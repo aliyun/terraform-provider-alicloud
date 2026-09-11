@@ -110,6 +110,127 @@ class AmpSafeTest(unittest.TestCase):
                 self.assertEqual([event["kind"] for event in events], ["amp"])
                 self.assert_fixed_flags(events[0])
 
+    def test_read_selectors_are_canonicalized_then_moved_to_child_environment(self):
+        self.environment.update({
+            "AMP_BRANCH": "feature/environment", "AMP_API_NAME": "AmbientApi"})
+        cases = (
+            (("api", "list"), ()),
+            (("api", "get"), ()),
+            (("api", "get"), ("--api-name", "GetWidget")),
+            (("branch", "get"), ("--status", "active")),
+        )
+        for command, extra_flags in cases:
+            for branch in ("master", "main", "feature/read-api"):
+                for inline in (False, True):
+                    with self.subTest(command=command, extra_flags=extra_flags,
+                                      branch=branch, inline=inline), mock.patch.object(
+                            amp_safe.subprocess, "run",
+                            return_value=SimpleNamespace(returncode=0)) as execute:
+                        selectors = ("--branch", branch, *extra_flags)
+                        flags = (tuple(flag + "=" + value for flag, value in
+                                       zip(selectors[::2], selectors[1::2]))
+                                 if inline else selectors)
+                        argv = (*command, *flags, "--project-id", "3065873")
+                        expected = (*command, "--project-id", "3065873", *selectors)
+                        invocation = amp_safe.parse_amp_argv(argv)
+                        self.assertEqual(invocation.argv, expected)
+                        self.assertIsNone(invocation.authorize_action)
+                        self.assertEqual(self.run_amp(*argv), 0)
+                        child = amp_safe._child_environment(self.environment)
+                        child["AMP_BRANCH"] = branch
+                        native_extra = extra_flags
+                        if extra_flags[:1] == ("--api-name",):
+                            child["AMP_API_NAME"] = extra_flags[1]
+                            native_extra = ()
+                        else:
+                            self.assertNotIn("AMP_API_NAME", child)
+                        execute.assert_called_once_with(
+                            [str(self.stub.resolve()), *command, "--project-id",
+                             "3065873", *native_extra, "-o", "json", "--no-interactive"],
+                            cwd=str(self.root.resolve()), env=child,
+                            stdin=amp_safe.subprocess.DEVNULL, check=False)
+        self.assertEqual(self.events(), [])
+        self.assertEqual(self.environment["AMP_BRANCH"], "feature/environment")
+        self.assertEqual(self.environment["AMP_API_NAME"], "AmbientApi")
+
+    def test_read_does_not_default_or_inherit_selectors(self):
+        self.environment.update({
+            "AMP_BRANCH": "feature/environment", "AMP_API_NAME": "AmbientApi"})
+        cases = (
+            (("api", "list"), ()),
+            (("api", "get"), ()),
+            (("api", "get"), ("--api-name", "GetWidget")),
+            (("branch", "get"), ()),
+        )
+        for command, api_flags in cases:
+            with self.subTest(command=command, api_flags=api_flags), mock.patch.object(
+                    amp_safe.subprocess, "run",
+                    return_value=SimpleNamespace(returncode=0)) as execute:
+                self.assertEqual(
+                    amp_safe.parse_amp_argv((*command, *api_flags)).argv,
+                    (*command, *api_flags))
+                self.assertEqual(self.run_amp(*command, *api_flags), 0)
+                self.assertEqual(execute.call_count, 1)
+                self.assertEqual(execute.call_args.args[0], [
+                    str(self.stub.resolve()), *command, "-o", "json", "--no-interactive"])
+                child = execute.call_args.kwargs["env"]
+                self.assertNotIn("AMP_BRANCH", child)
+                if api_flags:
+                    self.assertEqual(child["AMP_API_NAME"], "GetWidget")
+                else:
+                    self.assertNotIn("AMP_API_NAME", child)
+        self.assertEqual(self.events(), [])
+
+    def test_read_rejects_duplicate_empty_missing_and_unknown_selectors(self):
+        for command in (("api", "list"), ("api", "get"), ("branch", "get")):
+            selectors = ("--branch", "--api-name") if command == ("api", "get") else ("--branch",)
+            for selector in selectors:
+                rejected = (
+                    (selector, "master", selector, "feature/read-api"),
+                    (selector + "=master", selector + "=main"),
+                    (selector, "master", selector + "=main"),
+                    (selector, ""),
+                    (selector + "=",),
+                    (selector,),
+                    (selector, "master", "--unknown", "value"),
+                )
+                for flags in rejected:
+                    with self.subTest(command=command, flags=flags), mock.patch.object(
+                            amp_safe.subprocess, "run") as execute:
+                        with self.assertRaises(amp_safe.AmpSafeError):
+                            self.run_amp(*command, *flags)
+                        execute.assert_not_called()
+        self.assertEqual(self.events(), [])
+
+    def test_mutating_selectors_remain_in_argv_not_child_environment(self):
+        self.environment.update({
+            "AMP_BRANCH": "master", "AMP_API_NAME": "AmbientApi"})
+        cases = (
+            (("init", "--project-id", "3065873", "--branch", "feature/init",
+              "--api-name", "GetWidget"),
+             ("init", "--project-id", "3065873", "--branch", "feature/init",
+              "--api-name", "GetWidget")),
+            (("branch", "create", "--branch", "feature/create",
+              "--project-id", "3065873"),
+             ("branch", "create", "--branch", "feature/create",
+              "--project-id", "3065873")),
+            (("publish", "pre", "--dry-run"),
+             ("publish", "pre", "--branch", "feature/test-safe", "--dry-run",
+              "--project-id", "3065873")),
+        )
+        for argv, expected in cases:
+            with self.subTest(argv=argv), mock.patch.object(
+                    amp_safe.subprocess, "run",
+                    return_value=SimpleNamespace(returncode=0)) as execute:
+                self.clear_events()
+                self.assertEqual(self.run_amp(*argv), 0)
+                self.assertEqual([event["kind"] for event in self.events()], ["authorize"])
+                self.assertEqual(execute.call_count, 1)
+                self.assertEqual(execute.call_args.args[0], [
+                    str(self.stub.resolve()), *expected, "-o", "json", "--no-interactive"])
+                self.assertNotIn("AMP_BRANCH", execute.call_args.kwargs["env"])
+                self.assertNotIn("AMP_API_NAME", execute.call_args.kwargs["env"])
+
     def test_mutating_commands_use_corresponding_task_authorization(self):
         doc_meta = json.dumps({"title": "Describe widgets"})
         api_meta = json.dumps({"paths": {"/widgets": {}}})
@@ -373,8 +494,11 @@ class AmpSafeTest(unittest.TestCase):
     def test_feature_branch_is_required_for_every_mutating_branch_input(self):
         rejected = (
             ("init", "--branch", "main"),
+            ("init", "--project-id", "3065873", "--branch", "master"),
+            ("branch", "create", "--project-id", "3065873", "--branch", "master"),
             ("branch", "create", "--branch", "release/x"),
             ("branch", "switch", "master"),
+            ("context", "set", "branch", "master"),
             ("context", "set", "branch", "feature/../main"),
             ("context", "set", "branch", "feature/x/"),
         )

@@ -395,11 +395,12 @@ def _parse_api(tokens: Sequence[str]) -> AmpInvocation:
     command = tokens[0]
     rest = tokens[1:]
     if command == "list":
-        values, booleans, _ = _parse_options(rest, value_flags=_SCOPE_FLAGS)
+        order = (*_SCOPE_FLAGS, "--branch")
+        values, booleans, _ = _parse_options(rest, value_flags=order)
         return AmpInvocation((
-            "api", "list", *_canonical_options(values, booleans, _SCOPE_FLAGS)))
+            "api", "list", *_canonical_options(values, booleans, order)))
     if command == "get":
-        order = (*_SCOPE_FLAGS, "--api-name")
+        order = (*_SCOPE_FLAGS, "--branch", "--api-name")
         values, booleans, _ = _parse_options(rest, value_flags=order)
         return AmpInvocation((
             "api", "get", *_canonical_options(values, booleans, order)))
@@ -892,12 +893,23 @@ def _authorize(action: str, repo: Path,
 
 def _execute_amp(binary: str, argv: Sequence[str], cwd: Path,
                  environ: Mapping[str, str]) -> int:
+    child_environment = dict(environ)
     command = [binary, *argv, *_FIXED_FLAGS]
+    if tuple(argv[:2]) in {("api", "get"), ("api", "list"), ("branch", "get")}:
+        # Native read selectors use context overrides rather than CLI flags.
+        overrides = {"--branch": "AMP_BRANCH", "--api-name": "AMP_API_NAME"}
+        command = [binary, *argv[:2]]
+        for flag, value in zip(argv[2::2], argv[3::2]):
+            if flag in overrides:
+                child_environment[overrides[flag]] = value
+            else:
+                command.extend((flag, value))
+        command.extend(_FIXED_FLAGS)
     try:
         completed = subprocess.run(
             command,
             cwd=os.fspath(cwd),
-            env=dict(environ),
+            env=child_environment,
             stdin=subprocess.DEVNULL,
             check=False,
         )
