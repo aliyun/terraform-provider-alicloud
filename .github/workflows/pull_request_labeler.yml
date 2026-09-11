@@ -4,6 +4,7 @@ on:
   pull_request_target:
     branches:
       - master
+      - release/v2
 
 permissions: {}
 
@@ -17,7 +18,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    runs-on: terraform-ci-policy
+    runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6.2.0
