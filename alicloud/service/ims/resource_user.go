@@ -8,6 +8,7 @@ import (
 
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -166,7 +167,10 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	response, err := r.Client().RpcPost("Ims", "2019-08-15", "CreateUser", nil, request, true)
 	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s: calling CreateUser", userTypeName), err.Error())
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: calling CreateUser", userTypeName),
+			errs.WrapErrorf(err, "Creating %s: calling CreateUser", userTypeName).Error(),
+		)
 		return
 	}
 
@@ -182,7 +186,10 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	object, err := getUser(r.Client(), userId)
 	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("Reading %s: calling GetUser", userTypeName), err.Error())
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: calling GetUser", userTypeName),
+			errs.WrapErrorf(err, "Reading %s: calling GetUser", userTypeName).Error(),
+		)
 		return
 	}
 	if object == nil {
@@ -204,7 +211,10 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	object, err := getUser(r.Client(), state.Id.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("Reading %s: calling GetUser", userTypeName), err.Error())
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: calling GetUser", userTypeName),
+			errs.WrapErrorf(err, "Reading %s: calling GetUser", userTypeName).Error(),
+		)
 		return
 	}
 	if object == nil {
@@ -245,14 +255,20 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	if len(request) > 1 {
 		if _, err := r.Client().RpcPost("Ims", "2019-08-15", "UpdateUser", nil, request, true); err != nil {
-			resp.Diagnostics.AddError(fmt.Sprintf("Updating %s: calling UpdateUser", userTypeName), err.Error())
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Updating %s: calling UpdateUser", userTypeName),
+				errs.WrapErrorf(err, "Updating %s: calling UpdateUser", userTypeName).Error(),
+			)
 			return
 		}
 	}
 
 	object, err := getUser(r.Client(), state.Id.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("Reading %s: calling GetUser", userTypeName), err.Error())
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: calling GetUser", userTypeName),
+			errs.WrapErrorf(err, "Reading %s: calling GetUser", userTypeName).Error(),
+		)
 		return
 	}
 	if object == nil {
@@ -273,7 +289,10 @@ func (r *userResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		"UserId": state.Id.ValueString(),
 	}, true)
 	if err != nil && !isUserNotExist(err) {
-		resp.Diagnostics.AddError(fmt.Sprintf("Deleting %s: calling DeleteUser", userTypeName), err.Error())
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Deleting %s: calling DeleteUser", userTypeName),
+			errs.WrapErrorf(err, "Deleting %s: calling DeleteUser", userTypeName).Error(),
+		)
 		return
 	}
 }
