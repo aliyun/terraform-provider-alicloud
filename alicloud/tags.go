@@ -66,6 +66,14 @@ func tagsSchema() *schema.Schema {
 	}
 }
 
+func tagsSchemaString() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		Elem:     &schema.Schema{Type: schema.TypeString},
+	}
+}
+
 // lintignore: S006
 // Deprecated: Use tagsSchemaForceNewWithElements instead, which declares the
 // string element type explicitly.
