@@ -58,6 +58,12 @@ func resourceAlicloudEcsPrefixList() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -77,6 +83,10 @@ func resourceAlicloudEcsPrefixListCreate(d *schema.ResourceData, meta interface{
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 
 	if v, ok := d.GetOk("entry"); ok {
@@ -141,6 +151,9 @@ func resourceAlicloudEcsPrefixListRead(d *schema.ResourceData, meta interface{})
 		d.Set("max_entries", formatInt(v))
 	}
 	d.Set("prefix_list_name", object["PrefixListName"])
+	if object["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", object["ResourceGroupId"])
+	}
 	return nil
 }
 func resourceAlicloudEcsPrefixListUpdate(d *schema.ResourceData, meta interface{}) error {
