@@ -406,6 +406,7 @@ var regularProductEndpoint = map[string]string{
 	"fc_open":              "%s.fc.aliyuncs.com",
 	"fc":                   "%s.fc.aliyuncs.com",
 	"cloudapi":             "apigateway.%s.aliyuncs.com",
+	"cloud_siem":           "cloud-siem.%s.aliyuncs.com",
 	"mns_open":             "mns-open.%s.aliyuncs.com",
 	"elasticsearch":        "elasticsearch.%s.aliyuncs.com",
 	"alikafka":             "alikafka.%s.aliyuncs.com",
