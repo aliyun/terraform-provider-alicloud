@@ -20,13 +20,18 @@ class TerraformReplyTemplateTest(unittest.TestCase):
         )
         for heading in headings:
             self.assertIn(heading, prompt)
+        self.assertNotIn("前三段的总结句也必须加粗", prompt)
+        self.assertNotIn("当前待办", prompt)
         positions = [prompt.index(heading) for heading in headings]
         self.assertEqual(positions, sorted(positions))
         for rule in (
             "loops/terraform-reply-template.md", "done/idle/suspend",
             "分子/分母", "负责人待确认", "发布时间待确认",
             "尚未进入待发布阶段", "方案链接", "内部交接术语",
-            "前三段的总结句也必须加粗", "可视化报告暂不可用",
+            "总体进展和发布安排的总结句必须加粗", "可视化报告暂不可用",
+            "尚未完成的阶段及卡点", "不增加重复总结句",
+            "@花名(工号)", "发送前核实", "不包反引号",
+            "评论提交成功不代表钉钉通知已送达",
             "段落及各项之间留一个空行", "不把整个回复包在代码块",
         ):
             self.assertIn(rule, prompt)
