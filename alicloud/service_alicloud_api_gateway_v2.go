@@ -470,3 +470,83 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayApi(id string) (object map[strin
 }
 
 // DescribeApiGatewayApi >>> Encapsulated.
+
+// DescribeApiGatewayDataset <<< Encapsulated get interface for ApiGateway Dataset.
+
+func (s *ApiGatewayServiceV2) DescribeApiGatewayDataset(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeDatasetInfo"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["DatasetId"] = id
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFoundDataset"}) {
+			return object, WrapErrorf(NotFoundErr("Dataset", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.DatasetInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DatasetInfo", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+// DescribeApiGatewayDataset >>> Encapsulated.
+
+// ListApiGatewayDatasetTags <<< Encapsulated get tags interface for ApiGateway Dataset.
+
+func (s *ApiGatewayServiceV2) ListApiGatewayDatasetTags(id string) (tags map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "ListTagResources"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["ResourceId.1"] = id
+	query["ResourceType"] = "dataset"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return tags, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	tagsRaw, err := jsonpath.Get("$.TagResources.TagResource", response)
+	if err != nil {
+		return tags, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response)
+	}
+	return tagsToMap(tagsRaw), nil
+}
+
+// ListApiGatewayDatasetTags >>> tag read function encapsulated.
