@@ -109,11 +109,51 @@ func TestAccAliCloudEfloCluster_basic10311(t *testing.T) {
 					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"node_groups": []map[string]interface{}{
 						{
-							"node_group_name":        "cluster-resource-test",
-							"node_group_description": "cluster-resource-test",
+							"node_group_name":           "cluster-resource-test",
+							"node_group_description":    "cluster-resource-test",
+							"machine_type":              "efg1.nvga1n",
+							"image_id":                  "i190982651690986913088",
+							"zone_id":                   "cn-wulanchabu-b",
+							"key_pair_name":             "${alicloud_ecs_key_pair.default.key_pair_name}",
+							"hpn_zone":                  "B1",
+							"bond_num":                  "2",
+							"file_system_mount_enabled": "true",
+							"user_data":                 "IyEvYmluL2Jhc2gKZWNobyBoZWxsbwo=",
+							"system_disk": []map[string]interface{}{
+								{
+									"size":              "500",
+									"performance_level": "PL1",
+									"category":          "cloud_essd",
+								},
+							},
+							"nodes": []map[string]interface{}{
+								{
+									"node_id":        "e01-cn-test0000001",
+									"hostname":       "test-node",
+									"vpc_id":         "${alicloud_vpc.create_vpc.id}",
+									"vswitch_id":     "${alicloud_vswitch.create_vswitch.id}",
+									"login_password": "Terraform@1234",
+								},
+							},
+						},
+						{
+							"node_group_name":        "cluster-resource-test-2",
+							"node_group_description": "cluster-resource-test-2",
 							"machine_type":           "efg1.nvga1n",
 							"image_id":               "i190982651690986913088",
 							"zone_id":                "cn-wulanchabu-b",
+							"login_password":         "Terraform@1234",
+						},
+					},
+					"components": []map[string]interface{}{
+						{
+							"component_type": "AckEdge",
+							"component_config": []map[string]interface{}{
+								{
+									"basic_args": "{}",
+									"node_units": []string{"{}"},
+								},
+							},
 						},
 					},
 					"nimiz_vswitches": []string{
@@ -122,15 +162,17 @@ func TestAccAliCloudEfloCluster_basic10311(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"hpn_zone":                 "B1",
-						"ignore_failed_node_tasks": "true",
-						"cluster_type":             "Lite",
-						"cluster_name":             name,
-						"cluster_description":      "cluster-resource-test",
-						"resource_group_id":        CHECKSET,
-						"node_groups.#":            "1",
-						"nimiz_vswitches.#":        "1",
-						"open_eni_jumbo_frame":     "false",
+						"hpn_zone":                    "B1",
+						"ignore_failed_node_tasks":    "true",
+						"cluster_type":                "Lite",
+						"cluster_name":                name,
+						"cluster_description":         "cluster-resource-test",
+						"resource_group_id":           CHECKSET,
+						"node_groups.#":               "2",
+						"node_groups.0.key_pair_name": CHECKSET,
+						"node_group_ids.%":            CHECKSET,
+						"nimiz_vswitches.#":           "1",
+						"open_eni_jumbo_frame":        "false",
 					}),
 				),
 			},
@@ -226,6 +268,10 @@ resource "alicloud_security_group" "create_security_group" {
   security_group_name = "cluster-resoure-test"
   security_group_type = "normal"
   vpc_id              = alicloud_vpc.create_vpc.id
+}
+
+resource "alicloud_ecs_key_pair" "default" {
+  key_pair_name = "${var.name}-kp"
 }
 
 
