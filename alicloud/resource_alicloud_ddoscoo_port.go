@@ -67,6 +67,18 @@ func resourceAliCloudDdosCooPort() *schema.Resource {
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"proxy_enable": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"ip_mode": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"module": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -91,6 +103,9 @@ func resourceAliCloudDdosCooPortCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("real_servers"); ok {
 		realServersMaps := v.([]interface{})
 		request["RealServers"] = realServersMaps
+	}
+	if v, ok := d.GetOk("proxy_enable"); ok {
+		request["ProxyEnable"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -149,6 +164,10 @@ func resourceAliCloudDdosCooPortRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.Set("real_servers", realServers1Raw)
+
+	if objectRaw["IpMode"] != nil {
+		d.Set("ip_mode", objectRaw["IpMode"])
+	}
 
 	objectRaw, err = ddosCooServiceV2.DescribeDescribeNetworkRuleAttributes(d.Id())
 	if err != nil {
@@ -218,6 +237,12 @@ func resourceAliCloudDdosCooPortUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 	request["BackendPort"] = d.Get("backend_port")
+	if !d.IsNewResource() && d.HasChange("proxy_enable") {
+		update = true
+	}
+	if v, ok := d.GetOk("proxy_enable"); ok || d.HasChange("proxy_enable") {
+		request["ProxyEnable"] = v
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -245,7 +270,7 @@ func resourceAliCloudDdosCooPortUpdate(d *schema.ResourceData, meta interface{})
 	query["ForwardProtocol"] = parts[2]
 	query["FrontendPort"] = parts[1]
 
-	if d.HasChange("config") {
+	if d.HasChange("config") || d.HasChange("module") {
 		update = true
 	}
 	objectDataLocalMap := make(map[string]interface{})
@@ -257,6 +282,9 @@ func resourceAliCloudDdosCooPortUpdate(d *schema.ResourceData, meta interface{})
 		}
 
 		request["Config"] = convertObjectToJsonString(objectDataLocalMap)
+	}
+	if v, ok := d.GetOk("module"); ok || d.HasChange("module") {
+		request["Module"] = v
 	}
 
 	if update {

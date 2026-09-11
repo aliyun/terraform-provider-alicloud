@@ -62,9 +62,9 @@ The following arguments are supported:
 
 * `config` - (Optional, List, Available since v1.230.0) Session persistence settings for port forwarding rules. Use a string representation in JSON format. The specific structure is described as follows.
   - `PersistenceTimeout`: is of Integer type and is required. The timeout period of the session. Value range: `30` to `3600`, in seconds. The default value is `0`, which is closed. See [`config`](#config) below.
-* `frontend_port` - (Required, ForceNew, Int) The forwarding port to query. Valid values: `0` to `65535`.
+* `frontend_port` - (Required, ForceNew, Int) The forwarding port. Valid values: `0` to `65535`.
 
-* `frontend_protocol` - (Required, ForceNew) The type of the forwarding protocol to query. Valid values:
+* `frontend_protocol` - (Required, ForceNew) The type of the forwarding protocol. Valid values:
   - `tcp`
   - `udp`
 
@@ -73,6 +73,10 @@ The following arguments are supported:
 -> **NOTE:**  You can call the [DescribeInstanceIds](https://www.alibabacloud.com/help/en/doc-detail/157459.html) operation to query the IDs of all instances.
 
 * `real_servers` - (Required, List) List of source IP addresses
+
+* `proxy_enable` - (Optional, Int) Whether to enable the Layer 4 proxy for the port forwarding rule. This is a write-only field: it can be set via CreatePort/ModifyPort but is not returned by DescribePort, so changes made outside Terraform cannot be detected.
+
+* `module` - (Optional) The module type of the network rule attribute. This is a write-only field: it can be set via ModifyNetworkRuleAttribute but is not returned by DescribeNetworkRuleAttributes, so changes made outside Terraform cannot be detected.
 
 ### `config`
 
@@ -83,6 +87,7 @@ The config supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<frontend_port>:<frontend_protocol>`.
+* `ip_mode` - The IP mode of the port forwarding rule.
 
 ## Timeouts
 
