@@ -14,5 +14,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  NewDefaultDomainDataSource,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_ims_user",
+				Factory:  NewUserResource,
+			},
+		},
 	}
 }
