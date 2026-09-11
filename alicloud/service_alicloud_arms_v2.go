@@ -860,3 +860,86 @@ func (s *ArmsServiceV2) ArmsGrafanaWorkspaceStateRefreshFunc(id string, field st
 }
 
 // DescribeArmsGrafanaWorkspace >>> Encapsulated.
+// DescribeArmsWebhookContact <<< Encapsulated get interface for Arms WebhookContact.
+
+func (s *ArmsServiceV2) DescribeArmsWebhookContact(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["ContactIds"] = id
+
+	action := "DescribeWebhookContacts"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ARMS", "2019-08-08", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"404"}) {
+			return object, WrapErrorf(NotFoundErr("WebhookContact", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	code, _ := jsonpath.Get("$.Code", response)
+	if InArray(fmt.Sprint(code), []string{"404"}) {
+		return object, WrapErrorf(NotFoundErr("WebhookContact", id), NotFoundMsg, response)
+	}
+
+	v, err := jsonpath.Get("$.PageBean.WebhookContacts[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageBean.WebhookContacts[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("WebhookContact", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *ArmsServiceV2) ArmsWebhookContactStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.ArmsWebhookContactStateRefreshFuncWithApi(id, field, failStates, s.DescribeArmsWebhookContact)
+}
+
+func (s *ArmsServiceV2) ArmsWebhookContactStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeArmsWebhookContact >>> Encapsulated.
