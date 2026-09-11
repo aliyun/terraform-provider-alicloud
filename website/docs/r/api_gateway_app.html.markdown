@@ -31,6 +31,8 @@ Basic Usage
 resource "alicloud_api_gateway_app" "example" {
   name        = "tf_example"
   description = "tf_example"
+  extend      = "extend-info"
+  app_code    = "tf-app-code-1234"
 }
 
 ```
@@ -41,8 +43,12 @@ resource "alicloud_api_gateway_app" "example" {
 
 The following arguments are supported:
 
-* `name` - (Required) The name of the app. 
+* `name` - (Required) The name of the app.
 * `description` - (Optional) The description of the app. Defaults to null.
+* `app_code` - (Optional, Computed) The AppCode of the app. It is settable at create and modifiable post-create via the ResetAppCode API. Once changed, the provider issues ResetAppCode with the previous value as identifier and the new value as the target AppCode.
+* `extend` - (Optional, Computed) The extend info of the app. Settable at create and update.
+* `disabled` - (Optional, Computed) Whether the app is disabled. Modifiable via the ModifyApp API; not accepted by CreateApp, so the provider applies it via ModifyApp right after creation when set.
+* `app_secret_reset` - (Optional) Trigger field. Any non-empty change invokes the ResetAppSecret API, after which the provider refreshes `app_key` and `app_secret` into state. Use this to rotate credentials without recreating the app.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
@@ -50,6 +56,9 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the app of api gateway.
+* `app_key` - The AppKey returned by the service.
+* `app_secret` - The AppSecret returned by the service (sensitive).
+* `app_code` - The AppCode currently associated with the app.
 
 ## Import
 
