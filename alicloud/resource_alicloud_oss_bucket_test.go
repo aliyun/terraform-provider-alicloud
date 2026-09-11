@@ -445,14 +445,26 @@ func TestAccAliCloudOssBucketBasic(t *testing.T) {
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"policy": `{\"Statement\":[{\"Action\":[\"oss:*\"],\"Effect\":\"Allow\",\"Resource\":[\"acs:oss:*:*:*\"]}],\"Version\":\"1\"}`,
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(nil),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy": `{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"oss:GetObject\"],\"Principal\":[\"1111111111111111\"],\"Resource\":[\"acs:oss:*:*:*\"]}]}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy": REMOVEKEY,
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
