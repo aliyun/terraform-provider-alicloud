@@ -53,8 +53,20 @@ func dataSourceAlicloudEcsAutoSnapshotPolicies() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"auto_snapshot_policy_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"association_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"copied_snapshots_retention_days": {
 							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"disk_nums": {
@@ -65,7 +77,11 @@ func dataSourceAlicloudEcsAutoSnapshotPolicies() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
-						"name": {
+						"record_total": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"region_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -91,6 +107,22 @@ func dataSourceAlicloudEcsAutoSnapshotPolicies() *schema.Resource {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"target_tags": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"tag_key": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tag_value": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 						"time_points": {
 							Type:     schema.TypeList,
@@ -172,7 +204,7 @@ func dataSourceAlicloudEcsAutoSnapshotPoliciesRead(d *schema.ResourceData, meta 
 					continue
 				}
 			}
-			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+			if statusOk && status.(string) != "" && status.(string) != fmt.Sprint(item["Status"]) {
 				continue
 			}
 			objects = append(objects, item)
@@ -207,10 +239,13 @@ func dataSourceAlicloudEcsAutoSnapshotPoliciesRead(d *schema.ResourceData, meta 
 		mapping := map[string]interface{}{
 			"id":                              fmt.Sprint(object["AutoSnapshotPolicyId"]),
 			"auto_snapshot_policy_id":         fmt.Sprint(object["AutoSnapshotPolicyId"]),
+			"auto_snapshot_policy_name":       object["AutoSnapshotPolicyName"],
+			"association_type":                object["AssociationType"],
 			"copied_snapshots_retention_days": formatInt(object["CopiedSnapshotsRetentionDays"]),
+			"create_time":                     object["CreationTime"],
 			"disk_nums":                       formatInt(object["DiskNums"]),
 			"enable_cross_region_copy":        object["EnableCrossRegionCopy"],
-			"name":                            object["AutoSnapshotPolicyName"],
+			"region_id":                       object["RegionId"],
 			"repeat_weekdays":                 repeatWeekdays,
 			"retention_days":                  formatInt(object["RetentionDays"]),
 			"status":                          object["Status"],
@@ -231,6 +266,20 @@ func dataSourceAlicloudEcsAutoSnapshotPoliciesRead(d *schema.ResourceData, meta 
 			}
 		}
 		mapping["tags"] = tags
+
+		targetTagRaw, _ := jsonpath.Get("$.TargetTags.TargetTag", object)
+		targetTagsMaps := make([]map[string]interface{}, 0)
+		if targetTagRaw != nil {
+			for _, targetTagChildRaw := range convertToInterfaceArray(targetTagRaw) {
+				targetTagsMap := make(map[string]interface{})
+				targetTagChildRaw := targetTagChildRaw.(map[string]interface{})
+				targetTagsMap["tag_key"] = targetTagChildRaw["TagKey"]
+				targetTagsMap["tag_value"] = targetTagChildRaw["TagValue"]
+				targetTagsMaps = append(targetTagsMaps, targetTagsMap)
+			}
+		}
+		mapping["target_tags"] = targetTagsMaps
+
 		ids = append(ids, fmt.Sprint(object["AutoSnapshotPolicyId"]))
 		names = append(names, object["AutoSnapshotPolicyName"])
 		s = append(s, mapping)
