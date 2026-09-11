@@ -16,6 +16,8 @@ For information about Polar Db Account and how to use it, see [What is Account](
 
 -> **NOTE:** Available since v1.67.0.
 
+-> **NOTE:** The `account_password_wo` and `account_password_wo_version` arguments require Terraform v1.11.0 or later. When `account_password_wo` is in use, `account_password` is not stored in the state or plan and reads back empty; use the `has_account_password_wo` attribute to check whether the password is managed by `account_password_wo`.
+
 -> **NOTE:** The DynamoDB type account does not support deletion. When destroying the Terraform resource, the DynamoDB account will be removed from state but not deleted from the cloud.
 
 ## Example Usage
@@ -81,6 +83,8 @@ The following arguments are supported:
   - Contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
   - Be 8 to 32 characters in length.
   - Special characters include !@#$%^&*()_+-=.
+* `account_password_wo` - (Optional, Sensitive, Available since v1.293.0) The write-only password of the database account. It is only sent to the server when the resource is created or updated and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `account_password_wo_version`. It conflicts with `account_password` and `kms_encrypted_password`.
+* `account_password_wo_version` - (Optional, Computed, Available since v1.293.0) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `account_password_wo` changes. Once set, the last version remains in the state after this argument is removed from the configuration together with `account_password_wo`.
 * `account_password_valid_time` - (Optional, Available since v1.265.0) The time when the password for the database account expires.
 * `account_type` - (Optional, ForceNew) The account type. Default value:`Normal`. Valid values: `Normal`, `Super`.
 * `db_cluster_id` - (Required, ForceNew) The cluster ID.
@@ -93,6 +97,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<account_name>`.
 * `status` - (Available since v1.265.0) The status of the database account.
 * `dynamodb_auth_password` - (Sensitive, Available since v1.285.0) The DynamoDB authentication password. Only available for DynamoDB account type.
+* `has_account_password_wo` - Whether the password of the database account is currently managed by `account_password_wo`. When it is `true`, `account_password` reads back empty because the write-only password is never stored in the state.
 
 ## Timeouts
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -43,9 +44,28 @@ func resourceAliCloudPolarDbAccount() *schema.Resource {
 				ForceNew: true,
 			},
 			"account_password": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"account_password_wo"},
+			},
+			"account_password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				WriteOnly:     true,
+				ConflictsWith: []string{"kms_encrypted_password"},
+				RequiredWith:  []string{"account_password_wo_version"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				RequiredWith: []string{"account_password_wo"},
+			},
+			"has_account_password_wo": {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 			"account_password_valid_time": {
 				Type:     schema.TypeString,
@@ -115,10 +135,15 @@ func resourceAliCloudPolarDbAccountCreate(d *schema.ResourceData, meta interface
 	}
 
 	password := d.Get("account_password").(string)
+	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo")); err != nil {
+		return WrapError(err)
+	} else if woValue != "" {
+		password = woValue
+	}
 	kmsPassword := d.Get("kms_encrypted_password").(string)
 
 	if password == "" && kmsPassword == "" {
-		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		return WrapError(Error("One of the 'account_password', 'kms_encrypted_password' and 'account_password_wo' should be set."))
 	}
 	if password != "" {
 		request["AccountPassword"] = password
@@ -192,6 +217,24 @@ func resourceAliCloudPolarDbAccountRead(d *schema.ResourceData, meta interface{}
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_cluster_id", parts[0])
+
+	hasPasswordWo := false
+	if v, ok := d.GetOk("has_account_password_wo"); ok && v.(bool) {
+		hasPasswordWo = true
+	}
+	if rawConfig := d.GetRawConfig(); !rawConfig.IsNull() {
+		woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("account_password_wo"))
+		if err != nil {
+			return WrapError(err)
+		}
+		hasPasswordWo = woValue != ""
+	}
+	if hasPasswordWo {
+		d.Set("has_account_password_wo", true)
+		d.Set("account_password", nil)
+	} else {
+		d.Set("has_account_password_wo", nil)
+	}
 
 	return nil
 }

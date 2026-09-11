@@ -505,3 +505,77 @@ resource "alicloud_polardb_cluster" "default" {
 }
 `, name)
 }
+
+func TestAccAliCloudPolarDbAccount_passwordWo(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_polardb_account.default"
+	ra := resourceAttrInit(resourceId, AliCloudPolarDbAccountMap11819)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PolarDbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePolarDbAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPolarDbAccountBasicDependence11819)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":               "${alicloud_polardb_cluster.default.id}",
+					"account_name":                name,
+					"account_password_wo":         "YourPassword123!",
+					"account_password_wo_version": 1,
+					"account_type":                "Super",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id":               CHECKSET,
+						"account_name":                name,
+						"account_type":                "Super",
+						"account_password":            "",
+						"account_password_wo_version": "1",
+						"has_account_password_wo":     "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password_wo":         "YourPassword123!update",
+					"account_password_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password":            "YourPassword123!",
+					"account_password_wo":         REMOVEKEY,
+					"account_password_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"has_account_password_wo":     "false",
+						"account_password_wo_version": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "account_password_wo_version"},
+			},
+		},
+	})
+}
