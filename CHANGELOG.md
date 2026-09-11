@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
 - resource/alicloud_oos_parameter: support the write-only attribute `value_wo` with `value_wo_version` as its change trigger, so the parameter value can be managed without being persisted in the state or plan.
+- resource/alicloud_ssl_certificates_service_certificate: support the write-only attribute key_wo with key_wo_version as its change trigger, so the certificate private key can be managed without being persisted in the state or plan.
 
 ## 1.292.0 (September 8, 2026)
 

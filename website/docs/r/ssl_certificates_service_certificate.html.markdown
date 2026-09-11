@@ -16,6 +16,8 @@ For information about SSL Certificates Certificate and how to use it, see [What 
 
 -> **NOTE:** Available since v1.129.0.
 
+-> **NOTE:** The `key_wo` and `key_wo_version` arguments require Terraform v1.11.0 or later. When `key_wo` is in use, `key` is not stored in the state or plan and reads back empty; use the `has_key_wo` attribute to check whether the private key is managed by `key_wo`.
+
 ## Example Usage
 
 Basic Usage
@@ -98,7 +100,9 @@ EOF
 The following arguments are supported:
 
 * `cert` - (Optional, ForceNew) The content of a non-SM certificate in PEM format.
-* `key` - (Optional, ForceNew) The private key of a non-SM certificate in PEM format.
+* `key` - (Optional, ForceNew) The private key of a non-SM certificate in PEM format. It conflicts with `key_wo`.
+* `key_wo` - (Optional, Sensitive, Available since v1.293.0) The write-only private key of a non-SM certificate in PEM format. It is only sent to the server when the resource is created and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `key_wo_version`. It conflicts with `key`.
+* `key_wo_version` - (Optional, ForceNew, Computed, Available since v1.293.0) The version of the write-only private key. The write-only private key is re-sent to the server only when this argument changes, so changing it recreates the resource with the new `key_wo` value.
 * `encrypt_cert` - (Optional, ForceNew, Available since v1.260.1) The content of an SM encryption certificate in PEM format.
 * `encrypt_private_key` - (Optional, ForceNew, Available since v1.260.1) The private key of an SM encryption certificate in PEM format.
 * `sign_cert` - (Optional, ForceNew, Available since v1.260.1) The content of an SM signing certificate in PEM format.
@@ -113,6 +117,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
+* `has_key_wo` - Whether the private key of the certificate is currently managed by `key_wo`. When it is `true`, `key` reads back empty because the write-only private key is never stored in the state.
 
 ## Timeouts
 

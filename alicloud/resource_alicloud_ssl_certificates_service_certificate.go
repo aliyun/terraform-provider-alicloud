@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -49,10 +50,29 @@ func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 				Sensitive: true,
 			},
 			"key": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				ForceNew:  true,
-				Sensitive: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"key_wo"},
+			},
+			"key_wo": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				WriteOnly:    true,
+				RequiredWith: []string{"key_wo_version"},
+			},
+			"key_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				RequiredWith: []string{"key_wo"},
+			},
+			"has_key_wo": {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -107,6 +127,11 @@ func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceD
 	}
 	if v, ok := d.GetOk("key"); ok {
 		request["Key"] = v
+	}
+	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("key_wo")); err != nil {
+		return WrapError(err)
+	} else if woValue != "" {
+		request["Key"] = woValue
 	}
 	if v, ok := d.GetOk("encrypt_cert"); ok {
 		request["EncryptCert"] = v
@@ -169,7 +194,24 @@ func resourceAliCloudSslCertificatesServiceCertificateRead(d *schema.ResourceDat
 	d.Set("certificate_name", objectRaw["Name"])
 	d.Set("encrypt_cert", objectRaw["EncryptCert"])
 	d.Set("encrypt_private_key", objectRaw["EncryptPrivateKey"])
-	d.Set("key", objectRaw["Key"])
+	hasKeyWo := false
+	if v, ok := d.GetOk("has_key_wo"); ok && v.(bool) {
+		hasKeyWo = true
+	}
+	if rawConfig := d.GetRawConfig(); !rawConfig.IsNull() {
+		woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("key_wo"))
+		if err != nil {
+			return WrapError(err)
+		}
+		hasKeyWo = woValue != ""
+	}
+	if hasKeyWo {
+		d.Set("has_key_wo", true)
+		d.Set("key", nil)
+	} else {
+		d.Set("has_key_wo", nil)
+		d.Set("key", objectRaw["Key"])
+	}
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("sign_cert", objectRaw["SignCert"])
 	d.Set("sign_private_key", objectRaw["SignPrivateKey"])

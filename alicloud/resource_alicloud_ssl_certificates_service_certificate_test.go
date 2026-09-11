@@ -745,3 +745,74 @@ EOF
 }
 
 // Test SslCertificatesService Certificate. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudSslCertificatesServiceCertificate_keyWo(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ssl_certificates_service_certificate.default"
+	ra := resourceAttrInit(resourceId, AliCloudSslCertificatesServiceCertificateMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SslCertificatesServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSslCertificatesServiceCertificate")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%ssslcertificatesservicecertificate%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSslCertificatesServiceCertificateBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cert":             "${var.cert}",
+					"key_wo":           "${var.key}",
+					"key_wo_version":   1,
+					"certificate_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cert":             CHECKSET,
+						"key":              "",
+						"key_wo_version":   "1",
+						"has_key_wo":       "true",
+						"certificate_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key_wo":         "${var.key}",
+					"key_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key_wo_version": "2",
+						"has_key_wo":     "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key":            "${var.key}",
+					"key_wo":         REMOVEKEY,
+					"key_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key":        CHECKSET,
+						"has_key_wo": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
