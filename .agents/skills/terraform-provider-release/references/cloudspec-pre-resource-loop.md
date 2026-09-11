@@ -42,7 +42,7 @@ bash bootstrap/cloudspec-core.sh doctor
 从工单提取 `product_code`、`resource_code`、需求属性/行为及验收标准。随后只取 pre 资源 Meta：
 
 ```bash
-python3 .Codex/skills/amp-resource-metadata/scripts/get_resource_type.py \
+python3 .agents/skills/amp-resource-metadata/scripts/get_resource_type.py \
   --service-code <product_code> \
   --resource-code <resource_code> \
   --env pre
@@ -80,7 +80,7 @@ count     for_each  depends_on  lifecycle  connection  dynamic  self
 pre 对齐时检查每个属性名（PascalCase 转 snake_case 后比对）：
 
 ```bash
-python3 .Codex/skills/amp-resource-metadata/scripts/get_resource_type.py \
+python3 .agents/skills/amp-resource-metadata/scripts/get_resource_type.py \
   --service-code <product_code> --resource-code <resource_code> --env pre \
   | python3 -c 'import json,sys,re; d=json.load(sys.stdin);
 props=d.get(“Data”,{}).get(“Properties”,{})

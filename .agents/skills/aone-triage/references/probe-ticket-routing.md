@@ -38,7 +38,7 @@
 
 ### ③ 蒸馏知识（KNOWLEDGE.md 契约）
 
-按 `.Codex/skills/tf-customer-probe/references/knowledge-distillation.md` 契约，把本单在**复验/修复过程**中
+按 `.agents/skills/tf-customer-probe/references/knowledge-distillation.md` 契约，把本单在**复验/修复过程**中
 学到的产品级事实追加进 `<playground>/<product>/KNOWLEDGE.md`（触发点②aone-triage bookend 收尾——这是评审
 阻断项，客户单/probe 单皆算）。收录判据：可执行 / 跨场景复用 / 非文档已明示；条目格式
 `- [YYYY-MM-DD][来源: 工单URL 或 verdict 路径 或 PR URL] <一条可执行的产品级事实>`。

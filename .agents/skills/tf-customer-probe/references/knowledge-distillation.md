@@ -23,7 +23,7 @@ env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > `bootstrap/workspac
 ```markdown
 # <product> KNOWLEDGE
 
-> jarvis 蒸馏的产品级可执行知识；条目按时序追加，格式见 `.Codex/skills/tf-customer-probe/references/knowledge-distillation.md`。
+> jarvis 蒸馏的产品级可执行知识；条目按时序追加，格式见 `.agents/skills/tf-customer-probe/references/knowledge-distillation.md`。
 
 ## 命名与基本行为
 - [YYYY-MM-DD][来源: <链接/路径>] <一条可执行的产品级事实>
@@ -55,14 +55,14 @@ env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > `bootstrap/workspac
 
 ## 触发点（三处，缺一条链路都会漏收）
 
-1. **probe 轮 Step E 收尾**（`.Codex/skills/tf-customer-probe/SKILL.md` Step E）：
+1. **probe 轮 Step E 收尾**（`.agents/skills/tf-customer-probe/SKILL.md` Step E）：
    跑完 tier-0/tier-1 汇报前，按下面**收录判据**过一遍本轮 findings + judgment 判定结果 + verdict 摘录，
    命中判据的条目追加进对应产品 `KNOWLEDGE.md`。
-2. **aone-triage bookend 收尾**（`.Codex/skills/aone-triage/SKILL.md` 主流程 bookend 段）：
+2. **aone-triage bookend 收尾**（`.agents/skills/aone-triage/SKILL.md` 主流程 bookend 段）：
    凡工单涉及某个 terraform 云产品（客户单 / 内部研发单 / probe 单皆算），在 `wrap.sh done` 之后、
    `claim.sh release/finish` 之前，把本轮**验证结论中可复用的产品级事实**蒸馏进 `<playground>/<product>/KNOWLEDGE.md`。
    **这是评审阻断项**——客户单场合的蒸馏钩子必须挂在 aone-triage 主流程，不能只挂 probe 侧。
-3. **provider-resource-dev 完成开发后**（`.Codex/skills/provider-resource-dev/SKILL.md` 步骤 8 PR 提交后）：
+3. **provider-resource-dev 完成开发后**（`.agents/skills/provider-resource-dev/SKILL.md` 步骤 8 PR 提交后）：
    把开发过程学到的产品 quirk（API 行为差异、schema 陷阱、必须的重试码等）蒸馏进 `<product>/KNOWLEDGE.md`，
    来源锚点写 upstream PR URL + provider 源码行号。
 
@@ -84,9 +84,9 @@ env `JARVIS_TF_PLAYGROUND` > config `paths.playground_dir` > `bootstrap/workspac
 
 ## 消费约定（三处开发前都读）
 
-- **`.Codex/skills/tf-customer-probe`**：Step B 挑场景前，若涉及产品 X，先读 `<playground>/<X>/KNOWLEDGE.md`（存在即读）。
-- **`.Codex/skills/aone-triage`**：查证阶段（SKILL.md 第 3 步）若命中某个 terraform 产品，先读 `<playground>/<X>/KNOWLEDGE.md`。
-- **`.Codex/skills/provider-resource-dev`**：开发某资源前（步骤 6 手改），先读 `<playground>/<X>/KNOWLEDGE.md`。
+- **`.agents/skills/tf-customer-probe`**：Step B 挑场景前，若涉及产品 X，先读 `<playground>/<X>/KNOWLEDGE.md`（存在即读）。
+- **`.agents/skills/aone-triage`**：查证阶段（SKILL.md 第 3 步）若命中某个 terraform 产品，先读 `<playground>/<X>/KNOWLEDGE.md`。
+- **`.agents/skills/provider-resource-dev`**：开发某资源前（步骤 6 手改），先读 `<playground>/<X>/KNOWLEDGE.md`。
 
 playground 路径解析：`bootstrap/workspace.sh dir tf_playground` 或 env `JARVIS_TF_PLAYGROUND`；
 文件不存在即跳过（无信息 ≠ 阻断），存在则读全文（文件按小节结构组织，五节均需扫）。
@@ -108,7 +108,7 @@ playground 路径解析：`bootstrap/workspace.sh dir tf_playground` 或 env `JA
 - **被 dev/review/probe 消费 ≥ 3 次**（在 aone-triage 查证 / provider-resource-dev 开发 / tf-customer-probe 判定的
   会话中被引用），
 
-即触发**起草 `.Codex/skills/<product>-*` 产品级 skill**（如 `alicloud-vpc-quirks` / `alicloud-oss-lifecycle`），
+即触发**起草 `.agents/skills/<product>-*` 产品级 skill**（如 `alicloud-vpc-quirks` / `alicloud-oss-lifecycle`），
 把稳定的产品级事实沉淀为可搜索、可 trigger 的 skill；KNOWLEDGE.md 继续作为**未稳定条目的写入队列**。
 毕业动作建 Aone 跟踪，并在相关产品 skill/reference 中记录（"KNOWLEDGE → 产品级 skill 毕业"）。
 
