@@ -545,3 +545,164 @@ func (s *RealtimeComputeServiceV2) GetSqlFileRootFolderId(workspace, namespace s
 }
 
 // DescribeRealtimeComputeSqlFile >>> Encapsulated.
+
+// DescribeRealtimeComputeVariable <<< Encapsulated get interface for RealtimeCompute Variable.
+// There is no single GetVariable API; Read uses ListVariables and filters by name.
+// ListVariables is paginated (pageSize/pageIndex); this function walks every page so
+// a variable beyond the first page is still found.
+
+func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVariable(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
+	}
+	workspace := parts[0]
+	namespace := parts[1]
+	name := parts[2]
+	action := fmt.Sprintf("/api/v2/namespaces/%s/variables", namespace)
+	header := make(map[string]*string)
+	header["workspace"] = StringPointer(workspace)
+	pageSize := 100
+	pageIndex := 1
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+
+	for {
+		query := make(map[string]*string)
+		query["pageSize"] = StringPointer(fmt.Sprintf("%d", pageSize))
+		query["pageIndex"] = StringPointer(fmt.Sprintf("%d", pageIndex))
+		var response map[string]interface{}
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, make(map[string]interface{}))
+		if err != nil {
+			if IsExpectedErrors(err, []string{"990301"}) {
+				return object, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, response)
+			}
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		v, e := jsonpath.Get("$.data", response)
+		if e != nil {
+			return object, WrapErrorf(e, FailedGetAttributeMsg, id, "$.data", response)
+		}
+		var data []interface{}
+		if dataSlice, ok := v.([]interface{}); ok {
+			data = dataSlice
+		}
+		for _, item := range data {
+			if m, ok := item.(map[string]interface{}); ok {
+				if fmt.Sprint(m["name"]) == name {
+					return m, nil
+				}
+			}
+		}
+		// stop when the page is empty/partial or all pages have been consumed
+		if len(data) == 0 || len(data) < pageSize {
+			break
+		}
+		totalSize := 0
+		if tv, ok := response["totalSize"]; ok {
+			if ts, ok2 := tv.(float64); ok2 {
+				totalSize = int(ts)
+			}
+		}
+		if pageIndex*pageSize >= totalSize {
+			break
+		}
+		pageIndex++
+	}
+
+	return object, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, nil)
+}
+
+// DescribeRealtimeComputeVariable >>> Encapsulated.
+
+// DescribeRealtimeComputeVariables <<< Encapsulated list interface for Realtime Compute Variables.
+// ListVariables is paginated (pageSize/pageIndex); this function aggregates every page so no
+// variable is missed. id is a 2-part workspace:namespace.
+func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVariables(id string) (variables []map[string]interface{}, err error) {
+	client := s.client
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	workspace := parts[0]
+	namespace := parts[1]
+	action := fmt.Sprintf("/api/v2/namespaces/%s/variables", namespace)
+	header := make(map[string]*string)
+	header["workspace"] = StringPointer(workspace)
+	pageSize := 100
+	pageIndex := 1
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+
+	for {
+		query := make(map[string]*string)
+		query["pageSize"] = StringPointer(fmt.Sprintf("%d", pageSize))
+		query["pageIndex"] = StringPointer(fmt.Sprintf("%d", pageIndex))
+		var response map[string]interface{}
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, make(map[string]interface{}))
+		if err != nil {
+			if IsExpectedErrors(err, []string{"990301"}) {
+				return nil, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, response)
+			}
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		v, e := jsonpath.Get("$.data", response)
+		if e != nil {
+			return nil, WrapErrorf(e, FailedGetAttributeMsg, id, "$.data", response)
+		}
+		var data []interface{}
+		if dataSlice, ok := v.([]interface{}); ok {
+			data = dataSlice
+		}
+		if len(data) == 0 {
+			break
+		}
+		for _, item := range data {
+			if m, ok := item.(map[string]interface{}); ok {
+				variables = append(variables, m)
+			}
+		}
+		if len(data) < pageSize {
+			break
+		}
+		totalSize := 0
+		if tv, ok := response["totalSize"]; ok {
+			if ts, ok2 := tv.(float64); ok2 {
+				totalSize = int(ts)
+			}
+		}
+		if len(variables) >= totalSize {
+			break
+		}
+		pageIndex++
+	}
+
+	return variables, nil
+}
+
+// DescribeRealtimeComputeVariables >>> Encapsulated.
