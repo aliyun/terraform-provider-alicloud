@@ -13,6 +13,8 @@ Encrypt a given plaintext with KMS. The produced ciphertext stays stable across 
 
 -> **NOTE:** Available since v1.63.0.
 
+-> **NOTE:** The `plaintext_wo` and `plaintext_wo_version` arguments require Terraform v1.11.0 or later. When `plaintext_wo` is in use, `plaintext` is not stored in the state or plan and reads back empty; use the `has_plaintext_wo` attribute to check whether the plaintext is managed by `plaintext_wo`.
+
 -> **NOTE**: Using this data provider will allow you to conceal secret data within your resource definitions but does not take care of protecting that data in all Terraform logging and state output. Please take care to secure your secret data beyond just the Terraform configuration.
 
 ## Example Usage
@@ -42,7 +44,9 @@ resource "alicloud_kms_ciphertext" "encrypted" {
 
 The following arguments are supported:
 
-* `plaintext` - (Required, ForceNew) The plaintext to be encrypted which must be encoded in Base64.
+* `plaintext` - (Optional, Computed, ForceNew) The plaintext to be encrypted which must be encoded in Base64. Exactly one of `plaintext` and `plaintext_wo` can be set.
+* `plaintext_wo` - (Optional, Sensitive, Available since v1.293.0) The write-only plaintext to be encrypted which must be encoded in Base64. It is only sent to the server when the resource is created and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `plaintext_wo_version`. Exactly one of `plaintext` and `plaintext_wo` can be set.
+* `plaintext_wo_version` - (Optional, ForceNew, Computed, Available since v1.293.0) The version of the write-only plaintext. The write-only plaintext is re-sent to the server only when this argument changes, so changing it recreates the resource with the new `plaintext_wo` value.
 * `key_id` - (Required, ForceNew) The globally unique ID of the CMK.
 * `encryption_context` - (Optional, ForceNew) The Encryption context. If you specify this parameter here, it is also required when you call the Decrypt API operation. For more information, see [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm).
 
@@ -52,3 +56,4 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ciphertext_blob` - The ciphertext of the data key encrypted with the primary CMK version.
+* `has_plaintext_wo` - Whether the plaintext is currently managed by `plaintext_wo`. When it is `true`, `plaintext` reads back empty because the write-only plaintext is never stored in the state.

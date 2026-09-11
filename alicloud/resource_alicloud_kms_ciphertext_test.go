@@ -118,3 +118,52 @@ var testAccAlicloudKmsCiphertextConfig_validate_withContext = func(keyId string)
 	}
 	`, keyId)
 }
+
+func TestAccAliCloudKmsCiphertext_plaintextWo(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAlicloudKmsCiphertextConfig_plaintextWo(acctest.RandomWithPrefix("tf-testacc-plaintextwo"), 1),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_kms_ciphertext.default", "ciphertext_blob"),
+					resource.TestCheckResourceAttr("alicloud_kms_ciphertext.default", "plaintext_wo_version", "1"),
+					resource.TestCheckResourceAttr("alicloud_kms_ciphertext.default", "has_plaintext_wo", "true"),
+				),
+			},
+			{
+				Config: testAccAlicloudKmsCiphertextConfig_plaintextWo(acctest.RandomWithPrefix("tf-testacc-plaintextwo"), 2),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_kms_ciphertext.default", "ciphertext_blob"),
+					resource.TestCheckResourceAttr("alicloud_kms_ciphertext.default", "plaintext_wo_version", "2"),
+					resource.TestCheckResourceAttr("alicloud_kms_ciphertext.default", "has_plaintext_wo", "true"),
+				),
+			},
+			{
+				Config: testAccAlicloudKmsCiphertextConfig_basic(acctest.RandomWithPrefix("tf-testacc-plaintextwo")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_kms_ciphertext.default", "ciphertext_blob"),
+					resource.TestCheckResourceAttr("alicloud_kms_ciphertext.default", "has_plaintext_wo", "false"),
+				),
+			},
+		},
+	})
+}
+
+var testAccAlicloudKmsCiphertextConfig_plaintextWo = func(keyId string, version int) string {
+	return fmt.Sprintf(`
+resource "alicloud_kms_key" "default" {
+  	description = "%s"
+	is_enabled  = true
+	pending_window_in_days = 7
+}
+
+resource "alicloud_kms_ciphertext" "default" {
+	key_id = "${alicloud_kms_key.default.id}"
+	plaintext_wo = "plaintext-wo"
+	plaintext_wo_version = %d
+}
+`, keyId, version)
+}
