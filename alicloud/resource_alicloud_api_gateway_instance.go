@@ -135,6 +135,7 @@ func resourceAliCloudApiGatewayInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			// lintignore: S022
 			"to_connect_vpc_ip_block": {
 				Type:          schema.TypeMap,
 				Optional:      true,
@@ -181,6 +182,27 @@ func resourceAliCloudApiGatewayInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"delete_vpc_access": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"maintain_start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"maintain_end_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"intranet_segments": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tags": tagsSchemaForceNew(),
 		},
 	}
 }
@@ -233,6 +255,13 @@ func resourceAliCloudApiGatewayInstanceCreate(d *schema.ResourceData, meta inter
 	}
 	if v, ok := d.GetOk("duration"); ok {
 		request["Duration"] = v
+	}
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		request["AutoPay"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -367,6 +396,24 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 			update = true
 		}
 	}
+	if d.HasChange("maintain_start_time") {
+		if v, ok := d.GetOk("maintain_start_time"); ok {
+			request["MaintainStartTime"] = v
+			update = true
+		}
+	}
+	if d.HasChange("maintain_end_time") {
+		if v, ok := d.GetOk("maintain_end_time"); ok {
+			request["MaintainEndTime"] = v
+			update = true
+		}
+	}
+	if d.HasChange("intranet_segments") {
+		if v, ok := d.GetOk("intranet_segments"); ok {
+			request["IntranetSegments"] = v
+			update = true
+		}
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -398,9 +445,12 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 	query = make(map[string]interface{})
 	request["Token"] = buildClientToken(action)
 	request["InstanceId"] = d.Id()
-	if !d.IsNewResource() && d.HasChanges("instance_spec") {
+	if !d.IsNewResource() && d.HasChanges("instance_spec", "auto_pay") {
 		update = true
 		request["InstanceSpec"] = d.Get("instance_spec")
+		if v, ok := d.GetOkExists("auto_pay"); ok {
+			request["AutoPay"] = v
+		}
 		if v, ok := d.GetOk("skip_wait_switch"); ok {
 			request["SkipWaitSwitch"] = v
 		}
@@ -437,6 +487,12 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 	query = make(map[string]interface{})
 	request["Token"] = buildClientToken(action)
 	request["InstanceId"] = d.Id()
+	if !d.IsNewResource() && d.HasChange("delete_vpc_access") {
+		if v, ok := d.GetOkExists("delete_vpc_access"); ok && v.(bool) {
+			request["DeleteVpcAccess"] = v
+			update = true
+		}
+	}
 	if d.HasChanges("ingress_vpc_id", "ingress_vpc_owner_id", "ingress_vswitch_id") {
 		v, ok := d.GetOk("ingress_vpc_id")
 		if ok && v != nil {

@@ -79,6 +79,12 @@ func TestAccAliCloudApiGatewayInstance_basic5800(t *testing.T) {
 					"egress_ipv6_enable":      "true",
 					"vpc_slb_intranet_enable": "true",
 					"ipv6_enabled":            "true",
+					"auto_pay":                "false",
+					"maintain_start_time":     "02:00:00Z",
+					"maintain_end_time":       "06:00:00Z",
+					"intranet_segments":       "172.16.0.0/12",
+					"delete_vpc_access":       "false",
+					"tags":                    map[string]string{"key1": "value1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -91,6 +97,11 @@ func TestAccAliCloudApiGatewayInstance_basic5800(t *testing.T) {
 						"egress_ipv6_enable":      "true",
 						"vpc_slb_intranet_enable": "true",
 						"ipv6_enabled":            "true",
+						"auto_pay":                "false",
+						"maintain_start_time":     "02:00:00Z",
+						"maintain_end_time":       "06:00:00Z",
+						"intranet_segments":       "172.16.0.0/12",
+						"delete_vpc_access":       "false",
 					}),
 				),
 			},
@@ -108,7 +119,7 @@ func TestAccAliCloudApiGatewayInstance_basic5800(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"skip_wait_switch"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"skip_wait_switch", "tags", "maintain_start_time", "maintain_end_time", "intranet_segments", "auto_pay", "delete_vpc_access"},
 			},
 		},
 	})
