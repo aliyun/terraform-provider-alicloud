@@ -64,6 +64,10 @@ The following arguments are supported:
 * `configuration_snapshot` - (Optional) Indicates whether the specified destination receives scheduled resource snapshots. Cloud Config delivers scheduled resource snapshots at 04:00Z and 16:00Z to OSS, MNS, or Log Service every day. The time is displayed in UTC. Valid values:  
   - true: The specified destination receives scheduled resource snapshots.  
   - false: The specified destination does not receive scheduled resource snapshots.  
+* `compliant_snapshot` - (Optional) Indicates whether the specified destination receives compliant snapshots. Valid values:
+  - true: The specified destination receives compliant snapshots.
+  - false: The specified destination does not receive compliant snapshots.
+* `delivery_snapshot_time` - (Optional) The time at which the scheduled resource snapshot is delivered. The time is displayed in UTC.
 * `delivery_channel_condition` - (Optional) The rule that is attached to the delivery channel.  
 
   This parameter is available when you deliver data of all types to MNS or deliver snapshots to Log Service.  
