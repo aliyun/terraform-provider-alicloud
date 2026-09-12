@@ -198,6 +198,7 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 					"aggregate_compliance_pack_name": name,
 					"description":                    name,
 					"risk_level":                     "1",
+					"template_content":               "",
 					"config_rules": []map[string]interface{}{
 						{
 							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
@@ -249,6 +250,9 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 					"config_rules": []map[string]interface{}{
 						{
 							"managed_rule_identifier": "ecs-snapshot-retention-days",
+							"config_rule_name":        "tf-test-snapshot-rule",
+							"description":             "test snapshot retention",
+							"risk_level":              "2",
 							"config_rule_parameters": []map[string]interface{}{
 								{
 									"parameter_name":  "days",
@@ -278,6 +282,9 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 					"config_rules": []map[string]interface{}{
 						{
 							"managed_rule_identifier": "ecs-snapshot-retention-days",
+							"config_rule_name":        "tf-test-snapshot-rule-update",
+							"description":             "test snapshot retention updated",
+							"risk_level":              "3",
 							"config_rule_parameters": []map[string]interface{}{
 								{
 									"parameter_name":  "days",
@@ -292,6 +299,162 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 						"config_rules.#": "1",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tag_key_scope":            "env",
+					"tag_value_scope":          "prod",
+					"resource_ids_scope":       "[\\\"i-test\\\"]",
+					"resource_group_ids_scope": "rg-test",
+					"region_ids_scope":         "cn-hangzhou",
+					"tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "env",
+							"tag_value": "prod",
+						},
+						{
+							"tag_key":   "team",
+							"tag_value": "dev",
+						},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "team",
+							"tag_value": "dev",
+						},
+						{
+							"tag_key":   "env",
+							"tag_value": "prod",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_key_scope":                  "env",
+						"tag_value_scope":                "prod",
+						"resource_ids_scope":             "i-test",
+						"resource_group_ids_scope":       "rg-test",
+						"region_ids_scope":               "cn-hangzhou",
+						"tags_scope.#":                   "2",
+						"tags_scope.0.tag_key":           "env",
+						"tags_scope.0.tag_value":         "prod",
+						"tags_scope.1.tag_key":           "team",
+						"tags_scope.1.tag_value":         "dev",
+						"exclude_tags_scope.#":           "2",
+						"exclude_tags_scope.0.tag_key":   "team",
+						"exclude_tags_scope.0.tag_value": "dev",
+						"exclude_tags_scope.1.tag_key":   "env",
+						"exclude_tags_scope.1.tag_value": "prod",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "team",
+							"tag_value": "dev",
+						},
+						{
+							"tag_key":   "env",
+							"tag_value": "prod",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "team",
+							"tag_value": "dev",
+						},
+						{
+							"tag_key":   "env",
+							"tag_value": "prod",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags_scope.#":           "2",
+						"tags_scope.0.tag_key":   "team",
+						"tags_scope.0.tag_value": "dev",
+						"tags_scope.1.tag_key":   "env",
+						"tags_scope.1.tag_value": "prod",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"exclude_tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "env",
+							"tag_value": "prod",
+						},
+						{
+							"tag_key":   "team",
+							"tag_value": "dev",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"exclude_tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "env",
+							"tag_value": "prod",
+						},
+						{
+							"tag_key":   "team",
+							"tag_value": "dev",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"exclude_tags_scope.#":           "2",
+						"exclude_tags_scope.0.tag_key":   "env",
+						"exclude_tags_scope.0.tag_value": "prod",
+						"exclude_tags_scope.1.tag_key":   "team",
+						"exclude_tags_scope.1.tag_value": "dev",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tag_key_scope":                    "team",
+					"tag_value_scope":                  "dev",
+					"resource_ids_scope":               REMOVEKEY,
+					"resource_group_ids_scope":         REMOVEKEY,
+					"region_ids_scope":                 REMOVEKEY,
+					"exclude_resource_ids_scope":       "[\\\"i-test2\\\"]",
+					"exclude_resource_group_ids_scope": "rg-test2",
+					"exclude_region_ids_scope":         "cn-shanghai",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_key_scope":                    "team",
+						"tag_value_scope":                  "dev",
+						"resource_ids_scope":               "",
+						"resource_group_ids_scope":         "",
+						"region_ids_scope":                 "",
+						"exclude_resource_ids_scope":       "i-test2",
+						"exclude_resource_group_ids_scope": "rg-test2",
+						"exclude_region_ids_scope":         "cn-shanghai",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"config_rules", "config_rule_ids"},
 			},
 		},
 	})
@@ -461,14 +624,14 @@ func AliCloudConfigAggregateCompliancePackBasicDependence0(name string) string {
 		default = "ct-3d20ff4e06a30027f76e"
 	}
 
-	data "alicloud_resource_manager_accounts" "default" {
-	  status = "CreateSuccess"
+	resource "alicloud_resource_manager_account" "default" {
+	  display_name = var.name
 	}
 
 	resource "alicloud_config_aggregator" "default" {
 	  aggregator_accounts {
-		account_id   = data.alicloud_resource_manager_accounts.default.accounts.0.account_id
-		account_name = data.alicloud_resource_manager_accounts.default.accounts.0.display_name
+		account_id   = alicloud_resource_manager_account.default.id
+		account_name = alicloud_resource_manager_account.default.display_name
 		account_type = "ResourceDirectory"
 	  }
 	  aggregator_name = var.name
@@ -502,14 +665,14 @@ func AliCloudConfigAggregateCompliancePackBasicDependence1(name string) string {
 	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 
-	data "alicloud_resource_manager_accounts" "default" {
-	  status = "CreateSuccess"
+	resource "alicloud_resource_manager_account" "default" {
+	  display_name = var.name
 	}
 
 	resource "alicloud_config_aggregator" "default" {
 	  aggregator_accounts {
-		account_id   = data.alicloud_resource_manager_accounts.default.accounts.0.account_id
-		account_name = data.alicloud_resource_manager_accounts.default.accounts.0.display_name
+		account_id   = alicloud_resource_manager_account.default.id
+		account_name = alicloud_resource_manager_account.default.display_name
 		account_type = "ResourceDirectory"
 	  }
 	  aggregator_name = var.name
@@ -517,34 +680,34 @@ func AliCloudConfigAggregateCompliancePackBasicDependence1(name string) string {
 	  aggregator_type = "CUSTOM"
 	}
 
-	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_efficiency"
-  		available_resource_creation = "VSwitch"
-	}
-
-	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
-	}
-
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		name_regex  = "^aliyun_3_x64_20G_alibase*"
   		most_recent = true
   		owners      = "system"
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING"
+	data "alicloud_instance_types" "default" {
+  		cpu_core_count       = 2
+  		memory_size          = 4
+  		system_disk_category = "cloud_essd"
+  		sorted_by            = "Price"
 	}
 
-	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_zones.default.zones.0.id
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 	}
 
 	resource "alicloud_security_group" "default" {
   		name   = var.name
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+  		vpc_id = alicloud_vpc.default.id
 	}
 
 	resource "alicloud_instance" "default" {
@@ -554,11 +717,11 @@ func AliCloudConfigAggregateCompliancePackBasicDependence1(name string) string {
   		security_groups            = alicloud_security_group.default.*.id
   		internet_charge_type       = "PayByTraffic"
   		internet_max_bandwidth_out = "10"
-  		availability_zone          = data.alicloud_zones.default.zones.0.id
+  		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
   		instance_charge_type       = "PostPaid"
   		password                   = "YourPassword12345!"
-  		system_disk_category       = "cloud_efficiency"
-  		vswitch_id                 = data.alicloud_vswitches.default.ids.0
+  		system_disk_category       = "cloud_essd"
+  		vswitch_id                 = alicloud_vswitch.default.id
 	}
 
 	resource "alicloud_config_aggregate_config_rule" "default" {
