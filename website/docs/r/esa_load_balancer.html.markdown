@@ -115,6 +115,9 @@ The adaptive_routing supports the following:
 * `failover_across_pools` - (Optional) Whether to failover across pools.
   - `true`: Yes.
   - `false`: No.
+* `origin_level_retry` - (Optional) Whether to retry at the origin level.
+  - `true`: Yes.
+  - `false`: No.
 
 ### `monitor`
 

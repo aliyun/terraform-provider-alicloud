@@ -73,6 +73,7 @@ func TestAccAliCloudEsaLoadBalancer_basic11682(t *testing.T) {
 					"adaptive_routing": []map[string]interface{}{
 						{
 							"failover_across_pools": "true",
+							"origin_level_retry":    "true",
 						},
 					},
 				}),
@@ -302,6 +303,7 @@ func TestAccAliCloudEsaLoadBalancer_basic11682_twin(t *testing.T) {
 					"adaptive_routing": []map[string]interface{}{
 						{
 							"failover_across_pools": "true",
+							"origin_level_retry":    "true",
 						},
 					},
 					"monitor": []map[string]interface{}{
