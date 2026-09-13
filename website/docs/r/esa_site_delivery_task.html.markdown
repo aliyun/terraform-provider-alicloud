@@ -85,6 +85,9 @@ The following arguments are supported:
   - `dcdn_log_er`: edge function log.
   - `dcdn_log_waf`: security protection log.
   - `dcdn_log_ipa`: 4 layer acceleration log.
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
 * `data_center` - (Required, ForceNew) Data Center. Values:
   - `cn`: Mainland China.
   - `sg`: Global (excluding Mainland China).
@@ -97,6 +100,10 @@ The following arguments are supported:
   - `aws3cmpt`: Amazon s3 Compatible Service.
 * `discard_rate` - (Optional, Float) If the discard rate is not filled, the default value is 0.
 * `field_name` - (Required) The list of delivery fields to be modified, separated by commas.
+* `filter_ver` - (Optional) The version of the filter.
+
+-> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+
 * `http_delivery` - (Optional, List) HTTP delivery configuration parameters. See [`http_delivery`](#http_delivery) below.
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
@@ -126,18 +133,21 @@ The following arguments are supported:
 ### `http_delivery`
 
 The http_delivery supports the following:
-* `compress` - (Optional) 
-* `dest_url` - (Optional) 
-* `header_param` - (Optional, Map) 
-* `log_body_prefix` - (Optional) 
-* `log_body_suffix` - (Optional) 
-* `max_batch_mb` - (Optional, Int) 
-* `max_batch_size` - (Optional, Int) 
-* `max_retry` - (Optional, Int) 
-* `query_param` - (Optional, Map) 
-* `standard_auth_on` - (Optional) 
+* `compress` - (Optional)
+* `dest_url` - (Optional)
+* `header_param` - (Optional, Map)
+* `last_log_split` - (Optional)
+* `log_body_prefix` - (Optional)
+* `log_body_suffix` - (Optional)
+* `log_split` - (Optional)
+* `log_split_words` - (Optional)
+* `max_batch_mb` - (Optional, Int)
+* `max_batch_size` - (Optional, Int)
+* `max_retry` - (Optional, Int)
+* `query_param` - (Optional, Map)
+* `standard_auth_on` - (Optional)
 * `standard_auth_param` - (Optional, List)  See [`standard_auth_param`](#http_delivery-standard_auth_param) below.
-* `transform_timeout` - (Optional, Int) 
+* `transform_timeout` - (Optional, Int)
 
 ### `http_delivery-standard_auth_param`
 
@@ -149,14 +159,15 @@ The http_delivery-standard_auth_param supports the following:
 ### `kafka_delivery`
 
 The kafka_delivery supports the following:
-* `balancer` - (Optional) 
-* `brokers` - (Optional, List) 
+* `balancer` - (Optional)
+* `brokers` - (Optional, List)
 * `compress` - (Optional) The compression method. By default, data is not compressed.
-* `machanism_type` - (Optional) 
-* `password` - (Optional) 
-* `topic` - (Optional) 
-* `user_auth` - (Optional) 
-* `user_name` - (Optional) 
+* `machanism_type` - (Optional)
+* `password` - (Optional)
+* `topic` - (Optional)
+* `use_tls` - (Optional)
+* `user_auth` - (Optional)
+* `user_name` - (Optional)
 
 ### `oss_delivery`
 
