@@ -39,6 +39,11 @@ func resourceAliCloudEsaRoutine() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"has_assets": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"code": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -80,6 +85,9 @@ func resourceAliCloudEsaRoutineCreate(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
+	}
+	if v, ok := d.GetOk("has_assets"); ok {
+		request["HasAssets"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -127,6 +135,7 @@ func resourceAliCloudEsaRoutineRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
+	d.Set("has_assets", objectRaw["HasAssets"])
 
 	d.Set("name", d.Id())
 
