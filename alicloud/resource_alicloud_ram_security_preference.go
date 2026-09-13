@@ -41,6 +41,11 @@ func resourceAliCloudRamSecurityPreference() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"allow_user_to_manage_service_credentials": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"allow_user_to_manage_mfa_devices": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -155,6 +160,9 @@ func resourceAliCloudRamSecurityPreferenceCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOkExists("allow_user_to_manage_access_keys"); ok {
 		request["AllowUserToManageAccessKeys"] = v
 	}
+	if v, ok := d.GetOkExists("allow_user_to_manage_service_credentials"); ok {
+		request["AllowUserToManageServiceCredentials"] = v
+	}
 	if v, ok := d.GetOkExists("max_idle_days_for_users"); ok {
 		request["MaxIdleDaysForUsers"] = v
 	}
@@ -202,6 +210,7 @@ func resourceAliCloudRamSecurityPreferenceRead(d *schema.ResourceData, meta inte
 		accessKeyPreferenceRaw = accessKeyPreferenceRawObj.(map[string]interface{})
 	}
 	d.Set("allow_user_to_manage_access_keys", accessKeyPreferenceRaw["AllowUserToManageAccessKeys"])
+	d.Set("allow_user_to_manage_service_credentials", accessKeyPreferenceRaw["AllowUserToManageServiceCredentials"])
 
 	loginProfilePreferenceRawObj, _ := jsonpath.Get("$.LoginProfilePreference", objectRaw)
 	loginProfilePreferenceRaw := make(map[string]interface{})
@@ -322,6 +331,11 @@ func resourceAliCloudRamSecurityPreferenceUpdate(d *schema.ResourceData, meta in
 	if d.HasChange("allow_user_to_manage_access_keys") {
 		update = true
 		request["AllowUserToManageAccessKeys"] = d.Get("allow_user_to_manage_access_keys")
+	}
+
+	if d.HasChange("allow_user_to_manage_service_credentials") {
+		update = true
+		request["AllowUserToManageServiceCredentials"] = d.Get("allow_user_to_manage_service_credentials")
 	}
 
 	if d.HasChange("max_idle_days_for_users") {
