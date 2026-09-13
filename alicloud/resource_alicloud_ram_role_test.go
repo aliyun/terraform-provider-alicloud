@@ -179,6 +179,26 @@ func TestAccAliCloudRamRole_basic5886(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"allow_console_login": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_console_login": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_console_login": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_console_login": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -255,6 +275,7 @@ func TestAccAliCloudRamRole_basic5886_twin(t *testing.T) {
 					"assume_role_policy_document": `{\"Statement\": [{\"Action\": [\"sts:AssumeRole\",\"sts:SetSourceIdentity\"],\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"apigateway.aliyuncs.com\",\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
 					"description":                 name,
 					"max_session_duration":        "6000",
+					"allow_console_login":         "true",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -267,6 +288,7 @@ func TestAccAliCloudRamRole_basic5886_twin(t *testing.T) {
 						"assume_role_policy_document": CHECKSET,
 						"description":                 name,
 						"max_session_duration":        "6000",
+						"allow_console_login":         "true",
 						"tags.%":                      "2",
 						"tags.Created":                "TF",
 						"tags.For":                    "Test",
@@ -348,6 +370,26 @@ func TestAccAliCloudRamRole_basic5888(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"allow_console_login": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_console_login": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_console_login": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_console_login": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -424,6 +466,7 @@ func TestAccAliCloudRamRole_basic5888_twin(t *testing.T) {
 					"document":             `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
 					"description":          name,
 					"max_session_duration": "6000",
+					"allow_console_login":  "true",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -436,6 +479,7 @@ func TestAccAliCloudRamRole_basic5888_twin(t *testing.T) {
 						"document":             CHECKSET,
 						"description":          name,
 						"max_session_duration": "6000",
+						"allow_console_login":  "true",
 						"tags.%":               "2",
 						"tags.Created":         "TF",
 						"tags.For":             "Test",
@@ -519,6 +563,26 @@ func TestAccAliCloudRamRole_basic5890(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"allow_console_login": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_console_login": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_console_login": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_console_login": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -596,6 +660,7 @@ func TestAccAliCloudRamRole_basic5890_twin(t *testing.T) {
 					"services":             []string{"ecs.aliyuncs.com"},
 					"description":          name,
 					"max_session_duration": "6000",
+					"allow_console_login":  "true",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -609,6 +674,7 @@ func TestAccAliCloudRamRole_basic5890_twin(t *testing.T) {
 						"services.#":           "1",
 						"description":          name,
 						"max_session_duration": "6000",
+						"allow_console_login":  "true",
 						"tags.%":               "2",
 						"tags.Created":         "TF",
 						"tags.For":             "Test",
@@ -652,6 +718,7 @@ func TestAccAliCloudRamRole_multi(t *testing.T) {
 					"assume_role_policy_document": `{\"Statement\": [{\"Action\": \"sts:AssumeRole\",\"Effect\": \"Allow\",\"Principal\": {\"Service\": [\"ecs.aliyuncs.com\"]}}],\"Version\": \"1\"}`,
 					"description":                 name + "-${count.index}",
 					"max_session_duration":        "6000",
+					"allow_console_login":         "true",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -664,6 +731,7 @@ func TestAccAliCloudRamRole_multi(t *testing.T) {
 						"assume_role_policy_document": CHECKSET,
 						"description":                 name + fmt.Sprint(-5),
 						"max_session_duration":        "6000",
+						"allow_console_login":         "true",
 						"tags.%":                      "2",
 						"tags.Created":                "TF",
 						"tags.For":                    "Test",
