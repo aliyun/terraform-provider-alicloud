@@ -33,17 +33,19 @@ func TestAccAliCloudEnsDisk_basic5178(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":      "cloud_ssd",
-					"payment_type":  "PayAsYouGo",
-					"ens_region_id": "cn-chongqing-11",
-					"size":          "20",
+					"category":               "cloud_ssd",
+					"payment_type":           "PayAsYouGo",
+					"ens_region_id":          "cn-chongqing-11",
+					"size":                   "20",
+					"instance_billing_cycle": "Hour",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":      "cloud_ssd",
-						"payment_type":  "PayAsYouGo",
-						"ens_region_id": "cn-chongqing-11",
-						"size":          "20",
+						"category":               "cloud_ssd",
+						"payment_type":           "PayAsYouGo",
+						"ens_region_id":          "cn-chongqing-11",
+						"size":                   "20",
+						"instance_billing_cycle": "Hour",
 					}),
 				),
 			},
@@ -113,7 +115,7 @@ func TestAccAliCloudEnsDisk_basic5178(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"instance_billing_cycle"},
 			},
 		},
 	})
