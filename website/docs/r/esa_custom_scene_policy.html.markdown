@@ -64,6 +64,7 @@ The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The t
 * `end_time` - (Required) The time when the policy expires.
 The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `site_ids` - (Required) The IDs of the sites to associate with the policy. Separate multiple site IDs with commas.
+* `objects` - (Optional) The IDs of the websites that you want to associate with the policy. Separate multiple IDs with commas (,).
 * `template` - (Required) The name of the policy template. Valid value:
   - `promotion`: major events.
 * `status` - (Optional) Policy effective status. Valid values: `Disabled`, `Running`.

@@ -37,6 +37,11 @@ func resourceAliCloudEsaCustomScenePolicy() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"objects": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"start_time": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -76,6 +81,9 @@ func resourceAliCloudEsaCustomScenePolicyCreate(d *schema.ResourceData, meta int
 	request["Name"] = d.Get("custom_scene_policy_name")
 	request["SiteIds"] = d.Get("site_ids")
 	request["EndTime"] = d.Get("end_time")
+	if v, ok := d.GetOk("objects"); ok {
+		request["Objects"] = v
+	}
 
 	if v, ok := d.GetOk("start_time"); ok {
 		request["StartTime"] = v
@@ -125,6 +133,7 @@ func resourceAliCloudEsaCustomScenePolicyRead(d *schema.ResourceData, meta inter
 	d.Set("custom_scene_policy_name", objectRaw["Name"])
 	d.Set("end_time", objectRaw["EndTime"])
 	d.Set("site_ids", objectRaw["SiteIds"])
+	d.Set("objects", objectRaw["Objects"])
 	d.Set("start_time", objectRaw["StartTime"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("template", objectRaw["Template"])
@@ -242,6 +251,12 @@ func resourceAliCloudEsaCustomScenePolicyUpdate(d *schema.ResourceData, meta int
 		update = true
 	}
 	request["SiteIds"] = d.Get("site_ids")
+	if !d.IsNewResource() && d.HasChange("objects") {
+		update = true
+	}
+	if v, ok := d.GetOk("objects"); ok {
+		request["Objects"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("end_time") {
 		update = true
 	}
