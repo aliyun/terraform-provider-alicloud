@@ -352,4 +352,55 @@ func TestAccAliCloudRamGroup_basic_multi(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudRamGroup_rename(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_group.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamGroupMap10096)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	renamed := fmt.Sprintf("tfaccram%d-renamed", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamGroupBasicDependence10096)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_name": renamed,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_name": renamed,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
+
 // Test Ram Group. <<< Resource test cases, automatically generated.
