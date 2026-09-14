@@ -103,6 +103,19 @@ python3 {SKILL_DIR}/scripts/acctest.py upload-run \
 | `--download-dir` | Local dir for downloaded logs | `./acctest_logs` |
 | `--insecure` | Skip TLS certificate verification for internal ACube endpoints when Python cert verification fails | flag |
 
+### 供 GitHub approve 复用结果
+
+准备供 PR 使用的验收结果时，先提交待测代码，再执行 `upload` 或 `upload-run`。
+CLI 默认把 `--dir` 对应仓库的完整 Git HEAD 作为 `commitSha` 随 ZIP 上传；源码归档没有 Git
+信息时可显式传 `--commit-sha <40 位小写 SHA>`。该字段兼容旧后端，但只有部署结果复用功能的
+ACube 才会保存并使用它。未提交的代码仍可测试；源码与 commit 不一致时 CI 会重新执行。
+
+这里“全量”指该 PR 按现有 CI 规则选中的全部用例，可能跨多个资源；单个资源通过不能代表
+整个 PR 通过。若使用 `--test-case`，必须一次提交与 CI 相同的完整用例清单。只有全部真实
+PASS、无 FAIL/SKIP/漏跑、当前源码与执行环境标识匹配的结果可复用。CI 会在 approve 时重新
+校验实际 ZIP 摘要及完整日志，并把统计和可下载明细写到当前 commit 的 `acube/acctest`。
+旧任务未记录 commit/源码身份时不能补填冒充新证据，需要重新跑一次。
+
 `upload-run` 会：
 
 1. 只打包 `go.mod`、`go.sum`、`alicloud/`
