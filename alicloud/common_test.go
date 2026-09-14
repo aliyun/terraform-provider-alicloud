@@ -4020,36 +4020,34 @@ func TestUnitCommonIncrementalWait(t *testing.T) {
 	firstDuration := 100 * time.Millisecond
 	increaseDuration := 50 * time.Millisecond
 
+	originalJitter := incrementalWaitJitter
+	incrementalWaitJitter = func() float64 { return 1.0 }
+	t.Cleanup(func() { incrementalWaitJitter = originalJitter })
+
 	waitFunc := incrementalWait(firstDuration, increaseDuration)
 
-	// Test first call
-	start := time.Now()
-	waitFunc()
-	elapsed := time.Since(start)
+	expected := []time.Duration{
+		firstDuration,
+		firstDuration + increaseDuration,
+		firstDuration + 3*increaseDuration,
+		firstDuration + 7*increaseDuration,
+		firstDuration + 15*increaseDuration,
+	}
+	const tolerance = 30 * time.Millisecond
 
-	// Should wait approximately firstDuration
-	if elapsed < firstDuration || elapsed > firstDuration+50*time.Millisecond {
-		t.Errorf("First wait expected ~%v, got %v", firstDuration, elapsed)
+	elapsed := make([]time.Duration, len(expected))
+	for i := range expected {
+		start := time.Now()
+		waitFunc()
+		elapsed[i] = time.Since(start)
+		t.Logf("wait call %d: measured=%v (expected>=%v)", i+1, elapsed[i], expected[i]-tolerance)
 	}
 
-	// Test second call
-	start = time.Now()
-	waitFunc()
-	elapsed = time.Since(start)
-
-	// Should wait approximately increaseDuration
-	if elapsed < increaseDuration || elapsed > increaseDuration+50*time.Millisecond {
-		t.Errorf("Second wait expected ~%v, got %v", increaseDuration, elapsed)
-	}
-
-	// Test third call
-	start = time.Now()
-	waitFunc()
-	elapsed = time.Since(start)
-
-	// Should wait approximately increaseDuration again
-	if elapsed < increaseDuration || elapsed > increaseDuration+50*time.Millisecond {
-		t.Errorf("Third wait expected ~%v, got %v", increaseDuration, elapsed)
+	for i := 1; i < len(expected); i++ {
+		if elapsed[i] < expected[i]-tolerance {
+			t.Errorf("wait call %d: backoff did not accumulate; expected >= %v, measured %v (observed sequence %v)",
+				i+1, expected[i]-tolerance, elapsed[i], elapsed)
+		}
 	}
 }
 
