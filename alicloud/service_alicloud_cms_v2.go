@@ -682,3 +682,119 @@ func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFuncWithApi(id string, fi
 }
 
 // DescribeCmsEventNotifyPolicy >>> Encapsulated.
+
+// DescribeCmsDigitalEmployee <<< Encapsulated get interface for Cms DigitalEmployee.
+func (s *CmsServiceV2) DescribeCmsDigitalEmployee(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	name := id
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/digital-employee/%s", name)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDigitalEmployee.NotFound", "404"}) {
+			return object, WrapErrorf(NotFoundErr("DigitalEmployee", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *CmsServiceV2) CmsDigitalEmployeeStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.CmsDigitalEmployeeStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsDigitalEmployee)
+}
+
+func (s *CmsServiceV2) CmsDigitalEmployeeStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsDigitalEmployee >>> Encapsulated.
+
+// ListCmsDigitalEmployees <<< Encapsulated list interface for Cms DigitalEmployee.
+func (s *CmsServiceV2) ListCmsDigitalEmployees(query map[string]*string) (objects []map[string]interface{}, resp map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	action := "/digital-employee"
+	request = make(map[string]interface{})
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	for {
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return objects, response, WrapErrorf(err, DefaultErrorMsg, "ListDigitalEmployees", action, AlibabaCloudSdkGoERROR)
+		}
+
+		result, _ := jsonpath.Get("$.digitalEmployees[*]", response)
+		if items, ok := result.([]interface{}); ok {
+			for _, v := range items {
+				if item, ok := v.(map[string]interface{}); ok {
+					objects = append(objects, item)
+				}
+			}
+		}
+
+		if nextToken, ok := response["nextToken"].(string); ok && nextToken != "" {
+			query["nextToken"] = StringPointer(nextToken)
+		} else {
+			break
+		}
+	}
+
+	return objects, response, nil
+}
+
+// ListCmsDigitalEmployees >>> Encapsulated.
