@@ -204,6 +204,107 @@ var OosExecutionMap = map[string]string{
 	"update_date": CHECKSET,
 }
 
+// A TimerTrigger parent execution stays in Waiting until the trigger fires, so this case only
+// passes if the create wait accepts Waiting for trigger-class executions.
+func TestAccAliCloudOOSExecution_timerTrigger(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_execution.default"
+	ra := resourceAttrInit(resourceId, OosExecutionMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosExecution")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccOosExecutionTimer%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, OosExecutionTimerTriggerDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_name": "${alicloud_oos_template.default.template_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"template_name": CHECKSET,
+						"status":        "Waiting",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func OosExecutionTimerTriggerDependence(name string) string {
+	return fmt.Sprintf(`
+		resource "alicloud_ram_role" "default" {
+		  role_name = "%[1]s"
+		  assume_role_policy_document = <<DEFINITION
+		  {
+			"Statement": [
+			  {
+				"Action": "sts:AssumeRole",
+				"Effect": "Allow",
+				"Principal": {
+				  "Service": [
+					"oos.aliyuncs.com"
+				  ]
+				}
+			  }
+			],
+			"Version": "1"
+		  }
+		  DEFINITION
+		  force = true
+		}
+
+		resource "alicloud_oos_template" "default" {
+		  content= <<EOF
+		  {
+			"FormatVersion": "OOS-2019-06-01",
+			"Description": "Schedule to describe instances",
+			"RamRole": "${alicloud_ram_role.default.role_name}",
+			"Tasks": [
+			  {
+				"Name": "timer",
+				"Action": "ACS::TimerTrigger",
+				"Properties": {
+				  "Type": "at",
+				  "Expression": "2036-01-01T00:00:00Z",
+				  "EndDate": "2036-01-02T00:00:00Z"
+				}
+			  },
+			  {
+				"Properties" :{
+				  "Parameters":{
+					"Status": "Running"
+				  },
+				  "API": "DescribeInstances",
+				  "Service": "Ecs"
+				},
+				"Name": "describeInstances",
+				"Action": "ACS::ExecuteApi"
+			  }]
+		  }
+		  EOF
+		  template_name = "%[1]s"
+		  version_name = "test"
+		}
+	`, name)
+}
+
 func OosExecutionBasicdependence(name string) string {
 	return fmt.Sprintf(`
 		resource "alicloud_oos_template" "default" {
