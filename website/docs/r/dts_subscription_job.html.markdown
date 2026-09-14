@@ -143,6 +143,9 @@ The following arguments were support:
 * `payment_duration_unit` - (Optional) The payment duration unit. Valid values: `Month`, `Year`. When `payment_type` is `Subscription`, this parameter is valid and must be passed in.
 * `payment_duration` - (Optional) The duration of prepaid instance purchase. When `payment_type` is `Subscription`, this parameter is valid and must be passed in.
 * `reserve` - (Optional) DTS reserves parameters, the format is a JSON string, you can pass in this parameter to complete the source and target database information (such as the data storage format of the target Kafka database, the instance ID of the cloud enterprise network CEN). For more information, please refer to the parameter description of the [Reserve parameter](https://help.aliyun.com/document_detail/176470.html).
+
+  -> **NOTE:** The `srcSSL` key is managed by the property `source_endpoint_ssl`. If the property is set, it overrides the corresponding key here.
+
 * `source_endpoint_database_name` - (Optional) To subscribe to the name of the database.
 * `source_endpoint_engine_name` - (Required) The source database type value is MySQL or Oracle. Valid values: `MySQL`, `Oracle`.
 * `source_endpoint_instance_id` - (Optional) The ID of source instance. Only when the type of source database instance was RDS MySQL, PolarDB-X 1.0, PolarDB MySQL, this parameter can be available and must be set.
@@ -155,6 +158,7 @@ The following arguments were support:
 * `source_endpoint_port` - (Optional) The port of source database.
 * `source_endpoint_region` - (Required) The region of source database.
 * `source_endpoint_role` - (Optional) Both the authorization roles. When the source instance and configure subscriptions task of the Alibaba Cloud account is not the same as the need to pass the parameter, to specify the source of the authorization roles, to allow configuration subscription task of the Alibaba Cloud account to access the source of the source instance information.
+* `source_endpoint_ssl` - (Optional, Computed) The connection method of the source instance. Valid values: `0` (an unencrypted connection), `1` (an SSL-secured connection). Only supported when the source endpoint is accessed as a cloud instance or as a self-managed database hosted on ECS.
 * `subscription_data_type_ddl` - (Optional) Whether to subscribe the DDL type of data. Valid values: `true`, `false`.
 * `subscription_data_type_dml` - (Optional) Whether to subscribe the DML type of data. Valid values: `true`, `false`.
 * `subscription_instance_network_type` - (Optional, ForceNew) Subscription task type of network value: classic: classic Network. Virtual Private Cloud (vpc): a vpc. Valid values: `classic`, `vpc`.
