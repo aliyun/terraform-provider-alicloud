@@ -13,7 +13,7 @@ This data source provides the CR Endpoint Acl Service of the current Alibaba Clo
 
 For information about Event Bridge and how to use it, see [What is CR Endpoint Acl](https://www.alibabacloud.com/help/en/doc-detail/142246.htm).
 
--> **NOTE:** Available in v1.139.0+.
+-> **NOTE:** Available since v1.139.0.
 
 ## Example Usage
 
@@ -32,8 +32,8 @@ data "alicloud_cr_endpoint_acl_service" "example" {
 
 The following arguments are supported:
 
-* `endpoint_type` - (Required, ForceNew)  The type of endpoint. Valid values: `internet`.
-* `enable` - (Optional) Whether to enable Acl Service, Setting the value to `true` to enable the acl service. Valid values: `true` and `false`.
+* `endpoint_type` - (Required, ForceNew)  The type of endpoint. Valid values: `internet`, `Internet`. The value is normalized to lowercase `internet` in the attributes.
+* `enable` - (Required) Whether to enable Acl Service, Setting the value to `true` to enable the acl service. Valid values: `true` and `false`.
 * `instance_id` - (Required, ForceNew) The ID of the CR Instance.
 * `module_name` - (Optional, ForceNew) The ModuleName. Valid values: `Registry`.
 
@@ -41,13 +41,9 @@ The following arguments are supported:
 
 -> **NOTE:** You may want to allow all ECS instances to access the Container Registry Enterprise Edition instance over the Internet. To achieve this purpose, you can enable access over the Internet and delete all IP addresses from the whitelist for Internet access. After you perform the preceding operation, the Container Registry Enterprise Edition instance is completely exposed to the Internet and may be attacked.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `service` - A list of Cr Endpoint Acl Service. Each element contains the following attributes:
-	* `enable` - Whether to enable Acl Service.  Valid values: `true` and `false`.
-	* `endpoint_type` - The type of endpoint. Valid values: `internet`.
-	* `id` - The ID of the Endpoint Acl Service.
-	* `instance_id` - The ID of the CR Instance.
-	* `status` - The status of the resource.
+* `id` - The ID of the Endpoint Acl Service. The value formats as `<instance_id>:<endpoint_type>`.
+* `status` - The status of the resource.

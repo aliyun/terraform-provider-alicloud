@@ -16,6 +16,25 @@ type CrService struct {
 	client *connectivity.AliyunClient
 }
 
+// convertCrEndpointType maps the Terraform-side endpoint_type value to the
+// value documented by the CR endpoint APIs (GetInstanceEndpoint,
+// CreateInstanceEndpointAclPolicy, DeleteInstanceEndpointAclPolicy and
+// UpdateInstanceEndpointStatus document EndpointType as supporting only
+// "Internet"). Terraform config, state and resource IDs keep the lowercase
+// form; this conversion happens only at the API boundary.
+func convertCrEndpointType(endpointType string) string {
+	if strings.EqualFold(endpointType, "internet") {
+		return "Internet"
+	}
+	return endpointType
+}
+
+// isCrEndpointType reports whether s is a recognized endpoint_type segment of
+// an alicloud_cr_endpoint_acl_policy resource ID, in either documented case.
+func isCrEndpointType(s string) bool {
+	return strings.EqualFold(s, "internet")
+}
+
 type crCreateNamespaceRequestPayload struct {
 	Namespace struct {
 		Namespace string `json:"Namespace"`
@@ -270,7 +289,7 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 		return
 	}
 	request := map[string]interface{}{
-		"EndpointType": parts[1],
+		"EndpointType": convertCrEndpointType(parts[1]),
 		"InstanceId":   parts[0],
 	}
 	idExist := false
@@ -333,7 +352,7 @@ func (s *CrService) WaitCrEndpointAclEntryPropagate(instanceId, endpointType, en
 	client := s.client
 	action := "GetInstanceEndpoint"
 	request := map[string]interface{}{
-		"EndpointType": endpointType,
+		"EndpointType": convertCrEndpointType(endpointType),
 		"InstanceId":   instanceId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -382,7 +401,7 @@ func (s *CrService) WaitCrEndpointRunning(instanceId, endpointType string, timeo
 	client := s.client
 	action := "GetInstanceEndpoint"
 	request := map[string]interface{}{
-		"EndpointType": endpointType,
+		"EndpointType": convertCrEndpointType(endpointType),
 		"InstanceId":   instanceId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -415,7 +434,7 @@ func (s *CrService) DescribeCrEndpointAclService(id string) (object map[string]i
 		return
 	}
 	request := map[string]interface{}{
-		"EndpointType": parts[1],
+		"EndpointType": convertCrEndpointType(parts[1]),
 		"InstanceId":   parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
