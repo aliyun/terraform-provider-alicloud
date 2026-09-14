@@ -42,6 +42,15 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicyOrder_basic12717(t *tes
 					}),
 				),
 			},
+			{
+				Config: alicloudCloudFirewallVpcFirewallControlPolicyOrderBasicDependenceUpdate12717(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"order": "3",
+						"lang":  "en",
+					}),
+				),
+			},
 		},
 	})
 }
@@ -87,6 +96,49 @@ resource "alicloud_cloud_firewall_vpc_firewall_control_policy_order" "test" {
   order           = "${count.index + 1}"
   vpc_firewall_id = alicloud_cen_instance.test.id
   lang            = "zh"
+  acl_uuid        = split(":", alicloud_cloud_firewall_vpc_firewall_control_policy.test[count.index].id)[1]
+}`, name)
+}
+
+func alicloudCloudFirewallVpcFirewallControlPolicyOrderBasicDependenceUpdate12717(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_account" "test" {
+}
+
+resource "alicloud_cen_instance" "test" {
+  cen_instance_name = var.name
+}
+
+resource "alicloud_cloud_firewall_vpc_firewall_control_policy" "test" {
+  count            = 3
+  order            = "-1"
+  destination      = "127.0.0.2/32"
+  application_name = "ANY"
+  description      = "example_value"
+  source_type      = "net"
+  dest_port        = "80/88"
+  acl_action       = "accept"
+  lang             = "zh"
+  destination_type = "net"
+  source           = "127.0.0.1/32"
+  dest_port_type   = "port"
+  proto            = "TCP"
+  release          = true
+  vpc_firewall_id  = alicloud_cen_instance.test.id
+  lifecycle {
+    ignore_changes = [order]
+  }
+}
+
+resource "alicloud_cloud_firewall_vpc_firewall_control_policy_order" "test" {
+  count           = 3
+  order           = "${3 - count.index}"
+  vpc_firewall_id = alicloud_cen_instance.test.id
+  lang            = "en"
   acl_uuid        = split(":", alicloud_cloud_firewall_vpc_firewall_control_policy.test[count.index].id)[1]
 }`, name)
 }
