@@ -337,6 +337,37 @@ func (s *SaeService) DescribeApplicationSlb(id string) (object map[string]interf
 	return object, nil
 }
 
+func (s *SaeService) DescribeApplicationNlb(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "/pop/v1/sam/app/nlb"
+	request := map[string]*string{
+		"AppId": StringPointer(id),
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
 func (s *SaeService) UpdateSlb(d *schema.ResourceData) error {
 	if d.HasChange("intranet") || d.HasChange("internet") || d.HasChange("internet_slb_id") || d.HasChange("intranet_slb_id") {
 		update := false
