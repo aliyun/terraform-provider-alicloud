@@ -44,8 +44,9 @@ resource "alicloud_ram_group" "group" {
 
 The following arguments are supported:
 * `comments` - (Optional) The Group comment information. The maximum length is 128 characters.
-* `group_name` - (Optional, ForceNew, Available since v1.245.0) The group name. You must specify at least one of the `group_name` and `name`.
+* `group_name` - (Optional, Available since v1.245.0) The group name. You must specify at least one of the `group_name` and `name`.
 It can be 1 to 64 characters in length and can contain letters, digits, periods (.), underscores (_), and dashes (-).
+Modifying this field renames the group in place via `UpdateGroup` without destroying and recreating the resource.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated since v1.120.0). Field 'name' has been deprecated from provider version 1.120.0. New field 'group_name' instead.
