@@ -46,12 +46,14 @@ func resourceAliCloudConfigCompliancePack() *schema.Resource {
 			"config_rule_ids": {
 				Type:          schema.TypeSet,
 				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"config_rules"},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"config_rule_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -83,12 +85,98 @@ func resourceAliCloudConfigCompliancePack() *schema.Resource {
 								},
 							},
 						},
+						"config_rule_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"risk_level": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: IntInSlice([]int{1, 2, 3}),
+						},
 					},
 				},
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"template_content": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"tag_key_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tag_value_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_ids_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"exclude_resource_ids_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_group_ids_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"exclude_resource_group_ids_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"region_ids_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"exclude_region_ids_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tags_scope": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"tag_key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"tag_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"exclude_tags_scope": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"tag_key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"tag_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -131,6 +219,18 @@ func resourceAliCloudConfigCompliancePackCreate(d *schema.ResourceData, meta int
 
 				configRulesMap["ManagedRuleIdentifier"] = configRulesArg["managed_rule_identifier"]
 
+				if configRuleName := configRulesArg["config_rule_name"]; configRuleName.(string) != "" {
+					configRulesMap["ConfigRuleName"] = configRuleName
+				}
+
+				if description := configRulesArg["description"]; description.(string) != "" {
+					configRulesMap["Description"] = description
+				}
+
+				if riskLevel := configRulesArg["risk_level"]; riskLevel.(int) != 0 {
+					configRulesMap["RiskLevel"] = riskLevel
+				}
+
 				if configRuleParameters, ok := configRulesArg["config_rule_parameters"]; ok {
 					configRuleParametersMaps := make([]map[string]interface{}, 0)
 					configRuleParametersMap := map[string]interface{}{}
@@ -164,6 +264,40 @@ func resourceAliCloudConfigCompliancePackCreate(d *schema.ResourceData, meta int
 		}
 
 		request["ConfigRules"] = configRulesJson
+	}
+
+	if v, ok := d.GetOk("template_content"); ok {
+		request["TemplateContent"] = v
+	}
+	if v, ok := d.GetOk("tag_key_scope"); ok {
+		request["TagKeyScope"] = v
+	}
+	if v, ok := d.GetOk("tag_value_scope"); ok {
+		request["TagValueScope"] = v
+	}
+	if v, ok := d.GetOk("resource_ids_scope"); ok {
+		request["ResourceIdsScope"] = v
+	}
+	if v, ok := d.GetOk("exclude_resource_ids_scope"); ok {
+		request["ExcludeResourceIdsScope"] = v
+	}
+	if v, ok := d.GetOk("resource_group_ids_scope"); ok {
+		request["ResourceGroupIdsScope"] = v
+	}
+	if v, ok := d.GetOk("exclude_resource_group_ids_scope"); ok {
+		request["ExcludeResourceGroupIdsScope"] = v
+	}
+	if v, ok := d.GetOk("region_ids_scope"); ok {
+		request["RegionIdsScope"] = v
+	}
+	if v, ok := d.GetOk("exclude_region_ids_scope"); ok {
+		request["ExcludeRegionIdsScope"] = v
+	}
+	if v, ok := d.GetOk("tags_scope"); ok {
+		setTagsScopeParams(request, "TagsScope", v.([]interface{}))
+	}
+	if v, ok := d.GetOk("exclude_tags_scope"); ok {
+		setTagsScopeParams(request, "ExcludeTagsScope", v.([]interface{}))
 	}
 
 	wait := incrementalWait(3*time.Second, 30*time.Second)
@@ -213,6 +347,51 @@ func resourceAliCloudConfigCompliancePackRead(d *schema.ResourceData, meta inter
 	d.Set("risk_level", formatInt(object["RiskLevel"]))
 	d.Set("compliance_pack_template_id", object["CompliancePackTemplateId"])
 	d.Set("status", object["Status"])
+	d.Set("template_content", object["TemplateContent"])
+
+	if scope, ok := object["Scope"]; ok {
+		scopeMap := scope.(map[string]interface{})
+		d.Set("tag_key_scope", scopeMap["TagKeyScope"])
+		d.Set("tag_value_scope", scopeMap["TagValueScope"])
+		d.Set("resource_ids_scope", scopeMap["ResourceIdsScope"])
+		d.Set("exclude_resource_ids_scope", scopeMap["ExcludeResourceIdsScope"])
+		d.Set("resource_group_ids_scope", scopeMap["ResourceGroupIdsScope"])
+		d.Set("exclude_resource_group_ids_scope", scopeMap["ExcludeResourceGroupIdsScope"])
+		d.Set("region_ids_scope", scopeMap["RegionIdsScope"])
+		d.Set("exclude_region_ids_scope", scopeMap["ExcludeRegionIdsScope"])
+
+		if tagsScopeList, ok := scopeMap["TagsScope"]; ok {
+			tagsScopeMaps := make([]map[string]interface{}, 0)
+			for _, ts := range tagsScopeList.([]interface{}) {
+				tsArg := ts.(map[string]interface{})
+				tsMap := map[string]interface{}{}
+				if tagKey, ok := tsArg["TagKey"]; ok {
+					tsMap["tag_key"] = tagKey
+				}
+				if tagValue, ok := tsArg["TagValue"]; ok {
+					tsMap["tag_value"] = tagValue
+				}
+				tagsScopeMaps = append(tagsScopeMaps, tsMap)
+			}
+			d.Set("tags_scope", tagsScopeMaps)
+		}
+
+		if excludeTagsScopeList, ok := scopeMap["ExcludeTagsScope"]; ok {
+			excludeTagsScopeMaps := make([]map[string]interface{}, 0)
+			for _, ets := range excludeTagsScopeList.([]interface{}) {
+				etsArg := ets.(map[string]interface{})
+				etsMap := map[string]interface{}{}
+				if tagKey, ok := etsArg["TagKey"]; ok {
+					etsMap["tag_key"] = tagKey
+				}
+				if tagValue, ok := etsArg["TagValue"]; ok {
+					etsMap["tag_value"] = tagValue
+				}
+				excludeTagsScopeMaps = append(excludeTagsScopeMaps, etsMap)
+			}
+			d.Set("exclude_tags_scope", excludeTagsScopeMaps)
+		}
+	}
 
 	if _, ok := d.GetOk("config_rules"); ok {
 		if configRulesList, ok := object["ConfigRules"]; ok {
@@ -223,6 +402,18 @@ func resourceAliCloudConfigCompliancePackRead(d *schema.ResourceData, meta inter
 
 				if managedRuleIdentifier, ok := configRulesArg["ManagedRuleIdentifier"]; ok {
 					configRulesMap["managed_rule_identifier"] = managedRuleIdentifier
+				}
+
+				if configRuleName, ok := configRulesArg["ConfigRuleName"]; ok {
+					configRulesMap["config_rule_name"] = configRuleName
+				}
+
+				if description, ok := configRulesArg["Description"]; ok {
+					configRulesMap["description"] = description
+				}
+
+				if riskLevel, ok := configRulesArg["RiskLevel"]; ok {
+					configRulesMap["risk_level"] = formatInt(riskLevel)
 				}
 
 				if configRuleParameters, ok := configRulesArg["ConfigRuleParameters"]; ok {
@@ -310,6 +501,18 @@ func resourceAliCloudConfigCompliancePackUpdate(d *schema.ResourceData, meta int
 
 			configRulesMap["ManagedRuleIdentifier"] = configRulesArg["managed_rule_identifier"]
 
+			if configRuleName := configRulesArg["config_rule_name"]; configRuleName.(string) != "" {
+				configRulesMap["ConfigRuleName"] = configRuleName
+			}
+
+			if description := configRulesArg["description"]; description.(string) != "" {
+				configRulesMap["Description"] = description
+			}
+
+			if riskLevel := configRulesArg["risk_level"]; riskLevel.(int) != 0 {
+				configRulesMap["RiskLevel"] = riskLevel
+			}
+
 			if configRuleParameters, ok := configRulesArg["config_rule_parameters"]; ok {
 				configRuleParametersMaps := make([]map[string]interface{}, 0)
 				configRuleParametersMap := map[string]interface{}{}
@@ -342,6 +545,67 @@ func resourceAliCloudConfigCompliancePackUpdate(d *schema.ResourceData, meta int
 		request["ConfigRules"] = configRulesJson
 	}
 
+	if d.HasChange("tag_key_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("tag_key_scope"); ok {
+		request["TagKeyScope"] = v
+	}
+	if d.HasChange("tag_value_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("tag_value_scope"); ok {
+		request["TagValueScope"] = v
+	}
+	if d.HasChange("resource_ids_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("resource_ids_scope"); ok {
+		request["ResourceIdsScope"] = v
+	}
+	if d.HasChange("exclude_resource_ids_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("exclude_resource_ids_scope"); ok {
+		request["ExcludeResourceIdsScope"] = v
+	}
+	if d.HasChange("resource_group_ids_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("resource_group_ids_scope"); ok {
+		request["ResourceGroupIdsScope"] = v
+	}
+	if d.HasChange("exclude_resource_group_ids_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("exclude_resource_group_ids_scope"); ok {
+		request["ExcludeResourceGroupIdsScope"] = v
+	}
+	if d.HasChange("region_ids_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("region_ids_scope"); ok {
+		request["RegionIdsScope"] = v
+	}
+	if d.HasChange("exclude_region_ids_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("exclude_region_ids_scope"); ok {
+		request["ExcludeRegionIdsScope"] = v
+	}
+	if d.HasChange("tags_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("tags_scope"); ok {
+		setTagsScopeParams(request, "TagsScope", v.([]interface{}))
+	}
+	if d.HasChange("exclude_tags_scope") {
+		update = true
+	}
+	if v, ok := d.GetOk("exclude_tags_scope"); ok {
+		setTagsScopeParams(request, "ExcludeTagsScope", v.([]interface{}))
+	}
+
 	if update {
 		action := "UpdateCompliancePack"
 		wait := incrementalWait(3*time.Second, 30*time.Second)
@@ -371,6 +635,16 @@ func resourceAliCloudConfigCompliancePackUpdate(d *schema.ResourceData, meta int
 		d.SetPartial("description")
 		d.SetPartial("risk_level")
 		d.SetPartial("config_rules")
+		d.SetPartial("tag_key_scope")
+		d.SetPartial("tag_value_scope")
+		d.SetPartial("resource_ids_scope")
+		d.SetPartial("exclude_resource_ids_scope")
+		d.SetPartial("resource_group_ids_scope")
+		d.SetPartial("exclude_resource_group_ids_scope")
+		d.SetPartial("region_ids_scope")
+		d.SetPartial("exclude_region_ids_scope")
+		d.SetPartial("tags_scope")
+		d.SetPartial("exclude_tags_scope")
 	}
 
 	if d.HasChange("config_rule_ids") {
@@ -488,4 +762,23 @@ func resourceAliCloudConfigCompliancePackDelete(d *schema.ResourceData, meta int
 	}
 
 	return nil
+}
+
+// setTagsScopeParams sets tags_scope/exclude_tags_scope parameters in POP flat
+// format (TagsScope.N.TagKey / TagsScope.N.TagValue) as required by the
+// CreateCompliancePack/UpdateCompliancePack API. The API rejects JSON array
+// serialization with "InvalidTagsScope: Flat format is required."
+func setTagsScopeParams(request map[string]interface{}, key string, tagsScopeList []interface{}) {
+	for i, ts := range tagsScopeList {
+		tsArg, ok := ts.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if tagKey, ok := tsArg["tag_key"]; ok {
+			request[fmt.Sprintf("%s.%d.TagKey", key, i+1)] = tagKey
+		}
+		if tagValue, ok := tsArg["tag_value"]; ok {
+			request[fmt.Sprintf("%s.%d.TagValue", key, i+1)] = tagValue
+		}
+	}
 }
