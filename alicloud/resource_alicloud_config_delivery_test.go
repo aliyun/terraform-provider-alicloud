@@ -48,6 +48,8 @@ func TestAccAliCloudConfigDelivery_OSS(t *testing.T) {
 					"description":                            "${var.name}",
 					"configuration_snapshot":                 "true",
 					"configuration_item_change_notification": "true",
+					"compliant_snapshot":                     "true",
+					"delivery_snapshot_time":                 "04:00",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -57,6 +59,8 @@ func TestAccAliCloudConfigDelivery_OSS(t *testing.T) {
 						"description":                            name,
 						"configuration_snapshot":                 "true",
 						"configuration_item_change_notification": "true",
+						"compliant_snapshot":                     "true",
+						"delivery_snapshot_time":                 "04:00",
 					}),
 				),
 			},
@@ -124,11 +128,25 @@ func TestAccAliCloudConfigDelivery_OSS(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"compliant_snapshot":     "false",
+					"delivery_snapshot_time": "16:00",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compliant_snapshot":     "false",
+						"delivery_snapshot_time": "16:00",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"delivery_channel_name":                  "${var.name}",
 					"delivery_channel_target_arn":            "${local.bucket}",
 					"description":                            "${var.name}",
 					"configuration_snapshot":                 "true",
 					"configuration_item_change_notification": "true",
+					"compliant_snapshot":                     "true",
+					"delivery_snapshot_time":                 "04:00",
 					"status":                                 "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -138,6 +156,8 @@ func TestAccAliCloudConfigDelivery_OSS(t *testing.T) {
 						"description":                            name,
 						"configuration_snapshot":                 "true",
 						"configuration_item_change_notification": "true",
+						"compliant_snapshot":                     "true",
+						"delivery_snapshot_time":                 "04:00",
 						"status":                                 "1",
 					}),
 				),
