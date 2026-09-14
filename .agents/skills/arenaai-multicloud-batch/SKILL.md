@@ -1,6 +1,6 @@
 ---
 name: arenaai-multicloud-batch
-description: 在本地 Chrome 新窗口批量打开 ArenaAI（包括常见拼写 AernaAI）页面，生成并提交互不重复的 Terraform、Cloud Control API/CCAPI、aliyun CLI 与多云企业治理问题，并逐页确认回答结果。用于 ArenaAI 批量提问、模型对战或云基础设施主题 dogfooding；不用于普通的单页浏览或仅在本地回答这些问题。
+description: 在本地 Chrome 新窗口批量打开 ArenaAI（包括常见拼写 AernaAI）页面，生成并提交互不重复的 IaC、aliyun CLI 与多云企业治理问题，并逐页确认回答结果。用于 ArenaAI 批量提问、模型对战或云基础设施主题 dogfooding；不用于普通的单页浏览或仅在本地回答这些问题。
 ---
 
 # ArenaAI 多云批量提问

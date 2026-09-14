@@ -1,4 +1,4 @@
 interface:
   display_name: "ArenaAI 多云批量提问"
   short_description: "在本地 Chrome 批量运行多云 IaC 对比提问"
-  default_prompt: "使用 $arenaai-multicloud-batch 在本地 Chrome 新窗口创建多个 ArenaAI 页面，分别发送不重复的 Terraform、CCAPI、aliyun CLI 和多云治理对比问题，并确认全部获得回答。"
+  default_prompt: "使用 $arenaai-multicloud-batch 在本地 Chrome 新窗口创建多个 ArenaAI 页面，分别发送不重复的 IaC、aliyun CLI 和多云治理对比问题，并确认全部获得回答。"
