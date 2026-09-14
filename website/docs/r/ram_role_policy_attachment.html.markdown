@@ -16,6 +16,10 @@ For information about RAM Role Policy Attachment and how to use it, see [What is
 
 -> **NOTE:** Available since v1.0.0.
 
+Set `resource_group_id` to grant permissions within a resource group. Omitting it or setting it to an empty string grants permissions at the account level.
+
+-> **NOTE:** Reading this resource uses ResourceManager `ListPolicyAttachments`. The credentials running Terraform must allow `ram:ListPolicyAttachments`, including when managing existing account-level attachments.
+
 ## Example Usage
 
 Basic Usage
@@ -85,6 +89,27 @@ resource "alicloud_ram_role_policy_attachment" "attach" {
 }
 ```
 
+
+Resource Group Scope
+
+The following attachment grants the same role and policy access within one resource group:
+
+```terraform
+resource "alicloud_resource_manager_resource_group" "group" {
+  resource_group_name = "example-group"
+  display_name        = "Example group"
+}
+
+resource "alicloud_ram_role_policy_attachment" "group" {
+  policy_name       = alicloud_ram_policy.policy.policy_name
+  policy_type       = alicloud_ram_policy.policy.type
+  role_name         = alicloud_ram_role.role.role_name
+  resource_group_id = alicloud_resource_manager_resource_group.group.id
+}
+```
+
+Account-level and resource-group attachments can coexist. Adding a resource-group attachment does not narrow an existing account-level attachment. To remove an unneeded account-level grant, remove that attachment from the configuration and review the Terraform plan before applying it.
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ram_role_policy_attachment&spm=docs.r.ram_role_policy_attachment.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -95,11 +120,12 @@ The following arguments are supported:
   - Custom: Custom policy.
   - System: System policy.
 * `role_name` - (Required, ForceNew) The RAM role name.
+* `resource_group_id` - (Optional, ForceNew) The resource group in which the policy is attached. Omit this argument or use an empty string for account-level authorization. Changing the scope replaces the attachment.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. The value is formulated as `role:<policy_name>:<policy_type>:<role_name>`.
+* `id` - Account-level attachments use `role:<policy_name>:<policy_type>:<role_name>`. Resource-group attachments use `role:<policy_name>:<policy_type>:<role_name>:<resource_group_id>`. Existing account-level IDs remain valid.
 
 ## Timeouts
 
@@ -113,4 +139,10 @@ RAM Role Policy Attachment can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_ram_role_policy_attachment.example role:<policy_name>:<policy_type>:<role_name>
+```
+
+For a resource-group attachment, append the resource group ID:
+
+```shell
+$ terraform import alicloud_ram_role_policy_attachment.example role:<policy_name>:<policy_type>:<role_name>:<resource_group_id>
 ```

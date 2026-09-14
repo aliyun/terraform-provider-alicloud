@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -337,63 +338,92 @@ func (s *RamServiceV2) RamSamlProviderStateRefreshFunc(id string, field string, 
 
 // DescribeRamRolePolicyAttachment <<< Encapsulated get interface for Ram RolePolicyAttachment.
 
-func (s *RamServiceV2) DescribeRamRolePolicyAttachment(id string) (object map[string]interface{}, err error) {
+func (s *RamServiceV2) DescribeRamRolePolicyAttachment(id string) (map[string]interface{}, error) {
 	client := s.client
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
-	parts := strings.Split(id, ":")
-	if len(parts) != 4 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+	identity, err := parseRamRolePolicyAttachmentID(id)
+	if err != nil {
+		return nil, WrapError(err)
 	}
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["RoleName"] = parts[3]
-
-	action := "ListPoliciesForRole"
-
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("Ram", "2015-05-01", action, query, request, true)
-
+	scope := identity.scope
+	if scope == "" {
+		scope, err = client.AccountId()
 		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+			return nil, WrapError(err)
+		}
+		if scope == "" {
+			return nil, fmt.Errorf("cannot resolve account scope for RAM role policy attachment")
+		}
+	}
+	request := map[string]interface{}{
+		"PolicyName": identity.policyName, "PolicyType": identity.policyType,
+		"PrincipalType": "ServiceRole", "ResourceGroupId": scope, "PageSize": 100,
+	}
+	action := "ListPolicyAttachments"
+	seen := 0
+	for page := 1; ; page++ {
+		request["PageNumber"] = page
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(time.Minute, func() *resource.RetryError {
+			var err error
+			response, err = client.RpcPost("ResourceManager", "2020-03-31", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"EntityNotExists.ResourceGroup", "EntityNotExist.Policy"}) {
+				return nil, WrapErrorf(NotFoundErr("RolePolicyAttachment", id), NotFoundMsg, response)
+			}
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
-			return object, WrapErrorf(NotFoundErr("RolePolicyAttachment", id), NotFoundMsg, response)
+		container, ok := response["PolicyAttachments"].(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("%s returned an invalid PolicyAttachments object", action)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	v, err := jsonpath.Get("$.Policies.Policy[*]", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Policies.Policy[*]", response)
-	}
-
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("RolePolicyAttachment", id), NotFoundMsg, response)
-	}
-
-	result, _ := v.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		if fmt.Sprint(item["PolicyName"]) != parts[1] {
-			continue
+		items, ok := container["PolicyAttachment"].([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("%s returned an invalid PolicyAttachment list", action)
 		}
-		if fmt.Sprint(item["PolicyType"]) != parts[2] {
-			continue
+		total, err := strconv.Atoi(fmt.Sprint(response["TotalCount"]))
+		if err != nil || total < 0 || total < seen+len(items) || (len(items) == 0 && seen < total) {
+			return nil, fmt.Errorf("%s returned inconsistent pagination metadata", action)
 		}
-		return item, nil
+		for _, value := range items {
+			item, ok := value.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("%s returned an invalid attachment", action)
+			}
+			fields := make(map[string]string, 5)
+			for _, field := range []string{"PolicyName", "PolicyType", "PrincipalType", "PrincipalName", "ResourceGroupId"} {
+				text, ok := item[field].(string)
+				if !ok || text == "" {
+					return nil, fmt.Errorf("%s returned an invalid attachment %s", action, field)
+				}
+				fields[field] = text
+			}
+			if fields["PrincipalType"] != "ServiceRole" {
+				continue
+			}
+			principal := strings.Split(fields["PrincipalName"], "@role.")
+			if len(principal) != 2 || principal[0] == "" || !strings.HasSuffix(principal[1], ".onaliyunservice.com") || strings.TrimSuffix(principal[1], ".onaliyunservice.com") == "" {
+				return nil, fmt.Errorf("%s returned an invalid ServiceRole principal", action)
+			}
+			if fields["PolicyName"] == identity.policyName && fields["PolicyType"] == identity.policyType && principal[0] == identity.roleName && fields["ResourceGroupId"] == scope {
+				return item, nil
+			}
+		}
+		seen += len(items)
+		if seen >= total {
+			return nil, WrapErrorf(NotFoundErr("RolePolicyAttachment", id), NotFoundMsg, response)
+		}
 	}
-	return object, WrapErrorf(NotFoundErr("RolePolicyAttachment", id), NotFoundMsg, response)
 }
 
 func (s *RamServiceV2) RamRolePolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
