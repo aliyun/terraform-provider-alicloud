@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"hash/crc32"
 	"log"
 	"strings"
 	"time"
@@ -13,14 +12,52 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+// vpnTunnelOptionsSpecHashResource mirrors ONLY the user-configurable fields of
+// tunnel_options_specification for set-element hashing. Computed-only fields
+// (status, internet_ip, zone_no, tunnel_id, state, bgp_status, peer_bgp_ip,
+// peer_asn) are omitted because SerializeResourceForHash skips them anyway.
+// local_id is deliberately OMITTED: the backend backfills it (N/A -> real IP)
+// after CEN TR mount, and including it would flip element identity into a
+// delete+add drift on the next plan. KEEP IN SYNC with the
+// tunnel_options_specification schema above; see
+// TestUnitVpnTunnelOptionsSpecificationHash for which fields affect the hash.
+var vpnTunnelOptionsSpecHashResource = &schema.Resource{
+	Schema: map[string]*schema.Schema{
+		"customer_gateway_id":  {Type: schema.TypeString, Required: true},
+		"role":                 {Type: schema.TypeString, Optional: true, Computed: true},
+		"tunnel_index":         {Type: schema.TypeInt, Required: true},
+		"enable_nat_traversal": {Type: schema.TypeBool, Optional: true, Computed: true},
+		"enable_dpd":           {Type: schema.TypeBool, Optional: true, Computed: true},
+		"tunnel_ike_config": {Type: schema.TypeList, Optional: true, Computed: true, MaxItems: 1,
+			Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+				"ike_auth_alg": {Type: schema.TypeString, Optional: true, Computed: true},
+				"ike_enc_alg":  {Type: schema.TypeString, Optional: true, Computed: true},
+				"ike_version":  {Type: schema.TypeString, Optional: true, Computed: true},
+				"ike_mode":     {Type: schema.TypeString, Optional: true, Computed: true},
+				"ike_lifetime": {Type: schema.TypeInt, Optional: true, Computed: true},
+				"psk":          {Type: schema.TypeString, Optional: true, Computed: true},
+				"remote_id":    {Type: schema.TypeString, Optional: true, Computed: true},
+				"ike_pfs":      {Type: schema.TypeString, Optional: true, Computed: true},
+				// local_id INTENTIONALLY OMITTED (backend-backfilled)
+			}}},
+		"tunnel_bgp_config": {Type: schema.TypeList, Optional: true, Computed: true, MaxItems: 1,
+			Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+				"local_asn":    {Type: schema.TypeInt, Optional: true, Computed: true},
+				"tunnel_cidr":  {Type: schema.TypeString, Optional: true, Computed: true},
+				"local_bgp_ip": {Type: schema.TypeString, Optional: true, Computed: true},
+			}}},
+		"tunnel_ipsec_config": {Type: schema.TypeList, Optional: true, Computed: true, MaxItems: 1,
+			Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+				"ipsec_pfs":      {Type: schema.TypeString, Optional: true, Computed: true},
+				"ipsec_enc_alg":  {Type: schema.TypeString, Optional: true, Computed: true},
+				"ipsec_auth_alg": {Type: schema.TypeString, Optional: true, Computed: true},
+				"ipsec_lifetime": {Type: schema.TypeInt, Optional: true, Computed: true},
+			}}},
+	},
+}
+
 func vpnTunnelOptionsSpecificationHash(v interface{}) int {
-	m := v.(map[string]interface{})
-	s := fmt.Sprintf("%d-%s", m["tunnel_index"].(int), m["customer_gateway_id"].(string))
-	h := int(crc32.ChecksumIEEE([]byte(s)))
-	if h < 0 {
-		return -h
-	}
-	return h
+	return schema.HashResource(vpnTunnelOptionsSpecHashResource)(v)
 }
 
 func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
@@ -818,6 +855,16 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 	if err := d.Set("health_check_config", healthCheckConfigMaps); err != nil {
 		return err
 	}
+	existingTopLevelPsk := ""
+	if v, ok := d.GetOk("ike_config"); ok {
+		if l, ok := v.([]interface{}); ok && len(l) > 0 {
+			if m, ok := l[0].(map[string]interface{}); ok {
+				if psk, ok := m["psk"].(string); ok && psk != "" {
+					existingTopLevelPsk = psk
+				}
+			}
+		}
+	}
 	ikeConfigMaps := make([]map[string]interface{}, 0)
 	ikeConfigMap := make(map[string]interface{})
 	ikeConfigRaw := make(map[string]interface{})
@@ -832,7 +879,11 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 		ikeConfigMap["ike_pfs"] = ikeConfigRaw["IkePfs"]
 		ikeConfigMap["ike_version"] = ikeConfigRaw["IkeVersion"]
 		ikeConfigMap["local_id"] = ikeConfigRaw["LocalId"]
-		ikeConfigMap["psk"] = ikeConfigRaw["Psk"]
+		if existingTopLevelPsk != "" {
+			ikeConfigMap["psk"] = existingTopLevelPsk
+		} else {
+			ikeConfigMap["psk"] = ikeConfigRaw["Psk"]
+		}
 		ikeConfigMap["remote_id"] = ikeConfigRaw["RemoteId"]
 
 		ikeConfigMaps = append(ikeConfigMaps, ikeConfigMap)
@@ -861,6 +912,21 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 	d.Set("tags", tagsToMap(tagsMaps))
 	tunnelOptionsRaw, _ := jsonpath.Get("$.TunnelOptionsSpecification.TunnelOptions", objectRaw)
 	tunnelOptionsSpecificationMaps := make([]map[string]interface{}, 0)
+	existingIkePskByIndex := make(map[int]string)
+	if v, ok := d.GetOk("tunnel_options_specification"); ok {
+		for _, item := range v.(*schema.Set).List() {
+			if m, ok := item.(map[string]interface{}); ok {
+				idx := formatInt(m["tunnel_index"])
+				if ikeCfg, ok := m["tunnel_ike_config"].([]interface{}); ok && len(ikeCfg) > 0 {
+					if im, ok := ikeCfg[0].(map[string]interface{}); ok {
+						if psk, ok := im["psk"].(string); ok && psk != "" {
+							existingIkePskByIndex[idx] = psk
+						}
+					}
+				}
+			}
+		}
+	}
 	if tunnelOptionsRaw != nil {
 		for _, tunnelOptionsChildRaw := range tunnelOptionsRaw.([]interface{}) {
 			tunnelOptionsSpecificationMap := make(map[string]interface{})
@@ -909,7 +975,12 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 				tunnelIkeConfigMap["ike_pfs"] = tunnelIkeConfigRaw["IkePfs"]
 				tunnelIkeConfigMap["ike_version"] = tunnelIkeConfigRaw["IkeVersion"]
 				tunnelIkeConfigMap["local_id"] = tunnelIkeConfigRaw["LocalId"]
-				tunnelIkeConfigMap["psk"] = tunnelIkeConfigRaw["Psk"]
+				tunnelIdx := formatInt(tunnelOptionsChildRaw["TunnelIndex"])
+				if psk, ok := existingIkePskByIndex[tunnelIdx]; ok && psk != "" {
+					tunnelIkeConfigMap["psk"] = psk
+				} else {
+					tunnelIkeConfigMap["psk"] = tunnelIkeConfigRaw["Psk"]
+				}
 				tunnelIkeConfigMap["remote_id"] = tunnelIkeConfigRaw["RemoteId"]
 
 				tunnelIkeConfigMaps = append(tunnelIkeConfigMaps, tunnelIkeConfigMap)
@@ -1020,7 +1091,7 @@ func resourceAliCloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 		request["EnableTunnelsBgp"] = d.Get("enable_tunnels_bgp")
 	}
 
-	if !d.IsNewResource() && d.HasChange("tunnel_options_specification") {
+	if !d.IsNewResource() && (d.HasChange("tunnel_options_specification") || d.HasChange("enable_tunnels_bgp")) {
 		update = true
 		if v, ok := d.GetOk("tunnel_options_specification"); ok || d.HasChange("tunnel_options_specification") {
 			tunnelOptionsSpecificationMapsArray := make([]interface{}, 0)
