@@ -432,6 +432,13 @@ func (s *RdsServiceV2) DescribeRdsDatabase(id string) (object map[string]interfa
 				wait()
 				return resource.RetryableError(err)
 			}
+			if rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidDBName.NotFound") {
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+			}
+			if rdsErrorHasCode(err, dbInstanceStatusErrorCodes...) {
+				rdsService := RdsService{s.client}
+				return resource.NonRetryableError(rdsService.confirmRdsChildError(parts[0], err))
+			}
 			return resource.NonRetryableError(err)
 		}
 		return nil

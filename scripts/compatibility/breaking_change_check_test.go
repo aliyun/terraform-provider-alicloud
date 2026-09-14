@@ -743,3 +743,23 @@ if IsExpectedErrors(err, []string{"Throttling"}) {`,
 		})
 	}
 }
+
+func TestExactRdsErrorClassifierCompatibility(t *testing.T) {
+	old := `action := "DeleteDatabase"
+if IsExpectedErrors(err, []string{"InvalidDBName.NotFound"}) { return nil }`
+	updated := `action := "DeleteDatabase"
+if rdsErrorHasCode(deleteErr, "InvalidDBInstanceId.NotFound", "InvalidDBName.NotFound") { return nil }
+if IsExpectedErrors(deleteErr, []string{"OperationDenied.DBInstanceStatus"}) { return retry(deleteErr) }`
+	before := ParseRetryErrorCodesFromContent(old)
+	after := ParseRetryErrorCodesFromContent(updated)
+	if !verifyExpectedCodes(t, "updated", after, map[string][]string{"DeleteDatabase": {"InvalidDBInstanceId.NotFound", "InvalidDBName.NotFound", "OperationDenied.DBInstanceStatus"}}) {
+		return
+	}
+	if IsRetryCodeBreaking(before, after) {
+		t.Fatal("changing the classifier must not appear to remove a retained code")
+	}
+	removed := ParseRetryErrorCodesFromContent(strings.ReplaceAll(updated, `, "InvalidDBName.NotFound"`, ""))
+	if !IsRetryCodeBreaking(before, removed) {
+		t.Fatal("real removal must remain detectable")
+	}
+}

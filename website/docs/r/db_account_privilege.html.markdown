@@ -85,12 +85,12 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The Id of instance in which account belongs.
 * `account_name` - (Required, ForceNew) A specified account name.
 * `privilege` - (Optional, ForceNew) The privilege of one account access database. Valid values: 
-    - ReadOnly: This value is only for MySQL, MariaDB and SQL Server
-    - ReadWrite: This value is only for MySQL, MariaDB and SQL Server
-    - DDLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
-    - DMLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
-    - DBOwner: (Available in 1.64.0+) This value is only for SQL Server and PostgreSQL.
-      Default to "ReadOnly". 
+  - ReadOnly: This value is only for MySQL, MariaDB and SQL Server
+  - ReadWrite: This value is only for MySQL, MariaDB and SQL Server
+  - DDLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
+  - DMLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
+  - DBOwner: (Available in 1.64.0+) This value is only for SQL Server and PostgreSQL.
+    Default to "ReadOnly".
 * `db_names` - (Required) List of specified database name.
 
 ## Attributes Reference

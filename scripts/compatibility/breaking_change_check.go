@@ -361,12 +361,12 @@ func extractFieldProperties(compLit *ast.CompositeLit, props map[string]interfac
 }
 
 // ParseRetryErrorCodesFromContent extracts retry error codes from full file content
-// Format: IsExpectedErrors(err, []string{"ErrorCode1", "ErrorCode2"})
+// Formats: IsExpectedErrors(err, []string{"Code"}) and rdsErrorHasCode(err, "Code").
 // Map structure: map[apiName]map[errorCode]struct{}
 func ParseRetryErrorCodesFromContent(content string) map[string]map[string]struct{} {
 	retryCodesMap := make(map[string]map[string]struct{})
-	// Regex to match: IsExpectedErrors(err, []string{"code1", "code2", ...})
-	expectedErrorsRegex := regexp.MustCompile(`IsExpectedErrors\(err,\s*\[\]string\{([^}]*)\}`)
+	// Both helpers may receive a named error such as deleteErr.
+	expectedErrorsRegex := regexp.MustCompile(`(?:IsExpectedErrors|rdsErrorHasCode)\(\s*[a-zA-Z_][a-zA-Z0-9_]*,\s*(?:\[\]string\{)?([^})]*)`)
 	// Regex to find action variable: action := "ApiName" or action = "ApiName"
 	actionRegex := regexp.MustCompile(`action\s*:?=\s*"([^"]*)"`)
 
@@ -379,7 +379,7 @@ func ParseRetryErrorCodesFromContent(content string) map[string]map[string]struc
 			currentAction = actionMatches[1]
 		}
 
-		// Look for IsExpectedErrors call
+		// Look for a supported error-code classifier
 		if expectedErrorsMatches := expectedErrorsRegex.FindStringSubmatch(line); expectedErrorsMatches != nil && len(expectedErrorsMatches) > 1 {
 			if currentAction == "" {
 				// Skip if no action found in current scope
@@ -391,6 +391,9 @@ func ParseRetryErrorCodesFromContent(content string) map[string]map[string]struc
 			// Extract individual error codes
 			codeRegex := regexp.MustCompile(`"([^"]+)"`)
 			codeMatches := codeRegex.FindAllStringSubmatch(errorCodesStr, -1)
+			if len(codeMatches) == 0 {
+				continue
+			}
 
 			if _, exists := retryCodesMap[currentAction]; !exists {
 				retryCodesMap[currentAction] = make(map[string]struct{})
