@@ -52,7 +52,6 @@ func resourceAliCloudConfigAggregateRemediation() *schema.Resource {
 			"remediation_source_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"remediation_template_id": {
 				Type:     schema.TypeString,
@@ -61,7 +60,6 @@ func resourceAliCloudConfigAggregateRemediation() *schema.Resource {
 			"remediation_type": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 		},
 	}
@@ -167,6 +165,14 @@ func resourceAliCloudConfigAggregateRemediationUpdate(d *schema.ResourceData, me
 		update = true
 	}
 	request["Params"] = d.Get("remediation_origin_params")
+	if d.HasChange("remediation_source_type") {
+		update = true
+	}
+	request["SourceType"] = d.Get("remediation_source_type")
+	if d.HasChange("remediation_type") {
+		update = true
+	}
+	request["RemediationType"] = d.Get("remediation_type")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
