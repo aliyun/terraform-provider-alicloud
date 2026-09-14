@@ -54,6 +54,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 						"address_ip_version": "Ipv4",
 						"resource_group_id":  CHECKSET,
 						"dry_run":            "false",
+						"traffic_mode":       CHECKSET,
 					}),
 				),
 			},
@@ -67,22 +68,26 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 						},
 					},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"traffic_mode":      "ByPass",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_name": name + "_update",
 						"zone_mappings.#":    "1",
 						"resource_group_id":  CHECKSET,
+						"traffic_mode":       "ByPass",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"traffic_mode":      "LoadBalance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
+						"traffic_mode":      "LoadBalance",
 					}),
 				),
 			},
@@ -132,7 +137,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ImportStateVerifyIgnore: []string{"dry_run", "traffic_mode"},
 			},
 		},
 	})
@@ -230,6 +235,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 						"address_ip_version": "Ipv4",
 						"resource_group_id":  CHECKSET,
 						"dry_run":            "false",
+						"traffic_mode":       CHECKSET,
 					}),
 				),
 			},
@@ -243,22 +249,26 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 						},
 					},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"traffic_mode":      "ByPass",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_name": name + "_update",
 						"zone_mappings.#":    "1",
 						"resource_group_id":  CHECKSET,
+						"traffic_mode":       "ByPass",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"traffic_mode":      "LoadBalance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
+						"traffic_mode":      "LoadBalance",
 					}),
 				),
 			},
@@ -308,7 +318,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ImportStateVerifyIgnore: []string{"dry_run", "traffic_mode"},
 			},
 		},
 	})

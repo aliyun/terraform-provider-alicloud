@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAliCloudGwlbLoadBalancer() *schema.Resource {
@@ -54,6 +55,15 @@ func resourceAliCloudGwlbLoadBalancer() *schema.Resource {
 				Computed: true,
 			},
 			"tags": tagsSchema(),
+			"traffic_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					"LoadBalance",
+					"ByPass",
+				}, false),
+			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -196,6 +206,9 @@ func resourceAliCloudGwlbLoadBalancerRead(d *schema.ResourceData, meta interface
 	if objectRaw["LoadBalancerStatus"] != nil {
 		d.Set("status", objectRaw["LoadBalancerStatus"])
 	}
+	if objectRaw["TrafficMode"] != nil {
+		d.Set("traffic_mode", objectRaw["TrafficMode"])
+	}
 	if objectRaw["VpcId"] != nil {
 		d.Set("vpc_id", objectRaw["VpcId"])
 	}
@@ -256,6 +269,10 @@ func resourceAliCloudGwlbLoadBalancerUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("load_balancer_name") {
 		update = true
 		request["LoadBalancerName"] = d.Get("load_balancer_name")
+	}
+	if d.HasChange("traffic_mode") {
+		update = true
+		request["TrafficMode"] = d.Get("traffic_mode")
 	}
 
 	if update {

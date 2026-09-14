@@ -88,6 +88,7 @@ The following arguments are supported:
 * `address_ip_version` - (Optional, ForceNew, Computed) The IP version. Valid values:
 
   - `Ipv4`: IPv4 (default)
+  - `DualStack`: IPv4 and IPv6 dual stack.
 * `dry_run` - (Optional) Specifies whether to perform a dry run, without performing the actual request. Valid values:
 
   - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error code is returned. If the request passes the dry run, the `DryRunOperation` error code is returned.
@@ -97,6 +98,10 @@ The following arguments are supported:
   The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The name must start with a letter.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
 * `tags` - (Optional, Map) The tag keys. You can specify at most 20 tags in each call.
+* `traffic_mode` - (Optional, Computed) The traffic forwarding mode of the GWLB instance. Valid values:
+
+  - `LoadBalance`: The default mode. The GWLB instance distributes network traffic across backend servers.
+  - `ByPass`: The GWLB instance forwards traffic to the associated ENI without load balancing.
 * `vpc_id` - (Required, ForceNew) The virtual private cloud (VPC) ID.
 * `zone_mappings` - (Required, Set) The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones. See [`zone_mappings`](#zone_mappings) below.
 
@@ -111,7 +116,8 @@ The zone_mappings supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the resource was created. The time follows the ISO 8601 standard in the **yyyy-MM-ddTHH:mm:ssZ** format. The time is displayed in UTC.
-* `status` - The GWLB instance status. 
+* `status` - The GWLB instance status.
+* `traffic_mode` - The traffic forwarding mode of the GWLB instance.
 
 * `zone_mappings` - The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones.
   * `load_balancer_addresses` - The information about the IP addresses used by the GWLB instance.
