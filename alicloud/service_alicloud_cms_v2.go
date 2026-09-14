@@ -682,3 +682,72 @@ func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFuncWithApi(id string, fi
 }
 
 // DescribeCmsEventNotifyPolicy >>> Encapsulated.
+
+// DescribeCmsEvaluationTask <<< Encapsulated get interface for Cms EvaluationTask.
+func (s *CmsServiceV2) DescribeCmsEvaluationTask(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	workspace := parts[0]
+	taskId := parts[1]
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/api/v1/evaluation-task/%s/%s", workspace, taskId)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EvaluationTaskNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("Cms:EvaluationTask", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeCmsEvaluationTask >>> Encapsulated.
+
+// ListCmsEvaluationTasks <<< Encapsulated list interface for Cms EvaluationTask.
+func (s *CmsServiceV2) ListCmsEvaluationTasks(query map[string]*string) (response map[string]interface{}, err error) {
+	client := s.client
+	action := "/api/v1/evaluation-tasks"
+	request := make(map[string]interface{})
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	return response, WrapErrorf(err, DefaultErrorMsg, "ListCmsEvaluationTasks", action, AlibabaCloudSdkGoERROR)
+}
+
+// ListCmsEvaluationTasks >>> Encapsulated.
