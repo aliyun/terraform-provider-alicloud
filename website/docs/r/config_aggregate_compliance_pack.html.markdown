@@ -89,8 +89,19 @@ The following arguments are supported:
   - `2`: warning.
   - `3`: info.
 * `compliance_pack_template_id` - (Optional, ForceNew, Available since v1.141.0) The Template ID of compliance package.
+* `template_content` - (Optional, ForceNew) The template content of compliance package. It is a JSON string that defines the compliance pack rules. If not specified, the template content is derived from `compliance_pack_template_id`.
 * `config_rule_ids` - (Optional, Set, Available since v1.141.0) A list of Config Rule IDs. See [`config_rule_ids`](#config_rule_ids) below.
 * `config_rules` - (Optional, Set, Deprecated since v1.141.0) A list of Config Rules. See [`config_rules`](#config_rules) below. **NOTE:** Field `config_rules` has been deprecated from provider version 1.141.0. New field `config_rule_ids` instead.
+* `tag_key_scope` - (Optional) The tag key scope. The compliance pack only applies to resources with the specified tag key.
+* `tag_value_scope` - (Optional) The tag value scope. The compliance pack only applies to resources with the specified tag value.
+* `resource_ids_scope` - (Optional) The resource IDs scope. The compliance pack only applies to the specified resource IDs.
+* `exclude_resource_ids_scope` - (Optional) The exclude resource IDs scope. The compliance pack does not apply to the specified resource IDs.
+* `resource_group_ids_scope` - (Optional) The resource group IDs scope. The compliance pack only applies to resources in the specified resource groups.
+* `exclude_resource_group_ids_scope` - (Optional) The exclude resource group IDs scope. The compliance pack does not apply to resources in the specified resource groups.
+* `region_ids_scope` - (Optional) The region IDs scope. The compliance pack only applies to resources in the specified regions.
+* `exclude_region_ids_scope` - (Optional) The exclude region IDs scope. The compliance pack does not apply to resources in the specified regions.
+* `tags_scope` - (Optional) The tags scope. The compliance pack only applies to resources with the specified tags. See [`tags_scope`](#tags_scope) below.
+* `exclude_tags_scope` - (Optional) The exclude tags scope. The compliance pack does not apply to resources with the specified tags. See [`exclude_tags_scope`](#exclude_tags_scope) below.
 
 ### `config_rule_ids`
 
@@ -100,17 +111,34 @@ The config_rule_ids supports the following:
 
 ### `config_rules`
 
-The config_rules supports the following: 
+The config_rules supports the following:
 
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
+* `config_rule_name` - (Optional) The name of the config rule.
+* `description` - (Optional) The description of the config rule.
+* `risk_level` - (Optional, Int) The risk level of the config rule. Valid values: `1`, `2`, `3`.
 * `config_rule_parameters` - (Optional, Set) A list of parameter rules. See [`config_rule_parameters`](#config_rules-config_rule_parameters) below.
 
 ### `config_rules-config_rule_parameters`
 
-The config_rule_parameters supports the following: 
+The config_rule_parameters supports the following:
 
 * `parameter_name` - (Optional) The Parameter Name.
 * `parameter_value` - (Optional) The Parameter Value.
+
+### `tags_scope`
+
+The tags_scope supports the following:
+
+* `tag_key` - (Optional) The tag key.
+* `tag_value` - (Optional) The tag value.
+
+### `exclude_tags_scope`
+
+The exclude_tags_scope supports the following:
+
+* `tag_key` - (Optional) The tag key.
+* `tag_value` - (Optional) The tag value.
 
 ## Attributes Reference
 
