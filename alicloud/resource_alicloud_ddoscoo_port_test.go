@@ -46,7 +46,9 @@ func TestAccAliCloudDdosCooPort_basic(t *testing.T) {
 					"backend_port":      fmt.Sprint(rand + 1),
 					"instance_id":       "${data.alicloud_ddoscoo_instances.default.ids.0}",
 					"frontend_protocol": "tcp",
-					"real_servers":      []string{"192.168.0.1"},
+					"real_servers":      []string{"1.1.1.1"},
+					"proxy_enable":      1,
+					"module":            "sla",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -54,17 +56,20 @@ func TestAccAliCloudDdosCooPort_basic(t *testing.T) {
 						"backend_port":      fmt.Sprint(rand + 1),
 						"frontend_protocol": "tcp",
 						"real_servers.#":    "1",
+						"proxy_enable":      "1",
+						"module":            "sla",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"proxy_enable", "module", "ip_mode"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"real_servers": []string{"192.168.0.1", "192.168.0.2"},
+					"real_servers": []string{"1.1.1.1", "2.2.2.2"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -74,7 +79,7 @@ func TestAccAliCloudDdosCooPort_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"real_servers": []string{"192.168.0.1"},
+					"real_servers": []string{"1.1.1.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -130,7 +135,7 @@ func TestAccAliCloudDdosCooPort_basic1(t *testing.T) {
 					"backend_port":      fmt.Sprint(rand + 1),
 					"instance_id":       "${data.alicloud_ddoscoo_instances.default.ids.0}",
 					"frontend_protocol": "udp",
-					"real_servers":      []string{"192.168.0.1"},
+					"real_servers":      []string{"1.1.1.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -142,13 +147,14 @@ func TestAccAliCloudDdosCooPort_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ip_mode"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"real_servers": []string{"192.168.0.1", "192.168.0.2"},
+					"real_servers": []string{"1.1.1.1", "2.2.2.2"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -158,7 +164,7 @@ func TestAccAliCloudDdosCooPort_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"real_servers": []string{"192.168.0.1"},
+					"real_servers": []string{"1.1.1.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -225,6 +231,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 				"InstanceIds":      "CreatePortValue",
 				"BackendPort":      "443",
 				"RealServers":      "CreatePortValue",
+				"IpMode":           "ipv4",
 			},
 		},
 	}
