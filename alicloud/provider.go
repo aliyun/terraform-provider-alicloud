@@ -216,6 +216,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_esa_cache_reserve_instances":                    dataSourceAliCloudEsaCacheReserveInstances(),
 			"alicloud_esa_waf_rulesets":                               dataSourceAliCloudEsaWafRuleSets(),
 			"alicloud_esa_lists":                                      dataSourceAliCloudEsaLists(),
+			"alicloud_esa_error_pages_redirect_rules":                 dataSourceAliCloudEsaErrorPagesRedirectRules(),
 			"alicloud_cs_clusters":                                    dataSourceAliCloudAckClusters(),
 			"alicloud_threat_detection_check_item_configs":            dataSourceAliCloudThreatDetectionCheckItemConfigs(),
 			"alicloud_threat_detection_check_structures":              dataSourceAliCloudThreatDetectionCheckStructures(),
@@ -976,6 +977,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sls_metric_stores":                                dataSourceAliCloudSlsMetricStores(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_esa_error_pages_redirect_rule":                        resourceAliCloudEsaErrorPagesRedirectRule(),
 			"alicloud_cr_instance_customized_domain":                        resourceAliCloudCrInstanceCustomizedDomain(),
 			"alicloud_threat_detection_attack_path_whitelist":               resourceAliCloudThreatDetectionAttackPathWhitelist(),
 			"alicloud_vpc_route_target_group":                               resourceAliCloudVpcRouteTargetGroup(),
