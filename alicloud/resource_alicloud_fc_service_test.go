@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func init() {
@@ -739,3 +740,90 @@ var testFCVpcPolicyTemplate = `
   ]
 }
 `
+
+// TestUnitAliCloudFCServiceParseVpcConfig guards parseVpcConfig against a regression where a
+// vpc_config block with an empty vswitch_ids set caused an index-out-of-range panic. It also
+// pins the documented behavior that a vpc_config block whose vswitch_ids and security_group_id
+// are both empty is treated as unset (see website/docs/r/fc_service.html.markdown), including
+// the requirement that this is decided before the 'role' guard. Every case returns before
+// parseVpcConfig reaches DescribeVSwitch, so the test performs no network call and needs no
+// credentials.
+func TestUnitAliCloudFCServiceParseVpcConfig(t *testing.T) {
+	meta := &connectivity.AliyunClient{}
+	const testRole = "acs:ram::1234567890123456:role/fc-service-unit-test"
+
+	// Case 1 (regression anchor): vpc_config present but vswitch_ids and security_group_id both
+	// empty, with role set. On the unfixed code this panics at vswitchIds[0]; the fix returns
+	// (nil, nil).
+	t.Run("both empty is treated as unset", func(t *testing.T) {
+		d := schema.TestResourceDataRaw(t, resourceAlicloudFCService().Schema, map[string]interface{}{
+			"role": testRole,
+			"vpc_config": []interface{}{
+				map[string]interface{}{
+					"vswitch_ids":       []interface{}{},
+					"security_group_id": "",
+				},
+			},
+		})
+		config, err := parseVpcConfig(d, meta)
+		if err != nil {
+			t.Fatalf("expected no error for an empty vpc_config block, got: %v", err)
+		}
+		if config != nil {
+			t.Fatalf("expected nil VPCConfig for an empty vpc_config block, got: %#v", config)
+		}
+	})
+
+	// Case 2: vpc_config entirely absent must also produce no VPCConfig.
+	t.Run("missing vpc_config block", func(t *testing.T) {
+		d := schema.TestResourceDataRaw(t, resourceAlicloudFCService().Schema, map[string]interface{}{
+			"role": testRole,
+		})
+		config, err := parseVpcConfig(d, meta)
+		if err != nil {
+			t.Fatalf("expected no error when vpc_config is absent, got: %v", err)
+		}
+		if config != nil {
+			t.Fatalf("expected nil VPCConfig when vpc_config is absent, got: %#v", config)
+		}
+	})
+
+	// Case 3: an empty vswitch_ids with a non-empty security_group_id cannot build a valid
+	// VPCConfig, so parseVpcConfig must return a clear error instead of panicking.
+	t.Run("empty vswitch_ids with security_group_id errors", func(t *testing.T) {
+		d := schema.TestResourceDataRaw(t, resourceAlicloudFCService().Schema, map[string]interface{}{
+			"role": testRole,
+			"vpc_config": []interface{}{
+				map[string]interface{}{
+					"vswitch_ids":       []interface{}{},
+					"security_group_id": "test-security-group",
+				},
+			},
+		})
+		config, err := parseVpcConfig(d, meta)
+		if err == nil {
+			t.Fatalf("expected an error when vswitch_ids is empty but security_group_id is set, got config: %#v", config)
+		}
+	})
+
+	// Case 4 (ordering anchor): an empty vpc_config block must be treated as unset before the
+	// 'role' requirement is enforced, so omitting role must not surface the "'role' is required"
+	// error.
+	t.Run("empty vpc_config does not require role", func(t *testing.T) {
+		d := schema.TestResourceDataRaw(t, resourceAlicloudFCService().Schema, map[string]interface{}{
+			"vpc_config": []interface{}{
+				map[string]interface{}{
+					"vswitch_ids":       []interface{}{},
+					"security_group_id": "",
+				},
+			},
+		})
+		config, err := parseVpcConfig(d, meta)
+		if err != nil {
+			t.Fatalf("expected no error (role not required for an empty vpc_config), got: %v", err)
+		}
+		if config != nil {
+			t.Fatalf("expected nil VPCConfig for an empty vpc_config block, got: %#v", config)
+		}
+	})
+}
