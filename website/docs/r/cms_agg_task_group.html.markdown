@@ -81,6 +81,7 @@ The following arguments are supported:
 * `cron_expr` - (Optional) The cron expression for scheduling when `schedule_mode` is set to `Cron`.
 * `delay` - (Optional, Int) The fixed delay for scheduling.
 * `description` - (Optional) The description of the aggregation task group.
+* `from_time` - (Optional, Int, Available since v1.289.0) The UNIX timestamp for the scheduling start time. If the specified value is in the past, the server resets it to the current time, and the provider suppresses the resulting diff.
 * `max_retries` - (Optional, Int) The maximum number of retries for an aggregation task.
 * `max_run_time_in_seconds` - (Optional, Int) The maximum retry time for an aggregation task.
 * `override_if_exists` - (Optional, Bool) Specifies whether to overwrite an existing resource with the same name.
@@ -89,6 +90,7 @@ The following arguments are supported:
 * `schedule_time_expr` - (Optional) The scheduling time expression.
 * `source_prometheus_id` - (Required, ForceNew) The ID of the source Prometheus instance for the aggregation task group.
 * `status` - (Optional) The status of the aggregation task group. Valid values: `Running` and `Stopped`.
+* `tags` - (Optional, Map, ForceNew, Available since v1.289.0) A mapping of tags to assign to the aggregation task group. Tags can only be set at creation; changing tags forces a new resource because the update API does not persist tags.
 * `target_prometheus_id` - (Required, ForceNew) The ID of the target Prometheus instance for the aggregation task group.
 * `to_time` - (Optional, Int) The UNIX timestamp for the scheduling end time.
 
