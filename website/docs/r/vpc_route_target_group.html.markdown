@@ -32,15 +32,15 @@ variable "name" {
 }
 
 variable "region" {
-  default = "cn-wulanchabu"
+  default = "cn-beijing"
 }
 
 variable "zone_id_1" {
-  default = "cn-wulanchabu-b"
+  default = "cn-beijing-f"
 }
 
 variable "zone_id_2" {
-  default = "cn-wulanchabu-c"
+  default = "cn-beijing-i"
 }
 
 provider "alicloud" {
@@ -118,6 +118,115 @@ resource "alicloud_gwlb_load_balancer" "standby" {
     zone_id    = var.zone_id_2
   }
 }
+
+# Active Server Group
+resource "alicloud_gwlb_server_group" "active_sg" {
+  protocol          = "GENEVE"
+  server_group_name = "${var.name}-active-sg"
+  server_group_type = "Ip"
+  vpc_id            = alicloud_vpc.default.id
+  scheduler         = "5TCH"
+
+  servers {
+    server_id   = "10.0.0.10"
+    server_ip   = "10.0.0.10"
+    server_type = "Ip"
+  }
+  servers {
+    server_id   = "10.0.0.11"
+    server_ip   = "10.0.0.11"
+    server_type = "Ip"
+  }
+
+  connection_drain_config {
+    connection_drain_enabled = true
+    connection_drain_timeout = 300
+  }
+
+  health_check_config {
+    health_check_enabled         = true
+    health_check_protocol        = "TCP"
+    health_check_connect_port    = 80
+    health_check_connect_timeout = 5
+    health_check_interval        = 10
+    healthy_threshold            = 2
+    unhealthy_threshold          = 2
+  }
+
+  tags = {
+    Environment = "production"
+    Type        = "active"
+    Name        = "${var.name}-active-sg"
+  }
+}
+
+# Standby Server Group
+resource "alicloud_gwlb_server_group" "standby_sg" {
+  protocol          = "GENEVE"
+  server_group_name = "${var.name}-standby-sg"
+  server_group_type = "Ip"
+  vpc_id            = alicloud_vpc.default.id
+  scheduler         = "5TCH"
+
+  servers {
+    server_id   = "10.0.1.10"
+    server_ip   = "10.0.1.10"
+    server_type = "Ip"
+  }
+  servers {
+    server_id   = "10.0.1.11"
+    server_ip   = "10.0.1.11"
+    server_type = "Ip"
+  }
+
+  connection_drain_config {
+    connection_drain_enabled = true
+    connection_drain_timeout = 300
+  }
+
+  health_check_config {
+    health_check_enabled         = true
+    health_check_protocol        = "TCP"
+    health_check_connect_port    = 80
+    health_check_connect_timeout = 5
+    health_check_interval        = 10
+    healthy_threshold            = 2
+    unhealthy_threshold          = 2
+  }
+
+  tags = {
+    Environment = "production"
+    Type        = "standby"
+    Name        = "${var.name}-standby-sg"
+  }
+}
+
+# Listener for Active Server Group
+resource "alicloud_gwlb_listener" "active_listener" {
+  load_balancer_id     = alicloud_gwlb_load_balancer.active.id
+  server_group_id      = alicloud_gwlb_server_group.active_sg.id
+  listener_description = "${var.name}-active-listener"
+
+  tags = {
+    Environment = "production"
+    Type        = "active"
+    Name        = "${var.name}-active-listener"
+  }
+}
+
+# Listener for Standby Server Group
+resource "alicloud_gwlb_listener" "standby_listener" {
+  load_balancer_id     = alicloud_gwlb_load_balancer.standby.id
+  server_group_id      = alicloud_gwlb_server_group.standby_sg.id
+  listener_description = "${var.name}-standby-listener"
+
+  tags = {
+    Environment = "production"
+    Type        = "standby"
+    Name        = "${var.name}-standby-listener"
+  }
+}
+
 
 resource "alicloud_privatelink_vpc_endpoint_service" "standby" {
   auto_accept_connection = true
