@@ -131,11 +131,9 @@ resource "alicloud_cen_transit_router_vpc_attachment" "tr-vpc1" {
   vpc_id            = alicloud_vpc.vpc1.id
   cen_id            = alicloud_cen_instance.cen.id
   transit_router_id = alicloud_cen_transit_router.tr.transit_router_id
-  depends_on        = [alicloud_route_table.foo]
 }
 
 resource "time_sleep" "wait_10_minutes" {
-  depends_on = [alicloud_cen_transit_router_vpc_attachment.tr-vpc1]
 
   create_duration = "10m"
 }
@@ -152,7 +150,6 @@ resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
   transit_router_id         = alicloud_cen_transit_router.tr.transit_router_id
   route_mode                = "managed"
 
-  depends_on = [time_sleep.wait_10_minutes]
 }
 ```
 
@@ -186,6 +183,13 @@ The following arguments are supported:
  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `transit_router_id` - (Required, ForceNew) The ID of the transit router instance.
+* `firewall_vpc_id` - (Optional, ForceNew) The ID of the firewall VPC.
+* `firewall_vswitch_id` - (Optional, ForceNew) The ID of the vSwitch in the firewall VPC.
+* `tr_attachment_zones` - (Optional, ForceNew) The list of zones for the transit router attachment.
+* `firewall_attachment_zone` - (Optional, ForceNew) The attachment zone of the firewall.
+* `firewall_service_mode` - (Optional, ForceNew) The service mode of the firewall.
+* `firewall_service_zones` - (Optional, ForceNew) The list of service zones of the firewall.
+* `lang` - (Optional, Sensitive) The language preferred for the API response.
 
 ## Attributes Reference
 

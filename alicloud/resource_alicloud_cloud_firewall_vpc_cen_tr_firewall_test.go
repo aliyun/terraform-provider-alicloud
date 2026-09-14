@@ -413,4 +413,83 @@ resource "alicloud_cen_transit_router_vpc_attachment" "tr-vpc2" {
 }`, name)
 }
 
+// Case VpcCenTrFirewall create-only fields coverage
+func TestAccAliCloudCloudFirewallVpcCenTrFirewall_createOnlyFields(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_vpc_cen_tr_firewall.default"
+	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallVpcCenTrFirewallMapCreateOnly)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudFirewallServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallVpcCenTrFirewall")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudFirewallVpcCenTrFirewallBasicDependence7158)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"firewall_description":      "VpcCenTrFirewall create-only fields coverage",
+					"region_no":                 "${var.region}",
+					"route_mode":                "managed",
+					"cen_id":                    "${alicloud_cen_instance.cen.id}",
+					"firewall_vpc_cidr":         "${var.firewall_vpc_cidr}",
+					"transit_router_id":         "${alicloud_cen_transit_router.tr.transit_router_id}",
+					"tr_attachment_master_cidr": "${var.tr_attachment_master_cidr}",
+					"firewall_name":             "${var.firewall_name}",
+					"firewall_subnet_cidr":      "${var.firewall_subnet_cidr}",
+					"tr_attachment_slave_cidr":  "${var.tr_attachment_slave_cidr}",
+					"firewall_vpc_id":           "${alicloud_vpc.vpc1.id}",
+					"firewall_vswitch_id":       "${alicloud_vswitch.vpc1vsw1.id}",
+					"tr_attachment_zones":       []interface{}{"${var.zone1}"},
+					"firewall_attachment_zone":  "${var.zone1}",
+					"firewall_service_mode":     "managed",
+					"firewall_service_zones":    []interface{}{"${var.zone1}"},
+					"lang":                      "zh",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"firewall_description":      "VpcCenTrFirewall create-only fields coverage",
+						"region_no":                 CHECKSET,
+						"route_mode":                "managed",
+						"cen_id":                    CHECKSET,
+						"firewall_vpc_cidr":         CHECKSET,
+						"transit_router_id":         CHECKSET,
+						"tr_attachment_master_cidr": CHECKSET,
+						"firewall_name":             CHECKSET,
+						"firewall_subnet_cidr":      CHECKSET,
+						"tr_attachment_slave_cidr":  CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"firewall_name": "${var.firewall_name_update}",
+					"lang":          "en",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"firewall_name": CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudCloudFirewallVpcCenTrFirewallMapCreateOnly = map[string]string{
+	"firewall_eni_vpc_id":        CHECKSET,
+	"firewall_eni_id":            CHECKSET,
+	"status":                     CHECKSET,
+	"firewall_vpc_attachment_id": CHECKSET,
+}
+
 // Test CloudFirewall VpcCenTrFirewall. <<< Resource test cases, automatically generated.
