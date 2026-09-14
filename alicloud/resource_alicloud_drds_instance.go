@@ -29,6 +29,10 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"description": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -161,6 +165,11 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
+	// RUN can precede complete metadata; wait only during creation.
+	if err := drdsService.waitDrdsInstanceReady(d.Id(), request.VswitchId != "", d.Timeout(schema.TimeoutCreate)); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAliCloudDRDSInstanceUpdate(d, meta)
 
 }
@@ -212,24 +221,39 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	data := object.Data
-	//other attribute not set,because these attribute from `data` can't  get
+	vpcId, connectionString, port, vswitchId := flattenDrdsInstanceVips(data.Vips.Vip)
 	d.Set("zone_id", data.ZoneId)
 	d.Set("description", data.Description)
-	vpcId, connectionString, port := flattenDrdsInstanceVips(data.Vips.Vip)
+	d.Set("specification", data.InstanceSpec)
+	d.Set("instance_series", data.InstanceSeries)
 	d.Set("vpc_id", vpcId)
+	d.Set("vswitch_id", vswitchId)
+	// CommodityCode encodes the charge type (drdsPost/drdsPre); map it back so
+	// imported instances do not diff against the PostPaid default.
+	chargeType := data.CommodityCode
+	switch data.CommodityCode {
+	case "drdsPost":
+		chargeType = string(PostPaid)
+	case "drdsPre":
+		chargeType = string(PrePaid)
+	}
+	d.Set("instance_charge_type", chargeType)
 	d.Set("connection_string", connectionString)
 	d.Set("port", port)
 	d.Set("mysql_version", data.MysqlVersion)
+	d.Set("status", data.Status)
 	return nil
 }
 
-// flattenDrdsInstanceVips extracts the vpc_id, connection_string and port from the
-// DescribeDrdsInstance VIP list. A valid instance can transiently report an empty
-// VIP list, so the first-element access is length-guarded to avoid an out-of-range
-// panic; an empty list yields zero values.
-func flattenDrdsInstanceVips(vips []drds.Vip) (vpcId, connectionString, port string) {
-	if len(vips) > 0 {
-		vpcId = vips[0].VpcId
+// Keep VPC and VSwitch IDs paired, since a public VIP can precede the network
+// VIP. An empty or incomplete VIP list yields empty network IDs.
+func flattenDrdsInstanceVips(vips []drds.Vip) (vpcId, connectionString, port, vswitchId string) {
+	for _, vip := range vips {
+		if vip.VpcId != "" && vip.VswitchId != "" {
+			vpcId = vip.VpcId
+			vswitchId = vip.VswitchId
+			break
+		}
 	}
 	for _, vip := range vips {
 		if vip.Type == "intranet" {
@@ -238,7 +262,7 @@ func flattenDrdsInstanceVips(vips []drds.Vip) (vpcId, connectionString, port str
 			break
 		}
 	}
-	return vpcId, connectionString, port
+	return vpcId, connectionString, port, vswitchId
 }
 
 func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}) error {
