@@ -26,6 +26,8 @@ import argparse
 import io
 import json
 import os
+import re
+import subprocess
 import ssl
 import sys
 import tempfile
@@ -456,7 +458,27 @@ def create_code_zip(dir_path):
     return buf
 
 
-def multipart_upload(url, namespace, resource, zip_buf, test_case=None, insecure=False):
+def resolve_commit_sha(dir_path, explicit_sha=None):
+    """Bind the upload to Git HEAD; ACube independently verifies the uploaded bytes."""
+    if explicit_sha is not None:
+        if not re.fullmatch(r"[0-9a-f]{40}", explicit_sha):
+            raise ValueError("--commit-sha must be a full lowercase Git commit SHA")
+        return explicit_sha
+    try:
+        root = subprocess.check_output(
+            ["git", "-C", dir_path, "rev-parse", "--show-toplevel"],
+            stderr=subprocess.DEVNULL, text=True).strip()
+        if os.path.realpath(root) != os.path.realpath(dir_path):
+            return None
+        sha = subprocess.check_output(
+            ["git", "-C", dir_path, "rev-parse", "HEAD"],
+            stderr=subprocess.DEVNULL, text=True).strip()
+        return sha if re.fullmatch(r"[0-9a-f]{40}", sha) else None
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def multipart_upload(url, namespace, resource, zip_buf, test_case=None, insecure=False, commit_sha=None):
     """Send multipart/form-data POST with zip file.
 
     test_case (optional): single name → testCaseName query param (legacy-compatible);
@@ -475,6 +497,8 @@ def multipart_upload(url, namespace, resource, zip_buf, test_case=None, insecure
 
     write_field("namespace", namespace)
     write_field("resourceTypeCode", resource)
+    if commit_sha is not None:
+        write_field("commitSha", commit_sha)
 
     # File part
     body.write(f"--{boundary}\r\n".encode())
@@ -513,6 +537,13 @@ def cmd_upload(args):
     dir_path = args.dir
     namespace, resource = resolve_acc_test_target(args)
     validate_provider_dir(dir_path)
+    try:
+        commit_sha = resolve_commit_sha(dir_path, getattr(args, "commit_sha", None))
+    except ValueError as error:
+        print(f"[AccTest] Error: {error}", file=sys.stderr)
+        sys.exit(2)
+    if commit_sha:
+        print(f"[AccTest] Source commit: {commit_sha}", file=sys.stderr)
     print(f"[AccTest] Zipping directory: {dir_path}", file=sys.stderr)
     zip_buf = create_code_zip(dir_path)
     zip_size = zip_buf.getbuffer().nbytes
@@ -522,7 +553,7 @@ def cmd_upload(args):
     print(f"[AccTest] Uploading to: {url}", file=sys.stderr)
     resp = multipart_upload(url, namespace, resource, zip_buf,
                             test_case=getattr(args, "test_case", None),
-                            insecure=args.insecure)
+                            insecure=args.insecure, commit_sha=commit_sha)
 
     if resp.get("code") != "SUCCESS":
         print(json.dumps(resp, indent=2, ensure_ascii=False), file=sys.stderr)
@@ -540,6 +571,13 @@ def cmd_upload_run(args):
     dir_path = args.dir
     namespace, resource = resolve_acc_test_target(args)
     validate_provider_dir(dir_path)
+    try:
+        commit_sha = resolve_commit_sha(dir_path, getattr(args, "commit_sha", None))
+    except ValueError as error:
+        print(f"[AccTest] Error: {error}", file=sys.stderr)
+        sys.exit(2)
+    if commit_sha:
+        print(f"[AccTest] Source commit: {commit_sha}", file=sys.stderr)
     print(f"[AccTest] Zipping directory: {dir_path}", file=sys.stderr)
     zip_buf = create_code_zip(dir_path)
     zip_size = zip_buf.getbuffer().nbytes
@@ -549,7 +587,7 @@ def cmd_upload_run(args):
     print(f"[AccTest] Uploading to: {url}", file=sys.stderr)
     resp = multipart_upload(url, namespace, resource, zip_buf,
                             test_case=getattr(args, "test_case", None),
-                            insecure=args.insecure)
+                            insecure=args.insecure, commit_sha=commit_sha)
 
     if resp.get("code") != "SUCCESS":
         print(json.dumps(resp, indent=2, ensure_ascii=False), file=sys.stderr)
@@ -708,6 +746,8 @@ def main():
                           help="Terraform resource name to resolve namespace/resource via Acube mapping "
                                "(e.g. alicloud_schedulerx_job)")
     p_upload.add_argument("--dir", required=True, help="Path to terraform-provider-alicloud directory")
+    p_upload.add_argument("--commit-sha", default=None,
+                          help="Full commit SHA for CI result reuse (default: provider Git HEAD)")
     p_upload.add_argument("--test-case", default=None,
                           help="Optional: exact test function name(s). One name -> testCaseName; "
                                "comma-separated names -> repeated testCaseNames params (server anchors "
@@ -721,6 +761,8 @@ def main():
                               help="Terraform resource name to resolve namespace/resource via Acube mapping "
                                    "(e.g. alicloud_schedulerx_job)")
     p_upload_run.add_argument("--dir", required=True, help="Path to terraform-provider-alicloud directory")
+    p_upload_run.add_argument("--commit-sha", default=None,
+                          help="Full commit SHA for CI result reuse (default: provider Git HEAD)")
     p_upload_run.add_argument("--test-case", default=None,
                                help="Optional: exact test function name(s). One name -> testCaseName; "
                                     "comma-separated names -> repeated testCaseNames params (server "
