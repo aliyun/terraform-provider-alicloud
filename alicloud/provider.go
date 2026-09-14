@@ -173,6 +173,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"alicloud_threat_detection_attack_path_whitelists":        dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
+			"alicloud_dlf_next_catalogs":                              dataSourceAliCloudDlfNextCatalogs(),
 			"alicloud_ehpc_users":                                     dataSourceAliCloudEhpcUsers(),
 			"alicloud_realtime_compute_members":                       dataSourceAliCloudRealtimeComputeMembers(),
 			"alicloud_apig_policies":                                  dataSourceAliCloudApigPolicies(),
@@ -979,6 +980,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_instance_customized_domain":                        resourceAliCloudCrInstanceCustomizedDomain(),
 			"alicloud_threat_detection_attack_path_whitelist":               resourceAliCloudThreatDetectionAttackPathWhitelist(),
 			"alicloud_vpc_route_target_group":                               resourceAliCloudVpcRouteTargetGroup(),
+			"alicloud_dlf_next_catalog":                                     resourceAliCloudDlfNextCatalog(),
 			"alicloud_ehpc_user":                                            resourceAliCloudEhpcUser(),
 			"alicloud_realtime_compute_member":                              resourceAliCloudRealtimeComputeMember(),
 			"alicloud_apig_policy":                                          resourceAliCloudApigPolicy(),

@@ -124,9 +124,17 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	}
 
 	if e, ok := err.(*tea.SDKError); ok {
+		// Use tea.StringValue to avoid nil-pointer panics when Code or Data is
+		// nil (e.g. a backend validation error with Code set but Data unset).
+		// Guard HasPrefix against an empty codeVal: strings.HasPrefix(code, "")
+		// is always true and would falsely match every expected code.
+		codeVal := tea.StringValue(e.Code)
+		dataVal := tea.StringValue(e.Data)
 		for _, code := range expectCodes {
-			// The second statement aims to match the tea sdk history bug
-			if *e.Code == code || strings.HasPrefix(code, *e.Code) || strings.Contains(*e.Data, code) {
+			if codeVal == code || (codeVal != "" && strings.HasPrefix(code, codeVal)) {
+				return true
+			}
+			if dataVal != "" && strings.Contains(dataVal, code) {
 				return true
 			}
 		}
