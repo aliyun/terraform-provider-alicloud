@@ -109,6 +109,24 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
 			},
+			"pricing_cycle": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"renewal_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
+			},
+			"renewal_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"tags": tagsSchema(),
 			"ip": {
 				Type:     schema.TypeString,
@@ -246,6 +264,18 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		request["Period"] = 1
 	}
 
+	if v, ok := d.GetOk("pricing_cycle"); ok {
+		request["PricingCycle"] = v
+	}
+
+	if v, ok := d.GetOk("renewal_status"); ok {
+		request["RenewalStatus"] = v
+	}
+
+	if v, ok := d.GetOk("renewal_period"); ok {
+		request["RenewPeriod"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, false, endpoint)
@@ -299,6 +329,7 @@ func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("name", objectRaw["Remark"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("ip", objectRaw["Ip"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 
 	objectRaw, err = ddosCooServiceV2.DescribeInstanceDescribeInstanceSpecs(d.Id())
 	if err != nil && !NotFoundError(err) {
@@ -363,7 +394,7 @@ func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChange("tags") {
+	if d.HasChange("tags") || d.HasChange("resource_group_id") {
 		if err := ddosCooServiceV2.SetResourceTags(d, "INSTANCE"); err != nil {
 			return WrapError(err)
 		}
