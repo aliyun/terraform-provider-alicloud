@@ -37,6 +37,16 @@ type RdsService struct {
 // That the business layer only need to check error.
 var DBInstanceStatusCatcher = Catcher{"OperationDenied.DBInstanceStatus", 60, 5}
 
+// dbInstanceGoneStatusCodes are 403 signals that the parent RDS instance is in
+// a non-permissible terminal state — for example a Subscription instance that
+// was refunded/unsubscribed out of band and is now sitting in the recycle bin.
+// During that window the instance object still exists, so the API answers 403
+// "OperationDenied ... DBInstanceStatus" instead of 404 NotFound, but the
+// instance can no longer be managed. On Read and pre-delete checks such a 403 is
+// treated as "instance gone" — equal to NotFound — so refresh and destroy of the
+// instance and its child resources complete idempotently instead of blocking.
+var dbInstanceGoneStatusCodes = []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}
+
 func (s *RdsService) DescribeDBInstance(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	action := "DescribeDBInstanceAttribute"
@@ -60,7 +70,12 @@ func (s *RdsService) DescribeDBInstance(id string) (object map[string]interface{
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound"}) {
+		// InvalidDBInstanceId.NotFound / InvalidDBInstanceName.NotFound mean the
+		// instance is gone. A 403 OperationDenied(Read)DBInstanceStatus means the
+		// instance is in a non-permissible terminal state (e.g. refunded and sitting
+		// in the recycle bin) — treat it as gone too so callers can clear state /
+		// finish delete idempotently instead of hard-failing refresh and destroy.
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound"}) || IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -143,7 +158,13 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (object map[string]in
 		addDebug(action, response, request)
 		return nil
 	}); err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+		// InvalidDBInstanceId.NotFound is a genuine 404. A 403 gone-status code
+		// (parent instance refunded / unsubscribed out of band, now in the recycle
+		// bin) means the privilege can no longer be managed — map it to NotFound
+		// too. The Invoker exhausts its retry budget on a sustained gone 403
+		// (DBInstanceStatusCatcher); with the chain preserved by Run, the gone
+		// code is still matchable through the Cause chain here.
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) || IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
 			return ds, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return ds, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -174,7 +195,16 @@ func (s *RdsService) DescribeDBDatabase(id string) (object map[string]interface{
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBInstanceStatus"}) {
+			// Terminal 403 (parent instance in recycle bin / refunded): the
+			// instance object still exists so the API answers 403 instead of
+			// 404, but the database can no longer be managed. Map to NotFound
+			// here (the DescribeDBInstance choke point does the same) so callers
+			// clear state / finish delete idempotently instead of burning the
+			// whole 5-minute retry budget on an unmanageable instance.
+			if IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+			}
+			if IsExpectedErrors(err, []string{"InternalError"}) {
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
 			}
 			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidDBName.NotFound", "InvalidDBInstanceId.NotFoundError"}) {
@@ -787,6 +817,20 @@ func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
+			// Terminal 403 (parent instance in recycle bin / refunded): confirm
+			// via DescribeDBInstance (the choke point that maps the same codes
+			// to NotFound) that the parent is gone, then finish idempotently
+			// instead of burning the retry budget on an unmanageable instance.
+			// If the parent is not gone the 403 is a transient instance-status
+			// lock and stays retryable. isParentGone (not NotFoundError) is used
+			// for the follow-up so an auth 404 is not mistaken for a gone parent.
+			if IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+				if _, e := s.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+					log.Printf("[WARN] Resource alicloud_db_account_privilege RevokeAccountPrivilege: instance [%s] is gone, treating privilege as removed: %s", parts[0], err)
+					return nil
+				}
+				return resource.RetryableError(err)
+			}
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"InvalidDB.NotFound"}) {
@@ -800,6 +844,18 @@ func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
 	})
 
 	if err != nil {
+		// If the parent instance has reached a terminal state (refunded /
+		// recycle bin) the privilege no longer exists — treat it as removed
+		// instead of hard-failing destroy. DescribeDBInstance maps the same 403
+		// terminal codes to NotFound, so a NotFound follow-up check confirms the instance is
+		// gone. The Delete pre-check covers the already-terminal case before the
+		// loop starts; this handles the instance going terminal mid-loop.
+		if IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+			if _, e := s.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+				log.Printf("[WARN] Resource alicloud_db_account_privilege RevokeAccountPrivilege: instance [%s] is gone, treating privilege as removed: %s", parts[0], err)
+				return nil
+			}
+		}
 		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1454,23 +1510,37 @@ func (s *RdsService) DescribeSQLCollectorRetention(id string) (object map[string
 // WaitForInstance waits for instance to given status
 func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	var currentStatus string
 	for {
 		object, err := s.DescribeDBInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if isParentGone(err) {
+				// DescribeDBInstance now maps the recycle-bin 403 to NotFound, so a
+				// NotFound here means the instance is gone (refunded / unsubscribed
+				// out of band, or already released). If we were waiting for Deleted
+				// that is success; for any other target it is futile to keep polling —
+				// fail fast instead of looping until the timeout (which previously
+				// also panicked on the nil object in the timeout message).
 				if status == Deleted {
 					return nil
 				}
-			} else {
-				return WrapError(err)
+				return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, currentStatus, status, ProviderERROR)
 			}
+			return WrapError(err)
 		}
-		if object != nil && strings.ToLower(fmt.Sprint(object["DBInstanceStatus"])) == strings.ToLower(string(status)) {
+		currentStatus = fmt.Sprint(object["DBInstanceStatus"])
+		if strings.ToLower(currentStatus) == strings.ToLower(string(status)) {
 			break
+		}
+		// The instance is still describable but already in a terminal deleting
+		// flow — it will never reach a live status. Fail fast rather than polling
+		// to the timeout (the out-of-Terraform unsubscribe / delete scenario).
+		if status != Deleted && currentStatus == "Deleting" {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, currentStatus, status, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["DBInstanceStatus"], status, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, currentStatus, status, ProviderERROR)
 		}
 	}
 	return nil
@@ -1480,7 +1550,7 @@ func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []strin
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDBInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if isParentGone(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
@@ -1661,11 +1731,25 @@ func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, t
 	for {
 		object, err := s.DescribeDBDatabase(parts[0] + ":" + dbName)
 		if err != nil {
-			if NotFoundError(err) {
+			if isParentGone(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
+				// DescribeDBDatabase now maps a terminal 403 (parent instance
+				// refunded / unsubscribed out of band and now in the recycle bin)
+				// to NotFound, so isParentGone above already covers it. This branch
+				// is kept as defense-in-depth: if DescribeDBDatabase ever surfaces a
+				// gone-status 403 without mapping it, confirm via DescribeDBInstance
+				// (the choke point) that the parent is gone before succeeding. A
+				// non-Deleted wait keeps failing: you cannot grant a privilege on a
+				// gone instance. Gated on dbInstanceGoneStatusCodes so unrelated
+				// errors (network, auth) still surface.
+				if status == Deleted && IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+					if _, e := s.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+						return nil
+					}
+				}
 				return WrapError(err)
 			}
 		}
@@ -1704,8 +1788,20 @@ func (s *RdsService) WaitForAccountPrivilegeRevoked(id, dbName string, timeout i
 	for {
 		object, err := s.DescribeDBDatabase(parts[0] + ":" + dbName)
 		if err != nil {
-			if NotFoundError(err) {
+			if isParentGone(err) {
 				return nil
+			}
+			// A revoke-wait succeeds when the privilege — or its parent — is gone.
+			// DescribeDBDatabase now maps a terminal 403 (parent instance in recycle
+			// bin / refunded) to NotFound, so isParentGone above covers it. This
+			// branch is kept as defense-in-depth: confirm via DescribeDBInstance (the
+			// choke point that maps the same codes to NotFound) that the parent is
+			// gone, then succeed. Gated on the gone codes so unrelated errors still
+			// surface.
+			if IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+				if _, e := s.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+					return nil
+				}
 			}
 			return WrapError(err)
 		}
@@ -1742,8 +1838,22 @@ func (s *RdsService) WaitForDBDatabase(id string, status Status, timeout int) er
 	for {
 		object, err := s.DescribeDBDatabase(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if isParentGone(err) {
 				if status == Deleted {
+					return nil
+				}
+			}
+			// DescribeDBDatabase now maps a terminal 403 (parent instance refunded /
+			// unsubscribed out of band and now in the recycle bin) to NotFound, so
+			// isParentGone above already covers it. This branch is kept as
+			// defense-in-depth: if DescribeDBDatabase ever surfaces a gone-status 403
+			// without mapping it, confirm via DescribeDBInstance (the choke point
+			// that maps the same codes to NotFound) that the parent is gone, then
+			// succeed — the database cannot exist on a released instance.
+			// Non-Deleted waits keep failing. Gated on the gone codes so unrelated
+			// errors still surface.
+			if status == Deleted && IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+				if _, e := s.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
 					return nil
 				}
 			}
@@ -2123,6 +2233,21 @@ func (s *RdsService) DescribeRdsAccount(id string) (object map[string]interface{
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			err = WrapErrorf(NotFoundErr("RdsAccount", id), NotFoundMsg, ProviderERROR)
 			return object, err
+		}
+		// A 403 OperationDenied(Read)DBInstanceStatus means the parent instance is
+		// in a terminal non-permissible state (e.g. a Subscription instance that was
+		// refunded / unsubscribed out of band and is now sitting in the recycle bin).
+		// The instance object still exists, so DescribeAccounts answers 403 instead
+		// of 404, but the account can no longer be managed. Confirm via
+		// DescribeDBInstance (which maps the same codes to NotFound) that the parent
+		// is actually gone, then treat the account as gone too — so Read clears
+		// state and Delete finishes idempotently instead of hard-failing refresh and
+		// hanging destroy.
+		if IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+			if _, e := s.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+				err = WrapErrorf(NotFoundErr("RdsAccount", id), NotFoundMsg, ProviderERROR)
+				return object, err
+			}
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return object, err

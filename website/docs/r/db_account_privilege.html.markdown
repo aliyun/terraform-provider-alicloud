@@ -85,12 +85,12 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The Id of instance in which account belongs.
 * `account_name` - (Required, ForceNew) A specified account name.
 * `privilege` - (Optional, ForceNew) The privilege of one account access database. Valid values: 
-    - ReadOnly: This value is only for MySQL, MariaDB and SQL Server
-    - ReadWrite: This value is only for MySQL, MariaDB and SQL Server
-    - DDLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
-    - DMLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
-    - DBOwner: (Available in 1.64.0+) This value is only for SQL Server and PostgreSQL.
-      Default to "ReadOnly". 
+  - ReadOnly: This value is only for MySQL, MariaDB and SQL Server
+  - ReadWrite: This value is only for MySQL, MariaDB and SQL Server
+  - DDLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
+  - DMLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
+  - DBOwner: (Available in 1.64.0+) This value is only for SQL Server and PostgreSQL.
+    Default to "ReadOnly".
 * `db_names` - (Required) List of specified database name.
 
 ## Attributes Reference
@@ -106,3 +106,13 @@ RDS account privilege can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_db_account_privilege.example "rm-12345:tf_account:ReadOnly"
 ```
+
+## Out-of-band parent-instance unsubscribe
+
+If the parent RDS instance is removed out of band — for example a Subscription
+(pay-by-month/year) instance unsubscribed from the console and now retained in
+the recycle bin — the RDS API returns `OperationDenied.DBInstanceStatus` (HTTP
+403) instead of a 404 Not Found. On the next `terraform refresh` or
+`terraform destroy` the provider detects this terminal 403 (confirmed via the
+parent instance) and removes the account privilege from state, so the operation
+completes idempotently rather than failing on the 403.

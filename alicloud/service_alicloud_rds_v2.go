@@ -432,6 +432,15 @@ func (s *RdsServiceV2) DescribeRdsDatabase(id string) (object map[string]interfa
 				wait()
 				return resource.RetryableError(err)
 			}
+			// Map a genuine 404 and the terminal 403 gone-status codes (parent
+			// instance refunded / unsubscribed out of band, now in the recycle bin)
+			// to NotFound — consistent with the DescribeDBInstance choke point — so
+			// callers can use isParentGone to clear state instead of hard-failing,
+			// and an auth 404 (wrapped with DefaultErrorMsg below) is not mistaken
+			// for a gone parent.
+			if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) || IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+			}
 			return resource.NonRetryableError(err)
 		}
 		return nil

@@ -102,6 +102,16 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 			d.SetId("")
 			return nil
 		}
+		// A 403 OperationDenied(Read)DBInstanceStatus means the parent instance is
+		// in a terminal non-permissible state (refunded / recycle bin). Confirm via
+		// DescribeDBInstance (which maps the same 403 to NotFound); if the parent is
+		// gone, drop the privilege from state so refresh stops hard-failing.
+		if !d.IsNewResource() && IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+			if _, e := rsdService.DescribeDBInstance(parts[0]); e != nil && NotFoundError(e) {
+				d.SetId("")
+				return nil
+			}
+		}
 		return WrapError(err)
 	}
 
@@ -136,7 +146,15 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBInstanceStatus"}) {
+				// Terminal 403 (parent instance in recycle bin / refunded): map to
+				// NotFound (consistent with the choke point) instead of burning the
+				// 5-minute budget on an unmanageable instance. The codes mirror
+				// dbInstanceGoneStatusCodes (service_alicloud_rds.go); inlined as
+				// literals so the breaking-change retry-code check sees them.
+				if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) {
+					return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+				}
+				if IsExpectedErrors(err, []string{"InternalError"}) {
 					return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
 				}
 				return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
@@ -156,6 +174,19 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 			return nil
 		})
 		if err != nil {
+			if isParentGone(err) {
+				// Confirm via DescribeDBInstance (the choke point that maps the
+				// same 403 to NotFound) that the parent is actually gone. The
+				// fallback's 403 may be a live-but-transiently-locked instance
+				// rather than a terminal recycle-bin state; only skip the
+				// enumeration when the parent is confirmed gone, otherwise
+				// surface the error so refresh retries instead of silently
+				// leaving db_names stale. Mirrors the privilege Read main path
+				// and db_database Read.
+				if _, e := rsdService.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+					return nil
+				}
+			}
 			return WrapError(err)
 		}
 	}
@@ -219,10 +250,24 @@ func resourceAlicloudDBAccountPrivilegeDelete(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapError(err)
 	}
+	// If the parent instance is gone (refunded / recycle bin — surfaces as a 403,
+	// mapped to NotFound by DescribeDBInstance, or a real 404), the privilege no
+	// longer exists; return nil so destroy is idempotent instead of revoking
+	// per-DB against a dead instance.
+	if _, e := rdsService.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+		return nil
+	}
 	object, err := rdsService.DescribeDBAccountPrivilege(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
+		}
+		// 403 terminal on DescribeAccounts (parent in recycle bin) — confirm the
+		// parent is gone, then finish idempotently.
+		if IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+			if _, e := rdsService.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+				return nil
+			}
 		}
 		return WrapError(err)
 	}

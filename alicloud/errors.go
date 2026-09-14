@@ -114,6 +114,36 @@ func NotFoundError(err error) bool {
 	return false
 }
 
+// isParentGone reports whether err carries the "parent RDS instance gone"
+// signal that the DescribeDBInstance choke point (and the DescribeRdsAccount /
+// DescribeDBDatabase mid-loop gone-checks) emit: a ComplexError whose Err was
+// built from NotFoundMsg, i.e. starts with ResourceNotfound. It walks the
+// Cause chain and checks the Err prefix at every ComplexError level, so the
+// signal survives the extra WrapErrorf layers callers stack on top.
+//
+// Unlike NotFoundError it does NOT accept a generic HTTP 404 reached by
+// recursing the Cause chain to a *tea.SDKError / *errors.ServerError. A
+// recycled-parent 403 and a genuine InvalidDBInstanceId.NotFound 404 are both
+// wrapped with NotFoundMsg by the choke point and therefore match; an auth
+// failure such as InvalidAccessKeyId.NotFound (also a 404) is wrapped with
+// DefaultErrorMsg and does NOT match, so callers surface it instead of
+// silently clearing state / finishing delete as if the instance were gone.
+func isParentGone(err error) bool {
+	if err == nil {
+		return false
+	}
+	for {
+		e, ok := err.(*ComplexError)
+		if !ok {
+			return false
+		}
+		if e.Err != nil && strings.HasPrefix(e.Err.Error(), ResourceNotfound) {
+			return true
+		}
+		err = e.Cause
+	}
+}
+
 func IsExpectedErrors(err error, expectCodes []string) bool {
 	if err == nil {
 		return false

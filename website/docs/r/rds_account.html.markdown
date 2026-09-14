@@ -89,27 +89,27 @@ The following arguments are supported:
 
 -> **NOTE:** The name cannot start with http:// or https://.
 * `account_name` - (Optional, ForceNew) The name of the database account.
-    * The name must be unique.
-    * The name can contain lowercase letters, digits, and underscores (_). For MySQL databases, the name can contain uppercase letters.
-    * The name must start with a letter and end with a letter or digit.
-    * For MySQL databases, the name of the privileged account cannot be the same as that of the standard account. For example, if the name of the privileged account is Test1, the name of the standard account cannot be test1.
-    * The length of the value must meet the following requirements:
-        * If the instance runs MySQL 5.7 or MySQL 8.0, the value must be 2 to 32 characters in length.
-        * If the instance runs MySQL 5.6, the value must be 2 to 16 characters in length.
-        * If the instance runs SQL Server, the value must be 2 to 64 characters in length.
-        * If the instance runs PostgreSQL with cloud disks, the value must be 2 to 63 characters in length.
-        * If the instance runs PostgreSQL with local disks, the value must be 2 to 16 characters in length.
-        * If the instance runs MariaDB, the value must be 2 to 16 characters in length.
-        * For more information about invalid characters, See [Forbidden keywords](https://help.aliyun.com/zh/rds/developer-reference/forbidden-keywords?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
+  * The name must be unique.
+  * The name can contain lowercase letters, digits, and underscores (_). For MySQL databases, the name can contain uppercase letters.
+  * The name must start with a letter and end with a letter or digit.
+  * For MySQL databases, the name of the privileged account cannot be the same as that of the standard account. For example, if the name of the privileged account is Test1, the name of the standard account cannot be test1.
+  * The length of the value must meet the following requirements:
+    * If the instance runs MySQL 5.7 or MySQL 8.0, the value must be 2 to 32 characters in length.
+    * If the instance runs MySQL 5.6, the value must be 2 to 16 characters in length.
+    * If the instance runs SQL Server, the value must be 2 to 64 characters in length.
+    * If the instance runs PostgreSQL with cloud disks, the value must be 2 to 63 characters in length.
+    * If the instance runs PostgreSQL with local disks, the value must be 2 to 16 characters in length.
+    * If the instance runs MariaDB, the value must be 2 to 16 characters in length.
+    * For more information about invalid characters, See [Forbidden keywords](https://help.aliyun.com/zh/rds/developer-reference/forbidden-keywords?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
 
 * `account_password` - (Optional, Sensitive) The password of the account.
-    * The value must be 8 to 32 characters in length.
-    * The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
-    * Special characters include ! @ # $ % ^ & * ( ) _ + - =
+  * The value must be 8 to 32 characters in length.
+  * The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
+  * Special characters include ! @ # $ % ^ & * ( ) _ + - =
 * `account_type` - (Optional, ForceNew) The account type. Valid values:
-    * Normal: standard account (default).
-    * Super: privileged account.
-    * Sysadmin: system admin account. The account type is available only for ApsaraDB RDS for SQL Server instances.
+  * Normal: standard account (default).
+  * Super: privileged account.
+  * Sysadmin: system admin account. The account type is available only for ApsaraDB RDS for SQL Server instances.
 
 -> **NOTE:** Before you create a system admin account, check whether the RDS instance meets all prerequisites. For more information, See [Create a system admin account](https://help.aliyun.com/zh/rds/apsaradb-rds-for-sql-server/create-a-system-admin-account-for-an-apsaradb-rds-for-sql-server-instance?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. If the `account_password` is filled in, this field will be ignored.
@@ -148,3 +148,13 @@ RDS Account can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_rds_account.example <db_instance_id>:<account_name>
 ```
+
+## Out-of-band parent-instance unsubscribe
+
+If the parent RDS instance is removed out of band — for example a Subscription
+(pay-by-month/year) instance unsubscribed from the console and now retained in
+the recycle bin — the RDS API returns `OperationDenied.DBInstanceStatus` (HTTP
+403) instead of a 404 Not Found. On the next `terraform refresh` or
+`terraform destroy` the provider detects this terminal 403 (confirmed via the
+parent instance) and removes the account from state, so the operation completes
+idempotently rather than failing on the 403.
