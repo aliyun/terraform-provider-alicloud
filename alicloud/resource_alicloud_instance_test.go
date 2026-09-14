@@ -6181,3 +6181,14 @@ func resourceECSInstanceTagsDependence(name string) string {
 	}
 `, name)
 }
+
+// Temporary pipeline smoke checks; no cloud resources are created.
+func TestAccAliCloudInstanceAccTestReuseSmokeFirst(t *testing.T) {
+	if os.Getenv("TF_ACC") != "1" {
+		t.Fatal("expected the acceptance runner to set TF_ACC=1")
+	}
+}
+
+func TestAccAliCloudInstanceAccTestReuseSmokeSecond(t *testing.T) {
+	t.Log("Second named case for acceptance-result completeness verification; no cloud API calls")
+}
