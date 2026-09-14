@@ -68,6 +68,7 @@ The following arguments are supported:
 * `config` - (Optional, List) The specific configuration of the WAF rule. See [`config`](#config) below.
 * `phase` - (Required, ForceNew) The phase in which the WAF processes this rule.
 * `ruleset_id` - (Optional, ForceNew, Int) The ID of the WAF ruleset, which can be obtained by calling the [ListWafRulesets](https://www.alibabacloud.com/help/en/doc-detail/2850233.html) operation.
+* `position` - (Optional, Int) The position of the WAF rule. Position is only supported when updating a rule; it is not accepted when creating a rule. If omitted, the service-assigned position is used.
 * `shared` - (Optional, List) Shared configuration attributes used across multiple rules. See [`shared`](#shared) below.
 
 -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
