@@ -2,12 +2,109 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ens_network", &resource.Sweeper{
+		Name: "alicloud_ens_network",
+		F:    testSweepEnsNetworks,
+	})
+}
+
+func testSweepEnsNetworks(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+		"tf-example",
+		"tf-test",
+		"tf-acc",
+	}
+
+	networkIds := make([]string, 0)
+	action := "DescribeNetworks"
+	var response map[string]interface{}
+	request := map[string]interface{}{}
+	query := map[string]interface{}{
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	for {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve ENS Network in service list: %s", err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.Networks.Network", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Networks.Network", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			skip := true
+			item := v.(map[string]interface{})
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["NetworkName"])), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping ENS Network: %v (%v)", item["NetworkName"], item["NetworkId"])
+					continue
+				}
+			}
+			networkIds = append(networkIds, fmt.Sprint(item["NetworkId"]))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		query["PageNumber"] = query["PageNumber"].(int) + 1
+	}
+
+	for _, id := range networkIds {
+		log.Printf("[INFO] Deleting ENS Network: (%s)", id)
+		action := "DeleteNetwork"
+		request := map[string]interface{}{
+			"NetworkId": id,
+		}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(time.Minute*10, func() *resource.RetryError {
+			response, err = client.RpcPost("Ens", "2017-11-10", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete ENS Network (%s): %v", id, err)
+			continue
+		}
+	}
+	return nil
+}
 
 // Test Ens Network. >>> Resource test cases, automatically generated.
 // Case 5077
