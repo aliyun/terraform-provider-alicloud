@@ -91,18 +91,19 @@ resource "alicloud_ecd_desktop_group" "default" {
 
 The following arguments are supported:
 * `bundle_id` - (Required) The ID of the desktop template.
-* `end_user_ids` - (Required, List) The list of IDs of the end users authorized to use the desktop group.
 * `office_site_id` - (Required, ForceNew) The ID of the office network to which the desktop group belongs.
 * `policy_group_id` - (Required) The ID of the policy group associated with the desktop group.
 * `allow_auto_setup` - (Optional, Int) Specifies whether to allow cloud desktops to be automatically created for a subscription desktop group. This parameter takes effect only when the desktop group uses the subscription billing method. Valid values: `0` and `1`.
 * `allow_buffer_count` - (Optional, Int) The number of cloud desktops that are reserved in the desktop group. Reserved desktops are kept started and idle, waiting for connections. Valid values: `0` to `100`. `0` indicates that no desktop is reserved.
 * `comments` - (Optional) The remarks of the desktop group.
 * `desktop_group_name` - (Optional) The name of the desktop group. The name must be 1 to 30 characters in length, and can contain letters, digits, colons (:), underscores (_), periods (.), and hyphens (-). It must start with a letter but cannot start with `http://` or `https://`.
-* `directory_id` - (Optional, ForceNew) The ID of the directory.
+* `directory_id` - (Optional, ForceNew, Computed) The ID of the directory. This parameter is not publicly available yet.
+* `end_user_ids` - (Optional, List) The list of IDs of the end users authorized to use the desktop group. The order of the IDs does not matter.
 * `keep_duration` - (Optional, Int) The retention duration of a session after it is disconnected. Unit: milliseconds. Valid values: `180000` to `345600000`. `0` indicates that the session is always retained. If the user does not reconnect within the retention duration, the session is logged off and unsaved data is destroyed.
 * `max_desktops_count` - (Optional, Int) The maximum number of cloud desktops that the pay-as-you-go desktop group can contain. Valid values: `0` to `500`.
 * `min_desktops_count` - (Optional, Int) The minimum number of cloud desktops that the pay-as-you-go desktop group automatically creates. Valid values: `0` to the value of `max_desktops_count`.
-* `scale_strategy_id` - (Optional) The ID of the scaling policy.
+* `pay_type` - (Optional, Computed) The billing method of the desktop group. Valid values: `PostPaid`. If it is not set, the desktop group is created with the `PostPaid` billing method.
+* `scale_strategy_id` - (Optional) The ID of the scaling policy. This parameter is not publicly available yet.
 
 ## Attributes Reference
 
@@ -121,7 +122,6 @@ The following attributes are exported:
 * `office_site_name` - The name of the office network.
 * `office_site_type` - The type of the account system of the office network.
 * `own_bundle_name` - The name of the desktop template.
-* `pay_type` - The billing method.
 * `policy_group_name` - The name of the policy group.
 * `res_type` - The type of the resource.
 * `system_disk_category` - The category of the system disk.

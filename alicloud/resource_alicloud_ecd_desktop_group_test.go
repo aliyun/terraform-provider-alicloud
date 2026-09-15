@@ -96,6 +96,64 @@ func testSweepEcdDesktopGroup(region string) error {
 	return nil
 }
 
+// testAccCleanupEcdSimpleOfficeSite deletes the simple office site named name once the test finishes.
+// Destroying alicloud_ecd_simple_office_site does not call DeleteOfficeSites when the office site has
+// EnableInternetAccess set (see resourceAlicloudEcdSimpleOfficeSiteDelete), so every run would otherwise
+// leave an office site behind and exhaust the office site quota of the test account.
+func testAccCleanupEcdSimpleOfficeSite(t *testing.T, name string) {
+	t.Cleanup(func() {
+		client, ok := testAccProvider.Meta().(*connectivity.AliyunClient)
+		if !ok || client == nil {
+			return
+		}
+		request := map[string]interface{}{
+			"RegionId":       client.RegionId,
+			"OfficeSiteType": "SIMPLE",
+			"MaxResults":     PageSizeLarge,
+		}
+		officeSiteIds := make([]string, 0)
+		for {
+			response, err := client.RpcPost("ecd", "2020-09-30", "DescribeOfficeSites", nil, request, true)
+			if err != nil {
+				t.Logf("[WARN] Failed to list the office sites to clean up %s: %s", name, err)
+				return
+			}
+			officeSites, _ := response["OfficeSites"].([]interface{})
+			for _, raw := range officeSites {
+				if officeSite, ok := raw.(map[string]interface{}); ok && fmt.Sprint(officeSite["Name"]) == name {
+					officeSiteIds = append(officeSiteIds, fmt.Sprint(officeSite["OfficeSiteId"]))
+				}
+			}
+			if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+				request["NextToken"] = nextToken
+			} else {
+				break
+			}
+		}
+		for _, officeSiteId := range officeSiteIds {
+			deleteRequest := map[string]interface{}{
+				"RegionId":     client.RegionId,
+				"OfficeSiteId": []string{officeSiteId},
+			}
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				_, err := client.RpcPost("ecd", "2020-09-30", "DeleteOfficeSites", nil, deleteRequest, false)
+				if err != nil {
+					if NeedRetry(err) {
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			if err != nil {
+				t.Logf("[WARN] Failed to delete the office site %s (%s): %s", officeSiteId, name, err)
+				continue
+			}
+			t.Logf("[INFO] Deleted the office site %s (%s)", officeSiteId, name)
+		}
+	})
+}
+
 func TestAccAliCloudEcdDesktopGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
@@ -108,6 +166,7 @@ func TestAccAliCloudEcdDesktopGroup_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := 10000 + acctest.RandIntRange(0, 89999)
 	name := fmt.Sprintf("tf-testaccdesktopgroup%d", rand)
+	testAccCleanupEcdSimpleOfficeSite(t, name)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDDesktopGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -131,6 +190,7 @@ func TestAccAliCloudEcdDesktopGroup_basic0(t *testing.T) {
 					"allow_auto_setup":   "0",
 					"allow_buffer_count": "0",
 					"directory_id":       "",
+					"pay_type":           "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -145,6 +205,7 @@ func TestAccAliCloudEcdDesktopGroup_basic0(t *testing.T) {
 						"max_desktops_count": "1",
 						"allow_auto_setup":   "0",
 						"allow_buffer_count": "0",
+						"pay_type":           "PostPaid",
 					}),
 				),
 			},
@@ -185,7 +246,8 @@ func TestAccAliCloudEcdDesktopGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"end_user_ids": []string{"${alicloud_ecd_user.default.id}", "${alicloud_ecd_user.default1.id}"},
+					// The users are listed in reverse order of their IDs on purpose: a different order must not cause a diff.
+					"end_user_ids": []string{"${alicloud_ecd_user.default1.id}", "${alicloud_ecd_user.default.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
