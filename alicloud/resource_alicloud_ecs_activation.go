@@ -16,12 +16,14 @@ func resourceAlicloudEcsActivation() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudEcsActivationCreate,
 		Read:   resourceAlicloudEcsActivationRead,
+		Update: resourceAlicloudEcsActivationUpdate,
 		Delete: resourceAlicloudEcsActivationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(1 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -57,6 +59,22 @@ func resourceAlicloudEcsActivation() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.IntBetween(1, 24),
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"disabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"activation_code": {
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
+			},
 		},
 	}
 }
@@ -83,6 +101,9 @@ func resourceAlicloudEcsActivationCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("time_to_live_in_hours"); ok {
 		request["TimeToLiveInHours"] = v
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
@@ -101,6 +122,9 @@ func resourceAlicloudEcsActivationCreate(d *schema.ResourceData, meta interface{
 	}
 
 	d.SetId(fmt.Sprint(response["ActivationId"]))
+	if v, ok := response["ActivationCode"]; ok && fmt.Sprint(v) != "" {
+		d.Set("activation_code", v)
+	}
 
 	return resourceAlicloudEcsActivationRead(d, meta)
 }
@@ -123,8 +147,43 @@ func resourceAlicloudEcsActivationRead(d *schema.ResourceData, meta interface{})
 	d.Set("instance_name", object["InstanceName"])
 	d.Set("ip_address_range", object["IpAddressRange"])
 	d.Set("time_to_live_in_hours", formatInt(object["TimeToLiveInHours"]))
+	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("disabled", object["Disabled"])
 
 	return nil
+}
+func resourceAlicloudEcsActivationUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	if d.HasChange("disabled") {
+		if v, ok := d.GetOk("disabled"); ok && v.(bool) {
+			action := "DisableActivation"
+			request := map[string]interface{}{
+				"ActivationId": d.Id(),
+			}
+			request["RegionId"] = client.RegionId
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			var response map[string]interface{}
+			var err error
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		} else {
+			return WrapError(fmt.Errorf("the activation code cannot be enabled after it is disabled because the EnableActivation API does not exist"))
+		}
+	}
+	return resourceAlicloudEcsActivationRead(d, meta)
 }
 func resourceAlicloudEcsActivationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
