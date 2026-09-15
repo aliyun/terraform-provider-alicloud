@@ -736,6 +736,81 @@ func (s *DtsService) DescribeDtsInstance(id string) (object map[string]interface
 	return v.(map[string]interface{}), nil
 }
 
+// DescribeDtsJobsByInstanceId lists the DTS jobs currently attached to the given DTS instance.
+// An instance that carries historical deletion records can lose the server-side mapping between
+// the job ID stored in state and the instance, so listing the jobs by instance ID is the
+// reliable way to recover the currently valid job ID.
+func (s *DtsService) DescribeDtsJobsByInstanceId(instanceId, jobType string) (jobs []map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobs"
+	request := map[string]interface{}{
+		"RegionId":      client.RegionId,
+		"DtsInstanceId": instanceId,
+		"JobType":       jobType,
+		"PageSize":      PageSizeLarge,
+		"PageNumber":    1,
+	}
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
+				return jobs, WrapErrorf(NotFoundErr("DTS", instanceId), NotFoundWithResponse, response)
+			}
+			return jobs, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+		}
+		v, err := jsonpath.Get("$.DtsJobList", response)
+		if err != nil {
+			return jobs, WrapErrorf(err, FailedGetAttributeMsg, instanceId, "$.DtsJobList", response)
+		}
+		list, ok := v.([]interface{})
+		if !ok {
+			return jobs, WrapErrorf(NotFoundErr("DTS", instanceId), NotFoundWithResponse, response)
+		}
+		for _, item := range list {
+			if job, ok := item.(map[string]interface{}); ok {
+				jobs = append(jobs, job)
+			}
+		}
+		if len(list) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return jobs, nil
+}
+
+// isDtsJobNotFoundSignal reports whether a failed DTS job modification means that the job ID
+// stored in state no longer maps to a valid DTS instance, for example when the instance carries
+// historical deletion records and the job ID and the instance ID no longer match.
+func isDtsJobNotFoundSignal(err error, response map[string]interface{}) bool {
+	notFoundCodes := []string{"Forbidden.InstanceNotFound", "InvalidJobId"}
+	if err != nil {
+		return IsExpectedErrors(err, notFoundCodes)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		errCode := fmt.Sprint(response["ErrCode"])
+		for _, code := range notFoundCodes {
+			if errCode == code {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // setDtsEndpointSSL folds source_endpoint_ssl and destination_endpoint_ssl into the DTS Reserve
 // parameter as its srcSSL and destSSL keys. ConfigureDtsJob has no dedicated SSL parameter, so
 // Reserve is the only place the connection mode can be sent. Values already present under those

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -548,6 +549,43 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			return nil
 		})
 		addDebug(action, response, request)
+		if isDtsJobNotFoundSignal(err, response) {
+			// An instance that carries historical deletion records can lose the server-side
+			// mapping between the job ID stored in state and the instance, so ModifyDtsJobName
+			// reports that the instance does not exist. Recover the currently valid job ID from
+			// the instance and retry the rename once before failing.
+			dtsService := DtsService{client}
+			resolvedId, resolveErr := dtsSynchronizationJobResolveJobId(d, &dtsService)
+			if resolveErr != nil {
+				log.Printf("[WARN] Failed to resolve the valid DTS job ID under instance %s: %s", d.Get("dts_instance_id"), resolveErr)
+			}
+			if resolveErr == nil && resolvedId != "" && resolvedId != d.Id() {
+				log.Printf("[INFO] The DTS job ID %s of alicloud_dts_synchronization_job is no longer valid, retrying %s with the resolved job ID %s.", d.Id(), action, resolvedId)
+				request["DtsJobId"] = resolvedId
+				var retryErr error
+				retryWait := incrementalWait(3*time.Second, 3*time.Second)
+				retryErr = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, retryErr = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+					if retryErr != nil {
+						if NeedRetry(retryErr) {
+							retryWait()
+							return resource.RetryableError(retryErr)
+						}
+						return resource.NonRetryableError(retryErr)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if retryErr == nil && fmt.Sprint(response["Success"]) != "false" {
+					d.SetId(resolvedId)
+					err = nil
+				} else if retryErr != nil {
+					err = retryErr
+				} else {
+					err = fmt.Errorf("%s failed, response: %v", action, response)
+				}
+			}
+		}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -964,6 +1002,76 @@ func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, met
 	}
 
 	return nil
+}
+
+// dtsSynchronizationJobResolveJobId recovers the currently valid DTS job ID from the DTS
+// instance backing this resource. The instance ID remains stable while the job attached to it
+// can be deleted and re-created, leaving the job ID stored in state stale.
+func dtsSynchronizationJobResolveJobId(d *schema.ResourceData, dtsService *DtsService) (string, error) {
+	instanceId := ""
+	if v, ok := d.GetOk("dts_instance_id"); ok {
+		instanceId = fmt.Sprint(v)
+	}
+	if instanceId == "" {
+		return "", fmt.Errorf("dts_instance_id is empty, cannot resolve the valid job ID of alicloud_dts_synchronization_job %s", d.Id())
+	}
+	jobs, err := dtsService.DescribeDtsJobsByInstanceId(instanceId, "SYNC")
+	if err != nil {
+		return "", WrapError(err)
+	}
+	// A bidirectional synchronization topology attaches a reverse job to the same instance, and
+	// DescribeDtsJobs may expose it either as a separate list entry or nested under ReverseJob.
+	candidates := make([]map[string]interface{}, 0, len(jobs))
+	seenJobIds := make(map[string]bool)
+	appendCandidate := func(item map[string]interface{}) {
+		jobId := fmt.Sprint(item["DtsJobId"])
+		if jobId == "" || jobId == "<nil>" || seenJobIds[jobId] {
+			return
+		}
+		seenJobIds[jobId] = true
+		candidates = append(candidates, item)
+	}
+	for _, job := range jobs {
+		appendCandidate(job)
+		if reverse, ok := job["ReverseJob"].(map[string]interface{}); ok {
+			appendCandidate(reverse)
+		}
+	}
+	if len(candidates) == 0 {
+		return "", fmt.Errorf("no DTS synchronization job was found under instance %s", instanceId)
+	}
+	if len(candidates) == 1 {
+		return fmt.Sprint(candidates[0]["DtsJobId"]), nil
+	}
+	direction := ""
+	if v, ok := d.GetOk("synchronization_direction"); ok {
+		direction = fmt.Sprint(v)
+	}
+	if direction != "" {
+		matched := make([]string, 0, len(candidates))
+		for _, job := range candidates {
+			// DescribeDtsJobs returns the direction of each listed job as DtsJobDirection.
+			jobDirection := fmt.Sprint(job["DtsJobDirection"])
+			if jobDirection == "<nil>" || jobDirection == "" {
+				jobDirection = fmt.Sprint(job["SynchronizationDirection"])
+			}
+			if jobDirection == direction {
+				matched = append(matched, fmt.Sprint(job["DtsJobId"]))
+			}
+		}
+		if len(matched) == 1 {
+			return matched[0], nil
+		}
+		if len(matched) == 0 {
+			return "", fmt.Errorf("no DTS synchronization job with synchronization direction %s was found under instance %s", direction, instanceId)
+		}
+		return "", fmt.Errorf("found multiple DTS synchronization jobs (%s) with synchronization direction %s under instance %s, cannot determine the valid job ID automatically", strings.Join(matched, ","), direction, instanceId)
+	}
+	jobIds := make([]string, 0, len(candidates))
+	for _, job := range candidates {
+		jobIds = append(jobIds, fmt.Sprint(job["DtsJobId"]))
+	}
+	return "", fmt.Errorf("found multiple DTS synchronization jobs (%s) under instance %s, set synchronization_direction to determine the valid job ID", strings.Join(jobIds, ","), instanceId)
 }
 
 func convertSourceEndpointEngineNameUppercaseResponse(source interface{}) interface{} {
