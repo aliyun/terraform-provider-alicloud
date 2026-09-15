@@ -29,15 +29,13 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"allow_auto_setup": {
-				Type:      schema.TypeInt,
-				Optional:  true,
-				Computed:  true,
-				Sensitive: true,
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"allow_buffer_count": {
-				Type:      schema.TypeInt,
-				Optional:  true,
-				Sensitive: true,
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"bundle_id": {
 				Type:     schema.TypeString,
@@ -75,6 +73,7 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"directory_type": {
 				Type:     schema.TypeString,
@@ -82,8 +81,14 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 			},
 			"end_user_ids": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// end_user_ids is an unordered collection and Read returns the users sorted by ID,
+					// so listing the same users in another order is not a diff.
+					oldValue, newValue := d.GetChange("end_user_ids")
+					return ecdDesktopGroupEndUserIdsEqual(oldValue, newValue)
+				},
 			},
 			"expired_time": {
 				Type:     schema.TypeString,
@@ -134,8 +139,10 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 				Computed: true,
 			},
 			"pay_type": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"PostPaid"}, false),
 			},
 			"policy_group_id": {
 				Type:     schema.TypeString,
@@ -150,9 +157,8 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 				Computed: true,
 			},
 			"scale_strategy_id": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"system_disk_category": {
 				Type:     schema.TypeString,
@@ -179,6 +185,9 @@ func resourceAliCloudEcdDesktopGroupCreate(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	request["ChargeType"] = "PostPaid"
+	if v, ok := d.GetOk("pay_type"); ok {
+		request["ChargeType"] = v
+	}
 
 	if v, ok := d.GetOkExists("allow_auto_setup"); ok {
 		request["AllowAutoSetup"] = v
@@ -591,4 +600,25 @@ func resourceAliCloudEcdDesktopGroupDelete(d *schema.ResourceData, meta interfac
 	}
 
 	return nil
+}
+
+// ecdDesktopGroupEndUserIdsEqual reports whether two end_user_ids values contain the same users, ignoring their order.
+func ecdDesktopGroupEndUserIdsEqual(oldValue, newValue interface{}) bool {
+	oldList := convertToInterfaceArray(oldValue)
+	newList := convertToInterfaceArray(newValue)
+	if len(oldList) != len(newList) {
+		return false
+	}
+	counts := make(map[string]int, len(oldList))
+	for _, item := range oldList {
+		counts[fmt.Sprint(item)]++
+	}
+	for _, item := range newList {
+		key := fmt.Sprint(item)
+		if counts[key] == 0 {
+			return false
+		}
+		counts[key]--
+	}
+	return true
 }

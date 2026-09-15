@@ -12,6 +12,7 @@ func TestAccAliCloudEcdDesktopGroupsDataSource_basic0(t *testing.T) {
 	rand := 10000 + acctest.RandIntRange(0, 89999)
 	resourceId := "data.alicloud_ecd_desktop_groups.default"
 	name := fmt.Sprintf("tf-testaccdesktopgroupds%d", rand)
+	testAccCleanupEcdSimpleOfficeSite(t, name)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceEcdDesktopGroupsConfig)
 
 	idsConf := dataSourceTestAccConfig{
