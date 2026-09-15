@@ -2,9 +2,8 @@
 subcategory: "Private Link"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_privatelink_service"
-sidebar_current: "docs-alicloud-datasource-privatelink-service"
 description: |-
-    Provides a datasource to open the Privatelink service automatically.
+  Provides a datasource to open the Privatelink service automatically.
 ---
 
 # alicloud_privatelink_service
@@ -17,8 +16,10 @@ For information about Privatelink and how to use it, see [What is Privatelink](h
 
 ## Example Usage
 
+Basic Usage
+
 ```terraform
-data "alicloud_privatelink_service" "open" {
+data "alicloud_privatelink_service" "default" {
   enable = "On"
 }
 ```
@@ -27,7 +28,7 @@ data "alicloud_privatelink_service" "open" {
 
 The following arguments are supported:
 
-* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`. Default to `Off`.
+* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Default value: `Off`. Valid values: `On` and `Off`.
 
 -> **NOTE:** Setting `enable = "On"` to open the Privatelink service that means you have read and agreed the [Privatelink Terms of Service](https://help.aliyun.com/document_detail/197619.html). The service can not closed once it is opened.
 
@@ -35,4 +36,4 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - The current service enable status.

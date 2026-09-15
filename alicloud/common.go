@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"math/rand"
 	"net"
 	"os"
 	"os/user"
@@ -1075,15 +1076,16 @@ func BuildStateConf(pending, target []string, timeout, delay time.Duration, f re
 	}
 }
 
+var incrementalWaitJitter = rand.Float64
+
 func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration) func() {
-	retryCount := 1
+	retryCount := 0
 	return func() {
-		var waitTime time.Duration
-		if retryCount == 1 {
-			waitTime = firstDuration
-		} else if retryCount > 1 {
-			waitTime += increaseDuration
+		upper := float64(firstDuration) + (math.Pow(2, float64(retryCount))-1)*float64(increaseDuration)
+		if upper > float64(20*time.Second) {
+			upper = float64(20 * time.Second)
 		}
+		waitTime := time.Duration(upper * incrementalWaitJitter())
 		time.Sleep(waitTime)
 		retryCount++
 	}

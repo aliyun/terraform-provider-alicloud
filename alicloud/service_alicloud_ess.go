@@ -40,8 +40,21 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	request.RegionId = s.client.RegionId
 	request.AlarmTaskId = id
 	request.MetricType = "system"
-	Alarms, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeAlarms(request)
+
+	var Alarms interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		Alarms, err = s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DescribeAlarms(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
 		return alarm, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -58,8 +71,21 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	AlarmsRequest.RegionId = s.client.RegionId
 	AlarmsRequest.AlarmTaskId = id
 	AlarmsRequest.MetricType = "custom"
-	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DescribeAlarms(AlarmsRequest)
+
+	var raw interface{}
+	wait = incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DescribeAlarms(AlarmsRequest)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
 		return alarm, WrapErrorf(err, DefaultErrorMsg, id, AlarmsRequest.GetActionName(), AlibabaCloudSdkGoERROR)

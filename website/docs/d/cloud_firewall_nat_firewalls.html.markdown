@@ -133,6 +133,8 @@ The following attributes are exported in addition to the arguments listed above:
     * `route_table_id` - The route table where the default route of the NAT gateway is located.
   * `proxy_id` - NAT firewall ID
   * `proxy_name` - NAT firewall name
+  * `region_no` - The region ID of the NAT firewall.
   * `strict_mode` - Whether strict mode is enabled1-Enable strict mode0-Disable strict mode
+  * `status` - The status of the NAT firewall.
   * `vpc_id` - The ID of the VPC instance.
   * `id` - The ID of the resource supplied above.
