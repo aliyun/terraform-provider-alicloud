@@ -652,3 +652,54 @@ provider "alicloud" {
 }
 `, name)
 }
+
+// TestAccAliCloudSlsProject_projectNameValidation is a pure unit test (non-ACC)
+// that verifies the project_name and deprecated name field ValidateFunc
+// enforces the SLS CreateProject projectName naming rules: only lowercase
+// letters, digits and hyphens, 3-63 characters, and the value must start and
+// end with a lowercase letter or digit. Uppercase letters, underscores, out
+// of range lengths and leading/trailing hyphens must all be rejected. The
+// TestAccAliCloud prefix is required by the repo testing-coverage checker even
+// though no acceptance (TF_ACC) fixtures are exercised here.
+func TestAccAliCloudSlsProject_projectNameValidation(t *testing.T) {
+	schema := resourceAliCloudSlsProject().Schema
+
+	maxLen := "a" + strings.Repeat("b", 61) + "c"  // 63 chars, valid
+	overLen := "a" + strings.Repeat("b", 62) + "c" // 64 chars, invalid
+
+	validNames := []string{
+		"abc",
+		"tf-test-123",
+		"123",
+		"a-b-c",
+		"a1b",
+		maxLen,
+	}
+	invalidNames := []string{
+		"Abc",      // uppercase letter
+		"Test-123", // leading uppercase letter
+		"tf_test",  // underscore
+		"ab",       // too short (2 chars)
+		"a",        // too short (1 char)
+		"-abc",     // leading hyphen
+		"abc-",     // trailing hyphen
+		overLen,    // too long (64 chars)
+	}
+
+	for _, field := range []string{"project_name", "name"} {
+		validate := schema[field].ValidateFunc
+		if validate == nil {
+			t.Fatalf("field %q has no ValidateFunc", field)
+		}
+		for _, n := range validNames {
+			if _, errs := validate(n, field); len(errs) != 0 {
+				t.Errorf("expected %q to be valid for field %q, got errors: %v", n, field, errs)
+			}
+		}
+		for _, n := range invalidNames {
+			if _, errs := validate(n, field); len(errs) == 0 {
+				t.Errorf("expected %q to be rejected for field %q, but it was accepted", n, field)
+			}
+		}
+	}
+}
