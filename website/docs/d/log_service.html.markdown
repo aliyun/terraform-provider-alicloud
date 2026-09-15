@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_log_service"
 sidebar_current: "docs-alicloud-datasource-log-service"
 description: |-
-    Provides a datasource to open the Log service automatically.
+    Provides a datasource for Log service.
 ---
 
 # alicloud_log_service
 
-Using this data source can enable Log service automatically. If the service has been enabled, it will return `Opened`.
+Log service is enabled automatically when a project is created. This data source is retained for compatibility and no longer calls service APIs.
 
 For information about Log service and how to use it, see [What is Log Service](https://www.alibabacloud.com/help/product/28958.htm).
 
@@ -27,12 +27,10 @@ data "alicloud_log_service" "open" {
 
 The following arguments are supported:
 
-* `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: "On" or "Off". Default to "Off".
-
--> **NOTE:** Setting `enable = "On"` to open the Log service that means you have read and agreed the [Log Terms of Service](https://help.aliyun.com/document_detail/53476.html). The service can not closed once it is opened.
+* `enable` - (Optional) Setting the value to `On` returns `Opened`. Setting it to `Off` returns an empty status. Valid values: "On" or "Off". Default to "Off".
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `status` - The current service enable status. 
+* `status` - Returns `Opened` when `enable` is `On`, or an empty string otherwise. This is a compatibility value, not the actual service status.
