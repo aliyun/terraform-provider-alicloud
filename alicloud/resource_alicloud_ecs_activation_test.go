@@ -138,6 +138,7 @@ func TestAccAliCloudECSActivation_basic0(t *testing.T) {
 					"description":           "${var.name}",
 					"time_to_live_in_hours": "4",
 					"ip_address_range":      "0.0.0.0/0",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -150,9 +151,10 @@ func TestAccAliCloudECSActivation_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"activation_code"},
 			},
 		},
 	})
@@ -161,9 +163,11 @@ func TestAccAliCloudECSActivation_basic0(t *testing.T) {
 var AlicloudECSActivationMap0 = map[string]string{}
 
 func AlicloudECSActivationBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
+}
+data "alicloud_resource_manager_resource_groups" "default" {
 }
 `, name)
 }
@@ -199,9 +203,20 @@ func TestAccAliCloudECSActivation_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"disabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disabled": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"activation_code"},
 			},
 		},
 	})
@@ -219,6 +234,7 @@ func TestUnitAccAlicloudEcsActivation(t *testing.T) {
 		"description":           "CreateEcsActivationValue",
 		"time_to_live_in_hours": 4,
 		"ip_address_range":      "CreateEcsActivationValue",
+		"resource_group_id":     "rg-test",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -250,11 +266,13 @@ func TestUnitAccAlicloudEcsActivation(t *testing.T) {
 				"TimeToLiveInHours": "4",
 				"Disabled":          "false",
 				"IpAddressRange":    "CreateEcsActivationValue",
+				"ResourceGroupId":   "rg-test",
 			},
 		},
 	}
 	CreateMockResponse := map[string]interface{}{
-		"ActivationId": "EcsActivationId",
+		"ActivationId":   "EcsActivationId",
+		"ActivationCode": "test-activation-code",
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
@@ -356,6 +374,44 @@ func TestUnitAccAlicloudEcsActivation(t *testing.T) {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Update
+	attributesDiff = map[string]interface{}{
+		"disabled": true,
+	}
+	diff, err = newInstanceDiff("alicloud_ecs_activation", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_ecs_activation"].Schema).Data(dInit.State(), diff)
+	ReadMockResponse["Disabled"] = "true"
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DisableActivation" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudEcsActivationUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "nil":
 			assert.Nil(t, err)
 		}
 	}

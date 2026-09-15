@@ -70,6 +70,10 @@ func dataSourceAlicloudEcsActivations() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"instance_count": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -166,6 +170,7 @@ func dataSourceAlicloudEcsActivationsRead(d *schema.ResourceData, meta interface
 			"deregistered_count":    formatInt(object["DeregisteredCount"]),
 			"description":           object["Description"],
 			"disabled":              object["Disabled"],
+			"resource_group_id":     object["ResourceGroupId"],
 			"instance_count":        formatInt(object["InstanceCount"]),
 			"instance_name":         object["InstanceName"],
 			"ip_address_range":      object["IpAddressRange"],
