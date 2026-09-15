@@ -2964,7 +2964,6 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	}
 
 	if d.HasChange("enable_network_encryption") {
-		d.SetPartial("enable_network_encryption")
 
 		if v, ok := d.GetOkExists("enable_network_encryption"); ok {
 			request["EnableNetworkEncryption"] = v

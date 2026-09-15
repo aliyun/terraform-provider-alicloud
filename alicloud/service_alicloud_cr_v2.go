@@ -842,14 +842,14 @@ func (s *CrServiceV2) DescribeCrInstanceCustomizedDomain(id string) (object map[
 	var response map[string]interface{}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -865,11 +865,11 @@ func (s *CrServiceV2) DescribeCrInstanceCustomizedDomain(id string) (object map[
 	return response, nil
 }
 
-func (s *CrServiceV2) CrInstanceCustomizedDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrInstanceCustomizedDomainStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.CrInstanceCustomizedDomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeCrInstanceCustomizedDomain)
 }
 
-func (s *CrServiceV2) CrInstanceCustomizedDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *CrServiceV2) CrInstanceCustomizedDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

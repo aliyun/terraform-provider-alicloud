@@ -577,7 +577,7 @@ func TestUnitAlicloudCrEndpointTypeConvert(t *testing.T) {
 // fail fast with an actionable message naming the ID format instead of
 // forwarding the segment to the API and surfacing a raw InvalidEndpointType.
 func TestUnitAlicloudCREndpointAclPolicyReadInvalidId(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cr_endpoint_acl_policy"].Schema).Data(nil, nil)
 	d.SetId("cri-abc123:10.0.0.0/8:internet")
 	err := resourceAlicloudCrEndpointAclPolicyRead(d, nil)

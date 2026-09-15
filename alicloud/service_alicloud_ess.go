@@ -43,16 +43,16 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 
 	var Alarms interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		Alarms, err = s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DescribeAlarms(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -74,16 +74,16 @@ func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 
 	var raw interface{}
 	wait = incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DescribeAlarms(AlarmsRequest)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
