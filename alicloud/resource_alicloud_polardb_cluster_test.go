@@ -26,6 +26,31 @@ func init() {
 	})
 }
 
+func TestUnitPolarDBParameterModificationPendingStates(t *testing.T) {
+	states := []string{"Rebooting", "Running"}
+	nextState := 0
+	stateConf := BuildStateConf(
+		polarDBParameterModificationPendingStates(),
+		[]string{"Running"},
+		time.Second,
+		0,
+		func() (interface{}, string, error) {
+			state := states[nextState]
+			nextState++
+			return state, state, nil
+		},
+	)
+	stateConf.PollInterval = time.Millisecond
+
+	result, err := stateConf.WaitForState()
+	if err != nil {
+		t.Fatalf("expected Rebooting to be treated as pending: %s", err)
+	}
+	if result != "Running" {
+		t.Fatalf("expected waiter to finish in Running, got %v", result)
+	}
+}
+
 func testSweepPolarDBClusters(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {

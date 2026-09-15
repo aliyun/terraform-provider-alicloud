@@ -671,7 +671,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 		// wait cluster status back to Running before continuing with other operations,
 		// since applying parameters may restart the cluster
-		stateConf := BuildStateConf([]string{"ConfigSwitching", "Maintaining"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		stateConf := BuildStateConf(polarDBParameterModificationPendingStates(), []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -1666,6 +1666,10 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 
 	d.Partial(false)
 	return resourceAlicloudPolarDBClusterRead(d, meta)
+}
+
+func polarDBParameterModificationPendingStates() []string {
+	return []string{"ConfigSwitching", "Maintaining", "Rebooting"}
 }
 
 func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}) error {
