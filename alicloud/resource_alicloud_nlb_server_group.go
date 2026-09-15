@@ -148,7 +148,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"TCP", "UDP", "TCPSSL"}, false),
+				ValidateFunc: StringInSlice([]string{"TCP", "UDP", "TCP_UDP"}, false),
 			},
 			"region_id": {
 				Type:     schema.TypeString,
