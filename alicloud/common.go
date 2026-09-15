@@ -712,7 +712,16 @@ func (a *Invoker) Run(f func() error) error {
 			catcher.RetryCount--
 
 			if catcher.RetryCount <= 0 {
-				return fmt.Errorf("Retry timeout and got an error: %#v.", err)
+				// Preserve the original error in ComplexError.Cause so callers can
+				// still match it via IsExpectedErrors. The previous fmt.Errorf("...%#v")
+				// flattened the error into a plain *errors.errorString string, which
+				// broke type-based matching — e.g. DescribeDBAccountPrivilege's
+				// dbInstanceGoneStatusCodes gone-check (PR #10530) silently never fired
+				// on a sustained recycle-bin 403, leaving the privilege refresh
+				// hard-failing. WrapErrorf sets Cause = err; IsExpectedErrors recurses
+				// Cause, NotFoundError checks Err (which stays non-ResourceNotfound), so
+				// the exhaustion is now matchable as expected-without being NotFound.
+				return WrapErrorf(err, "Retry timeout and got an error")
 			} else {
 				time.Sleep(time.Duration(catcher.RetryWaitSeconds) * time.Second)
 				return a.Run(f)

@@ -1,12 +1,21 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudRdsAccount_basic(t *testing.T) {
@@ -815,3 +824,165 @@ resource "alicloud_db_instance" "default" {
 }
 
 // Test Rds Account. <<< Resource test cases, automatically generated.
+
+// rdsAccountTestClient stands up a credential-free AliyunClient whose RDS
+// transport is pointed at an in-process httptest server, mirroring the
+// ecs-snapshot unit-test construction. This avoids gomonkey binary patching
+// (which the macOS arm64 kernel refuses) and runs under a plain `go test`.
+func rdsAccountTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		handler(w, r)
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("rds", endpoint)
+	return client
+}
+
+// writeGone403 emits the terminal 403 the RDS API returns for a Subscription
+// instance refunded / unsubscribed out of band (now retained in the recycle
+// bin): the instance object still exists, so the API answers 403
+// OperationDenied(Read)DBInstanceStatus instead of 404. The message carries no
+// code substring so IsExpectedErrors' message matching cannot produce false
+// positives.
+func writeGone403(t *testing.T, w http.ResponseWriter) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden)
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
+		"Code":    "OperationDenied.DBInstanceStatus",
+		"Message": "the request was not permitted in the current state",
+	}); err != nil {
+		t.Error(err)
+	}
+}
+
+// rdsAccountResourceData returns a schema.ResourceData for alicloud_rds_account
+// with an instance:account id set, ready for Read/Delete exercises.
+func rdsAccountResourceData(t *testing.T) *schema.ResourceData {
+	t.Helper()
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, err := schema.InternalMap(p["alicloud_rds_account"].Schema).Data(nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.SetId("rm-test:test-account")
+	return d
+}
+
+// TestUnitRdsAccountReadParentGone verifies the Read fix: when
+// the parent instance is in the recycle-bin terminal state, DescribeAccounts
+// answers 403 and DescribeRdsAccount must (after confirming via
+// DescribeDBInstance that the parent is gone) surface that as NotFound so Read
+// clears state and returns nil instead of hard-failing refresh.
+func TestUnitRdsAccountReadParentGone(t *testing.T) {
+	client := rdsAccountTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Form.Get("Action") {
+		case "DescribeAccounts", "DescribeDBInstanceAttribute":
+			writeGone403(t, w)
+			return
+		}
+		t.Errorf("unexpected RDS action in Read: %s", r.Form.Get("Action"))
+		w.WriteHeader(http.StatusBadRequest)
+	})
+	d := rdsAccountResourceData(t)
+
+	err := resourceAliCloudRdsAccountRead(d, client)
+	assert.Nil(t, err, "Read must not hard-fail when the parent instance is gone")
+	assert.Equal(t, "", d.Id(), "account state must be cleared when the parent instance is gone")
+}
+
+// TestUnitRdsAccountDeleteParentGone verifies the Delete pre-check: when
+// DescribeDBInstance already reports the parent as gone (403 ->
+// NotFound), Delete returns nil without ever calling DeleteAccount, so destroy
+// is idempotent instead of calling DeleteAccount against a dead instance and
+// retrying the 403 until the delete timeout.
+func TestUnitRdsAccountDeleteParentGone(t *testing.T) {
+	var deleteAccountCalls int32
+	client := rdsAccountTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Form.Get("Action") {
+		case "DescribeDBInstanceAttribute":
+			writeGone403(t, w)
+			return
+		case "DeleteAccount":
+			atomic.AddInt32(&deleteAccountCalls, 1)
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{})
+			return
+		}
+		t.Errorf("unexpected RDS action in Delete: %s", r.Form.Get("Action"))
+		w.WriteHeader(http.StatusBadRequest)
+	})
+	d := rdsAccountResourceData(t)
+
+	err := resourceAliCloudRdsAccountDelete(d, client)
+	assert.Nil(t, err, "Delete must be idempotent when the parent instance is gone")
+	assert.Equal(t, int32(0), atomic.LoadInt32(&deleteAccountCalls),
+		"DeleteAccount must not be called when the parent instance is already gone")
+}
+
+// TestUnitRdsAccountDeleteDeleteAccountTerminal403 verifies the Delete 403
+// fix: when the pre-check sees a live instance (Running) but
+// DeleteAccount then answers the terminal 403, Delete must confirm via
+// DescribeDBInstance that the parent is gone and finish idempotently (skip the
+// post-delete state wait) instead of blind-retrying the 403 until the delete
+// timeout.
+func TestUnitRdsAccountDeleteDeleteAccountTerminal403(t *testing.T) {
+	var describeDBInstanceCalls int32
+	client := rdsAccountTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Form.Get("Action") {
+		case "DescribeDBInstanceAttribute":
+			n := atomic.AddInt32(&describeDBInstanceCalls, 1)
+			if n == 1 {
+				// 1st call: pre-check sees a live instance so the delete proceeds.
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Items": map[string]interface{}{
+						"DBInstanceAttribute": []map[string]interface{}{
+							{"DBInstanceStatus": "Running", "DBInstanceId": "rm-test"},
+						},
+					},
+				})
+				return
+			}
+			// Subsequent calls (the follow-up on the DeleteAccount 403) report the
+			// terminal gone 403, which DescribeDBInstance maps to NotFound.
+			writeGone403(t, w)
+			return
+		case "DeleteAccount":
+			writeGone403(t, w)
+			return
+		case "DescribeAccounts":
+			writeGone403(t, w)
+			return
+		}
+		t.Errorf("unexpected RDS action in Delete: %s", r.Form.Get("Action"))
+		w.WriteHeader(http.StatusBadRequest)
+	})
+	d := rdsAccountResourceData(t)
+
+	err := resourceAliCloudRdsAccountDelete(d, client)
+	assert.Nil(t, err, "Delete must finish idempotently when DeleteAccount returns the terminal 403")
+	assert.Equal(t, int32(2), atomic.LoadInt32(&describeDBInstanceCalls),
+		"the follow-up DescribeDBInstance must run exactly once after the DeleteAccount 403 (pre-check + follow-up)")
+}

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRdsDBAccountPrivilege_mysql(t *testing.T) {
+func TestAccAliCloudRdsDBAccountPrivilege_mysql(t *testing.T) {
 
 	var v map[string]interface{}
 	name := "tf-testAccDBAccountPrivilege_mysql"
@@ -88,7 +88,7 @@ func TestAccAlicloudRdsDBAccountPrivilege_mysql(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsDBAccountPrivilege_PostgreSql(t *testing.T) {
+func TestAccAliCloudRdsDBAccountPrivilege_PostgreSql(t *testing.T) {
 
 	var v map[string]interface{}
 	name := "tf-testAccDBAccountPrivilege_PostgreSql"
@@ -154,7 +154,7 @@ func TestAccAlicloudRdsDBAccountPrivilege_PostgreSql(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsDBAccountPrivilege_SQLServer(t *testing.T) {
+func TestAccAliCloudRdsDBAccountPrivilege_SQLServer(t *testing.T) {
 
 	var v map[string]interface{}
 	rand := acctest.RandIntRange(10000, 999999)

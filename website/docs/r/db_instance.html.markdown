@@ -938,3 +938,19 @@ RDS instance can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_db_instance.example rm-abc12345678
 ```
+
+## Out-of-band unsubscribe (Subscription instances)
+
+Subscription (pay-by-month/year) RDS instances unsubscribed from the console do
+not disappear immediately: the instance passes through refund -> lock -> release
+and is retained in the recycle bin for the retention window. While it sits in the
+recycle bin the instance object still exists and the RDS API returns
+`OperationDenied.DBInstanceStatus` (HTTP 403) rather than a 404 Not Found.
+
+On the next `terraform refresh` or `terraform destroy`, the provider treats this
+403 as a terminal "instance gone" signal — equal to Not Found — and removes the
+`alicloud_db_instance` and its child resources (`alicloud_db_database`,
+`alicloud_db_account_privilege`) from state, so the operation completes
+idempotently instead of failing on the 403. If you intentionally unsubscribe a
+Subscription instance out of band, run `terraform state rm` right after to keep
+state explicit.

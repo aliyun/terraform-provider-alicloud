@@ -227,7 +227,7 @@ func resourceAliCloudRdsAccountRead(d *schema.ResourceData, meta interface{}) er
 	rdsService := RdsService{client}
 	object, err := rdsService.DescribeRdsAccount(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if isParentGone(err) {
 			log.Printf("[DEBUG] Resource alicloud_rds_account rdsService.DescribeRdsAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -489,6 +489,14 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	rdsService := RdsService{client}
+	// If the parent instance is gone (refunded / unsubscribed out of band and now
+	// in the recycle bin — surfaces as a 403 mapped to NotFound by DescribeDBInstance,
+	// or a real 404), the account no longer exists; return nil so destroy is
+	// idempotent instead of calling DeleteAccount against a dead instance and
+	// retrying the 403 until the delete timeout.
+	if _, e := rdsService.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+		return nil
+	}
 	action := "DeleteAccount"
 	var response map[string]interface{}
 	request := map[string]interface{}{
@@ -497,10 +505,26 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 		"SourceIp":     client.SourceIp,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
+	instanceGone := false
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBClusterStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBStatus", "AccountActionForbidden", "IncorrectDBInstanceState"}) {
+			// Terminal 403 (parent instance in recycle bin / refunded): confirm via
+			// DescribeDBInstance (maps the same codes to NotFound) that the parent
+			// is gone, then finish delete idempotently instead of retrying an
+			// unmanageable instance until the delete timeout. If the parent is not
+			// gone the 403 is a transient instance-status lock and stays retryable.
+			// Codes mirror dbInstanceGoneStatusCodes; inlined as literals to satisfy
+			// the retry-code breaking-change check (it reads string literals, not vars).
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) {
+				if _, e := rdsService.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+					instanceGone = true
+					return nil
+				}
+				wait()
+				return resource.RetryableError(err)
+			}
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "AccountActionForbidden", "IncorrectDBInstanceState"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -537,8 +561,16 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
+	if instanceGone {
+		return nil
+	}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	// Skip the post-delete account-status wait when the parent instance is gone:
+	// there is no account status to converge against a dead instance.
+	if _, e := rdsService.DescribeDBInstance(parts[0]); e != nil && NotFoundError(e) {
+		return nil
 	}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, rdsService.RdsAccountStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {

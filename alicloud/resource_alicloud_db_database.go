@@ -141,10 +141,30 @@ func resourceAliCloudRdsDatabaseCreate(d *schema.ResourceData, meta interface{})
 func resourceAliCloudRdsDatabaseRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsServiceV2 := RdsServiceV2{client}
+	rdsService := RdsService{client}
 
 	objectRaw, err := rdsServiceV2.DescribeRdsDatabase(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		// NotFound => the database is gone. A 403 OperationDenied(Read)DBInstanceStatus
+		// means the parent instance is in a terminal non-permissible state (refunded /
+		// unsubscribed out of band and now in the recycle bin). For that 403, confirm
+		// via DescribeDBInstance (which maps the same codes to NotFound) that the
+		// parent is actually gone before dropping state — so refresh stops hard-failing
+		// without mistakenly clearing a live-but-transiently-locked instance.
+		if !d.IsNewResource() && (isParentGone(err) || IsExpectedErrors(err, dbInstanceGoneStatusCodes)) {
+			if IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+				// A gone 403 means the parent is (likely) in the recycle bin, but
+				// confirm via the choke point before dropping state so a live-but-
+				// transiently-locked instance is not cleared by mistake. If the id
+				// cannot be parsed, surface that instead of silently dropping state.
+				parts, perr := ParseResourceId(d.Id(), 2)
+				if perr != nil {
+					return WrapError(perr)
+				}
+				if _, e := rdsService.DescribeDBInstance(parts[0]); e == nil || !isParentGone(e) {
+					return WrapError(err)
+				}
+			}
 			log.Printf("[DEBUG] Resource alicloud_db_database DescribeRdsDatabase Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -227,18 +247,60 @@ func resourceAliCloudRdsDatabaseDelete(d *schema.ResourceData, meta interface{})
 		"DBName":       parts[1],
 		"SourceIp":     client.SourceIp,
 	}
-	// wait instance status is running before deleting database
-	if err := rdsService.WaitForDBInstance(parts[0], Running, 1800); err != nil {
-		return WrapError(err)
-	}
-	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+	// If the instance has already been removed outside of Terraform (console /
+	// CLI, or orphaned via `terraform state rm` and then deleted) or is being
+	// deleted, the database no longer exists and DeleteDatabase cannot be
+	// invoked. Return nil here so refresh / destroy does not block for up to
+	// 30 minutes waiting for the instance to reach Running.
+	instance, err := rdsService.DescribeDBInstance(parts[0])
 	if err != nil {
-		if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidDBName.NotFound"}) {
+		if isParentGone(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(action, response, request)
+	// The instance is describable. If it is already in a terminal deleting flow
+	// the database no longer exists and DeleteDatabase cannot be invoked — return
+	// nil so destroy is idempotent. (The recycle-bin / refunded state surfaces as
+	// a 403 above, now mapped to NotFound and already returned nil.)
+	if status := fmt.Sprint(instance["DBInstanceStatus"]); status == "Deleting" {
+		return nil
+	}
+	// The instance exists and is not in a terminal state; wait for it to reach
+	// Running so DeleteDatabase is permitted, then call it with retry on the
+	// transient instance-status race (consistent with alicloud_db_instance).
+	if err := rdsService.WaitForDBInstance(parts[0], Running, DefaultTimeoutMedium); err != nil {
+		// The instance went terminal (recycle bin / refunded) during the wait for
+		// Running — the database no longer exists, finish delete idempotently.
+		if isParentGone(err) {
+			return nil
+		}
+		return WrapError(err)
+	}
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		if err != nil {
+			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidDBName.NotFound"}) {
+				return nil
+			}
+			// Terminal 403 (parent instance in recycle bin / refunded): confirm via
+			// DescribeDBInstance (the choke point that maps the same codes to NotFound)
+			// that the parent is gone, then finish delete idempotently instead of
+			// blind-retrying an unmanageable instance until the delete timeout. Mirrors
+			// RevokeAccountPrivilege's mid-loop gone-check.
+			if IsExpectedErrors(err, dbInstanceGoneStatusCodes) {
+				if _, e := rdsService.DescribeDBInstance(parts[0]); e != nil && isParentGone(e) {
+					return nil
+				}
+			}
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
