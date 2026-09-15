@@ -1,0 +1,33 @@
+[
+  {
+    "resource": "alicloud_ram_group_membership",
+    "path": "user_names",
+    "reason": "Group membership is independent of user order; TypeSet preserves this contract.",
+    "config": {"group_name": "collection-order-check"},
+    "members": ["alice", "bob", "carol", "dave"]
+  },
+  {
+    "resource": "alicloud_ecd_desktop_group",
+    "path": "end_user_ids",
+    "order": "unordered",
+    "reason": "User assignments are a membership relation. DescribeDesktopGroupDescribeUsersInGroup sorts the Read result; TypeList currently produces a persistent reorder diff.",
+    "config": {
+      "bundle_id": "bundle-example",
+      "office_site_id": "office-example",
+      "policy_group_id": "policy-example"
+    },
+    "members": ["alice", "bob", "carol", "dave"]
+  },
+  {
+    "resource": "alicloud_ecd_desktop",
+    "path": "end_user_ids",
+    "order": "unordered",
+    "reason": "Assigned users form a membership relation. The existing ForceNew TypeList treats a different returned order as replacement.",
+    "config": {
+      "bundle_id": "bundle-example",
+      "office_site_id": "office-example",
+      "policy_group_id": "policy-example"
+    },
+    "members": ["alice", "bob", "carol", "dave"]
+  }
+]
