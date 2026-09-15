@@ -8,7 +8,6 @@
 
 ENHANCEMENTS:
 
-- resource/alicloud_oos_parameter: support the write-only attribute `value_wo` with `value_wo_version` as its change trigger, so the parameter value can be managed without being persisted in the state or plan.
 - resource/alicloud_realtime_compute_vvp_instance: support auto_renew for subscription instance. ([#10277](https://github.com/aliyun/terraform-provider-alicloud/issues/10277))
 - resource/alicloud_ecs_snapshot: add configurable wait_until policy. ([#10425](https://github.com/aliyun/terraform-provider-alicloud/issues/10425))
 - alicloud: deprecate tags schema helpers without Elem and add WithElements variants. ([#10463](https://github.com/aliyun/terraform-provider-alicloud/issues/10463))

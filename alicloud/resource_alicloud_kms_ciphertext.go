@@ -6,6 +6,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -22,10 +23,25 @@ func resourceAlicloudKmsCiphertext() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"plaintext": {
-				Type:      schema.TypeString,
-				Required:  true,
-				ForceNew:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				Sensitive:    true,
+				ExactlyOneOf: []string{"plaintext", "plaintext_wo"},
+			},
+			"plaintext_wo": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				WriteOnly:    true,
+				ExactlyOneOf: []string{"plaintext", "plaintext_wo"},
+				RequiredWith: []string{"plaintext_wo_version"},
+			},
+			"plaintext_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				RequiredWith: []string{"plaintext_wo"},
 			},
 			"key_id": {
 				Type:     schema.TypeString,
@@ -58,6 +74,11 @@ func resourceAlicloudKmsCiphertextCreate(d *schema.ResourceData, meta interface{
 	action := "Encrypt"
 	request := make(map[string]interface{})
 	request["Plaintext"] = d.Get("plaintext")
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("plaintext_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["Plaintext"] = woValue.AsString()
+	}
 	request["KeyId"] = d.Get("key_id")
 	request["RegionId"] = client.RegionId
 

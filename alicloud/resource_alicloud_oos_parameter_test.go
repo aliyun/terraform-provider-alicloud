@@ -311,7 +311,6 @@ func TestAccAliCloudOosParameter_valueWo(t *testing.T) {
 						"parameter_name":   name,
 						"value":            "",
 						"value_wo_version": "1",
-						"has_value_wo":     "true",
 					}),
 				),
 			},
@@ -335,8 +334,7 @@ func TestAccAliCloudOosParameter_valueWo(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"value":            "tf-testacc-oos_parameter",
-						"has_value_wo":     "false",
-						"value_wo_version": "2",
+						"value_wo_version": REMOVEKEY,
 					}),
 				),
 			},

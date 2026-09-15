@@ -731,18 +731,18 @@ func buildClientToken(action string) string {
 	return token
 }
 
-func getWriteOnlyStringValue(d *schema.ResourceData, path cty.Path) (string, error) {
+func getWriteOnlyValue(d *schema.ResourceData, path cty.Path, typ cty.Type) (cty.Value, error) {
 	if d.GetRawConfig().IsNull() {
-		return "", nil
+		return cty.NullVal(typ), nil
 	}
 	value, diags := d.GetRawConfigAt(path)
 	if diags.HasError() {
-		return "", WrapError(fmt.Errorf("error retrieving write-only argument: %s", diags[0].Summary))
+		return cty.NilVal, WrapError(fmt.Errorf("error retrieving write-only argument: %s", diags[0].Summary))
 	}
-	if value.IsNull() || !value.IsKnown() || !value.Type().Equals(cty.String) {
-		return "", nil
+	if !value.Type().Equals(typ) {
+		return cty.NilVal, WrapError(fmt.Errorf("error retrieving write-only argument %s: unexpected type %s, want %s", path, value.Type().FriendlyName(), typ.FriendlyName()))
 	}
-	return value.AsString(), nil
+	return value, nil
 }
 
 func getNextpageNumber(number requests.Integer) (requests.Integer, error) {

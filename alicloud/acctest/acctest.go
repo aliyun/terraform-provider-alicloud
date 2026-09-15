@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 )
 
+var Provider = alicloud.Provider()
+
 // ProtoV5ProviderFactories serves the real muxed provider — the SDK v2 half and the
 // framework half behind one server — under the name given, defaulting to "alicloud".
 //
@@ -30,7 +32,7 @@ func ProtoV5ProviderFactories(names ...string) map[string]func() (tfprotov5.Prov
 	factories := make(map[string]func() (tfprotov5.ProviderServer, error), len(names))
 	for _, name := range names {
 		factories[name] = func() (tfprotov5.ProviderServer, error) {
-			serverFactory, err := provider.ProtoV5ProviderServerFactory(context.Background(), alicloud.Provider())
+			serverFactory, err := provider.ProtoV5ProviderServerFactory(context.Background(), Provider)
 			if err != nil {
 				return nil, err
 			}

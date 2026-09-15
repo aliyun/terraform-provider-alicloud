@@ -1,3 +1,10 @@
+## 2.0.0-beta5 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_oos_parameter: support the write-only attribute `value_wo` with `value_wo_version` as its change trigger, so the parameter value can be managed without being persisted in the state or plan.
+- resource/alicloud_kms_ciphertext: support the write-only attribute `plaintext_wo` with `plaintext_wo_version` as its change trigger, so the plaintext can be managed without being persisted in the state or plan.
+
 ## 2.0.0-beta4 (August 27, 2026)
 
 This beta rolls up every change merged from the 1.x line since v2.0.0-beta3 — see the `1.290.0` section of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only changes below.
