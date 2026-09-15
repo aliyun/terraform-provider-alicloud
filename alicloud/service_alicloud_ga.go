@@ -1802,3 +1802,56 @@ func (s *GaService) SetResourceTags(d *schema.ResourceData, resourceType string)
 	}
 	return nil
 }
+
+func (s *GaService) DescribeGaServiceExtension(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "GetServiceExtension"
+	request := map[string]interface{}{
+		"RegionId":           s.client.RegionId,
+		"ServiceExtensionId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.ServiceExtension"}) {
+			return object, WrapErrorf(NotFoundErr("Ga:ServiceExtension", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *GaService) GaServiceExtensionStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGaServiceExtension(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		return object, fmt.Sprint(object["State"]), nil
+	}
+}
