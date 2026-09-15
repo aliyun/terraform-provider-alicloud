@@ -2,15 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"log"
+	"time"
 )
 
 func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
@@ -22,7 +21,6 @@ func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"total_target_capacity": {
 				Type:     schema.TypeString,
@@ -30,7 +28,7 @@ func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
 			},
 			"launch_template_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 			"auto_provisioning_group_name": {
@@ -161,19 +159,312 @@ func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
 					},
 				},
 			},
+			"launch_configuration": {
+				Optional: true,
+				ForceNew: true,
+				Type:     schema.TypeList,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"image_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"image_family": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"instance_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"instance_description": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"host_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"host_names": {
+							Type:     schema.TypeList,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Optional: true,
+						},
+						"credit_specification": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"deployment_set_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"auto_release_time": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"io_optimized": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"security_group_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"security_group_ids": {
+							Type:     schema.TypeList,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Optional: true,
+						},
+						"security_enhancement_strategy": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"internet_max_bandwidth_in": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"internet_max_bandwidth_out": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"internet_charge_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"password": {
+							Type:      schema.TypeString,
+							Optional:  true,
+							ForceNew:  true,
+							Sensitive: true,
+						},
+						"password_inherit": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"key_pair_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"ram_role_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"user_data": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"system_disk_category": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"system_disk_size": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"system_disk_performance_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"system_disk_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"system_disk_description": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"system_disk": {
+							Type:     schema.TypeList,
+							MaxItems: 1,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"encrypted": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"kms_key_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"encrypt_algorithm": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"provisioned_iops": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"bursting_enabled": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"data_disk": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"category": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"disk_name": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"size": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"device": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"snapshot_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"description": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"delete_with_instance": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"encrypted": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"kms_key_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"encrypt_algorithm": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"performance_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"provisioned_iops": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"bursting_enabled": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"network_interface": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"security_group_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"security_group_ids": {
+										Type:     schema.TypeList,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+										Optional: true,
+									},
+									"instance_type": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"tag": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"key": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"value": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"arn": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"rolearn": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"role_type": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"assume_role_for": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"period": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"period_unit": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"auto_renew": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"auto_renew_period": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"additional_info": {
+							Type:     schema.TypeList,
+							MaxItems: 1,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"pvd_config": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
-
 func resourceAlicloudAutoProvisioningGroupCreate(d *schema.ResourceData, meta interface{}) error {
-
 	request, err := buildAlicloudAutoProvisioningGroupArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
 	}
-
 	client := meta.(*connectivity.AliyunClient)
-
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.CreateAutoProvisioningGroup(request)
@@ -188,15 +479,11 @@ func resourceAlicloudAutoProvisioningGroupCreate(d *schema.ResourceData, meta in
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_auto_provisioning_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
 	return resourceAlicloudAutoProvisioningGroupRead(d, meta)
 }
-
 func resourceAlicloudAutoProvisioningGroupRead(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-
 	object, err := ecsService.DescribeAutoProvisioningGroup(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -206,7 +493,6 @@ func resourceAlicloudAutoProvisioningGroupRead(d *schema.ResourceData, meta inte
 		}
 		return WrapError(err)
 	}
-
 	d.Set("auto_provisioning_group_name", object.AutoProvisioningGroupName)
 	d.Set("launch_template_id", object.LaunchTemplateId)
 	d.Set("auto_provisioning_group_type", object.AutoProvisioningGroupType)
@@ -240,86 +526,68 @@ func resourceAlicloudAutoProvisioningGroupRead(d *schema.ResourceData, meta inte
 	}
 	launch_template_config = append(launch_template_config, para)
 	d.Set("launch_template_config", launch_template_config)
-
 	return nil
 }
-
 func resourceAlicloudAutoProvisioningGroupUpdate(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
 	request := ecs.CreateModifyAutoProvisioningGroupRequest()
 	request.RegionId = client.RegionId
 	request.AutoProvisioningGroupId = d.Id()
-
 	if d.HasChange("excess_capacity_termination_policy") {
 		if v, ok := d.GetOk("excess_capacity_termination_policy"); ok {
 			request.ExcessCapacityTerminationPolicy = v.(string)
 		}
 	}
-
 	if d.HasChange("default_target_capacity_type") {
 		if v, ok := d.GetOk("default_target_capacity_type"); ok {
 			request.DefaultTargetCapacityType = v.(string)
 		}
 	}
-
 	if d.HasChange("terminate_instances_with_expiration") {
 		request.TerminateInstancesWithExpiration = requests.NewBoolean(d.Get("terminate_instances_with_expiration").(bool))
 	}
-
 	if d.HasChange("max_spot_price") {
 		request.MaxSpotPrice = requests.NewFloat(d.Get("max_spot_price").(float64))
 	}
-
 	if d.HasChange("total_target_capacity") {
 		if v, ok := d.GetOk("total_target_capacity"); ok {
 			request.TotalTargetCapacity = v.(string)
 		}
 	}
-
 	if d.HasChange("pay_as_you_go_target_capacity") {
 		if v, ok := d.GetOk("pay_as_you_go_target_capacity"); ok {
 			request.PayAsYouGoTargetCapacity = v.(string)
 		}
 	}
-
 	if d.HasChange("spot_target_capacity") {
 		if v, ok := d.GetOk("spot_target_capacity"); ok {
 			request.SpotTargetCapacity = v.(string)
 		}
 	}
-
 	if d.HasChange("auto_provisioning_group_name") {
 		if v, ok := d.GetOk("auto_provisioning_group_name"); ok {
 			request.AutoProvisioningGroupName = v.(string)
 		}
 	}
-
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.ModifyAutoProvisioningGroup(request)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
 	return resourceAlicloudAutoProvisioningGroupRead(d, meta)
 }
-
 func resourceAlicloudAutoProvisioningGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-
 	request := ecs.CreateDeleteAutoProvisioningGroupRequest()
 	request.RegionId = client.RegionId
 	request.AutoProvisioningGroupId = d.Id()
 	request.TerminateInstances = requests.NewBoolean(d.Get("terminate_instances").(bool))
-
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.DeleteAutoProvisioningGroup(request)
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidAutoProvisioningGroupId.NotFound"}) {
 			return nil
@@ -327,17 +595,20 @@ func resourceAlicloudAutoProvisioningGroupDelete(d *schema.ResourceData, meta in
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
 	return WrapError(ecsService.WaitForAutoProvisioningGroup(d.Id(), Deleted, DefaultTimeoutMedium))
 }
-
 func buildAlicloudAutoProvisioningGroupArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateAutoProvisioningGroupRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
 	request := ecs.CreateCreateAutoProvisioningGroupRequest()
 	request.RegionId = client.RegionId
 	request.LaunchTemplateId = d.Get("launch_template_id").(string)
 	request.TotalTargetCapacity = d.Get("total_target_capacity").(string)
-
+	// At least one of launch_template_id or launch_configuration must be specified
+	if d.Get("launch_template_id").(string) == "" {
+		if _, ok := d.GetOk("launch_configuration"); !ok {
+			return nil, WrapError(fmt.Errorf("either launch_template_id or launch_configuration must be specified"))
+		}
+	}
 	if v, ok := d.GetOk("auto_provisioning_group_name"); ok && v.(string) != "" {
 		request.AutoProvisioningGroupName = v.(string)
 	}
@@ -408,6 +679,256 @@ func buildAlicloudAutoProvisioningGroupArgs(d *schema.ResourceData, meta interfa
 		createConfigs = append(createConfigs, conf)
 	}
 	request.LaunchTemplateConfig = &createConfigs
-
+	// Set LaunchConfiguration.* fields when launch_configuration block is provided.
+	// These fields are create-only: DescribeAutoProvisioningGroups does not return
+	// them and ModifyAutoProvisioningGroup does not accept them, so the entire
+	// block is ForceNew and Read does not populate these fields.
+	if lcRaw, ok := d.GetOk("launch_configuration"); ok {
+		lcList := lcRaw.([]interface{})
+		if len(lcList) > 0 {
+			lc := lcList[0].(map[string]interface{})
+			if v, ok := lc["image_id"].(string); ok && v != "" {
+				request.LaunchConfigurationImageId = v
+			}
+			if v, ok := lc["image_family"].(string); ok && v != "" {
+				request.LaunchConfigurationImageFamily = v
+			}
+			if v, ok := lc["instance_name"].(string); ok && v != "" {
+				request.LaunchConfigurationInstanceName = v
+			}
+			if v, ok := lc["instance_description"].(string); ok && v != "" {
+				request.LaunchConfigurationInstanceDescription = v
+			}
+			if v, ok := lc["host_name"].(string); ok && v != "" {
+				request.LaunchConfigurationHostName = v
+			}
+			if v, ok := lc["host_names"].([]interface{}); ok && len(v) > 0 {
+				hostNames := make([]string, 0, len(v))
+				for _, hn := range v {
+					hostNames = append(hostNames, hn.(string))
+				}
+				request.LaunchConfigurationHostNames = &hostNames
+			}
+			if v, ok := lc["credit_specification"].(string); ok && v != "" {
+				request.LaunchConfigurationCreditSpecification = v
+			}
+			if v, ok := lc["deployment_set_id"].(string); ok && v != "" {
+				request.LaunchConfigurationDeploymentSetId = v
+			}
+			if v, ok := lc["auto_release_time"].(string); ok && v != "" {
+				request.LaunchConfigurationAutoReleaseTime = v
+			}
+			if v, ok := lc["io_optimized"].(string); ok && v != "" {
+				request.LaunchConfigurationIoOptimized = v
+			}
+			if v, ok := lc["security_group_id"].(string); ok && v != "" {
+				request.LaunchConfigurationSecurityGroupId = v
+			}
+			if v, ok := lc["security_group_ids"].([]interface{}); ok && len(v) > 0 {
+				sgIds := make([]string, 0, len(v))
+				for _, sg := range v {
+					sgIds = append(sgIds, sg.(string))
+				}
+				request.LaunchConfigurationSecurityGroupIds = &sgIds
+			}
+			if v, ok := lc["security_enhancement_strategy"].(string); ok && v != "" {
+				request.LaunchConfigurationSecurityEnhancementStrategy = v
+			}
+			if v, ok := lc["internet_max_bandwidth_in"].(int); ok && v != 0 {
+				request.LaunchConfigurationInternetMaxBandwidthIn = requests.NewInteger(v)
+			}
+			if v, ok := lc["internet_max_bandwidth_out"].(int); ok && v != 0 {
+				request.LaunchConfigurationInternetMaxBandwidthOut = requests.NewInteger(v)
+			}
+			if v, ok := lc["internet_charge_type"].(string); ok && v != "" {
+				request.LaunchConfigurationInternetChargeType = v
+			}
+			if v, ok := lc["password"].(string); ok && v != "" {
+				request.LaunchConfigurationPassword = v
+			}
+			if v, ok := lc["password_inherit"].(bool); ok {
+				request.LaunchConfigurationPasswordInherit = requests.NewBoolean(v)
+			}
+			if v, ok := lc["key_pair_name"].(string); ok && v != "" {
+				request.LaunchConfigurationKeyPairName = v
+			}
+			if v, ok := lc["ram_role_name"].(string); ok && v != "" {
+				request.LaunchConfigurationRamRoleName = v
+			}
+			if v, ok := lc["user_data"].(string); ok && v != "" {
+				request.LaunchConfigurationUserData = v
+			}
+			if v, ok := lc["resource_group_id"].(string); ok && v != "" {
+				request.LaunchConfigurationResourceGroupId = v
+			}
+			if v, ok := lc["system_disk_category"].(string); ok && v != "" {
+				request.LaunchConfigurationSystemDiskCategory = v
+			}
+			if v, ok := lc["system_disk_size"].(int); ok && v != 0 {
+				request.LaunchConfigurationSystemDiskSize = requests.NewInteger(v)
+			}
+			if v, ok := lc["system_disk_performance_level"].(string); ok && v != "" {
+				request.LaunchConfigurationSystemDiskPerformanceLevel = v
+			}
+			if v, ok := lc["system_disk_name"].(string); ok && v != "" {
+				request.LaunchConfigurationSystemDiskName = v
+			}
+			if v, ok := lc["system_disk_description"].(string); ok && v != "" {
+				request.LaunchConfigurationSystemDiskDescription = v
+			}
+			if sdRaw, ok := lc["system_disk"].([]interface{}); ok && len(sdRaw) > 0 {
+				sd := sdRaw[0].(map[string]interface{})
+				systemDisk := ecs.CreateAutoProvisioningGroupLaunchConfigurationSystemDisk{}
+				if v, ok := sd["encrypted"].(string); ok && v != "" {
+					systemDisk.Encrypted = v
+				}
+				if v, ok := sd["kms_key_id"].(string); ok && v != "" {
+					systemDisk.KMSKeyId = v
+				}
+				if v, ok := sd["encrypt_algorithm"].(string); ok && v != "" {
+					systemDisk.EncryptAlgorithm = v
+				}
+				if v, ok := sd["provisioned_iops"].(string); ok && v != "" {
+					systemDisk.ProvisionedIops = v
+				}
+				if v, ok := sd["bursting_enabled"].(string); ok && v != "" {
+					systemDisk.BurstingEnabled = v
+				}
+				request.LaunchConfigurationSystemDisk = systemDisk
+			}
+			if ddRaw, ok := lc["data_disk"].([]interface{}); ok && len(ddRaw) > 0 {
+				dataDisks := make([]ecs.CreateAutoProvisioningGroupLaunchConfigurationDataDisk, 0, len(ddRaw))
+				for _, ddItem := range ddRaw {
+					dd := ddItem.(map[string]interface{})
+					dataDisk := ecs.CreateAutoProvisioningGroupLaunchConfigurationDataDisk{}
+					if v, ok := dd["category"].(string); ok && v != "" {
+						dataDisk.Category = v
+					}
+					if v, ok := dd["disk_name"].(string); ok && v != "" {
+						dataDisk.DiskName = v
+					}
+					if v, ok := dd["size"].(string); ok && v != "" {
+						dataDisk.Size = v
+					}
+					if v, ok := dd["device"].(string); ok && v != "" {
+						dataDisk.Device = v
+					}
+					if v, ok := dd["snapshot_id"].(string); ok && v != "" {
+						dataDisk.SnapshotId = v
+					}
+					if v, ok := dd["description"].(string); ok && v != "" {
+						dataDisk.Description = v
+					}
+					if v, ok := dd["delete_with_instance"].(string); ok && v != "" {
+						dataDisk.DeleteWithInstance = v
+					}
+					if v, ok := dd["encrypted"].(string); ok && v != "" {
+						dataDisk.Encrypted = v
+					}
+					if v, ok := dd["kms_key_id"].(string); ok && v != "" {
+						dataDisk.KmsKeyId = v
+					}
+					if v, ok := dd["encrypt_algorithm"].(string); ok && v != "" {
+						dataDisk.EncryptAlgorithm = v
+					}
+					if v, ok := dd["performance_level"].(string); ok && v != "" {
+						dataDisk.PerformanceLevel = v
+					}
+					if v, ok := dd["provisioned_iops"].(string); ok && v != "" {
+						dataDisk.ProvisionedIops = v
+					}
+					if v, ok := dd["bursting_enabled"].(string); ok && v != "" {
+						dataDisk.BurstingEnabled = v
+					}
+					dataDisks = append(dataDisks, dataDisk)
+				}
+				request.LaunchConfigurationDataDisk = &dataDisks
+			}
+			if niRaw, ok := lc["network_interface"].([]interface{}); ok && len(niRaw) > 0 {
+				nis := make([]ecs.CreateAutoProvisioningGroupLaunchConfigurationNetworkInterface, 0, len(niRaw))
+				for _, niItem := range niRaw {
+					ni := niItem.(map[string]interface{})
+					networkInterface := ecs.CreateAutoProvisioningGroupLaunchConfigurationNetworkInterface{}
+					if v, ok := ni["security_group_id"].(string); ok && v != "" {
+						networkInterface.SecurityGroupId = v
+					}
+					if sgRaw, ok := ni["security_group_ids"].([]interface{}); ok && len(sgRaw) > 0 {
+						sgIds := make([]string, 0, len(sgRaw))
+						for _, sg := range sgRaw {
+							sgIds = append(sgIds, sg.(string))
+						}
+						networkInterface.SecurityGroupIds = &sgIds
+					}
+					if v, ok := ni["instance_type"].(string); ok && v != "" {
+						networkInterface.InstanceType = v
+					}
+					nis = append(nis, networkInterface)
+				}
+				request.LaunchConfigurationNetworkInterface = &nis
+			}
+			if tagRaw, ok := lc["tag"].([]interface{}); ok && len(tagRaw) > 0 {
+				tags := make([]ecs.CreateAutoProvisioningGroupLaunchConfigurationTag, 0, len(tagRaw))
+				for _, tagItem := range tagRaw {
+					tag := tagItem.(map[string]interface{})
+					lcTag := ecs.CreateAutoProvisioningGroupLaunchConfigurationTag{}
+					if v, ok := tag["key"].(string); ok {
+						lcTag.Key = v
+					}
+					if v, ok := tag["value"].(string); ok {
+						lcTag.Value = v
+					}
+					tags = append(tags, lcTag)
+				}
+				request.LaunchConfigurationTag = &tags
+			}
+			if arnRaw, ok := lc["arn"].([]interface{}); ok && len(arnRaw) > 0 {
+				arns := make([]ecs.CreateAutoProvisioningGroupLaunchConfigurationArn, 0, len(arnRaw))
+				for _, arnItem := range arnRaw {
+					arnMap := arnItem.(map[string]interface{})
+					lcArn := ecs.CreateAutoProvisioningGroupLaunchConfigurationArn{}
+					if v, ok := arnMap["rolearn"].(string); ok && v != "" {
+						lcArn.Rolearn = v
+					}
+					if v, ok := arnMap["role_type"].(string); ok && v != "" {
+						lcArn.RoleType = v
+					}
+					if v, ok := arnMap["assume_role_for"].(string); ok && v != "" {
+						lcArn.AssumeRoleFor = v
+					}
+					arns = append(arns, lcArn)
+				}
+				request.LaunchConfigurationArn = &arns
+			}
+			lcStruct := ecs.CreateAutoProvisioningGroupLaunchConfiguration{}
+			needLcStruct := false
+			if v, ok := lc["period"].(string); ok && v != "" {
+				lcStruct.Period = v
+				needLcStruct = true
+			}
+			if v, ok := lc["period_unit"].(string); ok && v != "" {
+				lcStruct.PeriodUnit = v
+				needLcStruct = true
+			}
+			if v, ok := lc["auto_renew"].(string); ok && v != "" {
+				lcStruct.AutoRenew = v
+				needLcStruct = true
+			}
+			if v, ok := lc["auto_renew_period"].(string); ok && v != "" {
+				lcStruct.AutoRenewPeriod = v
+				needLcStruct = true
+			}
+			if needLcStruct {
+				request.LaunchConfiguration = lcStruct
+			}
+			if aiRaw, ok := lc["additional_info"].([]interface{}); ok && len(aiRaw) > 0 {
+				ai := aiRaw[0].(map[string]interface{})
+				additionalInfo := ecs.CreateAutoProvisioningGroupLaunchConfigurationAdditionalInfo{}
+				if v, ok := ai["pvd_config"].(string); ok && v != "" {
+					additionalInfo.PvdConfig = v
+				}
+				request.LaunchConfigurationAdditionalInfo = additionalInfo
+			}
+		}
+	}
 	return request, nil
 }
