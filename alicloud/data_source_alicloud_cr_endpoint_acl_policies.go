@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -18,7 +19,8 @@ func dataSourceAlicloudCrEndpointAclPolicies() *schema.Resource {
 			"endpoint_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"internet"}, false),
+				StateFunc:    func(v interface{}) string { return strings.ToLower(v.(string)) },
+				ValidateFunc: validation.StringInSlice([]string{"internet", "Internet"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -29,6 +31,11 @@ func dataSourceAlicloudCrEndpointAclPolicies() *schema.Resource {
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"module_name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Registry"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -71,7 +78,7 @@ func dataSourceAlicloudCrEndpointAclPoliciesRead(d *schema.ResourceData, meta in
 
 	action := "GetInstanceEndpoint"
 	request := make(map[string]interface{})
-	request["EndpointType"] = d.Get("endpoint_type")
+	request["EndpointType"] = convertCrEndpointType(d.Get("endpoint_type").(string))
 	request["InstanceId"] = d.Get("instance_id")
 	if v, ok := d.GetOk("module_name"); ok {
 		request["ModuleName"] = v
@@ -110,10 +117,11 @@ func dataSourceAlicloudCrEndpointAclPoliciesRead(d *schema.ResourceData, meta in
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AclEntries", response)
 	}
 	result, _ := resp.([]interface{})
+	endpointType := d.Get("endpoint_type").(string)
 	for _, v := range result {
 		item := v.(map[string]interface{})
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[fmt.Sprint(request["InstanceId"], ":", request["EndpointType"], ":", item["Entry"])]; !ok {
+			if _, ok := idsMap[fmt.Sprint(request["InstanceId"], ":", endpointType, ":", item["Entry"])]; !ok {
 				continue
 			}
 		}
@@ -124,8 +132,8 @@ func dataSourceAlicloudCrEndpointAclPoliciesRead(d *schema.ResourceData, meta in
 	for _, object := range objects {
 		mapping := map[string]interface{}{
 			"description":   object["Comment"],
-			"endpoint_type": request["EndpointType"],
-			"id":            fmt.Sprint(request["InstanceId"], ":", request["EndpointType"], ":", object["Entry"]),
+			"endpoint_type": endpointType,
+			"id":            fmt.Sprint(request["InstanceId"], ":", endpointType, ":", object["Entry"]),
 			"entry":         fmt.Sprint(object["Entry"]),
 			"instance_id":   request["InstanceId"],
 		}

@@ -39,6 +39,12 @@ resource "alicloud_ecs_auto_snapshot_policy" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+* `association_type` - (Optional, Computed, ForceNew, Available since v1.293.0) The association type between the automatic snapshot policy and target resources. Valid values:
+  - `AssociatedWithDisk`: The automatic snapshot policy is applied to disks.
+  - `AssociatedWithInstanceTag`: The automatic snapshot policy is associated with ECS instances that have the specified `target_tags`. Changing this parameter creates a new resource.
+
+-> **NOTE:** Before you can set `association_type` to `AssociatedWithInstanceTag`, you must contact the ECS product team to add your Alibaba Cloud account to the `AssociatedWithInstanceTag` whitelist. If your account is not on the whitelist, `CreateAutoSnapshotPolicy` returns the `InvalidOperation.UserNotInWhiteList` error. You can submit a ticket to apply for the whitelist.
+
 * `auto_snapshot_policy_name` - (Optional, Available since v1.236.0) The name of the automatic snapshot policy. The name must be 2 to 128 characters in length. The name must start with a letter and cannot start with http:// or https://. The name can contain letters, digits, colons (:), underscores (_), and hyphens (-).
 * `copied_snapshots_retention_days` - (Optional, Int) The retention period of the snapshot copy in the destination region. Unit: days. Valid values:
   - `-1`: The snapshot copy is retained until it is deleted.
@@ -52,6 +58,7 @@ The following arguments are supported:
   - `1` to `65536`: Auto snapshots are retained for the specified number of days. After the retention period of auto snapshots expires, the auto snapshots are automatically deleted.
 * `tags` - (Optional, Map) A mapping of tags to assign to the resource.
 * `target_copy_regions` - (Optional, List) The destination region to which to copy the snapshot. You can specify only a single destination region.
+* `target_tags` - (Optional, Set, Available since v1.293.0) The tags used to associate the automatic snapshot policy with ECS instances. This parameter takes effect only when `association_type` is set to `AssociatedWithInstanceTag`. See [`target_tags`](#target_tags) below.
 * `time_points` - (Required, List) The points in time of the day at which to create automatic snapshots.
 
   The time is displayed in UTC+8. Unit: hours. Valid values: `0` to `23`, which correspond to the 24 points in time on the hour from 00:00:00 to 23:00:00. For example, 1 indicates 01:00:00. Multiple points in time can be specified.
@@ -66,6 +73,12 @@ The following arguments will be discarded. Please use new fields as soon as poss
 The copy_encryption_configuration supports the following:
 * `encrypted` - (Optional, Bool) Whether to enable encryption for cross-region snapshot replication. Default value: `false`. Valid values: `true`, `false`.
 * `kms_key_id` - (Optional) The ID of the Key Management Service (KMS) key used to encrypt snapshots in cross-region snapshot replication.
+
+### `target_tags`
+
+The target_tags supports the following:
+* `tag_key` - (Optional, Available since v1.293.0) The key of target tag N. The tag key cannot be an empty string. The tag key can be up to 128 characters in length and cannot start with `acs:` or `aliyun`. Valid values of N: 1 to 10.
+* `tag_value` - (Optional, Available since v1.293.0) The value of target tag N. The tag value can be an empty string. The tag value can be up to 128 characters in length and cannot start with `acs:`.
 
 ## Attributes Reference
 

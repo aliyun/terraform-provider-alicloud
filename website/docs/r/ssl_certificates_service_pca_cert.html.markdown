@@ -160,7 +160,7 @@ The name of the state or province where the certificate's organization is locate
   - `REVOKE`: indicates that the certificate has been revoked.
 -> **NOTE:** If you want to destroy `alicloud_ssl_certificates_service_pca_cert`, `status` must be set to `REVOKE`
 * `tags` - (Optional, Map) Information about the queried instances and their associated tags.  
-* `upload_flag` - (Optional, Int) Indicates whether the certificate has been uploaded to the SSL certificate management platform.
+* `upload_flag` - (Optional, Computed, Int) Indicates whether the certificate has been uploaded to the SSL certificate management platform.
 * `years` - (Optional, Int) The duration for which the certificate is purchased, in years.
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
