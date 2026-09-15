@@ -125,6 +125,7 @@ func resourceAliCloudSslCertificatesServicePcaCert() *schema.Resource {
 			"upload_flag": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"years": {
 				Type:     schema.TypeInt,
