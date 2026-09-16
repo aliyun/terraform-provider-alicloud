@@ -95,11 +95,18 @@ resource "alicloud_ecs_launch_template" "default" {
   }
 
   network_interfaces {
-    name              = "eth0"
-    description       = "hello1"
-    primary_ip        = "10.0.0.2"
-    security_group_id = alicloud_security_group.default.id
-    vswitch_id        = alicloud_vswitch.default.id
+    name                           = "eth0"
+    description                    = "hello1"
+    primary_ip                     = "10.0.0.2"
+    security_group_id              = alicloud_security_group.default.id
+    vswitch_id                     = alicloud_vswitch.default.id
+    instance_type                  = "Primary"
+    network_interface_traffic_mode = "Standard"
+  }
+
+  security_options {
+    trusted_system_mode = "vTPM"
+    enable_secure_boot  = true
   }
 
   data_disks {
@@ -152,6 +159,7 @@ The following arguments are supported:
 * `launch_template_name` - (Optional, ForceNew) The name of Launch Template.
 * `network_interfaces` - (Optional) The list of network interfaces created with instance. See [`network_interfaces`](#network_interfaces) below.
 * `network_type` - (Optional) Network type of the instance. Valid values: `classic`, `vpc`.
+* `security_options` - (Optional) The security options of the launch template. See [`security_options`](#security_options) below.
 * `password_inherit` - (Optional) Whether to use the password preset by the mirror.
 * `period_unit` - (Optional, ForceNew, Computed, Available since v1.226.0) The unit of the subscription period. Default value: `Month`. Valid values: `Week`, `Month`.
 * `period` - (Optional, ForceNew, Computed) The subscription period of the instance. Unit: months. This parameter takes effect and is required only when InstanceChargeType is set to PrePaid. If the DedicatedHostId parameter is specified, the value of the Period parameter must be within the subscription period of the dedicated host.
@@ -185,8 +193,8 @@ The following arguments are supported:
 
   -> **NOTE:** From version 1.260.0, `http_put_response_hop_limit` can be modified.
 * `tags` - (Optional) A mapping of tags to assign to instance, block storage, and elastic network.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `template_tags` - (Optional) A mapping of tags to assign to the launch template. 
 * `default_version_number` - (Optional, Int, Computed, Available since v1.241.0) The version number of the default launch template version. Default to 1. It is conflict with `update_default_version_number`.
 * `update_default_version_number` - (Optional, Bool, Available since v1.241.0) Whether to update the default version of the launch template to the latest version automatically. It is conflict with `default_version_number`.
@@ -222,6 +230,8 @@ The network_interfaces supports the following:
 * `security_group_id` - (Optional) The security group ID must be one in the same VPC.
 * `vswitch_id` - (Optional) The VSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
 * `delete_on_release` - (Optional, Bool, Available since v1.245.0) Specifies whether to release ENI N when the instance is released. Valid values: `true`, `false`.
+* `instance_type` - (Optional) The type of the network interface. Valid values: `Primary`.
+* `network_interface_traffic_mode` - (Optional) The communication mode of the primary NIC. Valid values: `Standard`, `HighPerformance`.
 
 ### `data_disks`
 
@@ -243,6 +253,14 @@ The data_disks supports the following:
 The image_options supports the following:
 
 * `login_as_non_root` - (Optional) Specifies whether the instance that uses the image supports logons of the ecs-user user. Default value: `false`. Valid values: `true`,`false`.
+
+### `security_options`
+
+The security_options supports the following:
+
+* `enable_secure_boot` - (Optional, Bool) Specifies whether to enable secure boot. Valid values: `true`, `false`.
+  -> **NOTE:** `EnableSecureBoot` is accepted by `CreateLaunchTemplate` but not returned by `DescribeLaunchTemplateVersions`. Terraform preserves the configured value and cannot detect drift for this attribute after creation.
+* `trusted_system_mode` - (Optional) The trusted system mode. Valid values: `vTPM`.
 
 ## Attributes Reference
 
