@@ -996,10 +996,9 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 		}
 
 		securityGroupsRaw, _ := jsonpath.Get("$.securityGroups", objectRaw)
-		if securityGroupsRaw != nil {
-			d.Set("kibana_private_security_group_id", securityGroupsRaw.([]interface{})[0])
+		if securityGroups, ok := securityGroupsRaw.([]interface{}); ok && len(securityGroups) > 0 {
+			d.Set("kibana_private_security_group_id", securityGroups[0])
 		}
-
 	}
 
 	return nil
