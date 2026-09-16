@@ -136,6 +136,7 @@ func TestAccAliCloudECSSnapshotGroup_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"snapshot_group_name": name,
+						"snapshots.#":         CHECKSET,
 					}),
 				),
 			},
@@ -190,10 +191,24 @@ func TestAccAliCloudECSSnapshotGroup_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":         "${alicloud_disk_attachment.default.0.instance_id}",
+					"snapshot_group_name": "${var.name}",
+					"exclude_disk_id":     []string{"${alicloud_disk_attachment.default.0.disk_id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snapshot_group_name": name,
+						"exclude_disk_id.#":   "1",
+						"snapshots.#":         CHECKSET,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"disk_id", "exclude_disk_id", "instant_access_retention_days", "instant_access"},
+				ImportStateVerifyIgnore: []string{"disk_id", "exclude_disk_id", "instant_access_retention_days", "instant_access", "snapshots"},
 			},
 		},
 	})
@@ -235,13 +250,17 @@ func TestAccAliCloudECSSnapshotGroup_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":         name,
-						"instance_id":         CHECKSET,
-						"resource_group_id":   CHECKSET,
-						"snapshot_group_name": name,
-						"tags.%":              "2",
-						"tags.Created":        "TF",
-						"tags.For":            "Test",
+						"description":                   name,
+						"instance_id":                   CHECKSET,
+						"instant_access":                "true",
+						"instant_access_retention_days": "1",
+						"resource_group_id":             CHECKSET,
+						"snapshot_group_name":           name,
+						"snapshots.#":                   CHECKSET,
+						"snapshots.0.tags.%":            CHECKSET,
+						"tags.%":                        "2",
+						"tags.Created":                  "TF",
+						"tags.For":                      "Test",
 					}),
 				),
 			},
@@ -249,14 +268,15 @@ func TestAccAliCloudECSSnapshotGroup_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"disk_id", "exclude_disk_id", "instant_access_retention_days", "instant_access"},
+				ImportStateVerifyIgnore: []string{"disk_id", "exclude_disk_id", "instant_access_retention_days", "instant_access", "snapshots"},
 			},
 		},
 	})
 }
 
 var AlicloudECSSnapshotGroupMap0 = map[string]string{
-	"status": CHECKSET,
+	"status":      CHECKSET,
+	"snapshots.#": CHECKSET,
 }
 
 func AlicloudECSSnapshotGroupBasicDependence0(name string) string {
@@ -359,19 +379,41 @@ func TestUnitAlicloudECSSnapshotGroup(t *testing.T) {
 		"SnapshotGroups": map[string]interface{}{
 			"SnapshotGroup": []interface{}{
 				map[string]interface{}{
-					"Status":          "accomplished",
-					"Description":     "description",
-					"InstanceId":      "instance_id",
-					"CreationTime":    "2021-03-23T10:58:48Z",
-					"SnapshotGroupId": "snapshot_group_id",
-					"ResourceGroupId": "resource_group_id",
-					"Name":            "snapshot_group_name",
+					"Status":                     "accomplished",
+					"Description":                "description",
+					"InstanceId":                 "instance_id",
+					"CreationTime":               "2021-03-23T10:58:48Z",
+					"SnapshotGroupId":            "snapshot_group_id",
+					"ResourceGroupId":            "resource_group_id",
+					"Name":                       "snapshot_group_name",
+					"InstantAccess":              true,
+					"InstantAccessRetentionDays": 1,
 					"Tags": map[string]interface{}{
 						"Tag": []interface{}{
 							map[string]interface{}{
 								"Created": "TF",
 								"For":     "Test",
 							}},
+					},
+					"Snapshots": map[string]interface{}{
+						"Snapshot": []interface{}{
+							map[string]interface{}{
+								"SnapshotId":                 "snapshot_id",
+								"SourceDiskId":               "source_disk_id",
+								"Available":                  true,
+								"Progress":                   "100%",
+								"InstantAccess":              true,
+								"InstantAccessRetentionDays": 1,
+								"Tags": map[string]interface{}{
+									"Tag": []interface{}{
+										map[string]interface{}{
+											"Key":   "Created",
+											"Value": "TF",
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
