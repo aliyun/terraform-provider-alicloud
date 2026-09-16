@@ -207,6 +207,14 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"instance_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"network_interface_traffic_mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 				MaxItems: 1,
@@ -420,6 +428,24 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 					},
 				},
 			},
+			"security_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable_secure_boot": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"trusted_system_mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"system_disk_category": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -468,7 +494,7 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				"spot_strategy", "system_disk", "system_disk_category", "system_disk_description",
 				"system_disk_name", "system_disk_size", "tags", "user_data", "userdata",
 				"vswitch_id", "version_description", "vpc_id", "zone_id",
-				"http_endpoint", "http_tokens", "http_put_response_hop_limit", "image_options",
+				"http_endpoint", "http_tokens", "http_put_response_hop_limit", "image_options", "security_options",
 			}
 			for _, key := range versionTriggers {
 				if diff.HasChange(key) {
@@ -618,6 +644,8 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 			networkInterfacesMap["SecurityGroupId"] = networkInterfacesArg["security_group_id"]
 			networkInterfacesMap["VSwitchId"] = networkInterfacesArg["vswitch_id"]
 			networkInterfacesMap["DeleteOnRelease"] = networkInterfacesArg["delete_on_release"]
+			networkInterfacesMap["InstanceType"] = networkInterfacesArg["instance_type"]
+			networkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfacesArg["network_interface_traffic_mode"]
 			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
 		}
 		request["NetworkInterface"] = networkInterfacesMaps
@@ -791,6 +819,22 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 		request["ImageOptions"] = imageOptionsMap
 	}
 
+	if v, ok := d.GetOk("security_options"); ok {
+		securityOptionsMap := make(map[string]interface{})
+		for _, securityOptions := range v.([]interface{}) {
+			securityOptionsArg := securityOptions.(map[string]interface{})
+
+			if trustedSystemMode, ok := securityOptionsArg["trusted_system_mode"]; ok {
+				securityOptionsMap["TrustedSystemMode"] = trustedSystemMode
+			}
+			if enableSecureBoot, ok := securityOptionsArg["enable_secure_boot"]; ok {
+				securityOptionsMap["EnableSecureBoot"] = enableSecureBoot
+			}
+		}
+
+		request["SecurityOptions"] = securityOptionsMap
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
@@ -881,12 +925,14 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 		for _, v := range networkInterfaceList {
 			if m1, ok := v.(map[string]interface{}); ok {
 				temp1 := map[string]interface{}{
-					"description":       m1["Description"],
-					"name":              m1["NetworkInterfaceName"],
-					"primary_ip":        m1["PrimaryIpAddress"],
-					"security_group_id": m1["SecurityGroupId"],
-					"vswitch_id":        m1["VSwitchId"],
-					"delete_on_release": m1["DeleteOnRelease"],
+					"description":                    m1["Description"],
+					"name":                           m1["NetworkInterfaceName"],
+					"primary_ip":                     m1["PrimaryIpAddress"],
+					"security_group_id":              m1["SecurityGroupId"],
+					"vswitch_id":                     m1["VSwitchId"],
+					"delete_on_release":              m1["DeleteOnRelease"],
+					"instance_type":                  m1["InstanceType"],
+					"network_interface_traffic_mode": m1["NetworkInterfaceTrafficMode"],
 				}
 				networkInterface = append(networkInterface, temp1)
 
@@ -956,6 +1002,26 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 		imageOptionsMaps = append(imageOptionsMaps, imageOptionsMap)
 
 		d.Set("image_options", imageOptionsMaps)
+	}
+
+	if securityOptions, ok := describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SecurityOptions"]; ok {
+		securityOptionsMaps := make([]map[string]interface{}, 0)
+		securityOptionsMap := map[string]interface{}{}
+		securityOptionsArg := securityOptions.(map[string]interface{})
+		securityOptionsMap["trusted_system_mode"] = securityOptionsArg["TrustedSystemMode"]
+		// EnableSecureBoot is a write-only field: DescribeLaunchTemplateVersions
+		// does not return it in the response schema. Preserve the existing
+		// state/config value to avoid perpetual plan-not-empty drift.
+		if esb, ok := securityOptionsArg["EnableSecureBoot"]; ok && esb != nil {
+			securityOptionsMap["enable_secure_boot"] = esb
+		} else if existingOpts, ok := d.Get("security_options").([]interface{}); ok && len(existingOpts) > 0 {
+			if em, ok := existingOpts[0].(map[string]interface{}); ok {
+				securityOptionsMap["enable_secure_boot"] = em["enable_secure_boot"]
+			}
+		}
+		securityOptionsMaps = append(securityOptionsMaps, securityOptionsMap)
+
+		d.Set("security_options", securityOptionsMaps)
 	}
 
 	return nil
@@ -1161,6 +1227,8 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 			NetworkInterfaces[i]["SecurityGroupId"] = NetworkInterfacesMap["security_group_id"]
 			NetworkInterfaces[i]["VSwitchId"] = NetworkInterfacesMap["vswitch_id"]
 			NetworkInterfaces[i]["DeleteOnRelease"] = NetworkInterfacesMap["delete_on_release"]
+			NetworkInterfaces[i]["InstanceType"] = NetworkInterfacesMap["instance_type"]
+			NetworkInterfaces[i]["NetworkInterfaceTrafficMode"] = NetworkInterfacesMap["network_interface_traffic_mode"]
 		}
 		request["NetworkInterface"] = NetworkInterfaces
 
@@ -1370,6 +1438,25 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 		}
 
 		request["ImageOptions"] = imageOptionsMap
+	}
+
+	if d.HasChange("security_options") {
+		update = true
+	}
+	if v, ok := d.GetOk("security_options"); ok {
+		securityOptionsMap := make(map[string]interface{})
+		for _, securityOptions := range v.([]interface{}) {
+			securityOptionsArg := securityOptions.(map[string]interface{})
+
+			if trustedSystemMode, ok := securityOptionsArg["trusted_system_mode"]; ok {
+				securityOptionsMap["TrustedSystemMode"] = trustedSystemMode
+			}
+			if enableSecureBoot, ok := securityOptionsArg["enable_secure_boot"]; ok {
+				securityOptionsMap["EnableSecureBoot"] = enableSecureBoot
+			}
+		}
+
+		request["SecurityOptions"] = securityOptionsMap
 	}
 
 	if update {
