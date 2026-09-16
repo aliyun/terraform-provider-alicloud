@@ -44,6 +44,11 @@ func resourceAlicloudDtsMigrationJob() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"data_check_configure": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"dts_job_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -319,6 +324,9 @@ func resourceAlicloudDtsMigrationJobCreate(d *schema.ResourceData, meta interfac
 
 	request["PayType"] = convertDtsMigrationJobPaymentTypeRequest(d.Get("payment_type"))
 	request["JobType"] = "MIGRATION"
+	if v, ok := d.GetOk("data_check_configure"); ok {
+		request["DataCheckConfigure"] = v
+	}
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
