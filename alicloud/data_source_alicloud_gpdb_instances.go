@@ -212,6 +212,26 @@ func dataSourceAlicloudGpdbInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"db_instance_net_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_deploy_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"lock_mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"lock_reason": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"expire_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -359,6 +379,11 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 			"availability_zone":     object["ZoneId"],
 			"creation_time":         object["CreateTime"],
 			"charge_type":           object["PayType"],
+			"db_instance_net_type":  object["DBInstanceNetType"],
+			"instance_deploy_type":  object["InstanceDeployType"],
+			"lock_mode":             object["LockMode"],
+			"lock_reason":           object["LockReason"],
+			"expire_time":           object["ExpireTime"],
 		}
 
 		tags := make(map[string]interface{})
