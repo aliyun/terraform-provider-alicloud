@@ -20,22 +20,38 @@ text = sys.stdin.read().replace("\r\n", "\n").replace("\r", "\n")
 
 
 def convert_inline_numbered(line: str) -> list[str]:
-    matches = list(re.finditer(r"(?<!\d)(\d{1,2})[）)]", line))
+    # Stash function-call-like spans so argument-list digits such as the
+    # `12)` in `IntBetween(1,12)` are not mistaken for inline list numbers.
+    stashed: list[str] = []
+
+    def _hide(m: re.Match) -> str:
+        stashed.append(m.group(0))
+        return "\x00%d\x00" % (len(stashed) - 1)
+
+    def _restore(s: str) -> str:
+        for i, val in enumerate(stashed):
+            s = s.replace("\x00%d\x00" % i, val)
+        return s
+
+    work = re.sub(r"\w+\s*\([^)]*\)", _hide, line)
+    # Preceding , . - ， marks a numeric context (arguments, decimals, ranges),
+    # not a list number.
+    matches = list(re.finditer(r"(?<![\d,.\-，])(\d{1,2})[）)]", work))
     if len(matches) < 2:
         return [line]
 
-    prefix = line[: matches[0].start()].rstrip("；; ")
+    prefix = work[: matches[0].start()].rstrip("；; ")
     out: list[str] = []
     if prefix:
-        out.append(prefix)
+        out.append(_restore(prefix))
 
     for idx, match in enumerate(matches):
         start = match.end()
-        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(line)
-        item = line[start:end].strip()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(work)
+        item = work[start:end].strip()
         item = item.lstrip("；;、,， ")
         item = item.rstrip("；; ")
-        out.append(f"{match.group(1)}、{item}")
+        out.append(f"{match.group(1)}、{_restore(item)}")
 
     return out
 

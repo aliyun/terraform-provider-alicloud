@@ -117,6 +117,26 @@ off="$(printf '%s' '裸 https://off.com' | JARVIS_COMMENT_URL_AUTOLINK=0 bash "$
 assert_not_contains "kill switch leaves URL bare" "$off" '[https://off.com]'
 assert_contains "kill switch preserves raw URL text" "$off" 'https://off.com'
 
+echo "Test 5: function-call arguments and numeric ranges are not split as inline numbers"
+fn='处理内容：auto_renew_period 的 ValidateFunc 由 IntBetween(1,12) 放宽为 IntBetween(0,12)，允许 0 值。'
+formatted_fn="$(printf '%s' "$fn" | bash "$FORMAT")"
+assert_contains "function-call line stays intact" "$formatted_fn" 'IntBetween(1,12) 放宽为 IntBetween(0,12)'
+assert_not_contains "argument digit not rewritten as list number" "$formatted_fn" '12、'
+
+spaced='取值 foo(1, 12) 与 bar(0, 12) 均合法。'
+formatted_spaced="$(printf '%s' "$spaced" | bash "$FORMAT")"
+assert_contains "spaced argument list stays intact" "$formatted_spaced" 'foo(1, 12) 与 bar(0, 12)'
+
+range='合法值范围 (1-12) 与 (0-12) 均可。'
+formatted_range="$(printf '%s' "$range" | bash "$FORMAT")"
+assert_contains "numeric range stays intact" "$formatted_range" '(1-12) 与 (0-12)'
+
+mixed='结论：建议见 IntBetween(1,12)；剩余问题：1）测试缺失；2）文档缺失。'
+formatted_mixed="$(printf '%s' "$mixed" | bash "$FORMAT")"
+assert_contains "function call preserved before real numbers" "$formatted_mixed" 'IntBetween(1,12)'
+assert_contains "real inline number still split" "$formatted_mixed" $'\n\n1、测试缺失\n\n'
+assert_contains "second real inline number still split" "$formatted_mixed" $'\n\n2、文档缺失。'
+
 echo ""
 echo "Results: $pass_count passed, $fail_count failed"
 if [ "$fail_count" -eq 0 ]; then
