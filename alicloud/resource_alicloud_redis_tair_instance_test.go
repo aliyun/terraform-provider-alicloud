@@ -1590,35 +1590,39 @@ func TestAccAliCloudRedisTairInstance_basic6823_raw(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type":       "PayAsYouGo",
-					"instance_type":      "tair_scm",
-					"zone_id":            "${var.zone_id}",
-					"instance_class":     "tair.scm.standard.1m.4d",
-					"tair_instance_name": name,
-					"vswitch_id":         "${alicloud_vswitch.defaultVSwitch.id}",
-					"vpc_id":             "${alicloud_vpc.defaultVpc.id}",
-					"resource_group_id":  "${alicloud_resource_manager_resource_group.defaultRg.id}",
-					"password":           "123456Tf",
-					"engine_version":     "1.0",
-					"port":               "6379",
-					"secondary_zone_id":  "${var.secondary_zone_id}",
-					"security_group_id":  "${alicloud_security_group.defaultEcsSg.id}",
+					"payment_type":              "PayAsYouGo",
+					"instance_type":             "tair_essd",
+					"zone_id":                   "${var.zone_id}",
+					"instance_class":            "tair.essd.standard.xlarge",
+					"tair_instance_name":        name,
+					"vswitch_id":                "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":                    "${alicloud_vpc.defaultVpc.id}",
+					"resource_group_id":         "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"password":                  "123456Tf",
+					"engine_version":            "5.0",
+					"storage_performance_level": "PL1",
+					"storage_size_gb":           "60",
+					"port":                      "6379",
+					"secondary_zone_id":         "${var.secondary_zone_id}",
+					"security_group_id":         "${alicloud_security_group.defaultEcsSg.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"payment_type":       "PayAsYouGo",
-						"instance_type":      "tair_scm",
-						"zone_id":            CHECKSET,
-						"instance_class":     "tair.scm.standard.1m.4d",
-						"tair_instance_name": name,
-						"vswitch_id":         CHECKSET,
-						"vpc_id":             CHECKSET,
-						"resource_group_id":  CHECKSET,
-						"password":           "123456Tf",
-						"engine_version":     "1.0",
-						"port":               "6379",
-						"secondary_zone_id":  CHECKSET,
-						"security_group_id":  CHECKSET,
+						"payment_type":              "PayAsYouGo",
+						"instance_type":             "tair_essd",
+						"zone_id":                   CHECKSET,
+						"instance_class":            "tair.essd.standard.xlarge",
+						"tair_instance_name":        name,
+						"vswitch_id":                CHECKSET,
+						"vpc_id":                    CHECKSET,
+						"resource_group_id":         CHECKSET,
+						"password":                  "123456Tf",
+						"engine_version":            "5.0",
+						"storage_performance_level": "PL1",
+						"storage_size_gb":           "60",
+						"port":                      "6379",
+						"secondary_zone_id":         CHECKSET,
+						"security_group_id":         CHECKSET,
 					}),
 				),
 			},
@@ -1708,15 +1712,17 @@ func TestAccAliCloudRedisTairInstance_basic8747(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":                "PayAsYouGo",
-					"instance_type":               "tair_scm",
+					"instance_type":               "tair_essd",
 					"zone_id":                     "${var.zone_id}",
-					"instance_class":              "tair.scm.standard.2m.8d",
+					"instance_class":              "tair.essd.standard.xlarge",
 					"vswitch_id":                  "${alicloud_vswitch.defaultVSwitch.id}",
 					"vpc_id":                      "${alicloud_vpc.defaultVpc.id}",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"password":                    "123456Tf",
 					"port":                        "6379",
-					"engine_version":              "1.0",
+					"engine_version":              "5.0",
+					"storage_performance_level":   "PL1",
+					"storage_size_gb":             "60",
 					"security_ips":                "127.0.0.2",
 					"security_ip_group_name":      "test1",
 					"param_repl_mode":             "async",
@@ -1725,15 +1731,17 @@ func TestAccAliCloudRedisTairInstance_basic8747(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":                "PayAsYouGo",
-						"instance_type":               "tair_scm",
+						"instance_type":               "tair_essd",
 						"zone_id":                     CHECKSET,
-						"instance_class":              "tair.scm.standard.2m.8d",
+						"instance_class":              "tair.essd.standard.xlarge",
 						"vswitch_id":                  CHECKSET,
 						"vpc_id":                      CHECKSET,
 						"resource_group_id":           CHECKSET,
 						"password":                    "123456Tf",
 						"port":                        "6379",
-						"engine_version":              "1.0",
+						"engine_version":              "5.0",
+						"storage_performance_level":   "PL1",
+						"storage_size_gb":             "60",
 						"security_ips":                "127.0.0.2",
 						"security_ip_group_name":      "test1",
 						"param_repl_mode":             "async",
@@ -1844,15 +1852,17 @@ func TestAccAliCloudRedisTairInstance_basic8703(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":                    "PayAsYouGo",
-					"instance_type":                   "tair_scm",
+					"instance_type":                   "tair_essd",
 					"zone_id":                         "${var.zone_id}",
-					"instance_class":                  "tair.scm.with.proxy.standard.2m.8d",
+					"instance_class":                  "tair.essd.standard.xlarge",
 					"vswitch_id":                      "${alicloud_vswitch.defaultVSwitch.id}",
 					"vpc_id":                          "${alicloud_vpc.defaultVpc.id}",
 					"resource_group_id":               "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"password":                        "123456Tf",
 					"port":                            "6379",
-					"engine_version":                  "1.0",
+					"engine_version":                  "5.0",
+					"storage_performance_level":       "PL1",
+					"storage_size_gb":                 "60",
 					"security_ips":                    "127.0.0.2",
 					"security_ip_group_name":          "test1",
 					"shard_count":                     "2",
@@ -1863,15 +1873,17 @@ func TestAccAliCloudRedisTairInstance_basic8703(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":                    "PayAsYouGo",
-						"instance_type":                   "tair_scm",
+						"instance_type":                   "tair_essd",
 						"zone_id":                         CHECKSET,
-						"instance_class":                  "tair.scm.with.proxy.standard.2m.8d",
+						"instance_class":                  "tair.essd.standard.xlarge",
 						"vswitch_id":                      CHECKSET,
 						"vpc_id":                          CHECKSET,
 						"resource_group_id":               CHECKSET,
 						"password":                        "123456Tf",
 						"port":                            "6379",
-						"engine_version":                  "1.0",
+						"engine_version":                  "5.0",
+						"storage_performance_level":       "PL1",
+						"storage_size_gb":                 "60",
 						"security_ips":                    "127.0.0.2",
 						"security_ip_group_name":          "test1",
 						"shard_count":                     "2",
@@ -2211,7 +2223,7 @@ func TestAccAliCloudRedisTairInstance_basic8732(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "connection_string_prefix"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "connection_string_prefix"},
 			},
 		},
 	})
@@ -3009,6 +3021,83 @@ func TestAccAliCloudRedisTairInstance_config(t *testing.T) {
 						"payment_type": "PayAsYouGo",
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRedisTairInstance_elastic_burst(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3314)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3314)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${local.zone_id}",
+					"instance_class":     "tair.rdb.2g",
+					"shard_count":        "2",
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"tair_instance_name": name,
+					"bandwidth_burst":    "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":       "PayAsYouGo",
+						"instance_type":      "tair_rdb",
+						"instance_class":     "tair.rdb.2g",
+						"shard_count":        "2",
+						"tair_instance_name": name,
+						"bandwidth_burst":    "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_burst":              "false",
+					"additional_bandwidth":         "20",
+					"additional_bandwidth_node_id": "All",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_burst":              "false",
+						"additional_bandwidth":         "20",
+						"additional_bandwidth_node_id": "All",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_bandwidth": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_bandwidth": "30",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "bandwidth_burst", "additional_bandwidth", "additional_bandwidth_node_id"},
 			},
 		},
 	})
