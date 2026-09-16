@@ -167,6 +167,7 @@ ordering behavior or replace that acceptance run.
 
 ```sh
 go test ./scripts/collection-order/internal/coverage
+bash scripts/ci/collection-order-compat_test.sh
 go run ./scripts/collection-order -resource=alicloud_example
 # Or use full SHAs, with HEAD checked out at the PR head:
 go run ./scripts/collection-order -base="$DIFF_BASE" -head="$DIFF_HEAD"
@@ -175,3 +176,7 @@ go run ./scripts/collection-order -base="$DIFF_BASE" -head="$DIFF_HEAD"
 The workflow uses the existing pinned runner policy, exact-head checkout and
 read-only token permissions. It requires no cloud credentials and does not write
 back to the PR.
+
+For pull requests that predate this checker, CI restores only
+`scripts/collection-order` from the validated pull request base commit. The PR
+HEAD remains checked out; deleting the checker does not trigger restoration.
