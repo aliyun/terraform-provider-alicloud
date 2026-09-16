@@ -3475,3 +3475,82 @@ resource "alicloud_security_group" "default" {
 `, engine, paymentType, engine, versionFilter, paymentType, strings.Join(classes, ", "), zones, name, name, name+"-update", name)
 	}
 }
+
+func TestAccAliCloudKVStoreRedisInstance_elastic_burst(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceElasticBurst%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccKvstoreClassicDependence("Redis", "5.0", "PostPaid", "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread", "redis.amber.logic.sharding.2g.2db.0rodb.6proxy.multithread"))
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":   "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+					"db_instance_name": name,
+					"instance_type":    "Redis",
+					"engine_version":   "5.0",
+					"zone_id":          "${alicloud_vswitch.default.zone_id}",
+					"vswitch_id":       "${alicloud_vswitch.default.id}",
+					"shard_count":      "2",
+					"bandwidth_burst":  "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":   "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+						"db_instance_name": name,
+						"instance_type":    "Redis",
+						"engine_version":   "5.0",
+						"zone_id":          CHECKSET,
+						"vswitch_id":       CHECKSET,
+						"shard_count":      "2",
+						"bandwidth_burst":  "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_burst":              "false",
+					"additional_bandwidth":         "20",
+					"additional_bandwidth_node_id": "All",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_burst":              "false",
+						"additional_bandwidth":         "20",
+						"additional_bandwidth_node_id": "All",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_bandwidth": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_bandwidth": "30",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "bandwidth_burst", "additional_bandwidth", "additional_bandwidth_node_id"},
+			},
+		},
+	})
+}
