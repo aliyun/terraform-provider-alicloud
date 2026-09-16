@@ -489,6 +489,12 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	rdsService := RdsService{client}
+	if _, e := rdsService.describeRdsParentInstance(parts[0], 5*time.Minute); e != nil {
+		if NotFoundError(e) {
+			return nil
+		}
+		return WrapError(e)
+	}
 	action := "DeleteAccount"
 	var response map[string]interface{}
 	request := map[string]interface{}{
@@ -497,10 +503,30 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 		"SourceIp":     client.SourceIp,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
+	accountGone := false
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBClusterStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBStatus", "AccountActionForbidden", "IncorrectDBInstanceState"}) {
+			if rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound", "InvalidAccountName.NotFound") {
+				accountGone = true
+				return nil
+			}
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) {
+				confirmed := rdsService.confirmRdsChildError(parts[0], err)
+				if NotFoundError(confirmed) {
+					accountGone = true
+					return nil
+				}
+				if isRdsRetryableQueryError(confirmed) {
+					return resource.RetryableError(confirmed)
+				}
+				if confirmed != err {
+					return resource.NonRetryableError(confirmed)
+				}
+				wait()
+				return resource.RetryableError(err)
+			}
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "AccountActionForbidden", "IncorrectDBInstanceState"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -510,6 +536,7 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 		object, err := rdsService.DescribeRdsAccount(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
+				accountGone = true
 				return nil
 			}
 			return resource.NonRetryableError(err)
@@ -537,8 +564,17 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
+	if accountGone {
+		return nil
+	}
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	if _, e := rdsService.describeRdsParentInstance(parts[0], 5*time.Minute); e != nil {
+		if NotFoundError(e) {
+			return nil
+		}
+		return WrapError(e)
 	}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, rdsService.RdsAccountStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {

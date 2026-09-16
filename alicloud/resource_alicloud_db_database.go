@@ -227,20 +227,56 @@ func resourceAliCloudRdsDatabaseDelete(d *schema.ResourceData, meta interface{})
 		"DBName":       parts[1],
 		"SourceIp":     client.SourceIp,
 	}
-	// wait instance status is running before deleting database
-	if err := rdsService.WaitForDBInstance(parts[0], Running, 1800); err != nil {
-		return WrapError(err)
-	}
-	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
-	if err != nil {
-		if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidDBName.NotFound"}) {
+	// The delete retries and completion waiter share the configured timeout.
+	deadline := time.Now().Add(d.Timeout(schema.TimeoutDelete))
+	deleted := false
+	err = resource.Retry(time.Until(deadline), func() *resource.RetryError {
+		instance, parentErr := rdsService.describeRdsParentInstance(parts[0], 0)
+		if parentErr != nil {
+			if NotFoundError(parentErr) {
+				return nil
+			}
+			if isRdsRetryableQueryError(parentErr) {
+				return resource.RetryableError(parentErr)
+			}
+			return resource.NonRetryableError(parentErr)
+		}
+		if instance["DBInstanceStatus"] != "Running" {
+			// Deleting is in progress; only confirmed absence completes deletion.
+			return resource.RetryableError(fmt.Errorf("parent instance status is %v", instance["DBInstanceStatus"]))
+		}
+		response, deleteErr := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		if deleteErr == nil {
+			addDebug(action, response, request)
+			deleted = true
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-	}
-	addDebug(action, response, request)
+		if NotFoundError(deleteErr) || rdsErrorHasCode(deleteErr, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound", "InvalidDBName.NotFound") {
+			return nil
+		}
+		if IsExpectedErrors(deleteErr, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus", "IncorrectDBInstanceState"}) {
+			confirmed := rdsService.confirmRdsChildError(parts[0], deleteErr)
+			if NotFoundError(confirmed) {
+				return nil
+			}
+			if confirmed != deleteErr && !isRdsRetryableQueryError(confirmed) {
+				return resource.NonRetryableError(confirmed)
+			}
+			return resource.RetryableError(confirmed)
+		}
+		if NeedRetry(deleteErr) {
+			return resource.RetryableError(deleteErr)
+		}
+		return resource.NonRetryableError(WrapErrorf(deleteErr, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR))
+	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		if !time.Now().Before(deadline) {
+			return WrapErrorf(err, "timeout deleting RDS database %s", d.Id())
+		}
+		return WrapError(err)
 	}
-	return WrapError(rdsService.WaitForDBDatabase(d.Id(), Deleted, DefaultTimeoutMedium))
+	if !deleted {
+		return nil
+	}
+	return WrapError(rdsService.waitForDBDatabaseUntil(d.Id(), Deleted, deadline))
 }

@@ -37,7 +37,78 @@ type RdsService struct {
 // That the business layer only need to check error.
 var DBInstanceStatusCatcher = Catcher{"OperationDenied.DBInstanceStatus", 60, 5}
 
+// State errors require a parent lookup; they do not establish that an instance
+// has been released. In particular, a locked instance may still be recoverable.
+var dbInstanceStatusErrorCodes = []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}
+
+// rdsRetryableQueryError preserves the query's retry decision when its caller
+// owns the deadline. The decision is made against the original SDK error.
+type rdsRetryableQueryError struct {
+	cause error
+}
+
+func (e *rdsRetryableQueryError) Error() string { return e.cause.Error() }
+func (e *rdsRetryableQueryError) Unwrap() error { return e.cause }
+
+func rdsSingleQueryError(result *resource.RetryError) error {
+	if result.Retryable && !NotFoundError(result.Err) {
+		return &rdsRetryableQueryError{cause: result.Err}
+	}
+	return result.Err
+}
+
+func isRdsRetryableQueryError(err error) bool {
+	for {
+		switch e := err.(type) {
+		case *ComplexError:
+			err = e.Cause
+		case *rdsRetryableQueryError:
+			return true
+		default:
+			return false
+		}
+	}
+}
+
+// rdsParentQueryError keeps a failed parent lookup from being interpreted as
+// child-resource absence by the existing NotFoundError handling. The cause is
+// intentionally opaque to absence classifiers; its diagnostic text is retained.
+type rdsParentQueryError struct {
+	cause error
+}
+
+func (e *rdsParentQueryError) Error() string {
+	return fmt.Sprintf("failed to confirm RDS parent instance: %s", e.cause)
+}
+
+// confirmRdsChildError preserves the original state error when the parent exists.
+// A failed parent lookup is propagated, and only confirmed absence becomes gone.
+func (s *RdsService) confirmRdsChildError(instanceID string, err error) error {
+	if !rdsErrorHasCode(err, dbInstanceStatusErrorCodes...) {
+		return err
+	}
+	_, parentErr := s.describeRdsParentInstance(instanceID, 0)
+	if parentErr != nil {
+		return parentErr
+	}
+	return err
+}
+
 func (s *RdsService) DescribeDBInstance(id string) (object map[string]interface{}, err error) {
+	return s.describeDBInstance(id, 5*time.Minute)
+}
+
+func (s *RdsService) describeDBInstance(id string, retryTimeout time.Duration) (object map[string]interface{}, err error) {
+	return s.queryDBInstance(id, retryTimeout, false)
+}
+
+// describeRdsParentInstance requires instance-specific absence evidence when
+// the lookup is used to decide whether a child resource has disappeared.
+func (s *RdsService) describeRdsParentInstance(id string, retryTimeout time.Duration) (object map[string]interface{}, err error) {
+	return s.queryDBInstance(id, retryTimeout, true)
+}
+
+func (s *RdsService) queryDBInstance(id string, retryTimeout time.Duration, parentCheck bool) (object map[string]interface{}, err error) {
 	client := s.client
 	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
@@ -47,20 +118,31 @@ func (s *RdsService) DescribeDBInstance(id string) (object map[string]interface{
 	}
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	attempt := func() *resource.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
+			if parentCheck && NotFoundError(err) && !rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound", "InvalidDBInstanceId.NotFoundError", "Forbidden.InstanceNotFound") {
+				return resource.NonRetryableError(&rdsParentQueryError{cause: err})
+			}
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidParameter"}) {
-				wait()
+				if retryTimeout > 0 {
+					wait()
+				}
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
-	})
+	}
+	if retryTimeout > 0 {
+		err = resource.Retry(retryTimeout, attempt)
+	} else if result := attempt(); result != nil {
+		err = rdsSingleQueryError(result)
+	}
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound"}) {
+		if rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound", "InvalidDBInstanceId.NotFoundError") {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -70,7 +152,7 @@ func (s *RdsService) DescribeDBInstance(id string) (object map[string]interface{
 		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return nil, WrapErrorf(NotFoundErr("DBAccount", id), NotFoundMsg, ProviderERROR)
+		return nil, WrapErrorf(NotFoundErr("DBInstance", id), NotFoundMsg, ProviderERROR)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
@@ -132,18 +214,24 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (object map[string]in
 		"SourceIp":     s.client.SourceIp,
 	}
 	client := s.client
-	invoker := NewInvoker()
-	invoker.AddCatcher(DBInstanceStatusCatcher)
 	var response map[string]interface{}
-	if err := invoker.Run(func() error {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			// Check the parent before retrying a child state error.
+			if rdsErrorHasCode(err, dbInstanceStatusErrorCodes...) {
+				return resource.NonRetryableError(s.confirmRdsChildError(parts[0], err))
+			}
+			if NeedRetry(err) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
-	}); err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+	})
+	if err != nil {
+		if NotFoundError(err) || rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidAccountName.NotFound") {
 			return ds, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return ds, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -156,6 +244,10 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (object map[string]in
 }
 
 func (s *RdsService) DescribeDBDatabase(id string) (object map[string]interface{}, err error) {
+	return s.describeDBDatabase(id, 5*time.Minute)
+}
+
+func (s *RdsService) describeDBDatabase(id string, retryTimeout time.Duration) (object map[string]interface{}, err error) {
 	var ds map[string]interface{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -171,13 +263,16 @@ func (s *RdsService) DescribeDBDatabase(id string) (object map[string]interface{
 		"SourceIp":     s.client.SourceIp,
 	}
 	client := s.client
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	attempt := func() *resource.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBInstanceStatus"}) {
+			if rdsErrorHasCode(err, dbInstanceStatusErrorCodes...) {
+				return resource.NonRetryableError(s.confirmRdsChildError(parts[0], err))
+			}
+			if IsExpectedErrors(err, []string{"InternalError"}) {
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
 			}
-			if NotFoundError(err) || IsExpectedErrors(err, []string{"InvalidDBName.NotFound", "InvalidDBInstanceId.NotFoundError"}) {
+			if NotFoundError(err) || rdsErrorHasCode(err, "InvalidDBName.NotFound", "InvalidDBInstanceId.NotFound", "InvalidDBInstanceId.NotFoundError") {
 				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
@@ -192,7 +287,13 @@ func (s *RdsService) DescribeDBDatabase(id string) (object map[string]interface{
 		}
 		ds = v.([]interface{})[0].(map[string]interface{})
 		return nil
-	})
+	}
+	if retryTimeout > 0 {
+		err = resource.Retry(retryTimeout, attempt)
+	} else if result := attempt(); result != nil {
+		err = rdsSingleQueryError(result)
+	}
+
 	return ds, err
 }
 
@@ -771,6 +872,10 @@ func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
 }
 
 func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
+	return s.revokeAccountPrivilege(id, dbName, 3*time.Minute)
+}
+
+func (s *RdsService) revokeAccountPrivilege(id, dbName string, retryTimeout time.Duration) error {
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		return WrapError(err)
@@ -784,14 +889,30 @@ func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
 		"SourceIp":     s.client.SourceIp,
 	}
 	client := s.client
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	gone := false
+	err = resource.Retry(retryTimeout, func() *resource.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
+			if rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidDB.NotFound", "InvalidAccountName.NotFound") {
+				gone = true
+				return nil
+			}
+			if rdsErrorHasCode(err, dbInstanceStatusErrorCodes...) {
+				confirmed := s.confirmRdsChildError(parts[0], err)
+				if NotFoundError(confirmed) {
+					gone = true
+					return nil
+				}
+				if isRdsRetryableQueryError(confirmed) {
+					return resource.RetryableError(confirmed)
+				}
+				if confirmed != err {
+					return resource.NonRetryableError(confirmed)
+				}
+				return resource.RetryableError(err)
+			}
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
 				return resource.RetryableError(err)
-			} else if IsExpectedErrors(err, []string{"InvalidDB.NotFound"}) {
-				log.Printf("[WARN] Resource alicloud_db_account_privilege RevokeAccountPrivilege Failed!!! %s", err)
-				return nil
 			}
 			return resource.NonRetryableError(err)
 		}
@@ -803,6 +924,9 @@ func (s *RdsService) RevokeAccountPrivilege(id, dbName string) error {
 		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
+	if gone {
+		return nil
+	}
 	if err := s.WaitForAccountPrivilegeRevoked(id, dbName, DefaultTimeoutMedium); err != nil {
 		return WrapError(err)
 	}
@@ -1454,26 +1578,44 @@ func (s *RdsService) DescribeSQLCollectorRetention(id string) (object map[string
 // WaitForInstance waits for instance to given status
 func (s *RdsService) WaitForDBInstance(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	var currentStatus string
+	var lastErr error
 	for {
-		object, err := s.DescribeDBInstance(id)
+		object, err := s.describeDBInstance(id, 0)
 		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
+			if NotFoundError(err) && status == Deleted {
+				return nil
+			}
+			if !isRdsRetryableQueryError(err) {
 				return WrapError(err)
 			}
+			lastErr = err
+		} else {
+			currentStatus = fmt.Sprint(object["DBInstanceStatus"])
+			if status != Deleted && strings.EqualFold(currentStatus, string(status)) {
+				return nil
+			}
+			if status != Deleted && currentStatus == "Deleting" {
+				return fmt.Errorf("RDS instance %s is Deleting; cannot reach %s", id, status)
+			}
 		}
-		if object != nil && strings.ToLower(fmt.Sprint(object["DBInstanceStatus"])) == strings.ToLower(string(status)) {
-			break
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["DBInstanceStatus"], status, ProviderERROR)
+		if !rdsWaitBefore(deadline, DefaultIntervalShort*time.Second) {
+			return WrapErrorf(lastErr, "timeout waiting for RDS instance %s to reach %s; last status: %s", id, status, currentStatus)
 		}
 	}
-	return nil
+}
+
+// rdsWaitBefore caps polling sleeps at the operation deadline.
+func rdsWaitBefore(deadline time.Time, interval time.Duration) bool {
+	remaining := time.Until(deadline)
+	if remaining <= 0 {
+		return false
+	}
+	if interval > remaining {
+		interval = remaining
+	}
+	time.Sleep(interval)
+	return time.Now().Before(deadline)
 }
 
 func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -1661,14 +1803,12 @@ func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, t
 	for {
 		object, err := s.DescribeDBDatabase(parts[0] + ":" + dbName)
 		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
+			if NotFoundError(err) && status == Deleted {
+				return nil
 			}
+			return WrapError(err)
 		}
+
 		ready := false
 		if object != nil {
 			accountPrivilegeInfos := object["Accounts"].(map[string]interface{})["AccountPrivilegeInfo"].([]interface{})
@@ -1685,10 +1825,10 @@ func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, t
 		if status == Deleted && !ready {
 			break
 		}
-		if ready {
+		if status != Deleted && ready {
 			break
 		}
-		if time.Now().After(deadline) {
+		if !rdsWaitBefore(deadline, DefaultIntervalShort*time.Second) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "", id, ProviderERROR)
 		}
 	}
@@ -1725,7 +1865,7 @@ func (s *RdsService) WaitForAccountPrivilegeRevoked(id, dbName string, timeout i
 		if !exist {
 			break
 		}
-		if time.Now().After(deadline) {
+		if !rdsWaitBefore(deadline, DefaultIntervalShort*time.Second) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, "", dbName, ProviderERROR)
 		}
 
@@ -1734,30 +1874,36 @@ func (s *RdsService) WaitForAccountPrivilegeRevoked(id, dbName string, timeout i
 }
 
 func (s *RdsService) WaitForDBDatabase(id string, status Status, timeout int) error {
+	return s.waitForDBDatabaseUntil(id, status, time.Now().Add(time.Duration(timeout)*time.Second))
+}
+
+func (s *RdsService) waitForDBDatabaseUntil(id string, status Status, deadline time.Time) error {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return WrapError(err)
 	}
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	var lastErr error
+	var currentStatus string
 	for {
-		object, err := s.DescribeDBDatabase(id)
+		object, err := s.describeDBDatabase(id, 0)
 		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
+			if NotFoundError(err) && status == Deleted {
+				return nil
 			}
-			return WrapError(err)
+			if !isRdsRetryableQueryError(err) && !(status == Deleted && rdsErrorHasCode(err, dbInstanceStatusErrorCodes...)) {
+				return WrapError(err)
+			}
+			lastErr = err
+		} else if object != nil {
+			currentStatus = fmt.Sprint(object["DBStatus"])
+			if status != Deleted && object["DBName"] == parts[1] {
+				return nil
+			}
 		}
-		if object != nil && object["DBName"] == parts[1] {
-			break
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object["DBName"], parts[1], ProviderERROR)
+		if !rdsWaitBefore(deadline, DefaultIntervalShort*time.Second) {
+			return WrapErrorf(lastErr, "timeout waiting for RDS database %s to reach %s; last status: %s", id, status, currentStatus)
 		}
 	}
-	return nil
 }
 
 // turn period to TimeType
@@ -2120,9 +2266,12 @@ func (s *RdsService) DescribeRdsAccount(id string) (object map[string]interface{
 	}
 	response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+		if rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidAccountName.NotFound") {
 			err = WrapErrorf(NotFoundErr("RdsAccount", id), NotFoundMsg, ProviderERROR)
 			return object, err
+		}
+		if rdsErrorHasCode(err, dbInstanceStatusErrorCodes...) {
+			err = s.confirmRdsChildError(parts[0], err)
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return object, err

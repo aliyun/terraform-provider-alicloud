@@ -558,6 +558,11 @@ locals {
   zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
 }
 
+// RDS PostgreSQL on ECS requires this service-linked role before CreateDBInstance
+resource "alicloud_rds_service_linked_role" "default" {
+	service_name = "AliyunServiceRoleForRdsPgsqlOnEcs"
+}
+
 resource "alicloud_db_instance" "default" {
     engine = "PostgreSQL"
 	engine_version = "14.0"
@@ -567,6 +572,7 @@ resource "alicloud_db_instance" "default" {
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	instance_charge_type = "Postpaid"
+	depends_on = [alicloud_rds_service_linked_role.default]
 }
 `, name)
 }
