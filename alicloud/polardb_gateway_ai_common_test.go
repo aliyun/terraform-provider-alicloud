@@ -77,4 +77,12 @@ func TestUnitPolarDBGatewayAIResourceSchemas(t *testing.T) {
 	if consumerSchema["api_key_reset_token"].Sensitive {
 		t.Fatal("consumer api_key_reset_token is a rotation trigger, not the secret")
 	}
+	budgetSchema := resourceAlicloudPolarDBGatewayBudgetPolicy().Schema
+	if !budgetSchema["budget_type"].ForceNew || budgetSchema["budget_points"].ForceNew {
+		t.Fatal("budget type must replace the policy while budget points must update in place")
+	}
+	rateLimitSchema := resourceAlicloudPolarDBGatewayRateLimitPolicy().Schema
+	if !rateLimitSchema["scope_type"].ForceNew || rateLimitSchema["rate_limit_rpm"].ForceNew {
+		t.Fatal("rate limit scope must replace the policy while rate limits must update in place")
+	}
 }

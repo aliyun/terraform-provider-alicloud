@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +29,14 @@ func parsePolarDBGatewayAIChildID(id string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid PolarDB AI gateway child resource ID %q, expected <gateway_id>:<child_id>", id)
 	}
 	return parts[0], parts[1], nil
+}
+
+func polarDBGatewayAIInt(value interface{}) interface{} {
+	parsed, err := strconv.Atoi(strings.TrimSpace(fmt.Sprint(value)))
+	if err != nil {
+		return value
+	}
+	return parsed
 }
 
 func validatePolarDBGatewayAIURL(v interface{}, k string) ([]string, []error) {
