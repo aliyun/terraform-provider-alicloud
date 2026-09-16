@@ -29,7 +29,7 @@ mode="${1:-}"
 expected_event="${2:-}"
 
 case "$mode" in
-  claude|codex)
+  claude|codex|qoder)
     if [ "$expected_event" = "PreToolUse" ]; then
       # Codex only treats exit 2 + non-empty stderr as a blocking PreTool
       # result. Normalize missing Python/manager crashes/malformed input and
@@ -81,7 +81,7 @@ case "$mode" in
     exec "$python_bin" "$manager" "$@"
     ;;
   *)
-    echo "usage: run-interactive-worker-hook.sh <claude|codex|cli> [args...]" >&2
+    echo "usage: run-interactive-worker-hook.sh <claude|codex|qoder|cli> [args...]" >&2
     exit 64
     ;;
 esac

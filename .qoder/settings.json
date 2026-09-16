@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "repo=\"${QODER_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}\"; [ -n \"$repo\" ] || { echo \"worker-hook: cannot resolve repo root from cwd=$PWD\" >&2; exit 0; }; bash \"$repo/bootstrap/run-interactive-worker-hook.sh\" qoder SessionStart"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "repo=\"${QODER_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}\"; [ -n \"$repo\" ] || exit 0; bash \"$repo/bootstrap/run-interactive-worker-hook.sh\" qoder SessionEnd"
+          }
+        ]
+      }
+    ]
+  }
+}

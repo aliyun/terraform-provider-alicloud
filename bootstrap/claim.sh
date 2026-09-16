@@ -511,12 +511,25 @@ _update_tags_merged() {
     _run_tag_update $A1 project workitem update "$id" --tag "$to_write" "$@"
 }
 
-# Interactive Claude/Codex sessions use the database fence as the sole mutex.
+# Interactive Claude/Codex/Qoder sessions use the database fence as the sole mutex.
 # The wrapper loads the same gitignored control-plane environment as bridge/run.sh.
 _is_interactive_context() {
-    [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ] || \
-        { case "${JARVIS_INTERACTIVE_CLIENT:-}" in claude|codex) true ;; *) false ;; esac \
-          && [ -n "${JARVIS_INTERACTIVE_SESSION_ID:-}" ]; }
+    [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] || [ -n "${CODEX_THREAD_ID:-}" ] && return 0
+    case "${JARVIS_INTERACTIVE_CLIENT:-}" in
+        claude|codex|qoder)
+            [ -n "${JARVIS_INTERACTIVE_SESSION_ID:-}" ] && return 0
+            ;;
+    esac
+    # Qoder injects no session environment variable; resolve through the
+    # registered interactive-worker state instead.
+    local runner="${JARVIS_INTERACTIVE_WORKER_RUNNER:-$script_dir/run-interactive-worker-hook.sh}"
+    [ -f "$runner" ] || return 1
+    local context_out
+    context_out="$(bash "$runner" cli runtime-context 2>/dev/null)" || return 1
+    case "$context_out" in
+        qoder\ *) return 0 ;;
+    esac
+    return 1
 }
 
 _interactive_worker() {
