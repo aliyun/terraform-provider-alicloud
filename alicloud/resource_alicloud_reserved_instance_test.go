@@ -47,8 +47,10 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 					"zone_id":           "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
 					"scope":             "Zone",
 					"period":            "1",
+					"platform":          "Linux",
 					"renewal_status":    "AutoRenewal",
 					"auto_renew_period": "36",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"tags":              map[string]interface{}{"Created": "TF", "Foo": "Bar"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -61,8 +63,10 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 						"description":       "ReservedInstance",
 						"zone_id":           CHECKSET,
 						"scope":             "Zone",
+						"platform":          "Linux",
 						"renewal_status":    "AutoRenewal",
 						"auto_renew_period": "36",
+						"resource_group_id": CHECKSET,
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.Foo":          "Bar",
@@ -162,6 +166,30 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew":     "true",
+					"renewal_status": "AutoRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew":     "true",
+						"renewal_status": "AutoRenewal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew":     "false",
+					"renewal_status": "Normal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew":     "false",
+						"renewal_status": "Normal",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -247,6 +275,7 @@ var testAccReservedInstanceCheckMap = map[string]string{
 	"allocation_status": "",
 	"create_time":       CHECKSET,
 	"expired_time":      CHECKSET,
+	"payment_type":      CHECKSET,
 	"start_time":        CHECKSET,
 	"status":            CHECKSET,
 	"operation_locks.#": "0",
@@ -260,6 +289,9 @@ func resourceReservedInstanceBasicConfigDependence(name string) string {
 	
 	data "alicloud_instance_types" "default" {
 		instance_type_family = "ecs.g7"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 `, name)
 }

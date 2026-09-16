@@ -37,13 +37,18 @@ func resourceAliCloudReservedInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{string(RenewAutoRenewal), string(RenewNormal)}, false),
 			},
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"auto_renew_period": {
 				Computed:     true,
 				Optional:     true,
 				Type:         schema.TypeInt,
 				ValidateFunc: validation.IntInSlice([]int{1, 12, 36, 60}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if d.Get("renewal_status").(string) == string(RenewAutoRenewal) {
+					if d.Get("renewal_status").(string) == string(RenewAutoRenewal) || d.Get("auto_renew").(bool) {
 						return false
 					}
 					return true
@@ -133,6 +138,10 @@ func resourceAliCloudReservedInstance() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"No Upfront", "Partial Upfront", "All Upfront"}, false),
 			},
+			"payment_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -209,7 +218,9 @@ func resourceAliCloudReservedInstanceCreate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if v, ok := d.GetOk("renewal_status"); ok {
+	if v, exists := d.GetOkExists("auto_renew"); exists {
+		request["AutoRenew"] = v.(bool)
+	} else if v, ok := d.GetOk("renewal_status"); ok {
 		request["AutoRenew"] = v.(string) == string(RenewAutoRenewal)
 	}
 	if v, ok := d.GetOkExists("auto_renew_period"); ok {
@@ -298,7 +309,7 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("description")
 	}
 
-	if d.HasChanges("auto_renew_period", "renewal_status") {
+	if d.HasChanges("auto_renew", "auto_renew_period", "renewal_status") {
 		request := map[string]interface{}{
 			"ReservedInstanceId": []string{d.Id()},
 			"RegionId":           client.RegionId,
@@ -312,7 +323,13 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 				request["PeriodUnit"] = "Year"
 			}
 		}
-		if v, ok := d.GetOk("renewal_status"); ok {
+		if v, exists := d.GetOkExists("auto_renew"); exists {
+			if v.(bool) {
+				request["RenewalStatus"] = string(RenewAutoRenewal)
+			} else {
+				request["RenewalStatus"] = string(RenewNormal)
+			}
+		} else if v, ok := d.GetOk("renewal_status"); ok {
 			request["RenewalStatus"] = v
 		}
 
@@ -333,6 +350,7 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		d.SetPartial("auto_renew")
 		d.SetPartial("auto_renew_period")
 		d.SetPartial("renewal_status")
 	}
@@ -361,7 +379,7 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("name", reservedInstances.ReservedInstanceName)
 	d.Set("reserved_instance_name", reservedInstances.ReservedInstanceName)
 	d.Set("description", reservedInstances.Description)
-	d.Set("resource_group_id", reservedInstances.ReservedInstanceId)
+	d.Set("resource_group_id", reservedInstances.ResourceGroupId)
 	d.Set("status", reservedInstances.Status)
 	d.Set("create_time", reservedInstances.CreationTime)
 	d.Set("expired_time", reservedInstances.ExpiredTime)
@@ -384,7 +402,9 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("renewal_status", object["RenewalStatus"])
+	renewalStatus, _ := object["RenewalStatus"].(string)
+	d.Set("renewal_status", renewalStatus)
+	d.Set("auto_renew", renewalStatus == string(RenewAutoRenewal))
 
 	if v, ok := object["Duration"]; ok && formatInt(v) != 0 {
 		renewPeriod := formatInt(v)
@@ -392,6 +412,16 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 			renewPeriod = renewPeriod * 12
 		}
 		d.Set("auto_renew_period", renewPeriod)
+	}
+
+	// PaymentType is not modeled by the ECS SDK struct; read it from the raw
+	// DescribeReservedInstances response so users can observe the billing type.
+	rawReservedInstance, err := ecsService.DescribeEcsReservedInstance(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if v, ok := rawReservedInstance["PaymentType"].(string); ok {
+		d.Set("payment_type", v)
 	}
 
 	return nil
