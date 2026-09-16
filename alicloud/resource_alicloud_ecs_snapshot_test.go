@@ -423,6 +423,7 @@ var AliCloudEcsSnapshotMap0 = map[string]string{
 	"region_id":   CHECKSET,
 	"category":    CHECKSET,
 	"status":      CHECKSET,
+	"encrypted":   "true",
 }
 
 func AliCloudEcsSnapshotBasicDependence0(name string) string {
@@ -546,6 +547,7 @@ func TestUnitAliCloudEcsSnapshot(t *testing.T) {
 					"Category":                   "standard",
 					"Description":                "description",
 					"SourceDiskId":               "disk_id",
+					"Encrypted":                  true,
 					"InstantAccess":              true,
 					"InstantAccessRetentionDays": 20,
 					"ResourceGroupId":            "resource_group_id",
@@ -1690,5 +1692,201 @@ func TestUnitEcsSnapshotReadAvailable(t *testing.T) {
 		if state.Attributes["wait_until"] != "" {
 			t.Fatalf("import/Read must not invent a local policy: %q", state.Attributes["wait_until"])
 		}
+	}
+}
+
+// TestAccAliCloudECSSnapshot_lockDuration verifies that lock_duration locks a
+// snapshot in compliance mode via LockSnapshot and that lock_status /
+// lock_duration / encrypted are populated from DescribeSnapshots +
+// DescribeLockedSnapshots. The lock step extends the duration.
+//
+// NOTE: a compliance-locked snapshot cannot be deleted until the lock expires;
+// checkEcsSnapshotDestroyWithLock defers cleanup for locked snapshots instead
+// of failing the test.
+func TestAccAliCloudECSSnapshot_lockDuration(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_snapshot.default"
+	ra := resourceAttrInit(resourceId, AliCloudEcsSnapshotMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsSnapshot")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secssnapshot%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsSnapshotBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  checkEcsSnapshotDestroyWithLock(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_id":        "${alicloud_ecs_disk_attachment.default.disk_id}",
+					"retention_days": "20",
+					"lock_duration":  "10",
+					"wait_until":     "accomplished",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disk_id":        CHECKSET,
+						"retention_days": "20",
+						"lock_duration":  "10",
+						"lock_status":    CHECKSET,
+						"encrypted":      "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_id":        "${alicloud_ecs_disk_attachment.default.disk_id}",
+					"retention_days": "20",
+					"lock_duration":  "15",
+					"wait_until":     "accomplished",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lock_duration": "15",
+						"lock_status":   CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "wait_until", "lock_duration"},
+			},
+		},
+	})
+}
+
+// checkEcsSnapshotDestroyWithLock is like checkResourceDestroy but treats
+// compliance-locked snapshots as deferred cleanup (they auto-expire after
+// the lock duration) instead of failing the test.
+func checkEcsSnapshotDestroyWithLock() resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		ecsServiceV2 := EcsServiceV2{client}
+		for _, rs := range s.RootModule().Resources {
+			if rs.Type != "alicloud_ecs_snapshot" || rs.Primary.ID == "" {
+				continue
+			}
+			_, err := ecsServiceV2.DescribeEcsSnapshot(rs.Primary.ID)
+			if err != nil {
+				if NotFoundError(err) {
+					continue
+				}
+				return WrapError(err)
+			}
+			lockInfo, _ := ecsServiceV2.DescribeEcsSnapshotLock(rs.Primary.ID)
+			if lockInfo != nil {
+				log.Printf("[WARN] Snapshot %s is locked (lock_status=%v), cannot delete. It will auto-expire after the lock duration.", rs.Primary.ID, lockInfo["LockStatus"])
+				continue
+			}
+			return fmt.Errorf("ECS Snapshot %s still exists", rs.Primary.ID)
+		}
+		return nil
+	}
+}
+
+func TestUnitEcsSnapshotLockRead(t *testing.T) {
+	client := ecsSnapshotTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		var response interface{}
+		switch r.Form.Get("Action") {
+		case "DescribeSnapshots":
+			response = ecsSnapshotTestDescribeResponse("accomplished", true, map[string]interface{}{
+				"Encrypted": true,
+			})
+		case "DescribeLockedSnapshots":
+			response = map[string]interface{}{
+				"LockedSnapshotsInfo": []interface{}{
+					map[string]interface{}{
+						"SnapshotId":   "snapshot-test",
+						"LockStatus":   "compliance",
+						"LockDuration": 30,
+						"LockMode":     "compliance",
+					},
+				},
+			}
+		default:
+			t.Errorf("unexpected action: %s", r.Form.Get("Action"))
+			w.WriteHeader(http.StatusBadRequest)
+			response = map[string]interface{}{"Code": "UnexpectedAction"}
+		}
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			t.Error(err)
+		}
+	})
+
+	r := resourceAliCloudEcsSnapshot()
+	d := r.Data(nil)
+	d.SetId("snapshot-test")
+	if err := r.Read(d, client); err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+	if got := d.Get("encrypted").(bool); !got {
+		t.Fatalf("expected encrypted=true, got %v", got)
+	}
+	if got := d.Get("lock_status").(string); got != "compliance" {
+		t.Fatalf("expected lock_status=compliance, got %q", got)
+	}
+	if got := d.Get("lock_duration").(int); got != 30 {
+		t.Fatalf("expected lock_duration=30, got %v", got)
+	}
+}
+
+func TestUnitEcsSnapshotLockReadUnlocked(t *testing.T) {
+	var describeLockedCalls int32
+	client := ecsSnapshotTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		var response interface{}
+		switch r.Form.Get("Action") {
+		case "DescribeSnapshots":
+			response = ecsSnapshotTestDescribeResponse("accomplished", true, map[string]interface{}{
+				"Encrypted": false,
+			})
+		case "DescribeLockedSnapshots":
+			atomic.AddInt32(&describeLockedCalls, 1)
+			response = map[string]interface{}{
+				"LockedSnapshotsInfo": []interface{}{},
+			}
+		default:
+			t.Errorf("unexpected action: %s", r.Form.Get("Action"))
+			w.WriteHeader(http.StatusBadRequest)
+			response = map[string]interface{}{"Code": "UnexpectedAction"}
+		}
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			t.Error(err)
+		}
+	})
+
+	r := resourceAliCloudEcsSnapshot()
+	d := r.Data(nil)
+	d.SetId("snapshot-test")
+	if err := r.Read(d, client); err != nil {
+		t.Fatalf("Read failed: %v", err)
+	}
+	if got := d.Get("encrypted").(bool); got {
+		t.Fatalf("expected encrypted=false, got %v", got)
+	}
+	if got := d.Get("lock_status").(string); got != "" {
+		t.Fatalf("expected lock_status empty for unlocked snapshot, got %q", got)
+	}
+	if got := d.Get("lock_duration").(int); got != 0 {
+		t.Fatalf("expected lock_duration=0 for unlocked snapshot, got %v", got)
+	}
+	if got := atomic.LoadInt32(&describeLockedCalls); got != 1 {
+		t.Fatalf("expected one DescribeLockedSnapshots call, got %d", got)
 	}
 }
