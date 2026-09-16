@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -913,40 +914,6 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic10338(t *testing.T) {
 						{
 							"enable_dpd":           "false",
 							"enable_nat_traversal": "false",
-							"tunnel_index":         "2",
-							"tunnel_ike_config": []map[string]interface{}{
-								{
-									"psk":          "tunnel2new",
-									"ike_auth_alg": "sha384",
-									"ike_enc_alg":  "aes256",
-									"ike_lifetime": "86122",
-									"ike_mode":     "aggressive",
-									"ike_pfs":      "group14",
-									"ike_version":  "ikev2",
-									"local_id":     "2.2.2.2",
-									"remote_id":    "3.3.3.3",
-								},
-							},
-							"customer_gateway_id": "${alicloud_vpn_customer_gateway.cgw2.id}",
-							"tunnel_bgp_config": []map[string]interface{}{
-								{
-									"local_asn":    "1219002",
-									"local_bgp_ip": "169.254.42.1",
-									"tunnel_cidr":  "169.254.42.0/30",
-								},
-							},
-							"tunnel_ipsec_config": []map[string]interface{}{
-								{
-									"ipsec_auth_alg": "sha512",
-									"ipsec_enc_alg":  "aes192",
-									"ipsec_lifetime": "86111",
-									"ipsec_pfs":      "disabled",
-								},
-							},
-						},
-						{
-							"enable_dpd":           "false",
-							"enable_nat_traversal": "false",
 							"tunnel_index":         "1",
 							"tunnel_bgp_config": []map[string]interface{}{
 								{
@@ -977,6 +944,40 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic10338(t *testing.T) {
 								},
 							},
 							"customer_gateway_id": "${alicloud_vpn_customer_gateway.cgw2.id}",
+						},
+						{
+							"enable_dpd":           "false",
+							"enable_nat_traversal": "false",
+							"tunnel_index":         "2",
+							"tunnel_ike_config": []map[string]interface{}{
+								{
+									"psk":          "tunnel2new",
+									"ike_auth_alg": "sha384",
+									"ike_enc_alg":  "aes256",
+									"ike_lifetime": "86122",
+									"ike_mode":     "aggressive",
+									"ike_pfs":      "group14",
+									"ike_version":  "ikev2",
+									"local_id":     "2.2.2.2",
+									"remote_id":    "3.3.3.3",
+								},
+							},
+							"customer_gateway_id": "${alicloud_vpn_customer_gateway.cgw2.id}",
+							"tunnel_bgp_config": []map[string]interface{}{
+								{
+									"local_asn":    "1219002",
+									"local_bgp_ip": "169.254.42.1",
+									"tunnel_cidr":  "169.254.42.0/30",
+								},
+							},
+							"tunnel_ipsec_config": []map[string]interface{}{
+								{
+									"ipsec_auth_alg": "sha512",
+									"ipsec_enc_alg":  "aes192",
+									"ipsec_lifetime": "86111",
+									"ipsec_pfs":      "disabled",
+								},
+							},
 						},
 					},
 					"remote_subnet":     "9.0.0.0/8",
@@ -2519,4 +2520,136 @@ resource "alicloud_vpn_customer_gateway" "cgw2" {
 }
 
 `, name)
+}
+
+// Exercise changes independently, without changing customer gateways or tunnel
+// indexes, and refresh after attaching the VPN to a transit router.
+func TestAccAliCloudVpnGatewayVpnAttachment_tunnelListUpdates(t *testing.T) {
+	name := fmt.Sprintf("tfaccvpnlist%d", acctest.RandIntRange(10000, 99999))
+	resourceID := "alicloud_vpn_gateway_vpn_attachment.default"
+	var attachmentID string
+	stableID := func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceID]
+		if !ok || rs.Primary.ID == "" {
+			return fmt.Errorf("VPN attachment was not created")
+		}
+		if attachmentID == "" {
+			attachmentID = rs.Primary.ID
+		} else if attachmentID != rs.Primary.ID {
+			return fmt.Errorf("VPN attachment was replaced")
+		}
+		return nil
+	}
+	check := func(psk string) resource.TestCheckFunc {
+		return resource.ComposeTestCheckFunc(stableID,
+			resource.TestCheckResourceAttr(resourceID, "tunnel_options_specification.0.tunnel_index", "1"),
+			resource.TestCheckResourceAttr(resourceID, "tunnel_options_specification.1.tunnel_index", "2"),
+			resource.TestCheckResourceAttr(resourceID, "tunnel_options_specification.0.tunnel_ike_config.0.psk", psk))
+	}
+	cfg := func(psk, localID string, bgp bool, asn int) string {
+		return vpnAttachmentTunnelListConfig(name, psk, localID, bgp, asn)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) }, Providers: testAccProviders,
+		CheckDestroy: func(s *terraform.State) error {
+			service := VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+			for key, rs := range s.RootModule().Resources {
+				if key != resourceID {
+					continue
+				}
+				_, err := service.DescribeVpnGatewayVpnAttachment(rs.Primary.ID)
+				if err == nil {
+					return fmt.Errorf("VPN attachment still exists")
+				}
+				if !NotFoundError(err) {
+					return err
+				}
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{
+			{Config: cfg("tf-vpn-list-original", "", false, 65001), Check: check("tf-vpn-list-original")},
+			{PreConfig: func() { time.Sleep(90 * time.Second) }, Config: cfg("tf-vpn-list-original", "", false, 65001), PlanOnly: true},
+			{Config: cfg("tf-vpn-list-rotated", "", false, 65001), Check: check("tf-vpn-list-rotated")},
+			{Config: cfg("tf-vpn-list-rotated", "vpn-local.example", false, 65001), Check: resource.ComposeTestCheckFunc(check("tf-vpn-list-rotated"), resource.TestCheckResourceAttr(resourceID, "tunnel_options_specification.0.tunnel_ike_config.0.local_id", "vpn-local.example"))},
+			{Config: cfg("tf-vpn-list-rotated", "vpn-local.example", true, 65001), Check: resource.ComposeTestCheckFunc(check("tf-vpn-list-rotated"), resource.TestCheckResourceAttr(resourceID, "enable_tunnels_bgp", "true"))},
+			{Config: cfg("tf-vpn-list-rotated", "vpn-local.example", true, 65002), Check: resource.ComposeTestCheckFunc(check("tf-vpn-list-rotated"), resource.TestCheckResourceAttr(resourceID, "tunnel_options_specification.0.tunnel_bgp_config.0.local_asn", "65002"), resource.TestCheckResourceAttr(resourceID, "tunnel_options_specification.1.tunnel_bgp_config.0.local_asn", "65002"))},
+			{Config: cfg("tf-vpn-list-rotated", "vpn-local.example", true, 65002), PlanOnly: true},
+			{
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"tunnel_options_specification.0.tunnel_ike_config.0.psk",
+					"tunnel_options_specification.1.tunnel_ike_config.0.psk",
+				},
+			},
+		},
+	})
+}
+
+func vpnAttachmentTunnelListConfig(name, psk, localID string, bgp bool, asn int) string {
+	localIDConfig := ""
+	if localID != "" {
+		localIDConfig = fmt.Sprintf("local_id = %q", localID)
+	}
+	bgpOne, bgpTwo := "", ""
+	if bgp {
+		bgpOne = fmt.Sprintf("tunnel_bgp_config {\nlocal_asn = %d\ntunnel_cidr = \"169.254.10.0/30\"\nlocal_bgp_ip = \"169.254.10.1\"\n}", asn)
+		bgpTwo = fmt.Sprintf("tunnel_bgp_config {\nlocal_asn = %d\ntunnel_cidr = \"169.254.20.0/30\"\nlocal_bgp_ip = \"169.254.20.1\"\n}", asn)
+	}
+	return fmt.Sprintf(`
+variable "name" { default = %q }
+resource "alicloud_vpn_customer_gateway" "one" {
+ customer_gateway_name = "${var.name}-one"
+ ip_address = "7.8.${tonumber(substr(var.name,-4,2))}.${100+tonumber(substr(var.name,-2,2))}"
+ asn = "65010"
+}
+resource "alicloud_vpn_customer_gateway" "two" {
+ customer_gateway_name = "${var.name}-two"
+ ip_address = "7.9.${tonumber(substr(var.name,-4,2))}.${100+tonumber(substr(var.name,-2,2))}"
+ asn = "65010"
+}
+resource "alicloud_cen_instance" "default" { cen_instance_name = var.name }
+resource "alicloud_cen_transit_router" "default" {
+ cen_id = alicloud_cen_instance.default.id
+ transit_router_name = var.name
+}
+resource "alicloud_cen_transit_router_cidr" "default" {
+ transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+ cidr = "192.168.0.0/16"
+ transit_router_cidr_name = var.name
+ publish_cidr_route = false
+}
+resource "alicloud_vpn_gateway_vpn_attachment" "default" {
+ vpn_attachment_name = var.name
+ network_type = "public"
+ local_subnet = "0.0.0.0/0"
+ remote_subnet = "0.0.0.0/0"
+ enable_tunnels_bgp = %t
+ tunnel_options_specification {
+  customer_gateway_id = alicloud_vpn_customer_gateway.one.id
+  tunnel_index = 1
+  tunnel_ike_config {
+   psk = %q
+   ike_mode = "aggressive"
+   %s
+  }
+  %s
+ }
+ tunnel_options_specification {
+  customer_gateway_id = alicloud_vpn_customer_gateway.two.id
+  tunnel_index = 2
+  tunnel_ike_config { psk = "tf-vpn-list-secondary" }
+  %s
+ }
+}
+resource "alicloud_cen_transit_router_vpn_attachment" "default" {
+ cen_id = alicloud_cen_instance.default.id
+ transit_router_id = alicloud_cen_transit_router_cidr.default.transit_router_id
+ vpn_id = alicloud_vpn_gateway_vpn_attachment.default.id
+ transit_router_vpn_attachment_name = var.name
+ auto_publish_route_enabled = false
+}
+`, name, bgp, psk, localIDConfig, bgpOne, bgpTwo)
 }
