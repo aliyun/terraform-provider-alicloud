@@ -70,4 +70,11 @@ func TestUnitPolarDBGatewayAIResourceSchemas(t *testing.T) {
 	if resourceAlicloudPolarDBGatewayCostRule().Schema["model_name"].ForceNew {
 		t.Fatal("cost rule model_name is supported by ModifyCostRule")
 	}
+	consumerSchema := resourceAlicloudPolarDBGatewayConsumer().Schema
+	if !consumerSchema["api_key"].Sensitive || !consumerSchema["api_key"].Computed {
+		t.Fatal("consumer api_key must be a sensitive computed value")
+	}
+	if consumerSchema["api_key_reset_token"].Sensitive {
+		t.Fatal("consumer api_key_reset_token is a rotation trigger, not the secret")
+	}
 }

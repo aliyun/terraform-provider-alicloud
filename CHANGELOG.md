@@ -6,6 +6,10 @@
 - **New Data Source:** `alicloud_polardb_gateway_model_services` ([#10582](https://github.com/aliyun/terraform-provider-alicloud/issues/10582))
 - **New Data Source:** `alicloud_polardb_gateway_model_apis` ([#10582](https://github.com/aliyun/terraform-provider-alicloud/issues/10582))
 - **New Data Source:** `alicloud_polardb_gateway_cost_rules` ([#10592](https://github.com/aliyun/terraform-provider-alicloud/issues/10592))
+- **New Resource:** `alicloud_polardb_gateway_consumer_group` ([#10585](https://github.com/aliyun/terraform-provider-alicloud/issues/10585))
+- **New Resource:** `alicloud_polardb_gateway_consumer` ([#10585](https://github.com/aliyun/terraform-provider-alicloud/issues/10585))
+- **New Data Source:** `alicloud_polardb_gateway_consumer_groups` ([#10585](https://github.com/aliyun/terraform-provider-alicloud/issues/10585))
+- **New Data Source:** `alicloud_polardb_gateway_consumers` ([#10585](https://github.com/aliyun/terraform-provider-alicloud/issues/10585))
 
 ## 1.293.0 (September 11, 2026)
 
