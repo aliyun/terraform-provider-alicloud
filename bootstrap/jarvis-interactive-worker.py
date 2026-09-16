@@ -286,6 +286,21 @@ def _process_start_identity(pid: int) -> str:
     return " ".join(result.stdout.split())
 
 
+def _client_process_matches(command_lower: str, client_name: str) -> bool:
+    if client_name == "claude":
+        return re.search(r"(^|[/ ])claude([ /]|$)", command_lower) is not None
+    if client_name == "codex":
+        return "codex" in command_lower
+    if client_name == "qoder":
+        # Qoder's host is /Applications/Qoder.app/Contents/MacOS/Qoder or the
+        # qodercli binary; helper processes (qoder-computer-use, qoderwork
+        # wrappers, mcp bridges) are never the interactive host.
+        parts = command_lower.split()
+        executable = parts[0].rsplit("/", 1)[-1] if parts else ""
+        return executable in ("qoder", "qodercli")
+    return False
+
+
 def _find_host_pid(client_name: str) -> Tuple[int, bool]:
     configured = os.environ.get("JARVIS_INTERACTIVE_HOST_PID", "").strip()
     if configured:
@@ -302,8 +317,7 @@ def _find_host_pid(client_name: str) -> Tuple[int, bool]:
         lower = command.lower()
         helper = ("jarvis-interactive-worker" in lower
                   or "run-interactive-worker-hook" in lower)
-        if not helper and (re.search(r"(^|[/ ])claude([ /]|$)", lower)
-                           if needle == "claude" else "codex" in lower):
+        if not helper and _client_process_matches(lower, needle):
             return pid, True
         if depth >= 2 and fallback == os.getppid():
             fallback = pid
@@ -324,10 +338,9 @@ def _nearest_runtime_client() -> str:
         helper = ("jarvis-interactive-worker" in lower
                   or "run-interactive-worker-hook" in lower)
         if not helper:
-            if re.search(r"(^|[/ ])claude([ /]|$)", lower):
-                return "claude"
-            if "codex" in lower:
-                return "codex"
+            for candidate in ("claude", "codex", "qoder"):
+                if _client_process_matches(lower, candidate):
+                    return candidate
         pid = parent
     return ""
 
@@ -343,6 +356,59 @@ def _host_alive(state: Mapping[str, Any]) -> bool:
     return (str(state.get("client") or "").lower() in command.lower()
             and bool(expected_start)
             and _process_start_identity(int(pid)) == expected_start)
+
+
+def _qoder_state_context() -> Tuple[str, str]:
+    """Resolve the Qoder session from the worker state registered for this host.
+
+    Qoder injects no session-id environment variable into tool subprocesses, so
+    the context is recovered from the interactive-worker state written by the
+    SessionStart hook: same host process incarnation, not stopped, and (when
+    several sessions share one Qoder host) anchored by the registered cwd.
+    """
+    host_pid, verified = _find_host_pid("qoder")
+    if not verified:
+        raise RuntimeError("no Qoder host process in ancestry")
+    started_at = _process_start_identity(host_pid)
+    cwd = os.getcwd()
+    candidates = []
+    root = _state_root()
+    if root.is_dir():
+        for path in sorted(root.glob("qoder-*.json")):
+            try:
+                state = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if not isinstance(state, dict):
+                continue
+            if str(state.get("client") or "") != "qoder":
+                continue
+            if state.get("stopped"):
+                continue
+            if int(state.get("hostPid") or 0) != host_pid:
+                continue
+            if str(state.get("hostProcessStartedAt") or "") != started_at:
+                continue
+            candidates.append(state)
+    if not candidates:
+        raise RuntimeError(
+            "no registered Qoder interactive worker for this host process")
+
+    def _anchors(state: Mapping[str, Any]) -> bool:
+        state_cwd = str(state.get("cwd") or "").rstrip("/")
+        return bool(state_cwd) and (
+            cwd == state_cwd or cwd.startswith(state_cwd + "/"))
+
+    anchored = [state for state in candidates if _anchors(state)]
+    pool = anchored if anchored else candidates
+    if len(pool) != 1:
+        raise RuntimeError(
+            "multiple active Qoder sessions on this host; "
+            "interactive authorization is ambiguous and fail-closed")
+    session_id = str(pool[0].get("clientSessionId") or "").strip()
+    if not session_id:
+        raise RuntimeError("registered Qoder worker state lacks session id")
+    return "qoder", session_id
 
 
 def _runtime_context() -> Tuple[str, str]:
@@ -363,6 +429,10 @@ def _runtime_context() -> Tuple[str, str]:
             return "claude", persisted_session
     if nearest == "codex" and codex:
         return "codex", codex
+    if nearest == "qoder":
+        if persisted_client == "qoder" and persisted_session:
+            return "qoder", persisted_session
+        return _qoder_state_context()
 
     if claude and not codex:
         return "claude", claude
@@ -372,9 +442,9 @@ def _runtime_context() -> Tuple[str, str]:
         return "claude", claude
     if codex:
         return "codex", codex
-    if persisted_client in ("claude", "codex") and persisted_session:
+    if persisted_client in ("claude", "codex", "qoder") and persisted_session:
         return persisted_client, persisted_session
-    raise RuntimeError("no Claude/Codex interactive session context")
+    raise RuntimeError("no Claude/Codex/Qoder interactive session context")
 
 
 def _persist_claude_context(session_id: str) -> None:
@@ -5036,7 +5106,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     hook_parser = sub.add_parser("hook")
-    hook_parser.add_argument("client", choices=("claude", "codex"))
+    hook_parser.add_argument("client", choices=("claude", "codex", "qoder"))
     hook_parser.add_argument("--expected-event", choices=(
         "SessionStart", "SessionEnd", "UserPromptSubmit", "SubagentStart",
         "SubagentStop", "PreToolUse", "PostToolUse", "Stop"))
@@ -5074,6 +5144,7 @@ def _parser() -> argparse.ArgumentParser:
     reconcile_parser.add_argument("--no-retry", action="store_true")
     current_parser = sub.add_parser("has-current")
     current_parser.add_argument("aone_id")
+    sub.add_parser("runtime-context")
     suspend_parser = sub.add_parser("suspend")
     suspend_parser.add_argument("aone_id")
     suspend_parser.add_argument("detail", nargs="?", default="released")
@@ -5179,6 +5250,13 @@ def main(argv: Optional[list[str]] = None) -> int:
                 retry_allowed=not args.no_retry))
         elif args.command == "has-current":
             return 0 if has_current(args.aone_id) else 1
+        elif args.command == "runtime-context":
+            try:
+                context_client, context_session = _runtime_context()
+            except RuntimeError:
+                return 1
+            print("%s %s" % (context_client, context_session))
+            return 0
         elif args.command == "suspend":
             _print_json(transition(args.aone_id, "suspend", args.detail))
         elif args.command == "complete":
