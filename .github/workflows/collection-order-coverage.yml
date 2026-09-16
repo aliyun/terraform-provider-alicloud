@@ -65,6 +65,22 @@ jobs:
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
           CI_BASE_REF: ${{ github.ref_name }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Restore coverage checker for older pull requests
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          set -euo pipefail
+          if git cat-file -e "$DIFF_HEAD:scripts/collection-order" 2>/dev/null; then
+            exit 0
+          fi
+          if ! git diff --quiet "$DIFF_BASE" "$DIFF_HEAD" -- scripts/collection-order; then
+            echo "::error::This pull request removes the TypeList Order Coverage checker."
+            exit 1
+          fi
+          git archive "$PR_BASE_SHA" scripts/collection-order | tar -x
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
