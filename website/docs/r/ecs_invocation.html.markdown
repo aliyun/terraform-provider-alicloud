@@ -116,6 +116,13 @@ The following arguments are supported:
   * For Windows instances, the System username is used.
   * You can also specify other usernames that already exist in the ECS instance to run the command. It is more secure to run Cloud Assistant commands as a regular user. For more information, see [Configure a regular user to run Cloud Assistant commands](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/run-cloud-assistant-commands-as-a-regular-user).
 * `windows_password_name` - (Optional, ForceNew) The name of the password used to run the command on a Windows instance.
+* `content_encoding` - (Optional, ForceNew) The encoding mode of the command content and output. Valid values: `PlainText`, `Base64`. Default value: `Base64`.
+* `oss_output_delivery` - (Optional, ForceNew, Computed) The configuration for delivering command outputs to OSS. Specify this parameter in the `oss://${BucketName}/${Prefix}` format. The OSS bucket must be in the same region as the ECS instance.
+* `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group to which the command execution belongs.
+* `resource_tag` - (Optional, ForceNew) The tags used to filter target ECS instances for batch command execution. Each tag contains a `key` and `value`. **NOTE:** `resource_tag` conflicts with `instance_id`. When `resource_tag` is specified, `instance_id` cannot be set.
+  * `key` - (Optional, ForceNew) The tag key used to filter target ECS instances.
+  * `value` - (Optional, ForceNew) The tag value used to filter target ECS instances.
+* `working_dir` - (Optional, ForceNew, Computed) The working directory in the ECS instance for command execution. This value overrides the working directory configured in the command for this invocation only.
 
 ## Attributes Reference
 

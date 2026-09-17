@@ -75,6 +75,49 @@ func resourceAlicloudEcsInvocation() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"content_encoding": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PlainText", "Base64"}, false),
+			},
+			"oss_output_delivery": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"resource_tag": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
+			"working_dir": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -113,6 +156,25 @@ func resourceAlicloudEcsInvocationCreate(d *schema.ResourceData, meta interface{
 	}
 	if v, ok := d.GetOk("windows_password_name"); ok {
 		request["WindowsPasswordName"] = v
+	}
+	if v, ok := d.GetOk("oss_output_delivery"); ok {
+		request["OssOutputDelivery"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("working_dir"); ok {
+		request["WorkingDir"] = v
+	}
+	if v, ok := d.GetOk("resource_tag"); ok {
+		resourceTags := v.([]interface{})
+		for i, rt := range resourceTags {
+			rtMap := rt.(map[string]interface{})
+			request[fmt.Sprintf("ResourceTag.%d.Key", i+1)] = rtMap["key"]
+			if value, ok := rtMap["value"]; ok && value != nil {
+				request[fmt.Sprintf("ResourceTag.%d.Value", i+1)] = value
+			}
+		}
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -167,6 +229,15 @@ func resourceAlicloudEcsInvocationRead(d *schema.ResourceData, meta interface{})
 	d.Set("timed", object["Timed"])
 	d.Set("username", object["Username"])
 	d.Set("status", object["InvocationStatus"])
+	if v, ok := object["OssOutputDelivery"]; ok && v != nil {
+		d.Set("oss_output_delivery", v)
+	}
+	if v, ok := object["WorkingDir"]; ok && v != nil {
+		d.Set("working_dir", v)
+	}
+	if v, ok := object["ResourceGroupId"]; ok && v != nil {
+		d.Set("resource_group_id", v)
+	}
 	instanceIdItems := make([]string, 0)
 	if invokeInstances, ok := object["InvokeInstances"]; ok && invokeInstances != nil {
 		if invokeInstance, ok := invokeInstances.(map[string]interface{})["InvokeInstance"]; ok && invokeInstance != nil {
