@@ -248,6 +248,10 @@ func NeedRetry(err error) bool {
 		return true
 	}
 
+	if e, ok := err.(*errors.ClientError); ok && e.ErrorCode() == errors.TimeoutErrorCode {
+		return true
+	}
+
 	throttlingRegex := regexp.MustCompile("Throttling")
 	codeRegex := regexp.MustCompile("^code: 5[\\d]{2}")
 
@@ -281,6 +285,10 @@ func NoCodeRegexRetry(err error) bool {
 
 	postRegex := regexp.MustCompile("^Post [\"]*https://.*")
 	if postRegex.MatchString(err.Error()) {
+		return true
+	}
+
+	if e, ok := err.(*errors.ClientError); ok && e.ErrorCode() == errors.TimeoutErrorCode {
 		return true
 	}
 
