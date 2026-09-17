@@ -197,6 +197,38 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_vpn_gateway_vpn_attachment&spm=docs.r.vpn_gateway_vpn_attachment.example&intl_lang=EN_US)
 
+## Tunnel ordering and upgrades
+
+`tunnel_options_specification` is an ordered list. Keep each block's `tunnel_index`
+and position stable when changing IKE, IPsec, BGP, PSK, DPD, or NAT traversal settings.
+Read matches the API response by `tunnel_index` and preserves the existing list order,
+so asynchronous runtime values do not change a tunnel's identity. `local_id` may be
+omitted to use the service-assigned value or explicitly configured and updated.
+
+Existing set-based state is upgraded automatically to a list sorted by `tunnel_index`,
+preserving resource IDs and tunnel configuration. If an existing configuration declares
+tunnel 2 before tunnel 1, reorder the complete blocks to match the upgraded state before
+applying. The provider reports an error for a change of tunnel positions or identities
+instead of applying values inherited from a different tunnel. Reordering the HCL to
+match the migrated state does not require recreating the attachment. Imported tunnels
+are also ordered by `tunnel_index`.
+
+When enabling `enable_tunnels_bgp`, configure `tunnel_bgp_config` for both tunnels
+with the same `local_asn`.
+The provider submits these settings together with the BGP switch without resending
+unchanged IKE or IPsec settings. Update requests include a PSK only when that PSK
+changes. A readable PSK returned by the service refreshes state, so external changes
+can be detected. Empty or all-asterisk PSK responses retain the previously known
+value; importing such a response does not establish a known PSK. Configure the
+actual PSK explicitly when you intend to change it.
+
+When changing a customer gateway together with IKE settings, an explicitly
+configured `remote_id` is preserved. If `remote_id` is omitted, the provider reads
+the new customer gateway's IP address and uses it as the new default RemoteId.
+This update requires permission to call `DescribeCustomerGateway`; a failed
+lookup stops the update instead of sending the previous gateway's default.
+Changing only the customer gateway does not resubmit unchanged IKE settings.
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -239,7 +271,7 @@ Health check configuration information. See [`health_check_config`](#health_chec
   - If you set LocalSubnet and RemoteSubnet to specific CIDR blocks, the routing mode of the IPsec-VPN connection is set to Protected Data Flows.
 * `resource_group_id` - (Optional, Computed, Available since v1.246.0) The ID of the resource group
 * `tags` - (Optional, Map, Available since v1.246.0) Tags
-* `tunnel_options_specification` - (Optional, Computed, Set, Available since v1.246.0) Configure the tunnel.
+* `tunnel_options_specification` - (Optional, Computed, List, Available since v1.246.0) Configure the tunnel.
   - You can configure parameters in the `tunnel_options_specification` array when you create a vpn attachment in dual-tunnel mode.
   - When creating a vpn attachment in dual-tunnel mode, you must add both tunnels for the vpn attachment to ensure that the vpn attachment has link redundancy. Only two tunnels can be added to a vpn attachment. See [`tunnel_options_specification`](#tunnel_options_specification) below.
 * `vpn_attachment_name` - (Optional) vpn attachment name
@@ -302,7 +334,7 @@ The tunnel_options_specification supports the following:
 * `enable_nat_traversal` - (Optional, Computed, Available since v1.246.0) Whether the NAT crossing function is enabled for the tunnel. Value:
   - `true` (default): Enables the NAT Traversal function. When enabled, the IKE negotiation process deletes the verification process of the UDP port number and realizes the discovery function of the NAT gateway device in the tunnel.
   - `false`: does not enable the NAT Traversal function.
-* `role` - (Optional, Computed, Available since v1.276.0) The role of the tunnel. Valid values: `master`, `slave`. The role is determined by the order in which the tunnel is added to the IPsec-VPN connection.
+* `role` - (Optional, Computed, Deprecated, Available since v1.276.0) The service-assigned role of the tunnel: `master` or `slave`. This is a response-only field. Legacy configuration is accepted for compatibility but ignored; remove `role` from configuration. The value in state reflects the service response.
 * `tunnel_bgp_config` - (Optional, Computed, List, Available since v1.246.0) Add the BGP configuration for the tunnel.
 
 -> **NOTE:**  After you enable the BGP function for IPsec connections (that is, specify `EnableTunnelsBgp` as `true`), you must configure this parameter.
