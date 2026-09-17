@@ -1,4 +1,5 @@
-## 1.293.0 (Unreleased)
+## 1.294.0 (Unreleased)
+## 1.293.0 (September 17, 2026)
 
 - **New Resource:** `alicloud_event_bridge_event_streaming` ([#10243](https://github.com/aliyun/terraform-provider-alicloud/issues/10243))
 - **New Resource:** `alicloud_cms_dataset` ([#10454](https://github.com/aliyun/terraform-provider-alicloud/issues/10454))
