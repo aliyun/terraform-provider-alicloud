@@ -3,6 +3,7 @@
 
 - **New Resource:** `alicloud_event_bridge_event_streaming` ([#10243](https://github.com/aliyun/terraform-provider-alicloud/issues/10243))
 - **New Resource:** `alicloud_cms_dataset` ([#10454](https://github.com/aliyun/terraform-provider-alicloud/issues/10454))
+- **New Resource:** `alicloud_apig_secret` ([#10462](https://github.com/aliyun/terraform-provider-alicloud/issues/10462))
 - **New Resource:** `alicloud_cr_instance_customized_domain` ([#10485](https://github.com/aliyun/terraform-provider-alicloud/issues/10485))
 - **New Resource:** `alicloud_ims_user` ([#10515](https://github.com/aliyun/terraform-provider-alicloud/issues/10515))
 - **New Resource:** `alicloud_ssl_certificates_service_pca_cert_sync` ([#10554](https://github.com/aliyun/terraform-provider-alicloud/issues/10554))
@@ -31,6 +32,7 @@ ENHANCEMENTS:
 - docs: add SQLServer 2022/2025 version to RDS documentation. ([#10563](https://github.com/aliyun/terraform-provider-alicloud/issues/10563))
 - resource/alicloud_ssl_certificates_service_pca_cert: upload_flag supports Computed. ([#10564](https://github.com/aliyun/terraform-provider-alicloud/issues/10564))
 - docs: add framework action alicloud_ssl_certificates_service_pca_cert_sync. ([#10567](https://github.com/aliyun/terraform-provider-alicloud/issues/10567))
+- resource/alicloud_ros_stack_group: Changed the field parameters from TypeList to TypeSet. ([#10569](https://github.com/aliyun/terraform-provider-alicloud/issues/10569))
 - resource/alicloud_polardb_cluster: tolerate Rebooting status during parameter updates. ([#10571](https://github.com/aliyun/terraform-provider-alicloud/issues/10571))
 
 BUG FIXES:
@@ -41,6 +43,7 @@ BUG FIXES:
 - resource/alicloud_nlb_listener: reject empty strings in certificate_ids and ca_certificate_ids. ([#10473](https://github.com/aliyun/terraform-provider-alicloud/issues/10473))
 - resource/alicloud_db_database: confirm deletion; resource/alicloud_db_account_privilege: verify parent; resource/alicloud_rds_account: handle NotFound. ([#10530](https://github.com/aliyun/terraform-provider-alicloud/issues/10530))
 - provider: make incrementalWait retry backoff exponential with jitter. ([#10553](https://github.com/aliyun/terraform-provider-alicloud/issues/10553))
+- resource/alicloud_elasticsearch_instance: Fixed the panic error caused by kibana_private_security_group_id. ([#10583](https://github.com/aliyun/terraform-provider-alicloud/issues/10583))
 
 ## 1.292.0 (September 8, 2026)
 

@@ -95,7 +95,7 @@ The following arguments are supported:
 
 -> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
 
-* `auto_renew` - (Optional, ForceNew, Available since v1.293.0) Whether auto-renewal is enabled when the instance is created.
+* `auto_renew` - (Optional, ForceNew, Available since v1.294.0) Whether auto-renewal is enabled when the instance is created.
 * `components` - (Optional, Set) Instance component information. Includes Starter Edition/Standard Edition.
   - Starter version: Array including standalone
   - Standard Edition: The configuration is different according to the 2.5 version and 2.6 version.
@@ -107,9 +107,9 @@ The following arguments are supported:
 * `encrypted` - (Optional, ForceNew) Whether to use kms encryption. After enabling, you need to configure KmsKeyId. The default is false.
 * `ha` - (Optional) Whether to enable multiple copies of data
 * `instance_name` - (Required) Instance name. The length is limited to 1-64 characters and can only contain Chinese, letters, numbers,-,_
-* `is_multi_az_storage` - (Optional, ForceNew, Available since v1.293.0) Whether multi-zone storage is enabled when the instance is created.
+* `is_multi_az_storage` - (Optional, ForceNew, Available since v1.294.0) Whether multi-zone storage is enabled when the instance is created.
 * `kms_key_id` - (Optional, ForceNew) Kms Key encryption id, need to be encrypted set to true.
-* `load_replicas` - (Optional, ForceNew, Int, Available since v1.293.0) The number of load replicas configured when the instance is created.
+* `load_replicas` - (Optional, ForceNew, Int, Available since v1.294.0) The number of load replicas configured when the instance is created.
 * `multi_zone_mode` - (Optional, ForceNew) Availability Zone mode. The default Single.
   - Single: Single zone.
   - Two: Dual Availability Zones.
@@ -126,7 +126,7 @@ The following arguments are supported:
 * `payment_type` - (Required, ForceNew) Payment Type ,Enumeration value:
   - PayAsYouGo: Pay by volume
   - Subscription: Package year package month
-* `promotion_no` - (Optional, ForceNew, Available since v1.293.0) The promotion code used to create the instance.
+* `promotion_no` - (Optional, ForceNew, Available since v1.294.0) The promotion code used to create the instance.
 * `resource_group_id` - (Optional, Computed) Resource Group ID
 * `tags` - (Optional, Map) User Defined Label
 * `vswitch_ids` - (Optional, ForceNew, List) Switch list, configure the switch and zone. See [`vswitch_ids`](#vswitch_ids) below.
@@ -140,9 +140,9 @@ The components supports the following:
 * `cu_type` - (Optional, ForceNew, Computed) The calculation type. The default value is general, and the ram type needs to be opened with a work order.
   - general: Generic
   - ram: Capacity
-* `data_disk` - (Optional, Set, Available since v1.293.0) The QueryNode data disk configuration. Only Type=query is supported. See [`data_disk`](#components-data_disk) below.
+* `data_disk` - (Optional, Set, Available since v1.294.0) The QueryNode data disk configuration. Only Type=query is supported. See [`data_disk`](#components-data_disk) below.
 * `disk_size_type` - (Optional, ForceNew, Computed) Default Normal. The Query Node is configured with the capacity type, performance type, and capacity type Large, and the rest are configured with Normal.
-* `pay_type` - (Optional, ForceNew, Available since v1.293.0) The default is consistent with the cluster.
+* `pay_type` - (Optional, ForceNew, Available since v1.294.0) The default is consistent with the cluster.
 * `replica` - (Required, Int) The number of component replicas. The number of highly available replicas must be greater than or equal to 2.
 * `type` - (Required) The component type. Different types need to be configured according to different versions.
   - Starter version: Array including standalone
@@ -153,10 +153,10 @@ The components supports the following:
 ### `components-data_disk`
 
 The components-data_disk supports the following:
-* `enabled` - (Optional, Available since v1.293.0) Whether to enable the QueryNode data disk.
-* `performance_level` - (Optional, Available since v1.293.0) The ESSD performance level. Supported values: PL0, PL1, PL2, and PL3.
-* `size` - (Optional, Int, Available since v1.293.0) The data disk size in GiB.
-* `storage_class` - (Optional, Available since v1.293.0) The data disk StorageClass. Supported values: alicloud-disk-essd-pl0, alicloud-disk-essd-pl1, alicloud-disk-essd-pl2, and alicloud-disk-essd-pl3.
+* `enabled` - (Optional, Available since v1.294.0) Whether to enable the QueryNode data disk.
+* `performance_level` - (Optional, Available since v1.294.0) The ESSD performance level. Supported values: PL0, PL1, PL2, and PL3.
+* `size` - (Optional, Int, Available since v1.294.0) The data disk size in GiB.
+* `storage_class` - (Optional, Available since v1.294.0) The data disk StorageClass. Supported values: alicloud-disk-essd-pl0, alicloud-disk-essd-pl1, alicloud-disk-essd-pl2, and alicloud-disk-essd-pl3.
 
 ### `vswitch_ids`
 
@@ -170,10 +170,10 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Instance.
 * `create_time` - Instance creation time.
-* `expire_time` - (Available since v1.293.0) The expiration time of the instance, which is returned by the package year and month cluster.
-* `order_id` - (Available since v1.293.0) Alibaba Cloud Order Number.
-* `running_time` - (Available since v1.293.0) Instance running time.
-* `security_group_ids` - (Available since v1.293.0) Configured Security Group id.
+* `expire_time` - (Available since v1.294.0) The expiration time of the instance, which is returned by the package year and month cluster.
+* `order_id` - (Available since v1.294.0) Alibaba Cloud Order Number.
+* `running_time` - (Available since v1.294.0) Instance running time.
+* `security_group_ids` - (Available since v1.294.0) Configured Security Group id.
 * `region_id` - The regionId.
 * `status` - Instance status.
 
