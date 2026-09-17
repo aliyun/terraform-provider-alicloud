@@ -662,6 +662,57 @@ func (s *EcsServiceV2) EcsSnapshotStateRefreshFunc(id string, field string, fail
 
 // DescribeEcsSnapshot >>> Encapsulated.
 
+// DescribeEcsSnapshotLock <<< Encapsulated get interface for Ecs Snapshot lock info.
+
+func (s *EcsServiceV2) DescribeEcsSnapshotLock(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeLockedSnapshots"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SnapshotIds"] = convertListToJsonString([]interface{}{id})
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidSnapshotLock.NotFound"}) {
+			return nil, nil
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// DescribeLockedSnapshots returns LockedSnapshotsInfo as a direct JSON array
+	// (e.g. {"LockedSnapshotsInfo":[{"LockStatus":"compliance",...}]}), not a
+	// nested {"LockedSnapshotsInfo":{"LockedSnapshotInfo":[...]}} object. Match the
+	// real shape so a locked snapshot is read instead of being silently dropped.
+	v, err := jsonpath.Get("$.LockedSnapshotsInfo[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return nil, nil
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+// DescribeEcsSnapshotLock >>> Encapsulated.
+
 // DescribeEcsRamRoleAttachment <<< Encapsulated get interface for Ecs RamRoleAttachment.
 
 func (s *EcsServiceV2) DescribeEcsRamRoleAttachment(id string) (object map[string]interface{}, err error) {

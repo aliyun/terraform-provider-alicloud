@@ -115,8 +115,9 @@ The following arguments are supported:
 * `force` - (Optional, Bool) Specifies whether to force delete the snapshot that has been used to create disks. Valid values:
   - `true`: Force deletes the snapshot. After the snapshot is force deleted, the disks created from the snapshot cannot be re-initialized.
   - `false`: Does not force delete the snapshot.
-* `instant_access` - (Optional, Deprecated since v1.231.0) Field `instant_access` has been deprecated from provider version 1.231.0.
-* `instant_access_retention_days` - (Optional, Deprecated since v1.231.0) Field `instant_access_retention_days` has been deprecated from provider version 1.231.0.
+* `instant_access` - (Optional, Deprecated since v1.231.0) Whether to enable the instant access feature. Valid values: `true` (enabled, ESSD only) and `false` (disabled, creates a normal snapshot). Default value: `false`. Deprecated since v1.231.0: ESSD normal snapshots have been upgraded to instant-access by default, so this field no longer needs to be configured and no extra cost is incurred.
+* `instant_access_retention_days` - (Optional, Deprecated since v1.231.0) The retention period of the instant access feature. When the retention period ends, the feature is disabled and the IA snapshot is automatically released. This parameter takes effect only when `instant_access` is set to `true`. Unit: days. Valid values: 1 to 65535. By default, the value of this parameter is the same as that of `retention_days`.
+* `lock_duration` - (Optional, Int, Available since v1.241.0) The lock duration of the snapshot in compliance mode. Unit: days. Valid values: 1 to 36500. When set to a positive value, the snapshot is locked in compliance mode via LockSnapshot and cannot be deleted until the lock duration expires. Set to 0 or remove the field to unlock the snapshot via UnlockSnapshot. The lock duration can only be extended, not shortened, once the snapshot enters compliance mode. The lock duration must not exceed the snapshot retention period (`retention_days`).
 * `resource_group_id` - (Optional) The ID of the resource group. **NOTE:** From version 1.239.0, `resource_group_id` can be modified.
 * `retention_days` - (Optional, Int) The retention period of the snapshot. Valid values: `1` to `65536`. **NOTE:** From version 1.231.0, `retention_days` can be modified.
 * `snapshot_name` - (Optional) The name of the snapshot.
@@ -130,6 +131,8 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Snapshot.
 * `available` - Whether ECS reports the snapshot as available. This read-only value can be `true` while `status` is still `progressing`, allowing the operations described in the availability note above. It reflects the most recent refresh, not the configured `wait_until` policy.
 * `create_time` - (Available since v1.239.0) The time when the snapshot was created.
+* `encrypted` - (Available since v1.241.0) Whether the snapshot is encrypted.
+* `lock_status` - (Available since v1.241.0) The lock status of the snapshot. Valid values: `compliance-cooloff` (locked in compliance mode, still in cooling-off period), `compliance` (locked in compliance mode, cooling-off period ended), and `expired` (lock expired, snapshot is not locked).
 * `region_id` - (Available since v1.239.0) The region ID of the snapshot.
 * `status` - The status of the Snapshot.
 
