@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -100,13 +103,26 @@ func dataSourceAlicloudPolarDBEndpointsRead(d *schema.ResourceData, meta interfa
 
 	var dbi []polardb.DBEndpoint
 
-	raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
-		return polardbClient.DescribeDBClusterEndpoints(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		var callErr error
+		raw, callErr = client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+			return polardbClient.DescribeDBClusterEndpoints(request)
+		})
+		if callErr != nil {
+			if NeedRetry(callErr) {
+				wait()
+				return resource.RetryableError(callErr)
+			}
+			return resource.NonRetryableError(callErr)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_polardb_endpoints", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*polardb.DescribeDBClusterEndpointsResponse)
 
 	for _, item := range response.Items {
