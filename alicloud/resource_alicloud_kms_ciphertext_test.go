@@ -63,58 +63,113 @@ func TestAccAliCloudKmsCiphertext_validate_withContext(t *testing.T) {
 var testAccAlicloudKmsCiphertextConfig_basic = func(keyId string) string {
 	return fmt.Sprintf(`
 resource "alicloud_kms_key" "default" {
-  	description = "%s"
-	is_enabled  = true
-	pending_window_in_days = 7
+  description            = "%s"
+  is_enabled             = true
+  pending_window_in_days = 7
 }
 
 resource "alicloud_kms_ciphertext" "default" {
-	key_id = "${alicloud_kms_key.default.id}"
-	plaintext = "plaintext"
+  key_id    = "${alicloud_kms_key.default.id}"
+  plaintext = "plaintext"
 }
 `, keyId)
 }
 
 var testAccAlicloudKmsCiphertextConfig_validate = func(keyId string) string {
 	return fmt.Sprintf(`
-	resource "alicloud_kms_key" "default" {
-        description = "%s"
-		is_enabled  = true
-		pending_window_in_days = 7
-	}
-	
-	resource "alicloud_kms_ciphertext" "default" {
-		key_id = "${alicloud_kms_key.default.id}"
-		plaintext = "plaintext"
-	}
-	
-	data "alicloud_kms_plaintext" "default" {
-	  ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
-	}
+resource "alicloud_kms_key" "default" {
+  description            = "%s"
+  is_enabled             = true
+  pending_window_in_days = 7
+}
+
+resource "alicloud_kms_ciphertext" "default" {
+  key_id    = "${alicloud_kms_key.default.id}"
+  plaintext = "plaintext"
+}
+
+data "alicloud_kms_plaintext" "default" {
+  ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
+}
 	`, keyId)
 }
 
 var testAccAlicloudKmsCiphertextConfig_validate_withContext = func(keyId string) string {
 	return fmt.Sprintf(`
-	resource "alicloud_kms_key" "default" {
-        description = "%s"
-		is_enabled  = true
-		pending_window_in_days = 7
-	}
-	
-	resource "alicloud_kms_ciphertext" "default" {
-		key_id = "${alicloud_kms_key.default.id}"
-		plaintext = "plaintext"
-        encryption_context = {
-    		name = "value"
-  		}
-	}
-	
-	data "alicloud_kms_plaintext" "default" {
-	  ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
-	  encryption_context = {
-		name = "value"
-	  }
-	}
+resource "alicloud_kms_key" "default" {
+  description            = "%s"
+  is_enabled             = true
+  pending_window_in_days = 7
+}
+
+resource "alicloud_kms_ciphertext" "default" {
+  key_id    = "${alicloud_kms_key.default.id}"
+  plaintext = "plaintext"
+  encryption_context = {
+    name = "value"
+  }
+}
+
+data "alicloud_kms_plaintext" "default" {
+  ciphertext_blob = "${alicloud_kms_ciphertext.default.ciphertext_blob}"
+  encryption_context = {
+    name = "value"
+  }
+}
 	`, keyId)
+}
+
+func TestAccAliCloudKmsCiphertext_plaintextWo(t *testing.T) {
+	name := acctest.RandomWithPrefix("tf-testacc-plaintextwo")
+	testAccConfig := resourceTestAccConfigFunc("alicloud_kms_ciphertext.default", name, testAccAlicloudKmsCiphertextConfig_plaintextWoDependence)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key_id":               "${alicloud_kms_key.default.id}",
+					"plaintext_wo":         "plaintext-wo",
+					"plaintext_wo_version": "1",
+					"encryption_context":   map[string]interface{}{"name": "value"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_kms_ciphertext.default", "ciphertext_blob"),
+					resource.TestCheckResourceAttr("alicloud_kms_ciphertext.default", "plaintext_wo_version", "1"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plaintext_wo":         "plaintext-wo-2",
+					"plaintext_wo_version": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_kms_ciphertext.default", "ciphertext_blob"),
+					resource.TestCheckResourceAttr("alicloud_kms_ciphertext.default", "plaintext_wo_version", "2"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plaintext_wo":         REMOVEKEY,
+					"plaintext_wo_version": REMOVEKEY,
+					"plaintext":            "plaintext",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_kms_ciphertext.default", "ciphertext_blob"),
+				),
+			},
+		},
+	})
+}
+
+func testAccAlicloudKmsCiphertextConfig_plaintextWoDependence(name string) string {
+	return fmt.Sprintf(`
+resource "alicloud_kms_key" "default" {
+  description            = "%s"
+  is_enabled             = true
+  pending_window_in_days = 7
+}
+`, name)
 }

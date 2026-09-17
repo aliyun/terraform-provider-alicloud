@@ -39,10 +39,6 @@ func resourceAlicloudOosParameter() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringLenBetween(1, 200),
 			},
-			"has_value_wo": {
-				Type:     schema.TypeBool,
-				Computed: true,
-			},
 			"parameter_name": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -71,7 +67,6 @@ func resourceAlicloudOosParameter() *schema.Resource {
 			"value_wo": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Sensitive:    true,
 				WriteOnly:    true,
 				ValidateFunc: validation.StringLenBetween(1, 4096),
 				ExactlyOneOf: []string{"value", "value_wo"},
@@ -80,7 +75,7 @@ func resourceAlicloudOosParameter() *schema.Resource {
 			"value_wo_version": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				Computed:     true,
+				ValidateFunc: validation.IntAtLeast(1),
 				RequiredWith: []string{"value_wo"},
 			},
 		},
@@ -112,10 +107,10 @@ func resourceAlicloudOosParameterCreate(d *schema.ResourceData, meta interface{}
 	request["Name"] = d.Get("parameter_name")
 	request["Type"] = d.Get("type")
 	value := d.Get("value").(string)
-	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("value_wo")); err != nil {
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("value_wo"), cty.String); err != nil {
 		return WrapError(err)
-	} else if woValue != "" {
-		value = woValue
+	} else if !woValue.IsNull() {
+		value = woValue.AsString()
 	}
 	request["Value"] = value
 	request["ClientToken"] = buildClientToken("CreateParameter")
@@ -159,23 +154,9 @@ func resourceAlicloudOosParameterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("tags", tagsToMap(object["Tags"]))
 	d.Set("type", object["Type"])
-	hasValueWo := false
-	if v, ok := d.GetOk("has_value_wo"); ok && v.(bool) {
-		hasValueWo = true
-	}
-	if rawConfig := d.GetRawConfig(); !rawConfig.IsNull() {
-		woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("value_wo"))
-		if err != nil {
-			return WrapError(err)
-		}
-		hasValueWo = woValue != ""
-	}
-	if hasValueWo {
-		d.Set("has_value_wo", true)
+	d.Set("value", object["Value"])
+	if _, ok := d.GetOk("value_wo_version"); ok {
 		d.Set("value", nil)
-	} else {
-		d.Set("has_value_wo", nil)
-		d.Set("value", object["Value"])
 	}
 	return nil
 }
@@ -188,10 +169,10 @@ func resourceAlicloudOosParameterUpdate(d *schema.ResourceData, meta interface{}
 		"Name": d.Id(),
 	}
 	value := d.Get("value").(string)
-	if woValue, err := getWriteOnlyStringValue(d, cty.GetAttrPath("value_wo")); err != nil {
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("value_wo"), cty.String); err != nil {
 		return WrapError(err)
-	} else if woValue != "" {
-		value = woValue
+	} else if !woValue.IsNull() {
+		value = woValue.AsString()
 	}
 	if d.HasChange("value") {
 		update = true
