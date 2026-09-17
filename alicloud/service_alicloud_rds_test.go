@@ -43,6 +43,135 @@ func writeRdsParent(w http.ResponseWriter, status string) {
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"Items": map[string]interface{}{"DBInstanceAttribute": []map[string]interface{}{{"DBInstanceStatus": status, "DBInstanceId": "rm-test"}}}})
 }
 
+// Business NotFound responses can use HTTP 400 and messages that do not contain
+// "NotFound" or "instance is not found". Keep the wire response independent of
+// the generic HTTP 404 and message-based fallbacks.
+func writeRdsHTTP400Error(t *testing.T, w http.ResponseWriter, code, message string) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	if err := json.NewEncoder(w).Encode(map[string]string{"Code": code, "Message": message}); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestRdsDatabaseReadHTTP400NotFound(t *testing.T) {
+	for _, tc := range []struct {
+		code, message string
+		gone          bool
+	}{
+		{"InvalidDBInstanceId.NotFound", "DBInstanceIdentifier does not refer to an existing DB instance.", true},
+		{"InvalidDBName.NotFound", "The specified database does not exist.", true},
+		{"InvalidAccessKeyId.NotFound", "The specified access key does not exist.", false},
+		{"Unknown", "DBInstanceIdentifier does not refer to an existing DB instance.", false},
+	} {
+		t.Run(tc.code, func(t *testing.T) {
+			var calls int32
+			client := rdsAccountTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				atomic.AddInt32(&calls, 1)
+				if r.Form.Get("Action") != "DescribeDatabases" || r.Form.Get("DBInstanceId") != "rm-test" || r.Form.Get("DBName") != "testdb" {
+					t.Errorf("unexpected query: %v", r.Form)
+				}
+				writeRdsHTTP400Error(t, w, tc.code, tc.message)
+			})
+			id := "rm-test:testdb"
+			d := rdsTestData(t, "alicloud_db_database", id)
+			err := resourceAliCloudRdsDatabaseRead(d, client)
+			if tc.gone {
+				if err != nil || d.Id() != "" {
+					t.Fatalf("business absence must clear existing state: id=%q err=%v", d.Id(), err)
+				}
+			} else if err == nil || d.Id() != id {
+				t.Fatalf("query failure must preserve state: id=%q err=%v", d.Id(), err)
+			}
+			if calls != 1 {
+				t.Fatalf("unexpected retry or parent lookup: calls=%d", calls)
+			}
+		})
+	}
+}
+
+func TestRdsDatabaseDeleteHTTP400NotFound(t *testing.T) {
+	for _, stage := range []string{"before_delete", "after_deleting", "delete_request", "completion_query"} {
+		t.Run(stage, func(t *testing.T) {
+			var parents, deletes, databases int32
+			client := rdsAccountTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				switch r.Form.Get("Action") {
+				case "DescribeDBInstanceAttribute":
+					n := atomic.AddInt32(&parents, 1)
+					if n > 2 {
+						// Bound the test even if a regression starts polling an absent parent.
+						writeRdsError(t, w, 403, "Forbidden.RAM")
+					} else if stage == "after_deleting" && n == 1 {
+						writeRdsParent(w, "Deleting")
+					} else if stage == "before_delete" || stage == "after_deleting" {
+						writeRdsHTTP400Error(t, w, "InvalidDBInstanceName.NotFound", "The specified DB instance name does not exist.")
+					} else {
+						writeRdsParent(w, "Running")
+					}
+				case "DeleteDatabase":
+					atomic.AddInt32(&deletes, 1)
+					if stage == "delete_request" {
+						writeRdsHTTP400Error(t, w, "InvalidDBInstanceId.NotFound", "DBInstanceIdentifier does not refer to an existing DB instance.")
+					} else {
+						w.Header().Set("Content-Type", "application/json")
+						_, _ = w.Write([]byte(`{}`))
+					}
+				case "DescribeDatabases":
+					atomic.AddInt32(&databases, 1)
+					writeRdsHTTP400Error(t, w, "InvalidDBInstanceId.NotFound", "DBInstanceIdentifier does not refer to an existing DB instance.")
+				default:
+					t.Errorf("unexpected action: %s", r.Form.Get("Action"))
+				}
+			})
+			res := resourceAliCloudRdsDatabase()
+			res.Timeouts.Delete = schema.DefaultTimeout(3 * time.Second)
+			d := res.Data(nil)
+			d.SetId("rm-test:testdb")
+			if err := res.Delete(d, client); err != nil {
+				t.Fatalf("confirmed absence must complete deletion: %v", err)
+			}
+			wantParents, wantDeletes, wantDatabases := int32(1), int32(0), int32(0)
+			if stage == "after_deleting" {
+				wantParents = 2
+			}
+			if stage == "delete_request" || stage == "completion_query" {
+				wantDeletes = 1
+			}
+			if stage == "completion_query" {
+				wantDatabases = 1
+			}
+			if parents != wantParents || deletes != wantDeletes || databases != wantDatabases {
+				t.Fatalf("unexpected calls: parents=%d deletes=%d databases=%d; want %d/%d/%d", parents, deletes, databases, wantParents, wantDeletes, wantDatabases)
+			}
+		})
+	}
+}
+
+func TestRdsWaitInstanceHTTP400NotFound(t *testing.T) {
+	for _, target := range []Status{Running, Deleted} {
+		t.Run(string(target), func(t *testing.T) {
+			var calls int32
+			client := rdsAccountTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				atomic.AddInt32(&calls, 1)
+				writeRdsHTTP400Error(t, w, "InvalidDBInstanceName.NotFound", "The specified DB instance name does not exist.")
+			})
+			s := RdsService{client}
+			err := s.WaitForDBInstance("rm-test", target, 0)
+			if target == Deleted {
+				if err != nil {
+					t.Fatalf("absence must satisfy Deleted: %v", err)
+				}
+			} else if !NotFoundError(err) || strings.Contains(strings.ToLower(err.Error()), "timeout") {
+				t.Fatalf("absence must fail Running with NotFound rather than timeout: %v", err)
+			}
+			if calls != 1 {
+				t.Fatalf("must not keep polling an absent parent: calls=%d", calls)
+			}
+		})
+	}
+}
+
 func rdsTestData(t *testing.T, kind, id string) *schema.ResourceData {
 	t.Helper()
 	res := Provider().(*schema.Provider).ResourcesMap[kind]
