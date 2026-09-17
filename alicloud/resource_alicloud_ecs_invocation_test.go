@@ -54,7 +54,7 @@ func TestAccAliCloudECSInvocation_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"windows_password_name"},
+				ImportStateVerifyIgnore: []string{"windows_password_name", "resource_group_id", "content_encoding", "resource_tag"},
 			},
 		},
 	})
@@ -110,7 +110,74 @@ func TestAccAliCloudECSInvocation_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"windows_password_name"},
+				ImportStateVerifyIgnore: []string{"windows_password_name", "resource_group_id", "content_encoding", "resource_tag"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSInvocation_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_invocation.default"
+	ra := resourceAttrInit(resourceId, AliCloudECSInvocationMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsInvocation")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsinvocation%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECSInvocationBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"command_id":          "${alicloud_ecs_command.default.id}",
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"content_encoding":    "Base64",
+					"working_dir":         "/root",
+					"oss_output_delivery": "",
+					"resource_tag":        []map[string]string{{"key": "tf-testacc", "value": "ecs-invocation"}},
+					"depends_on":          []string{"alicloud_instance.default"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id.#":    "1",
+						"command_id":       CHECKSET,
+						"working_dir":      "/root",
+						"content_encoding": "Base64",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"command_id":          "${alicloud_ecs_command.default.id}",
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"content_encoding":    "Base64",
+					"working_dir":         "/root",
+					"oss_output_delivery": "",
+					"resource_tag":        []map[string]string{{"key": "tf-testacc-modified", "value": "ecs-invocation-v2"}},
+					"depends_on":          []string{"alicloud_instance.default"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id.#":    "1",
+						"command_id":       CHECKSET,
+						"working_dir":      "/root",
+						"content_encoding": "Base64",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"windows_password_name", "resource_group_id", "content_encoding", "resource_tag"},
 			},
 		},
 	})
@@ -121,7 +188,7 @@ var AliCloudECSInvocationMap0 = map[string]string{
 }
 
 func AliCloudECSInvocationBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
 	}
@@ -130,21 +197,10 @@ func AliCloudECSInvocationBasicDependence0(name string) string {
   		status = "OK"
 	}
 
-	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_essd"
-  		available_resource_creation = "VSwitch"
-	}
-
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		name_regex  = "^ubuntu_18.*64"
   		most_recent = true
   		owners      = "system"
-	}
-
-	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.u1"
-  		image_id             = data.alicloud_images.default.images.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -156,7 +212,7 @@ func AliCloudECSInvocationBasicDependence0(name string) string {
   		vswitch_name = var.name
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = "192.168.192.0/24"
-  		zone_id      = data.alicloud_zones.default.zones.0.id
+  		zone_id      = "cn-beijing-f"
 	}
 
 	resource "alicloud_security_group" "default" {
@@ -166,11 +222,11 @@ func AliCloudECSInvocationBasicDependence0(name string) string {
 
 	resource "alicloud_instance" "default" {
   		image_id                   = data.alicloud_images.default.images.0.id
-  		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  		instance_type              = "ecs.u1-c1m1.large"
   		security_groups            = alicloud_security_group.default.*.id
   		internet_charge_type       = "PayByTraffic"
   		internet_max_bandwidth_out = "10"
-  		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		availability_zone          = "cn-beijing-f"
   		instance_charge_type       = "PostPaid"
   		system_disk_category       = "cloud_essd"
   		vswitch_id                 = alicloud_vswitch.default.id
@@ -188,7 +244,7 @@ func AliCloudECSInvocationBasicDependence0(name string) string {
 }
 
 func AliCloudECSInvocationBasicDependence1(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
 	}
@@ -197,21 +253,10 @@ func AliCloudECSInvocationBasicDependence1(name string) string {
   		status = "OK"
 	}
 
-	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_essd"
-  		available_resource_creation = "VSwitch"
-	}
-
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		name_regex  = "^ubuntu_18.*64"
   		most_recent = true
   		owners      = "system"
-	}
-
-	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.u1"
-  		image_id             = data.alicloud_images.default.images.0.id
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -223,7 +268,7 @@ func AliCloudECSInvocationBasicDependence1(name string) string {
   		vswitch_name = var.name
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = "192.168.192.0/24"
-  		zone_id      = data.alicloud_zones.default.zones.0.id
+  		zone_id      = "cn-beijing-f"
 	}
 
 	resource "alicloud_security_group" "default" {
@@ -233,15 +278,19 @@ func AliCloudECSInvocationBasicDependence1(name string) string {
 
 	resource "alicloud_instance" "default" {
   		image_id                   = data.alicloud_images.default.images.0.id
-  		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  		instance_type              = "ecs.u1-c1m1.large"
   		security_groups            = alicloud_security_group.default.*.id
   		internet_charge_type       = "PayByTraffic"
   		internet_max_bandwidth_out = "10"
-  		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		availability_zone          = "cn-beijing-f"
   		instance_charge_type       = "PostPaid"
   		system_disk_category       = "cloud_essd"
   		vswitch_id                 = alicloud_vswitch.default.id
   		instance_name              = var.name
+  		tags = {
+    		"tf-testacc"         = "ecs-invocation"
+    		"tf-testacc-modified" = "ecs-invocation-v2"
+  		}
 	}
 
 	resource "alicloud_ecs_command" "default" {
@@ -272,6 +321,16 @@ func TestUnitAliCloudECSInvocation(t *testing.T) {
 		},
 		"username":              "CreateECSInvocationValue",
 		"windows_password_name": "CreateECSInvocationValue",
+		"oss_output_delivery":   "CreateECSInvocationValue",
+		"working_dir":           "CreateECSInvocationValue",
+		"resource_group_id":     "CreateECSInvocationValue",
+		"content_encoding":      "CreateECSInvocationValue",
+		"resource_tag": []interface{}{
+			map[string]interface{}{
+				"key":   "CreateECSInvocationValue",
+				"value": "CreateECSInvocationValue",
+			},
+		},
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -320,15 +379,17 @@ func TestUnitAliCloudECSInvocation(t *testing.T) {
 							},
 						},
 					},
-					"CommandContent": "CreateECSInvocationValue",
-					"RepeatMode":     "CreateECSInvocationValue",
-					"InvokeStatus":   "Running",
-					"CommandType":    "RunShellScript",
-					"Username":       "CreateECSInvocationValue",
-					"CreationTime":   "2022-05-17T10:28:05Z",
-					"Frequency":      "CreateECSInvocationValue",
-					"CommandId":      "CreateECSInvocationValue",
-					"InvokeId":       "CreateECSInvocationValue",
+					"CommandContent":    "CreateECSInvocationValue",
+					"RepeatMode":        "CreateECSInvocationValue",
+					"InvokeStatus":      "Running",
+					"CommandType":       "RunShellScript",
+					"Username":          "CreateECSInvocationValue",
+					"CreationTime":      "2022-05-17T10:28:05Z",
+					"Frequency":         "CreateECSInvocationValue",
+					"CommandId":         "CreateECSInvocationValue",
+					"InvokeId":          "CreateECSInvocationValue",
+					"OssOutputDelivery": "CreateECSInvocationValue",
+					"WorkingDir":        "CreateECSInvocationValue",
 				},
 			},
 		},

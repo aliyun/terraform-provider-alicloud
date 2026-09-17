@@ -103,7 +103,7 @@ resource "alicloud_ecs_invocation" "default" {
 The following arguments are supported:
 
 * `command_id` - (Required, ForceNew) The ID of the command.
-* `instance_id` - (Required, ForceNew) The list of instances to execute the command. You can specify up to 50 instance IDs.
+* `instance_id` - (Optional, ForceNew, Computed) The list of instances to execute the command. You can specify up to 50 instance IDs. This field conflicts with `resource_tag`; you must specify exactly one of `instance_id` or `resource_tag`.
 * `repeat_mode` - (Optional, ForceNew, Computed) Specifies how to run the command. Valid values: `Once`, `Period`, `NextRebootOnly`, `EveryReboot`. Default value: When `frequency` is not specified, the default value of `repeat_mode` is `Once`. When `frequency` is specified, `Period` is used as the value of `repeat_mode` regardless of whether `repeat_mode` is specified.
 * `timed` - (Optional, ForceNew, Computed, Deprecated) Specifies whether to periodically run the command. Default value: `false`. **NOTE:** This parameter has been deprecated by the ECS API and no longer takes effect. To run a command periodically, set `repeat_mode` to `Period` and specify `frequency` instead. Existing configurations in which `timed` is set to `true` together with `frequency` are not affected because the command runs periodically as long as `frequency` is specified.
 * `frequency` - (Optional, ForceNew) The schedule on which the recurring execution of the command takes place. Take note of the following items:
@@ -116,6 +116,18 @@ The following arguments are supported:
   * For Windows instances, the System username is used.
   * You can also specify other usernames that already exist in the ECS instance to run the command. It is more secure to run Cloud Assistant commands as a regular user. For more information, see [Configure a regular user to run Cloud Assistant commands](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/run-cloud-assistant-commands-as-a-regular-user).
 * `windows_password_name` - (Optional, ForceNew) The name of the password used to run the command on a Windows instance.
+* `oss_output_delivery` - (Optional, ForceNew) The configuration for delivering command execution output to OSS.
+* `working_dir` - (Optional, ForceNew) The working directory for command execution in the instance.
+* `resource_group_id` - (Optional, ForceNew) The ID of the resource group in which the command is executed.
+* `content_encoding` - (Optional, ForceNew) The encoding of the command content. Valid values: `PlainText`, `Base64`.
+* `resource_tag` - (Optional, ForceNew) The list of tags used to filter instances. You can execute commands to instances with the same tag in batches without specifying `instance_id`. This field conflicts with `instance_id`; you must specify exactly one of `instance_id` or `resource_tag`. See [`resource_tag`](#resource_tag) below.
+
+### `resource_tag`
+
+The resource_tag supports the following:
+
+* `key` - (Optional) The tag key used to filter instances.
+* `value` - (Optional) The tag value used to filter instances.
 
 ## Attributes Reference
 

@@ -31,10 +31,13 @@ func resourceAlicloudEcsInvocation() *schema.Resource {
 				ForceNew: true,
 			},
 			"instance_id": {
-				Type:     schema.TypeList,
-				Required: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				ForceNew: true,
+				Type:          schema.TypeList,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"resource_tag"},
+				AtLeastOneOf:  []string{"instance_id", "resource_tag"},
 			},
 			"repeat_mode": {
 				Type:         schema.TypeString,
@@ -75,6 +78,49 @@ func resourceAlicloudEcsInvocation() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"oss_output_delivery": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"working_dir": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"content_encoding": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"resource_tag": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"instance_id"},
+				AtLeastOneOf:  []string{"instance_id", "resource_tag"},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -90,7 +136,9 @@ func resourceAlicloudEcsInvocationCreate(d *schema.ResourceData, meta interface{
 	request := make(map[string]interface{})
 	var err error
 	request["CommandId"] = d.Get("command_id")
-	request["InstanceId"] = d.Get("instance_id")
+	if v, ok := d.GetOk("instance_id"); ok && len(v.([]interface{})) > 0 {
+		request["InstanceId"] = v
+	}
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("repeat_mode"); ok {
 		request["RepeatMode"] = v
@@ -113,6 +161,25 @@ func resourceAlicloudEcsInvocationCreate(d *schema.ResourceData, meta interface{
 	}
 	if v, ok := d.GetOk("windows_password_name"); ok {
 		request["WindowsPasswordName"] = v
+	}
+	if v, ok := d.GetOk("oss_output_delivery"); ok {
+		request["OssOutputDelivery"] = v
+	}
+	if v, ok := d.GetOk("working_dir"); ok {
+		request["WorkingDir"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOk("resource_tag"); ok {
+		resourceTags := v.(*schema.Set).List()
+		for i, item := range resourceTags {
+			m := item.(map[string]interface{})
+			request[fmt.Sprintf("ResourceTag.%d.Key", i+1)] = m["key"]
+			if val, ok := m["value"].(string); ok && val != "" {
+				request[fmt.Sprintf("ResourceTag.%d.Value", i+1)] = val
+			}
+		}
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -166,6 +233,8 @@ func resourceAlicloudEcsInvocationRead(d *schema.ResourceData, meta interface{})
 	d.Set("parameters", parametersMap)
 	d.Set("timed", object["Timed"])
 	d.Set("username", object["Username"])
+	d.Set("oss_output_delivery", object["OssOutputDelivery"])
+	d.Set("working_dir", object["WorkingDir"])
 	d.Set("status", object["InvocationStatus"])
 	instanceIdItems := make([]string, 0)
 	if invokeInstances, ok := object["InvokeInstances"]; ok && invokeInstances != nil {
