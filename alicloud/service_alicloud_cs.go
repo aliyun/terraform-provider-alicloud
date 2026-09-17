@@ -1182,9 +1182,12 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 	csClient := CsClient{roaClient}
 	kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
 	if err != nil {
-		log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
+		return WrapError(fmt.Errorf("failed to get kubeconfig for cluster %s: %s", d.Id(), err))
 	}
-	m := flattenAlicloudCSCertificate(kubeConfig)
+	m, err := flattenAlicloudCSCertificate(kubeConfig)
+	if err != nil {
+		return WrapError(fmt.Errorf("failed to parse kubeconfig for cluster %s: %s", d.Id(), err))
+	}
 	if len(m) >= 3 {
 		if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
 			if err := writeToFile(ce.(string), m["client_cert"]); err != nil {
@@ -1204,7 +1207,9 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 	}
 	// kube_config
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		writeToFile(file.(string), tea.StringValue(kubeConfig.Config))
+		if err := writeToFile(file.(string), tea.StringValue(kubeConfig.Config)); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	if setCertificateAuthorityAttribute {
@@ -1219,7 +1224,7 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 				return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
 			}
 		} else {
-			if err := d.Set("certificate_authority", []interface{}{flattenAlicloudCSCertificate(kubeConfig)}); err != nil {
+			if err := d.Set("certificate_authority", []interface{}{m}); err != nil {
 				return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
 			}
 		}
