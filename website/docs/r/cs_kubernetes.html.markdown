@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cs_kubernetes
 
--> **DEPRECATION NOTICE:** This resource has been deprecated since v1.276.0 and will be removed in a future release.
+-> **DEPRECATED:** This resource has been deprecated from version `1.276.0` and will be removed in a future release.
 
 This resource will help you to manage a Kubernetes Cluster in Alibaba Cloud Kubernetes Service, see [What is kubernetes](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/create-an-ask-cluster-1).
 
@@ -58,147 +58,73 @@ variable "name" {
   default = "tf-kubernetes-example"
 }
 
-# leave it to empty would create a new one
-variable "vpc_id" {
-  description = "Existing vpc id used to create several vswitches and other resources."
-  default     = ""
-}
-
-variable "vpc_cidr" {
-  description = "The cidr block used to launch a new vpc when 'vpc_id' is not specified."
-  default     = "10.0.0.0/8"
-}
-
-# leave it to empty then terraform will create several vswitches
-variable "vswitch_ids" {
-  description = "List of existing vswitch id."
-  type        = list(string)
-  default     = []
-}
-
-variable "vswitch_cidrs" {
-  description = "List of cidr blocks used to create several new vswitches when 'vswitch_ids' is not specified."
-  type        = list(string)
-  default     = ["10.1.0.0/16", "10.2.0.0/16", "10.3.0.0/16"]
-}
-
-variable "terway_vswitch_ids" {
-  description = "List of existing vswitch ids for terway."
-  type        = list(string)
-  default     = []
-}
-
-variable "terway_vswitch_cidrs" {
-  description = "List of cidr blocks used to create several new vswitches when 'terway_vswitch_cidrs' is not specified."
-  type        = list(string)
-  default     = ["10.4.0.0/16", "10.5.0.0/16", "10.6.0.0/16"]
-}
-
-variable "cluster_addons" {
-  type = list(object({
-    name   = string
-    config = map(string)
-  }))
-
-  default = [
-    # If use terway network, must specify addons with `terway-eniip` and param `pod_vswitch_ids`
-    {
-      "name"   = "terway-eniip",
-      "config" = {},
-    },
-    {
-      "name"   = "csi-plugin",
-      "config" = {},
-    },
-    {
-      "name"   = "csi-provisioner",
-      "config" = {},
-    },
-    {
-      "name" = "logtail-ds",
-      "config" = {
-        "IngressDashboardEnabled" = "true",
-      }
-    },
-    {
-      "name" = "nginx-ingress-controller",
-      "config" = {
-        "IngressSlbNetworkType" = "internet"
-      }
-    },
-    {
-      "name"   = "arms-prometheus",
-      "config" = {},
-    },
-    {
-      "name" = "ack-node-problem-detector",
-      "config" = {
-        "sls_project_name" = ""
-      },
-    }
-  ]
+variable "instance_type" {
+  default = "ecs.c6.xlarge"
 }
 
 data "alicloud_enhanced_nat_available_zones" "enhanced" {}
 
-# If there is not specifying vpc_id, the module will launch a new vpc
-resource "alicloud_vpc" "vpc" {
-  count      = var.vpc_id == "" ? 1 : 0
-  cidr_block = var.vpc_cidr
+data "alicloud_zones" "default" {
+  available_resource_creation = "Instance"
+  available_disk_category     = "cloud_essd"
+  available_instance_type     = var.instance_type
 }
 
-# According to the vswitch cidr blocks to launch several vswitches
-resource "alicloud_vswitch" "vswitches" {
-  count      = length(var.vswitch_ids) > 0 ? 0 : length(var.vswitch_cidrs)
-  vpc_id     = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
-  cidr_block = element(var.vswitch_cidrs, count.index)
-  zone_id    = data.alicloud_enhanced_nat_available_zones.enhanced.zones[count.index < length(data.alicloud_enhanced_nat_available_zones.enhanced.zones) ? count.index : 0].zone_id
-}
-
-# According to the vswitch cidr blocks to launch several vswitches
-resource "alicloud_vswitch" "terway_vswitches" {
-  count      = length(var.terway_vswitch_ids) > 0 ? 0 : length(var.terway_vswitch_cidrs)
-  vpc_id     = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
-  cidr_block = element(var.terway_vswitch_cidrs, count.index)
-  zone_id    = data.alicloud_enhanced_nat_available_zones.enhanced.zones[count.index < length(data.alicloud_enhanced_nat_available_zones.enhanced.zones) ? count.index : 0].zone_id
+locals {
+  # The zone must offer the master instance type and support the enhanced NAT gateway created by `new_nat_gateway`.
+  zone_id = sort(setintersection(data.alicloud_zones.default.zones[*].id, data.alicloud_enhanced_nat_available_zones.enhanced.zones[*].zone_id))[0]
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
 
-data "alicloud_instance_types" "cloud_essd" {
-  count                = 3
-  availability_zone    = data.alicloud_enhanced_nat_available_zones.enhanced.zones[count.index < length(data.alicloud_enhanced_nat_available_zones.enhanced.zones) ? count.index : 0].zone_id
-  cpu_core_count       = 4
-  memory_size          = 8
-  system_disk_category = "cloud_essd"
+data "alicloud_cs_kubernetes_version" "default" {
+  cluster_type = "Kubernetes"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = local.zone_id
 }
 
 resource "alicloud_cs_kubernetes" "default" {
-  master_vswitch_ids             = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
-  pod_vswitch_ids                = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
-  master_instance_types          = [data.alicloud_instance_types.cloud_essd.0.instance_types.0.id, data.alicloud_instance_types.cloud_essd.1.instance_types.0.id, data.alicloud_instance_types.cloud_essd.2.instance_types.0.id]
+  name                           = var.name
+  version                        = data.alicloud_cs_kubernetes_version.default.metadata.2.version
+  master_vswitch_ids             = [alicloud_vswitch.default.id, alicloud_vswitch.default.id, alicloud_vswitch.default.id]
+  master_instance_types          = [var.instance_type, var.instance_type, var.instance_type]
   master_disk_category           = "cloud_essd"
+  master_disk_size               = 80
   password                       = "Yourpassword1234"
+  pod_cidr                       = "10.72.0.0/16"
   service_cidr                   = "172.18.0.0/16"
+  node_cidr_mask                 = 24
+  enable_ssh                     = false
   install_cloud_monitor          = true
   resource_group_id              = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   deletion_protection            = false
-  timezone                       = "Asia/Shanghai"
   os_type                        = "Linux"
-  platform                       = "AliyunLinux3"
+  platform                       = "AliyunLinux4ContainerOptimized"
+  image_id                       = "aliyun_4_x64_20G_container_optimized_alibase_20260402.vhd"
   cluster_domain                 = "cluster.local"
   proxy_mode                     = "ipvs"
   custom_san                     = "www.terraform.io"
   new_nat_gateway                = true
-  skip_set_certificate_authority = true
-  dynamic "addons" {
-    for_each = var.cluster_addons
-    content {
-      name   = lookup(addons.value, "name", var.cluster_addons)
-      config = jsonencode(lookup(addons.value, "config", var.cluster_addons))
-    }
+  slb_internet_enabled           = false
+  skip_set_certificate_authority = false
+  runtime {
+    name    = "containerd"
+    version = "1.6.20"
+  }
+  tags = {
+    Platform = "TF"
   }
 }
 ```
@@ -207,7 +133,7 @@ resource "alicloud_cs_kubernetes" "default" {
 
 ## Argument Reference
 
-*Global params*
+Global params:
 
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
 * `name_prefix` - (Optional, Deprecated) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
@@ -246,7 +172,7 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
 * `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
 * `skip_set_certificate_authority` - (Optional) Configure whether to save certificate authority data for your cluster to attribute `certificate_authority`.For cluster security, recommended configuration as `true`. Will be removed with attribute certificate_authority removed.
 
-*Network params*
+Network params:
 
 * `pod_cidr` - (Optional, ForceNew) [Flannel Specific] The CIDR block for the pod network when using Flannel. 
 * `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `worker_vswitch_ids` and `master_vswitch_ids` but must be in same availability zones. Only works for **Create** Operation. 
@@ -258,7 +184,7 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
   -> **NOTE:** If you want to use `Terway` as CNI network plugin, You need to specify the `pod_vswitch_ids` field and addons with `terway-eniip`.
   If you want to use `Flannel` as CNI network plugin, You need to specify the `pod_cidr` field and addons with `flannel`.
 
-*Master params*
+Master params:
 
 * `master_vswitch_ids` - (Required, ForceNew) The vswitches used by master, you can specific 3 or 5 vswitches because of the amount of masters. Detailed below.
 * `master_instance_types` - (Required, ForceNew) The instance type of master node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
@@ -272,13 +198,13 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
 * `master_disk_performance_level` - (Optional, ForceNew, Available since v1.120.0) Master node system disk performance level. When `master_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
 * `master_disk_snapshot_policy_id` - (Optional, ForceNew, Available since v1.120.0) Master node system disk auto snapshot policy.
 
-*Computed params*
+Computed params:
 
 * `client_cert` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-cert.pem) for replace it.
 * `client_key` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.client_key](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#client_key) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/client-key.pem) for replace it.
 * `cluster_ca_cert` - (Optional, Deprecated from v1.248.0) From version 1.248.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kubeconfig, you can also save the [certificate_authority.cluster_cert](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#cluster_cert) attribute content of new DataSource `alicloud_cs_cluster_credential` to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.
 
-*Removed params*
+Removed params:
 
 * `master_instance_type` - (Removed) The instance type of master node.
 * `worker_instance_type` - (Removed) The instance type of worker node.
@@ -331,7 +257,7 @@ The addons supports the following:
 
 The following example is the definition of addons block, The type of this field is list:
 
-```
+```text
 # install nginx ingress, conflict with SLB ingress
 addons {
   name = "nginx-ingress-controller"
@@ -370,7 +296,7 @@ The log_config supports the following:
 
 The following example is the definition of runtime block:
 
-```
+```text
   runtime = {
     name = "containerd"
     version = "1.6.28"
@@ -389,7 +315,7 @@ The following arguments are supported in the `delete_options` configuration bloc
   - `SLS_Data`: SLS Project used by the cluster logging feature, default behavior is to retain, option to delete is available. 
   - `SLS_ControlPlane`: SLS Project used for the managed cluster control plane logs, default behavior is to retain, option to delete is available.
 
-```
+```text
   ...
   // Specify delete_options as below when deleting cluster
   // delete SLB resources created by the Nginx Ingress Service
