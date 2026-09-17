@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	roacs "github.com/alibabacloud-go/cs-20151215/v8/client"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
@@ -220,10 +222,10 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                           name,
-					"version":                        "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.2.version}",
+					"version":                        "1.32.7-aliyun.1",
 					"master_vswitch_ids":             []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
-					"master_instance_types":          []string{"${var.instance_type}", "${var.instance_type}", "${var.instance_type}"},
-					"master_disk_category":           "cloud_ssd",
+					"master_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"master_disk_category":           "cloud_essd",
 					"master_disk_size":               "80",
 					"master_disk_snapshot_policy_id": "${alicloud_ecs_auto_snapshot_policy.default.id}",
 					"key_name":                       "${alicloud_key_pair.default.key_pair_name}",
@@ -237,8 +239,6 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 					"timezone":                       "Asia/Shanghai",
 					"os_type":                        "Linux",
 					"platform":                       "AliyunLinux3",
-					"image_id":                       "aliyun_3_x64_20G_alibase_20240819.vhd",
-					"runtime":                        map[string]interface{}{"name": "containerd", "version": "1.6.20"},
 					"node_name_mode":                 "customized,aliyun.com-,5,-test",
 					"cluster_domain":                 "cluster.local",
 					"custom_san":                     "www.terraform.io",
@@ -256,7 +256,8 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                           name,
-						"master_disk_category":           "cloud_ssd",
+						"version":                        "1.32.7-aliyun.1",
+						"master_disk_category":           "cloud_essd",
 						"master_disk_size":               "80",
 						"key_name":                       name,
 						"pod_cidr":                       "10.72.0.0/16",
@@ -357,11 +358,11 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 			{
 				// upgrade
 				Config: testAccConfig(map[string]interface{}{
-					"version": "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.1.version}",
+					"version": "1.33.3-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": CHECKSET,
+						"version": "1.33.3-aliyun.1",
 					}),
 				),
 			},
@@ -530,12 +531,15 @@ data "alicloud_zones" "default" {
   available_instance_type     = var.instance_type
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 4
+  memory_size          = 8
+  system_disk_category = "cloud_essd"
 }
 
-data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
-  cluster_type = "Kubernetes"
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -590,7 +594,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id                    = alicloud_cs_kubernetes.default.id
   node_pool_name                = var.name
   vswitch_ids                   = [local.vswitch_id]
-  instance_types                = [var.instance_type]
+  instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
   password                      = "Test12345"
   system_disk_size              = 50
   system_disk_category          = "cloud_essd"
@@ -757,6 +761,166 @@ func TestUnit_parseRRSAMetadata(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tt.want, got) {
 				t.Errorf("flattenRRSAMetadata(%v) want %v got %v", tt.args.meta, tt.want, got)
+			}
+		})
+	}
+}
+
+const testKubeConfigYaml = `apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==
+    server: https://1.2.3.4:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==
+    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+`
+
+func TestUnit_flattenAlicloudCSCertificate(t *testing.T) {
+	normal := map[string]string{
+		"cluster_cert": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==",
+		"client_cert":  "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==",
+		"client_key":   "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQo=",
+	}
+	body := func(config string) *roacs.DescribeClusterUserKubeconfigResponseBody {
+		return &roacs.DescribeClusterUserKubeconfigResponseBody{Config: tea.String(config)}
+	}
+	tests := []struct {
+		name        string
+		certificate *roacs.DescribeClusterUserKubeconfigResponseBody
+		want        map[string]string
+		wantErr     bool
+	}{
+		{
+			name:        "nil response body",
+			certificate: nil,
+			wantErr:     true,
+		},
+		{
+			name:        "empty config",
+			certificate: body(""),
+			wantErr:     true,
+		},
+		{
+			name:        "invalid yaml",
+			certificate: body(": ["),
+			wantErr:     true,
+		},
+		{
+			name: "missing clusters",
+			certificate: body(`users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "missing users",
+			certificate: body(`clusters:
+- cluster:
+    certificate-authority-data: Yw==
+  name: kubernetes
+`),
+			wantErr: true,
+		},
+		{
+			name: "empty clusters array",
+			certificate: body(`clusters: []
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "clusters not a list",
+			certificate: body(`clusters: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "leaf field has wrong type",
+			certificate: body(`clusters:
+- cluster:
+    certificate-authority-data: 123456
+  name: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "missing leaf field",
+			certificate: body(`clusters:
+- cluster:
+    server: https://1.2.3.4:6443
+  name: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "empty leaf field",
+			certificate: body(`clusters:
+- cluster:
+    certificate-authority-data: ""
+  name: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name:        "normal kubeconfig",
+			certificate: body(testKubeConfigYaml),
+			want:        normal,
+			wantErr:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := flattenAlicloudCSCertificate(tt.certificate)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("flattenAlicloudCSCertificate(%v) want error got nil", tt.certificate)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("flattenAlicloudCSCertificate(%v) unexpected error: %v", tt.certificate, err)
+				return
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("flattenAlicloudCSCertificate(%v) want %v got %v", tt.certificate, tt.want, got)
 			}
 		})
 	}
