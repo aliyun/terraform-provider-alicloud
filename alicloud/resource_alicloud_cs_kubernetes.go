@@ -481,20 +481,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"runtime": {
 				Type:     schema.TypeMap,
 				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"name": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "docker",
-						},
-						"version": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "19.03.5",
-						},
-					},
-				},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"cluster_domain": {
 				Type:        schema.TypeString,
@@ -559,24 +546,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Deprecated: "Field 'cluster_ca_cert' has been deprecated from provider version 1.248.0. From version 1.248.0, new DataSource 'alicloud_cs_cluster_credential' is recommended to manage cluster's kubeconfig, you can also save the 'certificate_authority.cluster_cert' attribute content of new DataSource 'alicloud_cs_cluster_credential' to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.",
 			},
 			"certificate_authority": {
-				Type:     schema.TypeMap,
-				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"cluster_cert": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"client_cert": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"client_key": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-					},
-				},
+				Type:       schema.TypeMap,
+				Computed:   true,
+				Elem:       &schema.Schema{Type: schema.TypeString},
 				Deprecated: "Field 'certificate_authority' has been deprecated from provider version 1.248.0. Please use the attribute 'certificate_authority' of new DataSource 'alicloud_cs_cluster_credential' to replace it.",
 			},
 			"skip_set_certificate_authority": {
@@ -586,26 +558,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"connections": {
 				Type:     schema.TypeMap,
 				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"api_server_internet": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"api_server_intranet": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"master_public_ip": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"service_domain": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-					},
-				},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"slb_id": {
 				Type:     schema.TypeString,
@@ -1730,20 +1683,59 @@ func expandKubernetesRuntimeConfig(l map[string]interface{}) cs.Runtime {
 	return config
 }
 
-func flattenAlicloudCSCertificate(certificate *roacs.DescribeClusterUserKubeconfigResponseBody) map[string]string {
+type kubeConfigContent struct {
+	Clusters []struct {
+		Cluster struct {
+			CertificateAuthorityData interface{} `yaml:"certificate-authority-data"`
+		} `yaml:"cluster"`
+	} `yaml:"clusters"`
+	Users []struct {
+		User struct {
+			ClientCertificateData interface{} `yaml:"client-certificate-data"`
+			ClientKeyData         interface{} `yaml:"client-key-data"`
+		} `yaml:"user"`
+	} `yaml:"users"`
+}
+
+func flattenAlicloudCSCertificate(certificate *roacs.DescribeClusterUserKubeconfigResponseBody) (map[string]string, error) {
 	if certificate == nil {
-		return map[string]string{}
+		return nil, fmt.Errorf("invalid kubeconfig response: response body is empty")
 	}
 
-	kubeConfig := make(map[string]interface{})
-	_ = yaml.Unmarshal([]byte(tea.StringValue(certificate.Config)), &kubeConfig)
+	var kubeConfig kubeConfigContent
+	if err := yaml.Unmarshal([]byte(tea.StringValue(certificate.Config)), &kubeConfig); err != nil {
+		return nil, fmt.Errorf("failed to parse kubeconfig YAML: %s", err)
+	}
+	if len(kubeConfig.Clusters) == 0 {
+		return nil, fmt.Errorf("invalid kubeconfig: field 'clusters' is missing or empty")
+	}
+	if len(kubeConfig.Users) == 0 {
+		return nil, fmt.Errorf("invalid kubeconfig: field 'users' is missing or empty")
+	}
 
 	m := make(map[string]string)
-	m["cluster_cert"] = kubeConfig["clusters"].([]interface{})[0].(map[interface{}]interface{})["cluster"].(map[interface{}]interface{})["certificate-authority-data"].(string)
-	m["client_cert"] = kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-certificate-data"].(string)
-	m["client_key"] = kubeConfig["users"].([]interface{})[0].(map[interface{}]interface{})["user"].(map[interface{}]interface{})["client-key-data"].(string)
+	var err error
+	if m["cluster_cert"], err = kubeConfigStringValue(kubeConfig.Clusters[0].Cluster.CertificateAuthorityData, "clusters[0].cluster.certificate-authority-data"); err != nil {
+		return nil, err
+	}
+	if m["client_cert"], err = kubeConfigStringValue(kubeConfig.Users[0].User.ClientCertificateData, "users[0].user.client-certificate-data"); err != nil {
+		return nil, err
+	}
+	if m["client_key"], err = kubeConfigStringValue(kubeConfig.Users[0].User.ClientKeyData, "users[0].user.client-key-data"); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
 
-	return m
+func kubeConfigStringValue(v interface{}, field string) (string, error) {
+	s, ok := v.(string)
+	if !ok {
+		return "", fmt.Errorf("invalid kubeconfig: field '%s' is missing or has an unexpected type", field)
+	}
+	if s == "" {
+		return "", fmt.Errorf("invalid kubeconfig: field '%s' is empty", field)
+	}
+	return s, nil
 }
 
 // ACK pro maintenance window
