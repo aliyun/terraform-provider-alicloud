@@ -67,4 +67,7 @@ func TestUnitPolarDBGatewayAIResourceSchemas(t *testing.T) {
 	if !resourceAlicloudPolarDBGatewayModelAPI().Schema["name"].ForceNew {
 		t.Fatal("model API name must be ForceNew because ModifyModelApi cannot change it")
 	}
+	if resourceAlicloudPolarDBGatewayCostRule().Schema["model_name"].ForceNew {
+		t.Fatal("cost rule model_name is supported by ModifyCostRule")
+	}
 }
