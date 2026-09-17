@@ -384,22 +384,22 @@ func TestAccAliCloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                                      name,
-						"cluster_id":                                CHECKSET,
-						"vswitch_ids.#":                             "1",
-						"instance_types.#":                          "1",
-						"key_name":                                  CHECKSET,
-						"system_disk_categories.#":                  "2",
-						"system_disk_size":                          "40",
-						"install_cloud_monitor":                     "false",
-						"platform":                                  "AliyunLinux",
-						"scaling_policy":                            "release",
-						"scaling_config.#":                          "1",
-						"scaling_config.0.enable":                   "true",
-						"scaling_config.0.min_size":                 "1",
-						"scaling_config.0.max_size":                 "10",
-						"scaling_config.0.type":                     "cpu",
-						"scaling_config.0.is_bond_eip":              "true",
+						"name":                         name,
+						"cluster_id":                   CHECKSET,
+						"vswitch_ids.#":                "1",
+						"instance_types.#":             "1",
+						"key_name":                     CHECKSET,
+						"system_disk_categories.#":     "2",
+						"system_disk_size":             "40",
+						"install_cloud_monitor":        "false",
+						"platform":                     "AliyunLinux",
+						"scaling_policy":               "release",
+						"scaling_config.#":             "1",
+						"scaling_config.0.enable":      "true",
+						"scaling_config.0.min_size":    "1",
+						"scaling_config.0.max_size":    "10",
+						"scaling_config.0.type":        "cpu",
+						"scaling_config.0.is_bond_eip": "true",
 						"scaling_config.0.eip_internet_charge_type": "PayByBandwidth",
 						"scaling_config.0.eip_bandwidth":            "5",
 						"cpu_policy":                                "none",
@@ -8339,6 +8339,345 @@ func TestAccAliCloudCSKubernetesNodePool_containerdConfigCreate(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudCSKubernetesNodePool_osConfig covers the os_config block (sysctl +
+// hugepage) over the full lifecycle: add, update, explicit zero, sysctl removal and
+// whole-block removal. The hugepage-only steps use the framework's config generator;
+// the sysctl steps use hand-written HCL because sysctl keys contain dots
+// (user.max_user_namespaces), which the generator cannot emit as bare HCL identifiers.
+// The sysctl map is write-only on the cloud side, so it is mirrored back from the
+// configuration; only hugepage is drift-detected against the API read-back.
+func TestAccAliCloudCSKubernetesNodePool_osConfig(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.os_config"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-osconfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckNodepoolBasicDependence12069)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"cluster_id":  "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{"${alicloud_vswitch.defaultT8D8ss.id}"},
+					"instance_types": []string{
+						"ecs.g7.xlarge",
+					},
+					"desired_size":         "1",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":       name,
+						"cluster_id": CHECKSET,
+						// Guard: an unconfigured node pool must not surface server-side
+						// defaults as os_config, otherwise it produces a spurious diff.
+						"os_config.#": "0",
+					}),
+				),
+			},
+			// check: os_config basic (hugepage only; explicit zero khugepaged_defrag)
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": []map[string]interface{}{{
+						"hugepage": []map[string]interface{}{{
+							"transparent_enabled":              "always",
+							"transparent_defrag":               "always",
+							"khugepaged_defrag":                "0",
+							"khugepaged_alloc_sleep_millisecs": "60000",
+						}},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":                                             "1",
+						"os_config.0.sysctl.%":                                    "0",
+						"os_config.0.hugepage.#":                                  "1",
+						"os_config.0.hugepage.0.transparent_enabled":              "always",
+						"os_config.0.hugepage.0.transparent_defrag":               "always",
+						"os_config.0.hugepage.0.khugepaged_defrag":                "0",
+						"os_config.0.hugepage.0.khugepaged_alloc_sleep_millisecs": "60000",
+					}),
+				),
+			},
+			// check: os_config hugepage update
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": []map[string]interface{}{{
+						"hugepage": []map[string]interface{}{{
+							"transparent_enabled":              "madvise",
+							"transparent_defrag":               "defer+madvise",
+							"khugepaged_defrag":                "1",
+							"khugepaged_alloc_sleep_millisecs": "120000",
+							"khugepaged_scan_sleep_millisecs":  "10000",
+							"khugepaged_pages_to_scan":         "4096",
+						}},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":            "1",
+						"os_config.0.hugepage.#": "1",
+						"os_config.0.hugepage.0.transparent_enabled":              "madvise",
+						"os_config.0.hugepage.0.transparent_defrag":               "defer+madvise",
+						"os_config.0.hugepage.0.khugepaged_defrag":                "1",
+						"os_config.0.hugepage.0.khugepaged_alloc_sleep_millisecs": "120000",
+						"os_config.0.hugepage.0.khugepaged_scan_sleep_millisecs":  "10000",
+						"os_config.0.hugepage.0.khugepaged_pages_to_scan":         "4096",
+					}),
+				),
+			},
+			// check: sysctl map added via hand-written HCL (dotted key); the sysctl map
+			// is write-only and mirrored back from the configuration, and the hugepage
+			// values from the previous step are preserved.
+			{
+				Config: AlicloudAckNodepoolBasicDependence12069(name) + testAccAckNodepoolOsConfigSysctl("os_config", name, "65535"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":          "1",
+						"os_config.0.sysctl.%": "1",
+						"os_config.0.sysctl.user.max_user_namespaces":             "65535",
+						"os_config.0.hugepage.#":                                  "1",
+						"os_config.0.hugepage.0.transparent_enabled":              "madvise",
+						"os_config.0.hugepage.0.transparent_defrag":               "defer+madvise",
+						"os_config.0.hugepage.0.khugepaged_defrag":                "1",
+						"os_config.0.hugepage.0.khugepaged_alloc_sleep_millisecs": "120000",
+						"os_config.0.hugepage.0.khugepaged_scan_sleep_millisecs":  "10000",
+						"os_config.0.hugepage.0.khugepaged_pages_to_scan":         "4096",
+					}),
+				),
+			},
+			// check: sysctl update
+			{
+				Config: AlicloudAckNodepoolBasicDependence12069(name) + testAccAckNodepoolOsConfigSysctl("os_config", name, "131072"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.0.sysctl.user.max_user_namespaces": "131072",
+					}),
+				),
+			},
+			// check: removing sysctl from the configuration drops it from state (the
+			// write-only mirror) and clears it on the cloud side under the API's
+			// full-replacement semantics; hugepage stays as configured.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": []map[string]interface{}{{
+						"hugepage": []map[string]interface{}{{
+							"transparent_enabled":              "madvise",
+							"transparent_defrag":               "defer+madvise",
+							"khugepaged_defrag":                "1",
+							"khugepaged_alloc_sleep_millisecs": "120000",
+							"khugepaged_scan_sleep_millisecs":  "10000",
+							"khugepaged_pages_to_scan":         "4096",
+						}},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.0.sysctl.%":                        "0",
+						"os_config.0.sysctl.user.max_user_namespaces": REMOVEKEY,
+						"os_config.0.hugepage.#":                      "1",
+						"os_config.0.hugepage.0.transparent_enabled":  "madvise",
+					}),
+				),
+			},
+			// check: removing the whole os_config block clears all custom OS
+			// configuration (an empty map is sent) and state shows os_config.# = 0.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":                                             "0",
+						"os_config.0.sysctl.%":                                    REMOVEKEY,
+						"os_config.0.hugepage.#":                                  REMOVEKEY,
+						"os_config.0.hugepage.0.transparent_enabled":              REMOVEKEY,
+						"os_config.0.hugepage.0.transparent_defrag":               REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_defrag":                REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_alloc_sleep_millisecs": REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_scan_sleep_millisecs":  REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_pages_to_scan":         REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudCSKubernetesNodePool_osConfigCreate verifies the Create-time post-send
+// path: CreateNodePool does not accept os_config, so the Create function must re-send it
+// via ModifyNodePoolNodeConfig after the node pool becomes active. The first apply already
+// declares sysctl + hugepage; if the post-send were missing, the configuration would be
+// silently dropped and the first Read would leave a non-empty plan. A follow-up step
+// removes the block (full-replacement clears the cloud side) so the import verification
+// is not affected by the write-only sysctl mirror.
+func TestAccAliCloudCSKubernetesNodePool_osConfigCreate(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.os_config_create"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-osconfig-create-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckNodepoolBasicDependence12069)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// check: the os_config block declared at Create time is applied through the
+			// post-send call; the sysctl map is mirrored back from the configuration and
+			// the hugepage fields are read back from the API, so the first apply
+			// converges without a follow-up diff.
+			{
+				Config: AlicloudAckNodepoolBasicDependence12069(name) + testAccAckNodepoolOsConfigCreate("os_config_create", name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"cluster_id":           CHECKSET,
+						"os_config.#":          "1",
+						"os_config.0.sysctl.%": "1",
+						"os_config.0.sysctl.user.max_user_namespaces": "65535",
+						"os_config.0.hugepage.#":                      "1",
+						"os_config.0.hugepage.0.transparent_enabled":  "always",
+						"os_config.0.hugepage.0.transparent_defrag":   "madvise",
+						"os_config.0.hugepage.0.khugepaged_defrag":    "0",
+					}),
+				),
+			},
+			// check: removing the block clears the cloud-side configuration and state.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"cluster_id":  "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{"${alicloud_vswitch.defaultT8D8ss.id}"},
+					"instance_types": []string{
+						"ecs.g7.xlarge",
+					},
+					"desired_size":         "1",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":          "0",
+						"os_config.0.sysctl.%": REMOVEKEY,
+						"os_config.0.sysctl.user.max_user_namespaces": REMOVEKEY,
+						"os_config.0.hugepage.#":                      REMOVEKEY,
+						"os_config.0.hugepage.0.transparent_enabled":  REMOVEKEY,
+						"os_config.0.hugepage.0.transparent_defrag":   REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_defrag":    REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+		},
+	})
+}
+
+// Hand-written HCL helpers for the os_config steps. The sysctl map key contains dots,
+// which the framework config generator cannot emit (map keys are not quoted), and the
+// testing coverage checker only reads Check maps of steps whose Config captures no
+// braces — hence the HCL lives in helpers referenced from the Config lines.
+func testAccAckNodepoolOsConfigSysctl(resourceName, name, sysctlValue string) string {
+	return fmt.Sprintf(`
+resource "alicloud_cs_kubernetes_node_pool" "%s" {
+  name                 = "%s"
+  cluster_id           = alicloud_cs_managed_kubernetes.defaultNppPcz.id
+  vswitch_ids          = [alicloud_vswitch.defaultT8D8ss.id]
+  instance_types       = ["ecs.g7.xlarge"]
+  desired_size         = "1"
+  system_disk_category = "cloud_essd"
+  system_disk_size     = "40"
+  image_type           = "AliyunLinux3ContainerOptimized"
+  os_config {
+    sysctl = {
+      "user.max_user_namespaces" = "%s"
+    }
+    hugepage {
+      transparent_enabled              = "madvise"
+      transparent_defrag               = "defer+madvise"
+      khugepaged_defrag                = "1"
+      khugepaged_alloc_sleep_millisecs = "120000"
+      khugepaged_scan_sleep_millisecs  = "10000"
+      khugepaged_pages_to_scan         = "4096"
+    }
+  }
+}
+`, resourceName, name, sysctlValue)
+}
+
+func testAccAckNodepoolOsConfigCreate(resourceName, name string) string {
+	return fmt.Sprintf(`
+resource "alicloud_cs_kubernetes_node_pool" "%s" {
+  name                 = "%s"
+  cluster_id           = alicloud_cs_managed_kubernetes.defaultNppPcz.id
+  vswitch_ids          = [alicloud_vswitch.defaultT8D8ss.id]
+  instance_types       = ["ecs.g7.xlarge"]
+  desired_size         = "1"
+  system_disk_category = "cloud_essd"
+  system_disk_size     = "40"
+  image_type           = "AliyunLinux3ContainerOptimized"
+  os_config {
+    sysctl = {
+      "user.max_user_namespaces" = "65535"
+    }
+    hugepage {
+      transparent_enabled = "always"
+      transparent_defrag  = "madvise"
+      khugepaged_defrag   = "0"
+    }
+  }
+}
+`, resourceName, name)
+}
+
 // TestUnitFlattenContainerdConfig covers the API-response-to-schema conversion of the
 // containerd_config block: only keys explicitly returned by the API are written into the
 // element map (missing key = "not set"), numeric fields accept both json.Number and the
@@ -8588,6 +8927,292 @@ func TestUnitExpandContainerdConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, resourceSchema, tt.raw)
 			got, err := expandContainerdConfig(d)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+// TestUnitFlattenHugepage covers the API-response-to-schema conversion of the hugepage
+// object: string fields pass through, numeric fields accept both json.Number and the
+// float64 fallback and are rendered as decimal strings for the nullable TypeString
+// fields, and unknown keys are ignored.
+func TestUnitFlattenHugepage(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  map[string]interface{}
+		want map[string]interface{}
+	}{
+		{
+			name: "empty map returns empty map",
+			raw:  map[string]interface{}{},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "string fields pass through",
+			raw: map[string]interface{}{
+				"transparentEnabled": "always",
+				"transparentDefrag":  "defer+madvise",
+			},
+			want: map[string]interface{}{
+				"transparent_enabled": "always",
+				"transparent_defrag":  "defer+madvise",
+			},
+		},
+		{
+			name: "json.Number values render as decimal strings",
+			raw: map[string]interface{}{
+				"khugepagedDefrag":              json.Number("1"),
+				"khugepagedAllocSleepMillisecs": json.Number("60000"),
+				"khugepagedScanSleepMillisecs":  json.Number("10000"),
+				"khugepagedPagesToScan":         json.Number("4096"),
+			},
+			want: map[string]interface{}{
+				"khugepaged_defrag":                "1",
+				"khugepaged_alloc_sleep_millisecs": "60000",
+				"khugepaged_scan_sleep_millisecs":  "10000",
+				"khugepaged_pages_to_scan":         "4096",
+			},
+		},
+		{
+			name: "float64 fallback values render as decimal strings",
+			raw: map[string]interface{}{
+				"khugepagedDefrag": float64(0),
+			},
+			want: map[string]interface{}{
+				"khugepaged_defrag": "0",
+			},
+		},
+		{
+			name: "unknown keys are ignored",
+			raw: map[string]interface{}{
+				"transparentEnabled": "always",
+				"unknownKey":         "ignored",
+			},
+			want: map[string]interface{}{
+				"transparent_enabled": "always",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, flattenHugepage(tt.raw))
+		})
+	}
+}
+
+// TestUnitFlattenOsConfig covers the node_os_config-response-to-schema conversion of the
+// os_config block: the configured sysctl map is mirrored back (the API never returns it),
+// the hugepage section is backfilled from the API read-back when present, an empty
+// hugepage object yields no block, and an unconfigured node pool yields an empty list.
+func TestUnitFlattenOsConfig(t *testing.T) {
+	resourceSchema := resourceAliCloudAckNodepool().Schema
+
+	tests := []struct {
+		name string
+		raw  map[string]interface{}
+		api  interface{}
+		want []map[string]interface{}
+	}{
+		{
+			name: "nil API response and no config returns empty list",
+			raw:  map[string]interface{}{},
+			api:  nil,
+			want: []map[string]interface{}{},
+		},
+		{
+			name: "configured sysctl is mirrored even when API returns nothing",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				}},
+			},
+			api: nil,
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+			}},
+		},
+		{
+			name: "API hugepage is backfilled when no os_config is configured",
+			raw:  map[string]interface{}{},
+			api: map[string]interface{}{
+				"hugepage": map[string]interface{}{
+					"transparentEnabled": "always",
+					"khugepagedDefrag":   json.Number("0"),
+				},
+			},
+			want: []map[string]interface{}{{
+				"hugepage": []map[string]interface{}{{
+					"transparent_enabled": "always",
+					"khugepaged_defrag":   "0",
+				}},
+			}},
+		},
+		{
+			name: "empty hugepage object yields empty list",
+			raw:  map[string]interface{}{},
+			api: map[string]interface{}{
+				"hugepage": map[string]interface{}{},
+			},
+			want: []map[string]interface{}{},
+		},
+		{
+			name: "configured sysctl merges with API hugepage",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				}},
+			},
+			api: map[string]interface{}{
+				"hugepage": map[string]interface{}{
+					"transparentEnabled": "always",
+				},
+			},
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				"hugepage": []map[string]interface{}{{
+					"transparent_enabled": "always",
+				}},
+			}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, resourceSchema, tt.raw)
+			assert.Equal(t, tt.want, flattenOsConfig(d, tt.api))
+		})
+	}
+}
+
+// TestUnitExpandOsConfig covers the schema-to-API-request conversion of the os_config
+// block using the resource's real schema via schema.TestResourceDataRaw. The sysctl map
+// is sent as-is, hugepage fields are sent under their camelCase API names with the
+// numeric fields parsed from the nullable TypeString values (explicit "0" is sent),
+// removing the whole block yields an empty map ({} clears the cloud-side configuration
+// under the API's full-replacement semantics), and invalid values bypassing the schema
+// ValidateFunc layer surface as parse errors.
+func TestUnitExpandOsConfig(t *testing.T) {
+	resourceSchema := resourceAliCloudAckNodepool().Schema
+
+	tests := []struct {
+		name    string
+		raw     map[string]interface{}
+		want    map[string]interface{}
+		wantErr bool
+	}{
+		{
+			name: "block absent returns empty map",
+			raw:  map[string]interface{}{},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "block removed (empty list) returns empty map",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{},
+			},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "all fields unset sends no keys",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl":   map[string]interface{}{},
+					"hugepage": []interface{}{map[string]interface{}{}},
+				}},
+			},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "sysctl map is sent as-is",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				}},
+			},
+			want: map[string]interface{}{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+			},
+		},
+		{
+			name: "hugepage fields convert to camelCase API names",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"hugepage": []interface{}{map[string]interface{}{
+						"transparent_enabled":              "always",
+						"transparent_defrag":               "defer+madvise",
+						"khugepaged_defrag":                "1",
+						"khugepaged_alloc_sleep_millisecs": "60000",
+						"khugepaged_scan_sleep_millisecs":  "10000",
+						"khugepaged_pages_to_scan":         "4096",
+					}},
+				}},
+			},
+			want: map[string]interface{}{
+				"hugepage": map[string]interface{}{
+					"transparentEnabled":            "always",
+					"transparentDefrag":             "defer+madvise",
+					"khugepagedDefrag":              int64(1),
+					"khugepagedAllocSleepMillisecs": int64(60000),
+					"khugepagedScanSleepMillisecs":  int64(10000),
+					"khugepagedPagesToScan":         int64(4096),
+				},
+			},
+		},
+		{
+			name: "explicit zero khugepaged_defrag is sent",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"hugepage": []interface{}{map[string]interface{}{
+						"khugepaged_defrag": "0",
+					}},
+				}},
+			},
+			want: map[string]interface{}{
+				"hugepage": map[string]interface{}{
+					"khugepagedDefrag": int64(0),
+				},
+			},
+		},
+		{
+			name: "sysctl and hugepage are sent together",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+					"hugepage": []interface{}{map[string]interface{}{
+						"transparent_enabled": "never",
+					}},
+				}},
+			},
+			want: map[string]interface{}{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				"hugepage": map[string]interface{}{
+					"transparentEnabled": "never",
+				},
+			},
+		},
+		{
+			name: "invalid khugepaged_defrag returns error",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"hugepage": []interface{}{map[string]interface{}{
+						"khugepaged_defrag": "abc",
+					}},
+				}},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, resourceSchema, tt.raw)
+			got, err := expandOsConfig(d)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

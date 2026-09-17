@@ -1,4 +1,9 @@
 ## 1.294.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_cs_kubernetes_node_pool: support os_config (sysctl and transparent hugepage) for worker nodes. ([#9886](https://github.com/aliyun/terraform-provider-alicloud/issues/9886))
+
 ## 1.293.0 (September 11, 2026)
 
 - **New Resource:** `alicloud_cms_dataset` ([#10454](https://github.com/aliyun/terraform-provider-alicloud/issues/10454))

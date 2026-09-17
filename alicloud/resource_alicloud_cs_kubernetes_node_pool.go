@@ -523,6 +523,61 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 					},
 				},
 			},
+			"os_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"sysctl": {
+							Type:     schema.TypeMap,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"hugepage": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"transparent_enabled": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringInSlice([]string{"always", "never", "madvise"}, false),
+									},
+									"transparent_defrag": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringInSlice([]string{"always", "defer", "madvise", "defer+madvise", "never"}, false),
+									},
+									"khugepaged_defrag": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: ValidateNullableIntBetween(0, 1),
+									},
+									"khugepaged_alloc_sleep_millisecs": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: ValidateNullableIntBetween(0, 9007199254740991),
+									},
+									"khugepaged_scan_sleep_millisecs": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: ValidateNullableIntBetween(0, 9007199254740991),
+									},
+									"khugepaged_pages_to_scan": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: ValidateNullableIntBetween(0, 9007199254740991),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"labels": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1973,6 +2028,44 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
+	// CreateNodePool does not support os_config either; like containerd_config it can
+	// only be set through the node_config API (ModifyNodePoolNodeConfig). Send it in a
+	// follow-up call after the node pool has been created successfully.
+	if v, ok := d.GetOk("os_config"); ok && len(v.([]interface{})) > 0 {
+		osConfig, err := expandOsConfig(d)
+		if err != nil {
+			return err
+		}
+		if len(osConfig) > 0 {
+			nodepoolId := fmt.Sprint(response["nodepool_id"])
+			nodeConfigAction := fmt.Sprintf("/clusters/%s/nodepools/%s/node_config", ClusterId, nodepoolId)
+			nodeConfigBody := map[string]interface{}{
+				"os_config": osConfig,
+			}
+			var nodeConfigResponse map[string]interface{}
+			nodeConfigWait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				nodeConfigResponse, err = client.RoaPut("CS", "2015-12-15", nodeConfigAction, query, nil, nodeConfigBody, true)
+				if err != nil {
+					if NeedRetry(err) {
+						nodeConfigWait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(nodeConfigAction, nodeConfigResponse, nodeConfigBody)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), nodeConfigAction, AlibabaCloudSdkGoERROR)
+			}
+			nodeConfigStateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, nodeConfigResponse, "$.state", []string{"fail", "failed"}))
+			if jobDetail, err := nodeConfigStateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+			}
+		}
+	}
+
 	if v, ok := d.GetOk("instances"); ok && v != nil {
 		if err := attachExistingInstance(d, meta, expandStringList(v.([]interface{}))); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", action, AlibabaCloudSdkGoERROR)
@@ -2293,6 +2386,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	containerd_configRawObj, _ := jsonpath.Get("$.node_config.containerd_config", objectRaw)
 	containerdConfigMaps := flattenContainerdConfig(containerd_configRawObj)
 	if err := d.Set("containerd_config", containerdConfigMaps); err != nil {
+		return err
+	}
+	os_configRawObj, _ := jsonpath.Get("$.node_config.node_os_config", objectRaw)
+	osConfigMaps := flattenOsConfig(d, os_configRawObj)
+	if err := d.Set("os_config", osConfigMaps); err != nil {
 		return err
 	}
 	labelsRaw, _ := jsonpath.Get("$.kubernetes_config.labels", objectRaw)
@@ -3412,6 +3510,15 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		request["containerd_config"] = containerdConfig
 	}
 
+	if d.HasChange("os_config") {
+		update = true
+		osConfig, err := expandOsConfig(d)
+		if err != nil {
+			return err
+		}
+		request["os_config"] = osConfig
+	}
+
 	rolling_policy := make(map[string]interface{})
 
 	if v := d.Get("rolling_policy"); v != nil {
@@ -4013,4 +4120,178 @@ func containerdConfigInt64Value(v interface{}) int64 {
 		return 0
 	}
 	return n
+}
+
+// flattenOsConfig converts the ACK API response's node_os_config object into the
+// Terraform os_config block. The API only reads back the hugepage section; sysctl is
+// write-only, so the configured sysctl map is mirrored back into state instead (drift
+// of sysctl entries cannot be detected, which is documented on the resource). When the
+// API returns no hugepage keys and no sysctl is configured, an empty list is returned
+// so that unconfigured node pools keep os_config.# = 0 without a diff.
+func flattenOsConfig(d *schema.ResourceData, raw interface{}) []map[string]interface{} {
+	configMaps := make([]map[string]interface{}, 0)
+
+	sysctlConfigured := map[string]interface{}{}
+	if v, ok := d.GetOk("os_config"); ok {
+		if first := osConfigFirstMap(v); first != nil {
+			if m, ok := first["sysctl"].(map[string]interface{}); ok {
+				sysctlConfigured = m
+			}
+		}
+	}
+
+	hugepageMaps := make([]map[string]interface{}, 0)
+	if raw != nil {
+		if rawMap, ok := raw.(map[string]interface{}); ok {
+			if hugepageRaw, ok := rawMap["hugepage"].(map[string]interface{}); ok {
+				if hugepageMap := flattenHugepage(hugepageRaw); len(hugepageMap) > 0 {
+					hugepageMaps = append(hugepageMaps, hugepageMap)
+				}
+			}
+		}
+	}
+
+	if len(sysctlConfigured) > 0 || len(hugepageMaps) > 0 {
+		configMap := make(map[string]interface{})
+		if len(sysctlConfigured) > 0 {
+			configMap["sysctl"] = sysctlConfigured
+		}
+		if len(hugepageMaps) > 0 {
+			configMap["hugepage"] = hugepageMaps
+		}
+		configMaps = append(configMaps, configMap)
+	}
+	return configMaps
+}
+
+// flattenHugepage converts the ACK API response's hugepage object into the Terraform
+// schema format. Only keys explicitly returned by the API are written into the map;
+// numeric fields arrive as json.Number (with a defensive float64 fallback) and are
+// rendered as decimal strings for the nullable TypeString fields.
+func flattenHugepage(raw map[string]interface{}) map[string]interface{} {
+	hugepageMap := make(map[string]interface{})
+	if v, ok := raw["transparentEnabled"].(string); ok {
+		hugepageMap["transparent_enabled"] = v
+	}
+	if v, ok := raw["transparentDefrag"].(string); ok {
+		hugepageMap["transparent_defrag"] = v
+	}
+	if v, ok := raw["khugepagedDefrag"].(json.Number); ok {
+		hugepageMap["khugepaged_defrag"] = v.String()
+	} else if v, ok := raw["khugepagedDefrag"].(float64); ok {
+		hugepageMap["khugepaged_defrag"] = strconv.FormatInt(int64(v), 10)
+	}
+	if v, ok := raw["khugepagedAllocSleepMillisecs"].(json.Number); ok {
+		hugepageMap["khugepaged_alloc_sleep_millisecs"] = v.String()
+	} else if v, ok := raw["khugepagedAllocSleepMillisecs"].(float64); ok {
+		hugepageMap["khugepaged_alloc_sleep_millisecs"] = strconv.FormatInt(int64(v), 10)
+	}
+	if v, ok := raw["khugepagedScanSleepMillisecs"].(json.Number); ok {
+		hugepageMap["khugepaged_scan_sleep_millisecs"] = v.String()
+	} else if v, ok := raw["khugepagedScanSleepMillisecs"].(float64); ok {
+		hugepageMap["khugepaged_scan_sleep_millisecs"] = strconv.FormatInt(int64(v), 10)
+	}
+	if v, ok := raw["khugepagedPagesToScan"].(json.Number); ok {
+		hugepageMap["khugepaged_pages_to_scan"] = v.String()
+	} else if v, ok := raw["khugepagedPagesToScan"].(float64); ok {
+		hugepageMap["khugepaged_pages_to_scan"] = strconv.FormatInt(int64(v), 10)
+	}
+	return hugepageMap
+}
+
+// expandOsConfig converts the Terraform os_config block into the node_config request
+// body (the os_config object). It is called when os_config is present at Create time
+// (post-send call) and when d.HasChange("os_config") is true at Update time. The sysctl
+// map is sent as-is (the cloud-side API enforces the supported key whitelist, e.g.
+// user.max_user_namespaces); hugepage fields are sent under their camelCase API names,
+// with the numeric fields parsed from the nullable TypeString schema values. Removing
+// the whole block yields an empty map, which clears the cloud-side OS configuration
+// under the API's full-replacement semantics.
+func expandOsConfig(d *schema.ResourceData) (map[string]interface{}, error) {
+	_, newRaw := d.GetChange("os_config")
+	newMap := osConfigFirstMap(newRaw)
+
+	result := make(map[string]interface{})
+
+	if sysctlRaw, ok := newMap["sysctl"].(map[string]interface{}); ok && len(sysctlRaw) > 0 {
+		sysctl := make(map[string]interface{}, len(sysctlRaw))
+		for k, v := range sysctlRaw {
+			if s, ok := v.(string); ok && s != "" {
+				sysctl[k] = s
+			}
+		}
+		if len(sysctl) > 0 {
+			result["sysctl"] = sysctl
+		}
+	}
+
+	if hugepageRaw := osConfigFirstMap(newMap["hugepage"]); hugepageRaw != nil {
+		hugepage := make(map[string]interface{})
+		if v, ok := hugepageRaw["transparent_enabled"].(string); ok && v != "" {
+			hugepage["transparentEnabled"] = v
+		}
+		if v, ok := hugepageRaw["transparent_defrag"].(string); ok && v != "" {
+			hugepage["transparentDefrag"] = v
+		}
+		khugepagedDefrag, err := osConfigNullableInt64(hugepageRaw["khugepaged_defrag"], "khugepaged_defrag")
+		if err != nil {
+			return nil, err
+		}
+		if khugepagedDefrag != nil {
+			hugepage["khugepagedDefrag"] = *khugepagedDefrag
+		}
+		khugepagedAllocSleepMillisecs, err := osConfigNullableInt64(hugepageRaw["khugepaged_alloc_sleep_millisecs"], "khugepaged_alloc_sleep_millisecs")
+		if err != nil {
+			return nil, err
+		}
+		if khugepagedAllocSleepMillisecs != nil {
+			hugepage["khugepagedAllocSleepMillisecs"] = *khugepagedAllocSleepMillisecs
+		}
+		khugepagedScanSleepMillisecs, err := osConfigNullableInt64(hugepageRaw["khugepaged_scan_sleep_millisecs"], "khugepaged_scan_sleep_millisecs")
+		if err != nil {
+			return nil, err
+		}
+		if khugepagedScanSleepMillisecs != nil {
+			hugepage["khugepagedScanSleepMillisecs"] = *khugepagedScanSleepMillisecs
+		}
+		khugepagedPagesToScan, err := osConfigNullableInt64(hugepageRaw["khugepaged_pages_to_scan"], "khugepaged_pages_to_scan")
+		if err != nil {
+			return nil, err
+		}
+		if khugepagedPagesToScan != nil {
+			hugepage["khugepagedPagesToScan"] = *khugepagedPagesToScan
+		}
+		if len(hugepage) > 0 {
+			result["hugepage"] = hugepage
+		}
+	}
+
+	return result, nil
+}
+
+// osConfigNullableInt64 parses a nullable TypeString schema value ("not set" is "").
+// It returns nil for "not set" so the corresponding key stays absent from the request.
+func osConfigNullableInt64(v interface{}, field string) (*int64, error) {
+	s, ok := v.(string)
+	if !ok || s == "" {
+		return nil, nil
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return nil, WrapError(fmt.Errorf("invalid os_config.hugepage.%s value %q: %v", field, s, err))
+	}
+	return &n, nil
+}
+
+// osConfigFirstMap extracts the first element from a TypeList value.
+func osConfigFirstMap(v interface{}) map[string]interface{} {
+	list, ok := v.([]interface{})
+	if !ok || len(list) == 0 {
+		return nil
+	}
+	m, ok := list[0].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	return m
 }

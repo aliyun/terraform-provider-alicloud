@@ -317,6 +317,24 @@ resource "alicloud_cs_kubernetes_node_pool" "customized_kubelet" {
     insecure_registries = ["registry.example.com", "192.168.1.1:5000"]
   }
 
+  # OS configuration parameters (requires ACK 1.28 or later)
+  os_config {
+    # sysctl parameters; e.g. raise the per-user user namespace limit
+    sysctl = {
+      "user.max_user_namespaces" = "65535"
+    }
+
+    # transparent hugepage configuration
+    hugepage {
+      transparent_enabled              = "always"
+      transparent_defrag               = "always"
+      khugepaged_defrag                = "0"
+      khugepaged_alloc_sleep_millisecs = "60000"
+      khugepaged_scan_sleep_millisecs  = "10000"
+      khugepaged_pages_to_scan         = "4096"
+    }
+  }
+
   # rolling policy: works when updating
   rolling_policy {
     max_parallelism = 1
@@ -835,6 +853,9 @@ The following arguments are supported:
 * `containerd_config` - (Optional, Set, Available since v1.288.0) Containerd configuration parameters for worker nodes.
 
   -> **NOTE:** Setting `containerd_config` at creation time takes effect through an extra node_config update call issued after the node pool has been created. Removing the whole `containerd_config` block clears all custom containerd configuration on the cloud side (the API uses full-replacement semantics); an empty block is equivalent to omitting the parameter. See [`containerd_config`](#containerd_config) below.
+* `os_config` - (Optional, List, Available since v1.294.0) OS configuration parameters (sysctl and transparent hugepage) for worker nodes. See [`os_config`](#os_config) below. Supported on ACK clusters of version 1.28 or later.
+
+  -> **NOTE:** Setting `os_config` at creation time takes effect through an extra node_config update call issued after the node pool has been created. Removing the whole `os_config` block clears all custom OS configuration on the cloud side (the API uses full-replacement semantics); an empty block is equivalent to omitting the parameter. The `sysctl` parameter is write-only on the API: its value is not returned by read operations, so the provider mirrors the configured value into the state and drift cannot be detected.
 * `labels` - (Optional, List) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument. Detailed below. More information in [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/). See [`labels`](#labels) below.
 * `login_as_non_root` - (Optional, ForceNew) Whether the ECS instance is logged on as a ecs-user user. Valid value: `true` and `false`.
 * `management` - (Optional, Computed, Set) Managed node pool configuration. See [`management`](#management) below.
@@ -1104,6 +1125,28 @@ The containerd_config supports the following:
 * `limit_mem_lock` - (Optional, String) The maximum locked memory limit. Valid values: `""` or a canonical decimal integer string from `"65536"` to `"9007199254740991"` (forms like `"+65536"` or `"065536"` are not accepted). If not set (or set to `""`), this option is not written to the node containerd configuration. Removing this field from the configuration removes the key from the cloud-side containerd configuration.
 * `registry_mirrors` - (Optional, List of String) Configure mirror sites for container image registries to accelerate image pulls. Each string follows the format `registry=mirror1[&override_path],mirror2[&override_path],...`. The part before `=` is the container image registry, which must be a domain name or IP address without protocol prefix (optionally including a port number), e.g., `docker.io`, `192.168.1.1:5000`. The part after `=` is one or more mirror sites separated by commas; each mirror must start with `http://` or `https://` followed by an IP address or domain name (optionally including a port number), e.g., `https://registry.cn-hangzhou.aliyuncs.com`. Append `&override_path` to a mirror to enable path override for that mirror.
 * `insecure_registries` - (Optional, List) Allow the container runtime to skip TLS certificate verification when pulling images. Typically used in test environments with self-signed certificate registries. The format is domain name or IP address without protocol prefix (e.g., `registry.example.com`, `192.168.1.1:5000`).
+
+### `os_config`
+
+-> **NOTE:** The CreateNodePool API does not support `os_config`. When `os_config` is set at creation time, it takes effect through an extra node_config update call issued after the node pool has been created.
+
+-> **NOTE:** The API uses full-replacement semantics for `os_config`: removing the whole `os_config` block clears all custom OS configuration on the cloud side, and an empty block is equivalent to omitting the parameter. Removing a key from the `sysctl` map or from the `hugepage` block removes the corresponding parameter from the cloud-side configuration.
+
+-> **NOTE:** `os_config` is supported only on ACK clusters of version 1.28 or later.
+
+The os_config supports the following:
+* `sysctl` - (Optional, Map) The sysctl parameters applied to worker nodes. The map key is the sysctl name and the value is the sysctl value as a string, e.g. `user.max_user_namespaces = "65535"`. Only sysctl parameters on the API whitelist are accepted. The `sysctl` parameter is write-only on the API: its value is not returned by read operations, so the provider mirrors the configured value into the state and drift cannot be detected.
+* `hugepage` - (Optional, List) The transparent hugepage configuration. See [`hugepage`](#os_config-hugepage) below. The API returns only the parameters that were explicitly set: a parameter absent from the response is treated as not set and is removed from the state on the next apply.
+
+### `os_config-hugepage`
+
+The os_config-hugepage supports the following:
+* `transparent_enabled` - (Optional, String) Whether to enable transparent hugepages. Valid values: `always`, `never`, `madvise`.
+* `transparent_defrag` - (Optional, String) The transparent hugepage defragmentation mode. Valid values: `always`, `defer`, `madvise`, `defer+madvise`, `never`.
+* `khugepaged_defrag` - (Optional, String) Whether to enable khugepaged defragmentation. Valid values: `"0"`, `"1"`.
+* `khugepaged_alloc_sleep_millisecs` - (Optional, String) The sleep time of khugepaged between allocation attempts, in milliseconds. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"`.
+* `khugepaged_scan_sleep_millisecs` - (Optional, String) The sleep time of khugepaged between scans, in milliseconds. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"`.
+* `khugepaged_pages_to_scan` - (Optional, String) The number of memory pages that khugepaged scans at a time. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"`.
 
 ### `labels`
 
