@@ -313,6 +313,7 @@ var productCodeToLocationCode = map[string]string{
 	"milvus":                  "cloudmilvus",       // Milvus
 	"resourcedirectorymaster": "resourcedirectory", // ResourceManager
 	"openapiexplorer":         "apiexplorer",       // OpenAPIExplorer
+	"agentloop":               "agentloop",         // AgentLoop
 }
 
 // productCodeToConfigEndpoints records all products' code mapping to endpoints' subfield name
@@ -348,6 +349,7 @@ var irregularProductEndpoint = map[string]string{
 	"alidns":                  "alidns.aliyuncs.com",
 	"openapiexplorer":         "openapi-mcp.cn-hangzhou.aliyuncs.com",
 	"computenestsupplier":     "computenestsupplier.cn-hangzhou.aliyuncs.com",
+	"agentloop":               "agentloop.%s.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that

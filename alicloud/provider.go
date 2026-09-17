@@ -2186,6 +2186,16 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_zonal_endpoint":                                resourceAlicloudPolarDBZonalEndpoint(),
 			"alicloud_polardb_zonal_account":                                 resourceAlicloudPolarDBZonalAccount(),
 			"alicloud_sls_metric_store":                                      resourceAliCloudSlsMetricStore(),
+			"alicloud_agentloop_agent_space":                                 resourceAliCloudAgentloopAgentSpace(),
+			"alicloud_agentloop_context_store":                               resourceAliCloudAgentloopContextStore(),
+			"alicloud_agentloop_context_store_api_key":                       resourceAliCloudAgentloopContextStoreApiKey(),
+			"alicloud_agentloop_dataset":                                     resourceAliCloudAgentloopDataset(),
+			"alicloud_agentloop_endpoint_connector":                          resourceAliCloudAgentloopEndpointConnector(),
+			"alicloud_agentloop_evaluation_task":                             resourceAliCloudAgentloopEvaluationTask(),
+			"alicloud_agentloop_evaluator":                                   resourceAliCloudAgentloopEvaluator(),
+			"alicloud_agentloop_evaluator_skill":                             resourceAliCloudAgentloopEvaluatorSkill(),
+			"alicloud_agentloop_optimize_task":                               resourceAliCloudAgentloopOptimizeTask(),
+			"alicloud_agentloop_pipeline":                                    resourceAliCloudAgentloopPipeline(),
 		},
 	}
 	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {

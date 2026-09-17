@@ -67,6 +67,7 @@ func TestUnitCommonLoadEndpointFromLocal(t *testing.T) {
 
 func TestUnitCommonIrregularProductEndpoint(t *testing.T) {
 	client := &AliyunClient{
+		RegionId: "cn-hangzhou",
 		config: &Config{
 			Endpoints: new(sync.Map),
 			RegionId:  "cn-hangzhou",
@@ -79,6 +80,7 @@ func TestUnitCommonIrregularProductEndpoint(t *testing.T) {
 	}{
 		{"ram", "ram.aliyuncs.com"},
 		{"cloudfw", "cloudfw.aliyuncs.com"},
+		{"agentloop", "agentloop.cn-hangzhou.aliyuncs.com"},
 	}
 
 	for _, tc := range testCases {
