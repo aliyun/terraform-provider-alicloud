@@ -92,6 +92,16 @@ func TestAccAliCloudECSInvocation_basic1(t *testing.T) {
 					},
 					"username":              "root",
 					"windows_password_name": "axtSecretPassword",
+					"content_encoding":      "Base64",
+					"working_dir":           "/root",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"oss_output_delivery":   "oss://${alicloud_oss_bucket.default.id}/output",
+					"resource_tag": []map[string]string{
+						{
+							"key":   "env",
+							"value": "test",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -103,6 +113,8 @@ func TestAccAliCloudECSInvocation_basic1(t *testing.T) {
 						"parameters.%":    "1",
 						"parameters.name": "exampleName",
 						"username":        "root",
+						"working_dir":     "/root",
+						"resource_tag.#":  "0",
 					}),
 				),
 			},
@@ -110,7 +122,130 @@ func TestAccAliCloudECSInvocation_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"windows_password_name"},
+				ImportStateVerifyIgnore: []string{"windows_password_name", "content_encoding", "resource_tag"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudECSInvocation_instanceIdOrder covers the TypeList ordering
+// contract for `instance_id`: reordering at least two distinct members produces
+// a non-empty plan, and applying the reordered config converges to an empty
+// post-apply plan. See scripts/collection-order/README.md.
+func TestAccAliCloudECSInvocation_instanceIdOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_invocation.default"
+	ra := resourceAttrInit(resourceId, AliCloudECSInvocationMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsInvocation")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsinvocation%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECSInvocationBasicDependence2)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": []string{
+						"${alicloud_instance.default.id}",
+						"${alicloud_instance.second.id}",
+					},
+					"command_id": "${alicloud_ecs_command.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id.#": "2",
+						"command_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": []string{
+						"${alicloud_instance.second.id}",
+						"${alicloud_instance.default.id}",
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": []string{
+						"${alicloud_instance.second.id}",
+						"${alicloud_instance.default.id}",
+					},
+				}),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudECSInvocation_resourceTagOrder covers the TypeList ordering
+// contract for `resource_tag`: reordering at least two distinct members produces
+// a non-empty plan, and applying the reordered config converges to an empty
+// post-apply plan. See scripts/collection-order/README.md.
+func TestAccAliCloudECSInvocation_resourceTagOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_invocation.default"
+	ra := resourceAttrInit(resourceId, AliCloudECSInvocationMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsInvocation")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsinvocation%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECSInvocationBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": []string{"${alicloud_instance.default.id}"},
+					"command_id":  "${alicloud_ecs_command.default.id}",
+					"resource_tag": []map[string]string{
+						{"key": "env", "value": "prod"},
+						{"key": "team", "value": "dev"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id.#": "1",
+						"command_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_tag": []map[string]string{
+						{"key": "team", "value": "dev"},
+						{"key": "env", "value": "prod"},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_tag": []map[string]string{
+						{"key": "team", "value": "dev"},
+						{"key": "env", "value": "prod"},
+					},
+				}),
 			},
 		},
 	})
@@ -252,6 +387,89 @@ func AliCloudECSInvocationBasicDependence1(name string) string {
   		working_dir      = "/root"
   		enable_parameter = true
 	}
+
+	resource "alicloud_oss_bucket" "default" {
+  		bucket = lower(var.name)
+  		acl    = "private"
+	}
+`, name)
+}
+
+// AliCloudECSInvocationBasicDependence2 provisions two ECS instances so that
+// the `instance_id` TypeList can be reordered with at least two distinct members.
+func AliCloudECSInvocationBasicDependence2(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+  		available_disk_category     = "cloud_essd"
+  		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent = true
+  		owners      = "system"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		instance_type_family = "ecs.u1"
+  		image_id             = data.alicloud_images.default.images.0.id
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_instance" "default" {
+  		image_id                   = data.alicloud_images.default.images.0.id
+  		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  		security_groups            = alicloud_security_group.default.*.id
+  		internet_charge_type       = "PayByTraffic"
+  		internet_max_bandwidth_out = "10"
+  		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		instance_charge_type       = "PostPaid"
+  		system_disk_category       = "cloud_essd"
+  		vswitch_id                 = alicloud_vswitch.default.id
+  		instance_name              = var.name
+	}
+
+	resource "alicloud_instance" "second" {
+  		image_id                   = data.alicloud_images.default.images.0.id
+  		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  		security_groups            = alicloud_security_group.default.*.id
+  		internet_charge_type       = "PayByTraffic"
+  		internet_max_bandwidth_out = "10"
+  		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		instance_charge_type       = "PostPaid"
+  		system_disk_category       = "cloud_essd"
+  		vswitch_id                 = alicloud_vswitch.default.id
+  		instance_name              = "${var.name}-second"
+	}
+
+	resource "alicloud_ecs_command" "default" {
+  		name            = var.name
+  		command_content = "bHMK"
+  		description     = "For Terraform Test"
+  		type            = "RunShellScript"
+  		working_dir     = "/root"
+	}
 `, name)
 }
 
@@ -272,6 +490,11 @@ func TestUnitAliCloudECSInvocation(t *testing.T) {
 		},
 		"username":              "CreateECSInvocationValue",
 		"windows_password_name": "CreateECSInvocationValue",
+		"content_encoding":      "Base64",
+		"oss_output_delivery":   "CreateECSInvocationValue",
+		"resource_group_id":     "CreateECSInvocationValue",
+		"resource_tag":          []map[string]interface{}{},
+		"working_dir":           "CreateECSInvocationValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -320,15 +543,18 @@ func TestUnitAliCloudECSInvocation(t *testing.T) {
 							},
 						},
 					},
-					"CommandContent": "CreateECSInvocationValue",
-					"RepeatMode":     "CreateECSInvocationValue",
-					"InvokeStatus":   "Running",
-					"CommandType":    "RunShellScript",
-					"Username":       "CreateECSInvocationValue",
-					"CreationTime":   "2022-05-17T10:28:05Z",
-					"Frequency":      "CreateECSInvocationValue",
-					"CommandId":      "CreateECSInvocationValue",
-					"InvokeId":       "CreateECSInvocationValue",
+					"CommandContent":    "CreateECSInvocationValue",
+					"RepeatMode":        "CreateECSInvocationValue",
+					"InvokeStatus":      "Running",
+					"CommandType":       "RunShellScript",
+					"Username":          "CreateECSInvocationValue",
+					"CreationTime":      "2022-05-17T10:28:05Z",
+					"Frequency":         "CreateECSInvocationValue",
+					"CommandId":         "CreateECSInvocationValue",
+					"InvokeId":          "CreateECSInvocationValue",
+					"OssOutputDelivery": "CreateECSInvocationValue",
+					"WorkingDir":        "CreateECSInvocationValue",
+					"ResourceGroupId":   "CreateECSInvocationValue",
 				},
 			},
 		},
