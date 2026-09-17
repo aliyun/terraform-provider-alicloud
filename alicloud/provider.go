@@ -170,6 +170,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_data_works_data_service_groups":                 dataSourceAliCloudDataWorksDataServiceGroups(),
 			"alicloud_apig_ai_model_providers":                        dataSourceAliCloudApigAiModelProviders(),
 			"alicloud_apig_services":                                  dataSourceAliCloudApigServices(),
 			"alicloud_apig_gateways":                                  dataSourceAliCloudApigGateways(),
@@ -949,6 +950,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_data_works_data_service_group":                        resourceAliCloudDataWorksDataServiceGroup(),
 			"alicloud_message_service_account_logging":                      resourceAliCloudMessageServiceAccountLogging(),
 			"alicloud_apig_ai_model_provider":                               resourceAliCloudApigAiModelProvider(),
 			"alicloud_apig_service":                                         resourceAliCloudApigService(),
