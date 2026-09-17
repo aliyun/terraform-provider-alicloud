@@ -174,6 +174,8 @@ func Provider() *schema.Provider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"alicloud_sae_application_groups":                         dataSourceAliCloudSaeApplicationGroups(),
+			"alicloud_direct_mail_config_sets":                        dataSourceAliCloudDirectMailConfigSets(),
+			"alicloud_direct_mail_dedicated_ip_pools":                 dataSourceAliCloudDirectMailDedicatedIpPools(),
 			"alicloud_realtime_compute_variables":                     dataSourceAliCloudRealtimeComputeVariables(),
 			"alicloud_apig_secrets":                                   dataSourceAliCloudApigSecrets(),
 			"alicloud_threat_detection_attack_path_whitelists":        dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
@@ -989,6 +991,8 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_realtime_compute_variable":                            resourceAliCloudRealtimeComputeVariable(),
 			"alicloud_apig_secret":                                          resourceAliCloudApigSecret(),
+			"alicloud_direct_mail_config_set":                               resourceAliCloudDirectMailConfigSet(),
+			"alicloud_direct_mail_dedicated_ip_pool":                        resourceAliCloudDirectMailDedicatedIpPool(),
 			"alicloud_cr_instance_customized_domain":                        resourceAliCloudCrInstanceCustomizedDomain(),
 			"alicloud_threat_detection_attack_path_whitelist":               resourceAliCloudThreatDetectionAttackPathWhitelist(),
 			"alicloud_vpc_route_target_group":                               resourceAliCloudVpcRouteTargetGroup(),
