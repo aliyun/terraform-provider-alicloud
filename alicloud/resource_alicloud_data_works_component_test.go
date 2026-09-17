@@ -20,7 +20,13 @@ func TestAccAliCloudDataWorksComponent_basic8904(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdataworkscomponent%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksComponentBasicDependence0)
+	// spec is a JSON string with embedded double quotes. Passing it through the
+	// testAccConfig map helper breaks HCL parsing: valueConvert
+	// (service_alicloud_common_test.go) wraps string values in quotes without
+	// escaping inner quotes, so the parser sees the inner " as the string end
+	// and "nodeType" as a bare argument with no newline. Hand-write the HCL and
+	// escape inner quotes with \" — same convention as monitor_contacts_json /
+	// monitor_config_json in resource_alicloud_schedulerx_job_test.go.
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -30,12 +36,7 @@ func TestAccAliCloudDataWorksComponent_basic8904(t *testing.T) {
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"project_id":     "34051",
-					"spec":           "{\"nodeType\":\"NODE_TYPE_DEFAULT\",\"componentName\":\"tf-test-component\"}",
-					"component_type": "NODE_TYPE_DEFAULT",
-					"source":         "MANUAL",
-				}),
+				Config: AlicloudDataWorksComponentBasic8904Config(name, `"{\"nodeType\":\"NODE_TYPE_DEFAULT\",\"componentName\":\"tf-test-component\"}"`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"project_id": "34051",
@@ -43,12 +44,7 @@ func TestAccAliCloudDataWorksComponent_basic8904(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"project_id":     "34051",
-					"spec":           "{\"nodeType\":\"NODE_TYPE_DEFAULT\",\"componentName\":\"tf-test-component-updated\",\"nodeMode\":\"MODE_SYNC\"}",
-					"component_type": "NODE_TYPE_DEFAULT",
-					"source":         "MANUAL",
-				}),
+				Config: AlicloudDataWorksComponentBasic8904Config(name, `"{\"nodeType\":\"NODE_TYPE_DEFAULT\",\"componentName\":\"tf-test-component-updated\",\"nodeMode\":\"MODE_SYNC\"}"`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"project_id": "34051",
@@ -73,10 +69,23 @@ var AlicloudDataWorksComponentMap0 = map[string]string{
 	"source":         NOSET,
 }
 
-func AlicloudDataWorksComponentBasicDependence0(name string) string {
+// AlicloudDataWorksComponentBasic8904Config builds the HCL for the
+// DataWorks Component acceptance test. spec is a JSON string with embedded
+// double quotes; callers must pass it in HCL-escaped form (inner quotes as \")
+// so the HCL parser treats it as a single string. Hand-writing the resource
+// block instead of using the testAccConfig map helper avoids valueConvert
+// wrapping the value in unescaped quotes (see comment in TestAcc... above).
+func AlicloudDataWorksComponentBasic8904Config(name, spec string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
-`, name)
+
+resource "alicloud_data_works_component" "default" {
+  project_id     = "34051"
+  spec           = %s
+  component_type = "NODE_TYPE_DEFAULT"
+  source         = "MANUAL"
+}
+`, name, spec)
 }
