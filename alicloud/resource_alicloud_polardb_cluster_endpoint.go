@@ -57,6 +57,15 @@ func resourceAlicloudPolarDBClusterEndpoint() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"scc_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, true),
+				StateFunc: func(value interface{}) string {
+					return strings.ToUpper(value.(string))
+				},
+			},
 			"ssl_enabled": {
 				Type:         schema.TypeString,
 				ValidateFunc: StringInSlice([]string{"Enable", "Disable", "Update"}, false),
@@ -176,6 +185,9 @@ func resourceAlicloudPolarDBClusterEndpointRead(d *schema.ResourceData, meta int
 	}
 	d.Set("auto_add_new_nodes", autoAddNewNodes)
 	d.Set("read_write_mode", readWriteMode)
+	if err := d.Set("scc_mode", object.SccMode); err != nil {
+		return WrapError(err)
+	}
 
 	if err = polarDBService.RefreshEndpointConfig(d); err != nil {
 		return WrapError(err)
@@ -246,7 +258,7 @@ func resourceAlicloudPolarDBClusterEndpointUpdate(d *schema.ResourceData, meta i
 	}
 	dbClusterId := parts[0]
 	dbEndpointId := parts[1]
-	if d.HasChanges("nodes", "read_write_mode", "auto_add_new_nodes", "endpoint_config", "db_endpoint_description") {
+	if d.HasChanges("nodes", "read_write_mode", "auto_add_new_nodes", "endpoint_config", "scc_mode", "db_endpoint_description") {
 		modifyEndpointRequest := polardb.CreateModifyDBClusterEndpointRequest()
 		modifyEndpointRequest.RegionId = client.RegionId
 		modifyEndpointRequest.DBClusterId = dbClusterId
@@ -274,6 +286,10 @@ func resourceAlicloudPolarDBClusterEndpointUpdate(d *schema.ResourceData, meta i
 			}
 			modifyEndpointRequest.EndpointConfig = string(endpointConfig)
 			configItem["EndpointConfig"] = string(endpointConfig)
+		}
+		if d.HasChange("scc_mode") {
+			modifyEndpointRequest.SccMode = d.Get("scc_mode").(string)
+			configItem["SccMode"] = d.Get("scc_mode").(string)
 		}
 		if d.HasChange("db_endpoint_description") {
 			modifyEndpointRequest.DBEndpointDescription = d.Get("db_endpoint_description").(string)

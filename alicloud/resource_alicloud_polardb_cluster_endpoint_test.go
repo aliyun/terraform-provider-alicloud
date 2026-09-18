@@ -81,6 +81,27 @@ func TestAccAliCloudPolarDBClusterEndpointConfigUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"read_write_mode": "ReadWrite",
+					"scc_mode":        "ON",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scc_mode": "ON",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scc_mode": "OFF",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scc_mode": "OFF",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"nodes": []string{"${data.alicloud_polardb_clusters.default.clusters.0.db_nodes.0.db_node_id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -236,6 +257,26 @@ func TestAccAliCloudPolarDBClusterEndpointConfigUpdate_SslConnectionStringAndCon
 			},
 		},
 	})
+}
+
+func TestUnitPolarDBClusterEndpointSccMode(t *testing.T) {
+	sccModeSchema := resourceAlicloudPolarDBClusterEndpoint().Schema["scc_mode"]
+	for input, expected := range map[string]string{
+		"ON":  "ON",
+		"on":  "ON",
+		"OFF": "OFF",
+		"off": "OFF",
+	} {
+		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) > 0 {
+			t.Fatalf("expected %q to be valid, got: %v", input, errors)
+		}
+		if actual := sccModeSchema.StateFunc(input); actual != expected {
+			t.Fatalf("expected %q to normalize to %q, got %q", input, expected, actual)
+		}
+	}
+	if _, errors := sccModeSchema.ValidateFunc("INVALID", "scc_mode"); len(errors) == 0 {
+		t.Fatal("expected invalid scc_mode to be rejected")
+	}
 }
 
 func resourcePolarDBClusterEndpointConfigDependence(name string) string {
