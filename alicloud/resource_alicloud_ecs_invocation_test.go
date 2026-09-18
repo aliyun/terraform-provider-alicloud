@@ -92,6 +92,16 @@ func TestAccAliCloudECSInvocation_basic1(t *testing.T) {
 					},
 					"username":              "root",
 					"windows_password_name": "axtSecretPassword",
+					"content_encoding":      "Base64",
+					"working_dir":           "/root",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"oss_output_delivery":   "oss://${alicloud_oss_bucket.default.id}/output",
+					"resource_tag": []map[string]string{
+						{
+							"key":   "env",
+							"value": "test",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -103,6 +113,8 @@ func TestAccAliCloudECSInvocation_basic1(t *testing.T) {
 						"parameters.%":    "1",
 						"parameters.name": "exampleName",
 						"username":        "root",
+						"working_dir":     "/root",
+						"resource_tag.#":  "0",
 					}),
 				),
 			},
@@ -110,7 +122,7 @@ func TestAccAliCloudECSInvocation_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"windows_password_name"},
+				ImportStateVerifyIgnore: []string{"windows_password_name", "content_encoding", "resource_tag"},
 			},
 		},
 	})
@@ -252,6 +264,11 @@ func AliCloudECSInvocationBasicDependence1(name string) string {
   		working_dir      = "/root"
   		enable_parameter = true
 	}
+
+	resource "alicloud_oss_bucket" "default" {
+  		bucket = lower(var.name)
+  		acl    = "private"
+	}
 `, name)
 }
 
@@ -272,6 +289,11 @@ func TestUnitAliCloudECSInvocation(t *testing.T) {
 		},
 		"username":              "CreateECSInvocationValue",
 		"windows_password_name": "CreateECSInvocationValue",
+		"content_encoding":      "Base64",
+		"oss_output_delivery":   "CreateECSInvocationValue",
+		"resource_group_id":     "CreateECSInvocationValue",
+		"resource_tag":          []map[string]interface{}{},
+		"working_dir":           "CreateECSInvocationValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -320,15 +342,18 @@ func TestUnitAliCloudECSInvocation(t *testing.T) {
 							},
 						},
 					},
-					"CommandContent": "CreateECSInvocationValue",
-					"RepeatMode":     "CreateECSInvocationValue",
-					"InvokeStatus":   "Running",
-					"CommandType":    "RunShellScript",
-					"Username":       "CreateECSInvocationValue",
-					"CreationTime":   "2022-05-17T10:28:05Z",
-					"Frequency":      "CreateECSInvocationValue",
-					"CommandId":      "CreateECSInvocationValue",
-					"InvokeId":       "CreateECSInvocationValue",
+					"CommandContent":    "CreateECSInvocationValue",
+					"RepeatMode":        "CreateECSInvocationValue",
+					"InvokeStatus":      "Running",
+					"CommandType":       "RunShellScript",
+					"Username":          "CreateECSInvocationValue",
+					"CreationTime":      "2022-05-17T10:28:05Z",
+					"Frequency":         "CreateECSInvocationValue",
+					"CommandId":         "CreateECSInvocationValue",
+					"InvokeId":          "CreateECSInvocationValue",
+					"OssOutputDelivery": "CreateECSInvocationValue",
+					"WorkingDir":        "CreateECSInvocationValue",
+					"ResourceGroupId":   "CreateECSInvocationValue",
 				},
 			},
 		},
