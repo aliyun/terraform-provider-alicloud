@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudGpdbAccount() *schema.Resource {
@@ -40,9 +42,23 @@ func resourceAliCloudGpdbAccount() *schema.Resource {
 				ValidateFunc: StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_]+$"), "The account name."),
 			},
 			"account_password": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				ExactlyOneOf: []string{"account_password", "account_password_wo"},
+			},
+			"account_password_wo": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				WriteOnly:    true,
+				ExactlyOneOf: []string{"account_password", "account_password_wo"},
+				RequiredWith: []string{"account_password_wo_version"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntAtLeast(1),
+				RequiredWith: []string{"account_password_wo"},
 			},
 			"account_type": {
 				Type:     schema.TypeString,
@@ -84,6 +100,11 @@ func resourceAliCloudGpdbAccountCreate(d *schema.ResourceData, meta interface{})
 		request["AccountDescription"] = v
 	}
 	request["AccountPassword"] = d.Get("account_password")
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["AccountPassword"] = woValue.AsString()
+	}
 	if v, ok := d.GetOk("account_type"); ok {
 		request["AccountType"] = v
 	}
@@ -205,6 +226,14 @@ func resourceAliCloudGpdbAccountUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 	request["AccountPassword"] = d.Get("account_password")
+	if d.HasChange("account_password_wo_version") {
+		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+			return WrapError(err)
+		} else if !woValue.IsNull() {
+			update = true
+			request["AccountPassword"] = woValue.AsString()
+		}
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {

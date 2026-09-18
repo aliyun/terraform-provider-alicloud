@@ -14,6 +14,8 @@ For information about GPDB Account and how to use it, see [What is Account](http
 
 -> **NOTE:** Available since v1.142.0.
 
+-> **NOTE:** The `account_password_wo` and `account_password_wo_version` arguments require Terraform v1.11.0 or later.
+
 ## Example Usage
 
 Basic Usage
@@ -79,7 +81,9 @@ resource "alicloud_gpdb_account" "default" {
 The following arguments are supported:
 * `account_description` - (Optional) The description of the account.
 * `account_name` - (Required, ForceNew) The account name.
-* `account_password` - (Required) AccountPassword
+* `account_password` - (Optional, Sensitive) The password of the account. Exactly one of `account_password` and `account_password_wo` can be set.
+* `account_password_wo` - (Optional, Available since v2.0.0-beta5) The write-only password of the account. It is only sent to the server when the resource is created or the `account_password_wo_version` changes and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `account_password_wo_version`. Exactly one of `account_password` and `account_password_wo` can be set.
+* `account_password_wo_version` - (Optional, Available since v2.0.0-beta5) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `account_password_wo` changes.
 * `account_type` - (Optional, ForceNew, Available since v1.230.0) Account type. The value range is as follows:
 
   Normal: Normal account number.
