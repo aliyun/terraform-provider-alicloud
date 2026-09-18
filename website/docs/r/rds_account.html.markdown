@@ -16,6 +16,8 @@ For information about RDS Account and how to use it, see [What is Account](https
 
 -> **NOTE:** Available since v1.120.0.
 
+-> **NOTE:** The `account_password_wo` and `account_password_wo_version` arguments require Terraform v1.11.0 or later.
+
 ## Example Usage
 
 Basic Usage
@@ -102,22 +104,24 @@ The following arguments are supported:
         * If the instance runs MariaDB, the value must be 2 to 16 characters in length.
         * For more information about invalid characters, See [Forbidden keywords](https://help.aliyun.com/zh/rds/developer-reference/forbidden-keywords?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
 
-* `account_password` - (Optional, Sensitive) The password of the account.
+* `account_password` - (Optional, Sensitive) The password of the account. It conflicts with `password`, `kms_encrypted_password` and `account_password_wo`, and one of the four password sources must be set.
     * The value must be 8 to 32 characters in length.
     * The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
     * Special characters include ! @ # $ % ^ & * ( ) _ + - =
+* `account_password_wo` - (Optional, Available since v2.0.0-beta5) The write-only password of the account. It is only sent to the server when the resource is created or the `account_password_wo_version` changes and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `account_password_wo_version`. It conflicts with `account_password`, `password` and `kms_encrypted_password`, and one of the four password sources must be set.
+* `account_password_wo_version` - (Optional, Available since v2.0.0-beta5) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `account_password_wo` changes.
 * `account_type` - (Optional, ForceNew) The account type. Valid values:
     * Normal: standard account (default).
     * Super: privileged account.
     * Sysadmin: system admin account. The account type is available only for ApsaraDB RDS for SQL Server instances.
 
 -> **NOTE:** Before you create a system admin account, check whether the RDS instance meets all prerequisites. For more information, See [Create a system admin account](https://help.aliyun.com/zh/rds/apsaradb-rds-for-sql-server/create-a-system-admin-account-for-an-apsaradb-rds-for-sql-server-instance?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
-* `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. If the `account_password` is filled in, this field will be ignored.
+* `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. It conflicts with `account_password`, `password` and `account_password_wo`, and one of the four password sources must be set.
 * `kms_encryption_context` - (Optional, MapString) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `description` - (Optional, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_description` instead.
 * `instance_id` - (Optional, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `db_instance_id` instead.
 * `name` - (Optional, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_name` instead.
-* `password` - (Optional, Sensitive, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_password` instead.
+* `password` - (Optional, Sensitive, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_password` instead. It conflicts with `account_password`, `kms_encrypted_password` and `account_password_wo`, and one of the four password sources must be set.
 * `type` - (Optional, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_type` instead.
 
 -> **NOTE**: Only MySQL engine is supported resets permissions of the privileged account.

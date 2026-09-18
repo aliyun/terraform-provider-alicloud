@@ -9,6 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -64,7 +65,22 @@ func resourceAliCloudRdsAccount() *schema.Resource {
 				Sensitive:     true,
 				Optional:      true,
 				Computed:      true,
-				ConflictsWith: []string{"password"},
+				ConflictsWith: []string{"password", "kms_encrypted_password", "account_password_wo"},
+				AtLeastOneOf:  []string{"account_password", "password", "kms_encrypted_password", "account_password_wo"},
+			},
+			"account_password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				WriteOnly:     true,
+				ConflictsWith: []string{"account_password", "password", "kms_encrypted_password"},
+				AtLeastOneOf:  []string{"account_password", "password", "kms_encrypted_password", "account_password_wo"},
+				RequiredWith:  []string{"account_password_wo_version"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntAtLeast(1),
+				RequiredWith: []string{"account_password_wo"},
 			},
 			"password": {
 				Type:          schema.TypeString,
@@ -72,7 +88,8 @@ func resourceAliCloudRdsAccount() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				Deprecated:    "Field 'password' has been deprecated from provider version 1.120.0. New field 'account_password' instead.",
-				ConflictsWith: []string{"account_password"},
+				ConflictsWith: []string{"account_password", "kms_encrypted_password", "account_password_wo"},
+				AtLeastOneOf:  []string{"account_password", "password", "kms_encrypted_password", "account_password_wo"},
 			},
 			"account_type": {
 				Type:          schema.TypeString,
@@ -118,6 +135,8 @@ func resourceAliCloudRdsAccount() *schema.Resource {
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				ConflictsWith:    []string{"account_password", "password", "account_password_wo"},
+				AtLeastOneOf:     []string{"account_password", "password", "kms_encrypted_password", "account_password_wo"},
 				DiffSuppressFunc: kmsDiffSuppressFunc,
 			},
 			"kms_encryption_context": {
@@ -172,8 +191,12 @@ func resourceAliCloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		request["AccountPassword"] = decryptResp
+	} else if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["AccountPassword"] = woValue.AsString()
 	} else {
-		return WrapError(Error("One of the 'account_password' and 'password' and 'kms_encrypted_password' should be set."))
+		return WrapError(Error("One of the 'account_password' and 'password' and 'kms_encrypted_password' and 'account_password_wo' should be set."))
 	}
 	if v, ok := d.GetOk("account_type"); ok {
 		request["AccountType"] = v
@@ -378,6 +401,14 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		resetAccountPasswordReq["AccountPassword"] = decryptResp
 	}
+	if d.HasChange("account_password_wo_version") {
+		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+			return WrapError(err)
+		} else if !woValue.IsNull() {
+			update = true
+			resetAccountPasswordReq["AccountPassword"] = woValue.AsString()
+		}
+	}
 	if update {
 		action := "ResetAccountPassword"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -447,6 +478,11 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		if v, ok := d.GetOk("password"); ok {
 			resetAccountReq["AccountPassword"] = v.(string)
+		}
+		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+			return WrapError(err)
+		} else if !woValue.IsNull() {
+			resetAccountReq["AccountPassword"] = woValue.AsString()
 		}
 		// ResetAccount interface can also reset the database account password
 		action := "ResetAccount"
