@@ -81,8 +81,8 @@ The following arguments are supported:
 * `dual_stack` - (Optional, Available since v1.247.0) Whether to create an IPv6 mount point.
 
 Value:
-  - true: create
-  - false (default): not created
+- true: create
+- false (default): not created
 
 -> **NOTE:**  currently, only extreme NAS supports IPv6 function in various regions in mainland China, and IPv6 function needs to be turned on for this file system.
 
@@ -90,7 +90,7 @@ Value:
 * `network_type` - (Optional, ForceNew, Available since v1.208.1) Network type.
 * `security_group_id` - (Optional) The ID of the security group.
 * `status` - (Optional, Computed) The current status of the Mount point, including Active and Inactive, can be used to mount the file system only when the status is Active.
-* `vswitch_id` - (Optional, ForceNew) The ID of the switch.
+* `vswitch_id` - (Optional, ForceNew, Computed) The ID of the switch.
 * `vpc_id` - (Optional, ForceNew, Available since v1.208.1) VPC ID.
 
 ## Attributes Reference
