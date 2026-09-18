@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,9 +27,9 @@ func TestAccAliCloudRdsAccount_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -171,9 +172,9 @@ func TestAccAliCloudRdsAccount_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -222,9 +223,9 @@ func TestAccAliCloudRdsAccount_normal(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -371,9 +372,9 @@ func TestAccAliCloudRdsAccount_super(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -451,9 +452,9 @@ func TestAccAliCloudRdsAccount_basic11761(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -533,9 +534,9 @@ func TestAccAliCloudRdsAccount_basic11761_2(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -657,9 +658,9 @@ func TestAccAliCloudRdsAccount_basic11752(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -739,7 +740,7 @@ variable "name" {
 
 data "alicloud_db_zones" "default"{
   	engine               = "PostgreSQL"
-  	engine_version       = "12.0"
+  	engine_version       = "17.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
@@ -748,7 +749,7 @@ data "alicloud_db_zones" "default"{
 data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
   	engine               = "PostgreSQL"
-  	engine_version       = "12.0"
+  	engine_version       = "17.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
@@ -779,7 +780,7 @@ locals {
 
 resource "alicloud_db_instance" "default" {
   engine         	= "PostgreSQL"
-  engine_version 	= "12.0"
+  engine_version 	= "17.0"
   instance_type 	=  data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
   instance_storage	=  data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
   db_instance_storage_type =  "cloud_essd"
@@ -789,7 +790,6 @@ resource "alicloud_db_instance" "default" {
   vswitch_id			=  local.vswitch_id
   monitoring_period 	=  "60"
   category				=  "HighAvailability"
-  target_minor_version	=  "rds_postgres_1200_20231030"
 }
 
 
@@ -797,3 +797,80 @@ resource "alicloud_db_instance" "default" {
 }
 
 // Test Rds Account. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudRdsAccount_passwordWo(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_rds_account.default"
+	ra := resourceAttrInit(resourceId, AlicloudRdsAccountMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRdsAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srdsaccount%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsAccountBasicDependenceBasic)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id": "${alicloud_db_instance.default.id}",
+					"account_name":   "tftestnormal999",
+				}),
+				ExpectError: regexp.MustCompile("one\\s+of\\s+`account_password,account_password_wo,kms_encrypted_password,password`\\s+must\\s+be\\s+specified"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":              "${alicloud_db_instance.default.id}",
+					"account_name":                "tftestnormal999",
+					"account_password_wo":         "YourPassword_123",
+					"account_password_wo_version": 1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":              CHECKSET,
+						"account_name":                "tftestnormal999",
+						"account_password_wo_version": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password_wo":         "YourPassword_1234",
+					"account_password_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password":            "YourPassword_123",
+					"account_password_wo":         REMOVEKEY,
+					"account_password_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password":            "YourPassword_123",
+						"account_password_wo_version": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "account_password_wo_version", "reset_permission_flag"},
+			},
+		},
+	})
+}
