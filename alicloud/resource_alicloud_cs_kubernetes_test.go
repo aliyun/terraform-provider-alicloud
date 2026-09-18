@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	roacs "github.com/alibabacloud-go/cs-20151215/v8/client"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
@@ -757,6 +759,166 @@ func TestUnit_parseRRSAMetadata(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tt.want, got) {
 				t.Errorf("flattenRRSAMetadata(%v) want %v got %v", tt.args.meta, tt.want, got)
+			}
+		})
+	}
+}
+
+const testKubeConfigYaml = `apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==
+    server: https://1.2.3.4:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==
+    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+`
+
+func TestUnit_flattenAlicloudCSCertificate(t *testing.T) {
+	normal := map[string]string{
+		"cluster_cert": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==",
+		"client_cert":  "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==",
+		"client_key":   "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQo=",
+	}
+	body := func(config string) *roacs.DescribeClusterUserKubeconfigResponseBody {
+		return &roacs.DescribeClusterUserKubeconfigResponseBody{Config: tea.String(config)}
+	}
+	tests := []struct {
+		name        string
+		certificate *roacs.DescribeClusterUserKubeconfigResponseBody
+		want        map[string]string
+		wantErr     bool
+	}{
+		{
+			name:        "nil response body",
+			certificate: nil,
+			wantErr:     true,
+		},
+		{
+			name:        "empty config",
+			certificate: body(""),
+			wantErr:     true,
+		},
+		{
+			name:        "invalid yaml",
+			certificate: body(": ["),
+			wantErr:     true,
+		},
+		{
+			name: "missing clusters",
+			certificate: body(`users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "missing users",
+			certificate: body(`clusters:
+- cluster:
+    certificate-authority-data: Yw==
+  name: kubernetes
+`),
+			wantErr: true,
+		},
+		{
+			name: "empty clusters array",
+			certificate: body(`clusters: []
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "clusters not a list",
+			certificate: body(`clusters: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "leaf field has wrong type",
+			certificate: body(`clusters:
+- cluster:
+    certificate-authority-data: 123456
+  name: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "missing leaf field",
+			certificate: body(`clusters:
+- cluster:
+    server: https://1.2.3.4:6443
+  name: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "empty leaf field",
+			certificate: body(`clusters:
+- cluster:
+    certificate-authority-data: ""
+  name: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name:        "normal kubeconfig",
+			certificate: body(testKubeConfigYaml),
+			want:        normal,
+			wantErr:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := flattenAlicloudCSCertificate(tt.certificate)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("flattenAlicloudCSCertificate(%v) want error got nil", tt.certificate)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("flattenAlicloudCSCertificate(%v) unexpected error: %v", tt.certificate, err)
+				return
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("flattenAlicloudCSCertificate(%v) want %v got %v", tt.certificate, tt.want, got)
 			}
 		})
 	}
