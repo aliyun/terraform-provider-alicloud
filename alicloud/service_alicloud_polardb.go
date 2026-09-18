@@ -718,8 +718,22 @@ func (s *PolarDBService) DescribePolarDBInstanceNetInfo(id string) ([]polardb.DB
 	request := polardb.CreateDescribeDBClusterEndpointsRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = id
-	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-		return polarDBClient.DescribeDBClusterEndpoints(request)
+	var response *polardb.DescribeDBClusterEndpointsResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.DescribeDBClusterEndpoints(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*polardb.DescribeDBClusterEndpointsResponse)
+		return nil
 	})
 
 	if err != nil {
@@ -729,9 +743,6 @@ func (s *PolarDBService) DescribePolarDBInstanceNetInfo(id string) ([]polardb.DB
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	response, _ := raw.(*polardb.DescribeDBClusterEndpointsResponse)
 	if len(response.Items) < 1 {
 		return nil, WrapErrorf(NotFoundErr("DBInstanceNetInfo", id), NotFoundMsg, ProviderERROR)
 	}

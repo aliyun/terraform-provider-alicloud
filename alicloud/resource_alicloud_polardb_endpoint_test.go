@@ -286,6 +286,9 @@ func resourcePolarDBEndpointConfigDependence(name string) string {
                 db_node_class = "polar.mysql.x4.medium"
                 vswitch_id = alicloud_vswitch.default.id
                 description = "${var.name}"
+                lifecycle {
+                        ignore_changes = [encrypt_new_tables]
+                }
         }
 
 		data "alicloud_polardb_clusters" "default" {
@@ -370,6 +373,9 @@ resource "alicloud_polardb_cluster" "default" {
   pay_type        = "PostPaid"
   vswitch_id      = alicloud_vswitch.default.id
   enable_dynamodb = true
+  lifecycle {
+    ignore_changes = [encrypt_new_tables]
+  }
 }
 `, name)
 }
