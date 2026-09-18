@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -386,4 +387,81 @@ func TestUnitAlicloudGPDBAccount(t *testing.T) {
 	// Delete
 	err = resourceAliCloudGpdbAccountDelete(dExisted, rawClient)
 	assert.Nil(t, err)
+}
+
+func TestAccAliCloudGPDBAccount_passwordWo(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_account.default"
+	ra := resourceAttrInit(resourceId, AlicloudGPDBAccountMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tftest%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGPDBAccountBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id": "${alicloud_gpdb_instance.default.id}",
+					"account_name":   name,
+				}),
+				ExpectError: regexp.MustCompile("one\\s+of\\s+`account_password,account_password_wo`\\s+must\\s+be\\s+specified"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":              "${alicloud_gpdb_instance.default.id}",
+					"account_name":                name,
+					"account_password_wo":         "YourPassword_123",
+					"account_password_wo_version": 1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":              CHECKSET,
+						"account_name":                name,
+						"account_password_wo_version": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password_wo":         "YourPassword_1234",
+					"account_password_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password":            "TFTest123",
+					"account_password_wo":         REMOVEKEY,
+					"account_password_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password":            "TFTest123",
+						"account_password_wo_version": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "account_password_wo_version"},
+			},
+		},
+	})
 }
