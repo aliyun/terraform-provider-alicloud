@@ -2007,6 +2007,49 @@ func normalizeValue(value interface{}) (interface{}, error) {
 	}
 }
 
+// toInt converts an interface value to an int, tolerating the numeric types that
+// RpcPost responses may carry. Because DecodeJSONFromReader uses json.UseNumber,
+// integer fields in RPC responses arrive as json.Number rather than float64; a
+// naive v.(float64) type assertion panics on json.Number. This helper accepts
+// json.Number (preferred), json.RawMessage, float64, and numeric strings so callers
+// do not need to know which decoder produced the value.
+func toInt(v interface{}) (int, error) {
+	switch val := v.(type) {
+	case nil:
+		return 0, fmt.Errorf("toInt: value is nil")
+	case int:
+		return val, nil
+	case int32:
+		return int(val), nil
+	case int64:
+		return int(val), nil
+	case float32:
+		return int(val), nil
+	case float64:
+		return int(val), nil
+	case json.Number:
+		i, err := val.Int64()
+		if err != nil {
+			return 0, fmt.Errorf("toInt: json.Number %q conversion: %w", val.String(), err)
+		}
+		return int(i), nil
+	case json.RawMessage:
+		var num json.Number
+		if err := json.Unmarshal(val, &num); err != nil {
+			return 0, fmt.Errorf("toInt: json.RawMessage decode: %w", err)
+		}
+		return toInt(num)
+	case string:
+		i, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("toInt: string %q parse: %w", val, err)
+		}
+		return int(i), nil
+	default:
+		return 0, fmt.Errorf("toInt: unsupported type %T", v)
+	}
+}
+
 func convertToJsonWithoutEscapeHTML(m map[string]interface{}) (string, error) {
 	var buffer bytes.Buffer
 	encoder := json.NewEncoder(&buffer)
