@@ -1,4 +1,10 @@
 ## 1.294.0 (Unreleased)
+
+- **New Resource:** `alicloud_polardb_polar_fs`
+- **New Resource:** `alicloud_polardb_polar_fs_endpoint`
+- **New Data Source:** `alicloud_polardb_polar_fs_instances`
+- **New Data Source:** `alicloud_polardb_lakebase_tenant_token`
+
 ## 1.293.0 (September 17, 2026)
 
 - **New Resource:** `alicloud_event_bridge_event_streaming` ([#10243](https://github.com/aliyun/terraform-provider-alicloud/issues/10243))
