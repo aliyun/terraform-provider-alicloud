@@ -1,4 +1,16 @@
 ## 1.294.0 (Unreleased)
+
+- **New Resource:** `alicloud_agentloop_agent_space`
+- **New Resource:** `alicloud_agentloop_context_store`
+- **New Resource:** `alicloud_agentloop_context_store_api_key`
+- **New Resource:** `alicloud_agentloop_dataset`
+- **New Resource:** `alicloud_agentloop_endpoint_connector`
+- **New Resource:** `alicloud_agentloop_evaluation_task`
+- **New Resource:** `alicloud_agentloop_evaluator`
+- **New Resource:** `alicloud_agentloop_evaluator_skill`
+- **New Resource:** `alicloud_agentloop_optimize_task`
+- **New Resource:** `alicloud_agentloop_pipeline`
+
 ## 1.293.0 (September 17, 2026)
 
 - **New Resource:** `alicloud_event_bridge_event_streaming` ([#10243](https://github.com/aliyun/terraform-provider-alicloud/issues/10243))
