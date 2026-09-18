@@ -104,7 +104,7 @@ func (s *DataworksPublicService) DescribeDataWorksComponent(id string) (object m
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, true)
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

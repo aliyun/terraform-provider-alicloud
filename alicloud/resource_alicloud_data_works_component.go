@@ -63,7 +63,7 @@ func resourceAlicloudDataWorksComponentCreate(d *schema.ResourceData, meta inter
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, false)
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -120,7 +120,7 @@ func resourceAlicloudDataWorksComponentUpdate(d *schema.ResourceData, meta inter
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, false)
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -151,7 +151,7 @@ func resourceAlicloudDataWorksComponentDelete(d *schema.ResourceData, meta inter
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, false)
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
