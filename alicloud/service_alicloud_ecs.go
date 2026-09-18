@@ -3939,3 +3939,52 @@ func (s *EcsService) RebootEcsInstances(id []interface{}) (err error) {
 
 	return nil
 }
+
+func (s *EcsService) DescribeEcsSavingPlan(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	action := "QuerySavingsPlansInstance"
+	request := map[string]interface{}{
+		"InstanceId": id,
+		"PageSize":   "10",
+		"PageNum":    "1",
+	}
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		resp, e := client.RpcPost("BssOpenApi", "2017-12-14", action, nil, request, true)
+		if e != nil {
+			if NeedRetry(e) {
+				wait()
+				return resource.RetryableError(e)
+			}
+			return resource.NonRetryableError(e)
+		}
+		response = resp
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound", "NotFound"}) || NotFoundError(err) {
+			err = GetNotFoundErrorFromString(GetNotFoundMessage("Alicloud ecs saving plan", id))
+			return
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return
+	}
+	v, e := jsonpath.Get("$.Data.Items", response)
+	if e != nil || v == nil {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Alicloud ecs saving plan", id))
+		return
+	}
+	items, ok := v.([]interface{})
+	if !ok || len(items) == 0 {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Alicloud ecs saving plan", id))
+		return
+	}
+	object, ok = items[0].(map[string]interface{})
+	if !ok {
+		err = GetNotFoundErrorFromString(GetNotFoundMessage("Alicloud ecs saving plan", id))
+		return
+	}
+	return
+}
