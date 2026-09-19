@@ -799,3 +799,37 @@ func (s *MaxComputeServiceV2) MaxComputeTenantRoleUserAttachmentStateRefreshFunc
 }
 
 // DescribeMaxComputeTenantRoleUserAttachment >>> Encapsulated.
+func (s *MaxComputeServiceV2) DescribeProjectGetTrustedProjects(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	projectName := id
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/api/v1/projects/%s/trustedProjects", projectName)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ODPS-0420111", "OBJECT_NOT_EXIST", "ODPS-0130013", "INTERNAL_SERVER_ERROR"}) {
+			return object, WrapErrorf(NotFoundErr("Project", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
