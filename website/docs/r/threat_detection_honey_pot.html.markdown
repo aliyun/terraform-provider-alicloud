@@ -56,6 +56,7 @@ The following arguments are supported:
 * `honeypot_image_name` - (Required, ForceNew) Honeypot mirror name.
 * `honeypot_name` - (Required) Honeypot custom name.
 * `node_id` - (Required, ForceNew) The ID of the honeypot management node.
+* `meta` - (Optional) Honeypot custom configuration in JSON format. Contains fields: `trojan_git` (Git counterplan, valid values: `zip`, `web`, `close`), `trojan_git_addr` (Git counterplan connection address), `trojan_git.zip` (Git anti-Trojan package), `burp` (Burp counter, valid values: `open`, `close`), `portrait_option` (traceability configuration, valid values: `false`, `true`).
 
 
 ## Attributes Reference
