@@ -22,6 +22,8 @@
 
 ArenaAI 页面的 Content Security Policy **不含 `'unsafe-eval'`**，因此任何以 `evaluate`/`eval`/`new Function` 形式执行的任意 JavaScript（包括"原生 setter + `dispatchEvent`"片段）**都会被 CSP 拦截，无法运行**。不要试图用 `evaluate` 注入脚本来填值或点击——这是已验证的死路。
 
+> **例外：CDP 级 evaluate 不受 CSP 限制。** 上述封锁针对**页面上下文**的 eval（`chrome:control-chrome` 的 page eval、playwright 的 `page.evaluate`）。若改用 [AgentBridge 通路](agentbridge-method.md)（桌面扩展的 `chrome.debugger.attach`），其 `Runtime.evaluate` 是 CDP/devtools 协议层，**不受页面 CSP 限制**——即使页面禁 `unsafe-eval` 仍可执行任意表达式。**但**：仍应使用原生 fill（native setter + input/change events）与 `press Enter`，原因从 CSP 变为 React 受控组件兼容性，不是"evaluate 能跑了就改用 JS 点击"。AgentBridge 通路是 `chrome:control-chrome` 受阻（Chrome 153 封锁 `--remote-debugging-port` 或 relay 拥塞）时的备选，默认仍走本节的原生命令。
+
 改用浏览器控制接口提供的**原生 DOM 一等命令**：这些命令在内容脚本层直接操作 DOM，绕过页面 CSP。经多轮 × 15 页实战验证（CSP 下稳定 15/15 提交）的命令与参数：
 
 | 操作 | 命令 | 关键参数 |
