@@ -47,20 +47,15 @@ func TestAccAliCloudMaxComputeProject_basic1968(t *testing.T) {
 					},
 					"properties": []map[string]interface{}{
 						{
-							"allow_full_scan":  "false",
-							"enable_dr":        "true",
-							"enable_decimal2":  "true",
-							"retention_days":   "1",
-							"sql_metering_max": "0",
-							"timezone":         "Asia/Shanghai",
-							"type_system":      "2",
-							"encryption": []map[string]interface{}{
-								{
-									"enable":    "true",
-									"algorithm": "AESCTR",
-									"key":       "f58d854d-7bc0-4a6e-9205-160e10ffedec",
-								},
-							},
+							"allow_full_scan":           "false",
+							"enable_dr":                 "true",
+							"enable_decimal2":           "true",
+							"enable_data_masking":       "false",
+							"enable_tunnel_quota_route": "false",
+							"retention_days":            "1",
+							"sql_metering_max":          "0",
+							"timezone":                  "Asia/Shanghai",
+							"type_system":               "2",
 							"table_lifecycle": []map[string]interface{}{
 								{
 									"type":  "optional",
@@ -98,6 +93,67 @@ func TestAccAliCloudMaxComputeProject_basic1968(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"default_quota":    "默认后付费Quota",
+					"project_name":     "${var.name}",
+					"comment":          "${var.name}",
+					"product_type":     "PayAsYouGo",
+					"is_logical":       "false",
+					"three_tier_model": "true",
+					"ip_white_list": []map[string]interface{}{
+						{
+							"ip_list":     "1.1.1.1,2.2.2.2",
+							"vpc_ip_list": "10.10.10.10,11.11.11.11",
+						},
+					},
+					"properties": []map[string]interface{}{
+						{
+							"allow_full_scan":           "false",
+							"enable_dr":                 "true",
+							"enable_decimal2":           "true",
+							"enable_data_masking":       "true",
+							"enable_tunnel_quota_route": "true",
+							"tunnel_quota":              "default",
+							"retention_days":            "1",
+							"sql_metering_max":          "0",
+							"timezone":                  "Asia/Shanghai",
+							"type_system":               "2",
+							"encryption": []map[string]interface{}{
+								{
+									"enable":    "true",
+									"algorithm": "AESCTR",
+									"key":       "f58d854d-7bc0-4a6e-9205-160e10ffedec",
+								},
+							},
+							"table_lifecycle": []map[string]interface{}{
+								{
+									"type":  "optional",
+									"value": "37231",
+								},
+							},
+						},
+					},
+					"security_properties": []map[string]interface{}{
+						{
+							"enable_download_privilege":            "false",
+							"label_security":                       "true",
+							"object_creator_has_access_permission": "true",
+							"object_creator_has_grant_permission":  "true",
+							"project_protection": []map[string]interface{}{
+								{
+									"protected": "false",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"properties.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"comment":      "${var.name}_u",
 					"project_name": "${var.name}_u",
 					"is_logical":   "true",
@@ -121,7 +177,7 @@ func TestAccAliCloudMaxComputeProject_basic1968(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "is_logical"},
+				ImportStateVerifyIgnore: []string{"product_type", "is_logical", "default_quota"},
 			},
 		},
 	})
@@ -319,12 +375,12 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 					},
 					"security_properties": []map[string]interface{}{
 						{
-							"using_acl":                            "true",
-							"using_policy":                         "true",
-							"object_creator_has_access_permission": "true",
-							"object_creator_has_grant_permission":  "true",
-							"label_security":                       "true",
-							"enable_download_privilege":            "true",
+							"using_acl":                            "false",
+							"using_policy":                         "false",
+							"object_creator_has_access_permission": "false",
+							"object_creator_has_grant_permission":  "false",
+							"label_security":                       "false",
+							"enable_download_privilege":            "false",
 							"project_protection": []map[string]interface{}{
 								{
 									"protected":        "true",
@@ -355,7 +411,7 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status": "FROZEN",
+						"status": "FROZEN_BY_USER",
 					}),
 				),
 			},
