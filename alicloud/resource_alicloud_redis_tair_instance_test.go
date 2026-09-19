@@ -3013,3 +3013,80 @@ func TestAccAliCloudRedisTairInstance_config(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAliCloudRedisTairInstance_elastic_burst(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3314)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3314)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${local.zone_id}",
+					"instance_class":     "tair.rdb.2g",
+					"shard_count":        "2",
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"tair_instance_name": name,
+					"bandwidth_burst":    "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":       "PayAsYouGo",
+						"instance_type":      "tair_rdb",
+						"instance_class":     "tair.rdb.2g",
+						"shard_count":        "2",
+						"tair_instance_name": name,
+						"bandwidth_burst":    "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_burst":              "false",
+					"additional_bandwidth":         "20",
+					"additional_bandwidth_node_id": "All",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_burst":              "false",
+						"additional_bandwidth":         "20",
+						"additional_bandwidth_node_id": "All",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_bandwidth": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_bandwidth": "30",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "bandwidth_burst", "additional_bandwidth", "additional_bandwidth_node_id"},
+			},
+		},
+	})
+}
