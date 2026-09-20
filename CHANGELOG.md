@@ -1,4 +1,9 @@
 ## 1.294.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_polardb_cluster_endpoint: support scc_mode.
+
 ## 1.293.0 (September 17, 2026)
 
 - **New Resource:** `alicloud_event_bridge_event_streaming` ([#10243](https://github.com/aliyun/terraform-provider-alicloud/issues/10243))
