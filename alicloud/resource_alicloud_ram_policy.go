@@ -40,7 +40,7 @@ func resourceAliCloudRamPolicy() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringIsJSON,
+				ValidateFunc: validation.All(validation.StringIsJSON, validateRamPolicyDocumentStructure),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
@@ -101,7 +101,7 @@ func resourceAliCloudRamPolicy() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringIsJSON,
+				ValidateFunc: validation.All(validation.StringIsJSON, validateRamPolicyDocumentStructure),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
