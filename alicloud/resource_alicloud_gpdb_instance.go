@@ -708,39 +708,62 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 
 	// DescribeParameters returns the full server-side parameter set, while the
 	// user typically declares only a subset of parameters in the configuration.
-	// Writing the full set back into state makes a config that declares a subset
-	// produce a permanent non-empty plan. Only refresh the parameters the user
-	// has actually declared, so state stays aligned with the configuration.
-	if documented, ok := d.GetOk("parameters"); ok {
-		parameterObject, err := gpdbService.DescribeParameters(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		if parameterList, ok := parameterObject["Parameters"].([]interface{}); ok && parameterList != nil {
-			apiParameters := make(map[string]map[string]interface{})
-			for _, parameterListItem := range parameterList {
-				if parameterListValueItemMap, ok := parameterListItem.(map[string]interface{}); ok {
-					name := fmt.Sprint(parameterListValueItemMap["ParameterName"])
-					apiParameters[name] = map[string]interface{}{
-						"name":                   parameterListValueItemMap["ParameterName"],
-						"value":                  parameterListValueItemMap["CurrentValue"],
-						"default_value":          parameterListValueItemMap["ParameterValue"],
-						"is_changeable_config":   parameterListValueItemMap["IsChangeableConfig"],
-						"force_restart_instance": parameterListValueItemMap["ForceRestartInstance"],
-						"optional_range":         parameterListValueItemMap["OptionalRange"],
-						"parameter_description":  parameterListValueItemMap["ParameterDescription"],
-					}
+	// Refresh behavior splits into two branches so that both `terraform import`
+	// and an ordinary refresh produce a usable, drift-free state:
+	//   - When the configuration declares a subset of parameters, only those
+	//     declared parameters are refreshed using their current server-side
+	//     values. Writing the full server-side set back into state in this case
+	//     would surface the extra parameters as removed elements on every plan,
+	//     producing a permanent non-empty plan.
+	//   - When no parameters are declared in the configuration (notably right
+	//     after `terraform import`, where ImportStatePassthrough seeds the state
+	//     with only the instance id), the full server-side parameter set is
+	//     written back into state so the imported state reflects the real
+	//     instance. Because `parameters` is Optional+Computed, a configuration
+	//     that omits it keeps the server-side value without producing a plan.
+	//     A subsequent configuration that declares a subset is reconciled by
+	//     the following plan/apply, which is the expected behavior.
+	documented, documentedOk := d.GetOk("parameters")
+	parameterObject, err := gpdbService.DescribeParameters(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if parameterList, ok := parameterObject["Parameters"].([]interface{}); ok && parameterList != nil {
+		apiParameters := make(map[string]map[string]interface{})
+		for _, parameterListItem := range parameterList {
+			if parameterListValueItemMap, ok := parameterListItem.(map[string]interface{}); ok {
+				name := fmt.Sprint(parameterListValueItemMap["ParameterName"])
+				apiParameters[name] = map[string]interface{}{
+					"name":                   parameterListValueItemMap["ParameterName"],
+					"value":                  parameterListValueItemMap["CurrentValue"],
+					"default_value":          parameterListValueItemMap["ParameterValue"],
+					"is_changeable_config":   parameterListValueItemMap["IsChangeableConfig"],
+					"force_restart_instance": parameterListValueItemMap["ForceRestartInstance"],
+					"optional_range":         parameterListValueItemMap["OptionalRange"],
+					"parameter_description":  parameterListValueItemMap["ParameterDescription"],
 				}
 			}
-			parameterListMaps := make([]map[string]interface{}, 0)
+		}
+		parameterListMaps := make([]map[string]interface{}, 0)
+		if documentedOk {
+			// Configuration declared a subset: refresh only the declared
+			// parameters using their current server-side values to avoid a
+			// permanent diff from the extra server-side parameters.
 			for _, parameter := range documented.(*schema.Set).List() {
 				name := fmt.Sprint(parameter.(map[string]interface{})["name"])
 				if apiParameter, ok := apiParameters[name]; ok {
 					parameterListMaps = append(parameterListMaps, apiParameter)
 				}
 			}
-			d.Set("parameters", parameterListMaps)
+		} else {
+			// No parameters declared in the configuration (e.g. right after
+			// import, where the state only carries the instance id): write back
+			// the full server-side parameter set so state reflects the instance.
+			for _, apiParameter := range apiParameters {
+				parameterListMaps = append(parameterListMaps, apiParameter)
+			}
 		}
+		d.Set("parameters", parameterListMaps)
 	}
 
 	return nil
