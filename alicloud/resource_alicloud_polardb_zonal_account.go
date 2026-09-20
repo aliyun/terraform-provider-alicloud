@@ -69,7 +69,7 @@ func resourceAlicloudPolarDBZonalAccountCreate(d *schema.ResourceData, meta inte
 	password := d.Get("account_password").(string)
 
 	if password == "" {
-		return WrapError(Error("the 'password' should be set."))
+		return WrapError(Error("the 'account_password' should be set."))
 	}
 	request.AccountPassword = password
 
@@ -169,7 +169,7 @@ func resourceAlicloudPolarDBZonalAccountUpdate(d *schema.ResourceData, meta inte
 
 		password := d.Get("account_password").(string)
 		if password == "" {
-			return WrapError(Error("the 'password' should be set."))
+			return WrapError(Error("the 'account_password' should be set."))
 		}
 
 		passwordfinal := password
