@@ -152,7 +152,7 @@ The following arguments are supported:
 
 -> **NOTE:**  This parameter is required when `ListenerPort` is set to `0`.
 
-* `idle_timeout` - (Optional, Computed, Int) The timeout period of idle connections. Unit: seconds. Valid values: `1` to `900`. Default value: `900`.
+* `idle_timeout` - (Optional, Computed, Int) The timeout period of idle connections. Unit: seconds. Valid values: `1` to `900`. Default value: `900`. Values greater than `900` can be used only after you contact the product team to add a whitelist for your account.
 * `listener_description` - (Optional) Enter a name for the listener.
 The description must be 2 to 256 characters in length, and can contain letters, digits, commas (,), periods (.), semicolons (;), forward slashes (/), at signs (@), underscores (\_), and hyphens (-).
 * `listener_port` - (Required, ForceNew, Int) The listener port. Valid values: `0` to `65535`.
