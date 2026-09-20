@@ -172,6 +172,26 @@ func TestAccAliCloudCmsGroupMetricRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"category": "ecs",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"category": "ecs",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"category": "rds",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"category": "rds",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"contact_groups": "${alicloud_cms_monitor_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(

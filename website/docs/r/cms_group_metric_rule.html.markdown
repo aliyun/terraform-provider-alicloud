@@ -81,6 +81,8 @@ The following arguments are supported:
 * `metric_name` - (Required) The name of the metric.
 * `namespace` - (Required, ForceNew) The namespace of the service.
 * `category` - (Optional) The abbreviation of the service name.
+
+  -> **NOTE:** The API used to read the alert rule does not return this attribute, so Terraform cannot detect its drift. The state value always reflects the last applied configuration, and the attribute is not restored by `terraform import`.
 * `contact_groups` - (Optional) Alarm contact group.
 * `dimensions` - (Optional) The dimensions that specify the resources to be associated with the alert rule.
 * `email_subject` - (Optional) The subject of the alert notification email.
