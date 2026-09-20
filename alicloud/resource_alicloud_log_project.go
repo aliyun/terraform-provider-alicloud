@@ -41,7 +41,7 @@ func resourceAliCloudSlsProject() *schema.Resource {
 				Computed:     true,
 				ExactlyOneOf: []string{"project_name", "name"},
 				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "The name of the log project. It is the only in one Alicloud account. The project name is globally unique in Alibaba Cloud and cannot be modified after it is created. The naming rules are as follows:- The project name must be globally unique. - The name can contain only lowercase letters, digits, and hyphens (-). - It must start and end with a lowercase letter or number. - The value contains 3 to 63 characters."),
+				ValidateFunc: StringMatch(regexp.MustCompile("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$"), "The name of the log project. It is the only in one Alicloud account. The project name is globally unique in Alibaba Cloud and cannot be modified after it is created. The naming rules are as follows:- The project name must be globally unique. - The name can contain only lowercase letters, digits, and hyphens (-). - It must start and end with a lowercase letter or number. - The value contains 3 to 63 characters."),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -63,7 +63,7 @@ func resourceAliCloudSlsProject() *schema.Resource {
 				Computed:     true,
 				Deprecated:   "Field 'name' has been deprecated since provider version 1.223.0. New field 'project_name' instead.",
 				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "The name of the log project. It is the only in one Alicloud account. The project name is globally unique in Alibaba Cloud and cannot be modified after it is created. The naming rules are as follows:- The project name must be globally unique. - The name can contain only lowercase letters, digits, and hyphens (-). - It must start and end with a lowercase letter or number. - The value contains 3 to 63 characters."),
+				ValidateFunc: StringMatch(regexp.MustCompile("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$"), "The name of the log project. It is the only in one Alicloud account. The project name is globally unique in Alibaba Cloud and cannot be modified after it is created. The naming rules are as follows:- The project name must be globally unique. - The name can contain only lowercase letters, digits, and hyphens (-). - It must start and end with a lowercase letter or number. - The value contains 3 to 63 characters."),
 			},
 		},
 	}
