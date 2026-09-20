@@ -654,6 +654,42 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"optimized", "none"}, false),
 			},
+			"auto_create_proxy": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"business_info": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"connection_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Standard", "Safe"}, false),
+			},
+			"io_acceleration_enabled": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
+			"promotion_code": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"user_backup_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"compression_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
 			"template_id_list": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1832,6 +1868,20 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		request["BurstingEnabled"] = v
 	}
 
+	if d.HasChange("io_acceleration_enabled") {
+		update = true
+	}
+	if v, ok := d.GetOk("io_acceleration_enabled"); ok && v.(string) != "" {
+		request["IoAccelerationEnabled"] = v
+	}
+
+	if d.HasChange("compression_mode") {
+		update = true
+	}
+	if v, ok := d.GetOk("compression_mode"); ok && v.(string) != "" {
+		request["CompressionMode"] = v
+	}
+
 	if d.HasChange("serverless_config") {
 		update = true
 		if v, ok := d.GetOk("serverless_config"); ok {
@@ -2287,6 +2337,16 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("status", instance["DBInstanceStatus"])
 	d.Set("create_time", instance["CreationTime"])
 	d.Set("bursting_enabled", instance["BurstingEnabled"])
+	// DescribeDBInstanceAttribute omits IoAccelerationEnabled when BPE is disabled;
+	// default to "0" so the state stays consistent instead of an empty string that
+	// would cause a perpetual plan diff.
+	if v, ok := instance["IoAccelerationEnabled"]; ok && v != nil {
+		d.Set("io_acceleration_enabled", v)
+	} else {
+		d.Set("io_acceleration_enabled", "0")
+	}
+	d.Set("connection_mode", instance["ConnectionMode"])
+	d.Set("compression_mode", instance["CompressionMode"])
 	d.Set("pg_bouncer_enabled", instance["PGBouncerEnabled"])
 	if v, ok := instance["OptimizedWritesInfo"]; ok {
 		value := ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(v))
@@ -2652,6 +2712,27 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOk("optimized_writes"); ok && v.(string) != "" {
 		request["OptimizedWrites"] = v
+	}
+	if v, ok := d.GetOkExists("auto_create_proxy"); ok {
+		request["AutoCreateProxy"] = v
+	}
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		request["AutoPay"] = v
+	}
+	if v, ok := d.GetOk("business_info"); ok && v.(string) != "" {
+		request["BusinessInfo"] = v
+	}
+	if v, ok := d.GetOk("connection_mode"); ok && v.(string) != "" {
+		request["ConnectionMode"] = v
+	}
+	if v, ok := d.GetOk("io_acceleration_enabled"); ok && v.(string) != "" {
+		request["IoAccelerationEnabled"] = v
+	}
+	if v, ok := d.GetOk("promotion_code"); ok && v.(string) != "" {
+		request["PromotionCode"] = v
+	}
+	if v, ok := d.GetOk("user_backup_id"); ok && v.(string) != "" {
+		request["UserBackupId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		count := 1
