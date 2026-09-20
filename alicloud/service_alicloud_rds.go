@@ -286,6 +286,10 @@ func (s *RdsService) describeDBDatabase(id string, retryTimeout time.Duration) (
 			return resource.NonRetryableError(WrapErrorf(NotFoundErr("DBDatabase", dbName), NotFoundMsg, ProviderERROR))
 		}
 		ds = v.([]interface{})[0].(map[string]interface{})
+		engine, ok := ds["Engine"].(string)
+		if ok && string(MySQL) == engine && ds["CharacterSetName"] == "utf8mb3" {
+			ds["CharacterSetName"] = "utf8"
+		}
 		return nil
 	}
 	if retryTimeout > 0 {
