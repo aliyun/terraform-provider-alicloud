@@ -78,7 +78,7 @@ The following arguments are supported:
 * `bucket` - (Required, ForceNew) The name of the bucket.
 * `kms_data_encryption` - (Optional) The algorithm used to encrypt objects. If this element is not specified, objects are encrypted by using AES256. This element is valid only when the value of SSEAlgorithm is set to KMS.
 * `kms_master_key_id` - (Optional) The CMK ID that must be specified when SSEAlgorithm is set to KMS and a specified CMK is used for encryption. In other cases, this element must be set to null.
-* `sse_algorithm` - (Required) The server-side encryption method. Valid Values: KMS, AES256.
+* `sse_algorithm` - (Required) The server-side encryption method. Valid Values: KMS, AES256, SM4.
 
 ## Attributes Reference
 
