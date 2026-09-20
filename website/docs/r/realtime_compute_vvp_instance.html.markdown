@@ -92,9 +92,13 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 
 The following arguments are supported:
 * `auto_renew_duration` - (Optional) The auto-renewal period of the subscription instance. It only takes effect when `payment_type = "Subscription"` and `renew_status = "AutoRenewal"`. Valid values: `1`, `2`, `3`, `6`, `12`. The unit is specified by `renewal_duration_unit`.
-* `duration` - (Optional) The number of subscription periods. If the payment type is PRE, this parameter is required.
+* `duration` - (Optional) The number of subscription periods. If the payment type is PRE, this parameter is required. Changing this value for a Subscription instance triggers a RenewInstance call.
+* `ha` - (Optional, Computed) HA high availability flag.
+* `ha_resource_spec` - (Optional, Computed) HA resource specifications. See [`ha_resource_spec`](#ha_resource_spec) below.
+* `ha_vswitch_ids` - (Optional, Computed) HA virtual switch IDs.
+* `ha_zone_id` - (Optional, Computed) HA zone ID. This field can only be set during update (ModifyPrepayInstanceSpec), not during create.
 * `payment_type` - (Required, ForceNew) The payment type of the resource.
-* `pricing_cycle` - (Optional) The subscription period. If the payment type is PRE, this parameter is required.
+* `pricing_cycle` - (Optional) The subscription period. If the payment type is PRE, this parameter is required. Changing this value for a Subscription instance triggers a RenewInstance call.
 * `renew_status` - (Optional, Computed) The renewal status of the subscription instance. It only takes effect when `payment_type = "Subscription"`. Valid values: `AutoRenewal`, `ManualRenewal`, `NotRenewal`.
 * `renewal_duration_unit` - (Optional, Computed) The unit of the auto-renewal period. It only takes effect when `payment_type = "Subscription"` and `renew_status = "AutoRenewal"`. Valid values: `M` (month), `Y` (year).
 * `resource_group_id` - (Optional, Computed) The resource group to which the newly purchased instance belongs.
@@ -111,6 +115,24 @@ The following arguments are supported:
 The resource_spec supports the following:
 * `cpu` - (Optional) CPU number.
 * `memory_gb` - (Optional) Memory size.
+
+### `ha_resource_spec`
+
+The ha_resource_spec supports the following:
+* `cpu` - (Optional) HA resource spec CPU number.
+* `memory_gb` - (Optional) HA resource spec memory size.
+
+### `namespace_resource_specs`
+
+The namespace_resource_specs supports the following:
+* `namespace` - (Computed) The project name.
+* `resource_spec` - (Computed) Resource specifications. See [`resource_spec`](#namespace_resource_specs-resource_spec) below.
+
+### `namespace_resource_specs-resource_spec`
+
+The resource_spec supports the following:
+* `cpu` - (Computed) CPU number.
+* `memory_gb` - (Computed) Memory size.
 
 ### `storage`
 
@@ -129,6 +151,7 @@ The following attributes are exported:
 * `resource_id` - (Available since v1.264.0) The ID of the K8s cluster.
 * `create_time` - The creation time of the resource.
 * `status` - The status of the resource.
+* `namespace_resource_specs` - Project resource specifications. See [`namespace_resource_specs`](#namespace_resource_specs) below.
 
 ## Timeouts
 

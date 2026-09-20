@@ -160,6 +160,70 @@ func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"ha": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"ha_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"ha_vswitch_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"ha_resource_spec": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cpu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"memory_gb": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"namespace_resource_specs": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"namespace": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_spec": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"cpu": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"memory_gb": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -226,6 +290,27 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
 		objectDataLocalMap["ChargeType"] = convertRealtimeComputeCreateInstanceRequestChargeTypeRequest(v)
+	}
+	if v, ok := d.GetOk("ha"); ok {
+		objectDataLocalMap["Ha"] = v
+	}
+	if v, ok := d.GetOk("ha_vswitch_ids"); ok {
+		nodeNativeHaVSwitchIds, _ := jsonpath.Get("$", v)
+		if nodeNativeHaVSwitchIds != "" {
+			objectDataLocalMap["HaVSwitchIds"] = nodeNativeHaVSwitchIds
+		}
+	}
+	if v := d.Get("ha_resource_spec"); !IsNil(v) {
+		haResourceSpec := make(map[string]interface{})
+		nodeNativeHaCpu, _ := jsonpath.Get("$[0].cpu", v)
+		if nodeNativeHaCpu != "" {
+			haResourceSpec["Cpu"] = nodeNativeHaCpu
+		}
+		nodeNativeHaMem, _ := jsonpath.Get("$[0].memory_gb", v)
+		if nodeNativeHaMem != "" {
+			haResourceSpec["MemoryGB"] = nodeNativeHaMem
+		}
+		objectDataLocalMap["HaResourceSpec"] = haResourceSpec
 	}
 	request["CreateInstanceRequest"] = objectDataLocalMap
 	request["CreateInstanceRequest.ZoneId"] = d.Get("zone_id")
@@ -339,6 +424,51 @@ func resourceAliCloudRealtimeComputeVvpInstanceRead(d *schema.ResourceData, meta
 
 	d.Set("vswitch_ids", vSwitchIds1Raw)
 
+	d.Set("ha", objectRaw["Ha"])
+	d.Set("ha_zone_id", objectRaw["HaZoneId"])
+	haVSwitchIdsRaw := make([]interface{}, 0)
+	if objectRaw["HaVSwitchIds"] != nil {
+		haVSwitchIdsRaw = objectRaw["HaVSwitchIds"].([]interface{})
+	}
+	d.Set("ha_vswitch_ids", haVSwitchIdsRaw)
+	haResourceSpecMaps := make([]map[string]interface{}, 0)
+	haResourceSpecMap := make(map[string]interface{})
+	haResourceSpec1Raw := make(map[string]interface{})
+	if objectRaw["HaResourceSpec"] != nil {
+		haResourceSpec1Raw = objectRaw["HaResourceSpec"].(map[string]interface{})
+	}
+	if len(haResourceSpec1Raw) > 0 {
+		haResourceSpecMap["cpu"] = haResourceSpec1Raw["Cpu"]
+		haResourceSpecMap["memory_gb"] = haResourceSpec1Raw["MemoryGB"]
+		haResourceSpecMaps = append(haResourceSpecMaps, haResourceSpecMap)
+	}
+	d.Set("ha_resource_spec", haResourceSpecMaps)
+	namespaceResourceSpecsMaps := make([]map[string]interface{}, 0)
+	if objectRaw["NamespaceResourceSpecs"] != nil {
+		if rawList, ok := objectRaw["NamespaceResourceSpecs"].([]interface{}); ok {
+			for _, item := range rawList {
+				itemMap, ok := item.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				nsMap := make(map[string]interface{})
+				nsMap["namespace"] = itemMap["Namespace"]
+				nsResourceSpecMaps := make([]map[string]interface{}, 0)
+				if itemMap["ResourceSpec"] != nil {
+					if nsSpecRaw, ok := itemMap["ResourceSpec"].(map[string]interface{}); ok && len(nsSpecRaw) > 0 {
+						nsSpecMap := make(map[string]interface{})
+						nsSpecMap["cpu"] = nsSpecRaw["Cpu"]
+						nsSpecMap["memory_gb"] = nsSpecRaw["MemoryGB"]
+						nsResourceSpecMaps = append(nsResourceSpecMaps, nsSpecMap)
+					}
+				}
+				nsMap["resource_spec"] = nsResourceSpecMaps
+				namespaceResourceSpecsMaps = append(namespaceResourceSpecsMaps, nsMap)
+			}
+		}
+	}
+	d.Set("namespace_resource_specs", namespaceResourceSpecsMaps)
+
 	if checkValue := d.Get("payment_type"); checkValue == "Subscription" {
 		// The foasconsole DescribeInstances API does not return renewal state, so
 		// renewal is read back from bss QueryAvailableInstances. bss uses a
@@ -384,6 +514,34 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 			}
 			objectDataLocalMap["ResourceSpec"] = resourceSpec
 		}
+	}
+	if d.HasChange("ha") {
+		update = true
+		objectDataLocalMap["Ha"] = d.Get("ha")
+	}
+	if d.HasChange("ha_zone_id") {
+		update = true
+		objectDataLocalMap["HaZoneId"] = d.Get("ha_zone_id")
+	}
+	if d.HasChange("ha_vswitch_ids") {
+		update = true
+		nodeNativeHaVSwitchIds, _ := jsonpath.Get("$", d.Get("ha_vswitch_ids"))
+		if nodeNativeHaVSwitchIds != "" {
+			objectDataLocalMap["HaVSwitchIds"] = nodeNativeHaVSwitchIds
+		}
+	}
+	if d.HasChange("ha_resource_spec") {
+		update = true
+		haResourceSpec := make(map[string]interface{})
+		nodeNativeHaCpu, _ := jsonpath.Get("$[0].cpu", d.Get("ha_resource_spec"))
+		if nodeNativeHaCpu != "" {
+			haResourceSpec["Cpu"] = nodeNativeHaCpu
+		}
+		nodeNativeHaMem, _ := jsonpath.Get("$[0].memory_gb", d.Get("ha_resource_spec"))
+		if nodeNativeHaMem != "" {
+			haResourceSpec["MemoryGB"] = nodeNativeHaMem
+		}
+		objectDataLocalMap["HaResourceSpec"] = haResourceSpec
 	}
 	if d.HasChange("region_id") {
 		update = true
@@ -461,6 +619,9 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 	if err := setRealtimeComputeVvpInstanceRenewal(d, meta); err != nil {
 		return WrapError(err)
 	}
+	if err := renewRealtimeComputeVvpInstance(d, meta); err != nil {
+		return WrapError(err)
+	}
 	d.Partial(false)
 	return resourceAliCloudRealtimeComputeVvpInstanceRead(d, meta)
 }
@@ -506,6 +667,24 @@ func resourceAliCloudRealtimeComputeVvpInstanceDelete(d *schema.ResourceData, me
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 9*time.Minute, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "InstanceId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
+// renewRealtimeComputeVvpInstance renews a VVP subscription instance via the
+// foasconsole RenewInstance API. It is a no-op when payment_type is not
+// Subscription and when neither duration nor pricing_cycle has changed.
+func renewRealtimeComputeVvpInstance(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	if v, ok := d.GetOk("payment_type"); !ok || v.(string) != "Subscription" {
+		return nil
+	}
+	if !d.HasChange("duration") && !d.HasChange("pricing_cycle") {
+		return nil
+	}
+	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
+	if err := realtimeComputeServiceV2.RenewRealtimeComputeVvpInstance(d.Id(), d.Get("duration").(int), d.Get("pricing_cycle").(string)); err != nil {
+		return WrapError(err)
 	}
 	return nil
 }
