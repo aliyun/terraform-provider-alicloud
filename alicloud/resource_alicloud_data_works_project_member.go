@@ -101,7 +101,7 @@ func resourceAliCloudDataWorksProjectMemberCreate(d *schema.ResourceData, meta i
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990040003"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -205,7 +205,7 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"9990040003"}) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -248,7 +248,7 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"9990040003"}) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -287,7 +287,7 @@ func resourceAliCloudDataWorksProjectMemberDelete(d *schema.ResourceData, meta i
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990040003"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
