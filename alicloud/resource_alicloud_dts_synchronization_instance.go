@@ -76,7 +76,7 @@ func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"4xlarge", "2xlarge", "xlarge", "large", "medium", "small", "micro"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"xmicro", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "6xlarge", "8xlarge"}, false),
 			},
 			"payment_type": {
 				Type:         schema.TypeString,

@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
+func TestAccAliCloudDTSSynchronizationInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_synchronization_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationInstanceMap0)
@@ -44,45 +44,55 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 					"auto_start":                       "false",
 					"payment_type":                     "PayAsYouGo",
 					"source_endpoint_engine_name":      "MySQL",
-					"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
+					"source_endpoint_region":           "${data.alicloud_regions.default.regions.0.id}",
 					"destination_endpoint_engine_name": "MySQL",
-					"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
+					"destination_endpoint_region":      "${data.alicloud_regions.default.regions.0.id}",
+					"compute_unit":                     "2",
+					"database_count":                   "1",
+					"instance_class":                   "small",
+					"payment_duration":                 "1",
+					"payment_duration_unit":            "Month",
+					"quantity":                         "1",
+					"sync_architecture":                "oneway",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":                     "PayAsYouGo",
 						"source_endpoint_engine_name":      "MySQL",
-						"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":           CHECKSET,
 						"destination_endpoint_engine_name": "MySQL",
-						"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
+						"destination_endpoint_region":      CHECKSET,
 					}),
 				),
 			},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_pay", "auto_start", "compute_unit", "period", "used_time", "auto_pay", "order_type", "synchronization_direction"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_pay", "auto_start", "compute_unit", "payment_duration", "payment_duration_unit"},
 			},
 		},
 	})
 }
 
 var AlicloudDTSSynchronizationInstanceMap0 = map[string]string{
-	"sync_architecture":         NOSET,
-	"compute_unit":              NOSET,
 	"period":                    NOSET,
 	"used_time":                 NOSET,
 	"order_type":                NOSET,
 	"synchronization_direction": NOSET,
-	"database_count":            NOSET,
 	"status":                    NOSET,
-	"quantity":                  NOSET,
 }
 
 func AlicloudDTSSynchronizationInstanceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
+}
+
+// The region has to come from the provider rather than from ALICLOUD_REGION: that
+// variable is not always set, and an empty region_id makes CreateDtsInstance fail
+// with MissingDestinationRegion before the instance is created.
+data "alicloud_regions" "default" {
+  current = true
 }
 `, name)
 }
@@ -287,4 +297,87 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 		}
 	}
 
+}
+
+// TestAccAliCloudDTSSynchronizationInstance_instanceClassDowngrade mirrors the
+// sibling synchronization job's downgrade test: it exercises the
+// TransferInstanceClass Update path by changing instance_class across steps so
+// the instance resource satisfies the modified-attribute coverage check. Downgrade
+// requires an allowlisted account (TransferInstanceClass returns NoPermission
+// otherwise), so the case is gated on TF_ACC_DTS_DOWNGRADE and skipped by default.
+func TestAccAliCloudDTSSynchronizationInstance_instanceClassDowngrade(t *testing.T) {
+	if os.Getenv("TF_ACC_DTS_DOWNGRADE") == "" {
+		t.Skip("Skipping instance_class downgrade test: requires allowlisted account; set TF_ACC_DTS_DOWNGRADE=1 to run")
+	}
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_synchronization_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsSynchronizationInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtssyncinstdowngrade%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSSynchronizationInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_pay":                         "false",
+					"auto_start":                       "false",
+					"payment_type":                     "PayAsYouGo",
+					"source_endpoint_engine_name":      "MySQL",
+					"source_endpoint_region":           "${data.alicloud_regions.default.regions.0.id}",
+					"destination_endpoint_engine_name": "MySQL",
+					"destination_endpoint_region":      "${data.alicloud_regions.default.regions.0.id}",
+					"compute_unit":                     "2",
+					"database_count":                   "1",
+					"instance_class":                   "4xlarge",
+					"payment_duration":                 "1",
+					"payment_duration_unit":            "Month",
+					"quantity":                         "1",
+					"sync_architecture":                "oneway",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":                     "PayAsYouGo",
+						"source_endpoint_engine_name":      "MySQL",
+						"source_endpoint_region":           CHECKSET,
+						"destination_endpoint_engine_name": "MySQL",
+						"destination_endpoint_region":      CHECKSET,
+					}),
+					resource.TestCheckResourceAttr(resourceId, "instance_class", "4xlarge"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "large",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "large",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "instance_class", "large"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "4xlarge",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "4xlarge",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "instance_class", "4xlarge"),
+				),
+			},
+		},
+	})
 }
