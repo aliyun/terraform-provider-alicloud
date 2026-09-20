@@ -689,3 +689,47 @@ variable "name" {
 
 `, name)
 }
+
+// TestUnitRamRoleRoleNameValidation exercises the role_name schema
+// ValidateFunc without requiring acceptance test credentials. It mirrors the
+// OpenAPI CreateRole/UpdateRole RoleName constraint: 1 to 64 characters,
+// letters, digits, periods (.), and hyphens (-).
+func TestUnitRamRoleRoleNameValidation(t *testing.T) {
+	v := resourceAliCloudRamRole().Schema["role_name"].ValidateFunc
+	if v == nil {
+		t.Fatal("role_name schema is expected to register a ValidateFunc")
+	}
+
+	valid := []string{
+		"a", // 1 char, lower-bound
+		"Z", // 1 char, upper-case
+		"0", // 1 char, digit
+		"-", // single hyphen (OpenAPI has no leading-char restriction)
+		".", // single period (OpenAPI permits periods)
+		"tf-testAcc.Role-Name",
+		"role.name-1",
+		strings.Repeat("a", 64),            // 64 chars, upper-bound
+		strings.Repeat("a.b-c", 12) + "ab", // 62 chars mixing all allowed classes
+	}
+	for _, name := range valid {
+		if _, errs := v(name, "role_name"); len(errs) != 0 {
+			t.Errorf("role_name ValidateFunc should accept %q, got errors: %v", name, errs)
+		}
+	}
+
+	invalid := []string{
+		"",                      // empty, below 1
+		strings.Repeat("a", 65), // 65 chars, above 64
+		"role_name",             // underscore not allowed
+		"role name",             // space not allowed
+		"role@name",             // special char not allowed
+		"角色名",                   // non-ASCII not allowed
+		"role/name",             // slash not allowed
+		"role#name",             // hash not allowed
+	}
+	for _, name := range invalid {
+		if _, errs := v(name, "role_name"); len(errs) == 0 {
+			t.Errorf("role_name ValidateFunc should reject %q", name)
+		}
+	}
+}

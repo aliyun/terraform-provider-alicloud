@@ -67,7 +67,7 @@ The following arguments are supported:
 * `assume_role_policy_document` - (Optional, Available since v1.252.0) The trust policy that specifies one or more trusted entities to assume the RAM role. The trusted entities can be Alibaba Cloud accounts, Alibaba Cloud services, or identity providers (IdPs).
 * `description` - (Optional) The description of the RAM role. The description must be `1` to `1024` characters in length.
 * `max_session_duration` - (Optional, Int, Available since v1.105.0) The maximum session time of the RAM role. Default value: `3600`. Valid values: `3600` to `43200`.
-* `role_name` - (Optional, ForceNew, Available since v1.252.0) The name of the RAM role.
+* `role_name` - (Optional, ForceNew, Available since v1.252.0) The name of the RAM role. The name must be `1` to `64` characters in length, and can contain letters, digits, periods (.), and hyphens (-). Note: unlike `alicloud_ram_policy.policy_name`, `role_name` permits periods; `policy_name` only allows letters, digits, and hyphens.
 * `tags` - (Optional, Map, Available since v1.252.0) The list of tags for the role.
 * `force` - (Optional, Bool) Specifies whether to force delete the Role. Default value: `false`. Valid values:
   - `true`: Enable.
