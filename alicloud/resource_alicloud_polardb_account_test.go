@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -142,41 +143,25 @@ data "alicloud_polardb_node_classes" "default" {
   category   = "Normal"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
 
-locals {
-  vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids.0 : alicloud_vpc.default.id
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id  = local.vpc_id
-  zone_id = data.alicloud_polardb_node_classes.default.classes.0.zone_id
-}
-
 resource "alicloud_vswitch" "default" {
-  vpc_id       = local.vpc_id
+  vpc_id       = alicloud_vpc.default.id
   zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
   cidr_block   = "172.16.0.0/24"
   vswitch_name = var.name
 }
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : alicloud_vswitch.default.id
-}
-
 resource "alicloud_polardb_cluster" "default" {
-  db_type       = "MySQL"
-  db_version    = "8.0"
-  db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
-  pay_type      = "PostPaid"
-  vswitch_id    = local.vswitch_id
+  db_type            = "MySQL"
+  db_version         = "8.0"
+  db_node_class      = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+  pay_type           = "PostPaid"
+  vswitch_id         = alicloud_vswitch.default.id
+  encrypt_new_tables = "OFF"
 }
 `, name)
 }
@@ -356,41 +341,26 @@ data "alicloud_polardb_node_classes" "default" {
   category = "Normal"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
 
-locals {
-  vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids.0 : alicloud_vpc.default.id
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id  = local.vpc_id
-  zone_id = data.alicloud_polardb_node_classes.default.classes.0.zone_id
-}
-
 resource "alicloud_vswitch" "default" {
-  vpc_id       = local.vpc_id
+  vpc_id       = alicloud_vpc.default.id
   zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
   cidr_block   = "172.16.0.0/24"
   vswitch_name = var.name
 }
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : alicloud_vswitch.default.id
-}
-
 resource "alicloud_polardb_cluster" "default" {
-  db_version    = "14"
-  pay_type      = "PostPaid"
-  db_node_class = "polar.pg.x4.medium"
-  db_type       = "PostgreSQL"
-  vswitch_id    = local.vswitch_id
+  db_version         = "14"
+  pay_type           = "PostPaid"
+  db_node_class      = "polar.pg.x4.medium"
+  db_type            = "PostgreSQL"
+  vswitch_id         = alicloud_vswitch.default.id
+  enable_dynamodb    = true
+  encrypt_new_tables = "OFF"
 }
 
 	resource "alicloud_kms_key" "default" {
@@ -502,6 +472,86 @@ resource "alicloud_polardb_cluster" "default" {
   pay_type        = "PostPaid"
   vswitch_id      = alicloud_vswitch.default.id
   enable_dynamodb = true
+  encrypt_new_tables = "OFF"
 }
 `, name)
+}
+
+func TestAccAliCloudPolarDbAccount_passwordWo(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_polardb_account.default"
+	ra := resourceAttrInit(resourceId, AliCloudPolarDbAccountMap11819)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PolarDbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePolarDbAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tfacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPolarDbAccountBasicDependence11819)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id": "${alicloud_polardb_cluster.default.id}",
+					"account_name":  name,
+				}),
+				ExpectError: regexp.MustCompile("one\\s+of\\s+`account_password,account_password_wo,kms_encrypted_password`\\s+must\\s+be\\s+specified"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":               "${alicloud_polardb_cluster.default.id}",
+					"account_name":                name,
+					"account_password_wo":         "YourPassword123!",
+					"account_password_wo_version": 1,
+					"account_type":                "Super",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id":               CHECKSET,
+						"account_name":                name,
+						"account_type":                "Super",
+						"account_password_wo_version": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password_wo":         "YourPassword123!update",
+					"account_password_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password":            "YourPassword123!",
+					"account_password_wo":         REMOVEKEY,
+					"account_password_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password":            "YourPassword123!",
+						"account_password_wo_version": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "account_password_wo_version"},
+			},
+		},
+	})
 }

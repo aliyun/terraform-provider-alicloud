@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudPolarDbAccount() *schema.Resource {
@@ -43,9 +45,25 @@ func resourceAliCloudPolarDbAccount() *schema.Resource {
 				ForceNew: true,
 			},
 			"account_password": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"kms_encrypted_password", "account_password_wo"},
+				AtLeastOneOf:  []string{"account_password", "kms_encrypted_password", "account_password_wo"},
+			},
+			"account_password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				WriteOnly:     true,
+				ConflictsWith: []string{"account_password", "kms_encrypted_password"},
+				RequiredWith:  []string{"account_password_wo_version"},
+				AtLeastOneOf:  []string{"account_password", "kms_encrypted_password", "account_password_wo"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				RequiredWith: []string{"account_password_wo"},
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"account_password_valid_time": {
 				Type:     schema.TypeString,
@@ -72,6 +90,8 @@ func resourceAliCloudPolarDbAccount() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: kmsDiffSuppressFunc,
+				ConflictsWith:    []string{"account_password", "account_password_wo"},
+				AtLeastOneOf:     []string{"account_password", "kms_encrypted_password", "account_password_wo"},
 			},
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
@@ -115,10 +135,15 @@ func resourceAliCloudPolarDbAccountCreate(d *schema.ResourceData, meta interface
 	}
 
 	password := d.Get("account_password").(string)
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		password = woValue.AsString()
+	}
 	kmsPassword := d.Get("kms_encrypted_password").(string)
 
 	if password == "" && kmsPassword == "" {
-		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		return WrapError(Error("One of the 'account_password', 'kms_encrypted_password' and 'account_password_wo' should be set."))
 	}
 	if password != "" {
 		request["AccountPassword"] = password
@@ -292,6 +317,15 @@ func resourceAliCloudPolarDbAccountUpdate(d *schema.ResourceData, meta interface
 			return WrapError(err)
 		}
 		request["NewAccountPassword"] = decryptResp
+	}
+
+	if !d.IsNewResource() && d.HasChange("account_password_wo_version") {
+		update = true
+		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+			return WrapError(err)
+		} else if !woValue.IsNull() {
+			request["NewAccountPassword"] = woValue.AsString()
+		}
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
