@@ -42,6 +42,10 @@ func resourceAlicloudEcsDedicatedHostCluster() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -110,6 +114,7 @@ func resourceAlicloudEcsDedicatedHostClusterRead(d *schema.ResourceData, meta in
 		d.Set("tags", tagsToMap(v["Tag"]))
 	}
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	return nil
 }
 func resourceAlicloudEcsDedicatedHostClusterUpdate(d *schema.ResourceData, meta interface{}) error {
