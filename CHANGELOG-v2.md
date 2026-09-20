@@ -8,6 +8,7 @@ ENHANCEMENTS:
 - resource/alicloud_rds_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan.
 - resource/alicloud_gpdb_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan.
 - resource/alicloud_polardb_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan.
+- resource/alicloud_kvstore_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan.
 
 ## 2.0.0-beta4 (August 27, 2026)
 
