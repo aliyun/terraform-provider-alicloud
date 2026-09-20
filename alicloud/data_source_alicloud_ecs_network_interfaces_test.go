@@ -58,21 +58,21 @@ func TestAccAlicloudECSNetworkInterfacesDataSource(t *testing.T) {
 	vswitchIdConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_ecs_network_interface.default.id}"},
-			"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
+			"vswitch_id": "${alicloud_vswitch.default.id}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_ecs_network_interface.default.id}"},
-			"vswitch_id": "${data.alicloud_vswitches.default.ids.0}_fake",
+			"vswitch_id": "${alicloud_vswitch.default.id}_fake",
 		}),
 	}
 	privateIpConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_ecs_network_interface.default.id}"},
-			"private_ip": "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 100)}",
+			"private_ip": "${cidrhost(alicloud_vswitch.default.cidr_block, 100)}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_ecs_network_interface.default.id}"},
-			"private_ip": "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 101)}",
+			"private_ip": "${cidrhost(alicloud_vswitch.default.cidr_block, 101)}",
 		}),
 	}
 	securityGroupIdConf := dataSourceTestAccConfig{
@@ -93,6 +93,18 @@ func TestAccAlicloudECSNetworkInterfacesDataSource(t *testing.T) {
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":               []string{"${alicloud_ecs_network_interface.default.id}"},
 			"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake",
+		}),
+	}
+	pageNumberConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"vswitch_id":  "${alicloud_vswitch.default.id}",
+			"page_number": 1,
+			"page_size":   10,
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"vswitch_id":  "${alicloud_vswitch.default.id}",
+			"page_number": 99,
+			"page_size":   10,
 		}),
 	}
 	var existEcsNetworkInterfacesMapFunc = func(rand int) map[string]string {
@@ -144,7 +156,7 @@ func TestAccAlicloudECSNetworkInterfacesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeEcsNetworkInterfacesMapFunc,
 	}
 
-	EcsNetworkInterfacesInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, tagsConf, statusConf, vswitchIdConf, privateIpConf, securityGroupIdConf, resourceGroupIdConf)
+	EcsNetworkInterfacesInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, tagsConf, statusConf, vswitchIdConf, privateIpConf, securityGroupIdConf, resourceGroupIdConf, pageNumberConf)
 }
 
 func dataSourceEcsNetworkInterfacesDependence(name string) string {
@@ -157,19 +169,22 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
-  cidr_block = "192.168.0.0/16"
+resource "alicloud_vpc" "default" {
+  vpc_name    = var.name
+  cidr_block  = "192.168.0.0/16"
+  enable_ipv6 = true
 }
-data "alicloud_vswitches" "default" {
-  vpc_id     = data.alicloud_vpcs.default.ids.0
-  zone_id    = data.alicloud_zones.default.zones.0.id
-  cidr_block = "192.168.64.0/24"
+resource "alicloud_vswitch" "default" {
+  vpc_id               = alicloud_vpc.default.id
+  zone_id              = data.alicloud_zones.default.zones.0.id
+  cidr_block           = "192.168.64.0/24"
+  vswitch_name         = var.name
+  ipv6_cidr_block_mask = 64
 }
 
 resource "alicloud_security_group" "default" {
   name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
 }
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
@@ -177,10 +192,10 @@ data "alicloud_resource_manager_resource_groups" "default" {
 
 resource "alicloud_ecs_network_interface" "default" {
   network_interface_name = var.name
-  vswitch_id             = data.alicloud_vswitches.default.ids.0
+  vswitch_id             = alicloud_vswitch.default.id
   security_group_ids     = [alicloud_security_group.default.id]
   description            = "Basic test"
-  primary_ip_address     = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 100)
+  primary_ip_address     = cidrhost(alicloud_vswitch.default.cidr_block, 100)
   ipv6_address_count     = 1
   tags = {
     Created = "TF",
