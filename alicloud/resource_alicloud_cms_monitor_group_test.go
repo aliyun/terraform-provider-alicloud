@@ -89,7 +89,7 @@ func testSweepCmsMonitorgroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
+func TestAccAliCloudCmsMonitorGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_monitor_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
@@ -183,7 +183,7 @@ func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
+func TestAccAliCloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_monitor_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
@@ -220,7 +220,9 @@ func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"monitor_group_name": "${var.name}",
+					"resource_group_id":   "${alicloud_resource_manager_resource_group.default.id}",
+					"resource_group_name": "${alicloud_resource_manager_resource_group.default.resource_group_name}",
+					"monitor_group_name":  "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

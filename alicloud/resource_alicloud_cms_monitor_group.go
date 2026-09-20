@@ -138,6 +138,9 @@ func resourceAlicloudCmsMonitorGroupUpdate(d *schema.ResourceData, meta interfac
 	cmsService := CmsService{client}
 	var err error
 	var response map[string]interface{}
+	if !d.IsNewResource() && (d.HasChange("resource_group_id") || d.HasChange("resource_group_name")) {
+		return fmt.Errorf("changing resource_group_id/resource_group_name is not supported by CMS MonitorGroup API (resource group binding is set at creation via CreateMonitorGroupByResourceGroupId). To change the resource group binding, please recreate the resource (terraform destroy && terraform apply).")
+	}
 	d.Partial(true)
 
 	update := false
