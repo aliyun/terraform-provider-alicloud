@@ -606,7 +606,7 @@ func TestAccAliCloudEnsInstance_basic5654(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "order_detail", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "schedule_id", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
 			},
 		},
 	})
@@ -714,7 +714,7 @@ func TestAccAliCloudEnsInstance_basic5654_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "order_detail", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "schedule_id", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
 			},
 		},
 	})
@@ -846,7 +846,7 @@ func TestAccAliCloudEnsInstance_basic5657(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "order_detail", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "schedule_id", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
 			},
 		},
 	})
@@ -1102,7 +1102,7 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "order_detail", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "schedule_id", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
 			},
 		},
 	})
@@ -1220,7 +1220,7 @@ func TestAccAliCloudEnsInstance_basic5657_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "order_detail", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "schedule_id", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
 			},
 		},
 	})
@@ -1322,7 +1322,7 @@ func TestAccAliCloudEnsInstance_basic5608_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "order_detail", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "schedule_id", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
 			},
 		},
 	})
@@ -1436,7 +1436,7 @@ func TestAccAliCloudEnsInstance_basic7639(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "order_detail", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "schedule_id", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
 			},
 		},
 	})
@@ -1506,6 +1506,7 @@ func TestAccAliCloudEnsInstance_basic7627(t *testing.T) {
 					"payment_type":               "PayAsYouGo",
 					"instance_type":              "ens.pfv.cg72g2",
 					"spot_strategy":              "SpotAsPriceGo",
+					"spot_duration":              "1",
 					"password":                   "12345678abcABC",
 					"status":                     "Running",
 					"amount":                     "1",
@@ -1543,7 +1544,7 @@ func TestAccAliCloudEnsInstance_basic7627(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "order_detail", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "schedule_id", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
 			},
 		},
 	})
@@ -1730,7 +1731,7 @@ func TestAccAliCloudEnsInstance_basic5608_raw(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "order_detail", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "schedule_id", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
 			},
 		},
 	})
