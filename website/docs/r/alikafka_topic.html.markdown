@@ -78,11 +78,9 @@ resource "alicloud_alikafka_topic" "default" {
   partition_num = "18"
   configs = jsonencode(
     {
-      "message.format.version" : "2.2.0",
+      "retention.ms" : "3600000",
       "max.message.bytes" : "10485760",
-      "min.insync.replicas" : "1",
-      "replication-factor" : "2",
-      "retention.ms" : "3600000"
+      "message.timestamp.type" : "LogAppendTime"
     }
   )
   tags = {
@@ -100,7 +98,13 @@ The following arguments are supported:
 * `compact_topic` - (Optional, ForceNew, Bool) The cleanup policy for the topic. This parameter is available only if you set the storage engine of the topic to Local storage. Valid values:
   - false: The delete cleanup policy is used.
   - true: The compact cleanup policy is used.
-* `configs` - (Optional, Available since v1.262.1) The advanced configurations.
+* `configs` - (Optional, Available since v1.262.1) The advanced configurations of the topic, as a JSON encoded object. The service carries every value as a string; a value declared as a number or a boolean is compared through its literal text, so it matches the string the service reports for it. The keys the service accepts and their value ranges are defined by [UpdateTopicConfig](https://www.alibabacloud.com/help/en/apsaramq-for-kafka/cloud-message-queue-for-kafka/developer-reference/api-alikafka-2019-09-16-updatetopicconfig) and depend on the instance:
+  - Serverless instance: `retention.hours` (the retention period in hours, from `24` to `8760`), `max.message.bytes` (the maximum message size in bytes, from `1048576` to `10485760`), `message.timestamp.type` (`CreateTime` or `LogAppendTime`) and `message.timestamp.difference.max.ms` (the maximum difference allowed between the timestamp carried by a message and the time the server receives it - a message that exceeds it is rejected, and the key has no effect when `message.timestamp.type` is `LogAppendTime`).
+  - Reserved instance: only a topic that uses the Local storage engine can be configured, and the supported keys are `retention.ms` (the retention period in milliseconds, from `3600000` to `31536000000`), `max.message.bytes`, `message.timestamp.type` and `message.timestamp.difference.max.ms`.
+-> **NOTE:** The service reports the whole effective configuration of the topic, which can contain keys that were never declared in `configs` - a topic on a serverless instance reports `cloud.native.topic.type` and `replication-factor`, for example. Only the keys declared in `configs` are compared against the reported configuration, so those extra keys do not produce a diff.
+-> **NOTE:** Removing a key from `configs` neither resets it on the topic nor produces a diff, because the update merges the submitted keys and offers no way to delete or reset a single key. Set the key to the value you want instead of removing it, or recreate the topic.
+-> **NOTE:** A key that the service does not accept for the instance makes the update fail with `InvalidParameter.NotSupport`, so a configuration written for one instance type cannot be reused for the other as is - `retention.ms` and `retention.hours` in particular are not interchangeable.
+-> **NOTE:** `replication-factor` is part of the configuration reported by the service, but it is not one of the keys accepted when the topic configuration is updated - the number of replicas is only taken when the topic is created. Declaring it in `configs` therefore cannot be used to make the reported configuration match the configuration.
 * `instance_id` - (Required, ForceNew) The ID of the instance.
 * `local_topic` - (Optional, ForceNew, Bool) The storage engine of the topic. Valid values:
   - false: Cloud storage.
@@ -123,7 +127,7 @@ The following attributes are exported:
 -> **NOTE:** Available since v1.119.0.
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Topic.
+* `create` - (Defaults to 15 mins) Used when create the Topic.
 * `delete` - (Defaults to 16 mins) Used when delete the Topic.
 * `update` - (Defaults to 5 mins) Used when update the Topic.
 

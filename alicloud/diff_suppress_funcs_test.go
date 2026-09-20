@@ -4641,3 +4641,110 @@ func TestUnitCommonEsDataNodeDiskPerformanceLevelDiffSuppressFunc(t *testing.T) 
 		})
 	}
 }
+
+func TestUnitAlikafkaTopicConfigsDiffSuppressFunc(t *testing.T) {
+	// The server always reports the full effective topic config, so `old` (state) is a
+	// superset of `new` (the keys declared in HCL) whenever the instance injects defaults.
+	serverInjectedConfig := `{"cloud.native.topic.type":"true","replication-factor":"3","max.message.bytes":"1048576","retention.hours":"72"}`
+
+	testCases := []struct {
+		name        string
+		old         string
+		new         string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "ServerInjectedKeysIgnored",
+			old:         serverInjectedConfig,
+			new:         `{"max.message.bytes":"1048576","retention.hours":"72"}`,
+			expected:    true,
+			description: "keys injected by the server must not produce a diff",
+		},
+		{
+			name:        "DeclaredKeyChanged",
+			old:         serverInjectedConfig,
+			new:         `{"max.message.bytes":"10485760","retention.hours":"72"}`,
+			expected:    false,
+			description: "a real change on a declared key must still produce a diff",
+		},
+		{
+			name:        "NumberOnStateSide",
+			old:         `{"cloud.native.topic.type":"true","replication-factor":3,"retention.hours":72}`,
+			new:         `{"retention.hours":"72"}`,
+			expected:    true,
+			description: "numeric values reported by the server compare equal to their string form",
+		},
+		{
+			name:        "NumberOnConfigSide",
+			old:         serverInjectedConfig,
+			new:         `{"max.message.bytes":1048576}`,
+			expected:    true,
+			description: "jsonencode with a numeric value compares equal to the string form",
+		},
+		{
+			name:        "BoolAndStringBoolAreEqual",
+			old:         `{"cloud.native.topic.type":"true","preallocate":true}`,
+			new:         `{"preallocate":"true"}`,
+			expected:    true,
+			description: "boolean values compare equal to their string form",
+		},
+		{
+			name:        "RemovedKeyIsNotADiff",
+			old:         serverInjectedConfig,
+			new:         `{"retention.hours":"72"}`,
+			expected:    true,
+			description: "known limitation: dropping a previously declared key is suppressed because the update API only merges keys and cannot reset one",
+		},
+		{
+			name:        "NewlyDeclaredKeyIsADiff",
+			old:         `{"cloud.native.topic.type":"true","replication-factor":"3"}`,
+			new:         `{"retention.hours":"72"}`,
+			expected:    false,
+			description: "a key that the server does not report yet must produce a diff so it gets applied",
+		},
+		{
+			name:        "EmptyConfigDeclared",
+			old:         serverInjectedConfig,
+			new:         `{}`,
+			expected:    true,
+			description: "declaring an empty object enforces nothing",
+		},
+		{
+			name:        "EmptyNew",
+			old:         serverInjectedConfig,
+			new:         "",
+			expected:    true,
+			description: "an unset attribute keeps the value read back from the server",
+		},
+		{
+			name:        "EmptyOld",
+			old:         "",
+			new:         `{"retention.hours":"72"}`,
+			expected:    false,
+			description: "nothing in state yet, so the declared config must be applied",
+		},
+		{
+			name:        "InvalidNewJson",
+			old:         serverInjectedConfig,
+			new:         `{"retention.hours":`,
+			expected:    false,
+			description: "malformed config must not be suppressed",
+		},
+		{
+			name:        "InvalidOldJson",
+			old:         `not-json`,
+			new:         `{"retention.hours":"72"}`,
+			expected:    false,
+			description: "malformed state must not be suppressed",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := initTestData(t, nil)
+			result := alikafkaTopicConfigsDiffSuppressFunc("configs", tc.old, tc.new, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
