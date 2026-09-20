@@ -35,7 +35,7 @@ func resourceAliCloudGaAcl() *schema.Resource {
 			"acl_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile(`^[a-zA-Z][A-Za-z0-9._-]{2,128}$`), "The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), hyphens (-) and underscores (_). It must start with a letter."),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}0-9._-]{0,127}$`), "The name must be `1` to `128` characters in length, and can contain letters, Chinese characters, digits, periods (.), hyphens (-) and underscores (_). It must start with a letter or a Chinese character."),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
