@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -33,6 +34,14 @@ func dataSourceAlicloudAlikafkaConsumerGroups() *schema.Resource {
 			},
 			"output_file": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
 				Optional: true,
 			},
 			// Computed values
@@ -67,7 +76,11 @@ func dataSourceAlicloudAlikafkaConsumerGroups() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"tags": tagsSchema(),
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 					},
 				},
 			},
@@ -93,40 +106,62 @@ func dataSourceAlicloudAlikafkaConsumerGroupsRead(d *schema.ResourceData, meta i
 		}
 	}
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-		return alikafkaClient.GetConsumerList(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alikafka_consumer_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request.CurrentPage = requests.NewInteger(v.(int))
+	} else {
+		request.CurrentPage = requests.NewInteger(1)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*alikafka.GetConsumerListResponse)
+	pageSize := PageSizeLarge
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
+		pageSize = v.(int)
+	}
+	request.PageSize = requests.NewInteger(pageSize)
+
+	var r *regexp.Regexp
+	if v, ok := d.GetOk("consumer_id_regex"); ok && v.(string) != "" {
+		var compileErr error
+		r, compileErr = regexp.Compile(v.(string))
+		if compileErr != nil {
+			return WrapError(compileErr)
+		}
+	}
 
 	var filteredConsumerGroups []alikafka.ConsumerVO
-	nameRegex, ok := d.GetOk("consumer_id_regex")
-	for _, consumer := range response.ConsumerList.ConsumerVO {
-		var r *regexp.Regexp
-
-		if ok && nameRegex.(string) != "" {
-			if nameRegex != "" {
-				r, err = regexp.Compile(nameRegex.(string))
-				if err != nil {
-					return WrapError(err)
-				}
-			}
+	for {
+		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			return alikafkaClient.GetConsumerList(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alikafka_consumer_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*alikafka.GetConsumerListResponse)
 
-		if r != nil && !r.MatchString(consumer.ConsumerId) {
-			continue
-		}
-
-		if len(idsMap) > 0 {
-			if _, ok := idsMap[fmt.Sprint(consumer.InstanceId, ":", consumer.ConsumerId)]; !ok {
+		for _, consumer := range response.ConsumerList.ConsumerVO {
+			if r != nil && !r.MatchString(consumer.ConsumerId) {
 				continue
 			}
+
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(consumer.InstanceId, ":", consumer.ConsumerId)]; !ok {
+					continue
+				}
+			}
+
+			filteredConsumerGroups = append(filteredConsumerGroups, consumer)
 		}
 
-		filteredConsumerGroups = append(filteredConsumerGroups, consumer)
+		if isPagingRequest(d) {
+			break
+		}
+		if len(response.ConsumerList.ConsumerVO) < pageSize {
+			break
+		}
+		page, err := getNextpageNumber(request.CurrentPage)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.CurrentPage = page
 	}
 
 	return alikafkaConsumerGroupsDecriptionAttributes(d, filteredConsumerGroups, meta)

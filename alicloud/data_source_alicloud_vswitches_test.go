@@ -166,6 +166,8 @@ func TestAccAliCloudVPCVSwitchesDataSourceCoverage(t *testing.T) {
 					"vswitch_name":     "${alicloud_vswitch.default.vswitch_name}",
 					"vswitch_owner_id": 0,
 					"output_file":      "./test_output_file",
+					"page_number":      1,
+					"page_size":        10,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckExist(nil),
@@ -189,6 +191,8 @@ func TestAccAliCloudVPCVSwitchesDataSourceCoverage(t *testing.T) {
 					"vswitch_name":     "${alicloud_vswitch.default.vswitch_name}_fake",
 					"vswitch_owner_id": 1,
 					"output_file":      "./test_output_file_fake",
+					"page_number":      1,
+					"page_size":        10,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEmpty(nil),
