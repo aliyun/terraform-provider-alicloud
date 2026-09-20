@@ -343,6 +343,7 @@ var irregularProductEndpoint = map[string]string{
 	"esa":                     "esa.cn-hangzhou.aliyuncs.com",
 	"cas":                     "cas.aliyuncs.com",
 	"sas":                     "tds.aliyuncs.com",
+	"sophonsoar":              "sophonsoar.aliyuncs.com",
 	"ros":                     "ros.aliyuncs.com",
 	"eds_aic":                 "eds-aic.cn-shanghai.aliyuncs.com",
 	"alidns":                  "alidns.aliyuncs.com",
