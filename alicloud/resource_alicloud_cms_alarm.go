@@ -597,6 +597,45 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	return nil
 }
 
+// expandCmsAlarmTargets builds the Targets list sent to PutMetricRuleTargets.
+// The API marks Targets[].Id and Targets[].Arn as required, so when a targets
+// block is declared, target_id and arn must be non-empty. An empty value is
+// rejected here with a clear validation error instead of being silently sent
+// to the API, which would reject it with an opaque error. target_id and arn
+// remain Optional in the schema to avoid a breaking change (the provider's
+// BreakingChange CI gate blocks Optional->Required promotion), but the expand
+// path enforces the API contract at apply time.
+func expandCmsAlarmTargets(targetsList []interface{}) ([]map[string]interface{}, error) {
+	targetsMaps := make([]map[string]interface{}, 0)
+	for _, targets := range targetsList {
+		targetsMap := map[string]interface{}{}
+		targetsArg := targets.(map[string]interface{})
+
+		id, _ := targetsArg["target_id"].(string)
+		if id == "" {
+			return nil, fmt.Errorf("targets.target_id is required by the PutMetricRuleTargets API and must not be empty")
+		}
+		targetsMap["Id"] = id
+
+		if jsonParams, ok := targetsArg["json_params"]; ok {
+			targetsMap["JsonParams"] = jsonParams
+		}
+
+		if level, ok := targetsArg["level"]; ok {
+			targetsMap["Level"] = level
+		}
+
+		arn, _ := targetsArg["arn"].(string)
+		if arn == "" {
+			return nil, fmt.Errorf("targets.arn is required by the PutMetricRuleTargets API and must not be empty")
+		}
+		targetsMap["Arn"] = arn
+
+		targetsMaps = append(targetsMaps, targetsMap)
+	}
+	return targetsMaps, nil
+}
+
 func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
@@ -922,30 +961,10 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		update = true
 	}
 	if v, ok := d.GetOk("targets"); ok {
-		targetsMaps := make([]map[string]interface{}, 0)
-		for _, targets := range v.(*schema.Set).List() {
-			targetsMap := map[string]interface{}{}
-			targetsArg := targets.(map[string]interface{})
-
-			if id, ok := targetsArg["target_id"]; ok {
-				targetsMap["Id"] = id
-			}
-
-			if jsonParams, ok := targetsArg["json_params"]; ok {
-				targetsMap["JsonParams"] = jsonParams
-			}
-
-			if level, ok := targetsArg["level"]; ok {
-				targetsMap["Level"] = level
-			}
-
-			if arn, ok := targetsArg["arn"]; ok {
-				targetsMap["Arn"] = arn
-			}
-
-			targetsMaps = append(targetsMaps, targetsMap)
+		targetsMaps, err := expandCmsAlarmTargets(v.(*schema.Set).List())
+		if err != nil {
+			return WrapError(err)
 		}
-
 		putMetricRuleTargetsReq["Targets"] = targetsMaps
 	}
 
