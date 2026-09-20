@@ -224,9 +224,96 @@ func TestAccAliCloudECSPrefixList_basic0(t *testing.T) {
 var AlicloudECSPrefixListMap0 = map[string]string{}
 
 func AlicloudECSPrefixListBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
+}
+`, name)
+}
+
+func TestAccAliCloudECSPrefixList_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_prefix_list.default"
+	ra := resourceAttrInit(resourceId, AlicloudECSPrefixListMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsPrefixList")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testaccrecsprefixlistrg")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECSPrefixListBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_entries": "3",
+					"entry": []map[string]interface{}{
+						{
+							"description": name,
+							"cidr":        "192.168.0.0/24",
+						},
+					},
+					"address_family":    "IPv4",
+					"description":       name,
+					"prefix_list_name":  name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_entries":       "3",
+						"entry.#":           "1",
+						"address_family":    "IPv4",
+						"description":       name,
+						"prefix_list_name":  name,
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudECSPrefixListMap1 = map[string]string{}
+
+func AlicloudECSPrefixListBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
 }
 `, name)
 }
@@ -238,10 +325,11 @@ func TestUnitAlicloudECSPrefixList(t *testing.T) {
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_prefix_list"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
-		"max_entries":      3,
-		"description":      "description",
-		"prefix_list_name": "prefix_list_name",
-		"address_family":   "IPv4",
+		"max_entries":       3,
+		"description":       "description",
+		"prefix_list_name":  "prefix_list_name",
+		"address_family":    "IPv4",
+		"resource_group_id": "rg-test-id",
 		"entry": []map[string]interface{}{
 			{
 				"description": "description",
@@ -263,11 +351,12 @@ func TestUnitAlicloudECSPrefixList(t *testing.T) {
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		//DescribeEcsPrefixList
-		"MaxEntries":     3,
-		"Description":    "description",
-		"PrefixListName": "prefix_list_name",
-		"AddressFamily":  "IPv4",
-		"PrefixListId":   "PrefixListId",
+		"MaxEntries":      3,
+		"Description":     "description",
+		"PrefixListName":  "prefix_list_name",
+		"AddressFamily":   "IPv4",
+		"PrefixListId":    "PrefixListId",
+		"ResourceGroupId": "rg-test-id",
 		"Entries": []map[string]interface{}{
 			{
 				"Entry": map[string]interface{}{
