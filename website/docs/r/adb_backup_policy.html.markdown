@@ -54,11 +54,14 @@ resource "alicloud_adb_db_cluster" "cluster" {
 }
 
 resource "alicloud_adb_backup_policy" "default" {
-  db_cluster_id           = alicloud_adb_db_cluster.cluster.id
-  preferred_backup_period = ["Tuesday", "Wednesday"]
-  preferred_backup_time   = "10:00Z-11:00Z"
+  db_cluster_id               = alicloud_adb_db_cluster.cluster.id
+  preferred_backup_period     = ["Tuesday", "Wednesday"]
+  preferred_backup_time       = "10:00Z-11:00Z"
+  enable_backup_log           = "Enable"
+  log_backup_retention_period = 7
 }
 ```
+
 ### Removing alicloud_adb_cluster from your configuration
  
 The alicloud_adb_backup_policy resource allows you to manage your adb cluster policy, but Terraform cannot destroy it. Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the cluster policy. You can resume managing the cluster via the adb Console.
@@ -72,6 +75,8 @@ The following arguments are supported:
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
 * `preferred_backup_period` - (Required) ADB Cluster backup period. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday].
 * `preferred_backup_time` - (Required) ADB Cluster backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. China time is 8 hours behind it.
+* `enable_backup_log` - (Optional) Whether to enable log backup for the cluster. Valid values: `Enable`, `Disable`.
+* `log_backup_retention_period` - (Optional) The number of days for which log backup files are retained. It is only valid when `enable_backup_log` is `Enable`.
 
 ## Attributes Reference
 
@@ -79,6 +84,8 @@ The following attributes are exported:
 
 * `id` - The current backup policy resource ID. It is same as 'db_cluster_id'.
 * `backup_retention_period` - Cluster backup retention days, Fixed for 7 days, not modified.
+* `enable_backup_log` - Whether log backup is enabled for the cluster.
+* `log_backup_retention_period` - The number of days for which log backup files are retained.
 
 ## Import
 
