@@ -190,3 +190,65 @@ func TestUnitSlsWithoutEndpoint(t *testing.T) {
 		})
 	}
 }
+
+// TestUnitMirrorKvstoreEndpoint verifies that the documented
+// `endpoints.kvstore` field is mirrored into the "r_kvstore" key that
+// WithRKvstoreClient (via loadApiEndpoint("r_kvstore")) actually reads.
+// Without the mirror, a customer override set via `endpoints.kvstore` is
+// silently ignored and the location-service public endpoint is used instead.
+func TestUnitMirrorKvstoreEndpoint(t *testing.T) {
+	t.Run("kvstore set and r_kvstore unset mirrors value", func(t *testing.T) {
+		var endpoints sync.Map
+		endpoints.Store("kvstore", "r-kvstore.example.com")
+
+		MirrorKvstoreEndpoint(&endpoints)
+
+		v, ok := endpoints.Load("r_kvstore")
+		assert.True(t, ok)
+		assert.Equal(t, "r-kvstore.example.com", v)
+	})
+
+	t.Run("direct r_kvstore override keeps precedence over mirror", func(t *testing.T) {
+		var endpoints sync.Map
+		endpoints.Store("kvstore", "from-kvstore-field")
+		endpoints.Store("r_kvstore", "from-r-kvstore-field")
+
+		MirrorKvstoreEndpoint(&endpoints)
+
+		v, _ := endpoints.Load("r_kvstore")
+		assert.Equal(t, "from-r-kvstore-field", v)
+	})
+
+	t.Run("deprecated redisa fallback keeps precedence over mirror", func(t *testing.T) {
+		// deprecatedEndpointMap populates "r_kvstore" from "redisa" during
+		// provider config; the mirror must not overwrite that fallback.
+		var endpoints sync.Map
+		endpoints.Store("kvstore", "from-kvstore-field")
+		endpoints.Store("redisa", "from-redisa-field")
+		endpoints.Store("r_kvstore", "from-redisa-field")
+
+		MirrorKvstoreEndpoint(&endpoints)
+
+		v, _ := endpoints.Load("r_kvstore")
+		assert.Equal(t, "from-redisa-field", v)
+	})
+
+	t.Run("kvstore empty does not populate r_kvstore", func(t *testing.T) {
+		var endpoints sync.Map
+		endpoints.Store("kvstore", "")
+
+		MirrorKvstoreEndpoint(&endpoints)
+
+		_, ok := endpoints.Load("r_kvstore")
+		assert.False(t, ok)
+	})
+
+	t.Run("kvstore unset leaves r_kvstore untouched", func(t *testing.T) {
+		var endpoints sync.Map
+
+		MirrorKvstoreEndpoint(&endpoints)
+
+		_, ok := endpoints.Load("r_kvstore")
+		assert.False(t, ok)
+	})
+}

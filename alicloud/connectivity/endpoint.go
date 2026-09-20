@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
@@ -320,6 +321,28 @@ var productCodeToLocationCode = map[string]string{
 // Value: Field endpoints' subfield name, such as vpc, ecs, log
 var productCodeToConfigEndpoints = map[string]string{
 	"sls": "log",
+}
+
+// MirrorKvstoreEndpoint populates the "r_kvstore" endpoint key from the
+// documented "kvstore" field when "r_kvstore" is unset.
+//
+// WithRKvstoreClient resolves the R-KVStore endpoint via
+// loadApiEndpoint("r_kvstore"), which reads only the "r_kvstore" key. A
+// customer override supplied through the documented `endpoints.kvstore`
+// field is stored under the "kvstore" key and would be silently ignored
+// without this mirror, causing the location-service public endpoint to be
+// used instead. The deprecated `endpoints.redisa` fallback
+// (deprecatedEndpointMap) already populates "r_kvstore" during provider
+// configuration and keeps precedence over this mirror.
+func MirrorKvstoreEndpoint(endpoints *sync.Map) {
+	v, ok := endpoints.Load("kvstore")
+	if !ok || v.(string) == "" {
+		return
+	}
+	if rv, ok := endpoints.Load("r_kvstore"); ok && rv.(string) != "" {
+		return
+	}
+	endpoints.Store("r_kvstore", v.(string))
 }
 
 // irregularProductEndpoint specially records those product codes that
