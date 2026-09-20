@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudActiontrailGlobalEventsStorageRegion() *schema.Resource {
@@ -24,6 +25,10 @@ func resourceAlicloudActiontrailGlobalEventsStorageRegion() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				Type:     schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{
+					"ap-southeast-1",
+					"cn-hangzhou",
+				}, false),
 			},
 		},
 	}
@@ -84,6 +89,24 @@ func resourceAlicloudActiontrailGlobalEventsStorageRegionUpdate(d *schema.Resour
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		// GetGlobalEventsStorageRegion is eventually consistent: immediately after
+		// a successful UpdateGlobalEventsStorageRegion it can still report the
+		// previous StorageRegion, so poll until the API returns the newly
+		// configured region before refreshing state.
+		actiontrailService := ActiontrailService{client}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("storage_region"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, func() (interface{}, string, error) {
+			object, err := actiontrailService.DescribeActiontrailGlobalEventsStorageRegion(d.Id())
+			if err != nil {
+				if NotFoundError(err) {
+					return object, "", nil
+				}
+				return nil, "", WrapError(err)
+			}
+			return object, fmt.Sprint(object["StorageRegion"]), nil
+		})
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
