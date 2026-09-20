@@ -80,6 +80,60 @@ func resourceAliCloudConfigRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"exclude_region_ids_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"exclude_resource_group_ids_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"exclude_tags_scope": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"tag_key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"tag_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"extend_content": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_ids_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tag_key_logic_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tags_scope": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"tag_key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"tag_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			// lintignore: S006
 			"input_parameters": {
 				Type:     schema.TypeMap,
@@ -223,6 +277,35 @@ func resourceAlicloudConfigRuleCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("exclude_resource_ids_scope"); ok {
 		request["ExcludeResourceIdsScope"] = v
 	}
+	if v, ok := d.GetOk("exclude_region_ids_scope"); ok {
+		request["ExcludeRegionIdsScope"] = v
+	}
+	if v, ok := d.GetOk("exclude_resource_group_ids_scope"); ok {
+		request["ExcludeResourceGroupIdsScope"] = v
+	}
+	if v, ok := d.GetOk("exclude_tags_scope"); ok {
+		for i, dataLoop := range v.([]interface{}) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			request[fmt.Sprintf("ExcludeTagsScope.%d.TagKey", i+1)] = dataLoopTmp["tag_key"]
+			request[fmt.Sprintf("ExcludeTagsScope.%d.TagValue", i+1)] = dataLoopTmp["tag_value"]
+		}
+	}
+	if v, ok := d.GetOk("extend_content"); ok {
+		request["ExtendContent"] = v
+	}
+	if v, ok := d.GetOk("resource_ids_scope"); ok {
+		request["ResourceIdsScope"] = v
+	}
+	if v, ok := d.GetOk("tag_key_logic_scope"); ok {
+		request["TagKeyLogicScope"] = v
+	}
+	if v, ok := d.GetOk("tags_scope"); ok {
+		for i, dataLoop := range v.([]interface{}) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			request[fmt.Sprintf("TagsScope.%d.TagKey", i+1)] = dataLoopTmp["tag_key"]
+			request[fmt.Sprintf("TagsScope.%d.TagValue", i+1)] = dataLoopTmp["tag_value"]
+		}
+	}
 	if v, ok := d.GetOk("input_parameters"); ok {
 		request["InputParameters"] = convertMapToJsonStringIgnoreError(v.(map[string]interface{}))
 	}
@@ -286,6 +369,37 @@ func resourceAlicloudConfigRuleRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("create_time", objectRaw["CreateTimestamp"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("exclude_resource_ids_scope", objectRaw["ExcludeResourceIdsScope"])
+	d.Set("exclude_region_ids_scope", objectRaw["ExcludeRegionIdsScope"])
+	d.Set("exclude_resource_group_ids_scope", objectRaw["ExcludeResourceGroupIdsScope"])
+	if v, ok := objectRaw["ExcludeTagsScope"].([]interface{}); ok {
+		excludeTagsScopeList := make([]map[string]interface{}, 0)
+		for _, val := range v {
+			item := val.(map[string]interface{})
+			excludeTagsScopeList = append(excludeTagsScopeList, map[string]interface{}{
+				"tag_key":   item["TagKey"],
+				"tag_value": item["TagValue"],
+			})
+		}
+		if err := d.Set("exclude_tags_scope", excludeTagsScopeList); err != nil {
+			return WrapError(err)
+		}
+	}
+	d.Set("extend_content", objectRaw["ExtendContent"])
+	d.Set("resource_ids_scope", objectRaw["ResourceIdsScope"])
+	d.Set("tag_key_logic_scope", objectRaw["TagKeyLogicScope"])
+	if v, ok := objectRaw["TagsScope"].([]interface{}); ok {
+		tagsScopeList := make([]map[string]interface{}, 0)
+		for _, val := range v {
+			item := val.(map[string]interface{})
+			tagsScopeList = append(tagsScopeList, map[string]interface{}{
+				"tag_key":   item["TagKey"],
+				"tag_value": item["TagValue"],
+			})
+		}
+		if err := d.Set("tags_scope", tagsScopeList); err != nil {
+			return WrapError(err)
+		}
+	}
 	d.Set("input_parameters", objectRaw["InputParameters"])
 	d.Set("maximum_execution_frequency", objectRaw["MaximumExecutionFrequency"])
 	d.Set("modified_timestamp", objectRaw["ModifiedTimestamp"])
@@ -402,6 +516,52 @@ func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) 
 			request["ExcludeResourceIdsScope"] = v
 		}
 	}
+	if !d.IsNewResource() && d.HasChange("exclude_region_ids_scope") {
+		update = true
+		if v, ok := d.GetOk("exclude_region_ids_scope"); ok {
+			request["ExcludeRegionIdsScope"] = v
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("exclude_resource_group_ids_scope") {
+		update = true
+		if v, ok := d.GetOk("exclude_resource_group_ids_scope"); ok {
+			request["ExcludeResourceGroupIdsScope"] = v
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("exclude_tags_scope") {
+		update = true
+		for i, dataLoop := range d.Get("exclude_tags_scope").([]interface{}) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			request[fmt.Sprintf("ExcludeTagsScope.%d.TagKey", i+1)] = dataLoopTmp["tag_key"]
+			request[fmt.Sprintf("ExcludeTagsScope.%d.TagValue", i+1)] = dataLoopTmp["tag_value"]
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("extend_content") {
+		update = true
+		if v, ok := d.GetOk("extend_content"); ok {
+			request["ExtendContent"] = v
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("resource_ids_scope") {
+		update = true
+		if v, ok := d.GetOk("resource_ids_scope"); ok {
+			request["ResourceIdsScope"] = v
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("tag_key_logic_scope") {
+		update = true
+		if v, ok := d.GetOk("tag_key_logic_scope"); ok {
+			request["TagKeyLogicScope"] = v
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("tags_scope") {
+		update = true
+		for i, dataLoop := range d.Get("tags_scope").([]interface{}) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			request[fmt.Sprintf("TagsScope.%d.TagKey", i+1)] = dataLoopTmp["tag_key"]
+			request[fmt.Sprintf("TagsScope.%d.TagValue", i+1)] = dataLoopTmp["tag_value"]
+		}
+	}
 	if !d.IsNewResource() && d.HasChange("risk_level") {
 		update = true
 		if v, ok := d.GetOk("risk_level"); ok {
@@ -467,6 +627,13 @@ func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("region_ids_scope")
 		d.SetPartial("resource_group_ids_scope")
 		d.SetPartial("exclude_resource_ids_scope")
+		d.SetPartial("exclude_region_ids_scope")
+		d.SetPartial("exclude_resource_group_ids_scope")
+		d.SetPartial("exclude_tags_scope")
+		d.SetPartial("extend_content")
+		d.SetPartial("resource_ids_scope")
+		d.SetPartial("tag_key_logic_scope")
+		d.SetPartial("tags_scope")
 		d.SetPartial("risk_level")
 		d.SetPartial("config_rule_trigger_types")
 		d.SetPartial("input_parameters")
