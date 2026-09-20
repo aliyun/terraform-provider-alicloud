@@ -1568,3 +1568,68 @@ func (s *EnsServiceV2) EnsLoadBalancerUdpListenerStateRefreshFuncWithApi(id stri
 }
 
 // DescribeEnsLoadBalancerUdpListener >>> Encapsulated.
+
+// DescribeEnsBucketAcl <<< Encapsulated get interface for Ens BucketAcl.
+
+func (s *EnsServiceV2) DescribeEnsBucketAcl(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "GetBucketAcl"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["BucketName"] = id
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchBucket", "InvalidBucketName", "AccessDenied"}) {
+			return object, WrapErrorf(NotFoundErr("BucketAcl", id), NotFoundMsg, err)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.content.accessControlList.grant", response)
+	if err != nil || v == nil {
+		// Fallback: some responses expose the grant under the top-level
+		// "BucketAcl" key referenced by the resource mapping.
+		v, err = jsonpath.Get("$.BucketAcl", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.content.accessControlList.grant", response)
+		}
+	}
+
+	return map[string]interface{}{
+		"BucketName": id,
+		"BucketAcl":  fmt.Sprint(v),
+	}, nil
+}
+
+// DescribeEnsBucketAcl >>> Encapsulated.
+
+// EnsBucketAclStateRefreshFunc holds the state refresh func for ENS BucketAcl.
+func (s *EnsServiceV2) EnsBucketAclStateRefreshFunc(id string, failures []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEnsBucketAcl(id)
+		if err != nil {
+			if NotFoundError(err) || IsExpectedErrors(err, []string{"NoSuchBucket"}) {
+				return nil, "NotFound", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		return object, "Available", nil
+	}
+}
