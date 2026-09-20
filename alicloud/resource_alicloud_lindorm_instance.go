@@ -825,12 +825,12 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("search_engine_node_count")
 	}
 
-	if (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification")) && !d.IsNewResource() {
+	if (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification") || d.HasChange("log_num")) && !d.IsNewResource() {
 		newLindormSpec := d.Get("table_engine_specification")
 		newLindormNum := d.Get("table_engine_node_count")
 		enabled := d.Get("enabled_table_engine").(bool)
 		currentInstanceStorage := formatInt(d.Get("instance_storage"))
-		if !enabled {
+		if !enabled && (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification")) {
 			upgradeLindormInstanceTableReq := map[string]interface{}{}
 			upgradeLindormInstanceTableReq["UpgradeType"] = "open-lindorm-engine"
 			upgradeLindormInstanceTableReq["LindormSpec"] = newLindormSpec
@@ -853,8 +853,8 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		if enabled && d.HasChange("table_engine_node_count") {
-			if !d.IsNewResource() && d.HasChange("log_num") && d.HasChange("table_engine_node_count") {
+		if enabled && (d.HasChange("table_engine_node_count") || d.HasChange("log_num")) {
+			if !d.IsNewResource() && d.HasChange("log_num") {
 				upgradeLindormLogNumReq := map[string]interface{}{}
 				upgradeLindormLogNumReq["UpgradeType"] = "upgrade-lindorm-core-num"
 				upgradeLindormLogNumReq["LogNum"] = d.Get("log_num")
@@ -877,6 +877,7 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		d.SetPartial("table_engine_specification")
 		d.SetPartial("table_engine_node_count")
+		d.SetPartial("log_num")
 	}
 
 	if (d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification") || d.HasChange("time_series_engine_specification")) && !d.IsNewResource() {
