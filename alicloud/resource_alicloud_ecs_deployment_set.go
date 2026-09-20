@@ -43,6 +43,27 @@ func resourceAliCloudEcsDeploymentSet() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"CancelMembershipAndStart", "KeepStopped"}, false),
 			},
+			"group_count": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(1, 7),
+			},
+			"type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"host", "sw", "rack"}, false),
+			},
+			"affinity": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(1, 10),
+			},
 			"domain": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -87,6 +108,18 @@ func resourceAliCloudEcsDeploymentSetCreate(d *schema.ResourceData, meta interfa
 
 	if v, ok := d.GetOk("on_unable_to_redeploy_failed_instance"); ok {
 		request["OnUnableToRedeployFailedInstance"] = v
+	}
+
+	if v, ok := d.GetOk("group_count"); ok {
+		request["GroupCount"] = v
+	}
+
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
+	}
+
+	if v, ok := d.GetOk("affinity"); ok {
+		request["Affinity"] = v
 	}
 
 	if v, ok := d.GetOk("domain"); ok {
@@ -137,6 +170,13 @@ func resourceAliCloudEcsDeploymentSetRead(d *schema.ResourceData, meta interface
 	d.Set("strategy", object["DeploymentStrategy"])
 	d.Set("deployment_set_name", object["DeploymentSetName"])
 	d.Set("description", object["DeploymentSetDescription"])
+	if v, ok := object["GroupCount"]; ok && v != nil {
+		d.Set("group_count", v)
+	}
+	d.Set("type", convertEcsDeploymentSetTypeResponse(object["Type"]))
+	if v, ok := object["Affinity"]; ok && v != nil {
+		d.Set("affinity", v)
+	}
 	d.Set("domain", convertEcsDeploymentSetDomainResponse(object["Domain"]))
 	d.Set("granularity", convertEcsDeploymentSetGranularityResponse(object["Granularity"]))
 
@@ -237,6 +277,19 @@ func convertEcsDeploymentSetGranularityResponse(source interface{}) interface{} 
 	switch source {
 	case "host":
 		return "Host"
+	}
+
+	return source
+}
+
+func convertEcsDeploymentSetTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "Host":
+		return "host"
+	case "Sw":
+		return "sw"
+	case "Rack":
+		return "rack"
 	}
 
 	return source
