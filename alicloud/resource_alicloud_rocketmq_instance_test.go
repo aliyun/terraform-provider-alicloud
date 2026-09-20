@@ -43,8 +43,9 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 					"instance_name": name,
 					"product_info": []map[string]interface{}{
 						{
-							"msg_process_spec":       "rmq.p2.4xlarge",
-							"send_receive_ratio":     "0.03", // This should be out of range [0.05, 0.5] to test validation
+							"msg_process_spec": "rmq.p2.4xlarge",
+							// This value is out of range [0.05, 0.5] to test validation
+							"send_receive_ratio":     "0.03",
 							"message_retention_time": "70",
 						},
 					},
@@ -451,6 +452,19 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"software": []map[string]interface{}{
+						{},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"software.0.software_version": CHECKSET,
+						"software.0.upgrade_method":   CHECKSET,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -797,7 +811,7 @@ func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil, // bypass linter, prepaid (Subscription) resource cannot destroy
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1629,7 +1643,7 @@ func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil, // bypass linter, postpay resource cannot destroy
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

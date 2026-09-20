@@ -69,9 +69,6 @@ resource "alicloud_rocketmq_instance" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   remark            = "example"
   ip_whitelists     = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
-  software {
-    maintain_time = "02:00-06:00"
-  }
   tags = {
     Created = "TF"
     For     = "example"
@@ -95,9 +92,8 @@ resource "alicloud_rocketmq_instance" "default" {
 
 ### Deleting `alicloud_rocketmq_instance` or removing it from your configuration
 
-The `alicloud_rocketmq_instance` resource allows you to manage  `payment_type = "Subscription"`  instance, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
-You can resume managing the subscription instance via the AlibabaCloud Console.
+The `alicloud_rocketmq_instance` resource allows you to manage  `payment_type = "Subscription"`  instance.
+Destroying a subscription instance unsubscribes it through the billing API and releases it, and the unused prepaid amount is refunded. Pay-as-you-go instances are released directly through the RocketMQ API.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rocketmq_instance&spm=docs.r.rocketmq_instance.example&intl_lang=EN_US)
 
@@ -216,7 +212,7 @@ The product_info supports the following:
 ### `software`
 
 The software supports the following:
-* `maintain_time` - (Optional) Upgrade time period.
+* `maintain_time` - (Optional, Deprecated since v1.291.0) Field `maintain_time` has been deprecated from provider version 1.291.0. The GetInstance operation no longer returns this field. Although the value is still accepted on write, it cannot be read back. Manage the maintenance window of the instance in the ApsaraMQ for RocketMQ console.
 
 ## Attributes Reference
 
