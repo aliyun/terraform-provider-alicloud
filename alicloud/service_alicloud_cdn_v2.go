@@ -316,3 +316,105 @@ func (s *CdnServiceV2) CdnRealTimeLogDeliveryStateRefreshFunc(id string, field s
 }
 
 // DescribeCdnRealTimeLogDelivery >>> Encapsulated.
+
+// DescribeCdnRefreshObjectCache <<< Encapsulated get interface for Cdn RefreshObjectCache.
+func (s *CdnServiceV2) DescribeCdnRefreshObjectCache(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeRefreshTaskById"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["TaskId"] = id
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var result map[string]interface{}
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Cdn", "2018-05-10", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		// The CDN DescribeRefreshTaskById API exhibits write-after-read
+		// eventual consistency: immediately after Create returns a TaskId,
+		// the first Read can return Tasks:[] (TotalCount:0) and only ~2s
+		// later surfaces the task. Retrying on an empty result is safe here
+		// because these resources are @notDestroy (Delete is a no-op and never
+		// removes the task record), so an empty array can only mean the
+		// just-created task has not propagated yet — it cannot be a genuinely
+		// deleted resource being polled as missing.
+		v, jsonErr := jsonpath.Get("$.data.content.data[*]", response)
+		if jsonErr != nil {
+			return resource.NonRetryableError(jsonErr)
+		}
+		dataArray := convertToInterfaceArray(v)
+		if len(dataArray) == 0 {
+			wait()
+			return resource.RetryableError(NotFoundErr("RefreshObjectCache", id))
+		}
+		result = dataArray[0].(map[string]interface{})
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return result, nil
+}
+
+// DescribeCdnRefreshObjectCache >>> Encapsulated.
+
+// DescribeCdnPreloadObjectCache <<< Encapsulated get interface for Cdn PreloadObjectCache.
+func (s *CdnServiceV2) DescribeCdnPreloadObjectCache(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeRefreshTaskById"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["TaskId"] = id
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var result map[string]interface{}
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Cdn", "2018-05-10", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		// The CDN DescribeRefreshTaskById API exhibits write-after-read
+		// eventual consistency: immediately after Create returns a TaskId,
+		// the first Read can return Tasks:[] (TotalCount:0) and only ~2s
+		// later surfaces the task. Retrying on an empty result is safe here
+		// because these resources are @notDestroy (Delete is a no-op and never
+		// removes the task record), so an empty array can only mean the
+		// just-created task has not propagated yet — it cannot be a genuinely
+		// deleted resource being polled as missing.
+		v, jsonErr := jsonpath.Get("$.data.content.data[*]", response)
+		if jsonErr != nil {
+			return resource.NonRetryableError(jsonErr)
+		}
+		dataArray := convertToInterfaceArray(v)
+		if len(dataArray) == 0 {
+			wait()
+			return resource.RetryableError(NotFoundErr("PreloadObjectCache", id))
+		}
+		result = dataArray[0].(map[string]interface{})
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return result, nil
+}
+
+// DescribeCdnPreloadObjectCache >>> Encapsulated.
