@@ -41,9 +41,18 @@ resource "alicloud_cloud_firewall_instance_v2" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `account_number` - (Optional, Int) The number of managed sub-accounts when multi-account management is enabled. Valid values: 1 to 1000. **NOTE:** `account_number` takes effect only when `cfw_account` is set to `true`.
+* `auto_asset_protection` - (Optional) Whether to automatically protect new assets. Valid values: `true`, `false`.
+* `band_width` - (Optional, Int) The bandwidth. Valid values: 10 to 15000.
+* `cfw_account` - (Optional, Bool) Whether to enable multi-account management.
 * `cfw_log` - (Optional, Bool) Whether to use log audit. Valid values:
   - `true`: Enabled.
   - `false`: Disabled.
+* `cfw_log_storage` - (Optional, Int) The log storage size. Valid values: 1000 to 500000. **NOTE:** `cfw_log_storage` takes effect only when `cfw_log` is set to `true` and `payment_type` is `Subscription`.
+* `fw_vpc_number` - (Optional, Int, Computed) The number of protected VPCs. Valid values: 2 to 500. **NOTE:** `fw_vpc_number` is not supported by `premium_version`.
+* `instance_count` - (Optional, Int) The number of instances. Valid values: 5 to 5000.
+* `ip_number` - (Optional, Int, Computed) The number of protected public IPs. Valid values: 20 to 4000.
+* `logistics` - (Optional) The logistics information, in JSON format. **Note: The parameter is immutable after resource creation.**
 * `modify_type` - (Optional) The type of modification. Valid values: `Upgrade`, `Downgrade`. **NOTE:** The `modify_type` is required when you execute an update operation.
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`.
 * `period` - (Optional) The prepaid period. **NOTE:** If `payment_type` is set to `Subscription`, `period` is required.

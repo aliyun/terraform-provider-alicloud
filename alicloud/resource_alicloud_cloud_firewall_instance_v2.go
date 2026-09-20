@@ -26,10 +26,46 @@ func resourceAliCloudCloudFirewallInstanceV2() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"account_number": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(1, 1000),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("cfw_account"); ok && v.(bool) {
+						return false
+					}
+					return true
+				},
+			},
+			"auto_asset_protection": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"band_width": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(10, 15000),
+			},
+			"cfw_account": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"cfw_log": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
+			},
+			"cfw_log_storage": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(1000, 500000),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("cfw_log"); ok && v.(bool) && d.Get("payment_type").(string) == "Subscription" {
+						return false
+					}
+					return true
+				},
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -38,6 +74,33 @@ func resourceAliCloudCloudFirewallInstanceV2() *schema.Resource {
 			"end_time": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"fw_vpc_number": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(2, 500),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("spec"); ok && v.(string) == "premium_version" {
+						return true
+					}
+					return false
+				},
+			},
+			"instance_count": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(5, 5000),
+			},
+			"ip_number": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(20, 4000),
+			},
+			"logistics": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"modify_type": {
 				Type:         schema.TypeString,
@@ -91,7 +154,6 @@ func resourceAliCloudCloudFirewallInstanceV2() *schema.Resource {
 			"spec": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"payg_version", "premium_version", "enterprise_version", "ultimate_version"}, false),
 			},
 			"status": {
@@ -152,11 +214,63 @@ func resourceAliCloudCloudFirewallInstanceV2Create(d *schema.ResourceData, meta 
 			})
 		}
 	}
+	if v, ok := d.GetOk("ip_number"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "IpNumber",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("band_width"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "BandWidth",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("cfw_log_storage"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "CfwLogStorage",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOkExists("cfw_account"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "CfwAccount",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOkExists("account_number"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "CfwAccountNum",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("fw_vpc_number"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "FwVpcNumber",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("instance_count"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "InstanceCount",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("auto_asset_protection"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "AutoAssetProtection",
+			"Value": v,
+		})
+	}
 	request["Parameter"] = parameterMapList
 
 	request["ProductCode"] = d.Get("product_code")
 	request["SubscriptionType"] = d.Get("payment_type")
 	request["ProductType"] = d.Get("product_type")
+
+	if v, ok := d.GetOk("logistics"); ok {
+		request["Logistics"] = v
+	}
 
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request["RenewalStatus"] = v
@@ -178,6 +292,14 @@ func resourceAliCloudCloudFirewallInstanceV2Create(d *schema.ResourceData, meta 
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable", NotFoundArticle}) {
 				endpoint = connectivity.BssOpenAPIEndpointInternational
+				if _, ok := d.GetOkExists("account_number"); ok {
+					for _, v := range parameterMapList {
+						if fmt.Sprint(v["Code"]) == "CfwAccountNum" {
+							v["Code"] = "CfwAccountIntlNum"
+						}
+					}
+					request["Parameter"] = parameterMapList
+				}
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -236,6 +358,31 @@ func resourceAliCloudCloudFirewallInstanceV2Read(d *schema.ResourceData, meta in
 	d.Set("spec", convertCloudFirewallInstanceVersionResponse(objectRaw["Version"]))
 	d.Set("status", objectRaw["InstanceStatus"])
 	d.Set("user_status", fmt.Sprint(objectRaw["UserStatus"]))
+	// DescribeUserBuyVersion reports the purchased spec counts (IpNumber /
+	// VpcNumber / LogStorage) as 0 for Subscription instances even when
+	// InstanceStatus is normal, while PayAsYouGo returns the real values.
+	// Overwriting the user-configured counts with 0 produces a spurious diff
+	// on every plan, so these fields are only set when the API reports a
+	// non-zero value. Drift detection for these counts is therefore limited to
+	// instances where the API actually surfaces the value.
+	if v := objectRaw["LogStorage"]; v != nil && fmt.Sprint(v) != "0" {
+		d.Set("cfw_log_storage", v)
+	}
+	if v := objectRaw["VpcNumber"]; v != nil && fmt.Sprint(v) != "0" {
+		d.Set("fw_vpc_number", v)
+	}
+	if v := objectRaw["IpNumber"]; v != nil && fmt.Sprint(v) != "0" {
+		d.Set("ip_number", v)
+	}
+
+	assetStatistic, err := cloudFirewallServiceV2.DescribeInstanceDescribeAssetStatistic(d.Id())
+	if err != nil {
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+	} else {
+		d.Set("auto_asset_protection", fmt.Sprint(assetStatistic["AutoResourceEnable"]))
+	}
 
 	return nil
 }
@@ -311,12 +458,104 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 
 	parameterMapList := make([]map[string]interface{}, 0)
 
+	// Append every order Parameter that has a value so ModifyInstance receives
+	// the complete component list; HasChange only gates the update trigger.
+	// Sending the full set (including unchanged specs) is required for BssOpenApi
+	// ModifyInstance to accept the Upgrade/Downgrade without
+	// UPDOWNGRADE_CONFIG_NO_CHANGE.
+	if !d.IsNewResource() && d.HasChange("cfw_account") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("cfw_account"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "CfwAccount",
+			"Value": v,
+		})
+	}
+
+	if !d.IsNewResource() && d.HasChange("account_number") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("account_number"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "CfwAccountNum",
+			"Value": v,
+		})
+	}
+
+	if !d.IsNewResource() && d.HasChange("fw_vpc_number") {
+		update = true
+	}
+	if v, ok := d.GetOk("fw_vpc_number"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "FwVpcNumber",
+			"Value": v,
+		})
+	}
+
+	if !d.IsNewResource() && d.HasChange("ip_number") {
+		update = true
+	}
+	if v, ok := d.GetOk("ip_number"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "IpNumber",
+			"Value": v,
+		})
+	}
+
 	if !d.IsNewResource() && d.HasChange("cfw_log") {
 		update = true
 	}
 	if v, ok := d.GetOkExists("cfw_log"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "CfwLog",
+			"Value": v,
+		})
+	}
+
+	if !d.IsNewResource() && d.HasChange("cfw_log_storage") {
+		update = true
+	}
+	if v, ok := d.GetOk("cfw_log_storage"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "CfwLogStorage",
+			"Value": v,
+		})
+	}
+
+	if !d.IsNewResource() && d.HasChange("band_width") {
+		update = true
+	}
+	if v, ok := d.GetOk("band_width"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "BandWidth",
+			"Value": v,
+		})
+	}
+
+	if !d.IsNewResource() && d.HasChange("spec") {
+		update = true
+	}
+	if v, ok := d.GetOk("spec"); ok {
+		if d.Get("payment_type").(string) == "PayAsYouGo" {
+			parameterMapList = append(parameterMapList, map[string]interface{}{
+				"Code":  "spec",
+				"Value": convertCloudFirewallInstanceSpecRequest(v),
+			})
+		} else {
+			parameterMapList = append(parameterMapList, map[string]interface{}{
+				"Code":  "cfw_spec",
+				"Value": convertCloudFirewallInstanceSpecRequest(v),
+			})
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("instance_count") {
+		update = true
+	}
+	if v, ok := d.GetOk("instance_count"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "InstanceCount",
 			"Value": v,
 		})
 	}
@@ -334,6 +573,14 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 				}
 				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					endpoint = connectivity.BssOpenAPIEndpointInternational
+					if _, ok := d.GetOkExists("account_number"); ok {
+						for _, v := range parameterMapList {
+							if fmt.Sprint(v["Code"]) == "CfwAccountNum" {
+								v["Code"] = "CfwAccountIntlNum"
+							}
+						}
+						request["Parameter"] = parameterMapList
+					}
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -418,17 +665,111 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 		}
 	}
 
+	update = false
+	setAutoProtectNewAssetsRequest := make(map[string]interface{})
+	setAutoProtectNewAssetsQuery := make(map[string]interface{})
+
+	if !d.IsNewResource() && d.HasChange("auto_asset_protection") {
+		update = true
+	}
+	setAutoProtectNewAssetsRequest["AutoProtect"] = d.Get("auto_asset_protection")
+
+	if update {
+		action := "SetAutoProtectNewAssets"
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Cloudfw", "2017-12-07", action, setAutoProtectNewAssetsQuery, setAutoProtectNewAssetsRequest, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, setAutoProtectNewAssetsRequest)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("auto_asset_protection")
+	}
+
 	d.Partial(false)
 	return resourceAliCloudCloudFirewallInstanceV2Read(d, meta)
 }
 
 func resourceAliCloudCloudFirewallInstanceV2Delete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
 	if d.Get("payment_type").(string) == "Subscription" {
-		log.Printf("[WARN] Cannot destroy resourceAliCloudCloudFirewallInstance. Terraform will remove this resource from the state file, however resources may remain.")
+		// Prepaid (Subscription) Cloud Firewall instances cannot be released
+		// through Cloudfw ReleasePostInstance; unsubscribe them via BssOpenApi
+		// RefundInstance so that no cloud resource is left behind on destroy.
+		action := "RefundInstance"
+		request := map[string]interface{}{
+			"InstanceId":         d.Id(),
+			"ClientToken":        buildClientToken(action),
+			"ImmediatelyRelease": "1",
+			"ProductCode":        "vipcloudfw",
+			"ProductType":        "vipcloudfw",
+		}
+		if client.IsInternationalAccount() {
+			request["ProductCode"] = "cfw"
+			request["ProductType"] = "cfw_pre_intl"
+		}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		var response map[string]interface{}
+		var err error
+		var endpoint string
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					request["ProductCode"] = "cfw"
+					request["ProductType"] = "cfw_pre_intl"
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ResourceNotExists"}) || NotFoundError(err) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		bssOpenApiService := BssOpenApiService{client}
+		bssWait := incrementalWait(10*time.Second, 10*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			_, err = bssOpenApiService.QueryAvailableInstance(d.Id())
+			if err != nil {
+				if NotFoundError(err) {
+					return nil
+				}
+				if NeedRetry(err) {
+					bssWait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			bssWait()
+			return resource.RetryableError(fmt.Errorf("Cloud Firewall instance %s still exists", d.Id()))
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForRefundInstance", AlibabaCloudSdkGoERROR)
+		}
 		return nil
 	}
 
-	client := meta.(*connectivity.AliyunClient)
 	enableDelete := false
 	if v, ok := d.GetOkExists("payment_type"); ok {
 		if InArray(fmt.Sprint(v), []string{"PayAsYouGo"}) {
