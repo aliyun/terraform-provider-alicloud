@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudThreatDetectionWebLockConfig_basic1875(t *testing.T) {
+func TestAccAliCloudThreatDetectionWebLockConfig_basic1875(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_web_lock_config.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionWebLockConfigMap1875)
@@ -33,27 +33,36 @@ func TestAccAlicloudThreatDetectionWebLockConfig_basic1875(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"inclusive_file_type": "php;jsp;asp;aspx;js;cgi;html;htm;xml;shtml;shtm;jpg",
+					"inclusive_file":      "/tmp/include.txt",
+					"lang":                "zh",
 					"uuid":                "${data.alicloud_threat_detection_assets.default.ids.0}",
 					"mode":                "whitelist",
 					"local_backup_dir":    "/usr/local/aegis/bak",
 					"dir":                 "/tmp/",
 					"defence_mode":        "audit",
+					"exclusive_dir":       "",
+					"exclusive_file":      "",
+					"exclusive_file_type": "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"inclusive_file_type": "php;jsp;asp;aspx;js;cgi;html;htm;xml;shtml;shtm;jpg",
+						"inclusive_file":      "/tmp/include.txt",
 						"uuid":                CHECKSET,
 						"mode":                "whitelist",
 						"local_backup_dir":    "/usr/local/aegis/bak",
 						"dir":                 "/tmp/",
 						"defence_mode":        "audit",
+						"exclusive_dir":       "",
+						"exclusive_file":      "",
+						"exclusive_file_type": "",
 					}),
 				),
 			}, {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"lang"},
 			},
 		},
 	})

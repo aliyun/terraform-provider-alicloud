@@ -46,6 +46,11 @@ func resourceAlicloudThreatDetectionWebLockConfig() *schema.Resource {
 				ForceNew: true,
 				Type:     schema.TypeString,
 			},
+			"inclusive_file": {
+				Optional: true,
+				ForceNew: true,
+				Type:     schema.TypeString,
+			},
 			"inclusive_file_type": {
 				Optional: true,
 				ForceNew: true,
@@ -53,6 +58,12 @@ func resourceAlicloudThreatDetectionWebLockConfig() *schema.Resource {
 			},
 			"local_backup_dir": {
 				Required: true,
+				ForceNew: true,
+				Type:     schema.TypeString,
+			},
+			"lang": {
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 				Type:     schema.TypeString,
 			},
@@ -88,15 +99,21 @@ func resourceAlicloudThreatDetectionWebLockConfigCreate(d *schema.ResourceData, 
 	if v, ok := d.GetOk("exclusive_file_type"); ok {
 		request["ExclusiveFileType"] = v
 	}
+	if v, ok := d.GetOk("inclusive_file"); ok {
+		request["InclusiveFile"] = v
+	}
 	if v, ok := d.GetOk("inclusive_file_type"); ok {
 		request["InclusiveFileType"] = v
+	}
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
 	}
 	request["LocalBackupDir"] = d.Get("local_backup_dir")
 	request["Mode"] = d.Get("mode")
 	request["Uuid"] = d.Get("uuid")
 
 	var response map[string]interface{}
-	action := "ModifyWebLockStart"
+	action := "ModifyWebLockCreateConfig"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, false)
@@ -139,6 +156,7 @@ func resourceAlicloudThreatDetectionWebLockConfigRead(d *schema.ResourceData, me
 	d.Set("exclusive_dir", object["ExclusiveDir"])
 	d.Set("exclusive_file", object["ExclusiveFile"])
 	d.Set("exclusive_file_type", object["ExclusiveFileType"])
+	d.Set("inclusive_file", object["InclusiveFile"])
 	d.Set("inclusive_file_type", object["InclusiveFileType"])
 	d.Set("local_backup_dir", object["LocalBackupDir"])
 	d.Set("mode", object["Mode"])
