@@ -58,7 +58,7 @@ The following arguments are supported:
 
 * `rule_name` - (Required, ForceNew) The name of the event-triggered alert rule.
 * `group_id` - (Optional) The ID of the application group to which the event-triggered alert rule belongs.
-* `silence_time` - (Optional, Int) The silence time.
+* `silence_time` - (Optional, Int) The silence time in seconds.
 * `description` - (Optional) The description of the event-triggered alert rule.
 * `status` - (Optional) The status of the resource. Valid values: `ENABLED`, `DISABLED`.
 * `event_pattern` - (Required, Set) Event mode, used to describe the trigger conditions for this event. See [`event_pattern`](#event_pattern) below.
@@ -93,7 +93,10 @@ The contact_parameters supports the following:
 
 * `contact_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
 * `contact_group_name` (Optional) The name of the alert contact group.
-* `level` (Optional) The alert level and the corresponding notification methods.
+* `level` (Optional) The alert level and the corresponding notification methods. Valid values:
+  - `2`: notify by phone, SMS, DingTalk, and email.
+  - `3`: notify by SMS, DingTalk, and email.
+  - `4`: notify by DingTalk and email. International or partner accounts only support this level.
 
 ### `webhook_parameters`
 
