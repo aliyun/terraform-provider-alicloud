@@ -486,8 +486,9 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 													ValidateFunc: IntBetween(1, 5000),
 												},
 												"min_adjustment_value": {
-													Type:     schema.TypeInt,
-													Optional: true,
+													Type:         schema.TypeInt,
+													Optional:     true,
+													ValidateFunc: IntAtLeast(1),
 												},
 												"time_trigger": {
 													Type:     schema.TypeList,
@@ -2514,8 +2515,14 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					}
 					nodeGroupParam["PrivatePoolOptions"] = privatePoolOptions
 				}
+				// AutoScalingPolicy is documented as part of NodeGroupConfig, but passing it inline
+				// makes CreateNodeGroup fail with "[InvalidParameter] Invalid parameter:
+				// [nodeGroupId not exist]" even when the policy itself is valid (RequestId
+				// 019FCFB0-9204-5CBF-867E-EF50BF6A69D7). Attach it with PutAutoScalingPolicy once
+				// the node group exists, which is the same call the update path already uses.
+				var newNodeGroupScalingPolicy map[string]interface{}
 				if value, exists := newNodeGroup["auto_scaling_policy"]; exists && len(value.([]interface{})) > 0 {
-					nodeGroupParam["AutoScalingPolicy"] = adaptAutoScalingPolicyRequest(value.([]interface{})[0].(map[string]interface{}))
+					newNodeGroupScalingPolicy = adaptAutoScalingPolicyRequest(value.([]interface{})[0].(map[string]interface{}))
 				}
 				if value, exists := newNodeGroup["deployment_set_strategy"]; exists && value.(string) != "" {
 					nodeGroupParam["DeploymentSetStrategy"] = value.(string)
@@ -2630,6 +2637,39 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 				}
 
 				nodeGroupId := resp.([]interface{})[0].(map[string]interface{})["NodeGroupId"].(string)
+
+				if newNodeGroupScalingPolicy != nil {
+					// Normalise the top level keys the same way the existing PutAutoScalingPolicy
+					// update path does, so both callers send an identical payload shape.
+					if aspValue, aspExists := newNodeGroupScalingPolicy["scalingRules"]; aspExists {
+						newNodeGroupScalingPolicy["ScalingRules"] = aspValue
+						delete(newNodeGroupScalingPolicy, "scalingRules")
+					}
+					if aspValue, aspExists := newNodeGroupScalingPolicy["constraints"]; aspExists {
+						newNodeGroupScalingPolicy["Constraints"] = aspValue
+						delete(newNodeGroupScalingPolicy, "constraints")
+					}
+					newNodeGroupScalingPolicy["RegionId"] = client.RegionId
+					newNodeGroupScalingPolicy["ClusterId"] = d.Id()
+					newNodeGroupScalingPolicy["NodeGroupId"] = nodeGroupId
+
+					action = "PutAutoScalingPolicy"
+					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+						response, err = client.RpcPost("Emr", "2021-03-20", action, nil, newNodeGroupScalingPolicy, false)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, newNodeGroupScalingPolicy)
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+				}
 
 				newNodeCount := formatInt(newNodeGroup["node_count"])
 				if newNodeCount > 0 {
@@ -3208,7 +3248,7 @@ func adaptAutoScalingPolicyRequest(r map[string]interface{}) map[string]interfac
 			if scalingRuleValue, scalingRuleExists := scalingRuleMap["adjustment_value"]; scalingRuleExists {
 				scalingRule["AdjustmentValue"] = scalingRuleValue
 			}
-			if scalingRuleValue, scalingRuleExists := scalingRuleMap["min_adjustment_value"]; scalingRuleExists {
+			if scalingRuleValue, scalingRuleExists := scalingRuleMap["min_adjustment_value"]; scalingRuleExists && scalingRuleValue.(int) != 0 {
 				scalingRule["MinAdjustmentValue"] = scalingRuleValue
 			}
 			if scalingRuleValue, scalingRuleExists := scalingRuleMap["time_trigger"]; scalingRuleExists {
