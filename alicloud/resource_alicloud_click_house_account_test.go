@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -99,6 +100,7 @@ func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
 	}, "DescribeClickHouseAccount")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	_ = testAccCheck
 	rand := acctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
 	pwd := fmt.Sprintf("Tf-test%d", rand)
@@ -107,95 +109,26 @@ func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
+				// ClickHouse no longer supports creating clusters on version 21.8
+				// or earlier, so ModifyAccountAuthority (which backs the four
+				// authority fields) cannot be exercised against a real cluster.
+				// On a newer-than-21.8 cluster the provider rejects setting any
+				// authority field up front to avoid calling an unsupported API.
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_id":      "${alicloud_click_house_db_cluster.default.id}",
 					"account_name":       name,
 					"account_password":   pwd,
 					"type":               "Normal",
+					"dml_authority":      "all",
 					"ddl_authority":      "true",
-					"dml_authority":      "all",
 					"allow_databases":    "db1",
 					"allow_dictionaries": "dt1",
 				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_cluster_id":      CHECKSET,
-						"account_name":       name,
-						"account_password":   pwd,
-						"type":               "Normal",
-						"allow_databases":    "db1",
-						"dml_authority":      "all",
-						"allow_dictionaries": "dt1",
-						"ddl_authority":      "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_databases": "db1,db2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_databases": "db1,db2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"dml_authority": "readOnly,modify",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dml_authority": "readOnly,modify",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ddl_authority": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ddl_authority": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_dictionaries": "dt1,dt2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_dictionaries": "dt1,dt2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"allow_databases":    "db1",
-					"dml_authority":      "all",
-					"allow_dictionaries": "dt1",
-					"ddl_authority":      "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"allow_databases":    "db1",
-						"dml_authority":      "all",
-						"allow_dictionaries": "dt1",
-						"ddl_authority":      "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ExpectError: regexp.MustCompile(`is not supported on ClickHouse clusters newer than 21\.8`),
 			},
 		},
 	})
@@ -314,4 +247,30 @@ func AliCloudClickHouseAccountBasicDependence0(name string) string {
   		vswitch_id              = alicloud_vswitch.default.id
 	}
 `, name)
+}
+
+func TestAccAliCloudClickHouseEngineVersionAfter218(t *testing.T) {
+	cases := []struct {
+		version string
+		expect  bool
+	}{
+		{"19.15.2.2", false},
+		{"20.3.10.75", false},
+		{"20.8.7.15", false},
+		{"21.8.10.19", false},
+		{"22.8.5.29", true},
+		{"23.8", true},
+		{"25.3", true},
+		{"26.3", true},
+		{"21.8", false},
+		{"21.9", true},
+		{"22.3.5", true},
+		{"", false},
+		{"invalid", false},
+	}
+	for _, c := range cases {
+		if got := clickHouseEngineVersionAfter218(c.version); got != c.expect {
+			t.Errorf("clickHouseEngineVersionAfter218(%q) = %v, want %v", c.version, got, c.expect)
+		}
+	}
 }

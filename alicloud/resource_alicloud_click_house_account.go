@@ -4,12 +4,35 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
+
+// clickHouseEngineVersionAfter218 reports whether the given ClickHouse cluster
+// EngineVersion (e.g. "21.8.10.19", "22.8.5.29") is strictly greater than 21.8.
+// ModifyAccountAuthority only applies to 21.8 and earlier cluster versions, so
+// the authority fields (dml_authority, ddl_authority, allow_databases and
+// allow_dictionaries) must not be sent to clusters newer than 21.8.
+func clickHouseEngineVersionAfter218(engineVersion string) bool {
+	parts := strings.Split(engineVersion, ".")
+	if len(parts) < 2 {
+		return false
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return false
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return false
+	}
+	return major > 21 || (major == 21 && minor > 8)
+}
 
 func resourceAlicloudClickHouseAccount() *schema.Resource {
 	return &schema.Resource{
@@ -61,16 +84,19 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"all", "readOnly,modify"}, false),
+				Deprecated:   "Field 'dml_authority' has been deprecated from version 1.290.0. ClickHouse clusters newer than 21.8 no longer support ModifyAccountAuthority; use the SQL account authority model instead.",
 			},
 			"ddl_authority": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'ddl_authority' has been deprecated from version 1.290.0. ClickHouse clusters newer than 21.8 no longer support ModifyAccountAuthority; use the SQL account authority model instead.",
 			},
 			"allow_databases": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'allow_databases' has been deprecated from version 1.290.0. ClickHouse clusters newer than 21.8 no longer support ModifyAccountAuthority; use the SQL account authority model instead.",
 			},
 			"total_databases": {
 				Type:       schema.TypeString,
@@ -79,9 +105,10 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Deprecated: "Field 'total_databases' has been deprecated from version 1.223.1 and it will be removed in the future version.",
 			},
 			"allow_dictionaries": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'allow_dictionaries' has been deprecated from version 1.290.0. ClickHouse clusters newer than 21.8 no longer support ModifyAccountAuthority; use the SQL account authority model instead.",
 			},
 			"total_dictionaries": {
 				Type:       schema.TypeString,
@@ -95,17 +122,46 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 
 func resourceAlicloudClickHouseAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	clickhouseService := ClickhouseService{client}
 	var response map[string]interface{}
+	var err error
+
+	dbClusterId := d.Get("db_cluster_id").(string)
+	// DescribeDBClusterAttribute 读取集群 EngineVersion，用于按版本兼容切换
+	// CreateAccount/CreateSQLAccount 以及权限字段防写。
+	cluster, err := clickhouseService.DescribeClickHouseDbCluster(dbClusterId)
+	if err != nil {
+		return WrapError(err)
+	}
+	engineVersion, _ := cluster["EngineVersion"].(string)
+	after218 := clickHouseEngineVersionAfter218(engineVersion)
+
+	// ModifyAccountAuthority 仅适用于 21.8 及以下集群；高版本集群设置权限字段前置报错防写。
+	if after218 {
+		for _, field := range []string{"dml_authority", "ddl_authority", "allow_databases", "allow_dictionaries"} {
+			var set bool
+			if field == "ddl_authority" {
+				_, set = d.GetOkExists(field)
+			} else {
+				_, set = d.GetOk(field)
+			}
+			if set {
+				return WrapError(fmt.Errorf("setting %s is not supported on ClickHouse clusters newer than 21.8 (EngineVersion %q); ModifyAccountAuthority only applies to 21.8 and earlier versions", field, engineVersion))
+			}
+		}
+	}
+
 	action := "CreateAccount"
 	request := make(map[string]interface{})
-	var err error
 	if v, ok := d.GetOk("account_description"); ok {
 		request["AccountDescription"] = v
 	}
 	request["AccountName"] = d.Get("account_name")
 	request["AccountPassword"] = d.Get("account_password")
-	request["DBClusterId"] = d.Get("db_cluster_id")
-	if d.Get("type") == "Super" {
+	request["DBClusterId"] = dbClusterId
+	// 21.8 以上集群用 CreateSQLAccount 创建账号（Normal 与 Super 均走该 API）；
+	// 21.8 及以下维持原逻辑：Super 走 CreateSQLAccount，Normal 走 CreateAccount。
+	if after218 || d.Get("type") == "Super" {
 		action = "CreateSQLAccount"
 		request["AccountType"] = d.Get("type")
 	}
@@ -168,6 +224,7 @@ func resourceAlicloudClickHouseAccountRead(d *schema.ResourceData, meta interfac
 }
 func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	clickhouseService := ClickhouseService{client}
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -242,6 +299,18 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 		"DBClusterId": parts[0],
 	}
 	request["RegionId"] = client.RegionId
+	// 权限字段(dml_authority/ddl_authority/allow_databases/allow_dictionaries)变更前
+	// 确认集群版本，ModifyAccountAuthority 仅适用于 21.8 及以下集群，>21.8 前置报错防写。
+	if d.HasChange("dml_authority") || d.HasChange("ddl_authority") || d.HasChange("allow_databases") || d.HasChange("allow_dictionaries") {
+		cluster, err := clickhouseService.DescribeClickHouseDbCluster(parts[0])
+		if err != nil {
+			return WrapError(err)
+		}
+		engineVersion, _ := cluster["EngineVersion"].(string)
+		if clickHouseEngineVersionAfter218(engineVersion) {
+			return WrapError(fmt.Errorf("modifying account authority is not supported on ClickHouse clusters newer than 21.8 (EngineVersion %q); ModifyAccountAuthority only applies to 21.8 and earlier versions", engineVersion))
+		}
+	}
 	if d.HasChange("dml_authority") {
 		update = true
 	}
@@ -326,7 +395,12 @@ func resourceAlicloudClickHouseAccountDelete(d *schema.ResourceData, meta interf
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
+			// InstanceConnectFailed is a transient backend-side failure to reach
+			// the ClickHouse node (HTTP 400 with a connectivity message). It is
+			// not a validation error and typically clears on its own, so retry
+			// it like the account/instance-state errors above instead of
+			// surfacing it to the user on the first attempt.
+			if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState", "InstanceConnectFailed"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

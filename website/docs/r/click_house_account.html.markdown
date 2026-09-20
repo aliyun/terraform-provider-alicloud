@@ -81,13 +81,14 @@ The following arguments are supported:
 * `account_password` - (Required) The account password: uppercase letters, lowercase letters, lowercase letters, numbers, and special characters (special character! #$%^& author (s):_+-=) in a length of 8-32 bit.
 * `db_cluster_id` - (Required, ForceNew) The db cluster id.
 * `type` - (Optional, ForceNew) The type of the database account. Valid values: `Normal` or `Super`.
-* `dml_authority` - (Optional, Available since v1.163.0) Specifies whether to grant DML permissions to the database account. Valid values: `all` and `readOnly,modify`.
-* `ddl_authority` - (Optional, Available since v1.163.0) Specifies whether to grant DDL permissions to the database account. Valid values: `true` and `false`.
+* `dml_authority` - (Optional, Deprecated since v1.290.0) Specifies whether to grant DML permissions to the database account. Valid values: `all` and `readOnly,modify`. Field 'dml_authority' has been deprecated from provider version 1.290.0. ClickHouse clusters newer than 21.8 no longer support ModifyAccountAuthority; use the SQL account authority model instead.
+* `ddl_authority` - (Optional, Deprecated since v1.290.0) Specifies whether to grant DDL permissions to the database account. Valid values: `true` and `false`.
   -`true`: grants DDL permissions to the database account.
   -`false`: does not grant DDL permissions to the database account.
-* `allow_databases` - (Optional, Available since v1.163.0) The list of databases to which you want to grant permissions. Separate databases with commas (,).
+  Field 'ddl_authority' has been deprecated from provider version 1.290.0. ClickHouse clusters newer than 21.8 no longer support ModifyAccountAuthority; use the SQL account authority model instead.
+* `allow_databases` - (Optional, Deprecated since v1.290.0) The list of databases to which you want to grant permissions. Separate databases with commas (,). Field 'allow_databases' has been deprecated from provider version 1.290.0. ClickHouse clusters newer than 21.8 no longer support ModifyAccountAuthority; use the SQL account authority model instead.
 * `total_databases` - (Optional, Deprecated since v1.223.1) The list of all databases. Separate databases with commas (,). Field 'total_databases' has been deprecated from provider version 1.223.1.
-* `allow_dictionaries` - (Optional, Available since v1.163.0) The list of dictionaries to which you want to grant permissions. Separate dictionaries with commas (,).
+* `allow_dictionaries` - (Optional, Deprecated since v1.290.0) The list of dictionaries to which you want to grant permissions. Separate dictionaries with commas (,). Field 'allow_dictionaries' has been deprecated from provider version 1.290.0. ClickHouse clusters newer than 21.8 no longer support ModifyAccountAuthority; use the SQL account authority model instead.
 * `total_dictionaries` - (Optional, Deprecated since v1.223.1) The list of all dictionaries. Separate dictionaries with commas (,). Field 'total_dictionaries' has been deprecated from provider version 1.223.1.
 
 
