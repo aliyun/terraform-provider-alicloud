@@ -34,6 +34,7 @@ func TestAccAliCloudDasSqlLogConfig_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":    "${alicloud_polardb_cluster.default.id}",
 					"enable":         "true",
+					"enable_audit":   "true",
 					"request_enable": "true",
 					"retention":      "30",
 					"hot_retention":  "7",
@@ -42,6 +43,7 @@ func TestAccAliCloudDasSqlLogConfig_basic0(t *testing.T) {
 					testAccCheck(map[string]string{
 						"instance_id":    CHECKSET,
 						"enable":         "true",
+						"enable_audit":   "true",
 						"request_enable": "true",
 						"retention":      "30",
 						"hot_retention":  "7",
@@ -76,7 +78,7 @@ func TestAccAliCloudDasSqlLogConfig_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"enable", "request_enable"},
+				ImportStateVerifyIgnore: []string{"enable", "enable_audit", "request_enable"},
 			},
 		},
 	})
