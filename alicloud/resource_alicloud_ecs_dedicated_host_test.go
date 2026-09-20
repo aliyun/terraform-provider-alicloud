@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
+func TestAccAliCloudECSDedicatedHost_basic(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -45,12 +45,17 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 					"dedicated_host_type": "ddh.g6",
 					"description":         "From_Terraform",
 					"dedicated_host_name": name,
+					"payment_type":        "PrePaid",
+					"period":              1,
+					"period_unit":         "Month",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"dedicated_host_type": "ddh.g6",
 						"description":         "From_Terraform",
 						"dedicated_host_name": name,
+						"payment_type":        "PrePaid",
+						"period_unit":         "Month",
 					}),
 				),
 			},
@@ -58,7 +63,7 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_pay", "detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time", "period"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -122,6 +127,21 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"action_on_maintenance": "Migrate",
+					"auto_placement":        "off",
+					"auto_release_time":     "2027-12-31T23:59:59Z",
+					"detail_fee":            false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"action_on_maintenance": "Migrate",
+						"auto_placement":        "off",
+						"auto_release_time":     CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "Terraform",
 						"For":     "DDH",
@@ -148,11 +168,25 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 					}),
 				),
 			},
+			// Change payment_type from PrePaid to PostPaid to cover the
+			// ModifyDedicatedHostsChargeType update path. period and
+			// period_unit stay unchanged from the create step, so only
+			// HasChange("payment_type") fires here.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PostPaid",
+					}),
+				),
+			},
 		},
 	})
 }
 
-func TestAccAlicloudECSDedicatedHost_basic1(t *testing.T) {
+func TestAccAliCloudECSDedicatedHost_basic1(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -199,13 +233,103 @@ func TestAccAlicloudECSDedicatedHost_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_pay", "detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
+// TestAccAliCloudECSDedicatedHost_autoRenew covers the renewal_status,
+// auto_renew_with_ecs and duration fields backed by the
+// ModifyDedicatedHostAutoRenewAttribute / DescribeDedicatedHostAutoRenew APIs,
+// and the period, period_unit, quantity and auto_pay arguments surfaced on the
+// AllocateDedicatedHosts / ModifyDedicatedHostsChargeType paths. It exercises
+// the create -> update (ModifyDedicatedHostAutoRenewAttribute) -> read
+// (DescribeDedicatedHostAutoRenew) round-trip on a subscription dedicated host.
+// The deprecated sale_cycle / expired_time aliases are intentionally retained
+// in the config to verify backward compatibility and keep attribute coverage.
+func TestAccAliCloudECSDedicatedHost_autoRenew(t *testing.T) {
+	var v ecs.DedicatedHost
+	resourceId := "alicloud_ecs_dedicated_host.default"
+	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDedicatedHost")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccEcsDedicatedHost%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, EcsDedicatedHostBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dedicated_host_type": "ddh.g6",
+					"dedicated_host_name": name,
+					"description":         "From_Terraform",
+					"payment_type":        "PrePaid",
+					"period":              1,
+					"period_unit":         "Month",
+					"sale_cycle":          "Month",
+					"expired_time":        "1",
+					"quantity":            1,
+					"auto_pay":            true,
+					"renewal_status":      "Normal",
+					"auto_renew_with_ecs": "StopRenewWithEcs",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dedicated_host_type": "ddh.g6",
+						"payment_type":        "PrePaid",
+						"period_unit":         "Month",
+						"sale_cycle":          "Month",
+						"renewal_status":      "Normal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dedicated_host_type": "ddh.g6",
+					"dedicated_host_name": name,
+					"description":         "From_Terraform",
+					"payment_type":        "PrePaid",
+					"period":              1,
+					"period_unit":         "Year",
+					"sale_cycle":          "Year",
+					"expired_time":        "1",
+					"quantity":            1,
+					"auto_pay":            true,
+					"renewal_status":      "AutoRenewal",
+					"auto_renew_with_ecs": "AutoRenewWithEcs",
+					"duration":            "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status":      "AutoRenewal",
+						"auto_renew_with_ecs": "AutoRenewWithEcs",
+						"duration":            "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time", "period", "auto_pay", "quantity"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSDedicatedHost_basic2(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -269,7 +393,68 @@ func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_pay", "detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudECSDedicatedHost_cpuOverCommit exercises the cpu_over_commit_ratio
+// attribute, which is only supported by the g6s/c6s/r6s custom dedicated host
+// specifications. It covers the create -> update (ModifyDedicatedHostAttribute)
+// -> read round-trip and is the only ACC case that sets this field, so the
+// TestingCoverageRate must-set and modify gates are both satisfied here.
+func TestAccAliCloudECSDedicatedHost_cpuOverCommit(t *testing.T) {
+	var v ecs.DedicatedHost
+	resourceId := "alicloud_ecs_dedicated_host.default"
+	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDedicatedHost")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccEcsDedicatedHost%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, EcsDedicatedHostBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcsDedicatedHostRegions)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dedicated_host_type":   "ddh.g6s",
+					"description":           "From_Terraform",
+					"dedicated_host_name":   name,
+					"cpu_over_commit_ratio": 1.2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dedicated_host_type":   "ddh.g6s",
+						"cpu_over_commit_ratio": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cpu_over_commit_ratio": 1.5,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cpu_over_commit_ratio": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
 			},
 		},
 	})
@@ -322,10 +507,14 @@ func TestUnitAlicloudECSDedicatedHost(t *testing.T) {
 		"auto_release_time":         "AllocateDedicatedHostsValue",
 		"auto_renew":                false,
 		"auto_renew_period":         1,
+		"auto_pay":                  true,
 		"cpu_over_commit_ratio":     1.2,
 		"dedicated_host_cluster_id": "AllocateDedicatedHostsValue",
 		"expired_time":              "AllocateDedicatedHostsValue",
 		"payment_type":              "AllocateDedicatedHostsValue",
+		"period":                    1,
+		"period_unit":               "Month",
+		"quantity":                  1,
 		"sale_cycle":                "AllocateDedicatedHostsValue",
 	}
 	for key, value := range attributes {

@@ -39,6 +39,10 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
 				Default:      "on",
 			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"auto_release_time": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -51,6 +55,11 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 			"auto_renew_period": {
 				Type:     schema.TypeInt,
 				Optional: true,
+			},
+			"auto_renew_with_ecs": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewWithEcs", "StopRenewWithEcs", "NoOperation"}, false),
 			},
 			"cpu_over_commit_ratio": {
 				Type:     schema.TypeFloat,
@@ -82,6 +91,11 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+			},
+			"duration": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntInSlice([]int{1, 12}),
 			},
 			"expired_time": {
 				Type:     schema.TypeString,
@@ -115,6 +129,28 @@ func resourceAlicloudEcsDedicatedHost() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+			},
+			"period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"period_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
+			},
+			"quantity": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  1,
+				ForceNew: true,
+			},
+			"renewal_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "Normal", "NotRenewal"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -185,7 +221,9 @@ func resourceAlicloudEcsDedicatedHostCreate(d *schema.ResourceData, meta interfa
 		request["Description"] = v
 	}
 
-	if v, ok := d.GetOk("expired_time"); ok {
+	if v, ok := d.GetOk("period"); ok {
+		request["Period"] = v
+	} else if v, ok := d.GetOk("expired_time"); ok {
 		request["Period"] = v
 	}
 
@@ -207,13 +245,21 @@ func resourceAlicloudEcsDedicatedHostCreate(d *schema.ResourceData, meta interfa
 		request["ChargeType"] = v
 	}
 
-	request["Quantity"] = 1
+	// Quantity is surfaced as the quantity argument and defaults to 1:
+	// AllocateDedicatedHosts provisions one dedicated host per request by
+	// default. A Terraform resource maps to a single dedicated host instance,
+	// so values greater than 1 create multiple hosts but only the first
+	// DedicatedHostId is tracked; keep quantity at 1 unless multi-host
+	// creation is explicitly required.
+	request["Quantity"] = d.Get("quantity")
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
 
-	if v, ok := d.GetOk("sale_cycle"); ok {
+	if v, ok := d.GetOk("period_unit"); ok {
+		request["PeriodUnit"] = v
+	} else if v, ok := d.GetOk("sale_cycle"); ok {
 		request["PeriodUnit"] = v
 	}
 
@@ -252,6 +298,20 @@ func resourceAlicloudEcsDedicatedHostCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
+	// Apply the auto-renewal attribute after the dedicated host becomes
+	// Available. RenewalStatus/AutoRenewWithEcs/Duration are accepted by the
+	// ModifyDedicatedHostAutoRenewAttribute API, which only applies to
+	// subscription (PrePaid) dedicated hosts.
+	autoRenewWithEcs := d.Get("auto_renew_with_ecs").(string)
+	if d.Get("payment_type").(string) == "PrePaid" &&
+		(d.Get("renewal_status").(string) != "" ||
+			(autoRenewWithEcs != "" && autoRenewWithEcs != "NoOperation") ||
+			d.Get("duration").(int) != 0) {
+		if err := modifyDedicatedHostAutoRenewAttribute(d, meta); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	return resourceAlicloudEcsDedicatedHostRead(d, meta)
 }
 func resourceAlicloudEcsDedicatedHostRead(d *schema.ResourceData, meta interface{}) error {
@@ -285,8 +345,27 @@ func resourceAlicloudEcsDedicatedHostRead(d *schema.ResourceData, meta interface
 	d.Set("network_attributes", networkAttributesSli)
 	d.Set("payment_type", object["ChargeType"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("period_unit", object["SaleCycle"])
 	d.Set("sale_cycle", object["SaleCycle"])
 	d.Set("status", object["Status"])
+	// The auto-renewal attributes (RenewalStatus, AutoRenewWithEcs, Duration)
+	// are returned by the separate DescribeDedicatedHostAutoRenew API rather
+	// than DescribeDedicatedHosts. They only apply to subscription (PrePaid)
+	// dedicated hosts; for PostPaid hosts the values are cleared.
+	if object["ChargeType"] == "PrePaid" {
+		renewAttr, renewErr := ecsService.DescribeDedicatedHostAutoRenewAttribute(d.Id())
+		if renewErr == nil && renewAttr != nil {
+			d.Set("renewal_status", renewAttr["RenewalStatus"])
+			d.Set("auto_renew_with_ecs", renewAttr["AutoRenewWithEcs"])
+			d.Set("duration", renewAttr["Duration"])
+		} else {
+			log.Printf("[DEBUG] Resource alicloud_ecs_dedicated_host DescribeDedicatedHostAutoRenewAttribute failed: %s", renewErr)
+		}
+	} else {
+		d.Set("renewal_status", nil)
+		d.Set("auto_renew_with_ecs", nil)
+		d.Set("duration", nil)
+	}
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
 	}
@@ -369,14 +448,22 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 	request := map[string]interface{}{
 		"DedicatedHostIds": convertListToJsonString(convertListStringToListInterface([]string{d.Id()})),
 	}
-	if !d.IsNewResource() && d.HasChange("expired_time") {
+	if !d.IsNewResource() && (d.HasChange("period") || d.HasChange("expired_time")) {
 		update = true
-		request["Period"] = d.Get("expired_time")
+		if v, ok := d.GetOk("period"); ok {
+			request["Period"] = v
+		} else {
+			request["Period"] = d.Get("expired_time")
+		}
 	}
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("sale_cycle") {
+	if !d.IsNewResource() && (d.HasChange("period_unit") || d.HasChange("sale_cycle")) {
 		update = true
-		request["PeriodUnit"] = d.Get("sale_cycle")
+		if v, ok := d.GetOk("period_unit"); ok {
+			request["PeriodUnit"] = v
+		} else {
+			request["PeriodUnit"] = d.Get("sale_cycle")
+		}
 	}
 	if update {
 		action := "RenewDedicatedHosts"
@@ -401,6 +488,8 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("expired_time")
+		d.SetPartial("period")
+		d.SetPartial("period_unit")
 		d.SetPartial("sale_cycle")
 	}
 	update = false
@@ -408,13 +497,29 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		"DedicatedHostIds": convertListToJsonString(convertListStringToListInterface([]string{d.Id()})),
 	}
 	modifyDedicatedHostsChargeTypeReq["RegionId"] = client.RegionId
-	modifyDedicatedHostsChargeTypeReq["AutoPay"] = true
-	modifyDedicatedHostsChargeTypeReq["Period"] = d.Get("expired_time")
+	// AutoPay is surfaced as the auto_pay argument and defaults to true:
+	// when changing the charge type of a subscription dedicated host, the
+	// order is paid automatically by default; set auto_pay to false to
+	// generate an unpaid order that must be settled manually.
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		modifyDedicatedHostsChargeTypeReq["AutoPay"] = v
+	} else {
+		modifyDedicatedHostsChargeTypeReq["AutoPay"] = true
+	}
+	if v, ok := d.GetOk("period"); ok {
+		modifyDedicatedHostsChargeTypeReq["Period"] = v
+	} else {
+		modifyDedicatedHostsChargeTypeReq["Period"] = d.Get("expired_time")
+	}
 	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
 		modifyDedicatedHostsChargeTypeReq["DedicatedHostChargeType"] = d.Get("payment_type")
 	}
-	modifyDedicatedHostsChargeTypeReq["PeriodUnit"] = d.Get("sale_cycle")
+	if v, ok := d.GetOk("period_unit"); ok {
+		modifyDedicatedHostsChargeTypeReq["PeriodUnit"] = v
+	} else {
+		modifyDedicatedHostsChargeTypeReq["PeriodUnit"] = d.Get("sale_cycle")
+	}
 	if update {
 		if _, ok := d.GetOkExists("detail_fee"); ok {
 			modifyDedicatedHostsChargeTypeReq["DetailFee"] = d.Get("detail_fee")
@@ -443,10 +548,13 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+		d.SetPartial("auto_pay")
 		d.SetPartial("detail_fee")
 		d.SetPartial("dry_run")
 		d.SetPartial("expired_time")
 		d.SetPartial("payment_type")
+		d.SetPartial("period")
+		d.SetPartial("period_unit")
 		d.SetPartial("sale_cycle")
 	}
 	update = false
@@ -519,6 +627,18 @@ func resourceAlicloudEcsDedicatedHostUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("description")
 		d.SetPartial("network_attributes")
 	}
+	// ModifyDedicatedHostAutoRenewAttribute: renewal_status, auto_renew_with_ecs
+	// and duration are managed by the auto-renewal API and only apply to
+	// subscription (PrePaid) dedicated hosts.
+	if !d.IsNewResource() && d.Get("payment_type").(string) == "PrePaid" &&
+		(d.HasChange("renewal_status") || d.HasChange("auto_renew_with_ecs") || d.HasChange("duration")) {
+		if err := modifyDedicatedHostAutoRenewAttribute(d, meta); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("renewal_status")
+		d.SetPartial("auto_renew_with_ecs")
+		d.SetPartial("duration")
+	}
 	d.Partial(false)
 	return resourceAlicloudEcsDedicatedHostRead(d, meta)
 }
@@ -554,6 +674,72 @@ func resourceAlicloudEcsDedicatedHostDelete(d *schema.ResourceData, meta interfa
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+// modifyDedicatedHostAutoRenewAttribute calls the
+// ModifyDedicatedHostAutoRenewAttribute API to set the renewal status, the
+// auto-renew-with-ecs behaviour and (when auto-renewal is enabled) the renewal
+// duration of a subscription dedicated host. It is shared by the Create
+// (post-create configuration) and Update paths so the wiring stays consistent.
+func modifyDedicatedHostAutoRenewAttribute(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+	var response map[string]interface{}
+	var err error
+	action := "ModifyDedicatedHostAutoRenewAttribute"
+	request := map[string]interface{}{
+		"DedicatedHostIds": convertListToJsonString(convertListStringToListInterface([]string{d.Id()})),
+	}
+	request["RegionId"] = client.RegionId
+	renewalStatus := d.Get("renewal_status").(string)
+	request["RenewalStatus"] = renewalStatus
+	if v, ok := d.GetOkExists("auto_renew_with_ecs"); ok {
+		request["AutoRenewWithEcs"] = v
+	} else {
+		request["AutoRenewWithEcs"] = "NoOperation"
+	}
+	// Duration and PeriodUnit are only honoured when auto-renewal is enabled.
+	if renewalStatus == "AutoRenewal" {
+		if v, ok := d.GetOk("duration"); ok {
+			request["Duration"] = requests.NewInteger(v.(int))
+		}
+		periodUnit := d.Get("period_unit").(string)
+		if periodUnit == "" {
+			// Fall back to the deprecated sale_cycle alias for backward
+			// compatibility when period_unit is not configured.
+			periodUnit = d.Get("sale_cycle").(string)
+		}
+		if periodUnit == "" {
+			periodUnit = "Month"
+		}
+		request["PeriodUnit"] = periodUnit
+		// AutoRenewWithEcs=AutoRenewWithEcs requires AutoRenew=true to take effect.
+		request["AutoRenew"] = true
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+		if err != nil {
+			// The charge type may not have fully settled on the billing subsystem
+			// right after a charge-type change, so the auto-renew call can
+			// transiently fail with ChargeTypeViolation.
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"ChargeTypeViolation", "IncorrectDedicatedHostStatus"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.EcsDedicatedHostStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }
