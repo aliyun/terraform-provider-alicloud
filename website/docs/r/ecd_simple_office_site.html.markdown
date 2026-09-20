@@ -49,13 +49,18 @@ The following arguments are supported:
 * `cen_id` - (Optional, ForceNew) Cloud Enterprise Network Instance ID.
 * `cen_owner_id` - (Optional) The cen owner id.
 * `cidr_block` - (Required, ForceNew) Workspace Corresponds to the Security Office Network of IPv4 Segment.
+* `cloud_box_office_site` - (Optional, ForceNew) Specifies whether to create a Cloud Box office site. Valid values: `true`, `false`.
 * `desktop_access_type` - (Optional, Computed) Connect to the Cloud Desktop Allows the Use of the Access Mode of. Valid values: `Any`, `Internet`, `VPC`.
 * `enable_admin_access` - (Optional, ForceNew) Whether to Use Cloud Desktop User Empowerment of Local Administrator Permissions.
 * `enable_cross_desktop_access` - (Optional) Enable Cross-Desktop Access.
 * `enable_internet_access` - (Deprecated from 1.142.0) Whether the Open Internet Access Function.
 * `mfa_enabled` - (Optional) Whether to Enable Multi-Factor Authentication MFA.
+* `need_verify_login_risk` - (Optional, Computed) Specifies whether to enable two-factor authentication. Applicable to only office sites that use convenience accounts.
+* `need_verify_zero_device` - (Optional, Computed) Specifies whether to enable trusted device verification.
 * `office_site_name` - (Optional) The office site name.
 * `sso_enabled` - (Optional) Whether to Enable Single Sign-on (SSO) for User-Based SSO.
+* `verify_code` - (Optional, ForceNew) The verification code. If the CEN instance is owned by another Alibaba Cloud account, you must first call SendVerifyCode to obtain a verification code.
+* `vpc_type` - (Optional, ForceNew) The type of the office site. Valid values: `standard`, `basic`.
 
 ## Attributes Reference
 
