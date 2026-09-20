@@ -74,6 +74,48 @@ func resourceAliCloudThreatDetectionCheckConfig() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"config_standard_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"add_ids": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeInt},
+						},
+						"remove_ids": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeInt},
+						},
+					},
+				},
+			},
+			"config_requirement_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"add_ids": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeInt},
+						},
+						"remove_ids": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeInt},
+						},
+					},
+				},
+			},
+			"resource_directory_account_id": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -120,6 +162,60 @@ func resourceAliCloudThreatDetectionCheckConfigCreate(d *schema.ResourceData, me
 	}
 	if v, ok := d.GetOk("end_time"); ok {
 		request["EndTime"] = v
+	}
+
+	if v, ok := d.GetOk("config_standard_ids"); ok {
+		if configStandardIdsList, ok := v.([]interface{}); ok && len(configStandardIdsList) > 0 {
+			if configStandardIdsMap, ok := configStandardIdsList[0].(map[string]interface{}); ok {
+				configStandardIdsReq := make(map[string]interface{})
+				if addIds, ok := configStandardIdsMap["add_ids"].([]interface{}); ok && len(addIds) > 0 {
+					addIdsList := make([]interface{}, 0, len(addIds))
+					for _, id := range addIds {
+						addIdsList = append(addIdsList, id)
+					}
+					configStandardIdsReq["AddIds"] = addIdsList
+				}
+				if removeIds, ok := configStandardIdsMap["remove_ids"].([]interface{}); ok && len(removeIds) > 0 {
+					removeIdsList := make([]interface{}, 0, len(removeIds))
+					for _, id := range removeIds {
+						removeIdsList = append(removeIdsList, id)
+					}
+					configStandardIdsReq["RemoveIds"] = removeIdsList
+				}
+				if len(configStandardIdsReq) > 0 {
+					request["ConfigStandardIds"] = configStandardIdsReq
+				}
+			}
+		}
+	}
+
+	if v, ok := d.GetOk("config_requirement_ids"); ok {
+		if configRequirementIdsList, ok := v.([]interface{}); ok && len(configRequirementIdsList) > 0 {
+			if configRequirementIdsMap, ok := configRequirementIdsList[0].(map[string]interface{}); ok {
+				configRequirementIdsReq := make(map[string]interface{})
+				if addIds, ok := configRequirementIdsMap["add_ids"].([]interface{}); ok && len(addIds) > 0 {
+					addIdsList := make([]interface{}, 0, len(addIds))
+					for _, id := range addIds {
+						addIdsList = append(addIdsList, id)
+					}
+					configRequirementIdsReq["AddIds"] = addIdsList
+				}
+				if removeIds, ok := configRequirementIdsMap["remove_ids"].([]interface{}); ok && len(removeIds) > 0 {
+					removeIdsList := make([]interface{}, 0, len(removeIds))
+					for _, id := range removeIds {
+						removeIdsList = append(removeIdsList, id)
+					}
+					configRequirementIdsReq["RemoveIds"] = removeIdsList
+				}
+				if len(configRequirementIdsReq) > 0 {
+					request["ConfigRequirementIds"] = configRequirementIdsReq
+				}
+			}
+		}
+	}
+
+	if v, ok := d.GetOk("resource_directory_account_id"); ok {
+		request["ResourceDirectoryAccountId"] = v
 	}
 
 	if _, ok := d.GetOk("selected_checks"); ok {
