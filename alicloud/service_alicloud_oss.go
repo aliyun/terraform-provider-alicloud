@@ -102,3 +102,23 @@ func (s *OssService) DescribeOssBucketReplication(id string) (response string, e
 	response, _ = raw.(string)
 	return
 }
+
+func (s *OssService) DescribeOssBucketResourceGroup(id string) (response string, err error) {
+	bucket := id
+	request := map[string]string{"bucketName": bucket}
+	var requestInfo *oss.Client
+	raw, err := s.client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
+		return ossClient.GetBucketResourceGroup(bucket)
+	})
+	if err != nil {
+		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetBucketResourceGroup", AliyunOssGoSdk)
+	}
+
+	addDebug("GetBucketResourceGroup", raw, requestInfo, request)
+	resourceGroup, _ := raw.(oss.GetBucketResourceGroupResult)
+
+	response = resourceGroup.ResourceGroupId
+
+	return
+}
