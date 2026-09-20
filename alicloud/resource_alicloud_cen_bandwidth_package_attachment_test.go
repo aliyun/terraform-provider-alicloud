@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
+func TestAccAliCloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 	var cenBwp cbn.CenBandwidthPackage
 
 	resourceId := "alicloud_cen_bandwidth_package_attachment.default"
