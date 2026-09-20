@@ -143,6 +143,54 @@ func (s *SasService) DescribeThreatDetectionWebLockConfig(id string) (object map
 	return object, nil
 }
 
+func (s *SasService) DescribeThreatDetectionWebLockBind(id string) (object map[string]interface{}, err error) {
+	client := s.client
+
+	request := map[string]interface{}{
+		"Uuid": id,
+	}
+	request["CurrentPage"] = 1
+	request["PageSize"] = PageSizeLarge
+
+	var response map[string]interface{}
+	action := "DescribeWebLockBindList"
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.BindList", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BindList", response)
+	}
+	result, _ := v.([]interface{})
+	if len(result) < 1 {
+		return object, WrapErrorf(NotFoundErr("WebLockBind", id), NotFoundWithResponse, response)
+	}
+	for _, item := range result {
+		if entry, ok := item.(map[string]interface{}); ok && fmt.Sprint(entry["Uuid"]) == id {
+			object = entry
+			break
+		}
+	}
+	if object == nil {
+		return object, WrapErrorf(NotFoundErr("WebLockBind", id), NotFoundWithResponse, response)
+	}
+	return object, nil
+}
+
 func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object map[string]interface{}, err error) {
 	client := s.client
 
