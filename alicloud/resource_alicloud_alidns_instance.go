@@ -16,7 +16,6 @@ func resourceAlicloudAlidnsInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudAlidnsInstanceCreate,
 		Read:   resourceAlicloudAlidnsInstanceRead,
-		Update: resourceAlicloudAlidnsInstanceUpdate,
 		Delete: resourceAlicloudAlidnsInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -43,6 +42,7 @@ func resourceAlicloudAlidnsInstance() *schema.Resource {
 			"period": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				ForceNew: true,
 			},
 			"renew_period": {
 				Type:     schema.TypeInt,
@@ -174,10 +174,6 @@ func resourceAlicloudAlidnsInstanceRead(d *schema.ResourceData, meta interface{}
 	}
 
 	return nil
-}
-func resourceAlicloudAlidnsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudAlidnsInstanceRead(d, meta)
 }
 func resourceAlicloudAlidnsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resourceAlicloudAlidnsInstance. Terraform will remove this resource from the state file, however resources may remain.")
