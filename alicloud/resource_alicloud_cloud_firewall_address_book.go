@@ -29,7 +29,7 @@ func resourceAliCloudCloudFirewallAddressBook() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ip", "ipv6", "domain", "port", "tag", "asset", "assetIpv6"}, false),
+				ValidateFunc: StringInSlice([]string{"ip", "ipv6", "domain", "port", "tag", "asset", "assetIpv6", "ackLabel", "ackNamespace", "tagPrivate"}, false),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -217,6 +217,38 @@ func resourceAliCloudCloudFirewallAddressBook() *schema.Resource {
 					},
 				},
 			},
+			"ack_cluster_connector_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ack_labels": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 10,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"ack_namespaces": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 10,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"ack_cluster_connector_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"address_list_count": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -375,6 +407,30 @@ func flattenCloudFirewallAddressBookAssetRegionResourceTypes(src interface{}) []
 	return result
 }
 
+func expandCloudFirewallAddressBookAckLabels(configured []interface{}) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0)
+	for _, item := range configured {
+		if item == nil {
+			continue
+		}
+
+		itemArg := item.(map[string]interface{})
+		itemMap := make(map[string]interface{})
+
+		if v, ok := itemArg["key"].(string); ok {
+			itemMap["Key"] = v
+		}
+
+		if v, ok := itemArg["value"].(string); ok {
+			itemMap["Value"] = v
+		}
+
+		result = append(result, itemMap)
+	}
+
+	return result
+}
+
 func resourceAliCloudCloudFirewallAddressBookCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
@@ -427,6 +483,28 @@ func resourceAliCloudCloudFirewallAddressBookCreate(d *schema.ResourceData, meta
 		}
 
 		request["AssetRegionResourceTypes"] = assetRegionResourceTypesJson
+	}
+
+	if v, ok := d.GetOk("ack_cluster_connector_id"); ok {
+		request["AckClusterConnectorId"] = v
+	}
+
+	if v, ok := d.GetOk("ack_labels"); ok {
+		ackLabelsJson, err := convertArrayObjectToJsonString(expandCloudFirewallAddressBookAckLabels(v.([]interface{})))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request["AckLabels"] = ackLabelsJson
+	}
+
+	if v, ok := d.GetOk("ack_namespaces"); ok {
+		ackNamespacesJson, err := convertArrayObjectToJsonString(v.([]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request["AckNamespaces"] = ackNamespacesJson
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -506,6 +584,41 @@ func resourceAliCloudCloudFirewallAddressBookRead(d *schema.ResourceData, meta i
 
 	if v, ok := object["AssetRegionResourceTypes"]; ok {
 		d.Set("asset_region_resource_types", flattenCloudFirewallAddressBookAssetRegionResourceTypes(v))
+	}
+
+	if v, ok := object["AckClusterConnectorId"]; ok {
+		d.Set("ack_cluster_connector_id", v)
+	}
+
+	if v, ok := object["AckClusterConnectorName"]; ok {
+		d.Set("ack_cluster_connector_name", v)
+	}
+
+	if v, ok := object["AckLabels"]; ok {
+		ackLabels := make([]map[string]interface{}, 0)
+		if labelList, ok := v.([]interface{}); ok {
+			for _, labelItem := range labelList {
+				labelArg, ok := labelItem.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				ackLabel := make(map[string]interface{})
+				ackLabel["key"] = labelArg["Key"]
+				ackLabel["value"] = labelArg["Value"]
+				ackLabels = append(ackLabels, ackLabel)
+			}
+		}
+		d.Set("ack_labels", ackLabels)
+	}
+
+	if v, ok := object["AckNamespaces"]; ok {
+		ackNamespaces := make([]string, 0)
+		if nsList, ok := v.([]interface{}); ok {
+			for _, ns := range nsList {
+				ackNamespaces = append(ackNamespaces, fmt.Sprint(ns))
+			}
+		}
+		d.Set("ack_namespaces", ackNamespaces)
 	}
 
 	if v, ok := object["AddressListCount"]; ok {
@@ -596,6 +709,32 @@ func resourceAliCloudCloudFirewallAddressBookUpdate(d *schema.ResourceData, meta
 			}
 
 			request["AssetRegionResourceTypes"] = assetRegionResourceTypesJson
+		}
+	}
+
+	if d.HasChange("ack_labels") {
+		update = true
+
+		if v, ok := d.GetOk("ack_labels"); ok {
+			ackLabelsJson, err := convertArrayObjectToJsonString(expandCloudFirewallAddressBookAckLabels(v.([]interface{})))
+			if err != nil {
+				return WrapError(err)
+			}
+
+			request["AckLabels"] = ackLabelsJson
+		}
+	}
+
+	if d.HasChange("ack_namespaces") {
+		update = true
+
+		if v, ok := d.GetOk("ack_namespaces"); ok {
+			ackNamespacesJson, err := convertArrayObjectToJsonString(v.([]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+
+			request["AckNamespaces"] = ackNamespacesJson
 		}
 	}
 
