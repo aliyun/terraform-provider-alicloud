@@ -46,6 +46,22 @@ func resourceAlicloudCmsMonitorGroup() *schema.Resource {
 }
 
 func resourceAlicloudCmsMonitorGroupCreate(d *schema.ResourceData, meta interface{}) error {
+	// Validate at apply time (not in CustomizeDiff) that a new monitor group
+	// provides either monitor_group_name or resource_group_id. CustomizeDiff
+	// cannot reliably detect whether resource_group_id is present in the config
+	// when its value is a typed-unknown interpolated from a resource created in
+	// the same plan: under terraform-plugin-sdk v1, GetOk/GetOkExists filter out
+	// unknown values and HasChange is false for a fresh-create typed-unknown, so
+	// the guard wrongly demanded monitor_group_name and rejected the valid
+	// CreateMonitorGroupByResourceGroupId flow. At apply time all values are
+	// concrete, so GetOk works correctly. When resource_group_id is set the
+	// create delegates to CreateMonitorGroupByResourceGroupId and does not send
+	// GroupName; otherwise monitor_group_name is required by CreateMonitorGroup.
+	if _, rgidOk := d.GetOk("resource_group_id"); !rgidOk {
+		if name, ok := d.GetOk("monitor_group_name"); !ok || name.(string) == "" {
+			return fmt.Errorf("monitor_group_name is required when resource_group_id is not specified")
+		}
+	}
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
