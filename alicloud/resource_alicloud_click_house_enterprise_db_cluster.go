@@ -26,184 +26,196 @@ func resourceAliCloudClickHouseEnterpriseDbCluster() *schema.Resource {
 			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
-		Schema: map[string]*schema.Schema{
-			"category": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"charge_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"computing_group_ids": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"create_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"endpoints": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"status": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"vpc_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"endpoint_name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"vswitch_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"ports": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"port": {
-										Type:     schema.TypeInt,
-										Computed: true,
-									},
-									"protocol": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
+		Schema: clickHouseEnterpriseDbClusterSchema(),
+	}
+}
+
+// clickHouseEnterpriseDbClusterSchema returns the resource schema. multi_zones
+// is a schema.TypeList (ordered): the first block is the primary zone that
+// CreateDBInstance expects at MultiZone[0], so the HCL declaration order is
+// preserved when assembling the MultiZone request. The nested vswitch_ids
+// stays a schema.TypeSet because the vswitches within a single zone entry do
+// not carry order semantics.
+func clickHouseEnterpriseDbClusterSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"category": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"charge_type": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"computing_group_ids": {
+			Type:     schema.TypeList,
+			Computed: true,
+			Elem:     &schema.Schema{Type: schema.TypeString},
+		},
+		"create_time": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"description": {
+			Type:     schema.TypeString,
+			Optional: true,
+			Computed: true,
+		},
+		"endpoints": {
+			Type:     schema.TypeList,
+			Computed: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"status": {
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"vpc_id": {
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"endpoint_name": {
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"vswitch_id": {
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"ports": {
+						Type:     schema.TypeList,
+						Computed: true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"port": {
+									Type:     schema.TypeInt,
+									Computed: true,
+								},
+								"protocol": {
+									Type:     schema.TypeString,
+									Computed: true,
 								},
 							},
 						},
-						"vpc_instance_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"connection_string": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"ip_address": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"net_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"computing_group_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
+					},
+					"vpc_instance_id": {
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"connection_string": {
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"ip_address": {
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"net_type": {
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"computing_group_id": {
+						Type:     schema.TypeString,
+						Computed: true,
 					},
 				},
 			},
-			"engine_minor_version": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"instance_network_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"multi_zones": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"zone_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-						},
-						"vswitch_ids": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							ForceNew: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
+		},
+		"engine_minor_version": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"instance_network_type": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"multi_zones": {
+			Type:     schema.TypeList,
+			Optional: true,
+			Computed: true,
+			ForceNew: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"zone_id": {
+						Type:     schema.TypeString,
+						Optional: true,
+						ForceNew: true,
+					},
+					"vswitch_ids": {
+						Type:     schema.TypeSet,
+						Optional: true,
+						ForceNew: true,
+						Elem:     &schema.Schema{Type: schema.TypeString},
 					},
 				},
 			},
-			"node_count": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-			},
-			"node_scale_max": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-			},
-			"node_scale_min": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-			},
-			"region_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"resource_group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"scale_max": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"scale_min": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"storage_quota": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"storage_size": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
-			"storage_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"tags": tagsSchema(),
-			"vpc_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"zone_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
+		},
+		"node_count": {
+			Type:     schema.TypeInt,
+			Optional: true,
+			Computed: true,
+		},
+		"node_scale_max": {
+			Type:     schema.TypeInt,
+			Optional: true,
+			Computed: true,
+		},
+		"node_scale_min": {
+			Type:     schema.TypeInt,
+			Optional: true,
+			Computed: true,
+		},
+		"region_id": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"resource_group_id": {
+			Type:     schema.TypeString,
+			Optional: true,
+			Computed: true,
+		},
+		"scale_max": {
+			Type:     schema.TypeString,
+			Optional: true,
+			Computed: true,
+		},
+		"scale_min": {
+			Type:     schema.TypeString,
+			Optional: true,
+			Computed: true,
+		},
+		"status": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"storage_quota": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"storage_size": {
+			Type:     schema.TypeInt,
+			Computed: true,
+		},
+		"storage_type": {
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"tags": tagsSchema(),
+		"vpc_id": {
+			Type:     schema.TypeString,
+			Optional: true,
+			ForceNew: true,
+		},
+		"vswitch_id": {
+			Type:     schema.TypeString,
+			Optional: true,
+			Computed: true,
+			ForceNew: true,
+		},
+		"zone_id": {
+			Type:     schema.TypeString,
+			Optional: true,
+			Computed: true,
+			ForceNew: true,
 		},
 	}
 }
@@ -247,6 +259,10 @@ func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData,
 			dataLoop1Map["ZoneId"] = dataLoop1Tmp["zone_id"]
 			multiZoneMapsArray = append(multiZoneMapsArray, dataLoop1Map)
 		}
+		// multi_zones is a schema.TypeList, so convertToInterfaceArray
+		// preserves the HCL declaration order: the first block is the primary
+		// zone, which is exactly what CreateDBInstance expects for
+		// MultiZone[0]. No reorder is needed.
 		multiZoneMapsJson, err := json.Marshal(multiZoneMapsArray)
 		if err != nil {
 			return WrapError(err)
@@ -263,11 +279,21 @@ func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
 	}
-	if v, ok := d.GetOk("vswitch_id"); ok {
-		request["VswitchId"] = v
-	}
-	if v, ok := d.GetOk("zone_id"); ok {
-		request["ZoneId"] = v
+	// For multi-zone deployments (multi_zones is set), the top-level
+	// vswitch_id and zone_id are NOT sent to CreateDBInstance: the multi-zone
+	// information is carried entirely by the MultiZone parameter, and the
+	// server treats MultiZone[0] as the primary zone. Forwarding the top-level
+	// zone_id alongside MultiZone triggers
+	// InvalidZoneId.InconsistentWithMultiZone when it does not match
+	// MultiZone[0].zone_id. For single-zone deployments the top-level
+	// vswitch_id and zone_id are forwarded as before.
+	if _, ok := d.GetOk("multi_zones"); !ok {
+		if v, ok := d.GetOk("vswitch_id"); ok {
+			request["VswitchId"] = v
+		}
+		if v, ok := d.GetOk("zone_id"); ok {
+			request["ZoneId"] = v
+		}
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
