@@ -9,6 +9,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/echoprovider"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var Provider = alicloud.Provider()
@@ -44,6 +47,19 @@ func ProtoV5ProviderFactories(names ...string) map[string]func() (tfprotov5.Prov
 	return factories
 }
 
+func ProtoV6ProviderFactories(names ...string) map[string]func() (tfprotov6.ProviderServer, error) {
+	if len(names) == 0 {
+		names = []string{"echo"}
+	}
+
+	factories := make(map[string]func() (tfprotov6.ProviderServer, error), len(names))
+	for _, name := range names {
+		factories[name] = echoprovider.NewProviderServer()
+	}
+
+	return factories
+}
+
 // PreCheck is the exported form of the suite's testAccPreCheck: it fails the test unless
 // credentials are in the environment, and defaults the region the way the suite does.
 //
@@ -61,4 +77,8 @@ func PreCheck(t *testing.T) {
 		log.Println("[INFO] Test: Using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
 	}
+}
+
+func CheckDestroyNoop(*terraform.State) error {
+	return nil
 }

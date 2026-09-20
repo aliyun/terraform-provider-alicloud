@@ -1,5 +1,9 @@
 ## 2.0.0-beta5 (Unreleased)
 
+FEATURES:
+
+- **New Ephemeral Resource:** `alicloud_kms_secret` — reads a KMS secret's value through the `GetSecretValue` API without persisting it to the state or plan, for use in provider configuration, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
+
 ENHANCEMENTS:
 
 - resource/alicloud_oos_parameter: support the write-only attribute `value_wo` with `value_wo_version` as its change trigger, so the parameter value can be managed without being persisted in the state or plan.
