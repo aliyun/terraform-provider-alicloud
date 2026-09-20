@@ -60,6 +60,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the EIP instance.
+* `ip_address` - The elastic IP address of the EIP.
 * `status` - The status of the EIP.
 
 ## Timeouts
