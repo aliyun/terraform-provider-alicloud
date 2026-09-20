@@ -755,6 +755,65 @@ func resourceAliCloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
+	// CreateDBInstance cannot populate a custom IP array (it only writes the
+	// default group). When the user configured a custom db_instance_ip_array_name,
+	// create that array now via ModifySecurityIps and write the user's security
+	// IPs into it, leaving the default array at localhost to avoid pollution.
+	if ipArrayName, ok := d.GetOk("db_instance_ip_array_name"); ok && ipArrayName.(string) != "" && ipArrayName.(string) != "default" {
+		ipList := expandStringList(d.Get("security_ips").(*schema.Set).List())
+		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+		// default disable connect from outside
+		if ipstr == "" {
+			ipstr = LOCAL_HOST_IP
+		}
+		secAction := "ModifySecurityIps"
+		secRequest := map[string]interface{}{
+			"RegionId":              client.RegionId,
+			"DBInstanceId":          d.Id(),
+			"SecurityIps":           ipstr,
+			"DBInstanceIPArrayName": ipArrayName.(string),
+			"SourceIp":              client.SourceIp,
+		}
+		if v, ok := d.GetOk("db_instance_ip_array_attribute"); ok && v.(string) != "" {
+			secRequest["DBInstanceIPArrayAttribute"] = v
+		}
+		if v, ok := d.GetOk("security_ip_type"); ok && v.(string) != "" {
+			secRequest["SecurityIPType"] = v
+		}
+		if v, ok := d.GetOk("whitelist_network_type"); ok && v.(string) != "" {
+			secRequest["WhitelistNetworkType"] = v
+		}
+		if v, ok := d.GetOk("modify_mode"); ok && v.(string) != "" {
+			secRequest["ModifyMode"] = v
+		} else {
+			secRequest["ModifyMode"] = "Cover"
+		}
+		if v, ok := d.GetOk("fresh_white_list_readins"); ok && v.(string) != "" {
+			secRequest["FreshWhiteListReadins"] = v
+		}
+		var secResponse map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			secResponse, err = client.RpcPost("Rds", "2014-08-15", secAction, nil, secRequest, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), secAction, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(secAction, secResponse, secRequest)
+		secStateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 1*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := secStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	return resourceAliCloudDBInstanceUpdate(d, meta)
 }
 
@@ -2736,8 +2795,15 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		}
 	}
 
+	// CreateDBInstance only populates the default IP array; it has no
+	// DBInstanceIPArrayName parameter. When a custom IP array is requested via
+	// db_instance_ip_array_name, keep the default array at localhost and let the
+	// post-create ModifySecurityIps call populate the custom array, otherwise the
+	// default array would be polluted with the user's security IPs.
+	ipArrayName, hasCustomIpArray := d.GetOk("db_instance_ip_array_name")
+	isCustomIpArray := hasCustomIpArray && ipArrayName.(string) != "" && ipArrayName.(string) != "default"
 	request["SecurityIPList"] = LOCAL_HOST_IP
-	if len(d.Get("security_ips").(*schema.Set).List()) > 0 {
+	if !isCustomIpArray && len(d.Get("security_ips").(*schema.Set).List()) > 0 {
 		request["SecurityIPList"] = strings.Join(expandStringList(d.Get("security_ips").(*schema.Set).List())[:], COMMA_SEPARATED)
 	}
 
