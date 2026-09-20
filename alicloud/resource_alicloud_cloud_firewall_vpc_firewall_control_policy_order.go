@@ -40,6 +40,11 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyOrder() *schema.Resour
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"old_order": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Use 'acl_uuid' to identify the target access control policy. 'old_order' is deprecated and only sent as the OldOrder request parameter.",
+			},
 			"vpc_firewall_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -64,6 +69,12 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyOrderCreate(d *schema.
 	}
 	if v, ok := d.GetOk("acl_uuid"); ok {
 		request["AclUuid"] = v
+	}
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+	if v, ok := d.GetOk("old_order"); ok {
+		request["OldOrder"] = v
 	}
 
 	request["NewOrder"] = d.Get("order")
@@ -127,6 +138,12 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyOrderUpdate(d *schema.
 	query = make(map[string]interface{})
 	request["VpcFirewallId"] = parts[0]
 	request["AclUuid"] = parts[1]
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+	if v, ok := d.GetOk("old_order"); ok {
+		request["OldOrder"] = v
+	}
 
 	if d.HasChange("order") {
 		update = true
