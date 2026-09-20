@@ -71,7 +71,7 @@ func TestAccAliCloudSlsOssExportSink_basic9137(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"configuration": []map[string]interface{}{
 						{
-							"logstore": "${alicloud_log_store.defaultxeHfXC.name}",
+							"logstore": "${alicloud_log_store.defaultsecond.name}",
 							"role_arn": "acs:ram::1395891111111111111:role/aliyunlogdefaultrole",
 							"sink": []map[string]interface{}{
 								{
@@ -203,6 +203,14 @@ resource "alicloud_log_store" "defaultxeHfXC" {
   shard_count      = "2"
   project          = alicloud_log_project.defaulteyHJsO.name
   name             = format("%%s1", var.name)
+}
+
+resource "alicloud_log_store" "defaultsecond" {
+  hot_ttl          = "8"
+  retention_period = "30"
+  shard_count      = "2"
+  project          = alicloud_log_project.defaulteyHJsO.name
+  name             = format("%%s2", var.name)
 }
 
 resource "alicloud_oss_bucket" "defaultiwj0xO" {
