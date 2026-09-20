@@ -40,6 +40,7 @@ func TestAccAliCloudThreatDetectionMaliciousFileWhitelistConfig_basic4979(t *tes
 					"event_name":   "ALL",
 					"source":       "agentless",
 					"field_value":  "714",
+					"remark":       "test remark",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -50,6 +51,7 @@ func TestAccAliCloudThreatDetectionMaliciousFileWhitelistConfig_basic4979(t *tes
 						"event_name":   "ALL",
 						"source":       "agentless",
 						"field_value":  "714",
+						"remark":       "test remark",
 					}),
 				),
 			},
@@ -309,7 +311,7 @@ func TestAccAliCloudThreatDetectionMaliciousFileWhitelistConfig_basic4979(t *tes
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"remark"},
 			},
 		},
 	})
@@ -357,6 +359,7 @@ func TestAccAliCloudThreatDetectionMaliciousFileWhitelistConfig_basic4979_twin(t
 					"event_name":   "123",
 					"source":       "agentless",
 					"field_value":  "sadfas",
+					"remark":       "twin remark",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -367,6 +370,7 @@ func TestAccAliCloudThreatDetectionMaliciousFileWhitelistConfig_basic4979_twin(t
 						"event_name":   "123",
 						"source":       "agentless",
 						"field_value":  "sadfas",
+						"remark":       "twin remark",
 					}),
 				),
 			},
@@ -374,7 +378,7 @@ func TestAccAliCloudThreatDetectionMaliciousFileWhitelistConfig_basic4979_twin(t
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"remark"},
 			},
 		},
 	})

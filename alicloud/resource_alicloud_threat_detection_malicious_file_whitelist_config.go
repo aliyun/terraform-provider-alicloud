@@ -60,6 +60,10 @@ func resourceAliCloudThreatDetectionMaliciousFileWhitelistConfig() *schema.Resou
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"remark": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -95,6 +99,9 @@ func resourceAliCloudThreatDetectionMaliciousFileWhitelistConfigCreate(d *schema
 	}
 	if v, ok := d.GetOk("source"); ok {
 		request["Source"] = v
+	}
+	if v, ok := d.GetOk("remark"); ok {
+		request["Remark"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -142,6 +149,7 @@ func resourceAliCloudThreatDetectionMaliciousFileWhitelistConfigRead(d *schema.R
 	d.Set("source", objectRaw["Source"])
 	d.Set("target_type", objectRaw["TargetType"])
 	d.Set("target_value", objectRaw["TargetValue"])
+	d.Set("remark", objectRaw["Remark"])
 
 	return nil
 }
@@ -186,6 +194,11 @@ func resourceAliCloudThreatDetectionMaliciousFileWhitelistConfigUpdate(d *schema
 		update = true
 	}
 	request["FieldValue"] = d.Get("field_value")
+
+	if d.HasChange("remark") {
+		update = true
+	}
+	request["Remark"] = d.Get("remark")
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
