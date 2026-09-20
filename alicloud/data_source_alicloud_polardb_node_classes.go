@@ -91,6 +91,28 @@ func dataSourceAlicloudPolarDBNodeClasses() *schema.Resource {
 	}
 }
 
+// polardbEngineMatchesDbType reports whether the engine code returned by
+// DescribeDBClusterAvailableResources (e.g. "mysql8.0", "pgo14", "pg15")
+// corresponds to the user-facing db_type (MySQL/Oracle/PostgreSQL). The
+// API returns short engine codes rather than the full db_type names, so a
+// naive strings.Contains(engine, dbType) filter incorrectly drops Oracle
+// ("pgo14" does not contain "oracle") and PostgreSQL ("pg14" does not
+// contain "postgresql"). Since "pg" is also a prefix of "pgo", PostgreSQL
+// must explicitly exclude Oracle engines.
+func polardbEngineMatchesDbType(engine, dbType string) bool {
+	e := strings.ToLower(engine)
+	switch strings.ToLower(dbType) {
+	case "mysql":
+		return strings.HasPrefix(e, "mysql")
+	case "oracle":
+		return strings.HasPrefix(e, "pgo")
+	case "postgresql", "postgres", "pg":
+		return strings.HasPrefix(e, "pg") && !strings.HasPrefix(e, "pgo")
+	default:
+		return strings.HasPrefix(e, strings.ToLower(dbType))
+	}
+}
+
 func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
@@ -157,7 +179,7 @@ func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta i
 			if len(supportedEngine.AvailableResources) == 0 {
 				continue
 			}
-			if dbTypeGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(dbType.(string))) {
+			if dbTypeGot && !polardbEngineMatchesDbType(supportedEngine.Engine, dbType.(string)) {
 				continue
 			}
 			if dbVersionGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(dbVersion.(string))) {
