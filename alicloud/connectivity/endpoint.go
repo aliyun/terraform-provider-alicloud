@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -675,6 +676,11 @@ func (client *AliyunClient) describeEndpointForService(productCode string) (stri
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		endpointsResponse, err := locationClient.DescribeEndpoints(args)
 		if err != nil {
+			if e, ok := err.(*errors.ClientError); ok && e.ErrorCode() == errors.TimeoutErrorCode {
+				wait()
+				args.Domain = "location-readonly.aliyuncs.com"
+				return resource.RetryableError(err)
+			}
 			re := regexp.MustCompile("^Post [\"]*https://.*")
 			if err.Error() != "" && re.MatchString(err.Error()) {
 				wait()
