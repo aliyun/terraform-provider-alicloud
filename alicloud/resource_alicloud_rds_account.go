@@ -29,6 +29,12 @@ func resourceAliCloudRdsAccount() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(6 * time.Minute),
 		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("account_password"), cty.GetAttrPath("account_password_wo")),
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("password"), cty.GetAttrPath("account_password_wo")),
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("kms_encrypted_password"), cty.GetAttrPath("account_password_wo")),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"account_description": {
 				Type:          schema.TypeString,

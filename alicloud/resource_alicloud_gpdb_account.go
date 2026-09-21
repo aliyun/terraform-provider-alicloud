@@ -29,6 +29,10 @@ func resourceAliCloudGpdbAccount() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("account_password"), cty.GetAttrPath("account_password_wo")),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"account_description": {
 				Type:         schema.TypeString,

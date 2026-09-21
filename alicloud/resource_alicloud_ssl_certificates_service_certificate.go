@@ -27,6 +27,10 @@ func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("key"), cty.GetAttrPath("key_wo")),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"cert": {
 				Type:     schema.TypeString,
