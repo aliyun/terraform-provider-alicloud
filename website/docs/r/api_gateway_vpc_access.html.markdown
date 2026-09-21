@@ -103,6 +103,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The ID of an ECS or SLB instance in the VPC.
 * `port` - (Required, ForceNew) The port number that corresponds to the instance.
 * `vpc_target_host_name` - (Optional, ForceNew) The host of the backend service.
+* `tags` - (Optional, ForceNew) The tag of the resource.
 
 ## Attributes Reference
 
