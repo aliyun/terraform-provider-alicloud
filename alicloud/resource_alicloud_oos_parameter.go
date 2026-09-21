@@ -22,6 +22,10 @@ func resourceAlicloudOosParameter() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("value"), cty.GetAttrPath("value_wo")),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"constraints": {
 				Type:         schema.TypeString,
