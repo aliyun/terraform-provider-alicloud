@@ -44,6 +44,7 @@ func TestAccAliCloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 					"allowed_type": "vpc",
 					"port_range":   "9092/9092",
 					"allowed_ip":   "172.168.4.0/24",
+					"description":  "${var.name}-description",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -51,13 +52,15 @@ func TestAccAliCloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 						"allowed_type": "vpc",
 						"port_range":   "9092/9092",
 						"allowed_ip":   "172.168.4.0/24",
+						"description":  fmt.Sprintf("%s-description", name),
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"description"},
 			},
 		},
 	})
@@ -244,6 +247,7 @@ func TestUnitAliCloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
 		"port_range":   "9092/9092",
 		"instance_id":  "instance_id",
 		"allowed_type": "vpc",
+		"description":  "tf-testacc-description",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
