@@ -11,7 +11,7 @@ import (
 
 // Case 1
 // lintignore: AT001
-func SkipTestAccAlicloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
+func TestAccAliCloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
 	var v map[string]interface{}
 	testAccPreCheckWithRegions(t, true, connectivity.EbsDedicatedBlockStorageClusterRegions)
 	resourceId := "alicloud_ebs_dedicated_block_storage_cluster.default"
@@ -37,6 +37,8 @@ func SkipTestAccAlicloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
 					"zone_id":                              "${data.alicloud_ebs_regions.default.regions[0].zones[0].zone_id}",
 					"dedicated_block_storage_cluster_name": name,
 					"total_capacity":                       "61440",
+					"period":                               6,
+					"period_unit":                          "Month",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -63,7 +65,7 @@ func SkipTestAccAlicloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"period", "period_unit"},
 			},
 		},
 	})
