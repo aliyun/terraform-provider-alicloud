@@ -1,13 +1,13 @@
 ---
 subcategory: "KMS"
 layout: "alicloud"
-page_title: "Alicloud: Ephemeral: alicloud_kms_secret"
+page_title: "Alicloud: alicloud_kms_secret"
 sidebar_current: "docs-alicloud-ephemeral-kms-secret"
 description: |-
     Retrieves the value of a KMS secret without persisting it to the state or plan.
 ---
 
-# Ephemeral: alicloud_kms_secret
+# alicloud_kms_secret
 
 This ephemeral resource retrieves the value of a KMS secret through the `GetSecretValue` API without
 persisting it to the state or plan. The value is available for the duration of a single Terraform
