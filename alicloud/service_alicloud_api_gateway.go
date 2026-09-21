@@ -602,6 +602,48 @@ func (s *CloudApiService) DescribeApiGatewayBackend(id string) (object map[strin
 	return v.(map[string]interface{}), nil
 }
 
+func (s *CloudApiService) DescribeApiGatewayBackendTags(id string) (tags map[string]interface{}, err error) {
+	client := s.client
+	request := map[string]interface{}{
+		"ResourceId":   &[]string{id},
+		"ResourceType": "backend",
+	}
+	var response map[string]interface{}
+	action := "ListTagResources"
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TagResources.TagResource", response)
+	if err != nil {
+		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response)
+	}
+	result := make(map[string]interface{})
+	if tagsList, ok := v.([]interface{}); ok {
+		for _, tag := range tagsList {
+			if tagMap, ok := tag.(map[string]interface{}); ok {
+				if key, ok := tagMap["TagKey"].(string); ok {
+					result[key] = tagMap["TagValue"]
+				}
+			}
+		}
+	}
+	return result, nil
+}
+
 func (s *CloudApiService) DescribeApiGatewayLogConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
