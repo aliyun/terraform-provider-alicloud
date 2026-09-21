@@ -71,7 +71,7 @@ arn_parse(arn string) object
 
 ## Arguments
 
-* `arn` (String) ARN to parse, such as `acs:ecs:cn-hangzhou:123456789012****:instance/i-bp1234567890abcdef`.
+1. `arn` (String) ARN to parse, such as `acs:ecs:cn-hangzhou:123456789012****:instance/i-bp1234567890abcdef`.
 
 The ARN must have five colon-separated sections and must start with `acs`. The region and the account ID may be empty, because a global service such as `ram` carries no region and a policy may match every account, but the resource may not: `acs:ram:*::*` parses, `acs:ecs:cn-hangzhou:123456789012****:` does not. Any colons beyond the fourth belong to the resource and are kept as part of it, so `acs:log:cn-hangzhou:123456789012****:project/my-project:logstore/my-logstore` yields a resource of `project/my-project:logstore/my-logstore`.
 
