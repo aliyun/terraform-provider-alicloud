@@ -13,7 +13,7 @@ Encrypt a given plaintext with KMS. The produced ciphertext stays stable across 
 
 -> **NOTE:** Available since v1.63.0.
 
--> **NOTE:** The `plaintext_wo` and `plaintext_wo_version` arguments require Terraform v1.11.0 or later. When `plaintext_wo` is in use, `plaintext` reads back empty because it is not stored in the state or plan.
+-> **NOTE:** The `plaintext_wo` and `plaintext_wo_version` arguments require Terraform v1.11.0 or later. When `plaintext_wo` is in use, `plaintext` is empty in the state and plan.
 
 -> **NOTE**: Using this data provider will allow you to conceal secret data within your resource definitions but does not take care of protecting that data in all Terraform logging and state output. Please take care to secure your secret data beyond just the Terraform configuration.
 
@@ -44,7 +44,7 @@ resource "alicloud_kms_ciphertext" "encrypted" {
 
 The following arguments are supported:
 
-* `plaintext` - (Optional, Computed, ForceNew) The plaintext to be encrypted which must be encoded in Base64. Exactly one of `plaintext` and `plaintext_wo` can be set.
+* `plaintext` - (Optional, ForceNew) The plaintext to be encrypted which must be encoded in Base64. Exactly one of `plaintext` and `plaintext_wo` can be set.
 * `plaintext_wo` - (Optional, Available since v2.0.0-beta5) The write-only plaintext to be encrypted which must be encoded in Base64. It is only sent to the server when the resource is created and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `plaintext_wo_version`. Exactly one of `plaintext` and `plaintext_wo` can be set.
 * `plaintext_wo_version` - (Optional, ForceNew, Available since v2.0.0-beta5) The version of the write-only plaintext. The write-only plaintext is re-sent to the server only when this argument changes, so changing it recreates the resource with the new `plaintext_wo` value.
 * `key_id` - (Required, ForceNew) The globally unique ID of the CMK.

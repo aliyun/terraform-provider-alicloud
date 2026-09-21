@@ -30,7 +30,6 @@ func resourceAlicloudKmsCiphertext() *schema.Resource {
 			"plaintext": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
 				ForceNew:     true,
 				Sensitive:    true,
 				ExactlyOneOf: []string{"plaintext", "plaintext_wo"},
