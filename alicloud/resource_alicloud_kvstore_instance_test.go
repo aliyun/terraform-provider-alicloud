@@ -1176,6 +1176,80 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudKVStoreRedisInstance_secondaryZoneOnly(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceSecondaryZoneOnly%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":    "redis.shard.small.ce",
+					"db_instance_name":  name,
+					"instance_type":     "Redis",
+					"engine_version":    "7.0",
+					"shard_count":       "2",
+					"payment_type":      "PostPaid",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":    "redis.shard.small.ce",
+						"db_instance_name":  name,
+						"instance_type":     "Redis",
+						"engine_version":    "7.0",
+						"shard_count":       "2",
+						"payment_type":      "PostPaid",
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			{
+				// Changing only secondary_zone_id (zone_id unchanged) must still send ZoneId to MigrateToOtherZone.
+				Config: testAccConfig(map[string]interface{}{
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.2.id}",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":           CHECKSET,
+						"secondary_zone_id": CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
