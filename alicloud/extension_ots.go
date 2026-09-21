@@ -204,6 +204,12 @@ type RestOtsInstanceInfo struct {
 	Policy                string           `json:"Policy" xml:"Policy"`
 	PolicyVersion         int              `json:"PolicyVersion" xml:"PolicyVersion"`
 	InstanceDescription   string           `json:"InstanceDescription" xml:"InstanceDescription"`
+	PaymentType           string           `json:"PaymentType" xml:"PaymentType"`
+	StorageType           string           `json:"StorageType" xml:"StorageType"`
+	AliasName             string           `json:"AliasName" xml:"AliasName"`
+	ElasticVCUUpperLimit  float64          `json:"ElasticVCUUpperLimit" xml:"ElasticVCUUpperLimit"`
+	VCUQuota              int              `json:"VCUQuota" xml:"VCUQuota"`
+	IsMultiAZ             bool             `json:"IsMultiAZ" xml:"IsMultiAZ"`
 	Quota                 RestOtsQuota     `json:"Quota" xml:"Quota"`
 	Tags                  []RestOtsTagInfo `json:"Tags" xml:"Tags"`
 }

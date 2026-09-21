@@ -966,6 +966,14 @@ func OtsRestApiGetWithRetry(client *connectivity.AliyunClient, product string, v
 	return invokeOtsRestApiWithRetry(client, product, version, actionPath, "GET", urlQuery, nil, nil)
 }
 
+// OtsRestApiDeleteWithRetry send DELETE request by CommonSDK(roa/restful) with retry.
+// This method directly passes OpenAPI parameters such as product and version, without relying on SDK version upgrades.
+// Retry policy: 3, 3+5, 3+5+5…, retry timeout: d.Timeout(schema.TimeoutCreate)
+// product is openapi product code, version is openapi version, actionPath is restful openapi backend api path, urlQuery is url param
+func OtsRestApiDeleteWithRetry(client *connectivity.AliyunClient, product string, version string, actionPath string, urlQuery map[string]*string) (map[string]interface{}, error) {
+	return invokeOtsRestApiWithRetry(client, product, version, actionPath, "DELETE", urlQuery, nil, nil)
+}
+
 func invokeOtsRestApiWithRetry(client *connectivity.AliyunClient, product string, version string, actionPath string, httpMethod string, urlQuery map[string]*string, headers map[string]*string, requestBody map[string]interface{}) (map[string]interface{}, error) {
 	var response map[string]interface{}
 	otsClient, err := client.NewOtsRoaClient(product)

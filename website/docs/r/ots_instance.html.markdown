@@ -51,11 +51,11 @@ The following arguments are supported:
 
 * `name` - (Required, ForceNew) The name of the instance.
 * `network_type_acl` - (Optional, Available since v1.221.0) The set of network types that are allowed access. Valid optional values:
-    * `CLASSIC` - Classic network.
-    * `VPC` - VPC network.
-    * `INTERNET` - Public internet.
+  * `CLASSIC` - Classic network.
+  * `VPC` - VPC network.
+  * `INTERNET` - Public internet.
 
-    Default to ["VPC", "CLASSIC", "INTERNET"].
+  Default to ["VPC", "CLASSIC", "INTERNET"].
 * `network_source_acl` - (Optional, Available since v1.221.0) The set of request sources that are allowed access. Valid optional values:
   * `TRUST_PROXY` - Trusted proxy, usually the Alibaba Cloud console.
 
@@ -71,12 +71,26 @@ The following arguments are supported:
 * `instance_type` - (Optional, ForceNew) The type of instance. Valid values are "Capacity" and "HighPerformance". Default to "HighPerformance".
 * `description` - (Optional, ForceNew) The description of the instance. Currently, it does not support modifying.
 * `tags` - (Optional) A mapping of tags to assign to the instance.
+* `vcu` - (Optional, ForceNew) The number of VCUs for a reserved-mode (VCU) instance. When this value is greater than 0, the instance is created as a VCU instance via the CreateVCUInstance API; otherwise a free instance is created.
+* `period_in_month` - (Optional, ForceNew) The subscription duration in months. Required for VCU instances.
+* `enable_auto_renew` - (Optional, ForceNew) Whether to enable auto-renewal for the VCU instance.
+* `enable_elastic_vcu` - (Optional, ForceNew) Whether to enable instance elasticity. When enabled, the peak VCU usage can exceed the purchased VCU amount.
+* `auto_renew_period_in_month` - (Optional, ForceNew) The auto-renewal cycle in months. Required when `enable_auto_renew` is true.
+* `alias_name` - (Optional) The alias of the instance.
+* `elastic_vcu_upper_limit` - (Optional) The upper limit for the VCUs of the instance. Valid values: number of reserved VCUs + 0.1 to 2000.
+* `policy` - (Optional) The instance access control policy in JSON format.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID. The value is same as the "name".
+* `payment_type` - The payment type of the instance.
+* `policy_version` - The version of the instance policy.
+* `vcu` - The number of VCUs of the instance.
+* `alias_name` - The alias of the instance.
+* `elastic_vcu_upper_limit` - The upper limit for the VCUs of the instance.
+* `policy` - The instance access control policy in JSON format.
 
 ## Import
 
