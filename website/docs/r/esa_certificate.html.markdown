@@ -51,9 +51,9 @@ The following arguments are supported:
 * `cert_name` - (Optional, Computed) The certificate name.
 * `certificate` - (Optional, Computed) Certificate content.
 * `created_type` - (Required) The certificate type.
-  - cas (Certificate Center Certificate)
-  - upload (custom upload certificate)
-  - free( Free certificate).
+  - `cas` (Certificate Center Certificate)
+  - `upload` (custom upload certificate)
+  - `free`( Free certificate).
 
 -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
@@ -66,7 +66,10 @@ The following arguments are supported:
 For accounts on the Chinese site, this parameter value is: cn-hangzhou
 For accounts on the international site, this parameter value is: ap-southeast-1
 * `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the ListSites interface.
-* `type` - (Optional, ForceNew, Computed) Certificate type. Possible values: lets_encrypt: Let's Encrypt certificate; 
+* `type` - (Optional, ForceNew, Computed) The certificate type. Valid values:
+  - `lets_encrypt`: Let's Encrypt.
+  - `digicert_single`: (Available since v1.294.0) DigiCert single-domain.
+  - `digicert_wildcard`: (Available since v1.294.0) DigiCert wildcard.
 
 ## Attributes Reference
 
