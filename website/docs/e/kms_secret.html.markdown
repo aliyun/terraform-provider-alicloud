@@ -14,9 +14,9 @@ persisting it to the state or plan. The value is available for the duration of a
 operation and can be referenced in provider configuration, write-only attributes, and other ephemeral
 resources, but never appears in any Terraform artifact.
 
--> **NOTE:** Available since v2.0.0-beta5.
+-> **NOTE:** Available since v2.0.0-beta5. Ephemeral resources require Terraform 1.10 or later.
 
--> **NOTE:** Ephemeral resources require Terraform 1.10 or later.
+-> **NOTE:** The ephemeral resource is opened during the plan phase, so the secret it references must already exist. If the secret is created by another resource in the same configuration, the first plan fails with a not-found error such as `Forbidden.ResourceNotFound`; create the secret out of band or in an earlier apply first. If the secret value is rotated, the rotated value reaches a write-only attribute only after its `_wo_version` is bumped in a subsequent apply.
 
 ## Example Usage
 
@@ -65,8 +65,6 @@ resource "alicloud_kms_ciphertext" "default" {
   plaintext_wo_version = 1
 }
 ```
-
--> **NOTE:** The ephemeral resource is opened during the plan phase, so the secret it references must already exist. If the secret value is rotated, the rotated value reaches a write-only attribute only after its `_wo_version` is bumped in a subsequent apply.
 
 ## Argument Reference
 
