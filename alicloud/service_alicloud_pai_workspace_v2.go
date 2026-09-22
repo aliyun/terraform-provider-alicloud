@@ -84,6 +84,47 @@ func (s *PaiWorkspaceServiceV2) PaiWorkspaceWorkspaceStateRefreshFuncWithApi(id 
 }
 
 // DescribePaiWorkspaceWorkspace >>> Encapsulated.
+
+func (s *PaiWorkspaceServiceV2) PaiWorkspaceWorkspaceIdByName(name string) (string, error) {
+	client := s.client
+	action := "/api/v1/workspaces"
+	request := map[string]interface{}{"WorkspaceName": name}
+	query := map[string]*string{
+		"WorkspaceName": StringPointer(name),
+	}
+	var response map[string]interface{}
+	var err error
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("AIWorkSpace", "2021-02-04", action, query, nil, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return "", WrapErrorf(err, DefaultErrorMsg, name, action, AlibabaCloudSdkGoERROR)
+	}
+
+	workspaces, _ := response["Workspaces"].([]interface{})
+	for _, raw := range workspaces {
+		workspace, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(workspace["WorkspaceName"]) == name {
+			return fmt.Sprint(workspace["WorkspaceId"]), nil
+		}
+	}
+	return "", nil
+}
+
 // DescribePaiWorkspaceDataset <<< Encapsulated get interface for PaiWorkspace Dataset.
 
 func (s *PaiWorkspaceServiceV2) DescribePaiWorkspaceDataset(id string) (object map[string]interface{}, err error) {
