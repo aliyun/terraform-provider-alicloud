@@ -175,6 +175,7 @@ func Provider() *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"alicloud_realtime_compute_variables":                     dataSourceAliCloudRealtimeComputeVariables(),
 			"alicloud_apig_secrets":                                   dataSourceAliCloudApigSecrets(),
+			"alicloud_agentloop_agent_spaces":                         dataSourceAliCloudAgentLoopAgentSpaces(),
 			"alicloud_threat_detection_attack_path_whitelists":        dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
 			"alicloud_ehpc_users":                                     dataSourceAliCloudEhpcUsers(),
 			"alicloud_realtime_compute_members":                       dataSourceAliCloudRealtimeComputeMembers(),
@@ -982,6 +983,7 @@ func Provider() *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_realtime_compute_variable":                            resourceAliCloudRealtimeComputeVariable(),
+			"alicloud_agentloop_agent_space":                                resourceAliCloudAgentLoopAgentSpace(),
 			"alicloud_apig_secret":                                          resourceAliCloudApigSecret(),
 			"alicloud_cr_instance_customized_domain":                        resourceAliCloudCrInstanceCustomizedDomain(),
 			"alicloud_threat_detection_attack_path_whitelist":               resourceAliCloudThreatDetectionAttackPathWhitelist(),
