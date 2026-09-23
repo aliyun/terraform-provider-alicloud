@@ -6181,3 +6181,198 @@ func resourceECSInstanceTagsDependence(name string) string {
 	}
 `, name)
 }
+
+func TestAccAliCloudECSInstanceSecurityOptions(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceSecurityOptions%d", rand)
+	testAccConfigTDX := resourceTestAccConfigFunc(resourceId, name, resourceInstanceSecurityOptionsTDXDependence)
+	testAccConfigEnclave := resourceTestAccConfigFunc(resourceId, name, resourceInstanceSecurityOptionsEnclaveDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfigTDX(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":        "ecs.g8i.xlarge",
+					"availability_zone":    "cn-beijing-i",
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_options": []map[string]interface{}{
+						{
+							"confidential_computing_mode": "TDX",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+					}),
+					resource.TestCheckResourceAttr(resourceId, "security_options.0.confidential_computing_mode", "TDX"),
+				),
+			},
+			{
+				Config: testAccConfigEnclave(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":        "ecs.g8i.xlarge",
+					"availability_zone":    "cn-beijing-i",
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_options": []map[string]interface{}{
+						{
+							"confidential_computing_mode": "Enclave",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+					}),
+					resource.TestCheckResourceAttr(resourceId, "security_options.0.confidential_computing_mode", "Enclave"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSInstanceSecurityOptionsEnclave(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceSecurityOptionsEnclave%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceSecurityOptionsEnclaveDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":        "ecs.g8i.xlarge",
+					"availability_zone":    "cn-beijing-i",
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_options": []map[string]interface{}{
+						{
+							"confidential_computing_mode": "Enclave",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+					}),
+					resource.TestCheckResourceAttr(resourceId, "security_options.0.confidential_computing_mode", "Enclave"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+		},
+	})
+}
+
+func resourceInstanceSecurityOptionsTDXDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_images" "default" {
+	name_regex  = "^aliyun_4_x64_20G_alibase_[0-9]+\\.vhd$"
+	most_recent = true
+	owners      = "system"
+}
+
+resource "alicloud_vpc" "default" {
+	vpc_name = var.name
+	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+	vpc_id       = alicloud_vpc.default.id
+	zone_id      = "cn-beijing-i"
+	cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+	vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+	count = "1"
+	name   = "${var.name}"
+	vpc_id = alicloud_vpc.default.id
+}
+
+variable "name" {
+	default = "%s"
+}
+`, name)
+}
+
+func resourceInstanceSecurityOptionsEnclaveDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_images" "default" {
+	name_regex  = "^aliyun_2_1903_x64_20G_uefi_alibase_20260506\\.vhd$"
+	most_recent = true
+	owners      = "system"
+}
+
+resource "alicloud_vpc" "default" {
+	vpc_name = var.name
+	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+	vpc_id       = alicloud_vpc.default.id
+	zone_id      = "cn-beijing-i"
+	cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+	vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+	count = "1"
+	name   = "${var.name}"
+	vpc_id = alicloud_vpc.default.id
+}
+
+variable "name" {
+	default = "%s"
+}
+`, name)
+}
