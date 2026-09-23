@@ -162,12 +162,44 @@ resource "alicloud_polardb_gateway_consumer" "dependency" {
 `
 }
 
+func resourcePolarDBGatewayAIRateLimitPolicyDependence(name string) string {
+	return resourcePolarDBGatewayAIConsumerDependence(name) + `
+resource "alicloud_polardb_gateway_rate_limit_policy" "dependency" {
+  gateway_id     = alicloud_polardb_gateway.dependency.id
+  scope_type     = "Consumer"
+  scope_ref_id   = alicloud_polardb_gateway_consumer.dependency.consumer_id
+  rate_limit_rpm = "100"
+  rate_limit_tpm = "10000"
+}
+`
+}
+
+func resourcePolarDBGatewayAIBudgetPolicyDependence(name string) string {
+	return resourcePolarDBGatewayAIConfigDependence(name) + `
+resource "alicloud_polardb_gateway_budget_policy" "dependency" {
+  gateway_id          = alicloud_polardb_gateway.dependency.id
+  budget_type         = "GlobalTotal"
+  reset_day_of_month  = 1
+  budget_points       = "1000"
+  alert_threshold_pct = 80
+}
+`
+}
+
 func testAccPreCheckPolarDBGatewayAI(t *testing.T) {
 	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Beijing})
 }
 
 func testAccCheckPolarDBGatewayCostRuleDestroy(s *terraform.State) error {
 	return testAccCheckPolarDBGatewayAIChildDestroy(s, "alicloud_polardb_gateway_cost_rule", "DescribeCostRules", "", "CostRuleId")
+}
+
+func testAccCheckPolarDBGatewayBudgetPolicyDestroy(s *terraform.State) error {
+	return testAccCheckPolarDBGatewayAIChildDestroy(s, "alicloud_polardb_gateway_budget_policy", "DescribeBudgetPolicies", "BudgetPolicyId", "BudgetPolicyId")
+}
+
+func testAccCheckPolarDBGatewayRateLimitPolicyDestroy(s *terraform.State) error {
+	return testAccCheckPolarDBGatewayAIChildDestroy(s, "alicloud_polardb_gateway_rate_limit_policy", "DescribeRateLimitPolicy", "PolicyId", "PolicyId")
 }
 
 func testAccCheckPolarDBGatewayModelAPIDestroy(s *terraform.State) error {
@@ -270,6 +302,22 @@ func TestUnitPolarDBGatewayAIChildID(t *testing.T) {
 	}
 }
 
+func TestUnitPolarDBGatewayAIInt(t *testing.T) {
+	tests := []struct {
+		input interface{}
+		want  interface{}
+	}{
+		{input: " 28 ", want: 28},
+		{input: float64(80), want: 80},
+		{input: "unknown", want: "unknown"},
+	}
+	for _, test := range tests {
+		if got := polarDBGatewayAIInt(test.input); !reflect.DeepEqual(got, test.want) {
+			t.Fatalf("polarDBGatewayAIInt(%#v) = %#v, want %#v", test.input, got, test.want)
+		}
+	}
+}
+
 func TestUnitNormalizePolarDBGatewayAIJSON(t *testing.T) {
 	left := normalizePolarDBGatewayAIJSON(`[{"Weight":"10","Name":"primary"}]`)
 	right := normalizePolarDBGatewayAIJSON(`[
@@ -352,5 +400,13 @@ func TestUnitPolarDBGatewayAIResourceSchemas(t *testing.T) {
 	}
 	if consumerSchema["api_key_reset_token"].Sensitive {
 		t.Fatal("consumer api_key_reset_token is a rotation trigger, not the secret")
+	}
+	budgetSchema := resourceAlicloudPolarDBGatewayBudgetPolicy().Schema
+	if !budgetSchema["budget_type"].ForceNew || budgetSchema["budget_points"].ForceNew {
+		t.Fatal("budget type must replace the policy while budget points must update in place")
+	}
+	rateLimitSchema := resourceAlicloudPolarDBGatewayRateLimitPolicy().Schema
+	if !rateLimitSchema["scope_type"].ForceNew || rateLimitSchema["rate_limit_rpm"].ForceNew {
+		t.Fatal("rate limit scope must replace the policy while rate limits must update in place")
 	}
 }
