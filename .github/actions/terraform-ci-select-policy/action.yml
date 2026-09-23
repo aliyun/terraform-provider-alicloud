@@ -1,0 +1,31 @@
+name: Select Terraform CI policy
+description: Validate Basic Policy and select the runner for a supported event.
+
+outputs:
+  classification:
+    description: Validated trusted or external event classification.
+    value: ${{ steps.select.outputs.classification }}
+  relevant:
+    description: Whether provider CI consumer jobs should run.
+    value: ${{ steps.select.outputs.relevant }}
+  runner:
+    description: JSON string containing the selected runner label.
+    value: ${{ steps.select.outputs.runner }}
+  heavy_runner:
+    description: JSON string containing the selected heavy runner label.
+    value: ${{ steps.select.outputs.heavy_runner }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate Basic Policy and select runner
+      id: select
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      env:
+        TERRAFORM_CI_ROUTE_MODULE: ${{ github.action_path }}/route.js
+      with:
+        script: |
+          const { selectPolicy } = require(
+            process.env.TERRAFORM_CI_ROUTE_MODULE
+          );
+          await selectPolicy({ github, context, core });

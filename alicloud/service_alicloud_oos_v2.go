@@ -1,0 +1,407 @@
+package alicloud
+
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+)
+
+type OosServiceV2 struct {
+	client *connectivity.AliyunClient
+}
+
+// DescribeOosPatchBaseline <<< Encapsulated get interface for Oos PatchBaseline.
+
+func (s *OosServiceV2) DescribeOosPatchBaseline(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Name"] = id
+	request["RegionId"] = client.RegionId
+	action := "GetPatchBaseline"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.PatchBaseline"}) {
+			return object, WrapErrorf(NotFoundErr("PatchBaseline", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.PatchBaseline", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PatchBaseline", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *OosServiceV2) OosPatchBaselineStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.OosPatchBaselineStateRefreshFuncWithApi(id, field, failStates, s.DescribeOosPatchBaseline)
+}
+
+func (s *OosServiceV2) OosPatchBaselineStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeOosPatchBaseline >>> Encapsulated.
+
+func (s *OosServiceV2) SetOssResourceTags(d *schema.ResourceData, resourceType string) error {
+	if d.HasChange("tags") {
+		var action string
+		var err error
+		client := s.client
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+
+		added, removed := parsingTags(d)
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action = "UntagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceIds"] = "[\"" + d.Id() + "\"]"
+			request["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+			request["TagKeys"] = convertListToJsonString(convertListStringToListInterface(removedTagKeys))
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, false)
+
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added) > 0 {
+			action = "TagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceIds"] = "[\"" + d.Id() + "\"]"
+			request["RegionId"] = client.RegionId
+			tagsString, _ := convertArrayObjectToJsonString(added)
+			request["Tags"] = tagsString
+			request["ResourceType"] = resourceType
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+	}
+
+	return nil
+}
+
+// DescribeOosSecretParameter <<< Encapsulated get interface for Oos SecretParameter.
+
+func (s *OosServiceV2) DescribeOosSecretParameter(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "GetSecretParameter"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Name"] = id
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExists.Parameter"}) {
+			return object, WrapErrorf(NotFoundErr("SecretParameter", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Parameter", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Parameter", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+func (s *OosServiceV2) DescribeSecretParameterListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "ListTagResources"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceIds"] = convertObjectToJsonString(expandSingletonToList(id))
+	request["RegionId"] = client.RegionId
+
+	request["ResourceType"] = "secretparameter"
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidResourceId.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("SecretParameter", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// WaitForOosSecretParameterTagsConverged polls ListTagResources until the tag bindings
+// read back for the specified secret parameter match the expected tags. Tag bindings
+// written through UpdateSecretParameter are propagated asynchronously to the tag
+// storage behind ListTagResources, so an immediate read may miss them.
+func (s *OosServiceV2) WaitForOosSecretParameterTagsConverged(id string, expectedTags map[string]interface{}, timeout time.Duration) error {
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := resource.Retry(timeout, func() *resource.RetryError {
+		object, err := s.DescribeSecretParameterListTagResources(id)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", object)
+		tagResources := make([]interface{}, 0)
+		for _, tagResource := range convertToInterfaceArray(tagsMaps) {
+			if tagResourceMap, ok := tagResource.(map[string]interface{}); ok && fmt.Sprint(tagResourceMap["ResourceId"]) == id {
+				tagResources = append(tagResources, tagResource)
+			}
+		}
+		currentTags := tagsToMap(tagResources)
+		if len(currentTags) != len(expectedTags) {
+			wait()
+			return resource.RetryableError(Error("The tags of OOS secret parameter %s have not been propagated yet, current: %v, expected: %v.", id, currentTags, expectedTags))
+		}
+		for key, value := range expectedTags {
+			if fmt.Sprint(currentTags[key]) != fmt.Sprint(value) {
+				wait()
+				return resource.RetryableError(Error("The tags of OOS secret parameter %s have not been propagated yet, current: %v, expected: %v.", id, currentTags, expectedTags))
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return WrapError(err)
+	}
+	return nil
+}
+
+func (s *OosServiceV2) OosSecretParameterStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeOosSecretParameter(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeOosSecretParameter >>> Encapsulated.
+
+// SetResourceTags <<< Encapsulated tag function for Oos.
+func (s *OosServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+	if d.HasChange("tags") {
+		var action string
+		var err error
+		client := s.client
+		var request map[string]interface{}
+		var response map[string]interface{}
+		query := make(map[string]interface{})
+
+		added, removed := parsingTags(d)
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+		if len(removedTagKeys) > 0 {
+			action = "UntagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceIds"] = convertObjectToJsonString(expandSingletonToList(d.Id()))
+			request["RegionId"] = client.RegionId
+			if v, ok := d.GetOk("tags"); ok {
+				tagsTagKeyJsonPath, err := jsonpath.Get("$.tag_key", v)
+				if err == nil && tagsTagKeyJsonPath != "" {
+					request["TagKeys"] = tagsTagKeyJsonPath
+				}
+			}
+			request["ResourceType"] = resourceType
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added) > 0 {
+			action = "TagResources"
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ResourceIds"] = convertObjectToJsonString(expandSingletonToList(d.Id()))
+			request["RegionId"] = client.RegionId
+			tagsJsonPath, err := jsonpath.Get("$", d.Get("tags"))
+			if err == nil {
+				request["Tags"] = tagsJsonPath
+			}
+
+			request["ResourceType"] = resourceType
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("oos", "2019-06-01", action, query, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+	}
+
+	return nil
+}
+
+// SetResourceTags >>> tag function encapsulated.

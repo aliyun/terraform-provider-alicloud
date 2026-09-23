@@ -1,0 +1,131 @@
+groups:
+  - name: all
+    jobs:
+      - pull-request-integration-test-approve
+      - pull-request-integration-test-comment
+
+shared:
+  - &run
+    task: integrate-check
+    file: terraform-provider-alicloud/ci/tasks/pull-request.yml
+    params:
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key_for_service}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key_for_service}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id_for_service}}
+      FC_SERVICE: {{alicloud_fc_service_name}}
+      FC_REGION: {{alicloud_fc_region}}
+      OSS_BUCKET_NAME: {{alicloud_oss_bucket_name}}
+      OSS_BUCKET_REGION: {{alicloud_oss_bucket_region}}
+      GITHUB_TOKEN: {{github_token}}
+
+  - &run-example
+    task: docs-example-check
+    file: terraform-provider-alicloud/ci/tasks/docs-example.yml
+    params:
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key_test}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key_test}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id_test}}
+      ALICLOUD_REGION_TEST: {{alicloud_region_test}}
+      ALICLOUD_ACCESS_KEY_FOR_SERVICE: {{alicloud_access_key_for_service}}
+      ALICLOUD_SECRET_KEY_FOR_SERVICE: {{alicloud_secret_key_for_service}}
+      FC_SERVICE: {{alicloud_fc_service_name}}
+      FC_REGION: {{alicloud_fc_region}}
+      OSS_BUCKET_NAME: {{alicloud_oss_bucket_name}}
+      OSS_BUCKET_REGION: {{alicloud_oss_bucket_region}}
+      GITHUB_TOKEN: {{github_token}}
+  - &timer
+    task: timer
+    file: terraform-provider-alicloud/ci/tasks/timer.yml
+
+jobs:
+- name: pull-request-integration-test-approve
+  plan:
+  - in_parallel:
+    - get: terraform-provider-alicloud
+      resource: github-pr-approve
+      trigger: true
+      version: every
+      params:
+        source_path: .
+    - get: aliyun-cli
+      resource: aliyun-cli
+    - get: gh
+      resource: gh
+    - get: terraform
+      resource: terraform
+  - <<: *run
+  - <<: *timer
+  - <<: *run-example
+
+- name: pull-request-integration-test-comment
+  plan:
+  - in_parallel:
+    - get: terraform-provider-alicloud
+      resource: github-pr-comment
+      trigger: true
+      version: every
+      params:
+        source_path: .
+    - get: aliyun-cli
+      resource: aliyun-cli
+    - get: gh
+      resource: gh
+    - get: terraform
+      resource: terraform
+  - <<: *run
+  - <<: *timer
+  - <<: *run-example
+
+resources:
+
+- name: aliyun-cli
+  type: s3
+  source:
+    access_key_id: {{aliyun_cli_access_key}}
+    secret_access_key: {{aliyun_cli_secret_key}}
+    bucket: {{aliyun_cli_bucket}}
+    regexp: .*-cli-linux-3\.0\.(\d+)-amd64\.tgz
+    region_name: {{aliyun_cli_region}}
+    endpoint: oss-((aliyun_cli_region)).aliyuncs.com
+
+- name: github-pr-approve
+  type: github-pr-comment-resource
+  source:
+    repository: aliyun/terraform-provider-alicloud
+    access_token: {{github_token}}
+    review_states: ["approved"]
+    when: latest
+
+- name: github-pr-comment
+  type: github-pr-comment-resource
+  source:
+    repository: aliyun/terraform-provider-alicloud
+    access_token: {{github_token}}
+    review_states: ["commented"]
+    when: latest
+    comments: ["^approved$"]
+    commenter_association: ["owner", "member"]
+
+- name: gh
+  type: file-url
+  source:
+    url: https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz
+    filename: gh_2.27.0_linux_amd64.tar.gz
+
+- name: terraform
+  type: file-url
+  source:
+    url: https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip
+    filename: terraform.zip
+
+resource_types:
+  - name: github-pr-comment-resource
+    type: docker-image
+    source:
+      repository: ndrjng/concourse-github-pr-comment-resource
+
+  - name: file-url
+    type: docker-image
+    source:
+      repository: pivotalservices/concourse-curl-resource
+      tag: latest

@@ -1,0 +1,27 @@
+name: Golangci-Lint
+triggers:
+  merge_request:
+    paths:
+      - '.aoneci/acctest-terraform-lint.yml'
+      - 'alicloud/*.go'
+  push:
+    paths:
+      - '.aoneci/acctest-terraform-lint.yml'
+      - 'alicloud/*.go'
+jobs:
+  megalinter:
+    name: MegaLinter
+    steps:
+      - name: Check out code into the Go module directory
+        uses: checkout
+      - name: errcheck
+        uses: megalinter
+        envs:
+          ADDITIONAL_EXCLUDED_DIRECTORIES: ['scripts']
+          DISABLE_LINTERS: 'GO_REVIVE'
+          VALIDATE_ALL_CODEBASE: 'false'
+          GO_GOLANGCI_LINT_CLI_LINT_MODE: 'project'
+          GO_FILTER_REGEX_EXCLUDE: '.scripts/*'
+        inputs:
+          language: GO
+          compare-to: '${{git.merge_request.targetBranch ?: master}}'
