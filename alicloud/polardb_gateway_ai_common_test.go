@@ -74,6 +74,19 @@ resource "alicloud_polardb_gateway_model_api" "dependency" {
 `
 }
 
+func resourcePolarDBGatewayAICostRuleDependence(name string) string {
+	return resourcePolarDBGatewayAIModelServiceDependence(name) + `
+resource "alicloud_polardb_gateway_cost_rule" "dependency" {
+  gateway_id                     = var.gateway_id
+  model_name                     = "tf-acc-model"
+  model_service_id               = alicloud_polardb_gateway_model_service.dependency.model_service_id
+  input_cost_points_per_million  = "10"
+  output_cost_points_per_million = "20"
+  cache_cost_points_per_million  = "2"
+}
+`
+}
+
 func testAccPreCheckPolarDBGatewayAI(t *testing.T) {
 	testAccPreCheckWithEnvVariable(t, "ALICLOUD_POLARDB_ENDPOINT")
 	testAccPreCheckWithEnvVariable(t, "ALICLOUD_POLARDB_GATEWAY_ID")
@@ -143,5 +156,8 @@ func TestUnitPolarDBGatewayAIResourceSchemas(t *testing.T) {
 	}
 	if !resourceAlicloudPolarDBGatewayModelService().Schema["name"].ForceNew {
 		t.Fatal("model service name must be ForceNew because ModifyModelService cannot change it")
+	}
+	if !resourceAlicloudPolarDBGatewayCostRule().Schema["model_name"].ForceNew {
+		t.Fatal("cost rule model_name must be ForceNew because ModifyCostRule does not change it")
 	}
 }
