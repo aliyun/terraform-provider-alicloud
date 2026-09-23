@@ -26,6 +26,7 @@ For information about Global Accelerator (GA) Endpoint Group and how to use it, 
 
 ## Example Usage
 
+
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -99,6 +100,94 @@ resource "alicloud_ga_endpoint_group" "default" {
 }
 ```
 
+### IpTarget Usage
+
+The following example shows how to create an endpoint group with `IpTarget` type endpoints.
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ga_endpoint_group&exampleId=iptarget-example&activeTab=example&spm=docs.r.ga_endpoint_group.1.iptarget&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
+```terraform
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+provider "alicloud" {
+  region  = var.region
+  profile = "default"
+}
+
+resource "alicloud_ga_accelerator" "default" {
+  duration        = 1
+  auto_use_coupon = true
+  spec            = "1"
+}
+
+resource "alicloud_ga_bandwidth_package" "default" {
+  bandwidth      = 100
+  type           = "Basic"
+  bandwidth_type = "Basic"
+  payment_type   = "PayAsYouGo"
+  billing_type   = "PayBy95"
+  ratio          = 30
+}
+
+resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  accelerator_id       = alicloud_ga_accelerator.default.id
+  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+}
+
+resource "alicloud_ga_listener" "default" {
+  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  port_ranges {
+    from_port = 8080
+    to_port   = 8080
+  }
+  client_affinity = "SOURCE_IP"
+  protocol        = "HTTP"
+  name            = "terraform-example"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "terraform-example"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = "terraform-example"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = "cn-hangzhou-h"
+}
+
+resource "alicloud_vswitch" "update" {
+  vswitch_name = "terraform-example-update"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.2.0/24"
+  zone_id      = "cn-hangzhou-i"
+}
+
+resource "alicloud_ga_endpoint_group" "default" {
+  accelerator_id = alicloud_ga_accelerator.default.id
+  endpoint_configurations {
+    endpoint                     = "192.168.1.10"
+    type                         = "IpTarget"
+    weight                       = "20"
+    vpc_id                       = alicloud_vpc.default.id
+    vswitch_ids                  = [alicloud_vswitch.default.id]
+    enable_proxy_protocol        = true
+    enable_clientip_preservation = false
+  }
+  endpoint_group_region = var.region
+  listener_id           = alicloud_ga_listener.default.id
+  name                  = "terraform-example"
+  description           = "terraform-example"
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ga_endpoint_group&spm=docs.r.ga_endpoint_group.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -142,7 +231,7 @@ The endpoint_configurations supports the following:
 * `type` - (Required) The type of Endpoint N in the endpoint group. Valid values:
   - `Domain`: A custom domain name.
   - `Ip`: A custom IP address.
-  - `IpTarget`: (Available since v1.262.0) An Alibaba Cloud public IP address.
+  - `IpTarget`: (Available since v1.262.0) a custom private IP address.
   - `PublicIp`: An Alibaba Cloud public IP address.
   - `ECS`: An Elastic Compute Service (ECS) instance.
   - `SLB`: A Classic Load Balancer (CLB) instance.
@@ -160,8 +249,8 @@ The endpoint_configurations supports the following:
 * `enable_clientip_preservation` - (Optional, Bool) Indicates whether client IP addresses are reserved. Default Value: `false`. Valid values:
   - `true`: Client IP addresses are reserved.
   - `false`: Client IP addresses are not reserved.
-* `vpc_id` - (Optional, Available since v1.262.0) The ID of the VPC.
-* `vswitch_ids` - (Optional, List, Available since v1.262.0) The IDs of vSwitches that are deployed in the VPC.
+* `vpc_id` - (Optional, Available since v1.262.0) The ID of the Virtual Private Cloud (VPC). This parameter is required only when the endpoint type is set to IpTarget.
+* `vswitch_ids` - (Optional, List, Available since v1.262.0) A list of vSwitches in the VPC. You can specify a maximum of two vSwitch IDs for an endpoint group of an intelligent routing listener. This parameter is required when the endpoint type is IpTarget. The vSwitch must belong to the VPC specified by the VpcId parameter.
 
 ### `port_overrides`
 

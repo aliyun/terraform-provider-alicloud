@@ -61,6 +61,14 @@ func dataSourceAlicloudGaAccelerators() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"bandwidth": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"bandwidth_billing_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"basic_bandwidth_package": {
 							Type:     schema.TypeList,
 							Computed: true,
@@ -128,6 +136,18 @@ func dataSourceAlicloudGaAccelerators() *schema.Resource {
 						"spec": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"ip_set_config": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"access_mode": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
 						},
 						"status": {
 							Type:     schema.TypeString,
@@ -216,6 +236,8 @@ func dataSourceAlicloudGaAcceleratorsRead(d *schema.ResourceData, meta interface
 			"id":               fmt.Sprint(object["AcceleratorId"]),
 			"accelerator_id":   fmt.Sprint(object["AcceleratorId"]),
 			"accelerator_name": object["Name"],
+			"bandwidth":        formatInt(object["Bandwidth"]),
+			"bandwidth_billing_type": object["BandwidthBillingType"],
 			"cen_id":           object["CenId"],
 			"ddos_id":          object["DdosId"],
 			"description":      object["Description"],
@@ -226,6 +248,15 @@ func dataSourceAlicloudGaAcceleratorsRead(d *schema.ResourceData, meta interface
 			"spec":             object["Spec"],
 			"status":           object["State"],
 		}
+
+		ipSetConfigSli := make([]map[string]interface{}, 0)
+		if v, ok := object["IpSetConfig"].(map[string]interface{}); ok && len(v) > 0 {
+			ipSetConfig := object["IpSetConfig"]
+			ipSetConfigMap := make(map[string]interface{})
+			ipSetConfigMap["access_mode"] = ipSetConfig.(map[string]interface{})["AccessMode"]
+			ipSetConfigSli = append(ipSetConfigSli, ipSetConfigMap)
+		}
+		mapping["ip_set_config"] = ipSetConfigSli
 
 		basicBandwidthPackageSli := make([]map[string]interface{}, 0)
 		if v, ok := object["BasicBandwidthPackage"].(map[string]interface{}); ok && len(v) > 0 {
