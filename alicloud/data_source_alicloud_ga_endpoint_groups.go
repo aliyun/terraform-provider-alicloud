@@ -162,6 +162,23 @@ func dataSourceAliCloudGaEndpointGroups() *schema.Resource {
 										Type:     schema.TypeBool,
 										Computed: true,
 									},
+									"enable_proxy_protocol": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"sub_address": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"vpc_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"vswitch_ids": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
 								},
 							},
 						},
@@ -308,11 +325,21 @@ func dataSourceAliCloudGaEndpointGroupsRead(d *schema.ResourceData, meta interfa
 				if m1, ok := v.(map[string]interface{}); ok {
 					temp1 := map[string]interface{}{
 						"enable_clientip_preservation": m1["EnableClientIPPreservation"],
+						"enable_proxy_protocol":        m1["EnableProxyProtocol"],
 						"endpoint":                     m1["Endpoint"],
 						"probe_port":                   m1["ProbePort"],
 						"probe_protocol":               m1["ProbeProtocol"],
+						"sub_address":                  m1["SubAddress"],
 						"type":                         m1["Type"],
+						"vpc_id":                       m1["VpcId"],
 						"weight":                       m1["Weight"],
+					}
+					if vSwitchIds, ok := m1["VSwitchIds"]; ok && vSwitchIds != nil {
+						if ids, ok := vSwitchIds.([]interface{}); ok {
+							temp1["vswitch_ids"] = ids
+						} else if ids, ok := vSwitchIds.([]string); ok {
+							temp1["vswitch_ids"] = convertListStringToListInterface(ids)
+						}
 					}
 					endpointConfigurations = append(endpointConfigurations, temp1)
 				}

@@ -377,6 +377,7 @@ func TestAccAliCloudGaAccelerator_basic0_twin(t *testing.T) {
 					"auto_use_coupon":        "false",
 					"renewal_status":         "AutoRenewal",
 					"auto_renew_duration":    "1",
+					"promotion_option_no":    "1234",
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 					"accelerator_name":       name,
 					"description":            name,
@@ -395,6 +396,7 @@ func TestAccAliCloudGaAccelerator_basic0_twin(t *testing.T) {
 						"auto_use_coupon":        "false",
 						"renewal_status":         "AutoRenewal",
 						"auto_renew_duration":    "1",
+						"promotion_option_no":    "1234",
 						"resource_group_id":      CHECKSET,
 						"accelerator_name":       name,
 						"description":            name,
@@ -569,6 +571,79 @@ func TestAccAliCloudGaAccelerator_basic1_twin(t *testing.T) {
 						"tags.%":                 "2",
 						"tags.Created":           "TF",
 						"tags.For":               "Accelerator",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_use_coupon", "promotion_option_no"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaAccelerator_withAnycast(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_accelerator.default"
+	ra := resourceAttrInit(resourceId, AliCloudGaAcceleratorMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaAccelerator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaAccelerator%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaAcceleratorBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_billing_type": "CDT",
+					"payment_type":           "PayAsYouGo",
+					"bandwidth":              "200",
+					"ip_set_config": []map[string]interface{}{
+						{
+							"access_mode": "Anycast",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_billing_type":      "CDT",
+						"payment_type":                "PayAsYouGo",
+						"bandwidth":                   "200",
+						"ip_set_config.#":             "1",
+						"ip_set_config.0.access_mode": "Anycast",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_billing_type": "CDT",
+					"payment_type":           "PayAsYouGo",
+					"bandwidth":              "250",
+					"ip_set_config": []map[string]interface{}{
+						{
+							"access_mode": "Anycast",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_billing_type":      "CDT",
+						"payment_type":                "PayAsYouGo",
+						"bandwidth":                   "250",
+						"ip_set_config.#":             "1",
+						"ip_set_config.0.access_mode": "Anycast",
 					}),
 				),
 			},
