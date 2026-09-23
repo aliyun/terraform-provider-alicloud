@@ -111,6 +111,30 @@ resource "alicloud_polardb_gateway_consumer" "dependency" {
 `
 }
 
+func resourcePolarDBGatewayAIRateLimitPolicyDependence(name string) string {
+	return resourcePolarDBGatewayAIConsumerDependence(name) + `
+resource "alicloud_polardb_gateway_rate_limit_policy" "dependency" {
+  gateway_id     = var.gateway_id
+  scope_type     = "Consumer"
+  scope_ref_id   = alicloud_polardb_gateway_consumer.dependency.consumer_id
+  rate_limit_rpm = "100"
+  rate_limit_tpm = "10000"
+}
+`
+}
+
+func resourcePolarDBGatewayAIBudgetPolicyDependence(name string) string {
+	return resourcePolarDBGatewayAIConfigDependence(name) + `
+resource "alicloud_polardb_gateway_budget_policy" "dependency" {
+  gateway_id          = var.gateway_id
+  budget_type         = "GlobalTotal"
+  reset_day_of_month  = 1
+  budget_points       = "1000"
+  alert_threshold_pct = 80
+}
+`
+}
+
 func testAccPreCheckPolarDBGatewayAI(t *testing.T) {
 	testAccPreCheckWithEnvVariable(t, "ALICLOUD_POLARDB_ENDPOINT")
 	testAccPreCheckWithEnvVariable(t, "ALICLOUD_POLARDB_GATEWAY_ID")
@@ -190,5 +214,13 @@ func TestUnitPolarDBGatewayAIResourceSchemas(t *testing.T) {
 	}
 	if consumerSchema["api_key_reset_token"].Sensitive {
 		t.Fatal("consumer api_key_reset_token is a rotation trigger, not the secret")
+	}
+	budgetSchema := resourceAlicloudPolarDBGatewayBudgetPolicy().Schema
+	if !budgetSchema["budget_type"].ForceNew || budgetSchema["budget_points"].ForceNew {
+		t.Fatal("budget type must replace the policy while budget points must update in place")
+	}
+	rateLimitSchema := resourceAlicloudPolarDBGatewayRateLimitPolicy().Schema
+	if !rateLimitSchema["scope_type"].ForceNew || rateLimitSchema["rate_limit_rpm"].ForceNew {
+		t.Fatal("rate limit scope must replace the policy while rate limits must update in place")
 	}
 }

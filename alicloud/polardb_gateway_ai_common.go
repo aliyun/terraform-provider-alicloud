@@ -155,7 +155,7 @@ func listPolarDBGatewayAI(client *connectivity.AliyunClient, action string, requ
 
 func polarDBGatewayAIItems(raw interface{}) []map[string]interface{} {
 	if wrapper, ok := raw.(map[string]interface{}); ok {
-		for _, key := range []string{"Item", "ModelService", "ModelApi", "CostRule", "ConsumerGroup", "Consumer"} {
+		for _, key := range []string{"Item", "ModelService", "ModelApi", "CostRule", "ConsumerGroup", "Consumer", "BudgetPolicy", "RateLimitPolicy"} {
 			if value, exists := wrapper[key]; exists {
 				raw = value
 				break
