@@ -215,7 +215,7 @@ Whether to enable the DPD (peer survival detection) function.
 Specifies whether to enable NAT traversal. Valid values:
   - true (default): enables NAT traversal. After NAT traversal is enabled, the initiator does not check the UDP ports during IKE negotiations and can automatically discover NAT gateway devices along the vpn attachment tunnel.
   - false: disables NAT traversal.
-* `enable_tunnels_bgp` - (Optional, Computed, Available since v1.246.0) You can configure this parameter when you create a vpn attachment in dual-tunnel mode.Whether to enable the BGP function for the tunnel. Value: `true` or `false` (default).
+* `enable_tunnels_bgp` - (Optional, Computed, Available since v1.246.0) You can configure this parameter when you create a vpn attachment in dual-tunnel mode.Whether to enable the BGP function for the tunnel. Value: `true` or `false` (default). When enabling BGP in-place (`false` to `true`), the `tunnel_bgp_config` blocks in `tunnel_options_specification` are submitted together so the API receives the required BGP configuration.
 
 -> **NOTE:**  before adding BGP configuration, we recommend that you understand the working mechanism and usage restrictions of the BGP dynamic routing function.
 
@@ -239,7 +239,7 @@ Health check configuration information. See [`health_check_config`](#health_chec
   - If you set LocalSubnet and RemoteSubnet to specific CIDR blocks, the routing mode of the IPsec-VPN connection is set to Protected Data Flows.
 * `resource_group_id` - (Optional, Computed, Available since v1.246.0) The ID of the resource group
 * `tags` - (Optional, Map, Available since v1.246.0) Tags
-* `tunnel_options_specification` - (Optional, Computed, Set, Available since v1.246.0) Configure the tunnel.
+* `tunnel_options_specification` - (Optional, Computed, List, Available since v1.246.0) Configure the tunnel.
   - You can configure parameters in the `tunnel_options_specification` array when you create a vpn attachment in dual-tunnel mode.
   - When creating a vpn attachment in dual-tunnel mode, you must add both tunnels for the vpn attachment to ensure that the vpn attachment has link redundancy. Only two tunnels can be added to a vpn attachment. See [`tunnel_options_specification`](#tunnel_options_specification) below.
 * `vpn_attachment_name` - (Optional) vpn attachment name
@@ -290,6 +290,14 @@ The ipsec_config supports the following:
 * `ipsec_pfs` - (Optional, Computed) Diffie-Hellman Key Exchange Algorithm Used in Second Stage Negotiation
 
 ### `tunnel_options_specification`
+
+-> **NOTE:** This argument is an ordered list. Existing set-based state is upgraded automatically; you do not need to edit state or re-import the resource. Review expressions that depend on set semantics when upgrading.
+
+Existing tunnels cannot be removed by reducing this list. An empty nested BGP, IKE, or IPsec list cannot reset the remote configuration. Omit an optional nested block to retain its current settings; use `enable_tunnels_bgp = false` to disable BGP. A nested block newly added to an existing tunnel must be written in full in the same apply; an incomplete block is rejected with an explicit error instead of being completed with values from another tunnel.
+
+Reordering this list only updates the order recorded in state and does not call the cloud API. Tunnels are matched by `tunnel_index`, and each tunnel keeps its own settings when the list is reordered, including for nested blocks omitted from the configuration. Every change shown in the plan is applied. While the list is reordered, however, the plan cannot present a field whose new value equals the value of the tunnel previously at the same position, whether the field is omitted or set explicitly. Inside a scope that the plan actively modifies (a field group with another visible change, or a nested block with another visible leaf), such a field cannot be applied reliably: the apply is rejected with an explicit error naming the affected attributes, and nothing is sent to the API. Split the operation into two applies — first apply the reorder without changing tunnel values, then apply the value changes; each step then converges in one apply. The rejection covers user-writable fields only: computed-only fields that the API owns, such as each tunnel's `bgp_status`, `peer_asn` and `peer_bgp_ip`, are never applied on your behalf and always keep the tunnel's own values when the list is reordered. A change that the plan cannot present at all (a whole field group or nested block whose every leaf coincides with the predecessor's values) is indistinguishable from an omission and keeps the tunnel's own value; the same split makes it visible on the next apply.
+
+The API can omit the `psk` value in read responses. In that case the provider retains the PSK already in state instead of storing the empty value, so an omitted read does not produce a perpetual diff. Any non-empty value returned by the API is adopted into state, including a value consisting only of `*` characters: `*` is a legal PSK character and such a value may be the result of an external rotation, which then appears as a plan diff instead of staying hidden. When the PSK is empty in state (for example after an import), an update that submits an IKE block must set `psk` explicitly; the apply fails with an explicit error otherwise, because the API generates a random 16-character key when `psk` is absent. The same rule applies to the top-level `ike_config` block.
 
 The tunnel_options_specification supports the following:
 * `customer_gateway_id` - (Required, Available since v1.246.0) The ID of the user gateway associated with the tunnel.
