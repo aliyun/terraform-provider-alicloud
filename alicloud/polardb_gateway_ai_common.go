@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,14 @@ const (
 	polarDBGatewayAIVersion  = "2017-08-01"
 	polarDBGatewayAIPageSize = 100
 )
+
+func polarDBGatewayAIInt(value interface{}) interface{} {
+	parsed, err := strconv.Atoi(strings.TrimSpace(fmt.Sprint(value)))
+	if err != nil {
+		return value
+	}
+	return parsed
+}
 
 func polarDBGatewayAIChildID(gatewayID, childID string) string {
 	return fmt.Sprintf("%s:%s", gatewayID, childID)
@@ -142,7 +151,7 @@ func listPolarDBGatewayAI(client *connectivity.AliyunClient, action string, requ
 
 func polarDBGatewayAIItems(raw interface{}) []map[string]interface{} {
 	if wrapper, ok := raw.(map[string]interface{}); ok {
-		for _, key := range []string{"Item", "ModelService", "ModelApi", "CostRule", "ConsumerGroup", "Consumer"} {
+		for _, key := range []string{"Item", "ModelService", "ModelApi", "CostRule", "ConsumerGroup", "Consumer", "BudgetPolicy", "RateLimitPolicy"} {
 			if value, exists := wrapper[key]; exists {
 				raw = value
 				break
