@@ -22,7 +22,7 @@ data "alicloud_vpcs" "dependency" {
 
 data "alicloud_vswitches" "dependency" {
   vpc_id  = data.alicloud_vpcs.dependency.ids.0
-  zone_id = "cn-beijing-l"
+  zone_id = "cn-beijing-i"
   status  = "Available"
 }
 
@@ -32,7 +32,7 @@ resource "alicloud_security_group" "dependency" {
 }
 
 resource "alicloud_polardb_gateway" "dependency" {
-  zone_id           = "cn-beijing-l"
+  zone_id           = "cn-beijing-i"
   db_cluster_class  = "polar.app.g2.small"
   pay_type          = "Postpaid"
   vpc_id            = data.alicloud_vpcs.dependency.ids.0
@@ -125,6 +125,39 @@ resource "alicloud_polardb_gateway_cost_rule" "dependency" {
   input_cost_points_per_million  = "10"
   output_cost_points_per_million = "20"
   cache_cost_points_per_million  = "2"
+}
+`
+}
+
+func resourcePolarDBGatewayAIConsumerGroupDependence(name string) string {
+	return resourcePolarDBGatewayAIConfigDependence(name) + `
+resource "alicloud_polardb_gateway_consumer_group" "dependency" {
+  gateway_id = alicloud_polardb_gateway.dependency.id
+  name       = "${var.name}-group"
+  nickname   = "terraform-acceptance-test-group"
+}
+`
+}
+
+func resourcePolarDBGatewayAIConsumerTwoGroupsDependence(name string) string {
+	return resourcePolarDBGatewayAIConsumerGroupDependence(name) + `
+resource "alicloud_polardb_gateway_consumer_group" "dependency_updated" {
+  gateway_id = alicloud_polardb_gateway.dependency.id
+  name       = "${var.name}-group-updated"
+  nickname   = "terraform-acceptance-test-group-updated"
+}
+`
+}
+
+func resourcePolarDBGatewayAIConsumerDependence(name string) string {
+	return resourcePolarDBGatewayAIConsumerGroupDependence(name) + `
+resource "alicloud_polardb_gateway_consumer" "dependency" {
+  gateway_id        = alicloud_polardb_gateway.dependency.id
+  name              = "${var.name}-consumer"
+  consumer_group_id = alicloud_polardb_gateway_consumer_group.dependency.consumer_group_id
+  nickname          = "terraform-acceptance-test-consumer"
+  key_type           = "ApiKey"
+  is_default         = "0"
 }
 `
 }
@@ -301,5 +334,23 @@ func TestUnitPolarDBGatewayAIResourceSchemas(t *testing.T) {
 	}
 	if !resourceAlicloudPolarDBGatewayCostRule().Schema["model_service_id"].ForceNew {
 		t.Fatal("cost rule model_service_id must be ForceNew because ModifyCostRule retains it")
+	}
+	consumerSchema := resourceAlicloudPolarDBGatewayConsumer().Schema
+	for _, key := range []string{"name", "consumer_group_id", "nickname", "is_default"} {
+		if !consumerSchema[key].ForceNew {
+			t.Fatalf("consumer %s must be ForceNew because live updates did not converge", key)
+		}
+	}
+	if consumerSchema["api_key_reset_token"].ForceNew {
+		t.Fatal("consumer api_key_reset_token must update in place to reset the API key")
+	}
+	if !resourceAlicloudPolarDBGatewayConsumerGroup().Schema["is_default"].Computed {
+		t.Fatal("consumer group is_default must be read-only because live creates and updates did not persist it")
+	}
+	if !consumerSchema["api_key"].Sensitive || !consumerSchema["api_key"].Computed {
+		t.Fatal("consumer api_key must be a sensitive computed value")
+	}
+	if consumerSchema["api_key_reset_token"].Sensitive {
+		t.Fatal("consumer api_key_reset_token is a rotation trigger, not the secret")
 	}
 }
