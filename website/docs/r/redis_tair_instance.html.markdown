@@ -16,6 +16,8 @@ For information about Tair (Redis OSS-Compatible) And Memcache (KVStore) Tair In
 
 -> **NOTE:** Available since v1.206.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v1.294.0. To destroy it, convert the instance to `PayAsYouGo` by setting `payment_type = "PayAsYouGo"` and re-applying, or unsubscribe it in the Alibaba Cloud console. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Basic Usage
@@ -68,12 +70,6 @@ resource "alicloud_redis_tair_instance" "default" {
   tair_instance_name = var.name
 }
 ```
-
-### Deleting `alicloud_redis_tair_instance` or removing it from your configuration
-
-The `alicloud_redis_tair_instance` resource allows you to manage  `payment_type = "Subscription"`  instance, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
-You can resume managing the subscription instance via the AlibabaCloud Console.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_redis_tair_instance&spm=docs.r.redis_tair_instance.example&intl_lang=EN_US)
 
