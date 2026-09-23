@@ -1,0 +1,31 @@
+package alicloud
+
+const UserId = "userId"
+const ScalingGroup = "scaling_group"
+const GroupId = "groupId"
+
+type ScalingRuleType string
+
+const (
+	SimpleScalingRule         = ScalingRuleType("SimpleScalingRule")
+	TargetTrackingScalingRule = ScalingRuleType("TargetTrackingScalingRule")
+	StepScalingRule           = ScalingRuleType("StepScalingRule")
+	PredictiveScalingRule     = ScalingRuleType("PredictiveScalingRule")
+)
+
+type BatchSize int
+
+const (
+	AttachDetachLoadbalancersBatchsize  = BatchSize(5)
+	AttachDetachDbinstancesBatchsize    = BatchSize(5)
+	AttachDetachAlbServerGroupBatchsize = BatchSize(5)
+)
+
+type MaxItems int
+type MinItems int
+
+const (
+	MaxScalingConfigurationInstanceTypes = MaxItems(10)
+	MaxResourcePoolOptionsPrivatePoolIds = MaxItems(20)
+	MinResourcePoolOptionsPrivatePoolIds = MinItems(1)
+)

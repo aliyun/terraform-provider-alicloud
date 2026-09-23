@@ -1,0 +1,724 @@
+package alicloud
+
+import (
+	"fmt"
+	"log"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+)
+
+func init() {
+	resource.AddTestSweepers("alicloud_cdn_domain_new", &resource.Sweeper{
+		Name: "alicloud_cdn_domain_new",
+		F:    testSweepCdnDomains_new,
+	})
+}
+
+func testSweepCdnDomains_new(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		fmt.Sprintf("tf-testacc%s", region),
+		fmt.Sprintf("tf_testacc%s", region),
+	}
+
+	var domains []cdn.PageData
+	args := cdn.CreateDescribeUserDomainsRequest()
+	args.PageNumber = requests.NewInteger(1)
+	args.PageSize = requests.NewInteger(PageSizeLarge)
+	for {
+
+		raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+			return cdnClient.DescribeUserDomains(args)
+		})
+		if err != nil {
+			log.Printf("Error retrieving CDN Domain new: %s", err)
+		}
+		addDebug(args.GetActionName(), raw)
+		resp, _ := raw.(*cdn.DescribeUserDomainsResponse)
+		if resp == nil || len(resp.Domains.PageData) < 1 {
+			break
+		}
+		domains = append(domains, resp.Domains.PageData...)
+
+		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+			log.Printf("Error get Next page Number: %s", err)
+			break
+		} else {
+			args.PageNumber = page
+		}
+	}
+
+	for _, v := range domains {
+		name := v.DomainName
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping CDN domain: %s", name)
+			continue
+		}
+		log.Printf("[INFO] Deleting CDN domain: %s", name)
+		request := cdn.CreateDeleteCdnDomainRequest()
+		request.DomainName = name
+		raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+			return cdnClient.DeleteCdnDomain(request)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete CDN domain (%s): %s", name, err)
+		}
+		addDebug(request.GetActionName(), raw)
+	}
+	return nil
+}
+
+func TestAccAliCloudCDNDomainNew_basic(t *testing.T) {
+	var v *cdn.GetDomainDetailModel
+
+	resourceId := "alicloud_cdn_domain_new.domain"
+	ra := resourceAttrInit(resourceId, cdnDomainBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("test%s%d.pfytlm.xyz", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, strconv.Itoa(rand), resourceCdnDomainDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name":       name,
+					"cdn_type":          "web",
+					"scope":             "domestic",
+					"env":               "online",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"sources": []map[string]interface{}{
+						{
+							"content": "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
+							"type":    "oss",
+						},
+					},
+					"check_url": "http://" + name + "/test.html",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_name":       CHECKSET,
+						"scope":             "domestic",
+						"resource_group_id": CHECKSET,
+						"sources.#":         "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"env":               "",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"check_url", "env"},
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sources": []map[string]interface{}{
+						{
+							"content":  "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
+							"type":     "oss",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "30",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sources.#": "1",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sources": []map[string]interface{}{
+						{
+							"content":  "www.aliyuntest.com",
+							"type":     "domain",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "30",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sources.#": "1",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scope": "domestic",
+					"sources": []map[string]interface{}{
+						{
+							"content": "1.1.1.1",
+							"type":    "ipaddr",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sources.#": "1",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sources": []map[string]interface{}{
+						{
+							"content":  "www.aliyuntest.com",
+							"type":     "domain",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "30",
+						},
+						{
+							"content":  "1.1.1.1",
+							"type":     "ipaddr",
+							"priority": "40",
+							"port":     "80",
+							"weight":   "10",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sources.#": "2",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"certificate_config": []map[string]interface{}{
+						{
+							"server_certificate_status": "on",
+							"server_certificate":        testServerCertificate,
+							"private_key":               testPrivateKey,
+							"cert_name":                 name,
+							"cert_type":                 "cas",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"certificate_config.0.server_certificate_status": "on",
+						"certificate_config.0.cert_type":                 "cas",
+						"certificate_config.0.cert_name":                 name,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"certificate_config": []map[string]interface{}{
+						{
+							"server_certificate_status": "on",
+							"cert_id":                   "${alicloud_ssl_certificates_service_certificate.default.id}",
+							"cert_region":               "cn-hangzhou",
+							"cert_type":                 "cas",
+							"cert_name":                 REMOVEKEY,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"certificate_config.0.server_certificate_status": "on",
+						"certificate_config.0.cert_id":                   CHECKSET,
+						"certificate_config.0.cert_region":               CHECKSET,
+						"certificate_config.0.cert_type":                 "cas",
+						"certificate_config.0.cert_name":                 REMOVEKEY,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "3",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+						"tags.Updated": "TF",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name": name,
+					"cdn_type":    "web",
+					"scope":       REMOVEKEY,
+					"certificate_config": []map[string]interface{}{
+						{
+							"server_certificate_status": "off",
+						},
+					},
+					"sources": []map[string]interface{}{
+						{
+							"content": "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
+							"type":    "oss",
+						},
+						{
+							"content":  "www.aliyuntest.com",
+							"type":     "domain",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "30",
+						},
+						{
+							"content":  "1.1.1.1",
+							"type":     "ipaddr",
+							"priority": "40",
+							"port":     "80",
+							"weight":   "10",
+						},
+					},
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scope":                            REMOVEKEY,
+						"sources.#":                        "3",
+						"certificate_config.0.cert_id":     "",
+						"certificate_config.0.cert_name":   "",
+						"certificate_config.0.cert_region": "",
+						"certificate_config.0.server_certificate_status": "off",
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+						"tags.Updated": REMOVEKEY,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCDNDomainNew_scope(t *testing.T) {
+	var v *cdn.GetDomainDetailModel
+
+	resourceId := "alicloud_cdn_domain_new.domain"
+	ra := resourceAttrInit(resourceId, cdnDomainBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, strconv.Itoa(rand), resourceCdnDomainDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name": name,
+					"cdn_type":    "web",
+					"scope":       "overseas",
+					"sources": []map[string]interface{}{
+						{
+							"content": "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
+							"type":    "oss",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scope":     "overseas",
+						"sources.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sources": []map[string]interface{}{
+						{
+							"content":  "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
+							"type":     "oss",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "30",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sources.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceCdnDomainDependence(name string) string {
+	return fmt.Sprintf(`
+	resource "alicloud_oss_bucket" "default" {
+	  bucket = "tf-testacc-cdn-%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+resource "alicloud_ssl_certificates_service_certificate" "default" {
+  certificate_name = alicloud_oss_bucket.default.bucket
+  cert = <<EOF
+-----BEGIN CERTIFICATE-----
+MIID1jCCAr6gAwIBAgIQQ7/8/QOOTbywxdgSX9aMqDANBgkqhkiG9w0BAQsFADBe
+MQswCQYDVQQGEwJDTjEOMAwGA1UEChMFTXlTU0wxKzApBgNVBAsTIk15U1NMIFRl
+c3QgUlNBIC0gRm9yIHRlc3QgdXNlIG9ubHkxEjAQBgNVBAMTCU15U1NMLmNvbTAe
+Fw0yNTA5MjIwNTU3NDVaFw0zMDA5MjEwNTU3NDVaMCAxCzAJBgNVBAYTAkNOMREw
+DwYDVQQDEwgxNjg4LmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+AMEl04gKBqJxV+8KideZb7S4mPysehPzr/cXu4i1RXT7UFtNVZuqc4IdIzOja2SU
+6uNn8mY6Pfc5FNybg98bYx0ADbub55TUaw2Pz1CFEbiMvLpzMkp4EZadvmJWZk8t
+dNb+ClKqdXUWhxApS3Lz+wjCNYQnlODk4KmxmM8/U/CyQS7lgWS/1G72UFB09Skg
+sfvWdoHLrFfIlbVkp9XVELCtOkjj8Nn/rPOhc31NbstrwV4Whl6jngGAkaEtImJ7
+//sL+sPPsutefCgfZPrC+Zwru2En1BuIo5KW02NYLdjXbABH8xjkUobqRoro7eY3
+VySBr7adD6QmNv5hWohOuykCAwEAAaOBzTCByjAOBgNVHQ8BAf8EBAMCBaAwHQYD
+VR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB8GA1UdIwQYMBaAFCiBJgXRNBo/
+wXMPu5PPFRw/A79/MGMGCCsGAQUFBwEBBFcwVTAhBggrBgEFBQcwAYYVaHR0cDov
+L29jc3AubXlzc2wuY29tMDAGCCsGAQUFBzAChiRodHRwOi8vY2EubXlzc2wuY29t
+L215c3NsdGVzdHJzYS5jcnQwEwYDVR0RBAwwCoIIMTY4OC5jb20wDQYJKoZIhvcN
+AQELBQADggEBAHa0ATVeHtPPw1+a6kajlW6OQUjhiJg+Sk9fVA1eJ2Hzl1yDDw3K
+yAyl1gkxGI6BwWdX/C8IE6PuPYcG2CmJGoFoEAAIbAE76AKABvHoA8I6wyDruxFz
+06bNM8104TxAHTxe2zaHgBQnYIRk07uA8gxjZKFp1//eYbxj8HiP0Q9zXqYjF79G
+Le4PDw7Q6U22CP+cT9Sz5ZEoJCzmUtx3uQWhLzNxvyISrXeSqAFJzjtL0KKSR1cr
+8he6FoeU37oKdmrnweLeBe+no3OMChETa2JN4VAzXj/nPpQcyB7nXDfLUHe01+BB
+ZBXKFLD2H38e97mFl/7mgNP5Nc1sycI5Sp4=
+-----END CERTIFICATE-----
+EOF
+  key = <<EOF
+-----BEGIN PRIVATE KEY-----
+MIIEowIBAAKCAQEAwSXTiAoGonFX7wqJ15lvtLiY/Kx6E/Ov9xe7iLVFdPtQW01V
+m6pzgh0jM6NrZJTq42fyZjo99zkU3JuD3xtjHQANu5vnlNRrDY/PUIURuIy8unMy
+SngRlp2+YlZmTy101v4KUqp1dRaHEClLcvP7CMI1hCeU4OTgqbGYzz9T8LJBLuWB
+ZL/UbvZQUHT1KSCx+9Z2gcusV8iVtWSn1dUQsK06SOPw2f+s86FzfU1uy2vBXhaG
+XqOeAYCRoS0iYnv/+wv6w8+y6158KB9k+sL5nCu7YSfUG4ijkpbTY1gt2NdsAEfz
+GORShupGiujt5jdXJIGvtp0PpCY2/mFaiE67KQIDAQABAoIBAAKF9CZTUd8zvDKE
+azo/Ur0Zf5omxgOBC/vzj0DLyXKr89KgMdhHmPG1YBKFIIU0XYCHXkclR05LAcbu
+BdeCJpXS5zBbwDdAB9P/XHXQqeNvfJRc++ZgJ4QAXzkuqBssXK87ALcwFeUShxot
+cphiWpW0inlwVkVn3WLUzfUV0+ARljn8VOf+aAmfCiQMl4gsBpvD3dxF84aihS+1
+blqar5dE1GCJWHW67R1uSaAqHf7nwbBkZY8nTWF8n4+ELAAtlOgQKZlrQ+JxB3Ar
+rWzgMj4M6F1/man1y/XPR56px9Xv3DwBZHuLufsqPr10q/nI9VIIQHe49sFgnN4+
+48Q7wIECgYEAwxlrgBJI8gua4mJZxJRT8gBv2Mb1Kk1k7HVX11I+yF4eXr+cm+24
+Cq7MjqmBXSnqvdQkwGFZ+C3cTKXJBPONWGF8NgiXaHSKjPEoFuHLdKBpgZMAax/L
+aZBQRw6g12nz3XUCK0DE0wGgPkoDxc65s4NEWS+ua43LZ4TUOzWwwWECgYEA/XB1
+ARNHyARy+P3iTeebh3t7qJoNoptLWHMlKjSjIZ1VZ4+9ilKsi5ZKVkPaLIjo8MGv
+Ank3vzSrFSYhId0XfmSqoWySWc0eBkc6NERvopxuIV1WwRKf/18lLhxiEjHIcgds
+G2KmfeiXdCKSgGlWvJmLITY4gJpOYMjpEDxipskCgYAdxnljmGbNmfvPZRcyKzkM
+jAiF2wd7p0gp1lbLo9+1ELgt2ax7F7Ko3riVZUU7BLSwt/nL6o+iks02XW7qdIkz
+3dzpGjKRXIfwrrVhmKBGclzny5mav8V5nO7DiXX+qkrvl3X3R/FCCtN77ivZOo2Y
+2gXKXr6N55wNdnY1eyI4wQKBgQDXjZo2O+vFVuNimqyrjd1eMcxO7hfCwUooBGcL
+qpFEucg1uK+Awig24LCBBly9nARjIJh1Bhw/58/KwQ9U+fJNcdkeSnV/I1HyDQqY
+AczhBSM2BWkP9YNXc9jvivxudSECuwVblV/9nqGSCQWJag53gjAvIyqTVqpq7vYq
+9PEC4QKBgGY2pj0ZNqGkq16jD3iS+DDBpX+TPnoHzu5GZCM/1GLZ6xXbpNWtZQt4
+/m+6koRWeGvNAULnp8RSnhBzm+ZglpbwYcvsqRNDqIPGhJ2JruVA/bY3S0ebkRlD
+xDn0dJVMvNyRR83ZpjTQhxoq5l56TN5xk1vdJ9nZdwJMmXiz2TrA
+-----END PRIVATE KEY-----
+EOF
+}
+
+`, name)
+}
+
+var cdnDomainBasicMap = map[string]string{
+	"domain_name": CHECKSET,
+	"scope":       CHECKSET,
+	"cdn_type":    "web",
+}
+
+const testServerCertificate = `-----BEGIN CERTIFICATE-----\nMIICQTCCAaoCCQCFfdyqahygLzANBgkqhkiG9w0BAQUFADBlMQswCQYDVQQGEwJj\nbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzERMA8GA1UECgwI\nYWxpY2xvdWQxEDAOBgNVBAsMB2FsaWJhYmExDTALBgNVBAMMBHRlc3QwHhcNMjAw\nODA2MTAwMDAyWhcNMzAwODA0MTAwMDAyWjBlMQswCQYDVQQGEwJjbjEQMA4GA1UE\nCAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzERMA8GA1UECgwIYWxpY2xvdWQx\nEDAOBgNVBAsMB2FsaWJhYmExDTALBgNVBAMMBHRlc3QwgZ8wDQYJKoZIhvcNAQEB\nBQADgY0AMIGJAoGBAL7t2CmRCJ8irM5Too2QVGNm0xk6g3v+KE1/8Gthw+EtBKRw\n859SxM/+q8fS73rkadgWICgre5YZCj1oIG6hrBEUo0Fr1mklXJVtqYFZMFD8XGx+\niur2Mk1Hs5YDd/G8PGDDISS/SqyeHXNo6SPJSXEVjAOIXFnX9EcCP9IAEK5tAgMB\nAAEwDQYJKoZIhvcNAQEFBQADgYEAavYdM9s5jLFP9/ZPCrsRuRsjSJpe5y9VZL+1\n+Ebbw16V0xMYaqODyFH1meLRW/A4xUs15Ny2vLYOW15Mriif7Sixty3HUedBFa4l\ny6/gQ+mBEeZYzMaTTFgyzEZDMsfZxwV9GKfhOzAmK3jZ2LDpHIhnlJN4WwVf0lME\npCPDN7g=\n-----END CERTIFICATE-----\n`
+const testPrivateKey = `-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQC+7dgpkQifIqzOU6KNkFRjZtMZOoN7/ihNf/BrYcPhLQSkcPOf\nUsTP/qvH0u965GnYFiAoK3uWGQo9aCBuoawRFKNBa9ZpJVyVbamBWTBQ/Fxsforq\n9jJNR7OWA3fxvDxgwyEkv0qsnh1zaOkjyUlxFYwDiFxZ1/RHAj/SABCubQIDAQAB\nAoGADiobBUprN1MdOtldj98LQ6yXMKH0qzg5yTYaofzIyWXLmF+A02sSitO77sEp\nXxae+5b4n8JKEuKcrd2RumNoHmN47iLQ0M2eodjUQ96kzm5Esq6nln62/NF5KLuK\nJDw63nTsg6K0O+gQZv4SYjZAL3cswSmeQmvmcoNgArfcaoECQQDgYy6S91ZIUsLx\n6BB3tW+x7APYnvKysYbcKUEP8AutZSo4hdMfPQkOD0LwP5dWsrNippDWjNDiPZmt\nVKuZDoDdAkEA2dPxy1eQeJsRYTZmTWIuh3UY9xlL3G9skcSOM4LbFidroHWW9UDJ\nJDSSEMH2+/4quYTdPr28cj7RCjqL0brC0QJABXDCL1QJ5oUDLwRWaeCfTawQR89K\nySRexbXGWxGR5uleBbLQ9J/xOUMLd3HDRJnemZS6TElrwyCFOlukMXjVjQJBALr5\nQC0opmu/vzVQepOl2QaQrrM7VXCLfAfLTbxNcD0d7TY4eTFfQMgBD/euZpB65LWF\npFs8hcsSvGApTObjhmECQEydB1zzjU6kH171XlXCtRFnbORu2IB7rMsDP2CBPHyR\ntYBjBNVHIUGcmrMVFX4LeMuvvmUyzwfgLmLchHxbDP8=\n-----END RSA PRIVATE KEY-----\n`
+
+// Test Cdn Domain. >>> Resource test cases, automatically generated.
+// Case 3176
+func TestAccAliCloudCdnDomain_basic3176(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cdn_domain_new.default"
+	ra := resourceAttrInit(resourceId, AlicloudCdnDomainMap3176)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CdnServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCdnDomain")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("test%s%d.pfytlm.xyz", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCdnDomainBasicDependence3176)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name": name,
+					"cdn_type":    "web",
+					"sources": []map[string]interface{}{
+						{
+							"type":     "ipaddr",
+							"content":  "1.1.1.1",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "15",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_name": CHECKSET,
+						"cdn_type":    "web",
+						"sources.#":   "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scope": "global",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scope": "global",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "online",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "online",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "offline",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "offline",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"check_url"},
+			},
+		},
+	})
+}
+
+var AlicloudCdnDomainMap3176 = map[string]string{}
+
+func AlicloudCdnDomainBasicDependence3176(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 3176  twin
+func TestAccAliCloudCdnDomain_basic3176_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cdn_domain_new.default"
+	ra := resourceAttrInit(resourceId, AlicloudCdnDomainMap3176)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CdnServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCdnDomain")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("test%s%d.pfytlm.xyz", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCdnDomainBasicDependence3176)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scope":       "domestic",
+					"domain_name": name,
+					"cdn_type":    "web",
+					"sources": []map[string]interface{}{
+						{
+							"type":     "ipaddr",
+							"content":  "1.1.1.1",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "16",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scope":        "domestic",
+						"domain_name":  CHECKSET,
+						"cdn_type":     "web",
+						"sources.#":    "1",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"check_url"},
+			},
+		},
+	})
+}
+
+// Test Cdn Domain. <<< Resource test cases, automatically generated.

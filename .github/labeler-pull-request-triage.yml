@@ -1,0 +1,9 @@
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - go.mod
+          - go.sum
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - website/**/*
