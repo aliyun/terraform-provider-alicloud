@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_apig_secrets":                                   dataSourceAliCloudApigSecrets(),
 			"alicloud_threat_detection_attack_path_whitelists":        dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
 			"alicloud_ehpc_users":                                     dataSourceAliCloudEhpcUsers(),
 			"alicloud_realtime_compute_members":                       dataSourceAliCloudRealtimeComputeMembers(),
