@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -48,9 +49,18 @@ func resourceAliCloudEnsNetwork() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"router_table_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"vswitch_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
@@ -124,7 +134,11 @@ func resourceAliCloudEnsNetworkRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("description", objectRaw["Description"])
 	d.Set("ens_region_id", objectRaw["EnsRegionId"])
 	d.Set("network_name", objectRaw["NetworkName"])
+	d.Set("router_table_id", objectRaw["RouterTableId"])
 	d.Set("status", objectRaw["Status"])
+
+	vSwitchIdRaw, _ := jsonpath.Get("$.VSwitchIds.VSwitchId", objectRaw)
+	d.Set("vswitch_ids", vSwitchIdRaw)
 
 	return nil
 }
@@ -142,12 +156,16 @@ func resourceAliCloudEnsNetworkUpdate(d *schema.ResourceData, meta interface{}) 
 	query["NetworkId"] = d.Id()
 	if d.HasChange("network_name") {
 		update = true
-		request["NetworkName"] = d.Get("network_name")
+	}
+	if v, ok := d.GetOk("network_name"); ok || d.HasChange("network_name") {
+		request["NetworkName"] = v
 	}
 
 	if d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
+	}
+	if v, ok := d.GetOk("description"); ok || d.HasChange("description") {
+		request["Description"] = v
 	}
 
 	if update {
@@ -200,6 +218,9 @@ func resourceAliCloudEnsNetworkDelete(d *schema.ResourceData, meta interface{}) 
 	})
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

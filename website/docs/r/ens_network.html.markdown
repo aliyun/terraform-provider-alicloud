@@ -58,7 +58,9 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time, timestamp (MS).
+* `router_table_id` - The ID of the router table associated with the network.
 * `status` - The status of the network instance. Pending: Configuring, Available: Available.
+* `vswitch_ids` - The list of VSwitch IDs associated with the network.
 
 ## Timeouts
 
