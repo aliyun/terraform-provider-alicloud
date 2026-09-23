@@ -369,6 +369,9 @@ The cpu_options supports the following:
 * `core_count` - (Optional, Int) The maximum number of partitions in the storage set.
 * `threads_per_core` - (Optional, Int) The number of threads per CPU core.
 * `topology_type` - (Optional) The CPU topology type of the instance. Valid values: `ContinuousCoreToHTMapping`, `DiscreteCoreToHTMapping`.
+* `accelerators` - (Optional, List, ForceNew, Available since v1.294.0) The CPU accelerators to enable on the instance, such as the Intel vQAT (QuickAssist Technology) accelerator. Valid values are determined by the API and not yet documented; currently `vqat` is the only valid value, and invalid values are rejected by the API at apply time.
+
+  -> **NOTE:** `accelerators` can only be set at instance creation and is not reported back by the API. It is only supported by specific instance types, for example the standard 8th-generation Intel instance families (`ecs.g8i`, `ecs.c8i`, `ecs.r8i`, `ecs.hfc8i`, `ecs.hfg8i`) at 2xlarge size and above. Invalid accelerator values are rejected by the API with `InvalidParameter.CpuOptionsAccelerators`, and unsupported instance types with `InvalidInstanceType.NotSupportCpuOptionsAccelerators`.
 
 ## Attributes Reference
 

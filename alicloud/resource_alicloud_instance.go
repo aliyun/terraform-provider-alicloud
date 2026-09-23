@@ -772,6 +772,14 @@ func resourceAliCloudInstance() *schema.Resource {
 							Optional: true,
 							Computed: true,
 						},
+						"accelerators": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
 					},
 				},
 			},
@@ -1287,6 +1295,12 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["CpuOptions.TopologyType"] = topologyType
 	}
 
+	if accelerators, ok := d.GetOk("cpu_options.0.accelerators"); ok {
+		for index, accelerator := range accelerators.([]interface{}) {
+			request[fmt.Sprintf("CpuOptions.Accelerators.%d", index+1)] = accelerator
+		}
+	}
+
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
@@ -1725,6 +1739,12 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 
 		if topologyType, ok := cpuOptionsArg["TopologyType"]; ok {
 			cpuOptionsMap["topology_type"] = topologyType
+		}
+
+		// CpuOptions.Accelerators is not returned by DescribeInstances, so the
+		// configured value is preserved from state to keep the plan converged.
+		if accelerators, ok := d.GetOk("cpu_options.0.accelerators"); ok {
+			cpuOptionsMap["accelerators"] = accelerators
 		}
 
 		cpuOptionsMaps = append(cpuOptionsMaps, cpuOptionsMap)
