@@ -87,6 +87,30 @@ resource "alicloud_polardb_gateway_cost_rule" "dependency" {
 `
 }
 
+func resourcePolarDBGatewayAIConsumerGroupDependence(name string) string {
+	return resourcePolarDBGatewayAIConfigDependence(name) + `
+resource "alicloud_polardb_gateway_consumer_group" "dependency" {
+  gateway_id = var.gateway_id
+  name       = "${var.name}-group"
+  nickname   = "terraform-acceptance-test-group"
+  is_default = "0"
+}
+`
+}
+
+func resourcePolarDBGatewayAIConsumerDependence(name string) string {
+	return resourcePolarDBGatewayAIConsumerGroupDependence(name) + `
+resource "alicloud_polardb_gateway_consumer" "dependency" {
+  gateway_id        = var.gateway_id
+  name              = "${var.name}-consumer"
+  consumer_group_id = alicloud_polardb_gateway_consumer_group.dependency.consumer_group_id
+  nickname          = "terraform-acceptance-test-consumer"
+  key_type           = "ApiKey"
+  is_default         = "0"
+}
+`
+}
+
 func testAccPreCheckPolarDBGatewayAI(t *testing.T) {
 	testAccPreCheckWithEnvVariable(t, "ALICLOUD_POLARDB_ENDPOINT")
 	testAccPreCheckWithEnvVariable(t, "ALICLOUD_POLARDB_GATEWAY_ID")
@@ -159,5 +183,12 @@ func TestUnitPolarDBGatewayAIResourceSchemas(t *testing.T) {
 	}
 	if !resourceAlicloudPolarDBGatewayCostRule().Schema["model_name"].ForceNew {
 		t.Fatal("cost rule model_name must be ForceNew because ModifyCostRule does not change it")
+	}
+	consumerSchema := resourceAlicloudPolarDBGatewayConsumer().Schema
+	if !consumerSchema["api_key"].Sensitive || !consumerSchema["api_key"].Computed {
+		t.Fatal("consumer api_key must be a sensitive computed value")
+	}
+	if consumerSchema["api_key_reset_token"].Sensitive {
+		t.Fatal("consumer api_key_reset_token is a rotation trigger, not the secret")
 	}
 }
