@@ -96,6 +96,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above. The value is formulated as `<disk_id>:<instance_id>`.
 * `region_id` - The region ID of the resource.
 * `status` - The status of the disk.
+* `zone_id` - The zone ID of the RDS custom disk.
 
 ## Timeouts
 
