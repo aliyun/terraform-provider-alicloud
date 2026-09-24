@@ -20,6 +20,28 @@ func resourceAliCloudEsaCompressionRule() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: func(diff *schema.ResourceDiff, meta interface{}) error {
+			// The API fixes the config type (global vs rule) at creation and cannot
+			// migrate between them, so adding `rule` to an existing global config
+			// must recreate the resource instead of failing the update. Removing
+			// `rule` from a rule-type config is not detectable here: being
+			// Optional+Computed, an attribute absent from the config follows the
+			// state value and never produces a diff - taint the resource to convert
+			// it back to a global config.
+			if diff.Id() == "" {
+				return nil
+			}
+			if !diff.HasChange("rule") || !diff.NewValueKnown("rule") {
+				return nil
+			}
+			oldRaw, newRaw := diff.GetChange("rule")
+			oldRule, _ := oldRaw.(string)
+			newRule, _ := newRaw.(string)
+			if oldRule == "" && newRule != "" {
+				return diff.ForceNew("rule")
+			}
+			return nil
+		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
@@ -29,6 +51,7 @@ func resourceAliCloudEsaCompressionRule() *schema.Resource {
 			"brotli": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"config_id": {
@@ -38,20 +61,24 @@ func resourceAliCloudEsaCompressionRule() *schema.Resource {
 			"gzip": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"rule": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"rule_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"rule_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"sequence": {
 				Type:     schema.TypeInt,
@@ -71,6 +98,7 @@ func resourceAliCloudEsaCompressionRule() *schema.Resource {
 			"zstd": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 		},
@@ -183,6 +211,9 @@ func resourceAliCloudEsaCompressionRuleUpdate(d *schema.ResourceData, meta inter
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
 
+	// The API is PATCH-flavoured: an absent parameter keeps the stored value
+	// while a present one must be valid - an empty string fails with
+	// InvalidRuleEnable and friends. Never send a parameter the config removed.
 	if !d.IsNewResource() && d.HasChange("sequence") {
 		update = true
 		request["Sequence"] = d.Get("sequence")
@@ -190,32 +221,44 @@ func resourceAliCloudEsaCompressionRuleUpdate(d *schema.ResourceData, meta inter
 
 	if !d.IsNewResource() && d.HasChange("zstd") {
 		update = true
-		request["Zstd"] = d.Get("zstd")
+		if v, ok := d.GetOk("zstd"); ok {
+			request["Zstd"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("rule_enable") {
 		update = true
-		request["RuleEnable"] = d.Get("rule_enable")
+		if v, ok := d.GetOk("rule_enable"); ok {
+			request["RuleEnable"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("rule_name") {
 		update = true
-		request["RuleName"] = d.Get("rule_name")
+		if v, ok := d.GetOk("rule_name"); ok {
+			request["RuleName"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("rule") {
 		update = true
-		request["Rule"] = d.Get("rule")
+		if v, ok := d.GetOk("rule"); ok {
+			request["Rule"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("gzip") {
 		update = true
-		request["Gzip"] = d.Get("gzip")
+		if v, ok := d.GetOk("gzip"); ok {
+			request["Gzip"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("brotli") {
 		update = true
-		request["Brotli"] = d.Get("brotli")
+		if v, ok := d.GetOk("brotli"); ok {
+			request["Brotli"] = v
+		}
 	}
 
 	if update {

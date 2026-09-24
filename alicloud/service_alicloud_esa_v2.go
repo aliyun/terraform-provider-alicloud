@@ -1587,6 +1587,12 @@ func (s *EsaServiceV2) DescribeEsaCompressionRule(id string) (object map[string]
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
+	// GetCompressionRule responds 200 with an empty body when the ConfigId no
+	// longer exists, instead of a 404, so an empty payload means NotFound.
+	if len(response) == 0 || response["ConfigId"] == nil {
+		return object, WrapErrorf(NotFoundErr("CompressionRule", id), NotFoundMsg, response)
+	}
+
 	return response, nil
 }
 
