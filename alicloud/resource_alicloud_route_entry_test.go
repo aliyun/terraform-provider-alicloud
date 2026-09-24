@@ -468,7 +468,7 @@ func TestAccAliCloudRouteEntry_stateGapRecovery(t *testing.T) {
 				Config: AliCloudRouteEntryBasicDependence3(name),
 				// Destroy is left at its zero value (false) here on purpose: it is
 				// a no-op for test execution, but its "Destroy:" prefix is
-				// recognized by scripts/testing/testing_coverage_rate_check.go as a
+				// recognized by scripts/testing/cmd/testing-coverage-rate-check as a
 				// step-end sentinel, letting it cleanly close this step's Config
 				// (which has no inline attribute map to parse) instead of folding
 				// the Check func below into the checker's testAccCheck(map[string]
@@ -1039,7 +1039,7 @@ func TestAccAliCloudRouteEntry_stateGapRecoveryVbr(t *testing.T) {
 				Config: AliCloudRouteEntryVbrDependence(name),
 				// Destroy is left at its zero value (false) here on purpose: it
 				// is a no-op for test execution, but its "Destroy:" prefix is
-				// recognized by scripts/testing/testing_coverage_rate_check.go
+				// recognized by scripts/testing/cmd/testing-coverage-rate-check
 				// as a step-end sentinel, letting it cleanly close this step's
 				// Config (which has no inline attribute map to parse) instead
 				// of folding the Check func below into the checker's

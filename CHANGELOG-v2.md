@@ -2,12 +2,14 @@
 
 ## 2.0.0-beta5 (September 24, 2026)
 
-This beta rolls up every change merged from the 1.x line since v2.0.0-beta4 — see the `1.291.0`, `1.292.0`, `1.293.0` and `1.294.0` sections of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only changes below.
+This beta rolls up every change merged from the 1.x line since v2.0.0-beta4 through upstream `master` commit `f3b070b2f`, plus the v2-only changes below. The released 1.x changes are documented in [CHANGELOG.md](CHANGELOG.md); the merged `1.294.0` changes are still unreleased there.
 
 FEATURES:
 
 - **New Ephemeral Resource:** `alicloud_kms_secret` — reads a KMS secret's value through the `GetSecretValue` API without persisting it to the state or plan, for use in provider configuration, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
 - **New Ephemeral Resource:** `alicloud_oos_secret_parameter` — reads an OOS secret parameter's decrypted value through the `GetSecretParameter` API without persisting it to the state or plan, for use in provider configuration, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
+- **New Framework Resource:** `alicloud_ims_user` — manages an IMS user identified by its user principal name, display name, and optional contact details. Served by the framework provider.
+- **New Framework Action:** `alicloud_ssl_certificates_service_pca_cert_sync` — synchronizes a batch of PCA client certificates to the SSL Certificates service. Requires Terraform 1.14 or later. Served by the framework provider.
 
 ENHANCEMENTS:
 

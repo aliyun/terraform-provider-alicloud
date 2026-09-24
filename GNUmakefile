@@ -227,7 +227,7 @@ minimal-test-set:
 		echo "Error: FORMAT must be 'summary' or 'json' (default: summary)"; \
 		exit 1; \
 	fi; \
-	go run scripts/testing/minimal_test_set_calculator.go -resource $(RESOURCE) -format $$FORMAT
+	go run ./scripts/testing/cmd/minimal-test-set-calculator -resource $(RESOURCE) -format $$FORMAT
 
 # Sweep test resources in a specific region
 # Usage: 

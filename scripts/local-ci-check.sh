@@ -332,7 +332,7 @@ if [ -n "$RESOURCE_CHANGES" ]; then
   fi
   
   if [ -s "$TEMP_DIFF" ]; then
-    if go run "$SCRIPT_DIR/testing/testing_coverage_rate_check.go" -fileNames="$TEMP_DIFF"; then
+    if go run "$SCRIPT_DIR/testing/cmd/testing-coverage-rate-check" -fileNames="$TEMP_DIFF"; then
       echo -e "${GREEN}✓ PASSED: Testing coverage rate check${NC}"
       PASSED_CHECKS+=("Testing coverage rate check")
     else

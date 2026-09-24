@@ -15,7 +15,7 @@ import (
 //
 // The config is expressed as an inline map[string]interface{} (built by
 // resourceTestAccConfigFunc) rather than a hand-rolled fmt.Sprintf HCL string
-// so that scripts/testing/testing_coverage_rate_check.go can parse the
+// so that scripts/testing/cmd/testing-coverage-rate-check can parse the
 // `entries` set and its nested `entry`/`comment` attributes for both set and
 // modify coverage. The generator-emitted HCL is semantically identical to the
 // previous hand-written blocks.
