@@ -217,6 +217,126 @@ func (s *ApigServiceV2) DescribeApigGateway(id string) (object map[string]interf
 	return v.(map[string]interface{}), nil
 }
 
+func (s *ApigServiceV2) DescribeGatewayQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
+	return s.DescribeGatewayQueryAvailableInstancesByID(d.Id(), 1*time.Minute)
+}
+
+// DescribeGatewayQueryAvailableInstancesByID queries the billing attributes of one
+// instance from BssOpenApi. An empty result is retried within retryTimeout because
+// BssOpenApi may not expose a freshly created instance yet; a request error is
+// always returned as is instead of being reported as a missing instance.
+func (s *ApigServiceV2) DescribeGatewayQueryAvailableInstancesByID(id string, retryTimeout time.Duration) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var instance map[string]interface{}
+	request := make(map[string]interface{})
+	query := make(map[string]interface{})
+	query["InstanceIDs"] = id
+
+	var endpoint string
+	request["ProductCode"] = "apigateway"
+	action := "QueryAvailableInstances"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(retryTimeout, func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		var parseErr error
+		instance, parseErr = apigGatewayRenewalInstance(id, response, nil)
+		if parseErr != nil {
+			wait()
+			return retry.RetryableError(parseErr)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return instance, nil
+}
+
+// apigGatewayRenewalInstance extracts the single instance entry of a BssOpenApi
+// QueryAvailableInstances response. Request errors take precedence over an empty
+// response and neither of them is reported as a missing instance.
+func apigGatewayRenewalInstance(id string, response map[string]interface{}, responseErr error) (map[string]interface{}, error) {
+	if responseErr != nil {
+		return nil, responseErr
+	}
+	if response == nil {
+		return nil, fmt.Errorf("empty response returned by the BssOpenApi QueryAvailableInstances API for apig gateway %s", id)
+	}
+
+	raw, err := jsonpath.Get("$.Data.InstanceList[*]", response)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get attribute $.Data.InstanceList[*] for apig gateway %s: %s", id, err)
+	}
+	instances, ok := raw.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected BssOpenApi QueryAvailableInstances response for apig gateway %s: InstanceList is %v", id, raw)
+	}
+	if len(instances) == 0 {
+		return nil, fmt.Errorf("apig gateway %s is not visible in the BssOpenApi QueryAvailableInstances response yet", id)
+	}
+	instance, ok := instances[0].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected BssOpenApi QueryAvailableInstances instance entry for apig gateway %s: %v", id, instances[0])
+	}
+	return instance, nil
+}
+
+// apigGatewayRenewalConverged reports whether the BssOpenApi view of the renewal
+// settings already matches the values requested by SetRenewal. Renewal duration
+// and its unit are only meaningful for AutoRenewal.
+func apigGatewayRenewalConverged(renewalRaw map[string]interface{}, expected map[string]interface{}) bool {
+	expectedStatus, ok := expected["RenewalStatus"]
+	if !ok {
+		return true
+	}
+	if fmt.Sprint(renewalRaw["RenewStatus"]) != fmt.Sprint(expectedStatus) {
+		return false
+	}
+	if fmt.Sprint(expectedStatus) != "AutoRenewal" {
+		return true
+	}
+	if expectedPeriod, ok := expected["RenewalPeriod"]; ok && fmt.Sprint(renewalRaw["RenewalDuration"]) != fmt.Sprint(expectedPeriod) {
+		return false
+	}
+	if expectedUnit, ok := expected["RenewalPeriodUnit"]; ok && fmt.Sprint(renewalRaw["RenewalDurationUnit"]) != fmt.Sprint(expectedUnit) {
+		return false
+	}
+	return true
+}
+
+func waitForApigGatewayRenewalConvergence(id string, expected map[string]interface{}, timeout time.Duration, wait func(), describe func() (map[string]interface{}, error)) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		renewalRaw, err := describe()
+		if err == nil && apigGatewayRenewalConverged(renewalRaw, expected) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			if err != nil {
+				return fmt.Errorf("timeout waiting for the renewal settings of apig gateway %s to converge: expected %v, but the last query failed: %w", id, expected, err)
+			}
+			return fmt.Errorf("timeout waiting for the renewal settings of apig gateway %s to converge: expected %v, but observed status %q, renewal duration %v, renewal duration unit %q", id, expected, renewalRaw["RenewStatus"], renewalRaw["RenewalDuration"], renewalRaw["RenewalDurationUnit"])
+		}
+		wait()
+	}
+}
+
 func (s *ApigServiceV2) ApigGatewayStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigGatewayStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigGateway)
 }

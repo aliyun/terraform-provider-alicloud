@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -182,6 +183,23 @@ func resourceAliCloudApigGateway() *schema.Resource {
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+			},
+			"renew_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"renewal_period_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"M", "Y"}, false),
+			},
+			"renewal_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal", "NotRenewal"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -598,6 +616,23 @@ func resourceAliCloudApigGatewayRead(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
+	if d.Get("payment_type").(string) == "Subscription" {
+		renewalRaw, err := apigServiceV2.DescribeGatewayQueryAvailableInstances(d)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if err := d.Set("renew_period", renewalRaw["RenewalDuration"]); err != nil {
+			return WrapError(err)
+		}
+		if err := d.Set("renewal_period_unit", renewalRaw["RenewalDurationUnit"]); err != nil {
+			return WrapError(err)
+		}
+		if err := d.Set("renewal_status", renewalRaw["RenewStatus"]); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	return nil
 }
 
@@ -680,6 +715,90 @@ func resourceAliCloudApigGatewayUpdate(d *schema.ResourceData, meta interface{})
 		stateConf := BuildStateConf([]string{}, []string{expectedResourceGroupId}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, apigServiceV2.ApigGatewayStateRefreshFunc(d.Id(), "resourceGroupId", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	{
+		update = false
+		apigServiceV2 := ApigServiceV2{client}
+		objectRaw, err := apigServiceV2.DescribeApigGateway(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		enableSetRenewal1 := false
+		checkValue00 := convertApigGatewaydatachargeTypeResponse(objectRaw["chargeType"])
+		if checkValue00 == "Subscription" {
+			enableSetRenewal1 = true
+		}
+		if d.HasChange("renewal_status") || d.HasChange("renew_period") || d.HasChange("renewal_period_unit") {
+			update = true
+		}
+		action = "SetRenewal"
+		request = make(map[string]interface{})
+		query := make(map[string]interface{})
+		query["InstanceIDs"] = d.Id()
+
+		if v, ok := d.GetOk("renewal_status"); ok {
+			query["RenewalStatus"] = v.(string)
+		} else if update && enableSetRenewal1 {
+			if _, ok := d.GetOk("renew_period"); ok {
+				return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is specified", "renewal_status", "renew_period"))
+			}
+			if _, ok := d.GetOk("renewal_period_unit"); ok {
+				return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is specified", "renewal_status", "renewal_period_unit"))
+			}
+		}
+
+		if v, ok := d.GetOk("renew_period"); ok {
+			query["RenewalPeriod"] = strconv.Itoa(v.(int))
+		} else if update && enableSetRenewal1 {
+			if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+				return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renew_period", "renewal_status", d.Get("renewal_status")))
+			}
+		}
+
+		if v, ok := d.GetOk("renewal_period_unit"); ok {
+			query["RenewalPeriodUnit"] = v.(string)
+		} else if update && enableSetRenewal1 {
+			if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+				return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_period_unit", "renewal_status", d.Get("renewal_status")))
+			}
+		}
+
+		var endpoint string
+		request["ProductCode"] = "apigateway"
+		request["SubscriptionType"] = "Subscription"
+		if update && enableSetRenewal1 {
+			renewalDeadline := time.Now().Add(d.Timeout(schema.TimeoutUpdate))
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = retry.Retry(time.Until(renewalDeadline), func() *retry.RetryError {
+				response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+						endpoint = connectivity.BssOpenAPIEndpointInternational
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			// BssOpenApi may keep returning the previous renewal settings for a while
+			// after a successful SetRenewal, so wait until the requested values are
+			// visible instead of persisting a stale state.
+			convergeErr := waitForApigGatewayRenewalConvergence(d.Id(), query, time.Until(renewalDeadline), wait, func() (map[string]interface{}, error) {
+				return apigServiceV2.DescribeGatewayQueryAvailableInstancesByID(d.Id(), 30*time.Second)
+			})
+			if convergeErr != nil {
+				return WrapError(convergeErr)
+			}
 		}
 	}
 
