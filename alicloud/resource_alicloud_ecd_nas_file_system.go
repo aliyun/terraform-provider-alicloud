@@ -26,9 +26,10 @@ func resourceAlicloudEcdNasFileSystem() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "The description of the NAS file system.",
 			},
 			"mount_target_domain": {
 				Type:     schema.TypeString,
@@ -41,18 +42,25 @@ func resourceAlicloudEcdNasFileSystem() *schema.Resource {
 				Computed: true,
 			},
 			"nas_file_system_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "The NAS file system name. The name must be 2 to 128 characters in length and can contain letters and Chinese characters. The name must start with a letter or a Chinese character and cannot start with http:// or https://. The name can contain digits, underscores (_), or hyphens (-).",
 			},
 			"office_site_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The office network ID.",
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"zone_id": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The zone ID of the NAS file system.",
 			},
 			"reset": {
 				Type:     schema.TypeBool,
@@ -121,6 +129,7 @@ func resourceAlicloudEcdNasFileSystemRead(d *schema.ResourceData, meta interface
 	d.Set("office_site_id", object["OfficeSiteId"])
 	d.Set("status", object["FileSystemStatus"])
 	d.Set("file_system_id", object["FileSystemId"])
+	d.Set("zone_id", object["ZoneId"])
 	return nil
 }
 func resourceAlicloudEcdNasFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {
