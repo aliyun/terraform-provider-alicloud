@@ -1297,8 +1297,7 @@ func resourceAliCloudRedisTairInstanceDelete(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("payment_type"); ok {
 		if v == "Subscription" {
-			log.Printf("[WARN] Cannot destroy resource alicloud_redis_tair_instance which payment_type valued Subscription. Terraform will remove this resource from the state file, however resources may remain.")
-			return nil
+			return WrapError(Error("'Subscription' instance cannot be destroyed: please convert it to 'PayAsYouGo' (set payment_type = \"PayAsYouGo\" and re-apply) or unsubscribe it in the console. To remove it from the state only, run 'terraform state rm'."))
 		}
 	}
 	client := meta.(*connectivity.AliyunClient)

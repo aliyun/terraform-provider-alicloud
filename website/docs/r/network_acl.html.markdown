@@ -79,10 +79,10 @@ resource "alicloud_network_acl" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional) The description of the network ACL. The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`. 
+* `description` - (Optional) The description of the network ACL. The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`. Currently, the description is only returned by the API and is not displayed in the console. To configure the name displayed in the console, use `network_acl_name`.
 * `egress_acl_entries` - (Optional, Computed, List) Out direction rule information. See [`egress_acl_entries`](#egress_acl_entries) below.
 * `ingress_acl_entries` - (Optional, Computed, List) Inward direction rule information. See [`ingress_acl_entries`](#ingress_acl_entries) below.
-* `network_acl_name` - (Optional, Computed) The name of the network ACL.
+* `network_acl_name` - (Optional, Computed) The name of the network ACL. Currently, this name is displayed in the console.
 The name must be 1 to 128 characters in length and cannot start with http:// or https.
 * `resources` - (Optional, Computed, Set) The associated resource. See [`resources`](#resources) below.
 * `source_network_acl_id` - (Optional, Available since v1.220.0) SOURCE NetworkAcl specified by CopyNetworkAclEntries
@@ -95,7 +95,7 @@ The following arguments will be discarded. Please use new fields as soon as poss
 ### `egress_acl_entries`
 
 The egress_acl_entries supports the following:
-* `description` - (Optional) The description of the outbound rule.
+* `description` - (Optional) The description of the outbound rule. Currently, the description is only returned by the API and is not displayed in the console. To configure the name displayed in the console, use `network_acl_entry_name`.
 The description must be 1 to 256 characters in length and cannot start with http:// or https.
 * `destination_cidr_ip` - (Optional) The destination CIDR block, or the prefix list instance ID. 
 * `entry_type` - (Optional, Computed, Available since v1.220.0) The route entry type. Value
@@ -103,7 +103,7 @@ custom custom rule
 system system rules
 service Cloud service rules
 * `ip_version` - (Optional, Computed, Available since v1.220.0) The IP protocol version of the route entry. Valid values: "Ipv4" and "ipv6'
-* `network_acl_entry_name` - (Optional) Name of the outbound rule entry.
+* `network_acl_entry_name` - (Optional) Name of the outbound rule entry. Currently, this name is displayed in the console.
 The name must be 1 to 128 characters in length and cannot start with http:// or https.
 * `policy` - (Optional) The action to be performed on network traffic that matches the rule. Valid values:
   - accept
@@ -121,14 +121,14 @@ When the Protocol type of the outbound rule is tcp or udp, the port range is 1 t
 ### `ingress_acl_entries`
 
 The ingress_acl_entries supports the following:
-* `description` - (Optional) Description of the inbound rule.
+* `description` - (Optional) Description of the inbound rule. Currently, the description is only returned by the API and is not displayed in the console. To configure the name displayed in the console, use `network_acl_entry_name`.
 The description must be 1 to 256 characters in length and cannot start with http:// or https.
 * `entry_type` - (Optional, Computed, Available since v1.220.0) The route entry type. Value
   - `custom` custom rule
   - `system` system rules
   - `service` Cloud service rules
 * `ip_version` - (Optional, Computed, Available since v1.220.0) The IP protocol version of the route entry. Valid values: "Ipv4" and "ipv6'
-* `network_acl_entry_name` - (Optional) The name of the inbound rule entry.
+* `network_acl_entry_name` - (Optional) The name of the inbound rule entry. Currently, this name is displayed in the console.
 The name must be 1 to 128 characters in length and cannot start with http:// or https.
 * `policy` - (Optional) The action to be performed on network traffic that matches the rule. Valid values:
   - accept
