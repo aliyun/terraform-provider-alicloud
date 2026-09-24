@@ -103,12 +103,13 @@ func TestAccAliCloudESACertificateresource_Certificate_set_test(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":      "${data.alicloud_esa_sites.default.sites.0.id}",
-					"certificate":  testEsaCertificate,
-					"private_key":  testEsaPrivateKey,
-					"created_type": "upload",
-					"region":       "cn-hangzhou",
-					"cert_name":    "hyhtestname44",
+					"site_id":       "${data.alicloud_esa_sites.default.sites.0.id}",
+					"certificate":   testEsaCertificate,
+					"private_key":   testEsaPrivateKey,
+					"created_type":  "upload",
+					"region":        "cn-hangzhou",
+					"cert_name":     "hyhtestname44",
+					"key_server_id": "tf-acc-key-server-id",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),

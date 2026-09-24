@@ -62,6 +62,11 @@ func resourceAliCloudEsaCertificate() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"key_server_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"private_key": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -129,6 +134,9 @@ func resourceAliCloudEsaCertificateCreate(d *schema.ResourceData, meta interface
 		}
 		if v, ok := d.GetOk("cert_name"); ok {
 			request["Name"] = v
+		}
+		if v, ok := d.GetOk("key_server_id"); ok {
+			request["KeyServerId"] = v
 		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -229,6 +237,7 @@ func resourceAliCloudEsaCertificateRead(d *schema.ResourceData, meta interface{}
 	d.Set("status", resultRaw["Status"])
 	d.Set("type", resultRaw["Type"])
 	d.Set("cert_id", resultRaw["Id"])
+	d.Set("key_server_id", resultRaw["KeyServerId"])
 
 	return nil
 }
@@ -270,6 +279,11 @@ func resourceAliCloudEsaCertificateUpdate(d *schema.ResourceData, meta interface
 	if _, ok := d.GetOk("cert_name"); ok || d.HasChange("cert_name") {
 		update = true
 		request["Name"] = d.Get("cert_name")
+	}
+
+	if _, ok := d.GetOk("key_server_id"); ok || d.HasChange("key_server_id") {
+		update = true
+		request["KeyServerId"] = d.Get("key_server_id")
 	}
 
 	if update {
