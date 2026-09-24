@@ -82,27 +82,6 @@ func dataSourceAliCloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		}
 		requestBody := map[string]interface{}{"InternetChargeType": chargeType}
 
-		isUpdateChargeType := false
-		checkAndUpdate := func(key string) bool {
-			if v, ok := response[key]; ok && fmt.Sprint(v) != "" {
-				return chargeType != fmt.Sprint(v)
-			}
-			return false
-		}
-
-		if checkAndUpdate("ChangingChargeType") || checkAndUpdate("InternetChargeType") {
-			isUpdateChargeType = true
-		}
-
-		if opened && isUpdateChargeType {
-			resp, err := conn.DoRequest(StringPointer("ModifyCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
-
-			addDebug("ModifyCdnService", resp, nil)
-			if err != nil {
-				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "ModifyCdnService", AlibabaCloudSdkGoERROR)
-			}
-		}
-
 		if !opened {
 			resp, err := conn.DoRequest(StringPointer("OpenCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
 			addDebug("OpenCdnService", resp, nil)
