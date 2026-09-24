@@ -51,6 +51,18 @@ func dataSourceAlicloudCenBandwidthLimits() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"transit_router_attachment_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"bandwidth_package_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"geographic_span_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -137,11 +149,14 @@ func cenInterRegionBandwidthLimitsAttributes(d *schema.ResourceData, allCenBwLim
 
 	for _, cenBwLimit := range allCenBwLimits {
 		mapping := map[string]interface{}{
-			"instance_id":        cenBwLimit.CenId,
-			"local_region_id":    cenBwLimit.LocalRegionId,
-			"opposite_region_id": cenBwLimit.OppositeRegionId,
-			"status":             cenBwLimit.Status,
-			"bandwidth_limit":    cenBwLimit.BandwidthLimit,
+			"instance_id":                  cenBwLimit.CenId,
+			"local_region_id":              cenBwLimit.LocalRegionId,
+			"opposite_region_id":           cenBwLimit.OppositeRegionId,
+			"status":                       cenBwLimit.Status,
+			"bandwidth_limit":              cenBwLimit.BandwidthLimit,
+			"transit_router_attachment_id": cenBwLimit.TransitRouterAttachmentId,
+			"bandwidth_package_id":         cenBwLimit.BandwidthPackageId,
+			"geographic_span_id":           cenBwLimit.GeographicSpanId,
 		}
 
 		id := cenBwLimit.CenId + COLON_SEPARATED + cenBwLimit.LocalRegionId + COLON_SEPARATED + cenBwLimit.OppositeRegionId

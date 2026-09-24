@@ -11,9 +11,11 @@ description: |-
 
 This data source provides CEN Bandwidth Limits available to the user.
 
+-> **NOTE:** Available since v1.19.0+
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_bandwidth_limits" "bwl" {
   instance_ids = ["cen-id1"]
 }
@@ -40,3 +42,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `opposite_region_id` - ID of opposite region.
   * `status` - Status of the CEN Bandwidth Limit, including "Active" and "Modifying".
   * `bandwidth_limit` - The bandwidth limit configured for the interconnected regions communication.
+  * `transit_router_attachment_id` - The ID of the transit router attachment associated with the bandwidth limit.
+  * `bandwidth_package_id` - The ID of the bandwidth package allocated to the bandwidth limit.
+  * `geographic_span_id` - The ID of the geographic span to which the bandwidth limit belongs.

@@ -104,6 +104,47 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"redundancy_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"bandwidth": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"charge_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"expired_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"quorum_vsw_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -183,19 +224,33 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	descriptions := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+		// NAS DescribeFileSystems returns Tags as {"Tag": [{Key, Value}, ...]}; drill into
+		// the nested Tag list so tagsToMap walks the []interface{} Key/Value branch
+		// instead of treating the wrapper map as the tag set.
+		tagsRaw, _ := jsonpath.Get("$.Tag", object["Tags"])
 		mapping := map[string]interface{}{
-			"id":               fmt.Sprint(object["FileSystemId"]),
-			"region_id":        object["RegionId"],
-			"create_time":      object["CreateTime"],
-			"description":      object["Description"],
-			"protocol_type":    object["ProtocolType"],
-			"storage_type":     object["StorageType"],
-			"metered_size":     formatInt(object["MeteredSize"]),
-			"encrypt_type":     object["EncryptType"],
-			"file_system_type": object["FileSystemType"],
-			"capacity":         object["Capacity"],
-			"kms_key_id":       object["KMSKeyId"],
-			"zone_id":          object["ZoneId"],
+			"id":                fmt.Sprint(object["FileSystemId"]),
+			"region_id":         object["RegionId"],
+			"create_time":       object["CreateTime"],
+			"description":       object["Description"],
+			"protocol_type":     object["ProtocolType"],
+			"storage_type":      object["StorageType"],
+			"metered_size":      formatInt(object["MeteredSize"]),
+			"encrypt_type":      object["EncryptType"],
+			"file_system_type":  object["FileSystemType"],
+			"capacity":          object["Capacity"],
+			"kms_key_id":        object["KMSKeyId"],
+			"zone_id":           object["ZoneId"],
+			"status":            object["Status"],
+			"vpc_id":            object["VpcId"],
+			"resource_group_id": object["ResourceGroupId"],
+			"tags":              tagsToMap(tagsRaw),
+			"redundancy_type":   object["RedundancyType"],
+			"bandwidth":         formatInt(object["Bandwidth"]),
+			"charge_type":       object["ChargeType"],
+			"expired_time":      object["ExpiredTime"],
+			"version":           object["Version"],
+			"quorum_vsw_id":     object["QuorumVswId"],
 		}
 		ids = append(ids, fmt.Sprint(object["FileSystemId"]))
 		descriptions = append(descriptions, object["Description"])

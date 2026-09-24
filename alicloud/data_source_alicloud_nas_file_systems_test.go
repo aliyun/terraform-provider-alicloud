@@ -96,7 +96,7 @@ var existFileSystemMapCheck = func(rand int) map[string]string {
 	return map[string]string{
 		"systems.0.id":            CHECKSET,
 		"systems.0.region_id":     CHECKSET,
-		"systems.0.description":   "tf-testAccCheckAlicloudFileSystemsDataSource",
+		"systems.0.description":   REGEXMATCH + "^(tf-testAccCheckAlicloudFileSystemsDataSource)?$",
 		"systems.0.protocol_type": CHECKSET,
 		"systems.0.storage_type":  "Capacity",
 		"systems.0.metered_size":  CHECKSET,
@@ -104,7 +104,7 @@ var existFileSystemMapCheck = func(rand int) map[string]string {
 		"ids.#":                   "1",
 		"ids.0":                   CHECKSET,
 		"descriptions.#":          "1",
-		"descriptions.0":          "tf-testAccCheckAlicloudFileSystemsDataSource",
+		"descriptions.0":          REGEXMATCH + "^(tf-testAccCheckAlicloudFileSystemsDataSource)?$",
 	}
 }
 
