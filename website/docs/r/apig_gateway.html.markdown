@@ -16,6 +16,8 @@ For information about APIG Gateway and how to use it, see [What is Gateway](http
 
 -> **NOTE:** Available since v1.240.0.
 
+-> **NOTE:** For `Subscription` gateways, refreshing or importing this resource queries the BSS OpenAPI `QueryAvailableInstances` operation to read the renewal settings, so the identity used by Terraform also needs the read-only RAM permission `bss:DescribeInstances` in addition to the APIG permissions. Changing `renew_period`, `renewal_period_unit` or `renewal_status` calls the BSS OpenAPI `SetRenewal` operation, which also needs the RAM permission `bss:ModifyPrepaidInstanceAutoRenew`.
+
 ## Example Usage
 
 Basic Usage
@@ -100,6 +102,9 @@ The following arguments are supported:
 * `payment_type` - (Required, ForceNew) Payment type. Valid values:
   - PayAsYouGo: Pay-as-you-go.
   - Subscription: Subscription.
+* `renew_period` - (Optional, Int, Computed, Available since v2.2.0) The auto renewal period of the instance. The unit is specified by `renewal_period_unit`. It can only be set when `payment_type` is `Subscription`; configuring it for another payment type fails the plan. It is required when `renewal_status` is `AutoRenewal`.
+* `renewal_period_unit` - (Optional, String, Computed, Available since v2.2.0) The unit of the auto renewal period. Valid values: `M` (month), `Y` (year). It can only be set when `payment_type` is `Subscription`; configuring it for another payment type fails the plan.
+* `renewal_status` - (Optional, String, Computed, Available since v2.2.0) The auto renewal status of the instance. Valid values: `AutoRenewal` (auto renewal), `ManualRenewal` (manual renewal), `NotRenewal` (no renewal). It can only be set when `payment_type` is `Subscription`; configuring it for another payment type fails the plan.
 * `resource_group_id` - (Optional, Computed) The ID of the destination resource group.
 * `spec` - (Optional, ForceNew) Gateway specification:  
   - apigw.small.x1: Small specification.  
@@ -153,37 +158,37 @@ The following attributes are exported:
 * `create_from` - The source from which the gateway was created.
 * `create_time` - The creation timestamp. Unit: milliseconds.
 * `environments` - The list of environments associated with the gateway.
-    * `alias` - The alias of the environment.
-    * `environment_id` - The ID of the environment.
-    * `name` - The name of the environment.
+  * `alias` - The alias of the environment.
+  * `environment_id` - The ID of the environment.
+  * `name` - The name of the environment.
 * `expire_time` - Timestamp indicating when the subscription expires. Unit: milliseconds.
 * `load_balancers` - The list of Gateway ingress addresses.
-    * `address` - The address of the load balancer for the gateway.
-    * `address_ip_version` - The IP version of the load balancer.
-    * `address_type` - The load balancer address type.
-    * `gateway_default` - Indicates whether this is the default ingress address of the gateway.
-    * `ipv4_addresses` - The list of IPv4 addresses.
-    * `ipv6_addresses` - The list of IPv6 addresses.
-    * `load_balancer_id` - The ID of the load balancer associated with the gateway.
-    * `mode` - The load balancing provisioning mode for the gateway.
-    * `ports` - The list of listening ports.
-        * `port` - The port number of the load balancer listener.
-        * `protocol` - The protocol of the load balancer listener.
-    * `status` - The status of the load balancer.
-    * `type` - The type of the load balancer.
+  * `address` - The address of the load balancer for the gateway.
+  * `address_ip_version` - The IP version of the load balancer.
+  * `address_type` - The load balancer address type.
+  * `gateway_default` - Indicates whether this is the default ingress address of the gateway.
+  * `ipv4_addresses` - The list of IPv4 addresses.
+  * `ipv6_addresses` - The list of IPv6 addresses.
+  * `load_balancer_id` - The ID of the load balancer associated with the gateway.
+  * `mode` - The load balancing provisioning mode for the gateway.
+  * `ports` - The list of listening ports.
+    * `port` - The port number of the load balancer listener.
+    * `protocol` - The protocol of the load balancer listener.
+  * `status` - The status of the load balancer.
+  * `type` - The type of the load balancer.
 * `security_group` - The security group of the gateway.
-    * `name` - The name of the security group.
-    * `security_group_id` - The ID of the security group.
+  * `name` - The name of the security group.
+  * `security_group_id` - The ID of the security group.
 * `status` - The status of the gateway.
 * `target_version` - The target version of the gateway instance.
 * `update_time` - The timestamp when the gateway was last updated. Unit: milliseconds.
 * `vswitch` - The vSwitch associated with the gateway.
-    * `name` - The name of the virtual switch associated with the gateway.
+  * `name` - The name of the virtual switch associated with the gateway.
 * `version` - The current running version of the gateway instance.
 * `vpc` - The Virtual Private Cloud (VPC) associated with the gateway.
-    * `name` - The name of the VPC gateway.
+  * `name` - The name of the VPC gateway.
 * `zones` - The list of zones associated with the gateway.
-    * `name` - The name of the availability zone for the gateway.
+  * `name` - The name of the availability zone for the gateway.
 
 ## Timeouts
 
