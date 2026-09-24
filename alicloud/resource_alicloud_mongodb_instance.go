@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -1593,8 +1592,7 @@ func resourceAliCloudMongoDBInstanceDelete(d *schema.ResourceData, meta interfac
 	}
 
 	if fmt.Sprint(object["ChargeType"]) == "PrePaid" {
-		log.Printf("[WARN] Cannot destroy resourceAliCloudMongoDBInstance prepay type. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'PrePaid' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	request := map[string]interface{}{

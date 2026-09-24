@@ -3618,3 +3618,76 @@ resource "alicloud_ess_scaling_rule" "default" {
 
 `, EcsInstanceCommonTestCase, name)
 }
+
+func TestAccAliCloudCloudMonitorServiceMetricAlarmRule_multiKeyResources(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_monitor_service_metric_alarm_rule.default"
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudMonitorServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudMonitorServiceMetricAlarmRule")
+	rac := resourceAttrCheckInit(rc, resourceAttrInit(resourceId, map[string]string{}))
+	rand := acctest.RandIntRange(10000, 99999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+resource "alicloud_cloud_monitor_service_metric_alarm_rule" "default" {
+  rule_name            = "tf-testacc-cms-metric-alarm-rule-%[1]d"
+  metric_alarm_rule_id = "tf-testacc-cms-metric-alarm-rule-%[1]d"
+  namespace            = "acs_kafka"
+  metric_name          = "message_accumulation"
+  contact_groups       = "云账号报警联系人"
+  resources            = jsonencode([{ consumerGroup = "TF_ACC_GROUP", instanceId = "alikafka_post-cn-tfacc%[1]d", requestRegionId = "cn-hangzhou" }])
+  escalations {
+    critical {
+      comparison_operator = "GreaterThanThreshold"
+      statistics          = "Value"
+      threshold           = "100"
+      times               = 3
+    }
+  }
+}
+`, rand),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceId, "metric_alarm_rule_id"),
+					resource.TestCheckResourceAttr(resourceId, "rule_name", fmt.Sprintf("tf-testacc-cms-metric-alarm-rule-%d", rand)),
+					resource.TestCheckResourceAttr(resourceId, "namespace", "acs_kafka"),
+					resource.TestCheckResourceAttr(resourceId, "metric_name", "message_accumulation"),
+					resource.TestCheckResourceAttrSet(resourceId, "resources"),
+					resource.TestCheckResourceAttr(resourceId, "escalations.0.critical.0.threshold", "100"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(`
+resource "alicloud_cloud_monitor_service_metric_alarm_rule" "default" {
+  rule_name            = "tf-testacc-cms-metric-alarm-rule-%[1]d"
+  metric_alarm_rule_id = "tf-testacc-cms-metric-alarm-rule-%[1]d"
+  namespace            = "acs_kafka"
+  metric_name          = "message_accumulation"
+  contact_groups       = "云账号报警联系人"
+  resources            = jsonencode([{ consumerGroup = "TF_ACC_GROUP", instanceId = "alikafka_post-cn-tfacc%[1]d", requestRegionId = "cn-hangzhou" }])
+  escalations {
+    critical {
+      comparison_operator = "GreaterThanThreshold"
+      statistics          = "Value"
+      threshold           = "200"
+      times               = 3
+    }
+  }
+}
+`, rand),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceId, "metric_alarm_rule_id"),
+					resource.TestCheckResourceAttrSet(resourceId, "resources"),
+					resource.TestCheckResourceAttr(resourceId, "escalations.0.critical.0.threshold", "200"),
+				),
+			},
+		},
+	})
+}

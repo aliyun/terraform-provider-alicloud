@@ -1581,6 +1581,83 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 	})
 }
 
+// Destroying a PrePaid instance must fail with an error instead of silently
+// removing the instance from the state file (behavior changed in v1.294.0).
+func TestAccAliCloudKVStoreRedisInstance_prePaidDestroyError(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstancePrePaidDestroyError%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceVpcBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":   "redis.shard.with.proxy.small.ce",
+					"db_instance_name": name,
+					"instance_type":    "Redis",
+					"engine_version":   "6.0",
+					"shard_count":      "2",
+					"payment_type":     "PostPaid",
+					"zone_id":          "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":       "${data.alicloud_vswitches.default.ids.0}",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PostPaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PrePaid",
+					"period":       "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PrePaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PrePaid",
+					"period":       "1",
+				}),
+				Destroy:     true,
+				ExpectError: regexp.MustCompile(`'PrePaid' instance cannot be destroyed`),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PostPaid",
+					}),
+				),
+			},
+		},
+	})
+}
+
 // engine_version 4.0 has been offline from July 31, 2025
 func SkipTestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
