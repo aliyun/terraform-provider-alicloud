@@ -66,7 +66,7 @@ func TestAccAliCloudEsaCacheReserveInstance_basic10493(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_pay", "auto_renew"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "auto_renew", "order_id"},
 			},
 		},
 	})
@@ -75,6 +75,7 @@ func TestAccAliCloudEsaCacheReserveInstance_basic10493(t *testing.T) {
 var AlicloudEsaCacheReserveInstanceMap10493 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
+	"order_id":    CHECKSET,
 }
 
 func AlicloudEsaCacheReserveInstanceBasicDependence10493(name string) string {
