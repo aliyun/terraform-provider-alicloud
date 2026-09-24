@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -24,13 +23,17 @@ func resourceAliCloudEsaTransportLayerApplication() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(25 * time.Minute),
-			Update: schema.DefaultTimeout(17 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"application_id": {
 				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"cname": {
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"cross_border_optimization": {
@@ -47,6 +50,12 @@ func resourceAliCloudEsaTransportLayerApplication() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"keep_alive_protection": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"record_name": {
 				Type:     schema.TypeString,
@@ -66,13 +75,13 @@ func resourceAliCloudEsaTransportLayerApplication() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"source_type": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
 						"rule_id": {
 							Type:     schema.TypeInt,
 							Computed: true,
+						},
+						"source_type": {
+							Type:     schema.TypeString,
+							Required: true,
 						},
 						"protocol": {
 							Type:     schema.TypeString,
@@ -93,10 +102,19 @@ func resourceAliCloudEsaTransportLayerApplication() *schema.Resource {
 					},
 				},
 			},
+			"rules_count": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"site_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"static_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -120,18 +138,31 @@ func resourceAliCloudEsaTransportLayerApplicationCreate(d *schema.ResourceData, 
 		request["SiteId"] = v
 	}
 
+	if v, ok := d.GetOk("cross_border_optimization"); ok {
+		request["CrossBorderOptimization"] = v
+	}
+	if v, ok := d.GetOk("ip_access_rule"); ok {
+		request["IpAccessRule"] = v
+	}
+	if v, ok := d.GetOk("ipv6"); ok {
+		request["Ipv6"] = v
+	}
+	if v, ok := d.GetOk("keep_alive_protection"); ok {
+		request["KeepAliveProtection"] = v
+	}
+	request["RecordName"] = d.Get("record_name")
 	if v, ok := d.GetOk("rules"); ok {
 		rulesMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range convertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["ClientIPPassThroughMode"] = dataLoopTmp["client_ip_pass_through_mode"]
+			dataLoopMap["Comment"] = dataLoopTmp["comment"]
 			dataLoopMap["EdgePort"] = dataLoopTmp["edge_port"]
-			dataLoopMap["SourceType"] = dataLoopTmp["source_type"]
+			dataLoopMap["Protocol"] = dataLoopTmp["protocol"]
 			dataLoopMap["Source"] = dataLoopTmp["source"]
 			dataLoopMap["SourcePort"] = dataLoopTmp["source_port"]
-			dataLoopMap["Comment"] = dataLoopTmp["comment"]
-			dataLoopMap["Protocol"] = dataLoopTmp["protocol"]
-			dataLoopMap["ClientIPPassThroughMode"] = dataLoopTmp["client_ip_pass_through_mode"]
+			dataLoopMap["SourceType"] = dataLoopTmp["source_type"]
 			rulesMapsArray = append(rulesMapsArray, dataLoopMap)
 		}
 		rulesMapsJson, err := json.Marshal(rulesMapsArray)
@@ -141,15 +172,8 @@ func resourceAliCloudEsaTransportLayerApplicationCreate(d *schema.ResourceData, 
 		request["Rules"] = string(rulesMapsJson)
 	}
 
-	if v, ok := d.GetOk("ip_access_rule"); ok {
-		request["IpAccessRule"] = v
-	}
-	if v, ok := d.GetOk("ipv6"); ok {
-		request["Ipv6"] = v
-	}
-	request["RecordName"] = d.Get("record_name")
-	if v, ok := d.GetOk("cross_border_optimization"); ok {
-		request["CrossBorderOptimization"] = v
+	if v, ok := d.GetOk("static_ip"); ok {
+		request["StaticIp"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -194,16 +218,16 @@ func resourceAliCloudEsaTransportLayerApplicationRead(d *schema.ResourceData, me
 		return WrapError(err)
 	}
 
+	d.Set("cname", objectRaw["Cname"])
 	d.Set("cross_border_optimization", objectRaw["CrossBorderOptimization"])
 	d.Set("ip_access_rule", objectRaw["IpAccessRule"])
 	d.Set("ipv6", objectRaw["Ipv6"])
+	d.Set("keep_alive_protection", objectRaw["KeepAliveProtection"])
 	d.Set("record_name", objectRaw["RecordName"])
+	d.Set("rules_count", objectRaw["RulesCount"])
+	d.Set("static_ip", objectRaw["StaticIp"])
 	d.Set("status", objectRaw["Status"])
-	applicationId, err := strconv.ParseInt(objectRaw["ApplicationId"].(json.Number).String(), 10, 64)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("application_id", applicationId)
+	d.Set("application_id", objectRaw["ApplicationId"])
 	if v, ok := objectRaw["SiteId"]; ok {
 		d.Set("site_id", v)
 	}
@@ -245,31 +269,12 @@ func resourceAliCloudEsaTransportLayerApplicationUpdate(d *schema.ResourceData, 
 	action := "UpdateTransportLayerApplication"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["SiteId"] = parts[0]
 	request["ApplicationId"] = parts[1]
+	request["SiteId"] = parts[0]
 
-	if d.HasChange("rules") {
+	if d.HasChange("cross_border_optimization") {
 		update = true
-	}
-	if v, ok := d.GetOk("rules"); ok || d.HasChange("rules") {
-		rulesMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
-			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["EdgePort"] = dataLoopTmp["edge_port"]
-			dataLoopMap["SourceType"] = dataLoopTmp["source_type"]
-			dataLoopMap["Source"] = dataLoopTmp["source"]
-			dataLoopMap["SourcePort"] = dataLoopTmp["source_port"]
-			dataLoopMap["Comment"] = dataLoopTmp["comment"]
-			dataLoopMap["Protocol"] = dataLoopTmp["protocol"]
-			dataLoopMap["ClientIPPassThroughMode"] = dataLoopTmp["client_ip_pass_through_mode"]
-			rulesMapsArray = append(rulesMapsArray, dataLoopMap)
-		}
-		rulesMapsJson, err := json.Marshal(rulesMapsArray)
-		if err != nil {
-			return WrapError(err)
-		}
-		request["Rules"] = string(rulesMapsJson)
+		request["CrossBorderOptimization"] = d.Get("cross_border_optimization")
 	}
 
 	if d.HasChange("ip_access_rule") {
@@ -282,9 +287,38 @@ func resourceAliCloudEsaTransportLayerApplicationUpdate(d *schema.ResourceData, 
 		request["Ipv6"] = d.Get("ipv6")
 	}
 
-	if d.HasChange("cross_border_optimization") {
+	if d.HasChange("keep_alive_protection") {
 		update = true
-		request["CrossBorderOptimization"] = d.Get("cross_border_optimization")
+		request["KeepAliveProtection"] = d.Get("keep_alive_protection")
+	}
+
+	if d.HasChange("rules") {
+		update = true
+	}
+	if v, ok := d.GetOk("rules"); ok || d.HasChange("rules") {
+		rulesMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(v) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["ClientIPPassThroughMode"] = dataLoopTmp["client_ip_pass_through_mode"]
+			dataLoopMap["Comment"] = dataLoopTmp["comment"]
+			dataLoopMap["EdgePort"] = dataLoopTmp["edge_port"]
+			dataLoopMap["Protocol"] = dataLoopTmp["protocol"]
+			dataLoopMap["Source"] = dataLoopTmp["source"]
+			dataLoopMap["SourcePort"] = dataLoopTmp["source_port"]
+			dataLoopMap["SourceType"] = dataLoopTmp["source_type"]
+			rulesMapsArray = append(rulesMapsArray, dataLoopMap)
+		}
+		rulesMapsJson, err := json.Marshal(rulesMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Rules"] = string(rulesMapsJson)
+	}
+
+	if d.HasChange("static_ip") {
+		update = true
+		request["StaticIp"] = d.Get("static_ip")
 	}
 
 	if update {
@@ -331,8 +365,8 @@ func resourceAliCloudEsaTransportLayerApplicationDelete(d *schema.ResourceData, 
 		query := make(map[string]interface{})
 		var err error
 		request = make(map[string]interface{})
-		request["SiteId"] = parts[0]
 		request["ApplicationId"] = parts[1]
+		request["SiteId"] = parts[0]
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
@@ -354,11 +388,13 @@ func resourceAliCloudEsaTransportLayerApplicationDelete(d *schema.ResourceData, 
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		esaServiceV2 := EsaServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 3*time.Minute, esaServiceV2.EsaTransportLayerApplicationStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutDelete), 3*time.Minute, esaServiceV2.EsaTransportLayerApplicationStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 	}
 	return nil
 }
