@@ -33,14 +33,22 @@ func resourceAlicloudApiGatewayBackend() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"HTTP", "VPC", "FC_EVENT", "FC_EVENT_V3", "FC_HTTP", "FC_HTTP_V3", "OSS", "MOCK"}, false),
 			},
 			"create_event_bridge_service_linked_role": {
-				Optional: true,
-				Computed: true,
-				Type:     schema.TypeBool,
+				Optional:  true,
+				Computed:  true,
+				Type:      schema.TypeBool,
+				Sensitive: true,
+			},
+			"create_slr": {
+				Optional:  true,
+				Computed:  true,
+				Type:      schema.TypeBool,
+				Sensitive: true,
 			},
 			"description": {
 				Optional: true,
 				Type:     schema.TypeString,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -59,8 +67,14 @@ func resourceAlicloudApiGatewayBackendCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("create_event_bridge_service_linked_role"); ok {
 		request["CreateEventBridgeServiceLinkedRole"] = v
 	}
+	if v, ok := d.GetOk("create_slr"); ok {
+		request["CreateSlr"] = v
+	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		request["Tag"] = ConvertTags(v.(map[string]interface{}))
 	}
 
 	var response map[string]interface{}
@@ -108,11 +122,17 @@ func resourceAlicloudApiGatewayBackendRead(d *schema.ResourceData, meta interfac
 	d.Set("backend_name", object["BackendName"])
 	d.Set("backend_type", object["BackendType"])
 	d.Set("description", object["Description"])
+	if tags, err := cloudApiService.DescribeApiGatewayBackendTags(d.Id()); err != nil {
+		log.Printf("[DEBUG] Resource alicloud_api_gateway_backend DescribeApiGatewayBackendTags Failed!!! %s", err)
+	} else {
+		d.Set("tags", tags)
+	}
 	return nil
 }
 
 func resourceAlicloudApiGatewayBackendUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cloudApiService := CloudApiService{client}
 	var err error
 	update := false
 	request := map[string]interface{}{
@@ -126,6 +146,11 @@ func resourceAlicloudApiGatewayBackendUpdate(d *schema.ResourceData, meta interf
 		}
 	}
 
+	if d.HasChange("tags") {
+		if err := cloudApiService.setInstanceTags(d, TagResourceBackend); err != nil {
+			return WrapError(err)
+		}
+	}
 	if d.HasChange("backend_name") {
 		update = true
 	}
