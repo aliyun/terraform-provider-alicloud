@@ -155,13 +155,13 @@ func resourceAlicloudVpcDhcpOptionsSetAttachmentDelete(d *schema.ResourceData, m
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDhcpOptionsSetId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDhcpOptionsSetId.NotFound", "OperationFailed.AttachmentNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	vpcService := VpcService{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcDhcpOptionsSetStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.DescribeVpcDhcpOptionsSetAttachmentDeleteStateRefreshFunc(d.Id()))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

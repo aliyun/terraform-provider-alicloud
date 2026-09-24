@@ -16,6 +16,7 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	credential "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
@@ -420,6 +421,10 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 func needRetry(err error) bool {
 	postRegex := regexp.MustCompile("^Post [\"]*https://.*")
 	if postRegex.MatchString(err.Error()) {
+		return true
+	}
+
+	if e, ok := err.(*errors.ClientError); ok && e.ErrorCode() == errors.TimeoutErrorCode {
 		return true
 	}
 

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type RealtimeComputeServiceV2 struct {
@@ -544,3 +546,119 @@ func (s *RealtimeComputeServiceV2) GetSqlFileRootFolderId(workspace, namespace s
 }
 
 // DescribeRealtimeComputeSqlFile >>> Encapsulated.
+
+// DescribeRealtimeComputeVariable <<< Encapsulated get interface for RealtimeCompute Variable.
+
+func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVariable(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
+	}
+	namespace := parts[1]
+	request := make(map[string]*string)
+	query = make(map[string]*string)
+	header := make(map[string]*string)
+	request["pageSize"] = StringPointer(strconv.Itoa(PageSizeLarge))
+	request["pageIndex"] = StringPointer("1")
+	header["workspace"] = StringPointer(parts[0])
+
+	action := fmt.Sprintf("/api/v2/namespaces/%s/variables", namespace)
+
+	idExist := false
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action+"read", response, request)
+
+		if err != nil {
+			if fmt.Sprint(response["success"]) == "false" {
+				if fmt.Sprint(response["errorCode"]) == "990301" {
+					return object, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, response)
+				}
+				return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			}
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.data", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["name"]) == parts[2] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < PageSizeLarge {
+			break
+		}
+
+		pageIndex, err := strconv.Atoi(*request["pageIndex"])
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		request["pageIndex"] = StringPointer(strconv.Itoa(pageIndex + 1))
+	}
+
+	if !idExist {
+		return object, WrapErrorf(NotFoundErr("Variable", id), NotFoundMsg, response)
+	}
+
+	return object, nil
+}
+
+func (s *RealtimeComputeServiceV2) RealtimeComputeVariableStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.RealtimeComputeVariableStateRefreshFuncWithApi(id, field, failStates, s.DescribeRealtimeComputeVariable)
+}
+
+func (s *RealtimeComputeServiceV2) RealtimeComputeVariableStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeRealtimeComputeVariable >>> Encapsulated.

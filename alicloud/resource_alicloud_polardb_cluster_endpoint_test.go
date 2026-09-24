@@ -81,6 +81,31 @@ func TestAccAliCloudPolarDBClusterEndpointConfigUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"read_write_mode": "ReadWrite",
+					"endpoint_config": map[string]string{
+						"ConsistLevel": "0",
+					},
+					"scc_mode": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_config.ConsistLevel": "0",
+						"scc_mode":                     "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scc_mode": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scc_mode": "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"nodes": []string{"${data.alicloud_polardb_clusters.default.clusters.0.db_nodes.0.db_node_id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -238,25 +263,25 @@ func TestAccAliCloudPolarDBClusterEndpointConfigUpdate_SslConnectionStringAndCon
 	})
 }
 
+func TestUnitPolarDBClusterEndpointSccMode(t *testing.T) {
+	sccModeSchema := resourceAlicloudPolarDBClusterEndpoint().Schema["scc_mode"]
+	for _, input := range []string{"on", "off"} {
+		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) > 0 {
+			t.Fatalf("expected %q to be valid, got: %v", input, errors)
+		}
+	}
+	for _, input := range []string{"ON", "OFF", "INVALID"} {
+		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) == 0 {
+			t.Fatalf("expected %q to be rejected", input)
+		}
+	}
+}
+
 func resourcePolarDBClusterEndpointConfigDependence(name string) string {
 	return fmt.Sprintf(`
         variable "name" {
 			default = "%s"
         }
-
-		data "alicloud_vpcs" "default" {
-			name_regex = "^default-NODELETING$"
-		}
-
-		resource "alicloud_vpc" "default" {
-			vpc_name = var.name
-		}
-			
-		resource "alicloud_vswitch" "default" {
-			zone_id = data.alicloud_polardb_node_classes.default.classes.0.zone_id
-			vpc_id = alicloud_vpc.default.id
-			cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
-		}
 
 		data "alicloud_polardb_node_classes" "default" {
 			pay_type   = "PostPaid"
@@ -265,14 +290,20 @@ func resourcePolarDBClusterEndpointConfigDependence(name string) string {
 			category   = "Normal"
 		}
 
-        resource "alicloud_polardb_cluster" "cluster" {
-                db_type = "MySQL"
-                db_version = "8.0"
-                pay_type = "PostPaid"
-                db_node_class = "polar.mysql.x4.medium"
-                vswitch_id =  alicloud_vswitch.default.id
-                description = "${var.name}"
-        }
+		data "alicloud_vswitches" "default" {
+			zone_id = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+			status  = "Available"
+		}
+
+		resource "alicloud_polardb_cluster" "cluster" {
+				db_type = "MySQL"
+				db_version = "8.0"
+				pay_type = "PostPaid"
+				db_node_class = "polar.mysql.x4.medium"
+				encrypt_new_tables = "OFF"
+				vswitch_id = data.alicloud_vswitches.default.ids.0
+				description = "${var.name}"
+		}
 
 		data "alicloud_polardb_clusters" "default" {
 		  	ids = [alicloud_polardb_cluster.cluster.id]

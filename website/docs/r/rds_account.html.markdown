@@ -91,29 +91,29 @@ The following arguments are supported:
 
 -> **NOTE:** The name cannot start with http:// or https://.
 * `account_name` - (Optional, ForceNew) The name of the database account.
-    * The name must be unique.
-    * The name can contain lowercase letters, digits, and underscores (_). For MySQL databases, the name can contain uppercase letters.
-    * The name must start with a letter and end with a letter or digit.
-    * For MySQL databases, the name of the privileged account cannot be the same as that of the standard account. For example, if the name of the privileged account is Test1, the name of the standard account cannot be test1.
-    * The length of the value must meet the following requirements:
-        * If the instance runs MySQL 5.7 or MySQL 8.0, the value must be 2 to 32 characters in length.
-        * If the instance runs MySQL 5.6, the value must be 2 to 16 characters in length.
-        * If the instance runs SQL Server, the value must be 2 to 64 characters in length.
-        * If the instance runs PostgreSQL with cloud disks, the value must be 2 to 63 characters in length.
-        * If the instance runs PostgreSQL with local disks, the value must be 2 to 16 characters in length.
-        * If the instance runs MariaDB, the value must be 2 to 16 characters in length.
-        * For more information about invalid characters, See [Forbidden keywords](https://help.aliyun.com/zh/rds/developer-reference/forbidden-keywords?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
+  * The name must be unique.
+  * The name can contain lowercase letters, digits, and underscores (_). For MySQL databases, the name can contain uppercase letters.
+  * The name must start with a letter and end with a letter or digit.
+  * For MySQL databases, the name of the privileged account cannot be the same as that of the standard account. For example, if the name of the privileged account is Test1, the name of the standard account cannot be test1.
+  * The length of the value must meet the following requirements:
+    * If the instance runs MySQL 5.7 or MySQL 8.0, the value must be 2 to 32 characters in length.
+    * If the instance runs MySQL 5.6, the value must be 2 to 16 characters in length.
+    * If the instance runs SQL Server, the value must be 2 to 64 characters in length.
+    * If the instance runs PostgreSQL with cloud disks, the value must be 2 to 63 characters in length.
+    * If the instance runs PostgreSQL with local disks, the value must be 2 to 16 characters in length.
+    * If the instance runs MariaDB, the value must be 2 to 16 characters in length.
+    * For more information about invalid characters, See [Forbidden keywords](https://help.aliyun.com/zh/rds/developer-reference/forbidden-keywords?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
 
 * `account_password` - (Optional, Sensitive) The password of the account. It conflicts with `password`, `kms_encrypted_password` and `account_password_wo`, and one of the four password sources must be set.
-    * The value must be 8 to 32 characters in length.
-    * The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
-    * Special characters include ! @ # $ % ^ & * ( ) _ + - =
+  * The value must be 8 to 32 characters in length.
+  * The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
+  * Special characters include ! @ # $ % ^ & * ( ) _ + - =
 * `account_password_wo` - (Optional, Available since v2.0.0-beta5) The write-only password of the account. It is only sent to the server when the resource is created or the `account_password_wo_version` changes and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `account_password_wo_version`. It conflicts with `account_password`, `password` and `kms_encrypted_password`, and one of the four password sources must be set.
 * `account_password_wo_version` - (Optional, Available since v2.0.0-beta5) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `account_password_wo` changes.
 * `account_type` - (Optional, ForceNew) The account type. Valid values:
-    * Normal: standard account (default).
-    * Super: privileged account.
-    * Sysadmin: system admin account. The account type is available only for ApsaraDB RDS for SQL Server instances.
+  * Normal: standard account (default).
+  * Super: privileged account.
+  * Sysadmin: system admin account. The account type is available only for ApsaraDB RDS for SQL Server instances.
 
 -> **NOTE:** Before you create a system admin account, check whether the RDS instance meets all prerequisites. For more information, See [Create a system admin account](https://help.aliyun.com/zh/rds/apsaradb-rds-for-sql-server/create-a-system-admin-account-for-an-apsaradb-rds-for-sql-server-instance?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. It conflicts with `account_password`, `password` and `account_password_wo`, and one of the four password sources must be set.
@@ -127,14 +127,13 @@ The following arguments are supported:
 -> **NOTE**: Only MySQL engine is supported resets permissions of the privileged account.
 * `reset_permission_flag` - (Optional, Available in v1.198.0+) Resets permissions flag of the privileged account. Default to `false`. Set it to `true` can resets permissions of the privileged account.
 * `check_policy` - (Optional, Available since v1.266.0) Whether to apply password policy
-* `status` - (Optional, Computed) The status of the resource
+* `status` - (Optional, Computed) The status of the resource. Valid values: `Available`, `Unavailable`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID of Account. The value is formatted `<db_instance_id>:<account_name>`.
-* `status` - The status of the resource. Valid values: `Available`, `Unavailable`.
 
 
 ## Timeouts

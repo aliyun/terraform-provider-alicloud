@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type VpcService struct {
@@ -1182,7 +1183,7 @@ func (s *VpcService) DescribeVpcDhcpOptionsSet(id string) (object map[string]int
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidRegionId.NotFound", "InvalidDhcpOptionsSetId.NotFound"}) {
 			return object, WrapErrorf(NotFoundErr("VPC:DhcpOptionsSet", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -1262,6 +1263,24 @@ func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(id stri
 			if status == failState {
 				return object, fmt.Sprint(object["AssociateStatus"]), WrapError(Error(FailedToReachTargetStatus, status))
 			}
+		}
+		return object, status, nil
+	}
+}
+
+// DescribeVpcDhcpOptionsSetAttachmentDeleteStateRefreshFunc is the Delete
+// variant of the shared attachment refresh: when the VPC is no longer
+// associated the refresh returns a nil object, which lets WaitForState finish
+// through its resource-gone path instead of polling until the timeout.
+func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentDeleteStateRefreshFunc(id string) resource.StateRefreshFunc {
+	refreshFunc := s.DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(id, []string{})
+	return func() (interface{}, string, error) {
+		object, status, err := refreshFunc()
+		if err != nil {
+			return object, status, err
+		}
+		if status == "" {
+			return nil, "", nil
 		}
 		return object, status, nil
 	}

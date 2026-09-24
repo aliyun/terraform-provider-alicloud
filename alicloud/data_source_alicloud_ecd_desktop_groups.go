@@ -53,14 +53,12 @@ func dataSourceAliCloudEcdDesktopGroups() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"allow_auto_setup": {
-							Type:      schema.TypeInt,
-							Computed:  true,
-							Sensitive: true,
+							Type:     schema.TypeInt,
+							Computed: true,
 						},
 						"allow_buffer_count": {
-							Type:      schema.TypeInt,
-							Computed:  true,
-							Sensitive: true,
+							Type:     schema.TypeInt,
+							Computed: true,
 						},
 						"bundle_id": {
 							Type:     schema.TypeString,

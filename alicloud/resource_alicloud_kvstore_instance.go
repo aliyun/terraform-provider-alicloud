@@ -193,7 +193,12 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"MASTER_SLAVE", "STAND_ALONE", "double", "single"}, false),
-				Deprecated:   "Field 'node_type' has been deprecated from version 1.120.1",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return (old == "MASTER_SLAVE" && new == "double") ||
+						(old == "double" && new == "MASTER_SLAVE") ||
+						(old == "STAND_ALONE" && new == "single") ||
+						(old == "single" && new == "STAND_ALONE")
+				},
 			},
 			"order_type": {
 				Type:         schema.TypeString,
@@ -592,7 +597,7 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request["NetworkType"] = "VPC"
 		request["VpcId"] = vsw.VpcId
 		request["VSwitchId"] = vswitchId
-		if fmt.Sprint(request["ZoneId"]) == "" {
+		if zoneId, _ := request["ZoneId"].(string); zoneId == "" {
 			request["ZoneId"] = vsw.ZoneId
 		}
 	}
@@ -601,7 +606,7 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
-			if NoCodeRegexRetry(err) {
+			if NoCodeRegexRetry(err) || IsExpectedErrors(err, []string{"CanNotAcquireLock"}) {
 				wait()
 				return retry.RetryableError(err)
 			}

@@ -136,7 +136,13 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBInstanceStatus"}) {
+				if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) {
+					return retry.NonRetryableError(rsdService.confirmRdsChildError(parts[0], err))
+				}
+				if rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound") {
+					return retry.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+				}
+				if IsExpectedErrors(err, []string{"InternalError"}) {
 					return retry.RetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
 				}
 				return retry.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, object["DBInstanceId"], action, AlibabaCloudSdkGoERROR))
@@ -156,6 +162,10 @@ func resourceAlicloudDBAccountPrivilegeRead(d *schema.ResourceData, meta interfa
 			return nil
 		})
 		if err != nil {
+			if !d.IsNewResource() && NotFoundError(err) {
+				d.SetId("")
+				return nil
+			}
 			return WrapError(err)
 		}
 	}
@@ -217,6 +227,12 @@ func resourceAlicloudDBAccountPrivilegeDelete(d *schema.ResourceData, meta inter
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
+	}
+	if _, e := rdsService.describeRdsParentInstance(parts[0], 5*time.Minute); e != nil {
+		if NotFoundError(e) {
+			return nil
+		}
+		return WrapError(e)
 	}
 	object, err := rdsService.DescribeDBAccountPrivilege(d.Id())
 	if err != nil {

@@ -1,13 +1,22 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudRdsAccount_basic(t *testing.T) {
@@ -27,9 +36,9 @@ func TestAccAliCloudRdsAccount_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -110,6 +119,15 @@ data "alicloud_db_zones" "default"{
  	db_instance_storage_type = "local_ssd"
 }
 
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "local_ssd"
+	instance_charge_type = "PostPaid"
+}
+
 data "alicloud_vpcs" "default" {
     name_regex = "^default-NODELETING$"
 }
@@ -142,8 +160,8 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
- 	instance_type = "rds.mysql.s3.large"
-	instance_storage = 50
+ 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	instance_charge_type = "Postpaid"
@@ -172,9 +190,9 @@ func TestAccAliCloudRdsAccount_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -217,15 +235,15 @@ func TestAccAliCloudRdsAccount_normal(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srdsaccount%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsAccountBasicDependenceBasic)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsAccountBasicDependenceNormal)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -292,6 +310,15 @@ data "alicloud_db_zones" "default"{
  	db_instance_storage_type = "local_ssd"
 }
 
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "local_ssd"
+	instance_charge_type = "PostPaid"
+}
+
 data "alicloud_vpcs" "default" {
     name_regex = "^default-NODELETING$"
 }
@@ -325,8 +352,8 @@ resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
  	db_instance_storage_type = "local_ssd"
-	instance_type = "rds.mysql.s3.large"
-	instance_storage = 50
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
 	instance_charge_type = "Postpaid"
@@ -366,15 +393,15 @@ func TestAccAliCloudRdsAccount_super(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%srdsaccount%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsAccountBasicDependenceBasic)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsAccountBasicDependenceNormal)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -452,9 +479,9 @@ func TestAccAliCloudRdsAccount_basic11761(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -534,9 +561,9 @@ func TestAccAliCloudRdsAccount_basic11761_2(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -629,7 +656,7 @@ resource "alicloud_db_instance" "default" {
   engine_version = "2012_std_ha"
   vswitch_id     = local.vswitch_id
   instance_type  = "mssql.x4.medium.s2"
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   db_instance_storage_type = "cloud_essd"
   instance_charge_type =  "Postpaid"
   monitoring_period = "60"
@@ -658,9 +685,9 @@ func TestAccAliCloudRdsAccount_basic11752(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -740,7 +767,7 @@ variable "name" {
 
 data "alicloud_db_zones" "default"{
   	engine               = "PostgreSQL"
-  	engine_version       = "17.0"
+  	engine_version       = "12.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
@@ -749,7 +776,7 @@ data "alicloud_db_zones" "default"{
 data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
   	engine               = "PostgreSQL"
-  	engine_version       = "17.0"
+  	engine_version       = "12.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
@@ -775,21 +802,25 @@ locals {
   zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
 }
 
-
-
+// RDS PostgreSQL on ECS requires this service-linked role before CreateDBInstance
+resource "alicloud_rds_service_linked_role" "default" {
+	service_name = "AliyunServiceRoleForRdsPgsqlOnEcs"
+}
 
 resource "alicloud_db_instance" "default" {
   engine         	= "PostgreSQL"
-  engine_version 	= "17.0"
-  instance_type 	=  data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
-  instance_storage	=  data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
+  engine_version 	= "12.0"
+  instance_type 	=  data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage	=  data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   db_instance_storage_type =  "cloud_essd"
-  zone_id			=      data.alicloud_db_instance_classes.default.instance_classes[0].zone_ids[0].id
+  zone_id			=      data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id
   instance_charge_type  =  "Postpaid"
   instance_name			=  var.name
   vswitch_id			=  local.vswitch_id
   monitoring_period 	=  "60"
   category				=  "HighAvailability"
+  target_minor_version	=  "rds_postgres_1200_20231030"
+	depends_on = [alicloud_rds_service_linked_role.default]
 }
 
 
@@ -873,4 +904,143 @@ func TestAccAliCloudRdsAccount_passwordWo(t *testing.T) {
 			},
 		},
 	})
+}
+
+
+// rdsAccountTestClient stands up a credential-free AliyunClient whose RDS
+// transport is pointed at an in-process httptest server, mirroring the
+// ecs-snapshot unit-test construction. This avoids gomonkey binary patching
+// (which the macOS arm64 kernel refuses) and runs under a plain `go test`.
+func rdsAccountTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		handler(w, r)
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("rds", endpoint)
+	return client
+}
+
+func writeGone403(t *testing.T, w http.ResponseWriter) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden)
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
+		"Code":    "OperationDenied.DBInstanceStatus",
+		"Message": "the request was not permitted in the current state",
+	}); err != nil {
+		t.Error(err)
+	}
+}
+
+func rdsAccountResourceData(t *testing.T) *schema.ResourceData {
+	t.Helper()
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, err := schema.InternalMap(p["alicloud_rds_account"].Schema).Data(nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.SetId("rm-test:test-account")
+	return d
+}
+
+func TestUnitRdsAccountReadParentGone(t *testing.T) {
+	client := rdsAccountTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Form.Get("Action") {
+		case "DescribeDBInstanceAttribute":
+			writeRdsError(t, w, 404, "InvalidDBInstanceId.NotFound")
+			return
+		case "DescribeAccounts":
+			writeGone403(t, w)
+			return
+		}
+		t.Errorf("unexpected RDS action in Read: %s", r.Form.Get("Action"))
+		w.WriteHeader(http.StatusBadRequest)
+	})
+	d := rdsAccountResourceData(t)
+
+	err := resourceAliCloudRdsAccountRead(d, client)
+	assert.Nil(t, err, "Read must not hard-fail when the parent instance is gone")
+	assert.Equal(t, "", d.Id(), "account state must be cleared when the parent instance is gone")
+}
+
+func TestUnitRdsAccountDeleteParentGone(t *testing.T) {
+	var deleteAccountCalls int32
+	client := rdsAccountTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Form.Get("Action") {
+		case "DescribeDBInstanceAttribute":
+			writeRdsError(t, w, 404, "InvalidDBInstanceId.NotFound")
+			return
+		case "DeleteAccount":
+			atomic.AddInt32(&deleteAccountCalls, 1)
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{})
+			return
+		}
+		t.Errorf("unexpected RDS action in Delete: %s", r.Form.Get("Action"))
+		w.WriteHeader(http.StatusBadRequest)
+	})
+	d := rdsAccountResourceData(t)
+
+	err := resourceAliCloudRdsAccountDelete(d, client)
+	assert.Nil(t, err, "Delete must be idempotent when the parent instance is gone")
+	assert.Equal(t, int32(0), atomic.LoadInt32(&deleteAccountCalls),
+		"DeleteAccount must not be called when the parent instance is already gone")
+}
+
+func TestUnitRdsAccountDeleteDeleteAccountTerminal403(t *testing.T) {
+	var describeDBInstanceCalls int32
+	client := rdsAccountTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Form.Get("Action") {
+		case "DescribeDBInstanceAttribute":
+			n := atomic.AddInt32(&describeDBInstanceCalls, 1)
+			if n == 1 {
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Items": map[string]interface{}{
+						"DBInstanceAttribute": []map[string]interface{}{
+							{"DBInstanceStatus": "Running", "DBInstanceId": "rm-test"},
+						},
+					},
+				})
+				return
+			}
+			writeRdsError(t, w, 404, "InvalidDBInstanceId.NotFound")
+			return
+		case "DeleteAccount":
+			writeGone403(t, w)
+			return
+		case "DescribeAccounts":
+			writeGone403(t, w)
+			return
+		}
+		t.Errorf("unexpected RDS action in Delete: %s", r.Form.Get("Action"))
+		w.WriteHeader(http.StatusBadRequest)
+	})
+	d := rdsAccountResourceData(t)
+
+	err := resourceAliCloudRdsAccountDelete(d, client)
+	assert.Nil(t, err, "Delete must finish idempotently when DeleteAccount returns the terminal 403")
+	assert.Equal(t, int32(2), atomic.LoadInt32(&describeDBInstanceCalls),
+		"the follow-up DescribeDBInstance must run exactly once after the DeleteAccount 403 (pre-check + follow-up)")
 }

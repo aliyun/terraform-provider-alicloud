@@ -81,6 +81,7 @@ func TestAccAliCloudECSDiskAttachmentBasic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -251,78 +252,72 @@ resource "alicloud_ecs_disk_attachment" "default" {
 func AlicloudEcsDiskAttachmentBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-			default = "%s"
-		}
-
-variable "number" {
-	default = "2"
+  default = "%s"
 }
 
-data "alicloud_zones" default {
-  available_resource_creation = "Instance"
+variable "number" {
+  default = "2"
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  instance_type_family = "ecs.sn1ne"
+  instance_type_family = "ecs.g6"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+data "alicloud_images" "default" {
+  name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent   = true
+  owners        = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
 }
 
-data "alicloud_vswitches" "default" {
- vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "default" {
-  name = "tf-test"
-  description = "New security group"
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-
-data "alicloud_images" "default" {
-    name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  	most_recent = true
-	owners = "system"
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_instance" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  instance_name   = "${var.name}"
-  host_name       = "tf-testAcc"
-  image_id        = data.alicloud_images.default.images.0.id
-  instance_type   = data.alicloud_instance_types.default.instance_types.0.id
-  security_groups = [alicloud_security_group.default.id]
-  vswitch_id      = data.alicloud_vswitches.default.ids.0
+  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  instance_name     = var.name
+  host_name         = "tf-testAcc"
+  image_id          = data.alicloud_images.default.images.0.id
+  instance_type     = data.alicloud_instance_types.default.instance_types.0.id
+  security_groups   = [alicloud_security_group.default.id]
+  vswitch_id        = alicloud_vswitch.default.id
 }
 
-data "alicloud_zones" "disk" {
-	available_resource_creation= "VSwitch"
-}
 resource "alicloud_ecs_disk" "default" {
-	count = "${var.number}"
-	zone_id = "${data.alicloud_zones.disk.zones.0.id}"
-	category = "cloud_efficiency"
-	delete_auto_snapshot = "true"
-	description = "Test For Terraform"
-	disk_name = var.name
-	enable_auto_snapshot = "true"
-	encrypted = "true"
-	size = "500"
-  	tags = {
-    	Created     = "TF"
-    	Environment = "Acceptance-test"
-  	}
+  count                = var.number
+  zone_id              = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  category             = "cloud_efficiency"
+  delete_auto_snapshot = "true"
+  description          = "Test For Terraform"
+  disk_name            = var.name
+  enable_auto_snapshot = "true"
+  encrypted            = "true"
+  size                 = "500"
+  tags = {
+    Created     = "TF"
+    Environment = "Acceptance-test"
+  }
 }
 
 resource "alicloud_ecs_disk_attachment" "default" {
-  count = "${var.number}"
-  disk_id = "${element(alicloud_ecs_disk.default.*.id, count.index)}"
-  instance_id = alicloud_instance.default.id
-  password = "YouPassword123"
+  count         = var.number
+  disk_id       = element(alicloud_ecs_disk.default.*.id, count.index)
+  instance_id   = alicloud_instance.default.id
+  password      = "YouPassword123"
   key_pair_name = var.name
 }
 `, name)

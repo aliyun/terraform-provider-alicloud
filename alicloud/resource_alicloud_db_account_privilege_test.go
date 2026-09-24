@@ -304,16 +304,16 @@ variable "name" {
 }
 data "alicloud_db_zones" "default"{
 	engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "14.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
+	zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "14.0"
     category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
@@ -348,14 +348,20 @@ resource "alicloud_security_group" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
+// RDS PostgreSQL on ECS requires this service-linked role before CreateDBInstance
+resource "alicloud_rds_service_linked_role" "default" {
+	service_name = "AliyunServiceRoleForRdsPgsqlOnEcs"
+}
+
 resource "alicloud_db_instance" "default" {
 	engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "14.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name
+	depends_on = [alicloud_rds_service_linked_role.default]
 }
 
 resource "alicloud_db_database" "default" {
@@ -364,6 +370,7 @@ resource "alicloud_db_database" "default" {
   name = "tfaccountpri_${count.index}"
   description = "from terraform"
   character_set = "UTF8"
+  depends_on = [alicloud_db_account.default]
 }
 
 resource "alicloud_db_account" "default" {
@@ -435,11 +442,21 @@ resource "alicloud_db_database" "default" {
   character_set = "Chinese_PRC_CI_AS"
 }
 
+resource "alicloud_db_account" "super" {
+  db_instance_id = alicloud_db_instance.default.id
+  account_name = "tftestsuper"
+  account_password = "Test12345"
+  account_type = "Super"
+  description = "from terraform"
+}
+
 resource "alicloud_db_account" "default" {
   db_instance_id = alicloud_db_instance.default.id
   account_name = "tftestprivilege"
   account_password = "Test12345"
+  account_type = "Normal"
   description = "from terraform"
+  depends_on = [alicloud_db_account.super]
 }
 `, name)
 }

@@ -1781,6 +1781,7 @@ func (client *AliyunClient) getSdkConfig(timeout time.Duration) *sdk.Config {
 	}
 	// WithUserAgent will add a prefix Extra/ for user agent value
 	return sdk.NewConfig().
+		WithAutoRetry(true).
 		WithMaxRetryTime(DefaultClientRetryCountSmall).
 		WithTimeout(timeout).
 		WithEnableAsync(false).
@@ -1801,8 +1802,13 @@ func (client *AliyunClient) getTransport() *http.Transport {
 	if err != nil {
 		handshakeTimeout = 120
 	}
+	idleConnTimeout, err := strconv.Atoi(os.Getenv("IdleConnTimeout"))
+	if err != nil || idleConnTimeout <= 0 || idleConnTimeout > 86400 {
+		idleConnTimeout = 5
+	}
 	transport := &http.Transport{}
 	transport.TLSHandshakeTimeout = time.Duration(handshakeTimeout) * time.Second
+	transport.IdleConnTimeout = time.Duration(idleConnTimeout) * time.Second
 
 	return transport
 }

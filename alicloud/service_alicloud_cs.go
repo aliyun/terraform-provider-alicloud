@@ -1182,7 +1182,10 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 	csClient := CsClient{roaClient}
 	kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
 	if err != nil {
-		log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
+		return WrapError(err)
+	}
+	if kubeConfig == nil || tea.StringValue(kubeConfig.Config) == "" {
+		return WrapError(fmt.Errorf("empty kubeconfig response for cluster %s", d.Id()))
 	}
 	m := flattenAlicloudCSCertificate(kubeConfig)
 	if len(m) >= 3 {
@@ -1204,7 +1207,9 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 	}
 	// kube_config
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		writeToFile(file.(string), tea.StringValue(kubeConfig.Config))
+		if err := writeToFile(file.(string), tea.StringValue(kubeConfig.Config)); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	if setCertificateAuthorityAttribute {
