@@ -13,6 +13,10 @@ func ServicePackage() conns.ServicePackage {
 				TypeName: "alicloud_kms_secret",
 				Factory:  NewSecretEphemeralResource,
 			},
+			{
+				TypeName: "alicloud_kms_plaintext",
+				Factory:  NewPlaintextEphemeralResource,
+			},
 		},
 	}
 }
