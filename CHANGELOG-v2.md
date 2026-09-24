@@ -1,4 +1,8 @@
-## 2.0.0-beta5 (Unreleased)
+## 2.0.0-beta6 (Unreleased)
+
+## 2.0.0-beta5 (September 24, 2026)
+
+This beta rolls up every change merged from the 1.x line since v2.0.0-beta4 — see the `1.291.0`, `1.292.0`, `1.293.0` and `1.294.0` sections of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only changes below.
 
 FEATURES:
 
