@@ -54,16 +54,21 @@ resource "alicloud_message_service_subscription" "default" {
 
 The following arguments are supported:
 * `dlq_policy` - (Optional, Set, Available since v1.244.0) The dead-letter queue policy. See [`dlq_policy`](#dlq_policy) below.
+* `dm_attributes` - (Optional, ForceNew, Set, Available since v1.284.0) The email push attributes. This parameter is required when `push_type` is set to `dm`. See [`dm_attributes`](#dm_attributes) below.
+* `dysms_attributes` - (Optional, ForceNew, Set, Available since v1.284.0) The SMS push attributes. This parameter is required when `push_type` is set to `dysms`. See [`dysms_attributes`](#dysms_attributes) below.
+* `tenant_rate_limit_policy` - (Optional, Set, Available since v1.284.0) The rate limit policy. See [`tenant_rate_limit_policy`](#tenant_rate_limit_policy) below.
 * `topic_name`- (Required, ForceNew) The topic which The subscription belongs to was named with the name. A topic name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 255 characters.
 * `subscription_name` - (Required, ForceNew) Two topics subscription on a single account in the same topic cannot have the same name. A topic subscription name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 255 characters.
-* `endpoint` - (Required, ForceNew) The endpoint has three format. Available values format:
+* `endpoint` - (Required, ForceNew) The endpoint of the subscription. The format varies with `push_type`. Available values format:
   - `HTTP Format`: An HTTP URL that starts with http:// or https://.
   - `Queue Format`: A queue name.
+  - `Dm Format`: `smq-ep:dm:<account_id>:__dynamic`, where `<account_id>` is the ID of your Alibaba Cloud account.
+  - `Dysms Format`: `smq-ep:dysms:<account_id>:<phone_number>`.
   - `MPush Format`: An AppKey.
   - `Sms Format`: A mobile number
   - `Email Format`: An email address.
-* `sts_role_arn` - (Optional, ForceNew, Available since v1.259.0) The STS RoleArn.
-* `push_type` - (Required, ForceNew) The Push type of Subscription. The Valid values: `http`, `queue`, `mpush`, `alisms` and `email`.
+* `sts_role_arn` - (Optional, ForceNew, Available since v1.259.0) The ARN of the RAM role assumed by the service. The format is `acs:ram::<account_id>:role/<role_name>`. This parameter is required when `push_type` is set to `dm` or `dysms`.
+* `push_type` - (Required) The Push type of Subscription. Valid values: `http`, `queue`, `dm`, `dysms`, `fc` and `eventbus`. The values `mpush`, `alisms` and `email` are deprecated and are retained only for compatibility with existing subscriptions.
 * `filter_tag` - (Optional, ForceNew) The tag that is used to filter messages. Only the messages that have the same tag can be pushed. A tag is a string that can be up to 16 characters in length. By default, no tag is specified to filter messages.
 * `notify_content_format` - (Optional, Computed, ForceNew) The NotifyContentFormat attribute of Subscription. This attribute specifies the content format of the messages pushed to users. Valid values: `XML`, `JSON` and `SIMPLIFIED`. Default value: `XML`.
 * `notify_strategy` - (Optional) The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails. Default value: `BACKOFF_RETRY`. Valid values:
@@ -76,11 +81,31 @@ The dlq_policy supports the following:
 * `dead_letter_target_queue` - (Optional) The queue to which dead-letter messages are delivered.
 * `enabled` - (Optional, Bool) Specifies whether to enable the dead-letter message delivery. Valid values: `true`, `false`.
 
+### `dm_attributes`
+
+The dm_attributes supports the following:
+* `account_name` - (Optional, ForceNew) The sender address of the email push. The value must be a sender address that has been configured in Direct Mail.
+* `subject` - (Optional, ForceNew) The subject of the pushed email.
+
+### `dysms_attributes`
+
+The dysms_attributes supports the following:
+* `sign_name` - (Optional, ForceNew) The signature name of the SMS push. The value must be a signature that has been configured in Short Message Service.
+* `template_code` - (Optional, ForceNew) The template code of the SMS push. You can obtain the value from the Short Message Service console.
+
+### `tenant_rate_limit_policy`
+
+The tenant_rate_limit_policy supports the following:
+* `enabled` - (Optional, Bool) Specifies whether to enable the rate limit policy. Valid values: `true`, `false`.
+* `max_receives_per_second` - (Optional, Int) The maximum number of messages that can be pushed or consumed per second.
+
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The resource ID in terraform of Subscription. The value formats as `<topic_name>:<subscription_name>`.
 * `create_time` - (Available since v1.244.0) The time when the subscription was created.
+* `last_modify_time` - (Available since v1.284.0) The time when the subscription was last modified.
+* `topic_owner` - (Available since v1.284.0) The ID of the Alibaba Cloud account that owns the subscribed topic.
 
 ## Timeouts
 

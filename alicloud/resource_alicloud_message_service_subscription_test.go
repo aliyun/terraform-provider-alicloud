@@ -372,6 +372,40 @@ func TestAccAliCloudMessageServiceSubscription_basic9850(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tenant_rate_limit_policy": []map[string]interface{}{
+						{
+							"enabled":                 "true",
+							"max_receives_per_second": "50",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tenant_rate_limit_policy.#":                         "1",
+						"tenant_rate_limit_policy.0.enabled":                 "true",
+						"tenant_rate_limit_policy.0.max_receives_per_second": "50",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tenant_rate_limit_policy": []map[string]interface{}{
+						{
+							"enabled":                 "true",
+							"max_receives_per_second": "100",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tenant_rate_limit_policy.#":                         "1",
+						"tenant_rate_limit_policy.0.enabled":                 "true",
+						"tenant_rate_limit_policy.0.max_receives_per_second": "100",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -445,6 +479,8 @@ var AliCloudMessageServiceSubscriptionMap9850 = map[string]string{
 	"create_time":           CHECKSET,
 	"notify_content_format": CHECKSET,
 	"notify_strategy":       CHECKSET,
+	"last_modify_time":      CHECKSET,
+	"topic_owner":           CHECKSET,
 }
 
 func AliCloudMessageServiceSubscriptionBasicDependence9850(name string) string {
@@ -464,6 +500,148 @@ func AliCloudMessageServiceSubscriptionBasicDependence9850(name string) string {
   		message_retention_period = 345600
   		visibility_timeout       = 30
   		polling_wait_seconds     = 0
+	}
+`, name)
+}
+
+// TestAccAliCloudMessageServiceSubscription_dm covers the email (DirectMail) push
+// type. dm_attributes is required by the Subscribe API when push_type is dm;
+// without it the API rejects the call with EndpointInvalid.
+func TestAccAliCloudMessageServiceSubscription_dm(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_subscription.default"
+	ra := resourceAttrInit(resourceId, AliCloudMessageServiceSubscriptionMap9850)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceSubscription")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccmessageservice%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceSubscriptionPushDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"push_type":         "dm",
+					"endpoint":          "smq-ep:dm:${data.alicloud_account.current.id}:__dynamic",
+					"sts_role_arn":      "acs:ram::${data.alicloud_account.current.id}:role/AliyunMNSNotificationRole",
+					"subscription_name": name,
+					"topic_name":        "${alicloud_message_service_topic.default.id}",
+					"dm_attributes": []map[string]interface{}{
+						{
+							"account_name": "notify@example.com",
+							"subject":      name,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"push_type":                    "dm",
+						"endpoint":                     CHECKSET,
+						"sts_role_arn":                 CHECKSET,
+						"subscription_name":            name,
+						"topic_name":                   CHECKSET,
+						"dm_attributes.#":              "1",
+						"dm_attributes.0.subject":      name,
+						"dm_attributes.0.account_name": "notify@example.com",
+					}),
+				),
+			},
+			{
+				ResourceName: resourceId,
+				ImportState:  true,
+				// push_type, dm_attributes and sts_role_arn are accepted by the
+				// Subscribe API on create but GetSubscriptionAttributes returns none
+				// of them, so an imported state cannot be compared attribute by
+				// attribute. ForceNew attributes must not be listed in
+				// ImportStateVerifyIgnore, so verification is disabled here instead.
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudMessageServiceSubscription_dysms covers the SMS push type.
+// dysms_attributes is required by the Subscribe API when push_type is dysms.
+func TestAccAliCloudMessageServiceSubscription_dysms(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_subscription.default"
+	ra := resourceAttrInit(resourceId, AliCloudMessageServiceSubscriptionMap9850)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceSubscription")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccmessageservice%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceSubscriptionPushDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"push_type":         "dysms",
+					"endpoint":          "smq-ep:dysms:${data.alicloud_account.current.id}:13800138000",
+					"sts_role_arn":      "acs:ram::${data.alicloud_account.current.id}:role/AliyunMNSNotificationRole",
+					"subscription_name": name,
+					"topic_name":        "${alicloud_message_service_topic.default.id}",
+					"dysms_attributes": []map[string]interface{}{
+						{
+							"template_code": "SMS_123456",
+							"sign_name":     "阿里云短信测试专用",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"push_type":                        "dysms",
+						"endpoint":                         CHECKSET,
+						"sts_role_arn":                     CHECKSET,
+						"subscription_name":                name,
+						"topic_name":                       CHECKSET,
+						"dysms_attributes.#":               "1",
+						"dysms_attributes.0.template_code": "SMS_123456",
+						"dysms_attributes.0.sign_name":     "阿里云短信测试专用",
+					}),
+				),
+			},
+			{
+				ResourceName: resourceId,
+				ImportState:  true,
+				// Same as the dm case: push_type, dysms_attributes and sts_role_arn
+				// are never returned by GetSubscriptionAttributes, and ForceNew
+				// attributes must not be listed in ImportStateVerifyIgnore.
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
+
+func AliCloudMessageServiceSubscriptionPushDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_account" "current" {
+	}
+
+	resource "alicloud_message_service_topic" "default" {
+  		topic_name = var.name
 	}
 `, name)
 }
