@@ -1452,7 +1452,10 @@ func TestAccAliCloudRedisTairInstance_basic6473_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ssl_enabled": "Enable",
+						"ssl_enabled":       "Enable",
+						"cert_download_url": CHECKSET,
+						"ssl_expired_time":  CHECKSET,
+						"cert_common_name":  CHECKSET,
 					}),
 				),
 			},
