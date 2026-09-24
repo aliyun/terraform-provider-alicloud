@@ -288,6 +288,10 @@ func resourceAliCloudCloudMonitorServiceMetricAlarmRule() *schema.Resource {
 			"resources": {
 				Type:     schema.TypeString,
 				Required: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareArrayJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
 			},
 			"rule_name": {
 				Type:     schema.TypeString,
