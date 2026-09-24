@@ -3,7 +3,6 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -167,9 +166,15 @@ func (s *ElasticsearchService) getKibanaPvlNetworkInfo(id string) (interface{}, 
 		return nil
 	})
 
-	instanceMap := jsonToMap(listKibanaPvlNetworkResp.GetHttpContentString())
-	resultMap := instanceMap["Result"]
-	return resultMap, err
+	if err != nil {
+		return nil, err
+	}
+
+	instanceMap, err := jsonToMap(listKibanaPvlNetworkResp.GetHttpContentString())
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	return instanceMap["Result"], nil
 }
 
 func (s *ElasticsearchService) updateKibanaPrivatePvlNetwork(d *schema.ResourceData, content map[string]interface{}, meta interface{}) error {
@@ -190,14 +195,10 @@ func (s *ElasticsearchService) updateKibanaPrivatePvlNetwork(d *schema.ResourceD
 		return WrapErrorf(err, "get kibana pvl info error %s", d.Id())
 	}
 
-	pvlInfoArr := pvlInfoInterface.([]interface{})
-
-	if len(pvlInfoArr) == 0 {
-		return WrapErrorf(err, "get kibana pvl info empty %s", d.Id())
+	pvlId, err := parseKibanaPvlId(pvlInfoInterface)
+	if err != nil {
+		return WrapErrorf(err, "get kibana pvl info error %s", d.Id())
 	}
-
-	pvlInfo := pvlInfoArr[0]
-	pvlId := pvlInfo.(map[string]interface{})["pvlId"].(string)
 	updateKibanaPvlNetworkReq.QueryParams["pvlId"] = pvlId
 
 	// retry
@@ -1077,13 +1078,38 @@ func closeHttps(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func jsonToMap(content string) map[string]interface{} {
+func jsonToMap(content string) (map[string]interface{}, error) {
 	var dataMap map[string]interface{}
 
-	err := json.Unmarshal([]byte(content), &dataMap)
-	if err != nil {
-		log.Fatalf("parse json to map error: %v", err)
+	if err := json.Unmarshal([]byte(content), &dataMap); err != nil {
+		return nil, WrapError(err)
 	}
 
-	return dataMap
+	return dataMap, nil
+}
+
+// parseKibanaPvlId safely extracts the pvlId from the ListKibanaPvlNetwork response
+// Result. It returns an error instead of panicking when the response shape is
+// unexpected (nil/non-array Result, empty array, non-object item, or missing/non-string pvlId).
+func parseKibanaPvlId(result interface{}) (string, error) {
+	pvlInfoArr, ok := result.([]interface{})
+	if !ok {
+		return "", WrapError(fmt.Errorf("unexpected kibana pvl network response: Result is not a list, got %T", result))
+	}
+
+	if len(pvlInfoArr) == 0 {
+		return "", WrapError(fmt.Errorf("kibana pvl network info is empty"))
+	}
+
+	pvlInfoMap, ok := pvlInfoArr[0].(map[string]interface{})
+	if !ok {
+		return "", WrapError(fmt.Errorf("unexpected kibana pvl network response: item is not an object, got %T", pvlInfoArr[0]))
+	}
+
+	pvlId, ok := pvlInfoMap["pvlId"].(string)
+	if !ok {
+		return "", WrapError(fmt.Errorf("unexpected kibana pvl network response: pvlId is missing or not a string"))
+	}
+
+	return pvlId, nil
 }
