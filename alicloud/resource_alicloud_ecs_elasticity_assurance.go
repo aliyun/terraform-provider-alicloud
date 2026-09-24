@@ -2,12 +2,15 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -20,6 +23,29 @@ func resourceAliCloudEcsElasticityAssurance() *schema.Resource {
 		Delete: resourceAliCloudEcsElasticityAssuranceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, v interface{}) error {
+			if !d.NewValueKnown("period_unit") {
+				return nil
+			}
+			periodUnit, _ := d.Get("period_unit").(string)
+
+			if !d.NewValueKnown("period") {
+				return nil
+			}
+			if period, ok := d.GetOk("period"); ok {
+				if err := validateEcsElasticityAssurancePeriod(periodUnit, period.(int)); err != nil {
+					return err
+				}
+			}
+
+			if !ecsElasticityAssuranceRecurrenceRulesWhollyKnown(d) {
+				return nil
+			}
+			if err := validateEcsElasticityAssuranceRecurrenceRuleAttributes(d.GetRawConfig()); err != nil {
+				return err
+			}
+			return validateEcsElasticityAssuranceRecurrenceRules(periodUnit, ecsElasticityAssuranceRecurrenceRules(d.Get("recurrence_rules")))
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
@@ -70,17 +96,18 @@ func resourceAliCloudEcsElasticityAssurance() *schema.Resource {
 				Type:     schema.TypeList,
 				Required: true,
 				ForceNew: true,
+				MaxItems: 1,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+				ValidateFunc: IntBetween(1, 365),
 			},
 			"period_unit": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: StringInSlice([]string{"Month", "Year", "Day"}, false),
 			},
 			"private_pool_options_match_criteria": {
 				Type:     schema.TypeString,
@@ -92,6 +119,39 @@ func resourceAliCloudEcsElasticityAssurance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"recurrence_rules": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 20,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"start_hour": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: IntBetween(0, 24),
+						},
+						"recurrence_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: StringInSlice([]string{"Daily", "Weekly", "Monthly"}, false),
+						},
+						"end_hour": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: IntBetween(0, 24),
+						},
+						"recurrence_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
 			},
 			"region_id": {
 				Type:     schema.TypeString,
@@ -129,6 +189,7 @@ func resourceAliCloudEcsElasticityAssurance() *schema.Resource {
 				Type:     schema.TypeList,
 				Required: true,
 				ForceNew: true,
+				MaxItems: 1,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
@@ -191,6 +252,26 @@ func resourceAliCloudEcsElasticityAssuranceCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOkExists("period"); ok {
 		request["Period"] = v
 	}
+	periodUnit := fmt.Sprint(d.Get("period_unit"))
+	if period, ok := d.GetOk("period"); ok {
+		if err := validateEcsElasticityAssurancePeriod(periodUnit, period.(int)); err != nil {
+			return WrapError(err)
+		}
+	}
+	recurrenceRules := ecsElasticityAssuranceRecurrenceRules(d.Get("recurrence_rules"))
+	if err := validateEcsElasticityAssuranceRecurrenceRuleAttributes(d.GetRawConfig()); err != nil {
+		return WrapError(err)
+	}
+	if err := validateEcsElasticityAssuranceRecurrenceRules(periodUnit, recurrenceRules); err != nil {
+		return WrapError(err)
+	}
+	if v, ok := d.GetOk("recurrence_rules"); ok {
+		recurrenceRulesMapsArray, expandErr := expandEcsElasticityAssuranceRecurrenceRules(ecsElasticityAssuranceRecurrenceRules(v))
+		if expandErr != nil {
+			return WrapError(expandErr)
+		}
+		request["RecurrenceRules"] = recurrenceRulesMapsArray
+	}
 	if v, ok := d.GetOk("zone_ids"); ok {
 		zoneIdMapsArray := v.([]interface{})
 		request["ZoneId"] = zoneIdMapsArray
@@ -223,6 +304,154 @@ func resourceAliCloudEcsElasticityAssuranceCreate(d *schema.ResourceData, meta i
 	}
 
 	return resourceAliCloudEcsElasticityAssuranceUpdate(d, meta)
+}
+
+func expandEcsElasticityAssuranceRecurrenceRules(recurrenceRules []interface{}) ([]interface{}, error) {
+	recurrenceRulesMapsArray := make([]interface{}, 0, len(recurrenceRules))
+	for i, recurrenceRuleRaw := range recurrenceRules {
+		recurrenceRule, ok := recurrenceRuleRaw.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("invalid recurrence_rules.%d: expected an object, got %T", i, recurrenceRuleRaw)
+		}
+		recurrenceRulesMapsArray = append(recurrenceRulesMapsArray, map[string]interface{}{
+			"StartHour":       recurrenceRule["start_hour"],
+			"EndHour":         recurrenceRule["end_hour"],
+			"RecurrenceType":  recurrenceRule["recurrence_type"],
+			"RecurrenceValue": recurrenceRule["recurrence_value"],
+		})
+	}
+	return recurrenceRulesMapsArray, nil
+}
+
+func ecsElasticityAssuranceRecurrenceRules(v interface{}) []interface{} {
+	switch rules := v.(type) {
+	case *schema.Set:
+		return rules.List()
+	case []interface{}:
+		return rules
+	}
+	return nil
+}
+
+// ecsElasticityAssuranceRecurrenceRulesWhollyKnown reports whether every recurrence rule attribute
+// already has its final value. The block is a set, so a single unknown attribute makes the whole set
+// unknown at plan time; validation is then deferred to Create, which re-runs the same checks.
+func ecsElasticityAssuranceRecurrenceRulesWhollyKnown(d *schema.ResourceDiff) bool {
+	if !d.NewValueKnown("recurrence_rules") {
+		return false
+	}
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() || !rawConfig.Type().IsObjectType() || !rawConfig.Type().HasAttribute("recurrence_rules") {
+		return false
+	}
+	return rawConfig.GetAttr("recurrence_rules").IsWhollyKnown()
+}
+
+// The attributes of a recurrence rule are declared Optional so that adding the block is not treated as a
+// breaking change by scripts/compatibility (new required attributes are rejected). They remain mandatory for
+// every rule, which is checked against the raw config because a missing attribute is null there, while the
+// zero value of the decoded rule is indistinguishable from an omitted one.
+func validateEcsElasticityAssuranceRecurrenceRuleAttributes(rawConfig cty.Value) error {
+	if rawConfig.IsNull() || !rawConfig.IsKnown() || !rawConfig.Type().IsObjectType() || !rawConfig.Type().HasAttribute("recurrence_rules") {
+		return nil
+	}
+	recurrenceRules := rawConfig.GetAttr("recurrence_rules")
+	if recurrenceRules.IsNull() || !recurrenceRules.IsKnown() || !recurrenceRules.CanIterateElements() {
+		return nil
+	}
+	index := 0
+	for iterator := recurrenceRules.ElementIterator(); iterator.Next(); {
+		_, recurrenceRule := iterator.Element()
+		if recurrenceRule.IsKnown() && !recurrenceRule.IsNull() && recurrenceRule.Type().IsObjectType() {
+			for _, attribute := range []string{"start_hour", "end_hour", "recurrence_type", "recurrence_value"} {
+				if recurrenceRule.GetAttr(attribute).IsNull() {
+					return fmt.Errorf("invalid recurrence_rules.%d: %s must be specified", index, attribute)
+				}
+			}
+		}
+		index++
+	}
+	return nil
+}
+
+func validateEcsElasticityAssurancePeriod(periodUnit string, period int) error {
+	switch strings.ToUpper(periodUnit) {
+	case "DAY":
+		if period < 1 || period > 365 {
+			return fmt.Errorf("invalid period %d: when period_unit is Day, the value must be between 1 and 365", period)
+		}
+	case "MONTH":
+		if period < 1 || period > 9 {
+			return fmt.Errorf("invalid period %d: when period_unit is Month, the value must be between 1 and 9", period)
+		}
+	default:
+		if period < 1 || period > 5 {
+			return fmt.Errorf("invalid period %d: when period_unit is Year, the value must be between 1 and 5", period)
+		}
+	}
+	return nil
+}
+
+func validateEcsElasticityAssuranceRecurrenceValue(recurrenceType, recurrenceValue string) error {
+	switch recurrenceType {
+	case "Daily":
+		value, err := strconv.Atoi(recurrenceValue)
+		if err != nil || value < 1 || value > 31 {
+			return fmt.Errorf("recurrence_value %q must be a single integer between 1 and 31 when recurrence_type is Daily", recurrenceValue)
+		}
+	case "Weekly":
+		for _, part := range strings.Split(recurrenceValue, ",") {
+			value, err := strconv.Atoi(strings.TrimSpace(part))
+			if err != nil || value < 0 || value > 6 {
+				return fmt.Errorf("recurrence_value %q must be comma-separated integers between 0 and 6 when recurrence_type is Weekly", recurrenceValue)
+			}
+		}
+	case "Monthly":
+		parts := strings.Split(recurrenceValue, "-")
+		if len(parts) != 2 {
+			return fmt.Errorf("recurrence_value %q must be in the form A-B when recurrence_type is Monthly", recurrenceValue)
+		}
+		start, startErr := strconv.Atoi(strings.TrimSpace(parts[0]))
+		end, endErr := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if startErr != nil || endErr != nil || start < 1 || end > 31 || start > end {
+			return fmt.Errorf("recurrence_value %q must be in the form A-B with 1 <= A <= B <= 31 when recurrence_type is Monthly", recurrenceValue)
+		}
+	default:
+		return fmt.Errorf("recurrence_type must be one of Daily, Weekly and Monthly")
+	}
+	return nil
+}
+
+func validateEcsElasticityAssuranceRecurrenceRules(periodUnit string, recurrenceRules []interface{}) error {
+	if len(recurrenceRules) == 0 {
+		if periodUnit == "Day" {
+			return fmt.Errorf("recurrence_rules must be specified when period_unit is Day")
+		}
+		return nil
+	}
+	if periodUnit != "Day" {
+		return fmt.Errorf("recurrence_rules can only be specified when period_unit is Day")
+	}
+	for i, recurrenceRuleRaw := range recurrenceRules {
+		recurrenceRule, ok := recurrenceRuleRaw.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("invalid recurrence_rules.%d: expected an object, got %T", i, recurrenceRuleRaw)
+		}
+		startHour, startHourOk := recurrenceRule["start_hour"].(int)
+		endHour, endHourOk := recurrenceRule["end_hour"].(int)
+		if !startHourOk || !endHourOk {
+			return fmt.Errorf("invalid recurrence_rules.%d: start_hour and end_hour must be specified", i)
+		}
+		if endHour-startHour < 4 {
+			return fmt.Errorf("invalid recurrence_rules.%d: the difference between end_hour and start_hour must be at least 4 hours", i)
+		}
+		recurrenceType, _ := recurrenceRule["recurrence_type"].(string)
+		recurrenceValue, _ := recurrenceRule["recurrence_value"].(string)
+		if err := validateEcsElasticityAssuranceRecurrenceValue(recurrenceType, recurrenceValue); err != nil {
+			return fmt.Errorf("invalid recurrence_rules.%d: %s", i, err)
+		}
+	}
+	return nil
 }
 
 func resourceAliCloudEcsElasticityAssuranceRead(d *schema.ResourceData, meta interface{}) error {
@@ -265,6 +494,25 @@ func resourceAliCloudEcsElasticityAssuranceRead(d *schema.ResourceData, meta int
 			d.Set("instance_amount", allocatedResourceMap["TotalAmount"])
 			d.Set("zone_ids", []string{fmt.Sprint(allocatedResourceMap["zoneId"])})
 		}
+	}
+
+	recurrenceRulesMaps := make([]map[string]interface{}, 0)
+	if v, ok := objectRaw["RecurrenceRules"].(map[string]interface{}); ok {
+		for _, recurrenceRuleChildRaw := range convertToInterfaceArray(v["RecurrenceRule"]) {
+			recurrenceRule, ok := recurrenceRuleChildRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			recurrenceRulesMap := make(map[string]interface{})
+			recurrenceRulesMap["start_hour"] = recurrenceRule["StartHour"]
+			recurrenceRulesMap["end_hour"] = recurrenceRule["EndHour"]
+			recurrenceRulesMap["recurrence_type"] = convertEcsElasticityAssuranceRecurrenceTypeResponse(recurrenceRule["RecurrenceType"])
+			recurrenceRulesMap["recurrence_value"] = recurrenceRule["RecurrenceValue"]
+			recurrenceRulesMaps = append(recurrenceRulesMaps, recurrenceRulesMap)
+		}
+	}
+	if err := d.Set("recurrence_rules", recurrenceRulesMaps); err != nil {
+		return WrapError(err)
 	}
 
 	objectRaw, err = ecsServiceV2.DescribeElasticityAssuranceDescribeElasticityAssuranceAutoRenewAttribute(d.Id())
@@ -465,4 +713,17 @@ func convertEcsElasticityAssuranceRenewalStatusRequest(source interface{}) inter
 		return "Normal"
 	}
 	return source
+}
+
+func convertEcsElasticityAssuranceRecurrenceTypeResponse(source interface{}) interface{} {
+	recurrenceType := fmt.Sprint(source)
+	switch strings.ToUpper(recurrenceType) {
+	case "DAILY":
+		return "Daily"
+	case "WEEKLY":
+		return "Weekly"
+	case "MONTHLY":
+		return "Monthly"
+	}
+	return recurrenceType
 }
