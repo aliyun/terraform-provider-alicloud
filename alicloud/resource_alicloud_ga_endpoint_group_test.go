@@ -210,6 +210,53 @@ func TestAccAliCloudGaEndpointGroup_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"endpoint_configurations": []map[string]interface{}{
 						{
+							"endpoint":                     "${alicloud_eip_address.default.1.ip_address}",
+							"type":                         "PublicIp",
+							"weight":                       "20",
+							"enable_proxy_protocol":        "false",
+							"enable_clientip_preservation": "true",
+						},
+						{
+							"endpoint":                     "${alicloud_eip_address.default.0.ip_address}",
+							"type":                         "PublicIp",
+							"weight":                       "20",
+							"enable_proxy_protocol":        "false",
+							"enable_clientip_preservation": "true",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":                     "${alicloud_eip_address.default.1.ip_address}",
+							"type":                         "PublicIp",
+							"weight":                       "20",
+							"enable_proxy_protocol":        "false",
+							"enable_clientip_preservation": "true",
+						},
+						{
+							"endpoint":                     "${alicloud_eip_address.default.0.ip_address}",
+							"type":                         "PublicIp",
+							"weight":                       "20",
+							"enable_proxy_protocol":        "false",
+							"enable_clientip_preservation": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_configurations.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
 							"endpoint": "${alicloud_ecs_network_interface.default.id}",
 							"type":     "ENI",
 							"weight":   "30",
@@ -1092,6 +1139,259 @@ func TestAccAliCloudGaEndpointGroup_basic2_twin(t *testing.T) {
 						"name":                          name,
 						"description":                   name,
 						"endpoint_configurations.#":     "3",
+						"port_overrides.#":              "1",
+						"tags.%":                        "2",
+						"tags.Created":                  "TF",
+						"tags.For":                      "EndpointGroup",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaEndpointGroup_basicIpTarget(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_endpoint_group.default"
+	ra := resourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaEndpointGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence2)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":           "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region": defaultRegionToTest,
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":    "1.1.1.2",
+							"type":        "IpTarget",
+							"weight":      "20",
+							"vpc_id":      "${alicloud_vpc.default.id}",
+							"vswitch_ids": []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.update.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":            CHECKSET,
+						"listener_id":               CHECKSET,
+						"endpoint_group_region":     defaultRegionToTest,
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":    "1.1.1.2",
+							"type":        "IpTarget",
+							"weight":      "20",
+							"vpc_id":      "${alicloud_vpc.default.id}",
+							"vswitch_ids": []string{"${alicloud_vswitch.update.id}", "${alicloud_vswitch.default.id}"},
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":    "1.1.1.2",
+							"type":        "IpTarget",
+							"weight":      "20",
+							"vpc_id":      "${alicloud_vpc.default.id}",
+							"vswitch_ids": []string{"${alicloud_vswitch.update.id}", "${alicloud_vswitch.default.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":    "1.1.1.3",
+							"type":        "IpTarget",
+							"weight":      "20",
+							"vpc_id":      "${alicloud_vpc.default.id}",
+							"vswitch_ids": []string{"${alicloud_vswitch.default.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":    "1.1.1.3",
+							"type":        "IpTarget",
+							"weight":      "30",
+							"vpc_id":      "${alicloud_vpc.default.id}",
+							"vswitch_ids": []string{"${alicloud_vswitch.default.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":    "1.1.1.3",
+							"type":        "IpTarget",
+							"weight":      "30",
+							"vpc_id":      "${alicloud_vpc.default.id}",
+							"vswitch_ids": []string{"${alicloud_vswitch.update.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":                     "1.1.1.3",
+							"type":                         "IpTarget",
+							"weight":                       "30",
+							"vpc_id":                       "${alicloud_vpc.default.id}",
+							"vswitch_ids":                  []string{"${alicloud_vswitch.update.id}"},
+							"enable_proxy_protocol":        "true",
+							"enable_clientip_preservation": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaEndpointGroup_basicIpTarget_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_endpoint_group.default"
+	ra := resourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaEndpointGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence2)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id":                "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":                   "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region":         defaultRegionToTest,
+					"endpoint_group_type":           "virtual",
+					"endpoint_request_protocol":     "HTTPS",
+					"health_check_enabled":          "true",
+					"health_check_path":             "/healthCheck",
+					"health_check_port":             "30",
+					"health_check_protocol":         "http",
+					"health_check_interval_seconds": "5",
+					"threshold_count":               "5",
+					"traffic_percentage":            "30",
+					"name":                          name,
+					"description":                   name,
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":                     "1.1.1.2",
+							"type":                         "IpTarget",
+							"weight":                       "20",
+							"vpc_id":                       "${alicloud_vpc.default.id}",
+							"vswitch_ids":                  []string{"${alicloud_vswitch.default.id}", "${alicloud_vswitch.update.id}"},
+							"enable_proxy_protocol":        "true",
+							"enable_clientip_preservation": "false",
+						},
+					},
+					"port_overrides": []map[string]interface{}{
+						{
+							"endpoint_port": "10",
+							"listener_port": "8080",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "EndpointGroup",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":                CHECKSET,
+						"listener_id":                   CHECKSET,
+						"endpoint_group_region":         defaultRegionToTest,
+						"endpoint_group_type":           "virtual",
+						"endpoint_request_protocol":     "HTTPS",
+						"health_check_enabled":          "true",
+						"health_check_path":             "/healthCheck",
+						"health_check_port":             "30",
+						"health_check_protocol":         "http",
+						"health_check_interval_seconds": "5",
+						"threshold_count":               "5",
+						"traffic_percentage":            "30",
+						"name":                          name,
+						"description":                   name,
+						"endpoint_configurations.#":     "1",
 						"port_overrides.#":              "1",
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",

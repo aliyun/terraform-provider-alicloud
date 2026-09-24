@@ -65,7 +65,7 @@ func resourceAliCloudRosStackGroup() *schema.Resource {
 				Computed: true,
 			},
 			"parameters": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -187,7 +187,7 @@ func resourceAliCloudRosStackGroupCreate(d *schema.ResourceData, meta interface{
 
 	if v, ok := d.GetOk("parameters"); ok {
 		parametersMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range v.([]interface{}) {
+		for _, dataLoop1 := range convertToInterfaceArray(v) {
 			if dataLoop1 == nil {
 				continue
 			}
@@ -374,7 +374,7 @@ func resourceAliCloudRosStackGroupUpdate(d *schema.ResourceData, meta interface{
 		update = true
 		if v, ok := d.GetOk("parameters"); ok || d.HasChange("parameters") {
 			parametersMapsArray := make([]interface{}, 0)
-			for _, dataLoop := range v.([]interface{}) {
+			for _, dataLoop := range convertToInterfaceArray(v) {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["ParameterValue"] = dataLoopTmp["parameter_value"]

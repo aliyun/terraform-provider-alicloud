@@ -122,15 +122,20 @@ func TestAccAliCloudROSStackGroup_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"stack_group_name": name,
-					"template_body":    `{\"ROSTemplateFormatVersion\": \"2015-09-01\",\"Parameters\": {\"VpcName\": {\"Type\": \"String\"},\"InstanceType\": {\"Type\": \"String\"}}}`,
+					"template_body":    `{\"ROSTemplateFormatVersion\": \"2015-09-01\", \"Parameters\": {\"Product\": {\"Default\": \"ack-k8s-audit\", \"Type\": \"String\"}, \"VpcName\": {\"Default\": \"DefaultVpc\", \"Type\": \"String\"}, \"InstanceType\": {\"Default\": \"ecs.g6.large\", \"Type\": \"String\"}}}`,
+
 					"parameters": []map[string]interface{}{
 						{
 							"parameter_key":   "VpcName",
-							"parameter_value": "VpcName",
+							"parameter_value": "DefaultVpc",
+						},
+						{
+							"parameter_key":   "Product",
+							"parameter_value": "ack-k8s-audit",
 						},
 						{
 							"parameter_key":   "InstanceType",
-							"parameter_value": "InstanceType",
+							"parameter_value": "ecs.g6.large",
 						},
 					},
 				}),
@@ -138,7 +143,7 @@ func TestAccAliCloudROSStackGroup_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"stack_group_name": name,
 						"template_body":    CHECKSET,
-						"parameters.#":     "2",
+						"parameters.#":     "3",
 					}),
 				),
 			},
@@ -150,36 +155,36 @@ func TestAccAliCloudROSStackGroup_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"template_body": `{\"ROSTemplateFormatVersion\":\"2015-09-01\", \"Description\" : \"模板描述信息，可用于说明模板的适用场景、架构说明等。\", \"Parameters\": {\"VpcName\": {\"Type\": \"String\"},\"InstanceType\": {\"Type\": \"String\"}}}`,
+					"template_body": `{\"ROSTemplateFormatVersion\": \"2015-09-01\", \"Parameters\": {\"VpcName\": {\"Default\": \"DefaultVpc\", \"Type\": \"String\"}}}`,
 					"parameters": []map[string]interface{}{
 						{
 							"parameter_key":   "VpcName",
-							"parameter_value": "tf-testacc",
-						},
-						{
-							"parameter_key":   "InstanceType",
-							"parameter_value": "ECS",
+							"parameter_value": "DefaultVpc",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"template_body": CHECKSET,
-						"parameters.#":  "2",
+						"parameters.#":  "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"template_body": `{\"ROSTemplateFormatVersion\":\"2015-09-01\", \"Parameters\": {\"VpcName\": {\"Type\": \"String\"},\"InstanceType\": {\"Type\": \"String\"}}}`,
+					"template_body": `{\"ROSTemplateFormatVersion\": \"2015-09-01\", \"Parameters\": {\"Product\": {\"Default\": \"ack-k8s-audit\", \"Type\": \"String\"}, \"VpcName\": {\"Default\": \"DefaultVpc\", \"Type\": \"String\"}, \"InstanceType\": {\"Default\": \"ecs.g6.large\", \"Type\": \"String\"}}}`,
 					"parameters": []map[string]interface{}{
 						{
 							"parameter_key":   "VpcName",
-							"parameter_value": "VpcName",
+							"parameter_value": "DefaultVpc",
+						},
+						{
+							"parameter_key":   "Product",
+							"parameter_value": "ack-k8s-audit",
 						},
 						{
 							"parameter_key":   "InstanceType",
-							"parameter_value": "InstanceType",
+							"parameter_value": "ecs.g6.large",
 						},
 					},
 					"description": "test for tf",
@@ -187,7 +192,7 @@ func TestAccAliCloudROSStackGroup_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"template_body": CHECKSET,
-						"parameters.#":  "2",
+						"parameters.#":  "3",
 						"description":   "test for tf",
 					}),
 				),

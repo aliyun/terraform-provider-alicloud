@@ -239,12 +239,12 @@ The following arguments are supported:
 * `connection_string_prefix` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `port` - (Optional, Int, Available since v1.94.0) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `order_type`- (Optional, Available since v1.101.0) Specifies a change type when you change the configuration of a subscription instance. Valid values: `UPGRADE`, `DOWNGRADE`. Default value: `UPGRADE`. `UPGRADE` means upgrades the configuration of a subscription instance. `DOWNGRADE` means downgrades the configuration of a subscription instance.
-* `node_type`- (Deprecated since v1.120.1) Node type, valid values:
-  - `MASTER_SLAVE`: High availability (dual copies)
-  - `STAND_ALONE`: Single copy
-  - `double`: Dual copies
-  - `single`: Single copy
--> **NOTE:** For cloud native instances, please select MASTER_SLAVE or STAND_ALONE. For classic instances, please select double or single.
+* `node_type`- (Optional, ForceNew) The node type. Valid values:
+  - `MASTER_SLAVE`: High availability (master-replica)
+  - `STAND_ALONE`: Standalone
+  - `double`: Master-replica
+  - `single`: Standalone
+-> **NOTE:** To create a cloud-native instance, set this parameter to `MASTER_SLAVE` or `STAND_ALONE`. To create a classic instance, set this parameter to `double` or `single`.
 * `ssl_enable`- (Optional, Available since v1.101.0) Modifies the SSL status. Valid values: `Disable`, `Enable` and `Update`.
   **NOTE:** This functionality is supported by Cluster mode (Redis 2.8, 4.0, 5.0) and Standard mode( Redis 2.8 only).
 * `force_upgrade`- (Optional, Bool, Available since v1.101.0) Specifies whether to forcibly change the type. Default value: `true`.

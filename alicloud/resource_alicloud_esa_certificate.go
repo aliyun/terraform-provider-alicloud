@@ -85,7 +85,7 @@ func resourceAliCloudEsaCertificate() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"lets_encrypt"}, false),
+				ValidateFunc: StringInSlice([]string{"lets_encrypt", "digicert_single", "digicert_wildcard"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("created_type"); ok && v.(string) == "free" {
 						return true

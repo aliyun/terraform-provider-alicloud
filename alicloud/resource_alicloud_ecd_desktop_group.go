@@ -29,15 +29,13 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"allow_auto_setup": {
-				Type:      schema.TypeInt,
-				Optional:  true,
-				Computed:  true,
-				Sensitive: true,
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"allow_buffer_count": {
-				Type:      schema.TypeInt,
-				Optional:  true,
-				Sensitive: true,
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"bundle_id": {
 				Type:     schema.TypeString,
@@ -75,6 +73,7 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"directory_type": {
 				Type:     schema.TypeString,
@@ -82,7 +81,7 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 			},
 			"end_user_ids": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"expired_time": {
@@ -134,8 +133,10 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 				Computed: true,
 			},
 			"pay_type": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"PostPaid"}, false),
 			},
 			"policy_group_id": {
 				Type:     schema.TypeString,
@@ -150,9 +151,8 @@ func resourceAliCloudEcdDesktopGroup() *schema.Resource {
 				Computed: true,
 			},
 			"scale_strategy_id": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"system_disk_category": {
 				Type:     schema.TypeString,
@@ -179,6 +179,9 @@ func resourceAliCloudEcdDesktopGroupCreate(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	request["ChargeType"] = "PostPaid"
+	if v, ok := d.GetOk("pay_type"); ok {
+		request["ChargeType"] = v
+	}
 
 	if v, ok := d.GetOkExists("allow_auto_setup"); ok {
 		request["AllowAutoSetup"] = v
@@ -289,7 +292,8 @@ func resourceAliCloudEcdDesktopGroupRead(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 	} else {
-		d.Set("end_user_ids", usersObject["EndUserIds"])
+		endUserIds, _ := usersObject["EndUserIds"].([]interface{})
+		d.Set("end_user_ids", alignEndUserIdsOrder(d.Get("end_user_ids"), endUserIds))
 	}
 
 	return nil
@@ -591,4 +595,28 @@ func resourceAliCloudEcdDesktopGroupDelete(d *schema.ResourceData, meta interfac
 	}
 
 	return nil
+}
+
+// alignEndUserIdsOrder keeps the order of end_user_ids stable. DescribeUsersInGroup returns the users sorted
+// by ID, so the users that are already in the configuration keep their position and the remaining ones are
+// appended in the order returned by the API. Without it, applying a reordered list never converges.
+func alignEndUserIdsOrder(configured interface{}, fetched []interface{}) []interface{} {
+	remaining := make(map[string]int, len(fetched))
+	for _, item := range fetched {
+		remaining[fmt.Sprint(item)]++
+	}
+	ordered := make([]interface{}, 0, len(fetched))
+	for _, item := range convertToInterfaceArray(configured) {
+		if key := fmt.Sprint(item); remaining[key] > 0 {
+			remaining[key]--
+			ordered = append(ordered, item)
+		}
+	}
+	for _, item := range fetched {
+		if key := fmt.Sprint(item); remaining[key] > 0 {
+			remaining[key]--
+			ordered = append(ordered, item)
+		}
+	}
+	return ordered
 }

@@ -89,9 +89,12 @@ func resourcePolarDBEndpointAddressConfigDependence(name string) string {
 		db_type       = "MySQL"
 		db_version    = "8.0"
 		pay_type      = "PostPaid"
-		db_node_class = "polar.mysql.x4.medium"
+		db_node_class = "polar.mysql.x4.large"
 		vswitch_id    = local.vswitch_id
 		description   = "${var.name}"
+		lifecycle {
+			ignore_changes = [encrypt_new_tables]
+		}
 	}
 
 	data "alicloud_polardb_endpoints" "default1" {

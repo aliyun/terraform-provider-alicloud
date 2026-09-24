@@ -1520,6 +1520,14 @@ func (s *VpcServiceV2) DescribeVpcDhcpOptionsSet(id string) (object map[string]i
 	})
 	if err != nil {
 		addDebug(action, response, request)
+		// After DeleteDhcpOptionsSet the dopt is gone and GetDhcpOptionsSet
+		// returns InvalidDhcpOptionsSetId.NotFound as a 400 whose message is
+		// "does not exist" (no "NotFound" substring), so NotFoundError does not
+		// recognise it. Map it to NotFoundErr here so the delete state-refresh
+		// finishes through the resource-gone path instead of erroring out.
+		if IsExpectedErrors(err, []string{"InvalidDhcpOptionsSetId.NotFound"}) {
+			return object, WrapErrorf(NotFoundErr("DhcpOptionsSet", id), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
