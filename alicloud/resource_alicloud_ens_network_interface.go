@@ -11,7 +11,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/tidwall/sjson"
 )
 
 func resourceAliCloudEnsNetworkInterface() *schema.Resource {
@@ -80,9 +79,13 @@ func resourceAliCloudEnsNetworkInterface() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			// vmnc_learn is read-only: ENS does not expose a public API to
+			// modify VmncLearn after creation (ModifyNetworkInterfaceAttribute
+			// only accepts Description / NetworkInterfaceName, and the
+			// ModifyNetworkInterfaceVmncLearn action does not exist on the
+			// ENS endpoint). The value is populated from DescribeNetworkInterfaces.
 			"vmnc_learn": {
 				Type:     schema.TypeBool,
-				Optional: true,
 				Computed: true,
 			},
 		},
@@ -219,34 +222,6 @@ func resourceAliCloudEnsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	update = false
-	action = "ModifyNetworkInterfaceVmncLearn"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["NetworkInterfaceId"] = d.Id()
-
-	if d.HasChange("vmnc_learn") {
-		update = true
-	}
-	request["VmncLearn"] = d.Get("vmnc_learn")
-	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-	}
 
 	return resourceAliCloudEnsNetworkInterfaceRead(d, meta)
 }
@@ -261,9 +236,10 @@ func resourceAliCloudEnsNetworkInterfaceDelete(d *schema.ResourceData, meta inte
 	var err error
 	request = make(map[string]interface{})
 
-	jsonString := convertObjectToJsonString(request)
-	jsonString, _ = sjson.Set(jsonString, "NetworkInterfaceIds.0", d.Id())
-	_ = json.Unmarshal([]byte(jsonString), &request)
+	// ENS RPC POST reads array params from the query string. The previous
+	// implementation put NetworkInterfaceIds into the request body, which
+	// caused MissingNetworkInterfaceIds because ENS never saw the param.
+	query["NetworkInterfaceIds.0"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {

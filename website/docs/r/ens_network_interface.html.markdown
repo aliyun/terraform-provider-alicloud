@@ -66,9 +66,6 @@ The following arguments are supported:
 * `network_interface_name` - (Optional) The name of the ENI.
 * `security_group_ids` - (Required, ForceNew, List) The ID of the security group.
 * `vswitch_id` - (Optional, ForceNew) The vSwitch ID.
-* `vmnc_learn` - (Optional, Computed) Whether to enable NIC route learning. Possible values:
-  - true: On
-  - false: Off (default)
 
 ## Attributes Reference
 
@@ -77,6 +74,7 @@ The following attributes are exported:
 * `create_time` - Creation time.
 * `ens_region_id` - The node ID of ENS.
 * `instance_id` - The ID of the instance bound to the Eni.
+* `vmnc_learn` - Whether to enable NIC route learning. Read-only.
 * `mac_address` - The MAC address of the Eni.
 * `network_id` - The network ID.
 * `primary_ip` - The primary private network IP address.

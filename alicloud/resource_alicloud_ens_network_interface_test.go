@@ -39,7 +39,6 @@ func TestAccAliCloudEnsNetworkInterface_basic0(t *testing.T) {
 					"network_interface_name": name,
 					"security_group_ids":     []interface{}{"${alicloud_ens_security_group.default.id}"},
 					"vswitch_id":             vswitchId,
-					"vmnc_learn":             true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -47,7 +46,6 @@ func TestAccAliCloudEnsNetworkInterface_basic0(t *testing.T) {
 						"network_interface_name": name,
 						"security_group_ids":     CHECKSET,
 						"vswitch_id":             CHECKSET,
-						"vmnc_learn":             "true",
 					}),
 				),
 			},
@@ -58,27 +56,11 @@ func TestAccAliCloudEnsNetworkInterface_basic0(t *testing.T) {
 					"network_interface_name": name + "_update",
 					"security_group_ids":     []interface{}{"${alicloud_ens_security_group.default.id}"},
 					"vswitch_id":             vswitchId,
-					"vmnc_learn":             true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":            "desc_update",
 						"network_interface_name": name + "_update",
-					}),
-				),
-			},
-			{
-				// update vmnc_learn to false (ModifyNetworkInterfaceVmncLearn)
-				Config: testAccConfig(map[string]interface{}{
-					"description":            "desc_update",
-					"network_interface_name": name + "_update",
-					"security_group_ids":     []interface{}{"${alicloud_ens_security_group.default.id}"},
-					"vswitch_id":             vswitchId,
-					"vmnc_learn":             false,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vmnc_learn": "false",
 					}),
 				),
 			},
@@ -89,7 +71,6 @@ func TestAccAliCloudEnsNetworkInterface_basic0(t *testing.T) {
 					"network_interface_name": REMOVEKEY,
 					"security_group_ids":     []interface{}{"${alicloud_ens_security_group.default.id}"},
 					"vswitch_id":             vswitchId,
-					"vmnc_learn":             false,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
