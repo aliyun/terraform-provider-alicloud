@@ -544,3 +544,55 @@ func TestUnitAlicloudVPCDhcpOptionsSetStateRefreshNotFound400(t *testing.T) {
 	assert.Nil(t, object)
 	assert.Empty(t, status)
 }
+
+// TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteDetachNotExist locks the
+// idempotent-delete contract for the Detach path: when
+// DetachDhcpOptionsSetFromVpc returns 400 OperationFailed.AttachmentNotExist
+// (the VPC is no longer attached to a DHCP options set), Delete must treat the
+// attachment as already gone and return nil instead of hard-erroring, so a
+// ghost attachment can leave state on the next destroy without a manual
+// terraform state rm.
+func TestUnitAlicloudVPCDhcpOptionsSetAttachmentDeleteDetachNotExist(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if r.Form.Get("Action") == "DetachDhcpOptionsSetFromVpc" {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"Code":"OperationFailed.AttachmentNotExist","Message":"The current VPC is not attahced to a DHCP options set."}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("vpc", endpoint)
+
+	d := schema.TestResourceDataRaw(t, resourceAlicloudVpcDhcpOptionsSetAttachement().Schema, map[string]interface{}{
+		"vpc_id":              "vpc_id",
+		"dhcp_options_set_id": "dhcp_options_set_id",
+		"dry_run":             false,
+	})
+	d.SetId("vpc_id:dhcp_options_set_id")
+
+	if err := resourceAlicloudVpcDhcpOptionsSetAttachmentDelete(d, client); err != nil {
+		t.Fatalf("Delete must treat OperationFailed.AttachmentNotExist as already-detached and return nil, got: %s", err)
+	}
+}
