@@ -155,7 +155,7 @@ func resourceAlicloudVpcDhcpOptionsSetAttachmentDelete(d *schema.ResourceData, m
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDhcpOptionsSetId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDhcpOptionsSetId.NotFound", "OperationFailed.AttachmentNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
