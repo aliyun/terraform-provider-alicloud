@@ -925,3 +925,48 @@ func (s *CloudApiService) DescribeApiGatewayBackendModel(id string) (object map[
 
 	return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 }
+
+func (s *CloudApiService) DescribeApiGatewaySignature(id string) (*cloudapi.SignatureInfo, error) {
+	signature := &cloudapi.SignatureInfo{}
+	request := cloudapi.CreateDescribeSignaturesRequest()
+	request.RegionId = s.client.RegionId
+	request.SignatureId = id
+	request.PageSize = requests.NewInteger(PageSizeSmall)
+	request.PageNumber = requests.NewInteger(1)
+
+	raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+		return cloudApiClient.DescribeSignatures(request)
+	})
+	if err != nil {
+		return signature, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*cloudapi.DescribeSignaturesResponse)
+	if len(response.SignatureInfos.SignatureInfo) == 0 {
+		return signature, WrapErrorf(NotFoundErr("ApiGatewaySignature", id), NotFoundMsg, ProviderERROR)
+	}
+	signature = &response.SignatureInfos.SignatureInfo[0]
+	return signature, nil
+}
+
+func (s *CloudApiService) WaitForApiGatewaySignature(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeApiGatewaySignature(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.SignatureId == id && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.SignatureId, id, ProviderERROR)
+		}
+	}
+}
