@@ -661,6 +661,11 @@ func resourceAliCloudInstance() *schema.Resource {
 				ForceNew:      true,
 				ConflictsWith: []string{"spot_strategy", "spot_price_limit"},
 			},
+			"managed_host_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"launch_template_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -1222,6 +1227,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 	if v, ok := d.GetOk("dedicated_host_id"); ok {
 		request["DedicatedHostId"] = v
+	}
+
+	if v, ok := d.GetOk("managed_host_id"); ok {
+		request["ManagedHostId"] = v
 	}
 
 	if v, ok := d.GetOk("private_pool_options_match_criteria"); ok {

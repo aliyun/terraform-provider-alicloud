@@ -3,16 +3,21 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func init() {
@@ -4841,4 +4846,258 @@ var tags0 = map[string]string{
 	"tagX":   "valueX",
 	"tagY":   "valueY",
 	"tagZ":   "valueZ",
+}
+
+// managed_host_id is a create-only attribute: ECS RunInstances accepts ManagedHostId but
+// DescribeInstances/DescribeInstanceAttribute do not return it, so the test is create-only
+// without an import step. A pre-provisioned managed host is required.
+func TestAccAliCloudECSInstanceManagedHostId(t *testing.T) {
+	managedHostId := os.Getenv("ALICLOUD_MANAGED_HOST_ID")
+	if managedHostId == "" {
+		t.Skip("ALICLOUD_MANAGED_HOST_ID must be set to a valid managed host ID to run this test")
+	}
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceManagedHostId%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceManagedHostIdConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":          "${data.alicloud_images.default.images.0.id}",
+					"security_groups":   []string{"${alicloud_security_group.default.id}"},
+					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone": "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"instance_name":     "${var.name}",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"managed_host_id":   managedHostId,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":   name,
+						"managed_host_id": managedHostId,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceInstanceManagedHostIdConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_instance_types" "default" {
+	cpu_core_count = 1
+	memory_size    = 2
+}
+
+data "alicloud_images" "default" {
+	name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
+	owners     = "system"
+}
+
+resource "alicloud_vpc" "default" {
+	vpc_name = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+	vpc_id       = alicloud_vpc.default.id
+	zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+	cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+	vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+	name   = var.name
+	vpc_id = alicloud_vpc.default.id
+}
+`, name)
+}
+
+const unitTestMockInstanceID = "i-mock-managed-host-1"
+const unitTestMockManagedHostID = "mh-mock-1234567890"
+
+func TestUnitAliCloudInstanceManagedHostId(t *testing.T) {
+	var mu sync.Mutex
+	type capturedRequest struct {
+		action        string
+		managedHostID string
+	}
+	var requests []capturedRequest
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request form failed: %v", err)
+		}
+		action := r.FormValue("Action")
+		mu.Lock()
+		requests = append(requests, capturedRequest{action: action, managedHostID: r.FormValue("ManagedHostId")})
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		switch action {
+		case "RunInstances":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","InstanceIdSets":{"InstanceIdSet":["%s"]}}`, unitTestMockInstanceID)
+		case "DescribeInstances":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","TotalCount":1,"PageNumber":1,"PageSize":10,"Instances":{"Instance":[{"InstanceId":"%s","Status":"Running","InstanceName":"%s","ImageId":"aliyun-2193317896-mock","InstanceType":"ecs.n4.small","ZoneId":"cn-hangzhou-i","RegionId":"cn-hangzhou","InstanceChargeType":"PostPaid","SpotInterruptionBehavior":""}]}}`, unitTestMockInstanceID, unitTestMockInstanceID)
+		case "DescribeDisks":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","TotalCount":1,"Disks":{"Disk":[{"DiskId":"d-mock-system-disk","InstanceId":"%s","Category":"cloud_efficiency","DiskName":"mock-system-disk","Size":40,"Type":"system","Status":"In_use"}]}}`, unitTestMockInstanceID)
+		case "DescribeInstanceMaintenanceAttributes":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","MaintenanceAttributes":{"MaintenanceAttribute":[{"InstanceId":"%s","NotifyOnMaintenance":false}]}}`, unitTestMockInstanceID)
+		case "DescribeInstanceAttribute":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","InstanceId":"%s"}`, unitTestMockInstanceID)
+		case "DescribeInstanceAttachmentAttributes":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","Instances":{"Instance":[{"InstanceId":"%s","PrivatePoolOptionsMatchCriteria":"","PrivatePoolOptionsId":""}]}}`, unitTestMockInstanceID)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mockrid"}`)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("NO_PROXY", "127.0.0.1")
+	t.Setenv("no_proxy", "127.0.0.1")
+
+	credential, err := credentials.NewCredential(new(credentials.Config).SetType("access_key").
+		SetAccessKeyId("test-access-key-id").
+		SetAccessKeySecret("test-access-key-secret"))
+	if err != nil {
+		t.Fatalf("build credential failed: %v", err)
+	}
+	config := connectivity.Config{
+		AccessKey:            "test-access-key-id",
+		SecretKey:            "test-access-key-secret",
+		Credential:           credential,
+		RegionId:             "cn-hangzhou",
+		AccountType:          "test",
+		Protocol:             "http",
+		SkipRegionValidation: true,
+		Endpoints:            &sync.Map{},
+	}
+	// The tea RPC layer prepends the protocol scheme itself, so store the host without a scheme.
+	config.Endpoints.Store("ecs", strings.TrimPrefix(server.URL, "http://"))
+	rawClient, err := config.Client()
+	if err != nil {
+		t.Fatalf("build client failed: %v", err)
+	}
+
+	resources := Provider().(*schema.Provider).ResourcesMap
+
+	t.Run("SchemaManagedHostId", func(t *testing.T) {
+		s, ok := resources["alicloud_instance"].Schema["managed_host_id"]
+		if !ok {
+			t.Fatalf("alicloud_instance schema does not contain managed_host_id")
+		}
+		if s.Type != schema.TypeString {
+			t.Errorf("managed_host_id type = %v, want TypeString", s.Type)
+		}
+		if !s.Optional {
+			t.Errorf("managed_host_id should be Optional")
+		}
+		if !s.ForceNew {
+			t.Errorf("managed_host_id should be ForceNew (ECS does not support changing managed host after creation)")
+		}
+		if s.Computed {
+			t.Errorf("managed_host_id should not be Computed (DescribeInstances does not return it)")
+		}
+		if len(s.ConflictsWith) != 0 {
+			t.Errorf("managed_host_id should not declare ConflictsWith")
+		}
+	})
+
+	t.Run("CreateWithManagedHostId", func(t *testing.T) {
+		mu.Lock()
+		requests = nil
+		mu.Unlock()
+
+		d, err := schema.InternalMap(resources["alicloud_instance"].Schema).Data(nil, nil)
+		if err != nil {
+			t.Fatalf("build resource data failed: %v", err)
+		}
+		d.MarkNewResource()
+		if err := d.Set("instance_name", "tf-mock-managed-host-instance"); err != nil {
+			t.Fatalf("set instance_name failed: %v", err)
+		}
+		if err := d.Set("managed_host_id", unitTestMockManagedHostID); err != nil {
+			t.Fatalf("set managed_host_id failed: %v", err)
+		}
+		if err := resourceAliCloudInstanceCreate(d, rawClient); err != nil {
+			t.Fatalf("create instance failed: %v", err)
+		}
+		if d.Id() != unitTestMockInstanceID {
+			t.Fatalf("instance id = %s, want %s", d.Id(), unitTestMockInstanceID)
+		}
+
+		mu.Lock()
+		defer mu.Unlock()
+		runInstancesCount := 0
+		for _, req := range requests {
+			if req.action == "RunInstances" {
+				runInstancesCount++
+				if req.managedHostID != unitTestMockManagedHostID {
+					t.Errorf("RunInstances ManagedHostId = %q, want %q", req.managedHostID, unitTestMockManagedHostID)
+				}
+			}
+		}
+		if runInstancesCount < 1 {
+			t.Errorf("RunInstances was not called")
+		}
+		// DescribeInstances does not return the managed host ID, so the state must retain the configured value.
+		if v := d.Get("managed_host_id").(string); v != unitTestMockManagedHostID {
+			t.Errorf("state managed_host_id = %q, want %q", v, unitTestMockManagedHostID)
+		}
+	})
+
+	t.Run("CreateWithoutManagedHostId", func(t *testing.T) {
+		mu.Lock()
+		requests = nil
+		mu.Unlock()
+
+		d, err := schema.InternalMap(resources["alicloud_instance"].Schema).Data(nil, nil)
+		if err != nil {
+			t.Fatalf("build resource data failed: %v", err)
+		}
+		d.MarkNewResource()
+		if err := d.Set("instance_name", "tf-mock-managed-host-instance"); err != nil {
+			t.Fatalf("set instance_name failed: %v", err)
+		}
+		if err := resourceAliCloudInstanceCreate(d, rawClient); err != nil {
+			t.Fatalf("create instance failed: %v", err)
+		}
+		if d.Id() != unitTestMockInstanceID {
+			t.Fatalf("instance id = %s, want %s", d.Id(), unitTestMockInstanceID)
+		}
+
+		mu.Lock()
+		defer mu.Unlock()
+		runInstancesCount := 0
+		for _, req := range requests {
+			if req.action == "RunInstances" {
+				runInstancesCount++
+				if req.managedHostID != "" {
+					t.Errorf("RunInstances should not send ManagedHostId, got %q", req.managedHostID)
+				}
+			}
+		}
+		if runInstancesCount < 1 {
+			t.Errorf("RunInstances was not called")
+		}
+	})
 }
