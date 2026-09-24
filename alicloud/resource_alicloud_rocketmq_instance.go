@@ -999,8 +999,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 func resourceAliCloudRocketmqInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	if d.Get("payment_type").(string) == "Subscription" {
-		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_rocketmq_instance. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	client := meta.(*connectivity.AliyunClient)

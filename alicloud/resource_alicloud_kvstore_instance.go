@@ -1857,8 +1857,7 @@ func resourceAliCloudKvstoreInstanceDelete(d *schema.ResourceData, meta interfac
 	}
 
 	if fmt.Sprint(instance["ChargeType"]) == string(PrePaid) {
-		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_kvstore_instance. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'PrePaid' instance cannot be destroyed: please convert it to 'PostPaid' (set payment_type = \"PostPaid\" and re-apply) or unsubscribe it in the console. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	var response map[string]interface{}

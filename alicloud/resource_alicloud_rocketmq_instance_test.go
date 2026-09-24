@@ -792,6 +792,7 @@ func TestAccAliCloudRocketmqInstance_basic4128(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},
@@ -1624,6 +1625,7 @@ func TestAccAliCloudRocketmqInstance_basic4128_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
 		},

@@ -138,7 +138,20 @@ func TestAccAliCloudRedisTairInstance_basic3314(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type":       "Subscription",
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				// Adding secondary_zone_id forces replacement, and destroying a
+				// Subscription instance fails with an error instead of silently
+				// removing it from the state, so rebuild the instance after
+				// converting it to PayAsYouGo.
+				Config: testAccConfig(map[string]interface{}{
 					"instance_type":      "tair_rdb",
 					"password":           "Pass!123456",
 					"engine_version":     "5.0",
@@ -150,12 +163,9 @@ func TestAccAliCloudRedisTairInstance_basic3314(t *testing.T) {
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"vswitch_id":         "${local.vswitch_id}",
 					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
-					"auto_renew_period":  "12",
-					"period":             "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"payment_type":       "Subscription",
 						"instance_type":      "tair_rdb",
 						"password":           "Pass!123456",
 						"engine_version":     "5.0",
@@ -167,18 +177,6 @@ func TestAccAliCloudRedisTairInstance_basic3314(t *testing.T) {
 						"resource_group_id":  CHECKSET,
 						"vswitch_id":         CHECKSET,
 						"vpc_id":             CHECKSET,
-						"auto_renew_period":  "12",
-						"period":             "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"payment_type": "PayAsYouGo",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"payment_type": "PayAsYouGo",
 					}),
 				),
 			},
