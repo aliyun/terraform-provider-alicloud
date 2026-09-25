@@ -50,19 +50,36 @@ func resourceAliCloudEcsSnapshot() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"encrypted": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"instant_access": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				Deprecated: "Field `instant_access` has been deprecated from provider version 1.231.0.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Deprecated:  "Field `instant_access` has been deprecated from provider version 1.231.0. ESSD normal snapshots have been upgraded to instant-access by default; no additional configuration is required.",
+				Description: "Whether to enable the instant access feature. Valid values: `true` (enabled, ESSD only) and `false` (disabled, creates a normal snapshot). Default value: `false`. Deprecated since v1.231.0: ESSD normal snapshots have been upgraded to instant-access by default, so this field no longer needs to be configured and no extra cost is incurred.",
 			},
 			"instant_access_retention_days": {
-				Type:       schema.TypeInt,
-				Optional:   true,
-				Deprecated: "Field `instant_access_retention_days` has been deprecated from provider version 1.231.0.",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Deprecated:  "Field `instant_access_retention_days` has been deprecated from provider version 1.231.0.",
+				Description: "The retention period of the instant access feature. When the retention period ends, the feature is disabled and the IA snapshot is automatically released. This parameter takes effect only when `instant_access` is set to `true`. Unit: days. Valid values: 1 to 65535. By default, the value of this parameter is the same as that of `retention_days`.",
+			},
+			"lock_duration": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+				Description: "The lock duration of the snapshot in compliance mode. Unit: days. Valid values: 1 to 36500. When set to a positive value, the snapshot is locked in compliance mode via LockSnapshot and cannot be deleted until the lock duration expires. Set to 0 or remove the field to unlock the snapshot via UnlockSnapshot. The lock duration can only be extended, not shortened, once the snapshot enters compliance mode. The lock duration must not exceed the snapshot retention period (`retention_days`).",
+			},
+			"lock_status": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The lock status of the snapshot. Valid values: `compliance-cooloff` (locked in compliance mode, still in cooling-off period; can be unlocked, and cooling-off period and lock duration can be extended or shortened), `compliance` (locked in compliance mode, cooling-off period ended; cannot be unlocked or deleted, lock duration can only be extended), and `expired` (lock expired, snapshot is not locked and can be deleted).",
 			},
 			"region_id": {
 				Type:     schema.TypeString,
@@ -166,6 +183,43 @@ func resourceAliCloudEcsSnapshotCreate(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
+	if lockDuration := d.Get("lock_duration").(int); lockDuration > 0 {
+		// LockSnapshot requires Status=accomplished; if wait_until=available
+		// returned while the snapshot was still progressing, wait for
+		// accomplished before locking.
+		lockStateConf := BuildStateConf([]string{}, []string{"accomplished"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ecsServiceV2.EcsSnapshotStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := lockStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		lockAction := "LockSnapshot"
+		lockRequest := make(map[string]interface{})
+		lockQuery := make(map[string]interface{})
+		lockRequest["SnapshotId"] = d.Id()
+		lockRequest["RegionId"] = client.RegionId
+		lockRequest["LockMode"] = "compliance"
+		lockRequest["LockDuration"] = lockDuration
+		lockRequest["CoolOffPeriod"] = 0
+		lockRequest["ClientToken"] = buildClientToken(lockAction)
+
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = client.RpcPost("Ecs", "2014-05-26", lockAction, lockQuery, lockRequest, true)
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidOperation.SnapshotNotAvailable"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(lockAction, response, lockRequest)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), lockAction, AlibabaCloudSdkGoERROR)
+		}
+	}
+
 	return resourceAliCloudEcsSnapshotRead(d, meta)
 }
 
@@ -209,6 +263,9 @@ func resourceAliCloudEcsSnapshotRead(d *schema.ResourceData, meta interface{}) e
 	if objectRaw["SourceDiskId"] != nil {
 		d.Set("disk_id", objectRaw["SourceDiskId"])
 	}
+	if objectRaw["Encrypted"] != nil {
+		d.Set("encrypted", objectRaw["Encrypted"])
+	}
 	if objectRaw["RegionId"] != nil {
 		d.Set("region_id", objectRaw["RegionId"])
 	}
@@ -228,6 +285,19 @@ func resourceAliCloudEcsSnapshotRead(d *schema.ResourceData, meta interface{}) e
 
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
+
+	lockInfo, _ := ecsServiceV2.DescribeEcsSnapshotLock(d.Id())
+	if lockInfo != nil {
+		if lockInfo["LockStatus"] != nil {
+			d.Set("lock_status", lockInfo["LockStatus"])
+		}
+		if lockInfo["LockDuration"] != nil {
+			d.Set("lock_duration", lockInfo["LockDuration"])
+		}
+	} else {
+		d.Set("lock_status", "")
+		d.Set("lock_duration", 0)
+	}
 
 	return nil
 }
@@ -340,6 +410,72 @@ func resourceAliCloudEcsSnapshotUpdate(d *schema.ResourceData, meta interface{})
 			return WrapError(err)
 		}
 	}
+
+	if d.HasChange("lock_duration") {
+		lockDuration := d.Get("lock_duration").(int)
+		if lockDuration > 0 {
+			// LockSnapshot requires Status=accomplished.
+			lockStateConf := BuildStateConf([]string{}, []string{"accomplished"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsServiceV2.EcsSnapshotStateRefreshFunc(d.Id(), "Status", []string{}))
+			if _, err := lockStateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+			lockAction := "LockSnapshot"
+			lockRequest := make(map[string]interface{})
+			lockQuery := make(map[string]interface{})
+			lockRequest["SnapshotId"] = d.Id()
+			lockRequest["RegionId"] = client.RegionId
+			lockRequest["LockMode"] = "compliance"
+			lockRequest["LockDuration"] = lockDuration
+			lockRequest["CoolOffPeriod"] = 0
+			lockRequest["ClientToken"] = buildClientToken(lockAction)
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Ecs", "2014-05-26", lockAction, lockQuery, lockRequest, true)
+				if err != nil {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidOperation.SnapshotNotAvailable"}) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(lockAction, response, lockRequest)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), lockAction, AlibabaCloudSdkGoERROR)
+			}
+		} else {
+			unlockAction := "UnlockSnapshot"
+			unlockRequest := make(map[string]interface{})
+			unlockQuery := make(map[string]interface{})
+			unlockRequest["SnapshotId"] = d.Id()
+			unlockRequest["RegionId"] = client.RegionId
+			unlockRequest["ClientToken"] = buildClientToken(unlockAction)
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("Ecs", "2014-05-26", unlockAction, unlockQuery, unlockRequest, true)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"InvalidSnapshotLock.NotFound"}) {
+						return nil
+					}
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(unlockAction, response, unlockRequest)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), unlockAction, AlibabaCloudSdkGoERROR)
+			}
+		}
+	}
+
 	d.Partial(false)
 	return resourceAliCloudEcsSnapshotRead(d, meta)
 }
@@ -374,7 +510,12 @@ func resourceAliCloudEcsSnapshotDelete(d *schema.ResourceData, meta interface{})
 	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidResource.NotFound", "InvalidParameter"}) || NotFoundError(err) {
+		// InvalidOperation.SnapshotIsLocked: the snapshot is locked in compliance mode.
+		// A compliance-locked snapshot cannot be unlocked by any user and can only be
+		// deleted after the lock duration expires (auto-expire). Treat as deferred
+		// cleanup: remove from Terraform state and let the snapshot auto-expire.
+		// checkEcsSnapshotDestroyWithLock verifies the deferred state after destroy.
+		if IsExpectedErrors(err, []string{"InvalidResource.NotFound", "InvalidParameter", "InvalidOperation.SnapshotIsLocked"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
