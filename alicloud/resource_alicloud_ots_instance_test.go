@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -602,4 +603,103 @@ func testAccCheckOtsInstanceExist(n string, instance *RestOtsInstanceInfo) resou
 		instance = &response
 		return nil
 	}
+}
+
+// TestAccAliCloudOtsInstanceVcu_basic covers the reserved-mode (VCU) instance
+// lifecycle: CreateVCUInstance, UpdateInstance alias, UpdateInstancePolicy and
+// UpdateInstanceElasticVCUUpperLimit, plus import. It is gated behind
+// ALICLOUD_OTS_VCU_INSTANCE_TEST because VCU instances are paid resources.
+func TestAccAliCloudOtsInstanceVcu_basic(t *testing.T) {
+	var v ots.InstanceInfo
+
+	resourceId := "alicloud_ots_instance.default"
+	ra := resourceAttrInit(resourceId, otsInstanceVcuBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			if os.Getenv("ALICLOUD_OTS_VCU_INSTANCE_TEST") == "" {
+				t.Skip("Skipping VCU instance test because ALICLOUD_OTS_VCU_INSTANCE_TEST is not set")
+			}
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                       name,
+					"vcu":                        1,
+					"period_in_month":            1,
+					"alias_name":                 name,
+					"enable_auto_renew":          true,
+					"auto_renew_period_in_month": 1,
+					"enable_elastic_vcu":         true,
+					"elastic_vcu_upper_limit":    2,
+					"policy":                     `{\"Statement\":[{\"Action\":[\"ots:*\"],\"Effect\":\"Allow\",\"Principal\":[\"*\"],\"Resource\":\"*\"}],\"Version\":\"1\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                    name,
+						"vcu":                     "1",
+						"period_in_month":         "1",
+						"alias_name":              name,
+						"enable_auto_renew":       "true",
+						"enable_elastic_vcu":      "true",
+						"elastic_vcu_upper_limit": "2",
+						"payment_type":            CHECKSET,
+						"policy_version":          CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_auto_renew", "enable_elastic_vcu", "auto_renew_period_in_month", "period_in_month", "policy"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                       name,
+					"vcu":                        1,
+					"period_in_month":            1,
+					"alias_name":                 name + "-updated",
+					"enable_auto_renew":          true,
+					"auto_renew_period_in_month": 1,
+					"enable_elastic_vcu":         true,
+					"elastic_vcu_upper_limit":    3,
+					"policy":                     `{\"Statement\":[{\"Action\":[\"ots:*\"],\"Effect\":\"Deny\",\"Principal\":[\"*\"],\"Resource\":\"*\"}],\"Version\":\"1\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alias_name":              name + "-updated",
+						"elastic_vcu_upper_limit": "3",
+						"payment_type":            CHECKSET,
+						"policy_version":          CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
+var otsInstanceVcuBasicMap = map[string]string{
+	"name":           CHECKSET,
+	"vcu":            CHECKSET,
+	"payment_type":   CHECKSET,
+	"alias_name":     CHECKSET,
+	"policy_version": CHECKSET,
 }

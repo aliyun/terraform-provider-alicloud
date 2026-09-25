@@ -76,6 +76,51 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 				Type:     schema.TypeMap,
 				Optional: true,
 			},
+			"vcu": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"period_in_month": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"enable_auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"enable_elastic_vcu": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"auto_renew_period_in_month": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"alias_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"elastic_vcu_upper_limit": {
+				Type:     schema.TypeFloat,
+				Optional: true,
+			},
+			"policy": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"policy_version": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"payment_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -84,16 +129,31 @@ func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 
+	instanceName := d.Get("name").(string)
+
+	// VCU instance (reserved mode): created via CreateVCUInstance when vcu > 0.
+	if vcu := d.Get("vcu").(int); vcu > 0 {
+		actionPath := "/v2/openapi/createvcuinstance"
+		request := buildCreateVCUInstanceRequest(d)
+		if _, err := OtsRestApiPostWithRetry(client, "tablestore", "2020-12-09", actionPath, request); err != nil {
+			return WrapError(err)
+		}
+		d.SetId(instanceName)
+		if err := otsService.WaitForOtsInstance(instanceName, toInstanceInnerStatus(Running), DefaultTimeout); err != nil {
+			return WrapError(err)
+		}
+		return resourceAliyunOtsInstanceUpdate(d, meta)
+	}
+
 	instanceTypeStr := d.Get("instance_type").(string)
 	instanceType, err := parseAndCheckInstanceType(instanceTypeStr, otsService)
 	if err != nil {
 		return WrapError(err)
 	}
 
-	actionPath, instanceName, request := buildCreateInstanceRoaRequest(d, client.RegionId, instanceType)
+	actionPath, _, request := buildCreateInstanceRoaRequest(d, client.RegionId, instanceType)
 
-	_, err = OtsRestApiPostWithRetry(client, "tablestore", "2020-12-09", actionPath, request)
-	if err != nil {
+	if _, err = OtsRestApiPostWithRetry(client, "tablestore", "2020-12-09", actionPath, request); err != nil {
 		return WrapError(err)
 	}
 
@@ -179,6 +239,43 @@ func buildCreateInstanceRoaRequest(d *schema.ResourceData, regionId string, inst
 	return actionPath, instanceName, request
 }
 
+// buildCreateVCUInstanceRequest builds the request body for the CreateVCUInstance
+// API. A VCU instance is a reserved-mode Tablestore instance; its ClusterType
+// is fixed to "vcu" and the instance is billed by VCU quota.
+func buildCreateVCUInstanceRequest(d *schema.ResourceData) map[string]interface{} {
+	request := make(map[string]interface{})
+	request["ClusterType"] = "vcu"
+	request["VCU"] = d.Get("vcu").(int)
+	request["PeriodInMonth"] = d.Get("period_in_month").(int)
+	request["InstanceName"] = d.Get("name").(string)
+	if v, ok := d.GetOk("alias_name"); ok {
+		request["AliasName"] = v.(string)
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["InstanceDescription"] = v.(string)
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v.(string)
+	}
+	if v, ok := d.GetOk("enable_auto_renew"); ok {
+		request["EnableAutoRenew"] = v.(bool)
+	}
+	if v, ok := d.GetOk("enable_elastic_vcu"); ok {
+		request["EnableElasticVCU"] = v.(bool)
+	}
+	if v, ok := d.GetOk("auto_renew_period_in_month"); ok {
+		request["AutoRenewPeriodInMonth"] = v.(int)
+	}
+	if tagMap, ok := d.GetOk("tags"); ok {
+		var tags []map[string]string
+		for key, value := range tagMap.(map[string]interface{}) {
+			tags = append(tags, map[string]string{"Key": key, "Value": value.(string)})
+		}
+		request["Tags"] = tags
+	}
+	return request
+}
+
 func resourceAliyunOtsInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
@@ -218,6 +315,33 @@ func resourceAliyunOtsInstanceRead(d *schema.ResourceData, meta interface{}) err
 		return err
 	}
 	err = d.Set("tags", otsRestTagsToMap(instance.Tags))
+	if err != nil {
+		return err
+	}
+	err = d.Set("payment_type", instance.PaymentType)
+	if err != nil {
+		return err
+	}
+	err = d.Set("alias_name", instance.AliasName)
+	if err != nil {
+		return err
+	}
+	err = d.Set("elastic_vcu_upper_limit", instance.ElasticVCUUpperLimit)
+	if err != nil {
+		return err
+	}
+	err = d.Set("policy", instance.Policy)
+	if err != nil {
+		return err
+	}
+	err = d.Set("policy_version", instance.PolicyVersion)
+	if err != nil {
+		return err
+	}
+	// vcu is the purchased VCU quota for a reserved-mode instance. Reading
+	// back from VCUQuota keeps import of an existing VCU instance in sync
+	// with the server.
+	err = d.Set("vcu", instance.VCUQuota)
 	if err != nil {
 		return err
 	}
@@ -358,6 +482,50 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 		d.SetPartial("tags")
 	}
+	if !d.IsNewResource() && d.HasChange("alias_name") {
+		actionPath := "/v2/openapi/updateinstance"
+		request := make(map[string]interface{})
+		request["RegionId"] = StringPointer(client.RegionId)
+		// id is instanceName
+		request["InstanceName"] = StringPointer(d.Id())
+		request["AliasName"] = StringPointer(d.Get("alias_name").(string))
+
+		response, err := OtsRestApiPostWithRetry(client, "tablestore", "2020-12-09", actionPath, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), actionPath, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(actionPath, response, request)
+		d.SetPartial("alias_name")
+	}
+	if !d.IsNewResource() && d.HasChange("policy") {
+		actionPath := "/v2/openapi/updateinstancepolicy"
+		request := make(map[string]interface{})
+		// id is instanceName
+		request["InstanceName"] = StringPointer(d.Id())
+		request["Policy"] = StringPointer(d.Get("policy").(string))
+		request["PolicyVersion"] = d.Get("policy_version").(int)
+
+		response, err := OtsRestApiPostWithRetry(client, "tablestore", "2020-12-09", actionPath, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), actionPath, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(actionPath, response, request)
+		d.SetPartial("policy")
+	}
+	if !d.IsNewResource() && d.HasChange("elastic_vcu_upper_limit") {
+		actionPath := "/v2/openapi/updateinstanceelasticvcuupperlimit"
+		request := make(map[string]interface{})
+		// id is instanceName
+		request["InstanceName"] = StringPointer(d.Id())
+		request["ElasticVCUUpperLimit"] = d.Get("elastic_vcu_upper_limit").(float64)
+
+		response, err := OtsRestApiPostWithRetry(client, "tablestore", "2020-12-09", actionPath, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), actionPath, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(actionPath, response, request)
+		d.SetPartial("elastic_vcu_upper_limit")
+	}
 	if err := otsService.WaitForOtsInstance(d.Id(), toInstanceInnerStatus(Running), DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
@@ -367,6 +535,32 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 
 func resourceAliyunOtsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	otsService := OtsService{client}
+
+	// A reserved-mode (VCU) instance is deleted via DeleteVCUInstance.
+	// Triggered when vcu > 0. A free instance (vcu == 0) is deleted via
+	// the standard deleteinstance API. Read() backfills vcu from
+	// VCUQuota so imported VCU instances are also routed correctly.
+	// payment_type is not used here: the GetInstance response returns
+	// "PayAsYouGo" for both free and VCU instances, so a string-based
+	// branch would misroute free instances into DeleteVCUInstance and
+	// hit "can't delete a non-VCU instance" (IllegalOp 400).
+	if d.Get("vcu").(int) > 0 {
+		actionPath := "/v2/openapi/deletevcuinstance"
+		urlQuery := make(map[string]*string)
+		// id is instanceName
+		urlQuery["InstanceName"] = StringPointer(d.Id())
+
+		_, err := OtsRestApiDeleteWithRetry(client, "tablestore", "2020-12-09", actionPath, urlQuery)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), actionPath, AlibabaCloudSdkGoERROR)
+		}
+		return WrapError(otsService.WaitForOtsInstance(d.Id(), string(Deleted), DefaultLongTimeout))
+	}
+
 	actionPath := "/v2/openapi/deleteinstance"
 	request := make(map[string]interface{})
 	request["RegionId"] = StringPointer(client.RegionId)
@@ -381,6 +575,5 @@ func resourceAliyunOtsInstanceDelete(d *schema.ResourceData, meta interface{}) e
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), actionPath, AlibabaCloudSdkGoERROR)
 	}
 
-	otsService := OtsService{client}
 	return WrapError(otsService.WaitForOtsInstance(d.Id(), string(Deleted), DefaultLongTimeout))
 }
