@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -242,11 +243,11 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": name + ":_.-,][[" + name + "]" + "_change",
+					"instance_name": name + ":_.-.-_" + name + "._" + "_change",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name":         name + ":_.-,][[" + name + "]" + "_change",
+						"instance_name":         name + ":_.-.-_" + name + "._" + "_change",
 						"latest_version_number": "5",
 					}),
 				),
@@ -489,21 +490,40 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"network_interfaces": []map[string]string{
 						{
-							"name":              "eth0",
-							"description":       "hello",
-							"primary_ip":        "10.0.0.6",
-							"security_group_id": "xxxxx",
-							"vswitch_id":        "xxxxx",
-							"delete_on_release": "true",
+							"name":                           "eth0",
+							"description":                    "hello",
+							"primary_ip":                     "10.0.0.6",
+							"security_group_id":              "xxxxx",
+							"vswitch_id":                     "xxxxx",
+							"delete_on_release":              "true",
+							"instance_type":                  "Primary",
+							"network_interface_traffic_mode": "Standard",
+						},
+					},
+					"security_options": []map[string]string{
+						{
+							"trusted_system_mode": "vTPM",
+							"enable_secure_boot":  "true",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"network_interfaces.#":  "1",
-						"latest_version_number": "25",
+						"network_interfaces.#":                   "1",
+						"security_options.#":                     "1",
+						"security_options.0.trusted_system_mode": "vTPM",
+						"security_options.0.enable_secure_boot":  "true",
+						"latest_version_number":                  "25",
 					}),
+					checkLaunchTemplateNetworkInterfaceField(resourceId, "instance_type", "Primary"),
+					checkLaunchTemplateNetworkInterfaceField(resourceId, "network_interface_traffic_mode", "Standard"),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"template_resource_group_id", "security_options.0.enable_secure_boot"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1331,4 +1351,30 @@ resource "alicloud_ecs_deployment_set" "default" {
   description         = var.name
 }
 `, name)
+}
+
+// checkLaunchTemplateNetworkInterfaceField asserts the single network_interfaces
+// TypeSet block carries the expected value for the given sub-attribute.
+// network_interfaces is schema.TypeSet, so its state indexes are hashes and
+// cannot be addressed with resource.TestCheckResourceAttr.
+func checkLaunchTemplateNetworkInterfaceField(resourceID, subAttr, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceID]
+		if !ok {
+			return fmt.Errorf("not found: %s", resourceID)
+		}
+
+		got := make([]string, 0)
+		for k, v := range rs.Primary.Attributes {
+			if strings.HasPrefix(k, "network_interfaces.") && strings.HasSuffix(k, "."+subAttr) {
+				got = append(got, v)
+			}
+		}
+
+		if len(got) != 1 || got[0] != expected {
+			return fmt.Errorf("%s: network_interfaces %s expected [%s], got %v", resourceID, subAttr, expected, got)
+		}
+
+		return nil
+	}
 }
