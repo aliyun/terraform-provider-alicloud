@@ -725,3 +725,44 @@ func (s *DataWorksServiceV2) DataWorksDwResourceGroupStateRefreshFunc(id string,
 }
 
 // DescribeDataWorksDwResourceGroup >>> Encapsulated.
+
+// DescribeDataWorksResource <<< Encapsulated get interface for DataWorks Resource.
+func (s *DataWorksServiceV2) DescribeDataWorksResource(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return object, WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "GetResource"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["Id"] = parts[1]
+	query["ProjectId"] = parts[0]
+	query["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990020002", "9990040003"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"5801488441564725318"}) {
+			return object, WrapErrorf(NotFoundErr("Resource", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+// DescribeDataWorksResource >>> Encapsulated.
