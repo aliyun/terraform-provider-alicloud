@@ -151,6 +151,12 @@ func resourceAliCloudDtsSubscriptionJob() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"source_endpoint_ssl": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
 			"source_endpoint_user_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -291,6 +297,9 @@ func resourceAliCloudDtsSubscriptionJobRead(d *schema.ResourceData, meta interfa
 	d.Set("source_endpoint_port", object["SourceEndpoint"].(map[string]interface{})["Port"])
 	d.Set("source_endpoint_region", object["SourceEndpoint"].(map[string]interface{})["Region"])
 	d.Set("source_endpoint_role", object["SourceEndpoint"].(map[string]interface{})["RoleName"])
+	if ssl := convertDtsEndpointSslResponse(object["SourceEndpoint"].(map[string]interface{})["SslSolutionEnum"]); ssl != nil {
+		d.Set("source_endpoint_ssl", ssl)
+	}
 	d.Set("source_endpoint_user_name", object["SourceEndpoint"].(map[string]interface{})["UserName"])
 	d.Set("status", object["Status"])
 	d.Set("subscription_data_type_ddl", object["SubscriptionDataType"].(map[string]interface{})["Ddl"])
@@ -504,6 +513,9 @@ func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("source_endpoint_role"); ok {
 		configureSubscriptionReq["SourceEndpointRole"] = v
 	}
+	if d.HasChange("source_endpoint_ssl") {
+		update = true
+	}
 
 	if v, ok := d.GetOk("source_endpoint_user_name"); ok {
 		configureSubscriptionReq["SourceEndpointUserName"] = v
@@ -552,6 +564,12 @@ func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 		if v, ok := d.GetOk("reserve"); ok {
 			configureSubscriptionReq["Reserve"] = v
 		}
+		// Fold source_endpoint_ssl into the Reserve srcSSL key. ConfigureSubscription has no
+		// dedicated SSL parameter, so Reserve is the only place the source connection mode can be
+		// sent; a user-supplied reserve srcSSL is overwritten by the dedicated attribute.
+		if err := setDtsEndpointSSL(d, configureSubscriptionReq); err != nil {
+			return WrapError(err)
+		}
 		action := "ConfigureSubscription"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -584,6 +602,7 @@ func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("source_endpoint_port")
 		d.SetPartial("source_endpoint_region")
 		d.SetPartial("source_endpoint_role")
+		d.SetPartial("source_endpoint_ssl")
 		d.SetPartial("source_endpoint_user_name")
 		d.SetPartial("subscription_data_type_ddl")
 		d.SetPartial("subscription_data_type_dml")
