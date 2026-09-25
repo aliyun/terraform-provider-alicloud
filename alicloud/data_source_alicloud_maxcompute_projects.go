@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -10,7 +11,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
@@ -24,9 +24,8 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 				Computed: true,
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringIsValidRegExp,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -83,15 +82,15 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"timezone": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
 									"sql_metering_max": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
-									"type_system": {
+									"timezone": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tunnel_quota": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
@@ -110,6 +109,18 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 												},
 											},
 										},
+									},
+									"type_system": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"enable_data_masking": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"enable_tunnel_quota_route": {
+										Type:     schema.TypeBool,
+										Computed: true,
 									},
 									"retention_days": {
 										Type:     schema.TypeInt,
@@ -139,12 +150,20 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 										Type:     schema.TypeBool,
 										Computed: true,
 									},
+									"enable_dr": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
 									"enable_decimal2": {
 										Type:     schema.TypeBool,
 										Computed: true,
 									},
 								},
 							},
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"security_properties": {
 							Type:     schema.TypeList,
@@ -198,16 +217,43 @@ func dataSourceAliCloudMaxComputeProjects() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"three_tier_model": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"trusted_projects": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 						"type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
 				},
 			},
+			"product_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -225,6 +271,7 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		}
 		nameRegex = r
 	}
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -237,15 +284,17 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]*string
+	// ListProjects
 	action := fmt.Sprintf("/api/v1/projects")
 	var err error
 	request = make(map[string]interface{})
-	query := make(map[string]*string)
-	query["maxItem"] = StringPointer(strconv.Itoa(PageSizeLarge))
+	query = make(map[string]*string)
 
+	query["maxItem"] = StringPointer(strconv.Itoa(PageSizeLarge))
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
 			response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 			if err != nil {
@@ -263,8 +312,9 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		}
 
 		resp, _ := jsonpath.Get("$.data.projects[*]", response)
-		marker, _ := jsonpath.Get("$.data.marker", response)
-		for _, v := range resp.([]interface{}) {
+
+		result, _ := resp.([]interface{})
+		for _, v := range result {
 			item := v.(map[string]interface{})
 			if nameRegex != nil && !nameRegex.MatchString(fmt.Sprint(item["name"])) {
 				continue
@@ -277,7 +327,7 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 			objects = append(objects, item)
 		}
 
-		if nextToken, ok := marker.(string); ok && nextToken != "" {
+		if nextToken, ok := response["data.marker"].(string); ok && nextToken != "" {
 			query["marker"] = StringPointer(nextToken)
 		} else {
 			break
@@ -287,72 +337,74 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
-
-	maxComputeServiceV2 := MaxComputeServiceV2{client}
 	for _, objectRaw := range objects {
 		mapping := map[string]interface{}{}
 
+		mapping["id"] = objectRaw["name"]
+
 		mapping["comment"] = objectRaw["comment"]
+		mapping["cost_storage"] = objectRaw["costStorage"]
 		mapping["create_time"] = objectRaw["createdTime"]
 		mapping["default_quota"] = objectRaw["defaultQuota"]
 		mapping["owner"] = objectRaw["owner"]
+		mapping["region_id"] = objectRaw["regionId"]
 		mapping["status"] = objectRaw["status"]
+		mapping["three_tier_model"] = objectRaw["threeTierModel"]
 		mapping["type"] = objectRaw["type"]
 		mapping["project_name"] = objectRaw["name"]
 
-		objectDetail, _ := maxComputeServiceV2.DescribeMaxComputeProject(objectRaw["name"].(string))
-		objectRaw, _ := jsonpath.Get("$", objectDetail)
-
 		ipWhiteListMaps := make([]map[string]interface{}, 0)
 		ipWhiteListMap := make(map[string]interface{})
-		ipWhiteList2Raw := make(map[string]interface{})
-		if objectRaw.(map[string]interface{})["ipWhiteList"] != nil {
-			ipWhiteList2Raw = objectRaw.(map[string]interface{})["ipWhiteList"].(map[string]interface{})
+		ipWhiteListRaw := make(map[string]interface{})
+		if objectRaw["ipWhiteList"] != nil {
+			ipWhiteListRaw = objectRaw["ipWhiteList"].(map[string]interface{})
 		}
-		if len(ipWhiteList2Raw) > 0 {
-			ipWhiteListMap["ip_list"] = ipWhiteList2Raw["ipList"]
-			ipWhiteListMap["vpc_ip_list"] = ipWhiteList2Raw["vpcIpList"]
+		if len(ipWhiteListRaw) > 0 {
+			ipWhiteListMap["ip_list"] = ipWhiteListRaw["ipList"]
+			ipWhiteListMap["vpc_ip_list"] = ipWhiteListRaw["vpcIpList"]
 
 			ipWhiteListMaps = append(ipWhiteListMaps, ipWhiteListMap)
 		}
 		mapping["ip_white_list"] = ipWhiteListMaps
 		propertiesMaps := make([]map[string]interface{}, 0)
 		propertiesMap := make(map[string]interface{})
-		properties2Raw := make(map[string]interface{})
-		if objectRaw.(map[string]interface{})["properties"] != nil {
-			properties2Raw = objectRaw.(map[string]interface{})["properties"].(map[string]interface{})
+		propertiesRaw := make(map[string]interface{})
+		if objectRaw["properties"] != nil {
+			propertiesRaw = objectRaw["properties"].(map[string]interface{})
 		}
-		if len(properties2Raw) > 0 {
-			propertiesMap["allow_full_scan"] = properties2Raw["allowFullScan"]
-			propertiesMap["enable_decimal2"] = properties2Raw["enableDecimal2"]
-			propertiesMap["retention_days"] = properties2Raw["retentionDays"]
-			propertiesMap["sql_metering_max"] = properties2Raw["sqlMeteringMax"]
-			propertiesMap["timezone"] = properties2Raw["timezone"]
-			propertiesMap["type_system"] = properties2Raw["typeSystem"]
+		if len(propertiesRaw) > 0 {
+			propertiesMap["allow_full_scan"] = propertiesRaw["allowFullScan"]
+			propertiesMap["enable_decimal2"] = propertiesRaw["enableDecimal2"]
+			propertiesMap["enable_tunnel_quota_route"] = propertiesRaw["enableTunnelQuotaRoute"]
+			propertiesMap["retention_days"] = propertiesRaw["retentionDays"]
+			propertiesMap["sql_metering_max"] = propertiesRaw["sqlMeteringMax"]
+			propertiesMap["timezone"] = propertiesRaw["timezone"]
+			propertiesMap["tunnel_quota"] = propertiesRaw["tunnelQuota"]
+			propertiesMap["type_system"] = propertiesRaw["typeSystem"]
 
 			encryptionMaps := make([]map[string]interface{}, 0)
 			encryptionMap := make(map[string]interface{})
-			encryption2Raw := make(map[string]interface{})
-			if properties2Raw["encryption"] != nil {
-				encryption2Raw = properties2Raw["encryption"].(map[string]interface{})
+			encryptionRaw := make(map[string]interface{})
+			if propertiesRaw["encryption"] != nil {
+				encryptionRaw = propertiesRaw["encryption"].(map[string]interface{})
 			}
-			if len(encryption2Raw) > 0 {
-				encryptionMap["algorithm"] = encryption2Raw["algorithm"]
-				encryptionMap["enable"] = encryption2Raw["enable"]
-				encryptionMap["key"] = encryption2Raw["key"]
+			if len(encryptionRaw) > 0 {
+				encryptionMap["algorithm"] = encryptionRaw["algorithm"]
+				encryptionMap["enable"] = encryptionRaw["enable"]
+				encryptionMap["key"] = encryptionRaw["key"]
 
 				encryptionMaps = append(encryptionMaps, encryptionMap)
 			}
 			propertiesMap["encryption"] = encryptionMaps
 			tableLifecycleMaps := make([]map[string]interface{}, 0)
 			tableLifecycleMap := make(map[string]interface{})
-			tableLifecycle2Raw := make(map[string]interface{})
-			if properties2Raw["tableLifecycle"] != nil {
-				tableLifecycle2Raw = properties2Raw["tableLifecycle"].(map[string]interface{})
+			tableLifecycleRaw := make(map[string]interface{})
+			if propertiesRaw["tableLifecycle"] != nil {
+				tableLifecycleRaw = propertiesRaw["tableLifecycle"].(map[string]interface{})
 			}
-			if len(tableLifecycle2Raw) > 0 {
-				tableLifecycleMap["type"] = tableLifecycle2Raw["type"]
-				tableLifecycleMap["value"] = tableLifecycle2Raw["value"]
+			if len(tableLifecycleRaw) > 0 {
+				tableLifecycleMap["type"] = tableLifecycleRaw["type"]
+				tableLifecycleMap["value"] = tableLifecycleRaw["value"]
 
 				tableLifecycleMaps = append(tableLifecycleMaps, tableLifecycleMap)
 			}
@@ -362,27 +414,27 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		mapping["properties"] = propertiesMaps
 		securityPropertiesMaps := make([]map[string]interface{}, 0)
 		securityPropertiesMap := make(map[string]interface{})
-		securityProperties2Raw := make(map[string]interface{})
-		if objectRaw.(map[string]interface{})["securityProperties"] != nil {
-			securityProperties2Raw = objectRaw.(map[string]interface{})["securityProperties"].(map[string]interface{})
+		securityPropertiesRaw := make(map[string]interface{})
+		if objectRaw["securityProperties"] != nil {
+			securityPropertiesRaw = objectRaw["securityProperties"].(map[string]interface{})
 		}
-		if len(securityProperties2Raw) > 0 {
-			securityPropertiesMap["enable_download_privilege"] = securityProperties2Raw["enableDownloadPrivilege"]
-			securityPropertiesMap["label_security"] = securityProperties2Raw["labelSecurity"]
-			securityPropertiesMap["object_creator_has_access_permission"] = securityProperties2Raw["objectCreatorHasAccessPermission"]
-			securityPropertiesMap["object_creator_has_grant_permission"] = securityProperties2Raw["objectCreatorHasGrantPermission"]
-			securityPropertiesMap["using_acl"] = securityProperties2Raw["usingAcl"]
-			securityPropertiesMap["using_policy"] = securityProperties2Raw["usingPolicy"]
+		if len(securityPropertiesRaw) > 0 {
+			securityPropertiesMap["enable_download_privilege"] = securityPropertiesRaw["enableDownloadPrivilege"]
+			securityPropertiesMap["label_security"] = securityPropertiesRaw["labelSecurity"]
+			securityPropertiesMap["object_creator_has_access_permission"] = securityPropertiesRaw["objectCreatorHasAccessPermission"]
+			securityPropertiesMap["object_creator_has_grant_permission"] = securityPropertiesRaw["objectCreatorHasGrantPermission"]
+			securityPropertiesMap["using_acl"] = securityPropertiesRaw["usingAcl"]
+			securityPropertiesMap["using_policy"] = securityPropertiesRaw["usingPolicy"]
 
 			projectProtectionMaps := make([]map[string]interface{}, 0)
 			projectProtectionMap := make(map[string]interface{})
-			projectProtection2Raw := make(map[string]interface{})
-			if securityProperties2Raw["projectProtection"] != nil {
-				projectProtection2Raw = securityProperties2Raw["projectProtection"].(map[string]interface{})
+			projectProtectionRaw := make(map[string]interface{})
+			if securityPropertiesRaw["projectProtection"] != nil {
+				projectProtectionRaw = securityPropertiesRaw["projectProtection"].(map[string]interface{})
 			}
-			if len(projectProtection2Raw) > 0 {
-				projectProtectionMap["exception_policy"] = projectProtection2Raw["exceptionPolicy"]
-				projectProtectionMap["protected"] = projectProtection2Raw["protected"]
+			if len(projectProtectionRaw) > 0 {
+				projectProtectionMap["exception_policy"] = projectProtectionRaw["exceptionPolicy"]
+				projectProtectionMap["protected"] = projectProtectionRaw["protected"]
 
 				projectProtectionMaps = append(projectProtectionMaps, projectProtectionMap)
 			}
@@ -391,8 +443,21 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		}
 		mapping["security_properties"] = securityPropertiesMaps
 
-		ids = append(ids, fmt.Sprint(mapping["project_name"]))
-		names = append(names, fmt.Sprint(mapping["project_name"]))
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(mapping["id"]))
+			names = append(names, objectRaw["name"])
+			s = append(s, mapping)
+			continue
+		}
+
+		id := fmt.Sprint(objectRaw["name"])
+		mapping, err = dataSourceAliCloudMaxComputeProjectReadDescription(d, id, mapping, meta)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, objectRaw["name"])
 		s = append(s, mapping)
 	}
 
@@ -404,7 +469,6 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
-
 	if err := d.Set("projects", s); err != nil {
 		return WrapError(err)
 	}
@@ -413,4 +477,145 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		writeToFile(output.(string), s)
 	}
 	return nil
+}
+
+func dataSourceAliCloudMaxComputeProjectReadDescription(d *schema.ResourceData, id string, object map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	client := meta.(*connectivity.AliyunClient)
+
+	maxComputeServiceV2 := MaxComputeServiceV2{client}
+	getResp, err := maxComputeServiceV2.DescribeMaxComputeProject(id)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	// Merge additional fields from Get API response to mapping
+	// Reuse the response mapping template from Resource's read function
+	mapping := object
+	objectRaw := getResp
+
+	mapping["comment"] = objectRaw["comment"]
+	mapping["cost_storage"] = objectRaw["costStorage"]
+	mapping["create_time"] = objectRaw["createdTime"]
+	mapping["default_quota"] = objectRaw["defaultQuota"]
+	mapping["owner"] = objectRaw["owner"]
+	mapping["region_id"] = objectRaw["regionId"]
+	mapping["status"] = objectRaw["status"]
+	mapping["three_tier_model"] = objectRaw["threeTierModel"]
+	mapping["type"] = objectRaw["type"]
+	mapping["project_name"] = objectRaw["name"]
+
+	ipWhiteListMaps := make([]map[string]interface{}, 0)
+	ipWhiteListMap := make(map[string]interface{})
+	ipWhiteListRaw := make(map[string]interface{})
+	if objectRaw["ipWhiteList"] != nil {
+		ipWhiteListRaw = objectRaw["ipWhiteList"].(map[string]interface{})
+	}
+	if len(ipWhiteListRaw) > 0 {
+		ipWhiteListMap["ip_list"] = ipWhiteListRaw["ipList"]
+		ipWhiteListMap["vpc_ip_list"] = ipWhiteListRaw["vpcIpList"]
+
+		ipWhiteListMaps = append(ipWhiteListMaps, ipWhiteListMap)
+	}
+	mapping["ip_white_list"] = ipWhiteListMaps
+	propertiesMaps := make([]map[string]interface{}, 0)
+	propertiesMap := make(map[string]interface{})
+	propertiesRaw := make(map[string]interface{})
+	if objectRaw["properties"] != nil {
+		propertiesRaw = objectRaw["properties"].(map[string]interface{})
+	}
+	if len(propertiesRaw) > 0 {
+		propertiesMap["allow_full_scan"] = propertiesRaw["allowFullScan"]
+		propertiesMap["enable_data_masking"] = propertiesRaw["enableDataMasking"]
+		propertiesMap["enable_decimal2"] = propertiesRaw["enableDecimal2"]
+		propertiesMap["enable_dr"] = propertiesRaw["enableDr"]
+		propertiesMap["enable_tunnel_quota_route"] = propertiesRaw["enableTunnelQuotaRoute"]
+		propertiesMap["retention_days"] = propertiesRaw["retentionDays"]
+		propertiesMap["sql_metering_max"] = propertiesRaw["sqlMeteringMax"]
+		propertiesMap["timezone"] = propertiesRaw["timezone"]
+		propertiesMap["tunnel_quota"] = propertiesRaw["tunnelQuota"]
+		propertiesMap["type_system"] = propertiesRaw["typeSystem"]
+
+		encryptionMaps := make([]map[string]interface{}, 0)
+		encryptionMap := make(map[string]interface{})
+		encryptionRaw := make(map[string]interface{})
+		if propertiesRaw["encryption"] != nil {
+			encryptionRaw = propertiesRaw["encryption"].(map[string]interface{})
+		}
+		if len(encryptionRaw) > 0 {
+			encryptionMap["algorithm"] = encryptionRaw["algorithm"]
+			encryptionMap["enable"] = encryptionRaw["enable"]
+			encryptionMap["key"] = encryptionRaw["key"]
+
+			encryptionMaps = append(encryptionMaps, encryptionMap)
+		}
+		propertiesMap["encryption"] = encryptionMaps
+		tableLifecycleMaps := make([]map[string]interface{}, 0)
+		tableLifecycleMap := make(map[string]interface{})
+		tableLifecycleRaw := make(map[string]interface{})
+		if propertiesRaw["tableLifecycle"] != nil {
+			tableLifecycleRaw = propertiesRaw["tableLifecycle"].(map[string]interface{})
+		}
+		if len(tableLifecycleRaw) > 0 {
+			tableLifecycleMap["type"] = tableLifecycleRaw["type"]
+			tableLifecycleMap["value"] = tableLifecycleRaw["value"]
+
+			tableLifecycleMaps = append(tableLifecycleMaps, tableLifecycleMap)
+		}
+		propertiesMap["table_lifecycle"] = tableLifecycleMaps
+		propertiesMaps = append(propertiesMaps, propertiesMap)
+	}
+	mapping["properties"] = propertiesMaps
+	securityPropertiesMaps := make([]map[string]interface{}, 0)
+	securityPropertiesMap := make(map[string]interface{})
+	securityPropertiesRaw := make(map[string]interface{})
+	if objectRaw["securityProperties"] != nil {
+		securityPropertiesRaw = objectRaw["securityProperties"].(map[string]interface{})
+	}
+	if len(securityPropertiesRaw) > 0 {
+		securityPropertiesMap["enable_download_privilege"] = securityPropertiesRaw["enableDownloadPrivilege"]
+		securityPropertiesMap["label_security"] = securityPropertiesRaw["labelSecurity"]
+		securityPropertiesMap["object_creator_has_access_permission"] = securityPropertiesRaw["objectCreatorHasAccessPermission"]
+		securityPropertiesMap["object_creator_has_grant_permission"] = securityPropertiesRaw["objectCreatorHasGrantPermission"]
+		securityPropertiesMap["using_acl"] = securityPropertiesRaw["usingAcl"]
+		securityPropertiesMap["using_policy"] = securityPropertiesRaw["usingPolicy"]
+
+		projectProtectionMaps := make([]map[string]interface{}, 0)
+		projectProtectionMap := make(map[string]interface{})
+		projectProtectionRaw := make(map[string]interface{})
+		if securityPropertiesRaw["projectProtection"] != nil {
+			projectProtectionRaw = securityPropertiesRaw["projectProtection"].(map[string]interface{})
+		}
+		if len(projectProtectionRaw) > 0 {
+			projectProtectionMap["exception_policy"] = projectProtectionRaw["exceptionPolicy"]
+			projectProtectionMap["protected"] = projectProtectionRaw["protected"]
+
+			projectProtectionMaps = append(projectProtectionMaps, projectProtectionMap)
+		}
+		securityPropertiesMap["project_protection"] = projectProtectionMaps
+		securityPropertiesMaps = append(securityPropertiesMaps, securityPropertiesMap)
+	}
+	mapping["security_properties"] = securityPropertiesMaps
+
+	objectRaw = getResp
+
+	tagResourcesRaw := make(map[string]interface{})
+	if objectRaw["TagResources"] != nil {
+		tagResourcesRaw = objectRaw["TagResources"].(map[string]interface{})
+	}
+	if len(tagResourcesRaw) > 0 {
+
+		tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
+		mapping["tags"] = tagsToMap(tagsMaps)
+
+		objectRaw = getResp
+
+		dataRaw := make([]interface{}, 0)
+		if objectRaw["data"] != nil {
+			dataRaw = convertToInterfaceArray(objectRaw["data"])
+		}
+
+		mapping["trusted_projects"] = dataRaw
+	}
+
+	return mapping, nil
 }
