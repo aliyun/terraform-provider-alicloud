@@ -176,3 +176,82 @@ func (s *VodService) DescribeVodEditingProject(id string) (object map[string]int
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
+func (s *VodService) DescribeVodTranscodeJob(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "GetTranscodeTask"
+	request := map[string]interface{}{
+		"TranscodeTaskId": id,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TranscodeTask", response)
+	if err != nil || v == nil {
+		return object, WrapErrorf(NotFoundErr("VOD:TranscodeJob", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+	}
+	object, ok := v.(map[string]interface{})
+	if !ok || object == nil {
+		return object, WrapErrorf(NotFoundErr("VOD:TranscodeJob", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+	}
+	return object, nil
+}
+
+func (s *VodService) DescribeVodSnapshot(videoId, jobId string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "ListSnapshots"
+	request := map[string]interface{}{
+		"VideoId":  videoId,
+		"PageNo":   1,
+		"PageSize": 100,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, jobId, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.MediaSnapshot.Snapshots.Snapshot", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, jobId, "$.MediaSnapshot.Snapshots.Snapshot", response)
+	}
+	snapshots, ok := v.([]interface{})
+	if !ok || len(snapshots) == 0 {
+		return object, WrapErrorf(NotFoundErr("VOD:TranscodeJob", jobId), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+	}
+	for _, snapshot := range snapshots {
+		item, ok := snapshot.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(item["JobId"]) == jobId {
+			return item, nil
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("VOD:TranscodeJob", jobId), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+}
