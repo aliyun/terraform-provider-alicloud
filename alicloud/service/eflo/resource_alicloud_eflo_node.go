@@ -3,8 +3,10 @@ package eflo
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -777,7 +779,10 @@ func resourceNodeRead(d *schema.ResourceData, meta interface{}) error {
 		return errs.WrapError(err)
 	}
 
-	d.Set("payment_type", objectRaw["SubscriptionType"])
+	// QueryAvailableInstances can omit SubscriptionType. Read must never write a placeholder into
+	// state: keep a previously known billing type when there is one, otherwise record an empty
+	// value that Delete resolves from the billing API before removing state.
+	d.Set("payment_type", nodePaymentTypeForState(objectRaw["SubscriptionType"], d.Get("payment_type")))
 	d.Set("region_id", objectRaw["Region"])
 	if fmt.Sprint(objectRaw["RenewalDurationUnit"]) == "Y" {
 		renewPeriod, err := convert.FormatInt(objectRaw["RenewalDuration"])
@@ -1208,16 +1213,97 @@ func resourceNodeUpdate(d *schema.ResourceData, meta interface{}) error {
 	return resourceNodeRead(d, meta)
 }
 
+// normalizeEfloNodePaymentType returns the billing type when raw holds one the provider can
+// route on. A missing key, null, an empty string or any non-enumerated string (defensive input,
+// e.g. a placeholder such as "<nil>") is reported as unknown so callers never guess a billing
+// type from it.
+func normalizeEfloNodePaymentType(raw interface{}) (string, bool) {
+	value, ok := raw.(string)
+	if !ok {
+		return "", false
+	}
+	switch strings.TrimSpace(value) {
+	case "Subscription":
+		return "Subscription", true
+	case "PayAsYouGo":
+		return "PayAsYouGo", true
+	}
+	return "", false
+}
+
+// nodePaymentTypeForState returns the billing type Read stores in state: the value returned by
+// the billing API when it is a recognized billing type, otherwise the previously known state
+// value, otherwise an empty string. Read must never store a placeholder.
+func nodePaymentTypeForState(apiValue, stateValue interface{}) string {
+	if paymentType, ok := normalizeEfloNodePaymentType(apiValue); ok {
+		return paymentType
+	}
+	if paymentType, ok := normalizeEfloNodePaymentType(stateValue); ok {
+		return paymentType
+	}
+	return ""
+}
+
+// errEfloNodePaymentTypeUnknown reports that the billing type could not be determined from state
+// or from the billing API, so the caller has to fail instead of deleting nothing and dropping the
+// resource from state.
+var errEfloNodePaymentTypeUnknown = errors.New("cannot determine the billing type of the eflo node: payment_type in state is not a valid billing type and QueryAvailableInstances returned no usable SubscriptionType, the node was not deleted")
+
+// resolveEfloNodePaymentType decides which destroy API is used. State can hold an unknown billing
+// type when QueryAvailableInstances omitted SubscriptionType during Read, so the billing API is
+// queried explicitly; when it still cannot be determined an error is returned instead of deleting
+// nothing and silently dropping the resource from state.
+func resolveEfloNodePaymentType(stateValue interface{}, lookup func() (map[string]interface{}, error)) (string, error) {
+	if paymentType, ok := normalizeEfloNodePaymentType(stateValue); ok {
+		return paymentType, nil
+	}
+
+	instance, err := lookup()
+	if err != nil {
+		return "", err
+	}
+	if paymentType, ok := normalizeEfloNodePaymentType(instance["SubscriptionType"]); ok {
+		return paymentType, nil
+	}
+
+	return "", errEfloNodePaymentTypeUnknown
+}
+
 func resourceNodeDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	enableDelete := false
-	if v, ok := d.GetOkExists("payment_type"); ok {
-		if helper.InArray(fmt.Sprint(v), []string{"Subscription"}) {
-			enableDelete = true
+	efloServiceV2 := EfloServiceV2{client}
+
+	// Refresh normally clears the ID of a node that is already gone; keep destroy idempotent when
+	// the node disappeared between refresh and delete.
+	if _, err := efloServiceV2.DescribeEfloNode(d.Id()); err != nil {
+		if errs.IsExpectedErrors(err, []string{"RESOURCE_NOT_FOUND", "InvalidNodeId.NotFound"}) || errs.NotFoundError(err) {
+			return nil
 		}
+		return errs.WrapError(err)
 	}
-	if enableDelete {
+
+	// Only prepaid instances are unsubscribed through RefundInstance and only pay-as-you-go
+	// instances are released through DeleteNode. The billing type recorded in state can be
+	// missing or unknown, so it is resolved from the billing API instead of being guessed.
+	paymentType, err := resolveEfloNodePaymentType(d.Get("payment_type"), func() (map[string]interface{}, error) {
+		return getBillingInstance(d.Id(), d.Timeout(schema.TimeoutDelete), client)
+	})
+	if err != nil {
+		// Keep the SDK marker when the billing lookup itself failed; the resolver's own
+		// "cannot determine" error is provider-side.
+		errorSource := errs.AlibabaCloudSdkGoERROR
+		if errors.Is(err, errEfloNodePaymentTypeUnknown) {
+			errorSource = errs.ProviderERROR
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "QueryAvailableInstances", errorSource)
+	}
+
+	// Only prepaid instances are unsubscribed and only pay-as-you-go instances are released.
+	// resolveEfloNodePaymentType returns exactly one of the two billing types on success.
+	if paymentType == "Subscription" {
+		// Keep the literal: scripts/compatibility/breaking_change_check.go maps retry error codes
+		// to an API by matching action := "<ApiName>".
 		action := "RefundInstance"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -1250,26 +1336,12 @@ func resourceNodeDelete(d *schema.ResourceData, meta interface{}) error {
 			request["ProductCode"] = "learn"
 			request["ProductType"] = "learn_eflocomputing_public_cn"
 		}
-		if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
-			request["ProductCode"] = "bccluster"
-			request["ProductType"] = "bccluster_computinginstance_public_cn"
-			if installPai {
-				return errs.WrapError(errs.Error("InstallPai currently does not support pay-as-you-go products."))
-			}
-		}
 		if client.IsInternationalAccount() {
 			request["ProductCode"] = "bccluster"
 			request["ProductType"] = "bccluster_eflocomputing_public_intl"
 			if installPai {
 				request["ProductCode"] = "learn"
 				request["ProductType"] = "learn_eflocomputing_public_intl"
-			}
-			if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
-				request["ProductCode"] = "bccluster"
-				request["ProductType"] = "bccluster_computinginstance_public_intl"
-				if installPai {
-					return errs.WrapError(errs.Error("InstallPai currently does not support pay-as-you-go products."))
-				}
 			}
 		}
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -1287,13 +1359,6 @@ func resourceNodeDelete(d *schema.ResourceData, meta interface{}) error {
 						request["ProductCode"] = "learn"
 						request["ProductType"] = "learn_eflocomputing_public_intl"
 					}
-					if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
-						request["ProductCode"] = "bccluster"
-						request["ProductType"] = "bccluster_computinginstance_public_intl"
-						if installPai {
-							return retry.RetryableError(err)
-						}
-					}
 					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return retry.RetryableError(err)
 				}
@@ -1310,21 +1375,15 @@ func resourceNodeDelete(d *schema.ResourceData, meta interface{}) error {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		efloServiceV2 := EfloServiceV2{client}
 		stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, efloServiceV2.EfloNodeStateRefreshFunc(d.Id(), "$.NodeId", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
-	}
-
-	enableDelete = false
-	if v, ok := d.GetOkExists("payment_type"); ok {
-		if helper.InArray(fmt.Sprint(v), []string{"PayAsYouGo"}) {
-			enableDelete = true
-		}
-	}
-	if enableDelete {
+	} else {
+		// PayAsYouGo: pay-as-you-go instances are released through DeleteNode.
+		// Keep the literal: scripts/compatibility/breaking_change_check.go maps retry error codes
+		// to an API by matching action := "<ApiName>".
 		action := "DeleteNode"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -1355,7 +1414,6 @@ func resourceNodeDelete(d *schema.ResourceData, meta interface{}) error {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		efloServiceV2 := EfloServiceV2{client}
 		stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, efloServiceV2.EfloNodeStateRefreshFunc(d.Id(), "$.NodeId", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
@@ -1366,9 +1424,38 @@ func resourceNodeDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func getProductCodeAndType(instanceID string, timeout time.Duration, client *connectivity.AliyunClient) (string, string, error) {
-	var productCode, productType string
+	instance, err := getBillingInstance(instanceID, timeout, client)
+	if err != nil {
+		return "", "", err
+	}
+	productCode, _ := instance["ProductCode"].(string)
+	productType, _ := instance["ProductType"].(string)
+	return productCode, productType, nil
+}
 
-	request := map[string]interface{}{"InstanceIDs": instanceID}
+// efloNodeBillingRecord returns the billing record of instanceID. QueryAvailableInstances is
+// filtered by InstanceIDs, but the list is still matched on instance id: the record decides both
+// the destroy API and the refund product code, so a record of another instance must never be used.
+func efloNodeBillingRecord(instances []interface{}, instanceID string) (map[string]interface{}, bool) {
+	wanted := strings.TrimSpace(instanceID)
+	for _, raw := range instances {
+		record, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if id, ok := record["InstanceID"].(string); ok && strings.TrimSpace(id) == wanted {
+			return record, true
+		}
+	}
+	return nil, false
+}
+
+// getBillingInstance returns the BSS billing record of a node. The lookup is not filtered by
+// product type so it also works when the billing type recorded in state is unknown.
+func getBillingInstance(instanceID string, timeout time.Duration, client *connectivity.AliyunClient) (map[string]interface{}, error) {
+	var instance map[string]interface{}
+
+	request := map[string]interface{}{"InstanceIDs": instanceID, "PageNum": 1, "PageSize": 100}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 
 	err := retry.Retry(timeout, func() *retry.RetryError {
@@ -1389,16 +1476,17 @@ func getProductCodeAndType(instanceID string, timeout time.Duration, client *con
 			return retry.NonRetryableError(errs.WrapErrorf(errs.NotFoundErr("Node", instanceID), errs.NotFoundMsg, response))
 		}
 
-		instance, ok := instances[0].(map[string]interface{})
+		instanceObj, ok := efloNodeBillingRecord(instances, instanceID)
 		if !ok {
-			return retry.NonRetryableError(fmt.Errorf("unexpected instance format for id %s", instanceID))
+			// A response carrying other records must not be read as "already gone": destroy
+			// would then drop the node from state without deleting it.
+			return retry.NonRetryableError(fmt.Errorf("QueryAvailableInstances returned %d billing record(s) but none belongs to %s", len(instances), instanceID))
 		}
-		productCode, _ = instance["ProductCode"].(string)
-		productType, _ = instance["ProductType"].(string)
+		instance = instanceObj
 		return nil
 	})
 
-	return productCode, productType, err
+	return instance, err
 }
 
 // getInstanceList extracts the instance list from the response.

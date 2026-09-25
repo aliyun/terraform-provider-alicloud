@@ -28,6 +28,14 @@ Basic Usage
 
 ```terraform
 # Before executing this example, you need to confirm with the product team whether the resources are sufficient or you will get an error message with "Failure to check order before create instance"
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -55,6 +63,7 @@ resource "alicloud_eflo_node" "default" {
   status         = "Unused"
 }
 ```
+
 Creating a PayAsYouGo eflo node
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
   <a href="https://api.aliyun.com/terraform?resource=alicloud_eflo_node&exampleId=c7a78e81-3b3b-8b48-df8c-216206f8d1f9fe457282&activeTab=example&spm=docs.r.eflo_node.1.c7a78e813b&intl_lang=EN_US" target="_blank">
@@ -63,6 +72,14 @@ Creating a PayAsYouGo eflo node
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_eflo_node" "payasyougo" {
   machine_type   = "efg1.nvga8n"
   payment_type   = "PayAsYouGo"
@@ -120,9 +137,7 @@ resource "alicloud_eflo_node" "payasyougo" {
 
 ### Deleting `alicloud_eflo_node` or removing it from your configuration
 
-The `alicloud_eflo_node` resource allows you to manage  `payment_type = "Subscription"`  instance, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
-You can resume managing the subscription instance via the AlibabaCloud Console.
+Terraform selects the destroy request from the billing type of the node: it sends a refund request for a `payment_type = "Subscription"` instance and a release request for a `payment_type = "PayAsYouGo"` instance. When the billing type cannot be determined, Terraform reports an error and keeps the node in your state instead of silently removing it without destroying the instance.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_eflo_node&spm=docs.r.eflo_node.example&intl_lang=EN_US)
 
