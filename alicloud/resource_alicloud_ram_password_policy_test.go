@@ -45,6 +45,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 					"require_symbols":                      "false",
 					"password_not_contain_user_name":       "false",
 					"minimum_password_different_character": "1",
+					"initial_password_age":                 "30",
+					"intercept_risk_password_on_api":       "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -59,6 +61,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 						"require_symbols":                      "false",
 						"password_not_contain_user_name":       "false",
 						"minimum_password_different_character": "1",
+						"initial_password_age":                 "30",
+						"intercept_risk_password_on_api":       "true",
 					}),
 				),
 			},
@@ -75,6 +79,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 					"require_symbols":                      "true",
 					"password_not_contain_user_name":       "true",
 					"minimum_password_different_character": "2",
+					"initial_password_age":                 "90",
+					"intercept_risk_password_on_api":       "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -89,6 +95,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 						"require_symbols":                      "true",
 						"password_not_contain_user_name":       "true",
 						"minimum_password_different_character": "2",
+						"initial_password_age":                 "90",
+						"intercept_risk_password_on_api":       "false",
 					}),
 				),
 			},
@@ -105,6 +113,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 					"require_symbols":                      "false",
 					"password_not_contain_user_name":       "false",
 					"minimum_password_different_character": "0",
+					"initial_password_age":                 "0",
+					"intercept_risk_password_on_api":       "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -119,6 +129,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 						"require_symbols":                      "false",
 						"password_not_contain_user_name":       "false",
 						"minimum_password_different_character": "0",
+						"initial_password_age":                 "0",
+						"intercept_risk_password_on_api":       "true",
 					}),
 				),
 			},
@@ -149,6 +161,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 					"require_symbols":                      "true",
 					"password_not_contain_user_name":       "true",
 					"minimum_password_different_character": "2",
+					"initial_password_age":                 "90",
+					"intercept_risk_password_on_api":       "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -163,6 +177,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 						"require_symbols":                      "true",
 						"password_not_contain_user_name":       "true",
 						"minimum_password_different_character": "2",
+						"initial_password_age":                 "90",
+						"intercept_risk_password_on_api":       "false",
 					}),
 				),
 			},
@@ -185,6 +201,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 					"require_symbols":                      "false",
 					"password_not_contain_user_name":       "false",
 					"minimum_password_different_character": "1",
+					"initial_password_age":                 "30",
+					"intercept_risk_password_on_api":       "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -199,6 +217,8 @@ func TestAccAliCloudRamPasswordPolicy_basic9035(t *testing.T) {
 						"require_symbols":                      "false",
 						"password_not_contain_user_name":       "false",
 						"minimum_password_different_character": "1",
+						"initial_password_age":                 "30",
+						"intercept_risk_password_on_api":       "true",
 					}),
 				),
 			},
