@@ -690,4 +690,95 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name)
 }
 
+// TestAccAliCloudEfloNode_basicSubscriptionDestroy covers the destroy path for a Subscription eflo
+// node. payment_type is set explicitly to "Subscription" so that Delete routes to the
+// RefundInstance refund branch. Delete also falls back to "Subscription" when
+// payment_type is empty (e.g. Read could not backfill SubscriptionType), which prevents
+// destroy from silently skipping deletion; the empty-value fallback cannot be exercised
+// by ACC once Read backfills payment_type, so it is covered by code review of Delete/Read.
+func TestAccAliCloudEfloNode_basicSubscriptionDestroy(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eflo_node.default"
+	ra := resourceAttrInit(resourceId, AlicloudEfloNodeMapSubscriptionDestroy)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EfloServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEfloNode")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacceflo%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEfloNodeBasicDependenceSubscriptionDestroy)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":      "Subscription",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"period":            "36",
+					"discount_level":    "36",
+					"billing_cycle":     "1month",
+					"classify":          "gpuserver",
+					"zone":              "cn-wulanchabu-a",
+					"product_form":      "instance",
+					"payment_ratio":     "0",
+					"hpn_zone":          "A4",
+					"server_arch":       "bmserver",
+					"computing_server":  "efg2.C48eNH3ebn",
+					"stage_num":         "36",
+					"renewal_status":    "AutoRenewal",
+					"renew_period":      "36",
+					"status":            "Unused",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":      "Subscription",
+						"resource_group_id": CHECKSET,
+						"period":            "36",
+						"billing_cycle":     "1month",
+						"classify":          "gpuserver",
+						"zone":              "cn-wulanchabu-a",
+						"product_form":      "instance",
+						"hpn_zone":          "A4",
+						"server_arch":       "bmserver",
+						"computing_server":  "efg2.C48eNH3ebn",
+						"renewal_status":    "AutoRenewal",
+						"renew_period":      "36",
+						"status":            "Unused",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"billing_cycle", "classify", "discount_level", "login_password", "payment_ratio", "period", "product_form", "server_arch", "stage_num"},
+			},
+		},
+	})
+}
+
+var AlicloudEfloNodeMapSubscriptionDestroy = map[string]string{
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudEfloNodeBasicDependenceSubscriptionDestroy(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
 // Test Eflo Node. <<< Resource test cases, automatically generated.

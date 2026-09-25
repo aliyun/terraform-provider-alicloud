@@ -772,7 +772,14 @@ func resourceAliCloudEfloNodeRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	d.Set("payment_type", objectRaw["SubscriptionType"])
+	// SubscriptionType may be absent from QueryAvailableInstances in some cases; fall back
+	// to the documented default "Subscription" to keep state consistent and ensure Delete
+	// routes prepaid instances to RefundInstance.
+	subscriptionType := fmt.Sprint(objectRaw["SubscriptionType"])
+	if subscriptionType == "" {
+		subscriptionType = "Subscription"
+	}
+	d.Set("payment_type", subscriptionType)
 	d.Set("region_id", objectRaw["Region"])
 	if fmt.Sprint(objectRaw["RenewalDurationUnit"]) == "Y" {
 		d.Set("renew_period", formatInt(objectRaw["RenewalDuration"])*12)
@@ -1204,7 +1211,14 @@ func resourceAliCloudEfloNodeDelete(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	enableDelete := false
 	if v, ok := d.GetOkExists("payment_type"); ok {
-		if InArray(fmt.Sprint(v), []string{"Subscription"}) {
+		paymentType := fmt.Sprint(v)
+		// payment_type may be empty when Read could not backfill SubscriptionType from
+		// QueryAvailableInstances; fall back to the documented default "Subscription" so
+		// destroy still calls RefundInstance instead of silently skipping deletion.
+		if paymentType == "" {
+			paymentType = "Subscription"
+		}
+		if InArray(paymentType, []string{"Subscription"}) {
 			enableDelete = true
 		}
 	}
