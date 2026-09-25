@@ -1001,6 +1001,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_apig_ai_model_provider":                               resourceAliCloudApigAiModelProvider(),
 			"alicloud_apig_service":                                         resourceAliCloudApigService(),
 			"alicloud_gpdb_api_key":                                         resourceAliCloudGpdbApiKey(),
+			"alicloud_dataworks_checker_instance":                          resourceAliCloudDataworksCheckerInstance(),
 			"alicloud_apig_plugin":                                          resourceAliCloudApigPlugin(),
 			"alicloud_ssl_certificates_service_company":                     resourceAliCloudSslCertificatesServiceCompany(),
 			"alicloud_ssl_certificates_service_contact":                     resourceAliCloudSslCertificatesServiceContact(),
