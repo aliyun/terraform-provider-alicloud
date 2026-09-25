@@ -6274,3 +6274,449 @@ func resourceECSInstanceTagsDependence(name string) string {
 	}
 `, name)
 }
+
+// TestAccAliCloudECSInstanceSecurityGroupCrossTypeReplace verifies that an ECS
+// instance can atomically replace a normal security group with an enterprise
+// security group (and vice versa) within a single apply. This exercises the
+// ModifyInstanceAttribute SecurityGroupIds path added for cross-type
+// replacement, which the previous Leave/Join incremental approach could not
+// satisfy because ECS requires an instance to always belong to at least one
+// security group and forbids mixing basic and advanced security groups.
+func TestAccAliCloudECSInstanceSecurityGroupCrossTypeReplace(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceSgCrossType%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceECSInstanceSgCrossTypeReplaceDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.basic.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_groups.#": "1",
+					}),
+				),
+			},
+			// Cross-type replacement: swap the normal security group for an
+			// enterprise security group in one apply. The old Leave/Join
+			// incremental flow would leave the instance with zero security
+			// groups mid-flight and fail; the new atomic
+			// ModifyInstanceAttribute path must keep exactly one group.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_groups": []string{"${alicloud_security_group.enterprise.id}"},
+					"user_data":       "I_am_user_data",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_groups.#": "1",
+					}),
+				),
+			},
+			// Swap back to the normal security group to confirm the reverse
+			// direction also works through the atomic path.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_groups": []string{"${alicloud_security_group.basic.id}"},
+					"user_data":       "I_am_user_data",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_groups.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"period", "security_enhancement_strategy", "data_disks", "dry_run", "force_delete",
+					"include_data_disks", "user_data"},
+			},
+		},
+	})
+}
+
+func resourceECSInstanceSgCrossTypeReplaceDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex = "^ubuntu_18.*64"
+  		owners     = "system"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		image_id = data.alicloud_images.default.images.0.id
+	}
+
+	resource "alicloud_vpc" "default" {
+  		cidr_block = "192.168.0.0/16"
+  		vpc_name   = var.name
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		vswitch_name = var.name
+	}
+
+	resource "alicloud_security_group" "basic" {
+  		name              = var.name
+  		vpc_id            = alicloud_vpc.default.id
+  		security_group_type = "normal"
+	}
+
+	resource "alicloud_security_group" "enterprise" {
+  		name              = var.name
+  		vpc_id            = alicloud_vpc.default.id
+  		security_group_type = "enterprise"
+	}
+`, name)
+}
+
+// TestAccAliCloudECSInstanceDataDisksOrder verifies that reordering the
+// data_disks TypeList produces a non-empty plan and then converges, as
+// required by the TypeList Order Coverage check (see
+// scripts/collection-order/README.md). data_disks members are ForceNew, so
+// the reorder drives a replacement, which the checker permits.
+func TestAccAliCloudECSInstanceDataDisksOrder(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceDataDisksOrder%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceECSInstanceOrderCoverageDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.first.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"data_disks": []map[string]string{
+						{
+							"name": "${var.name}-first",
+							"size": "20",
+						},
+						{
+							"name":     "${var.name}-second",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disks.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disks": []map[string]string{
+						{
+							"name":     "${var.name}-second",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+						{
+							"name": "${var.name}-first",
+							"size": "20",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disks": []map[string]string{
+						{
+							"name":     "${var.name}-second",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+						{
+							"name": "${var.name}-first",
+							"size": "20",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disks.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudECSInstanceNetworkInterfacesOrder verifies that reordering
+// the network_interfaces TypeList produces a non-empty plan and then
+// converges, as required by the TypeList Order Coverage check (see
+// scripts/collection-order/README.md). network_interfaces members are
+// ForceNew, so the reorder drives a replacement, which the checker permits.
+func TestAccAliCloudECSInstanceNetworkInterfacesOrder(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceNetworkInterfacesOrder%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceECSInstanceOrderCoverageDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.first.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.first.id}"},
+						},
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.second.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_interfaces.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.second.id}"},
+						},
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.first.id}"},
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.second.id}"},
+						},
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.first.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_interfaces.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudECSInstanceNetworkInterfaceSecurityGroupIdsOrder verifies
+// that reordering the security_group_ids TypeList nested inside a single
+// network_interfaces member produces a non-empty plan and then converges, as
+// required by the TypeList Order Coverage check (see
+// scripts/collection-order/README.md). The outer network_interfaces list is
+// kept in the same single-member order; only the inner security_group_ids
+// list is reordered. Both the network interface and security_group_ids are
+// ForceNew, so the reorder drives a replacement, which the checker permits.
+func TestAccAliCloudECSInstanceNetworkInterfaceSecurityGroupIdsOrder(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceNiSecurityGroupIdsOrder%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceECSInstanceOrderCoverageDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.first.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.first.id}", "${alicloud_security_group.second.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_interfaces.#":                      "1",
+						"network_interfaces.0.security_group_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.second.id}", "${alicloud_security_group.first.id}"},
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.second.id}", "${alicloud_security_group.first.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_interfaces.0.security_group_ids.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceECSInstanceOrderCoverageDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex = "^ubuntu_18.*64"
+  		owners     = "system"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		image_id = data.alicloud_images.default.images.0.id
+	}
+
+	resource "alicloud_vpc" "default" {
+  		cidr_block = "192.168.0.0/16"
+  		vpc_name   = var.name
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		vswitch_name = var.name
+	}
+
+	resource "alicloud_security_group" "first" {
+  		name              = var.name
+  		vpc_id            = alicloud_vpc.default.id
+  		security_group_type = "normal"
+	}
+
+	resource "alicloud_security_group" "second" {
+  		name              = "${var.name}-second"
+  		vpc_id            = alicloud_vpc.default.id
+  		security_group_type = "normal"
+	}
+`, name)
+}

@@ -1804,19 +1804,15 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			os := o.(*schema.Set)
 			ns := n.(*schema.Set)
 
-			rl := expandStringList(os.Difference(ns).List())
-			al := expandStringList(ns.Difference(os).List())
-
-			if len(rl) > 0 {
-				err := ecsService.LeaveSecurityGroups(d.Id(), rl)
-				if err != nil {
-					return WrapError(err)
-				}
-			}
-
-			if len(al) > 0 {
-				err := ecsService.JoinSecurityGroups(d.Id(), al)
-				if err != nil {
+			// Replace the full security group set atomically via ModifyInstanceAttribute.
+			// The previous incremental Leave/Join approach removed the old groups before
+			// joining the new ones, which cannot migrate between basic and advanced
+			// security groups: ECS requires an instance to always belong to at least one
+			// security group and forbids mixing the two types. ModifyInstanceAttribute
+			// with SecurityGroupIds performs a declarative whole-group replacement that
+			// also covers same-type add/remove.
+			if len(os.Difference(ns).List()) > 0 || len(ns.Difference(os).List()) > 0 {
+				if err := ecsService.ModifyInstanceSecurityGroups(d.Id(), expandStringList(ns.List())); err != nil {
 					return WrapError(err)
 				}
 			}
