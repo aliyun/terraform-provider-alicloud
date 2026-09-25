@@ -1,12 +1,14 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -860,3 +862,84 @@ func (s *ArmsServiceV2) ArmsGrafanaWorkspaceStateRefreshFunc(id string, field st
 }
 
 // DescribeArmsGrafanaWorkspace >>> Encapsulated.
+
+// DescribeArmsNotificationPolicy <<< Encapsulated get interface for Arms NotificationPolicy.
+func (s *ArmsServiceV2) DescribeArmsNotificationPolicy(id string) (object map[string]interface{}, err error) {
+	return s.DescribeArmsNotificationPolicyContext(context.Background(), id)
+}
+
+func (s *ArmsServiceV2) DescribeArmsNotificationPolicyContext(ctx context.Context, id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["Ids"] = id
+	query["Page"] = 1
+	query["Size"] = PageSizeXLarge
+	query["IsDetail"] = true
+	query["RegionId"] = client.RegionId
+
+	action := "ListNotificationPolicies"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.RetryContext(ctx, 1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcGet("ARMS", "2019-08-08", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		// A transport-level 404 is definitive. A successful RPC that carries
+		// Code 404 only in its body is classified after the collection
+		// container is validated below, so a malformed body cannot be turned
+		// into NotFound.
+		if errs.IsTypedNotFound(err) && !errs.IsResponseCodeNotFound(err) {
+			return object, WrapErrorf(NotFoundErr("NotificationPolicy", id), NotFoundMsg, response)
+		}
+		if !errs.IsResponseCodeNotFound(err) {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	code, _ := jsonpath.Get("$.Code", response)
+
+	// The documented contract returns NotificationPolicies as an array. Validate
+	// the container before any NotFound classification, including the response
+	// level Code: a null, scalar or object shape is a malformed response, not
+	// evidence that the policy no longer exists. Only a confirmed array that is
+	// empty or lacks the requested Id means the policy is gone.
+	raw, err := jsonpath.Get("$.PageBean.NotificationPolicies", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageBean.NotificationPolicies", response)
+	}
+	list, ok := raw.([]interface{})
+	if !ok {
+		return object, WrapErrorf(fmt.Errorf("unexpected NotificationPolicies response type %T", raw), DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	if InArray(fmt.Sprint(code), []string{"404"}) || len(list) == 0 {
+		return object, WrapErrorf(NotFoundErr("NotificationPolicy", id), NotFoundMsg, response)
+	}
+
+	for _, item := range list {
+		policy, ok := item.(map[string]interface{})
+		if !ok {
+			return object, WrapErrorf(fmt.Errorf("unexpected NotificationPolicies element type %T", item), DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(policy["Id"]) == id {
+			return policy, nil
+		}
+	}
+
+	return object, WrapErrorf(NotFoundErr("NotificationPolicy", id), NotFoundMsg, response)
+}
+
+// DescribeArmsNotificationPolicy >>> Encapsulated.

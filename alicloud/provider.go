@@ -1333,6 +1333,7 @@ func Provider() *schema.Provider {
 			"alicloud_arms_prometheus":            resourceAlicloudArmsPrometheus(),
 			"alicloud_arms_integration_exporter":  resourceAlicloudArmsIntegrationExporter(),
 			"alicloud_arms_remote_write":          resourceAliCloudArmsRemoteWrite(),
+			"alicloud_arms_notification_policy":   resourceAliCloudArmsNotificationPolicy(),
 
 			// auto
 			"alicloud_auto_provisioning_group": resourceAlicloudAutoProvisioningGroup(),
