@@ -216,7 +216,7 @@ func dataSourceAlicloudCddcDedicatedHostsRead(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("order_id"); ok {
 		request["OrderId"] = v
 	}
-	request["PageNumbers"] = 1
+	request["PageNumber"] = 1
 	request["PageSize"] = PageSizeLarge
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("zone_id"); ok {

@@ -250,7 +250,7 @@ func dataSourceAliCloudEsaSiteRead(d *schema.ResourceData, meta interface{}) err
 		if len(result) < PageSizeLarge {
 			break
 		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
+		query["PageNumber"] = query["PageNumber"].(int) + 1
 	}
 
 	ids := make([]string, 0)
