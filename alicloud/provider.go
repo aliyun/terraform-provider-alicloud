@@ -614,6 +614,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_scdn_domains":                                     dataSourceAlicloudScdnDomains(),
 			"alicloud_alb_server_groups":                                dataSourceAlicloudAlbServerGroups(),
 			"alicloud_data_works_folders":                               dataSourceAlicloudDataWorksFolders(),
+			"alicloud_dataworks_data_service_authorized_apis":           dataSourceAlicloudDataworksDataServiceAuthorizedApis(),
 			"alicloud_arms_alert_contact_groups":                        dataSourceAlicloudArmsAlertContactGroups(),
 			"alicloud_express_connect_access_points":                    dataSourceAlicloudExpressConnectAccessPoints(),
 			"alicloud_cloud_storage_gateway_gateways":                   dataSourceAlicloudCloudStorageGatewayGateways(),
