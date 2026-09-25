@@ -51,6 +51,11 @@ func resourceAliCloudEsaSiteDeliveryTask() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"filter_ver": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"http_delivery": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -124,6 +129,18 @@ func resourceAliCloudEsaSiteDeliveryTask() *schema.Resource {
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
+						"log_split": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"last_log_split": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"log_split_words": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -164,6 +181,10 @@ func resourceAliCloudEsaSiteDeliveryTask() *schema.Resource {
 						},
 						"password": {
 							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"use_tls": {
+							Type:     schema.TypeBool,
 							Optional: true,
 						},
 					},
@@ -332,7 +353,13 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 		}
 		headerParam1, _ := jsonpath.Get("$[0].header_param", v)
 		if headerParam1 != nil && headerParam1 != "" {
-			httpDelivery["HeaderParam"] = headerParam1
+			headerParamMap := make(map[string]interface{})
+			if hp, ok := headerParam1.(map[string]interface{}); ok {
+				for k, val := range hp {
+					headerParamMap[k] = map[string]interface{}{"StaticValue": val}
+				}
+			}
+			httpDelivery["HeaderParam"] = headerParamMap
 		}
 		compress1, _ := jsonpath.Get("$[0].compress", v)
 		if compress1 != nil && compress1 != "" {
@@ -348,7 +375,13 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 		}
 		queryParam1, _ := jsonpath.Get("$[0].query_param", v)
 		if queryParam1 != nil && queryParam1 != "" {
-			httpDelivery["QueryParam"] = queryParam1
+			queryParamMap := make(map[string]interface{})
+			if qp, ok := queryParam1.(map[string]interface{}); ok {
+				for k, val := range qp {
+					queryParamMap[k] = map[string]interface{}{"StaticValue": val}
+				}
+			}
+			httpDelivery["QueryParam"] = queryParamMap
 		}
 		maxBatchSize1, _ := jsonpath.Get("$[0].max_batch_size", v)
 		if maxBatchSize1 != nil && maxBatchSize1 != "" {
@@ -357,6 +390,18 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 		logBodySuffix1, _ := jsonpath.Get("$[0].log_body_suffix", v)
 		if logBodySuffix1 != nil && logBodySuffix1 != "" {
 			httpDelivery["LogBodySuffix"] = logBodySuffix1
+		}
+		logSplit1, _ := jsonpath.Get("$[0].log_split", v)
+		if logSplit1 != nil && logSplit1 != "" {
+			httpDelivery["LogSplit"] = logSplit1
+		}
+		lastLogSplit1, _ := jsonpath.Get("$[0].last_log_split", v)
+		if lastLogSplit1 != nil && lastLogSplit1 != "" {
+			httpDelivery["LastLogSplit"] = lastLogSplit1
+		}
+		logSplitWords1, _ := jsonpath.Get("$[0].log_split_words", v)
+		if logSplitWords1 != nil && logSplitWords1 != "" {
+			httpDelivery["LogSplitWords"] = logSplitWords1
 		}
 
 		httpDeliveryJson, err := json.Marshal(httpDelivery)
@@ -427,6 +472,10 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 		balancer1, _ := jsonpath.Get("$[0].balancer", v)
 		if balancer1 != nil && balancer1 != "" {
 			kafkaDelivery["Balancer"] = balancer1
+		}
+		useTLS1, _ := jsonpath.Get("$[0].use_tls", v)
+		if useTLS1 != nil && useTLS1 != "" {
+			kafkaDelivery["UseTLS"] = useTLS1
 		}
 
 		kafkaDeliveryJson, err := json.Marshal(kafkaDelivery)
@@ -512,6 +561,9 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("discard_rate"); ok {
 		request["DiscardRate"] = v
 	}
+	if v, ok := d.GetOk("filter_ver"); ok {
+		request["FilterVer"] = v
+	}
 	request["DeliveryType"] = d.Get("delivery_type")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -554,6 +606,7 @@ func resourceAliCloudEsaSiteDeliveryTaskRead(d *schema.ResourceData, meta interf
 	d.Set("data_center", objectRaw["DataCenter"])
 	d.Set("delivery_type", objectRaw["DeliveryType"])
 	d.Set("discard_rate", objectRaw["DiscardRate"])
+	d.Set("filter_ver", objectRaw["FilterVer"])
 	d.Set("field_name", objectRaw["FieldList"])
 	d.Set("status", objectRaw["Status"])
 	if v, ok := objectRaw["SiteId"]; ok {
@@ -584,6 +637,11 @@ func resourceAliCloudEsaSiteDeliveryTaskUpdate(d *schema.ResourceData, meta inte
 	if !d.IsNewResource() && d.HasChange("discard_rate") {
 		update = true
 		request["DiscardRate"] = d.Get("discard_rate")
+	}
+
+	if !d.IsNewResource() && d.HasChange("filter_ver") {
+		update = true
+		request["FilterVer"] = d.Get("filter_ver")
 	}
 
 	if !d.IsNewResource() && d.HasChange("business_type") {
