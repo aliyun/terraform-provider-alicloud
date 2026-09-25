@@ -93,7 +93,7 @@ func testSweepEcdDesktop(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
+func TestAccAliCloudECDDesktop_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	resourceId := "alicloud_ecd_desktop.default"
@@ -116,11 +116,26 @@ func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"office_site_id":  "${alicloud_ecd_simple_office_site.default.id}",
-					"policy_group_id": "${alicloud_ecd_policy_group.default.id}",
-					"bundle_id":       "${data.alicloud_ecd_bundles.default.bundles.1.id}",
-					"desktop_name":    name,
-					"amount":          "1",
+					"office_site_id":            "${alicloud_ecd_simple_office_site.default.id}",
+					"policy_group_id":           "${alicloud_ecd_policy_group.default.id}",
+					"bundle_id":                 "${data.alicloud_ecd_bundles.default.bundles.1.id}",
+					"desktop_name":              name,
+					"amount":                    "1",
+					"app_rule_id":               "",
+					"desktop_member_ip":         "",
+					"desktop_name_suffix":       false,
+					"group_id":                  "",
+					"host_name":                 "",
+					"ou_path":                   "",
+					"promotion_id":              "",
+					"qos_rule_id":               "",
+					"reseller_owner_uid":        0,
+					"resource_group_id":         "",
+					"snapshot_policy_id":        "",
+					"subnet_id":                 "",
+					"timer_group_id":            "",
+					"volume_encryption_enabled": false,
+					"volume_encryption_key":     "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -164,6 +179,19 @@ func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"end_user_ids": []string{"${alicloud_ecd_user.default1.id}", "${alicloud_ecd_user.default.id}"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"end_user_ids": []string{"${alicloud_ecd_user.default1.id}", "${alicloud_ecd_user.default.id}"},
+				}),
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF1",
 					},
@@ -188,12 +216,12 @@ func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"status":             "Stopped",
 					"stopped_mode":       "KeepCharging",
-					"root_disk_size_gib": "200",
+					"root_disk_size_gib": "100",
 					"user_disk_size_gib": "200",
 					"policy_group_id":    "${alicloud_ecd_policy_group.default.id}",
 					"desktop_name":       fmt.Sprintf("tf-testaccdesknewname%d", rand),
 					"end_user_ids":       []string{"${alicloud_ecd_user.default.id}", "${alicloud_ecd_user.default1.id}"},
-					"desktop_type":       "eds.graphics.24c1t4",
+					"desktop_type":       "eds.enterprise_office.4c8g",
 					"tags": map[string]string{
 						"Created": "TF1",
 					},
@@ -202,12 +230,12 @@ func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
 					testAccCheck(map[string]string{
 						"status":             "Stopped",
 						"stopped_mode":       "KeepCharging",
-						"root_disk_size_gib": "200",
+						"root_disk_size_gib": "100",
 						"user_disk_size_gib": "200",
 						"policy_group_id":    CHECKSET,
 						"desktop_name":       fmt.Sprintf("tf-testaccdesknewname%d", rand),
 						"end_user_ids.#":     "2",
-						"desktop_type":       "eds.graphics.24c1t4",
+						"desktop_type":       "eds.enterprise_office.4c8g",
 						"tags.%":             "1",
 					}),
 				),
@@ -216,13 +244,13 @@ func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_id"},
+				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "app_rule_id", "desktop_member_ip", "desktop_name_suffix", "group_id", "ou_path", "promotion_id", "qos_rule_id", "reseller_owner_uid", "resource_group_id", "snapshot_policy_id", "subnet_id", "timer_group_id", "volume_encryption_enabled", "volume_encryption_key"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudECDDesktop_basic1(t *testing.T) {
+func TestAccAliCloudECDDesktop_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	resourceId := "alicloud_ecd_desktop.default"
@@ -280,13 +308,13 @@ func TestAccAlicloudECDDesktop_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_id"},
+				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudECDDesktop_basic2(t *testing.T) {
+func TestAccAliCloudECDDesktop_basic2(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	resourceId := "alicloud_ecd_desktop.default"
@@ -340,7 +368,7 @@ func TestAccAlicloudECDDesktop_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_id"},
+				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay"},
 			},
 		},
 	})
@@ -348,7 +376,6 @@ func TestAccAlicloudECDDesktop_basic2(t *testing.T) {
 
 var AlicloudECDDesktopMap0 = map[string]string{
 	"user_disk_size_gib": NOSET,
-	"host_name":          NOSET,
 	"period_unit":        NOSET,
 	"desktop_id":         NOSET,
 	"desktop_name":       CHECKSET,
@@ -427,18 +454,18 @@ resource "alicloud_ecd_policy_group" "default0" {
 resource "alicloud_ecd_user" "default" {
 	end_user_id = "tf_testaccecduser%d"
 	email       = "hello.%d@aaa.com"
-	phone       = "158016%d"
+	phone       = "158016%05d"
 	password    = "%d"
 }
 
 resource "alicloud_ecd_user" "default1" {
 	end_user_id = "tf_testaccecduser%d"
 	email       = "hello.%d@aaa.com"
-	phone       = "158016%d"
+	phone       = "158016%05d"
 	password    = "%d"
 }
 
-`, name, rand, rand, rand, rand, rand, rand, rand, rand)
+`, name, rand, rand, rand, rand, rand+1, rand+1, rand+1, rand+1)
 }
 
 func AlicloudECDDesktopBasicDependence1(name string) string {
