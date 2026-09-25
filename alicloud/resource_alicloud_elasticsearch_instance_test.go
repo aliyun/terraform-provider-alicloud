@@ -187,7 +187,7 @@ func TestAccAliCloudElasticsearchInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.ChengDu})
 		},
 		// module name
 		IDRefreshName: resourceId,
