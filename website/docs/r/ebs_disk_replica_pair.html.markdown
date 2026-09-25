@@ -90,7 +90,7 @@ resource "alicloud_ebs_disk_replica_pair" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `bandwidth` - (Optional, ForceNew, Int) The bandwidth for asynchronous data replication between cloud disks. The unit is Kbps. Value range:
+* `bandwidth` - (Optional, Int) The bandwidth for asynchronous data replication between cloud disks. The unit is Kbps. Value range:
   - 10240 Kbps: equal to 10 Mbps.
   - 20480 Kbps: equal to 20 Mbps.
   - 51200 Kbps: equal to 50 Mbps.
@@ -99,6 +99,7 @@ The following arguments are supported:
 Default value: 10240.
 This parameter cannot be specified when the ChargeType value is PayAsYouGo The system value is 0, which indicates that the disk is dynamically allocated according to data write changes during asynchronous replication.
 * `description` - (Optional) The description of the asynchronous replication relationship. 2 to 256 English or Chinese characters in length and cannot start with' http:// 'or' https.
+* `enable_rtc` - (Optional, Bool) Whether to enable RTC. Default value: false.
 * `destination_disk_id` - (Required, ForceNew) The ID of the standby disk.
 * `destination_region_id` - (Required, ForceNew) The ID of the region to which the disaster recovery site belongs.
 * `destination_zone_id` - (Required, ForceNew) The ID of the zone to which the disaster recovery site belongs.
@@ -118,7 +119,7 @@ Default value: false.
   - Month: Month.
 
 Default value: Month.
-* `rpo` - (Optional, ForceNew, Int) The RPO value set by the consistency group in seconds. Currently only 900 seconds are supported.
+* `rpo` - (Optional, Computed, Int) The RPO value set by the consistency group in seconds. Currently only 900 seconds are supported.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `reverse_replicate` - (Optional, Available since v1.245.0) Specifies whether to enable the reverse replication sub-feature. Valid values: true and false. Default value: true.
 * `source_zone_id` - (Required, ForceNew) The ID of the zone to which the production site belongs.

@@ -175,7 +175,6 @@ func TestAccAliCloudEbsDiskReplicaPair_basic6274(t *testing.T) {
 					"description":            "ccapi-test",
 					"payment_type":           "Subscription",
 					"disk_replica_pair_name": name,
-					"rpo":                    "900",
 					"period":                 "1",
 					"bandwidth":              "102400",
 					"period_unit":            "Month",
@@ -190,7 +189,6 @@ func TestAccAliCloudEbsDiskReplicaPair_basic6274(t *testing.T) {
 						"description":            "ccapi-test",
 						"payment_type":           "Subscription",
 						"disk_replica_pair_name": name,
-						"rpo":                    "900",
 						"period":                 "1",
 						"bandwidth":              "102400",
 						"period_unit":            "Month",
@@ -250,10 +248,34 @@ func TestAccAliCloudEbsDiskReplicaPair_basic6274(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_rtc": "true",
+					"rpo":        "900",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_rtc": "true",
+						"rpo":        "900",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":  "51200",
+					"enable_rtc": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":  "51200",
+						"enable_rtc": "false",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"one_shot", "period", "period_unit", "reverse_replicate"},
+				ImportStateVerifyIgnore: []string{"one_shot", "period", "period_unit", "reverse_replicate", "rpo"},
 			},
 		},
 	})
