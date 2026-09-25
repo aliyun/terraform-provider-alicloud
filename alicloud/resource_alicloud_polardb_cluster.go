@@ -915,7 +915,16 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("security_ips")
 	}
 
-	if v, ok := d.GetOk("creation_category"); !ok || v.(string) != "Basic" {
+	// Serverless clusters (AgileServerless / SteadyServerless) manage node count
+	// dynamically through ModifyDBClusterServerlessConf (scale_min, scale_max,
+	// scale_ro_num_min/max, ...). CreateDBNodes / DeleteDBNodes on a serverless
+	// cluster are rejected by the backend with OperationDenied.ServerlessDbNode,
+	// so skip the db_node_count branch when the configured serverless_type
+	// indicates a serverless cluster.
+	if st, ok := d.GetOk("serverless_type"); ok && (st.(string) == "AgileServerless" || st.(string) == "SteadyServerless") {
+		// db_node_count for serverless clusters is read-only; node scaling is
+		// handled by the ModifyDBClusterServerlessConf branch below.
+	} else if v, ok := d.GetOk("creation_category"); !ok || v.(string) != "Basic" {
 		if d.HasChange("db_node_count") {
 			cluster, err := polarDBService.DescribePolarDBCluster(d.Id())
 			if err != nil {
