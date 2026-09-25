@@ -233,7 +233,7 @@ func TestUnitAlicloudRAMSecurityPreference(t *testing.T) {
 	ReadMockResponse := map[string]interface{}{
 		//GetSecurityPreference
 		"SecurityPreference": map[string]interface{}{
-			"AccessKeyPreference": map[string]interface{}{"AllowUserToManageAccessKeys": false},
+			"AccessKeyPreference": map[string]interface{}{"AllowUserToManageAccessKeys": false, "AllowUserToManageServiceCredentials": false},
 			"LoginProfilePreference": map[string]interface{}{
 				"AllowUserToChangePassword": false,
 				"EnableSaveMFATicket":       false,
@@ -883,3 +883,60 @@ variable "name" {
 }
 
 // Test Ram SecurityPreference. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudRamSecurityPreference_serviceCredentials(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_security_preference.default"
+	ra := resourceAttrInit(resourceId, AlicloudRamSecurityPreferenceServiceCredentialsMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamSecurityPreference")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRamSecurityPreferenceBasicDependence9192)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_user_to_manage_service_credentials": "true",
+					"allow_user_to_manage_access_keys":         "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_user_to_manage_service_credentials": "true",
+						"allow_user_to_manage_access_keys":         "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_user_to_manage_service_credentials": "false",
+					"allow_user_to_manage_access_keys":         "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_user_to_manage_service_credentials": "false",
+						"allow_user_to_manage_access_keys":         "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudRamSecurityPreferenceServiceCredentialsMap = map[string]string{}
