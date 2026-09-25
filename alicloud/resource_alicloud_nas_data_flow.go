@@ -62,6 +62,42 @@ func resourceAlicloudNasDataFlow() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"source_storage_path": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"file_system_path": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"auto_refresh_policy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"None", "ImportChanged"}, false),
+			},
+			"auto_refresh_interval": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"auto_refresh": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"refresh_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -95,6 +131,31 @@ func resourceAlicloudNasDataFlowCreate(d *schema.ResourceData, meta interface{})
 		request["SourceSecurityType"] = v
 	}
 	request["SourceStorage"] = d.Get("source_storage")
+	if v, ok := d.GetOk("source_storage_path"); ok {
+		request["SourceStoragePath"] = v
+	}
+	if v, ok := d.GetOk("file_system_path"); ok {
+		request["FileSystemPath"] = v
+	}
+	if v, ok := d.GetOk("auto_refresh_policy"); ok {
+		request["AutoRefreshPolicy"] = v
+	}
+	if v, ok := d.GetOkExists("auto_refresh_interval"); ok {
+		request["AutoRefreshInterval"] = v
+	}
+	if v, ok := d.GetOk("auto_refresh"); ok {
+		autoRefreshsMaps := make([]map[string]interface{}, 0)
+		for _, raw := range v.([]interface{}) {
+			if raw == nil {
+				continue
+			}
+			m := raw.(map[string]interface{})
+			autoRefreshsMaps = append(autoRefreshsMaps, map[string]interface{}{
+				"RefreshPath": m["refresh_path"],
+			})
+		}
+		request["AutoRefreshs"] = autoRefreshsMaps
+	}
 	request["Throughput"] = d.Get("throughput")
 	request["ClientToken"] = buildClientToken("CreateDataFlow")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -141,6 +202,27 @@ func resourceAlicloudNasDataFlowRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("fset_id", object["FsetId"])
 	d.Set("source_security_type", object["SourceSecurityType"])
 	d.Set("source_storage", object["SourceStorage"])
+	d.Set("source_storage_path", object["SourceStoragePath"])
+	d.Set("file_system_path", object["FileSystemPath"])
+	d.Set("auto_refresh_policy", object["AutoRefreshPolicy"])
+	d.Set("auto_refresh_interval", formatInt(object["AutoRefreshInterval"]))
+	autoRefreshList := make([]map[string]interface{}, 0)
+	if ar, ok := object["AutoRefresh"]; ok && ar != nil {
+		if arMap, ok := ar.(map[string]interface{}); ok {
+			if innerList, ok := arMap["AutoRefresh"].([]interface{}); ok {
+				for _, item := range innerList {
+					if m, ok := item.(map[string]interface{}); ok {
+						autoRefreshList = append(autoRefreshList, map[string]interface{}{
+							"refresh_path": m["RefreshPath"],
+						})
+					}
+				}
+			}
+		}
+	}
+	if err := d.Set("auto_refresh", autoRefreshList); err != nil {
+		return WrapError(err)
+	}
 	d.Set("status", object["Status"])
 	d.Set("throughput", formatInt(object["Throughput"]))
 	return nil
@@ -271,6 +353,102 @@ func resourceAlicloudNasDataFlowUpdate(d *schema.ResourceData, meta interface{})
 				}
 			}
 			d.SetPartial("status")
+		}
+	}
+
+	if d.HasChange("auto_refresh") || d.HasChange("auto_refresh_policy") || d.HasChange("auto_refresh_interval") {
+		if d.HasChange("auto_refresh") {
+			// AutoRefresh list changed: apply the full new auto refresh configuration via ApplyDataFlowAutoRefresh.
+			request := map[string]interface{}{
+				"DataFlowId":   parts[1],
+				"FileSystemId": parts[0],
+			}
+			if v, ok := d.GetOk("auto_refresh_policy"); ok {
+				request["AutoRefreshPolicy"] = v
+			}
+			if v, ok := d.GetOkExists("auto_refresh_interval"); ok {
+				request["AutoRefreshInterval"] = v
+			}
+			autoRefreshsMaps := make([]map[string]interface{}, 0)
+			if v, ok := d.GetOk("auto_refresh"); ok {
+				for _, raw := range v.([]interface{}) {
+					if raw == nil {
+						continue
+					}
+					m := raw.(map[string]interface{})
+					autoRefreshsMaps = append(autoRefreshsMaps, map[string]interface{}{
+						"RefreshPath": m["refresh_path"],
+					})
+				}
+			}
+			request["AutoRefreshs"] = autoRefreshsMaps
+			if v, ok := d.GetOkExists("dry_run"); ok {
+				request["DryRun"] = v
+			}
+			action := "ApplyDataFlowAutoRefresh"
+			request["ClientToken"] = buildClientToken("ApplyDataFlowAutoRefresh")
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nasService.NasDataFlowStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("auto_refresh")
+			d.SetPartial("auto_refresh_policy")
+			d.SetPartial("auto_refresh_interval")
+		} else {
+			// Only AutoRefreshPolicy or AutoRefreshInterval changed: modify via ModifyDataFlowAutoRefresh.
+			request := map[string]interface{}{
+				"DataFlowId":   parts[1],
+				"FileSystemId": parts[0],
+			}
+			if v, ok := d.GetOk("auto_refresh_policy"); ok {
+				request["AutoRefreshPolicy"] = v
+			}
+			if v, ok := d.GetOkExists("auto_refresh_interval"); ok {
+				request["AutoRefreshInterval"] = v
+			}
+			if v, ok := d.GetOkExists("dry_run"); ok {
+				request["DryRun"] = v
+			}
+			action := "ModifyDataFlowAutoRefresh"
+			request["ClientToken"] = buildClientToken("ModifyDataFlowAutoRefresh")
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nasService.NasDataFlowStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("auto_refresh_policy")
+			d.SetPartial("auto_refresh_interval")
 		}
 	}
 	d.Partial(false)

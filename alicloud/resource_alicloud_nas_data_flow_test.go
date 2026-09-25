@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudNASDataFlow_basic0(t *testing.T) {
+func TestAccAliCloudNASDataFlow_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_data_flow.default"
 	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
@@ -105,7 +105,7 @@ func TestAccAlicloudNASDataFlow_basic0(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudNASDataFlow_basic1(t *testing.T) {
+func TestAccAliCloudNASDataFlow_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_data_flow.default"
 	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
@@ -163,6 +163,164 @@ var AlicloudNASDataFlowMap0 = map[string]string{
 	"status":         CHECKSET,
 	"file_system_id": CHECKSET,
 	"data_flow_id":   CHECKSET,
+}
+
+func TestAccAliCloudNASDataFlow_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_data_flow.default"
+	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudNASDataFlowMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasDataFlow")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snasdataflow%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNASDataFlowBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"fset_id":               "${alicloud_nas_fileset.default.fileset_id}",
+					"throughput":            "600",
+					"source_storage":        "oss://${alicloud_oss_bucket.default.bucket}",
+					"file_system_id":        "${alicloud_nas_file_system.default.id}",
+					"source_storage_path":   "/source-path/",
+					"file_system_path":      "/fs-path/",
+					"auto_refresh_policy":   "ImportChanged",
+					"auto_refresh_interval": 10,
+					"auto_refresh": []map[string]interface{}{
+						{
+							"refresh_path": "/refresh-path-1/",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"fset_id":               CHECKSET,
+						"throughput":            "600",
+						"source_storage":        CHECKSET,
+						"file_system_id":        CHECKSET,
+						"source_storage_path":   "/source-path/",
+						"file_system_path":      "/fs-path/",
+						"auto_refresh_policy":   "ImportChanged",
+						"auto_refresh_interval": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_refresh_policy":   "None",
+					"auto_refresh_interval": 15,
+					"auto_refresh": []map[string]interface{}{
+						{
+							"refresh_path": "/refresh-path-updated/",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_refresh_policy":   "None",
+						"auto_refresh_interval": "15",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_refresh"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudNASDataFlow_autoRefreshOrder covers the TypeList ordering contract
+// for the auto_refresh field: apply order A, then a plan-only reorder to B with a
+// non-empty plan, then apply B and require an empty post-apply plan.
+func TestAccAliCloudNASDataFlow_autoRefreshOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_data_flow.default"
+	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudNASDataFlowMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasDataFlow")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snasdataflow%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNASDataFlowBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"fset_id":               "${alicloud_nas_fileset.default.fileset_id}",
+					"throughput":            "600",
+					"source_storage":        "oss://${alicloud_oss_bucket.default.bucket}",
+					"file_system_id":        "${alicloud_nas_file_system.default.id}",
+					"source_storage_path":   "/source-path/",
+					"file_system_path":      "/fs-path/",
+					"auto_refresh_policy":   "ImportChanged",
+					"auto_refresh_interval": 10,
+					"auto_refresh": []map[string]interface{}{
+						{
+							"refresh_path": "/refresh-order-1/",
+						},
+						{
+							"refresh_path": "/refresh-order-2/",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_refresh_policy":   "ImportChanged",
+						"auto_refresh_interval": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_refresh": []map[string]interface{}{
+						{
+							"refresh_path": "/refresh-order-2/",
+						},
+						{
+							"refresh_path": "/refresh-order-1/",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_refresh": []map[string]interface{}{
+						{
+							"refresh_path": "/refresh-order-2/",
+						},
+						{
+							"refresh_path": "/refresh-order-1/",
+						},
+					},
+				}),
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
 }
 
 func AlicloudNASDataFlowBasicDependence0(name string) string {
@@ -253,11 +411,22 @@ func TestUnitAlicloudNASDataFlow(t *testing.T) {
 		"DataFlowInfo": map[string]interface{}{
 			"DataFlow": []interface{}{
 				map[string]interface{}{
-					"DataFlowId":   "MockDataFlowId",
-					"Status":       "Running",
-					"FileSystemId": "file_system_id",
-					"Throughput":   600,
-					"FsetId":       "fset_id",
+					"DataFlowId":          "MockDataFlowId",
+					"Status":              "Running",
+					"FileSystemId":        "file_system_id",
+					"Throughput":          600,
+					"FsetId":              "fset_id",
+					"SourceStoragePath":   "/source-path/",
+					"FileSystemPath":      "/fs-path/",
+					"AutoRefreshPolicy":   "ImportChanged",
+					"AutoRefreshInterval": 10,
+					"AutoRefresh": map[string]interface{}{
+						"AutoRefresh": []interface{}{
+							map[string]interface{}{
+								"RefreshPath": "/refresh-path-1/",
+							},
+						},
+					},
 				},
 			},
 		},
@@ -297,11 +466,22 @@ func TestUnitAlicloudNASDataFlow(t *testing.T) {
 				"DataFlowInfo": map[string]interface{}{
 					"DataFlow": []interface{}{
 						map[string]interface{}{
-							"DataFlowId":   "MockDataFlowId",
-							"Status":       "Stopped",
-							"FileSystemId": "file_system_id",
-							"Throughput":   600,
-							"FsetId":       "fset_id",
+							"DataFlowId":          "MockDataFlowId",
+							"Status":              "Stopped",
+							"FileSystemId":        "file_system_id",
+							"Throughput":          600,
+							"FsetId":              "fset_id",
+							"SourceStoragePath":   "/source-path/",
+							"FileSystemPath":      "/fs-path/",
+							"AutoRefreshPolicy":   "ImportChanged",
+							"AutoRefreshInterval": 10,
+							"AutoRefresh": map[string]interface{}{
+								"AutoRefresh": []interface{}{
+									map[string]interface{}{
+										"RefreshPath": "/refresh-path-1/",
+									},
+								},
+							},
 						},
 					},
 				},

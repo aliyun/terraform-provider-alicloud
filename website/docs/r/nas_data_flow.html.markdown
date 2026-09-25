@@ -91,25 +91,40 @@ resource "alicloud_nas_data_flow" "example" {
 
 The following arguments are supported:
 
+* `auto_refresh` - (Optional, Computed) The configuration of auto refresh. See [`auto_refresh`](#auto_refresh) below.
+* `auto_refresh_interval` - (Optional, Computed) The automatic update interval. CPFS checks whether data is updated in the directory at the interval specified by this parameter. Unit: minutes. Valid values: `10` to `525600`. Default value: `10`.
+* `auto_refresh_policy` - (Optional, Computed) The automatic update policy. Valid values: `None`, `ImportChanged`.
 * `description` - (Optional) The Description of the data flow. Restrictions:
   - `2` ~ `128` English or Chinese characters in length.
   - Must start with uppercase or lowercase letters or Chinese, and cannot start with `http://` and `https://`.
   - Can contain numbers, semicolons (:), underscores (_), or dashes (-).
 * `dry_run` - (Optional) The dry run.
 * `file_system_id` - (Required, ForceNew) The ID of the file system.
+* `file_system_path` - (Optional, ForceNew, Computed) The directory in the CPFS file system.
 * `fset_id` - (Required, ForceNew) The ID of the Fileset.
 * `source_security_type` - (Optional, ForceNew) The security protection type of the source storage. If the source storage must be accessed through security protection, specify the security protection type of the source storage. Value:
   - `NONE` (default): Indicates that the source storage does not need to be accessed through security protection.
   - `SSL`: Protects access through SSL certificates.
-* `source_storage` - (Required, ForceNew) The access path of the source store. Format: `<storage type>://<path>`. Among them:
-  - storage type: currently only OSS is supported.
-  - path: the bucket name of OSS.
+* `source_storage` - (Required, ForceNew) The access path of the source storage. Format: `<storage type>://[<account id>:]<path>`. Parameters:
+  - storage type: Only OSS is supported.
+  - account id (optional): the UID of the account of the source storage. This parameter is required when you use OSS buckets across accounts.
+  - path: the name of the OSS bucket.
     - Only lowercase letters, numbers, and dashes (-) are supported and must start and end with lowercase letters or numbers.
     - `8` to `128` English characters in length.
     - Use UTF-8 coding.
     - Cannot start with `http://` and `https://`.
+* `source_storage_path` - (Optional, ForceNew, Computed) The access path in the source storage.
 * `status` - (Optional) The status of the Data flow. Valid values: `Running`, `Stopped`.
 * `throughput` - (Required) The maximum transmission bandwidth of data flow, unit: `MB/s`. Valid values: `1200`, `1500`, `600`. **NOTE:** The transmission bandwidth of data flow must be less than the IO bandwidth of the file system.
+
+### `auto_refresh`
+
+The auto_refresh block supports the following:
+
+* `refresh_path` - (Optional) Auto refresh directory. CPFS only automatically checks whether the source data in the directory is updated and automatically imports the updated data. Restrictions:
+  - `2` to `1024` characters in length.
+  - Use UTF-8 coding.
+  - Must start and end with `/`.
 
 ## Attributes Reference
 
