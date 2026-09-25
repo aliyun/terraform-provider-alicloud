@@ -96,6 +96,16 @@ func resourceAliCloudNasFileSystem() *schema.Resource {
 							Optional: true,
 							Computed: true,
 						},
+						"enable_abe": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"vsc_access_point_access_only": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -365,6 +375,8 @@ func resourceAliCloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 	}
 	if len(optionsRaw) > 0 {
 		optionsMap["enable_oplock"] = optionsRaw["EnableOplock"]
+		optionsMap["enable_abe"] = optionsRaw["EnableABE"]
+		optionsMap["vsc_access_point_access_only"] = optionsRaw["VscAccessPointAccessOnly"]
 
 		optionsMaps = append(optionsMaps, optionsMap)
 	}
@@ -686,6 +698,14 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 			enableOplock1, _ := jsonpath.Get("$[0].enable_oplock", v)
 			if enableOplock1 != nil && enableOplock1 != "" {
 				options["EnableOplock"] = enableOplock1
+			}
+			enableAbe1, _ := jsonpath.Get("$[0].enable_abe", v)
+			if enableAbe1 != nil && enableAbe1 != "" {
+				options["EnableABE"] = enableAbe1
+			}
+			vscAccessPointAccessOnly1, _ := jsonpath.Get("$[0].vsc_access_point_access_only", v)
+			if vscAccessPointAccessOnly1 != nil && vscAccessPointAccessOnly1 != "" {
+				options["VscAccessPointAccessOnly"] = vscAccessPointAccessOnly1
 			}
 
 			optionsJson, err := json.Marshal(options)
