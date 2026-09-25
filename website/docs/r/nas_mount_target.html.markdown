@@ -77,12 +77,9 @@ resource "alicloud_nas_mount_target" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+* `access_point_access_only` - (Optional, Computed) Whether the VPC mount target only allows access through access points. This parameter only takes effect for CPFS file systems.
 * `access_group_name` - (Optional) The name of the permission group.
-* `dual_stack` - (Optional, Available since v1.247.0) Whether to create an IPv6 mount point.
-
-Value:
-  - true: create
-  - false (default): not created
+* `dual_stack` - (Optional, Available since v1.247.0) Whether to create an IPv6 mount point. Valid values: `true` (create), `false` (default, not created).
 
 -> **NOTE:**  currently, only extreme NAS supports IPv6 function in various regions in mainland China, and IPv6 function needs to be turned on for this file system.
 
