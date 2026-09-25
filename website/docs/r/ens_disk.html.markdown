@@ -48,14 +48,15 @@ The following arguments are supported:
 * `disk_name` - (Optional) The name of the disk.
 * `encrypted` - (Optional, ForceNew) Specifies whether to encrypt the new system disk. Valid values: `true`, `false`(default).
 * `ens_region_id` - (Required, ForceNew) The ID of the edge node.
+* `instance_billing_cycle` - (Optional, ForceNew) The billing cycle of the instance. Valid values: `Hour`, `Day`, `Month`.
 * `kms_key_id` - (Optional, ForceNew) The ID of the KMS key used by the cloud disk. If `encrypted` is set to `true`, the service default key is used when KMSKeyId is empty.
 * `payment_type` - (Required, ForceNew) The billing method of the instance. Valid values: `PayAsYouGo`.
 * `size` - (Optional, Int) The size of the disk instance. Unit: GiB.
 * `snapshot_id` - (Optional, ForceNew) The ID of the snapshot used to create the cloud disk.
 
 The SnapshotId and Size parameters have the following limitations:
-  - If the snapshot capacity corresponding to the `snapshot_id` parameter is greater than the specified `size` parameter, the Size of the cloud disk created is the Size of the specified snapshot.
-  - If the snapshot capacity corresponding to the `snapshot_id` parameter is less than the set `size` parameter value, the Size of the cloud disk created is the specified `size` parameter value.
+- If the snapshot capacity corresponding to the `snapshot_id` parameter is greater than the specified `size` parameter, the Size of the cloud disk created is the Size of the specified snapshot.
+- If the snapshot capacity corresponding to the `snapshot_id` parameter is less than the set `size` parameter value, the Size of the cloud disk created is the specified `size` parameter value.
 * `tags` - (Optional, Map, Available since v1.248.0) The label to which the instance is bound.
 
 ## Attributes Reference
