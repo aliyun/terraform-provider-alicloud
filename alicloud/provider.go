@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_esa_transport_layer_applications":               dataSourceAliCloudEsaTransportLayerApplications(),
 			"alicloud_realtime_compute_variables":                     dataSourceAliCloudRealtimeComputeVariables(),
 			"alicloud_apig_secrets":                                   dataSourceAliCloudApigSecrets(),
 			"alicloud_threat_detection_attack_path_whitelists":        dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
