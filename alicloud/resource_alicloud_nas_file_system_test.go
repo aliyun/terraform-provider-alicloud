@@ -1307,7 +1307,9 @@ func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"options": []map[string]interface{}{
 						{
-							"enable_oplock": "true",
+							"enable_oplock":                "true",
+							"enable_abe":                   "true",
+							"vsc_access_point_access_only": "false",
 						},
 					},
 					"keytab_md5": "${var.key_tab_md5}",
@@ -1320,8 +1322,11 @@ func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"keytab_md5": CHECKSET,
-						"keytab":     CHECKSET,
+						"keytab_md5":              CHECKSET,
+						"keytab":                  CHECKSET,
+						"options.#":               "1",
+						"options.0.enable_oplock": "true",
+						"options.0.enable_abe":    "true",
 					}),
 				),
 			},
@@ -1329,7 +1334,9 @@ func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"options": []map[string]interface{}{
 						{
-							"enable_oplock": "false",
+							"enable_oplock":                "false",
+							"enable_abe":                   "false",
+							"vsc_access_point_access_only": "false",
 						},
 					},
 					"keytab_md5": "${var.key_tab_1_md5}",
@@ -1346,8 +1353,11 @@ func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"keytab_md5": CHECKSET,
-						"keytab":     CHECKSET,
+						"keytab_md5":              CHECKSET,
+						"keytab":                  CHECKSET,
+						"options.#":               "1",
+						"options.0.enable_oplock": "false",
+						"options.0.enable_abe":    "false",
 					}),
 				),
 			},
@@ -1778,6 +1788,21 @@ func TestAccAliCloudNasFileSystem_basic12188(t *testing.T) {
 						"redundancy_type":          "ZRS",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"redundancy_vswitch_ids": []string{
+						"${alicloud_vswitch.CreateVswitchD.id}", "${alicloud_vswitch.CreateVswitchC.id}", "${alicloud_vswitch.CreateVswitchF.id}"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"redundancy_vswitch_ids": []string{
+						"${alicloud_vswitch.CreateVswitchD.id}", "${alicloud_vswitch.CreateVswitchC.id}", "${alicloud_vswitch.CreateVswitchF.id}"},
+				}),
+				ExpectNonEmptyPlan: false,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

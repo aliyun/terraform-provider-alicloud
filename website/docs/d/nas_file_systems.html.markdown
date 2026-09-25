@@ -75,4 +75,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `encrypt_type` - (Optional, Available in v1.121.2+) Whether the file system is encrypted. Valid values: `0` (The file system is not encrypted), `1` (The file system is encrypted with a managed secret key), `2` (User management key).
   * `kms_key_id` - (Optional, Available in v1.140.0+) The id of the KMS key.
   * `zone_id` - (Optional, Available in v1.140.0+) The id of the zone. Each region consists of multiple isolated locations known as zones. Each zone has an independent power supply and network.
+  * `options` - (Computed, List, Available since v1.294.0) The options of the FileSystem. Each element contains the following attributes:
+    * `enable_oplock` - Whether the OpLock function is enabled.
+    * `enable_abe` - Whether the SMB ABE access control function is enabled.
+    * `vsc_access_point_access_only` - Whether the VSC mount target of the intelligent computing CPFS file system only supports access through the access point (AP) method.
  
