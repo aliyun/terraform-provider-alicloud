@@ -89,8 +89,19 @@ The following arguments are supported:
   - `2`: warning.
   - `3`: info.
 * `compliance_pack_template_id` - (Optional, ForceNew) Compliance Package Template Id.
+* `template_content` - (Optional, ForceNew) The template content of the compliance pack.
 * `config_rule_ids` - (Optional, Set, Available since v1.141.0) A list of Config Rule IDs. See [`config_rule_ids`](#config_rule_ids) below.
 * `config_rules` - (Optional, Set, Deprecated since v1.141.0) A list of Config Rules. See [`config_rules`](#config_rules) below. **NOTE:** Field `config_rules` has been deprecated from provider version 1.141.0. New field `config_rule_ids` instead.
+* `tag_key_scope` - (Optional) The tag key scope of the compliance pack.
+* `tag_value_scope` - (Optional) The tag value scope of the compliance pack.
+* `resource_ids_scope` - (Optional) The resource IDs scope of the compliance pack.
+* `exclude_resource_ids_scope` - (Optional) The exclude resource IDs scope of the compliance pack.
+* `resource_group_ids_scope` - (Optional) The resource group IDs scope of the compliance pack.
+* `exclude_resource_group_ids_scope` - (Optional) The exclude resource group IDs scope of the compliance pack.
+* `region_ids_scope` - (Optional) The region IDs scope of the compliance pack.
+* `exclude_region_ids_scope` - (Optional) The exclude region IDs scope of the compliance pack.
+* `tags_scope` - (Optional, List) The tags scope of the compliance pack. See [`tags_scope`](#tags_scope) below.
+* `exclude_tags_scope` - (Optional, List) The exclude tags scope of the compliance pack. See [`exclude_tags_scope`](#exclude_tags_scope) below.
 
 ### `config_rule_ids`
 
@@ -100,17 +111,34 @@ The config_rule_ids supports the following:
 
 ### `config_rules`
 
-The config_rules supports the following: 
+The config_rules supports the following:
 
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
 * `config_rule_parameters` - (Optional, Set) A list of Config Rule Parameters. See [`config_rule_parameters`](#config_rules-config_rule_parameters) below.
+* `config_rule_name` - (Optional) The name of the Config Rule.
+* `description` - (Optional) The description of the Config Rule.
+* `risk_level` - (Optional, Int) The risk level of the Config Rule. Valid values: `1`, `2`, `3`.
 
 ### `config_rules-config_rule_parameters`
 
-The config_rule_parameters supports the following: 
+The config_rule_parameters supports the following:
 
 * `parameter_name` - (Optional) The parameter name.
 * `parameter_value` - (Optional) The parameter value.
+
+### `tags_scope`
+
+The tags_scope supports the following:
+
+* `tag_key` - (Optional) The tag key.
+* `tag_value` - (Optional) The tag value.
+
+### `exclude_tags_scope`
+
+The exclude_tags_scope supports the following:
+
+* `tag_key` - (Optional) The tag key.
+* `tag_value` - (Optional) The tag value.
 
 ## Attributes Reference
 
@@ -118,6 +146,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Compliance Pack.
 * `status` -  The status of the Compliance Pack.
+* `template_content` - The template content of the compliance pack.
 
 ## Timeouts
 
