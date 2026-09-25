@@ -915,3 +915,109 @@ resource "alicloud_nas_access_group" "create_access_group" {
 }
 
 // Test NAS MountTarget. <<< Resource test cases, automatically generated.
+
+// TestAccAliCloudNASMountTarget_accessPointAccessOnly verifies the access_point_access_only
+// attribute, which only takes effect for CPFS file systems. The test is env-guarded and
+// skipped unless ALICLOUD_NAS_CPFS_FILE_SYSTEM_ID is set, to avoid failing CI on accounts
+// without CPFS capability.
+func TestAccAliCloudNASMountTarget_accessPointAccessOnly(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_mount_target.default"
+	ra := resourceAttrInit(resourceId, AlicloudNASMountTargetAccessPointAccessOnlyMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasMountTarget")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sNASMountTarget%d", defaultRegionToTest, rand)
+
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNASMountTargetAccessPointAccessOnlyDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithEnvVariable(t, "ALICLOUD_NAS_CPFS_FILE_SYSTEM_ID")
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"file_system_id":           "${alicloud_nas_file_system.cpfs.id}",
+					"access_group_name":        "${alicloud_nas_access_group.cpfs.access_group_name}",
+					"vswitch_id":               "${alicloud_vswitch.main.id}",
+					"vpc_id":                   "${alicloud_vpc.main.id}",
+					"network_type":             "Vpc",
+					"access_point_access_only": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"file_system_id":           "${alicloud_nas_file_system.cpfs.id}",
+					"access_group_name":        "${alicloud_nas_access_group.cpfs.access_group_name}",
+					"vswitch_id":               "${alicloud_vswitch.main.id}",
+					"vpc_id":                   "${alicloud_vpc.main.id}",
+					"network_type":             "Vpc",
+					"access_point_access_only": false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudNASMountTargetAccessPointAccessOnlyMap = map[string]string{
+	"id": CHECKSET,
+}
+
+func AlicloudNASMountTargetAccessPointAccessOnlyDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+variable "var_zone_id1" {
+  type = object({
+    zone_id1 = string
+  })
+  default = {
+    zone_id1 = "cn-beijing-g"
+  }
+}
+
+resource "alicloud_vpc" "main" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
+}
+
+resource "alicloud_vswitch" "main" {
+  vswitch_name = alicloud_vpc.main.vpc_name
+  cidr_block   = alicloud_vpc.main.cidr_block
+  vpc_id       = alicloud_vpc.main.id
+  zone_id      = var.var_zone_id1.zone_id1
+}
+
+resource "alicloud_nas_file_system" "cpfs" {
+  protocol_type    = "cpfs"
+  storage_type     = "advance_100"
+  capacity         = "3600"
+  file_system_type = "cpfs"
+  vswitch_id       = alicloud_vswitch.main.id
+  vpc_id           = alicloud_vpc.main.id
+  zone_id          = var.var_zone_id1.zone_id1
+}
+
+resource "alicloud_nas_access_group" "cpfs" {
+  access_group_name = var.name
+  access_group_type = "Vpc"
+  file_system_type  = "cpfs"
+}
+
+`, name)
+}
