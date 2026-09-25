@@ -799,3 +799,88 @@ func (s *MaxComputeServiceV2) MaxComputeTenantRoleUserAttachmentStateRefreshFunc
 }
 
 // DescribeMaxComputeTenantRoleUserAttachment >>> Encapsulated.
+// DescribeMaxComputePackage <<< Encapsulated get interface for MaxCompute Package.
+
+func (s *MaxComputeServiceV2) DescribeMaxComputePackage(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return object, WrapErrorf(fmt.Errorf("invalid resource id, expected format <project_name>:<package_name>, got %q", id), "DescribeMaxComputePackage")
+	}
+	projectName := parts[0]
+	packageName := parts[1]
+	query := make(map[string]*string)
+	// GetPackage returns the allowedProjectList for a package rather than the
+	// package itself, so the resource state is read from ListPackages by
+	// filtering installedPackages on the package name.
+	action := fmt.Sprintf("/api/v1/projects/%s/packages", projectName)
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, id)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	installedRaw, gerr := jsonpath.Get("$.data.installedPackages[*]", response)
+	if gerr != nil {
+		return object, WrapErrorf(gerr, FailedGetAttributeMsg, id, "$.data.installedPackages[*]", response)
+	}
+	installedList, ok := installedRaw.([]interface{})
+	if !ok || len(installedList) == 0 {
+		return object, WrapErrorf(NotFoundErr("Package", id), NotFoundMsg, response)
+	}
+	for _, item := range installedList {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if name, ok := m["name"].(string); ok && name == packageName {
+			return m, nil
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("Package", id), NotFoundMsg, response)
+}
+
+func (s *MaxComputeServiceV2) MaxComputePackageStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.MaxComputePackageStateRefreshFuncWithApi(id, field, failStates, s.DescribeMaxComputePackage)
+}
+
+func (s *MaxComputeServiceV2) MaxComputePackageStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeMaxComputePackage >>> Encapsulated.
