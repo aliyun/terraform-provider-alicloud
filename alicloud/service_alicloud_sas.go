@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -409,4 +410,54 @@ func (s *SasService) ThreatDetectionHoneypotProbeStateRefreshFunc(d *schema.Reso
 		}
 		return object, fmt.Sprint(object["Status"]), nil
 	}
+}
+
+func (s *SasService) DescribeThreatDetectionCustomCheckStandardPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return object, WrapError(fmt.Errorf("invalid resource id %s, expected <policy_id>:<policy_type>", id))
+	}
+	policyId := parts[0]
+	policyType := parts[1]
+
+	request := map[string]interface{}{
+		"PolicyType": policyType,
+		"PolicyId":   policyId,
+	}
+
+	var response map[string]interface{}
+	action := "ListCheckPolicies"
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Policies", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Policies", response)
+	}
+	policies, ok := v.([]interface{})
+	if !ok || len(policies) < 1 {
+		return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
+	}
+	for _, policy := range policies {
+		p := policy.(map[string]interface{})
+		if fmt.Sprint(p["PolicyId"]) == policyId {
+			return p, nil
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
 }
