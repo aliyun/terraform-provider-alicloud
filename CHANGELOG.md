@@ -1,5 +1,8 @@
 ## 1.294.0 (Unreleased)
 
+- **New Resource:** `alicloud_hologram_user`
+- **New Data Source:** `alicloud_hologram_users`
+
 ENHANCEMENTS:
 
 - resource/alicloud_polardb_cluster_endpoint: support scc_mode.
