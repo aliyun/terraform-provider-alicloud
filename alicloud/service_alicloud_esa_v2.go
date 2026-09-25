@@ -4753,3 +4753,51 @@ func (s *EsaServiceV2) EsaCustomResponseCodeRuleStateRefreshFuncWithApi(id strin
 }
 
 // DescribeEsaCustomResponseCodeRule >>> Encapsulated.
+
+// DescribeEsaAigwRecord <<< Encapsulated get interface for Esa AigwRecord.
+func (s *EsaServiceV2) DescribeEsaAigwRecord(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["InstanceId"] = parts[0]
+	query["RecordName"] = parts[1]
+
+	action := "GetAIGWRecord"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidAIGWRecord.NotFound", "20101"}) {
+			return object, WrapErrorf(NotFoundErr("EsaAigwRecord", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Content", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Content", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+// DescribeEsaAigwRecord >>> Encapsulated.
