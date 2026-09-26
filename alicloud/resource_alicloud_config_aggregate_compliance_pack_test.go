@@ -198,6 +198,7 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 					"aggregate_compliance_pack_name": name,
 					"description":                    name,
 					"risk_level":                     "1",
+					"template_content":               "",
 					"config_rules": []map[string]interface{}{
 						{
 							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
@@ -249,6 +250,9 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 					"config_rules": []map[string]interface{}{
 						{
 							"managed_rule_identifier": "ecs-snapshot-retention-days",
+							"config_rule_name":        "tf-test-snapshot-rule",
+							"description":             "test snapshot retention",
+							"risk_level":              "2",
 							"config_rule_parameters": []map[string]interface{}{
 								{
 									"parameter_name":  "days",
@@ -278,6 +282,9 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 					"config_rules": []map[string]interface{}{
 						{
 							"managed_rule_identifier": "ecs-snapshot-retention-days",
+							"config_rule_name":        "tf-test-snapshot-rule-update",
+							"description":             "test snapshot retention updated",
+							"risk_level":              "3",
 							"config_rule_parameters": []map[string]interface{}{
 								{
 									"parameter_name":  "days",
@@ -292,6 +299,87 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 						"config_rules.#": "1",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tag_key_scope":                    "env",
+					"tag_value_scope":                  "prod",
+					"resource_ids_scope":               "[\"i-test\"]",
+					"exclude_resource_ids_scope":       "[\"i-test2\"]",
+					"resource_group_ids_scope":         "rg-test",
+					"exclude_resource_group_ids_scope": "rg-test2",
+					"region_ids_scope":                 "cn-hangzhou",
+					"exclude_region_ids_scope":         "cn-shanghai",
+					"tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "env",
+							"tag_value": "prod",
+						},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "team",
+							"tag_value": "dev",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_key_scope":                    "env",
+						"tag_value_scope":                  "prod",
+						"region_ids_scope":                 "cn-hangzhou",
+						"exclude_region_ids_scope":         "cn-shanghai",
+						"resource_group_ids_scope":         "rg-test",
+						"exclude_resource_group_ids_scope": "rg-test2",
+						"tags_scope.#":                     "1",
+						"tags_scope.0.tag_key":             "env",
+						"tags_scope.0.tag_value":           "prod",
+						"exclude_tags_scope.#":             "1",
+						"exclude_tags_scope.0.tag_key":     "team",
+						"exclude_tags_scope.0.tag_value":   "dev",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tag_key_scope":                    "team",
+					"tag_value_scope":                  "dev",
+					"resource_ids_scope":               "[\"i-test3\"]",
+					"exclude_resource_ids_scope":       "[\"i-test4\"]",
+					"resource_group_ids_scope":         "rg-test3",
+					"exclude_resource_group_ids_scope": "rg-test4",
+					"region_ids_scope":                 "cn-shanghai",
+					"exclude_region_ids_scope":         "cn-beijing",
+					"tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "team",
+							"tag_value": "dev",
+						},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "env",
+							"tag_value": "prod",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_key_scope":                "team",
+						"tag_value_scope":              "dev",
+						"region_ids_scope":             "cn-shanghai",
+						"exclude_region_ids_scope":     "cn-beijing",
+						"tags_scope.#":                 "1",
+						"tags_scope.0.tag_key":         "team",
+						"exclude_tags_scope.#":         "1",
+						"exclude_tags_scope.0.tag_key": "env",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
