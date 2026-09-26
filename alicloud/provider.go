@@ -978,6 +978,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_das_sql_log_configs":                              dataSourceAliCloudDasSqlLogConfigs(),
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 			"alicloud_sls_metric_stores":                                dataSourceAliCloudSlsMetricStores(),
+			"alicloud_pai_llm_trace_evals":                              dataSourceAlicloudPaiLlmTraceEvals(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_realtime_compute_variable":                            resourceAliCloudRealtimeComputeVariable(),
@@ -1255,6 +1256,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_data_works_data_source":                               resourceAliCloudDataWorksDataSource(),
 			"alicloud_data_works_project_member":                            resourceAliCloudDataWorksProjectMember(),
 			"alicloud_pai_workspace_workspace":                              resourceAliCloudPaiWorkspaceWorkspace(),
+			"alicloud_pai_llm_trace_eval":                                  resourceAliCloudPaiLlmTraceEval(),
 			"alicloud_gpdb_database":                                        resourceAliCloudGpdbDatabase(),
 			"alicloud_sls_collection_policy":                                resourceAliCloudSlsCollectionPolicy(),
 			"alicloud_gpdb_db_instance_ip_array":                            resourceAliCloudGpdbDBInstanceIPArray(),
