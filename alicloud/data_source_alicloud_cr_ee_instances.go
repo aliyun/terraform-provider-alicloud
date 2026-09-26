@@ -1,25 +1,135 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"regexp"
-	"sort"
-	"strings"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudCrEEInstances() *schema.Resource {
+func dataSourceAliCloudCrInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCrEEInstancesRead,
+		Read: dataSourceAliCloudCrInstanceRead,
 		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringIsValidRegExp,
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"instance_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"instances": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"end_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_endpoints": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"domains": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"type": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"domain": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
+									"endpoint_type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"enable": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_issue": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"modified_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"payment_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"renew_period": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"renewal_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -30,115 +140,25 @@ func dataSourceAlicloudCrEEInstances() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-			"tags": tagsSchema(),
-
-			// Computed values
-			"ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"names": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"instances": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"region": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"specification": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"namespace_quota": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"namespace_usage": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"repo_quota": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"repo_usage": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"vpc_endpoints": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-						"public_endpoints": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-						"authorization_token": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"temp_username": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"tags": {
-							Type:     schema.TypeMap,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-					},
-				},
-			},
 		},
 	}
 }
 
-func dataSourceAlicloudCrEEInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	crService := &CrService{client}
-	crServiceV2 := CrServiceV2{client}
-	pageNo := 1
-	pageSize := 50
 
-	var instances []cr_ee.InstancesItem
-	for {
-		resp, err := crService.ListCrEEInstances(pageNo, pageSize)
+	var objects []map[string]interface{}
+	var nameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		instances = append(instances, resp.Instances...)
-		if len(resp.Instances) < pageSize {
-			break
-		}
-		pageNo++
+		nameRegex = r
 	}
 
-	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		nameRegex = regexp.MustCompile(v.(string))
-	}
-
-	var idsMap map[string]string
+	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
-		idsMap = make(map[string]string)
 		for _, vv := range v.([]interface{}) {
 			if vv == nil {
 				continue
@@ -147,148 +167,173 @@ func dataSourceAlicloudCrEEInstancesRead(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	var targetInstances []cr_ee.InstancesItem
-	for _, instance := range instances {
-		if nameRegex != nil && !nameRegex.MatchString(instance.InstanceName) {
-			continue
-		}
-
-		if idsMap != nil && idsMap[instance.InstanceId] == "" {
-			continue
-		}
-
-		targetInstances = append(targetInstances, instance)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "ListInstance"
+	var err error
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["InstanceName"] = d.Get("instance_name")
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
+	request["PageSize"] = PageSizeLarge
+	request["PageNo"] = 1
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
+			response, err = client.RpcPost("cr", "2018-12-01", action, query, request, true)
 
-	instances = targetInstances
-
-	sort.SliceStable(instances, func(i, j int) bool {
-		return instances[i].CreateTime < instances[j].CreateTime
-	})
-
-	var (
-		ids          []string
-		names        []string
-		instanceMaps []map[string]interface{}
-	)
-
-	tagsFilter, tagsFilterSet := d.GetOk("tags")
-
-	for _, instance := range instances {
-		instanceTags, err := crServiceV2.ListCrInstanceTags(instance.InstanceId)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		if tagsFilterSet {
-			matched := true
-			for key, value := range tagsFilter.(map[string]interface{}) {
-				if v, ok := instanceTags[key]; !ok || fmt.Sprint(v) != fmt.Sprint(value) {
-					matched = false
-					break
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
 				}
+				return resource.NonRetryableError(err)
 			}
-			if !matched {
-				continue
-			}
-		}
-
-		usageResp, err := crService.GetCrEEInstanceUsage(instance.InstanceId)
-		if err != nil {
-			return WrapError(err)
-		}
-		endpointResp, err := crService.ListCrEEInstanceEndpoint(instance.InstanceId)
-		if err != nil {
-			// INSTANCE_STATUS_NOT_SUPPORT (the instance does not support managed public/VPC
-			// endpoints, e.g. retired instances) and INSTANCE_NOT_EXIST are per-instance
-			// conditions: the instance was enumerated by ListInstance, so it exists; the
-			// managed-endpoint feature is simply unavailable for it. Keep the instance in
-			// state with empty endpoint fields instead of dropping it or failing the read.
-			if !(IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) || strings.Contains(err.Error(), "INSTANCE_STATUS_NOT_SUPPORT")) {
-				return WrapError(err)
-			}
-			endpointResp = nil
-		}
-
-		var (
-			publicDomains []string
-			vpcDomains    []string
-		)
-		if endpointResp != nil {
-			for _, endpoint := range endpointResp.Endpoints {
-				if !endpoint.Enable {
-					continue
-				}
-				if endpoint.EndpointType == "internet" {
-					for _, d := range endpoint.Domains {
-						publicDomains = append(publicDomains, d.Domain)
-					}
-				} else if endpoint.EndpointType == "vpc" {
-					for _, d := range endpoint.Domains {
-						vpcDomains = append(vpcDomains, d.Domain)
-					}
-				}
-			}
-		}
-
-		mapping := make(map[string]interface{})
-		mapping["id"] = instance.InstanceId
-		mapping["name"] = instance.InstanceName
-		mapping["region"] = instance.RegionId
-		mapping["specification"] = instance.InstanceSpecification
-		mapping["namespace_quota"] = usageResp.NamespaceQuota
-		mapping["namespace_usage"] = usageResp.NamespaceUsage
-		mapping["repo_quota"] = usageResp.RepoQuota
-		mapping["repo_usage"] = usageResp.RepoUsage
-		mapping["vpc_endpoints"] = vpcDomains
-		mapping["public_endpoints"] = publicDomains
-		mapping["tags"] = instanceTags
-
-		ids = append(ids, instance.InstanceId)
-		names = append(names, instance.InstanceName)
-
-		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			instanceMaps = append(instanceMaps, mapping)
-			continue
-		}
-
-		response := &cr_ee.GetAuthorizationTokenResponse{}
-		request := cr_ee.CreateGetAuthorizationTokenRequest()
-		request.InstanceId = instance.InstanceId
-		action := request.GetActionName()
-
-		raw, err := client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-			return creeClient.GetAuthorizationToken(request)
+			addDebug(action, response, request)
+			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "data_alicloud_cr_ee_instances", action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, raw, request.RpcRequest, request)
 
-		response, _ = raw.(*cr_ee.GetAuthorizationTokenResponse)
-		if !response.GetAuthorizationTokenIsSuccess {
-			return WrapErrorf(err, DefaultErrorMsg, "data_alicloud_cr_ee_instances", action, AlibabaCloudSdkGoERROR)
+		resp, _ := jsonpath.Get("$.Instances[*]", response)
+
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if nameRegex != nil && !nameRegex.MatchString(fmt.Sprint(item["InstanceName"])) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["InstanceId"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
 		}
-		mapping["authorization_token"] = response.AuthorizationToken
-		mapping["temp_username"] = response.TempUsername
 
-		instanceMaps = append(instanceMaps, mapping)
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNo"] = request["PageNo"].(int) + 1
 	}
 
-	d.SetId(dataResourceIdHash(names))
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, objectRaw := range objects {
+		mapping := map[string]interface{}{}
+
+		mapping["id"] = objectRaw["InstanceId"]
+
+		mapping["create_time"] = objectRaw["CreateTime"]
+		mapping["instance_issue"] = objectRaw["InstanceIssue"]
+		mapping["instance_name"] = objectRaw["InstanceName"]
+		mapping["modified_time"] = formatInt(objectRaw["ModifiedTime"])
+		mapping["region_id"] = objectRaw["RegionId"]
+		mapping["resource_group_id"] = objectRaw["ResourceGroupId"]
+		mapping["instance_id"] = objectRaw["InstanceId"]
+
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(mapping["id"]))
+			names = append(names, objectRaw["InstanceName"])
+			s = append(s, mapping)
+			continue
+		}
+
+		id := fmt.Sprint(objectRaw["InstanceId"])
+		mapping, err = dataSourceAliCloudCrInstanceReadDescription(d, id, mapping, meta)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, objectRaw["InstanceName"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("instances", instanceMaps); err != nil {
+	if err := d.Set("instances", s); err != nil {
 		return WrapError(err)
 	}
 
-	if output, ok := d.GetOk("output_file"); ok {
-		writeToFile(output.(string), instanceMaps)
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
+	}
+	return nil
+}
+
+func dataSourceAliCloudCrInstanceReadDescription(d *schema.ResourceData, id string, object map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	client := meta.(*connectivity.AliyunClient)
+
+	crServiceV2 := CrServiceV2{client}
+	getResp, err := crServiceV2.DescribeCrInstance(id)
+	if err != nil {
+		return nil, WrapError(err)
 	}
 
-	return nil
+	// Merge additional fields from Get API response to mapping
+	// Reuse the response mapping template from Resource's read function
+	mapping := object
+	objectRaw := getResp
+
+	mapping["create_time"] = objectRaw["CreateTime"]
+	mapping["instance_issue"] = objectRaw["InstanceIssue"]
+	mapping["instance_name"] = objectRaw["InstanceName"]
+	mapping["modified_time"] = objectRaw["ModifiedTime"]
+	mapping["resource_group_id"] = objectRaw["ResourceGroupId"]
+	mapping["status"] = objectRaw["InstanceStatus"]
+	mapping["instance_id"] = objectRaw["InstanceId"]
+
+	objectRaw = getResp
+
+	mapping["create_time"] = objectRaw["CreateTime"]
+	mapping["end_time"] = objectRaw["EndTime"]
+	mapping["payment_type"] = objectRaw["SubscriptionType"]
+	mapping["region_id"] = objectRaw["Region"]
+	mapping["renew_period"] = objectRaw["RenewalDuration"]
+	mapping["renewal_status"] = objectRaw["RenewStatus"]
+	mapping["instance_id"] = objectRaw["InstanceID"]
+
+	objectRaw = getResp
+
+	endpointsRaw := objectRaw["Endpoints"]
+	instanceEndpointsMaps := make([]map[string]interface{}, 0)
+	if endpointsRaw != nil {
+		for _, endpointsChildRaw := range convertToInterfaceArray(endpointsRaw) {
+			instanceEndpointsMap := make(map[string]interface{})
+			endpointsChildRaw := endpointsChildRaw.(map[string]interface{})
+			instanceEndpointsMap["enable"] = endpointsChildRaw["Enable"]
+			instanceEndpointsMap["endpoint_type"] = endpointsChildRaw["EndpointType"]
+
+			domainsRaw := endpointsChildRaw["Domains"]
+			domainsMaps := make([]map[string]interface{}, 0)
+			if domainsRaw != nil {
+				for _, domainsChildRaw := range convertToInterfaceArray(domainsRaw) {
+					domainsMap := make(map[string]interface{})
+					domainsChildRaw := domainsChildRaw.(map[string]interface{})
+					domainsMap["domain"] = domainsChildRaw["Domain"]
+					domainsMap["type"] = domainsChildRaw["Type"]
+
+					domainsMaps = append(domainsMaps, domainsMap)
+				}
+			}
+			instanceEndpointsMap["domains"] = domainsMaps
+			instanceEndpointsMaps = append(instanceEndpointsMaps, instanceEndpointsMap)
+		}
+	}
+	mapping["instance_endpoints"] = instanceEndpointsMaps
+
+	return mapping, nil
 }
