@@ -303,6 +303,7 @@ var productCodeToLocationCode = map[string]string{
 	"quotas":                  "quotas",            //Quotas
 	"market":                  "market",            //Market
 	"aiworkspace":             "paiworkspace",      //PAIWorkspace
+	"pai_dsw":                 "paidsw",            //PaiDsw
 	"vpcipam":                 "vpcipam",           //VpcIpam
 	"gwlb":                    "gwlb",              // GWLB
 	"esa":                     "dcdnservices",      // ESA
@@ -494,6 +495,7 @@ var regularProductEndpoint = map[string]string{
 	"quickbi_public":       "quickbi.%s.aliyuncs.com",
 	"ddosbgp":              "ddosbgp.%s.aliyuncs.com",
 	"apig":                 "apig.%s.aliyuncs.com",
+	"pai_dsw":              "pai-dsw.%s.aliyuncs.com",
 	"dds":                  "mongodb.%s.aliyuncs.com",
 	"cloudcontrol":         "cloudcontrol.aliyuncs.com",
 	"bpstudio":             "bpstudio.cn-hangzhou.aliyuncs.com",
