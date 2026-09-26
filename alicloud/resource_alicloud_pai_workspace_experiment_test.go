@@ -38,6 +38,12 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 					"artifact_uri":    "oss://yyt-409262.oss-cn-hangzhou.aliyuncs.com/test/",
 					"experiment_name": name,
 					"workspace_id":    "${alicloud_pai_workspace_workspace.defaultDI9fsL.id}",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "team",
+							"value": "dev",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -45,6 +51,9 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 						"artifact_uri":    "oss://yyt-409262.oss-cn-hangzhou.aliyuncs.com/test/",
 						"experiment_name": name,
 						"workspace_id":    CHECKSET,
+						"labels.#":        "1",
+						"labels.0.key":    "team",
+						"labels.0.value":  "dev",
 					}),
 				),
 			},
@@ -52,11 +61,100 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"accessibility":   "PUBLIC",
 					"experiment_name": name + "_update",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "env",
+							"value": "prod",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"accessibility":   "PUBLIC",
 						"experiment_name": name + "_update",
+						"labels.#":        "1",
+						"labels.0.key":    "env",
+						"labels.0.value":  "prod",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "alpha",
+							"value": "one",
+						},
+						{
+							"key":   "beta",
+							"value": "two",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessibility":   "PUBLIC",
+						"experiment_name": name + "_update",
+						"labels.#":        "2",
+						"labels.0.key":    REMOVEKEY,
+						"labels.0.value":  REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "beta",
+							"value": "two",
+						},
+						{
+							"key":   "alpha",
+							"value": "one",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "beta",
+							"value": "two",
+						},
+						{
+							"key":   "alpha",
+							"value": "one",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessibility":   "PUBLIC",
+						"experiment_name": name + "_update",
+						"labels.#":        "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels":          REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessibility":   "PUBLIC",
+						"experiment_name": name + "_update",
+						"labels.#":        "0",
 					}),
 				),
 			},
