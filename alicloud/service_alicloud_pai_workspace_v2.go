@@ -756,3 +756,80 @@ func (s *PaiWorkspaceServiceV2) PaiWorkspaceUserConfigStateRefreshFunc(id string
 }
 
 // DescribePaiWorkspaceUserConfig >>> Encapsulated.
+
+// DescribePaiWorkspacePrompt <<< Encapsulated get interface for PaiWorkspace Prompt.
+
+func (s *PaiWorkspaceServiceV2) DescribePaiWorkspacePrompt(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	PromptId := parts[1]
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	query["WorkspaceId"] = StringPointer(parts[0])
+	action := fmt.Sprintf("/api/v1/prompts/%s", PromptId)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("AIWorkSpace", "2021-02-04", action, query, nil, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"PromptNoPerm"}) {
+			return object, WrapErrorf(NotFoundErr("Prompt", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *PaiWorkspaceServiceV2) PaiWorkspacePromptStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return s.PaiWorkspacePromptStateRefreshFuncWithApi(id, field, failStates, s.DescribePaiWorkspacePrompt)
+}
+
+func (s *PaiWorkspaceServiceV2) PaiWorkspacePromptStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribePaiWorkspacePrompt >>> Encapsulated.
