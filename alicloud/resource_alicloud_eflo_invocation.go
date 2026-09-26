@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -34,9 +35,19 @@ func resourceAliCloudEfloInvocation() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"content": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"content_encoding": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"content_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -46,9 +57,34 @@ func resourceAliCloudEfloInvocation() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"file_group": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"file_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"file_owner": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"frequency": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"invocation_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "RunCommand",
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// 老 state 没有该字段，升级后默认值比较会误判 RequiresNew
+					return (old == "" || old == "RunCommand") && (new == "" || new == "RunCommand")
+				},
 			},
 			"launcher": {
 				Type:     schema.TypeString,
@@ -58,11 +94,20 @@ func resourceAliCloudEfloInvocation() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"node_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"node_id_list": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"overwrite": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
 			},
 			// lintignore: S006
 			"parameters": {
@@ -72,6 +117,11 @@ func resourceAliCloudEfloInvocation() *schema.Resource {
 			"repeat_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"target_dir": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"termination_mode": {
 				Type:     schema.TypeString,
@@ -94,9 +144,16 @@ func resourceAliCloudEfloInvocation() *schema.Resource {
 }
 
 func resourceAliCloudEfloInvocationCreate(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
 
+	invocationType := d.Get("invocation_type").(string)
+	if invocationType == "SendFile" {
+		return resourceAliCloudEfloInvocationCreateSendFile(d, meta, client)
+	}
+	return resourceAliCloudEfloInvocationCreateRunCommand(d, meta, client)
+}
+
+func resourceAliCloudEfloInvocationCreateRunCommand(d *schema.ResourceData, meta interface{}, client *connectivity.AliyunClient) error {
 	action := "RunCommand"
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -180,25 +237,146 @@ func resourceAliCloudEfloInvocationCreate(d *schema.ResourceData, meta interface
 	return resourceAliCloudEfloInvocationUpdate(d, meta)
 }
 
+func resourceAliCloudEfloInvocationCreateSendFile(d *schema.ResourceData, meta interface{}, client *connectivity.AliyunClient) error {
+	action := "SendFile"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("name"); ok {
+		request["Name"] = v
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+	if v, ok := d.GetOk("target_dir"); ok {
+		request["TargetDir"] = v
+	}
+	if v, ok := d.GetOk("content_type"); ok {
+		request["ContentType"] = v
+	}
+	if v, ok := d.GetOk("content"); ok {
+		request["Content"] = v
+	}
+	if v, ok := d.GetOk("file_mode"); ok {
+		request["FileMode"] = v
+	}
+	if v, ok := d.GetOk("file_owner"); ok {
+		request["FileOwner"] = v
+	}
+	if v, ok := d.GetOk("file_group"); ok {
+		request["FileGroup"] = v
+	}
+	if v, ok := d.GetOk("node_id_list"); ok {
+		nodeIdListMapsArray := v.([]interface{})
+		nodeIdListMapsJson, err := json.Marshal(nodeIdListMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["NodeIdList"] = string(nodeIdListMapsJson)
+	}
+	if v, ok := d.GetOkExists("overwrite"); ok {
+		request["Overwrite"] = v
+	}
+	if v, ok := d.GetOkExists("timeout"); ok {
+		request["Timeout"] = v
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eflo_invocation", action, AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["InvokeId"]))
+
+	return resourceAliCloudEfloInvocationRead(d, meta)
+}
+
 func resourceAliCloudEfloInvocationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	efloServiceV2 := EfloServiceV2{client}
 
+	invocationType := d.Get("invocation_type").(string)
+
+	// SendFile 分支
+	if invocationType == "SendFile" {
+		object, err := efloServiceV2.DescribeEfloSendFileResults(d.Id())
+		if err != nil {
+			if !d.IsNewResource() && NotFoundError(err) {
+				log.Printf("[DEBUG] Resource alicloud_eflo_invocation DescribeEfloSendFileResults Failed!!! %s", err)
+				d.SetId("")
+				return nil
+			}
+			return WrapError(err)
+		}
+		setEfloSendFileAttributes(d, object)
+		return nil
+	}
+
+	// RunCommand 分支
 	_, err := efloServiceV2.DescribeEfloInvocation(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
+			// import 时 invocation_type 落在 schema 默认值 RunCommand，回退探测 SendFile
+			object, sendErr := efloServiceV2.DescribeEfloSendFileResults(d.Id())
+			if sendErr == nil {
+				d.Set("invocation_type", "SendFile")
+				setEfloSendFileAttributes(d, object)
+				return nil
+			}
 			log.Printf("[DEBUG] Resource alicloud_eflo_invocation DescribeEfloInvocation Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
 	return nil
+}
+
+// setEfloSendFileAttributes 只回填 CloudSpec get 映射覆盖到的字段：
+// InvokeId/NodeId/RegionId/Name/TargetDir/Content/FileOwner。
+// content_type、description、file_mode、file_group、overwrite 在模型里是 create-only，
+// 强填会与配置值产生永久 diff，因此不写回。
+func setEfloSendFileAttributes(d *schema.ResourceData, object map[string]interface{}) {
+	d.Set("name", object["Name"])
+	d.Set("target_dir", object["TargetDir"])
+	d.Set("content", object["Content"])
+	d.Set("file_owner", object["FileOwner"])
+	nodeIdVal, err := jsonpath.Get("$.InvokeNodes.InvokeNode[*].NodeId", object)
+	if err == nil && nodeIdVal != nil {
+		if nodeIds, ok := nodeIdVal.([]interface{}); ok && len(nodeIds) > 0 {
+			d.Set("node_id", fmt.Sprint(nodeIds[0]))
+		}
+	}
 }
 
 func resourceAliCloudEfloInvocationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+
+	invocationType := d.Get("invocation_type").(string)
+	// SendFile 是一次性下发，不支持 update；直接 Read
+	if invocationType == "SendFile" {
+		return resourceAliCloudEfloInvocationRead(d, meta)
+	}
+
+	// RunCommand 分支（现有 StopInvocation 逻辑）
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
