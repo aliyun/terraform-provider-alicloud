@@ -227,14 +227,19 @@ The following arguments are supported:
   - Custom parameter names can a-zA-Z0-9 a combination of-_. Other characters are not supported. Parameter names are not case-sensitive.
   - A single custom parameter name cannot exceed 64 bytes.
 * `command_id` - (Optional) Command ID
+* `content` - (Optional) The contents of the file. File content cannot exceed 32 KB in size after Base64 encoding. Used when `invocation_type` is `SendFile`.
 * `content_encoding` - (Optional) The encoding of the script content. Value range:
   - PlainText: no encoding, using PlainText transmission.
   - Base64:Base64 encoding.
 
 Default value: PlainText. If you fill it randomly or wrongly, the value will be treated as a PlainText.
+* `content_type` - (Optional) The file content type. Valid values: `PlainText`, `Base64`. Default value: `PlainText`. Used when `invocation_type` is `SendFile`.
 * `description` - (Optional) The command description.
 * `enable_parameter` - (Optional) Whether custom parameters are included in the command.
 Default value: false.
+* `file_group` - (Optional) The user group of the file. Takes effect only for Linux instances. The default value is root. Used when `invocation_type` is `SendFile`.
+* `file_mode` - (Optional) The permissions of the file. Takes effect only for Linux instances, set in the same way as the chmod command. Used when `invocation_type` is `SendFile`.
+* `file_owner` - (Optional) The user of the file. Takes effect only for Linux instances. The default value is root. Used when `invocation_type` is `SendFile`.
 * `frequency` - (Optional) The execution time of the scheduled execution command. Currently, three scheduled execution methods are supported: fixed interval execution (based on Rate expression), only once at a specified time, and timed execution based on clock (based on Cron expression).
   - Fixed time interval execution: Based on the Rate expression, the command is executed at the set time interval. Time intervals can be selected by seconds (s), minutes (m), hours (h), and days (d), which is suitable for scenarios where tasks are executed at fixed time intervals. The format is rate( ). If the execution is performed every 5 minutes, the format is rate(5m). Executing with a fixed time interval has the following limitations:
   - The set time interval is no more than 7 days and no less than 60 seconds, and must be greater than the timeout period of the scheduled task.
@@ -247,17 +252,19 @@ If it is specified to be executed once 13:15:30 June 06, 2022, China/Shanghai ti
   - The offset of the time zone relative to Greenwich Mean Time: E.G. GMT +8:00 (East Zone 8), GMT-7 (West Zone 7), etc. When using the GMT format, the hour bit does not support adding leading zeros.
   - Time zone abbreviation: Only UTC (Coordinated Universal Time) is supported.
 
-For example, in China/Shanghai time, the command will be executed once every day at 10:15 am in 2022 in the format 0 15 10? * * 2022 Asia/Shanghai; In the eastern 8th District time, it will be executed every half hour from 10:00 a.m. to 11:30 a.m. every day in 2022, in the format of 0 0/30 10-11 * *? 2022 GMT +8:00; In UTC time, starting from 2022, it will be executed every 5 minutes from 14:00 P.M. to 14:55 p. M. Every two years in October, in the format of 0 0/5 14*10? 2022/2 UTC.
+For example, in China/Shanghai time, the command will be executed once every day at 10:15 am in 2022 in the format `0 15 10? * * 2022 Asia/Shanghai`; In the eastern 8th District time, it will be executed every half hour from 10:00 a.m. to 11:30 a.m. every day in 2022, in the format of `0 0/30 10-11 * *? 2022 GMT +8:00`; In UTC time, starting from 2022, it will be executed every 5 minutes from 14:00 P.M. to 14:55 p. M. Every two years in October, in the format of `0 0/5 14*10? 2022/2 UTC`.
+* `invocation_type` - (Optional, ForceNew) The type of the invocation. Valid values: `RunCommand`, `SendFile`. Default value: `RunCommand`. When set to `SendFile`, the resource creates a file delivery invocation via the SendFile API and uses the SendFile-specific fields (`content`, `content_type`, `target_dir`, `file_mode`, `file_owner`, `file_group`, `overwrite`).
 * `launcher` - (Optional) The bootstrapper for script execution. The length cannot exceed 1KB.
 * `name` - (Optional) The command name.
 * `node_id_list` - (Optional, ForceNew, List) A list of nodes.
+* `overwrite` - (Optional) Whether to overwrite the file if a file with the same name already exists in the destination directory. Default value: false. Used when `invocation_type` is `SendFile`.
 * `parameters` - (Optional, Map) When the command contains custom parameters, the key-value pair of the custom parameters passed in when the command is executed. For example, if the command content is 'echo {{name}}', the key-value pair'{"name":"Jack"}'can be passed through the 'Parameter' parameter'. The custom parameter will automatically replace the variable value 'name' to get a new command that actually executes 'echo Jack '.
 
 The number of custom parameters ranges from 0 to 10, and you need to pay attention:
-  - The key is not allowed to be an empty string and supports a maximum of 64 characters.
-  - The value is allowed to be an empty string.
-  - After the custom parameters and the original command content are encoded in Base64, if the command is saved, the size of the command content after Base64 encoding cannot exceed 18KB. If the command is not saved, the size of the command content after Base64 encoding cannot exceed 24KB. You can set whether to keep the command through 'KeepCommand.
-  - The set of custom parameter names must be a subset of the parameter set defined when the command is created. For parameters that are not passed in, you can use an empty string instead.
+- The key is not allowed to be an empty string and supports a maximum of 64 characters.
+- The value is allowed to be an empty string.
+- After the custom parameters and the original command content are encoded in Base64, if the command is saved, the size of the command content after Base64 encoding cannot exceed 18KB. If the command is not saved, the size of the command content after Base64 encoding cannot exceed 24KB. You can set whether to keep the command through 'KeepCommand.
+- The set of custom parameter names must be a subset of the parameter set defined when the command is created. For parameters that are not passed in, you can use an empty string instead.
 
 The default value is empty, which means that the parameter is unset and the custom parameter is disabled.
 * `repeat_mode` - (Optional) Sets the way the command is executed. Value range:
@@ -267,8 +274,9 @@ The default value is empty, which means that the parameter is unset and the cust
   - EveryReboot: The command is automatically executed every time the instance is started.
 
 Default:
-  - When the'frequency' parameter is not specified, the default value is'once '.
-  - When the'frequency' parameter is specified, regardless of whether the parameter value has been set or not, it will be processed according to'period.
+- When the'frequency' parameter is not specified, the default value is'once '.
+- When the'frequency' parameter is specified, regardless of whether the parameter value has been set or not, it will be processed according to'period.
+* `target_dir` - (Optional) The target directory on the node where the file is distributed. If it does not exist, it will be created automatically. Used when `invocation_type` is `SendFile`.
 * `termination_mode` - (Optional) The mode when the task is stopped (manually stopped or execution time-out interrupted). Possible values:
 Process: Stops the current script Process.
 ProcessTree: Stops the current process tree (the script process and the collection of all child processes it created)
@@ -282,6 +290,7 @@ Linux instance: the execution path is in the/home directory of the root user by 
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
+* `node_id` - The node ID from the first InvokeNode returned by DescribeSendFileResults.
 
 ## Timeouts
 
