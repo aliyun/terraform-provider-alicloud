@@ -174,6 +174,7 @@ func Provider() terraform.ResourceProvider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"alicloud_realtime_compute_variables":                     dataSourceAliCloudRealtimeComputeVariables(),
 			"alicloud_apig_secrets":                                   dataSourceAliCloudApigSecrets(),
+			"alicloud_pai_dsw_temp_file_task":                         dataSourceAliCloudPaiDswTempFileTask(),
 			"alicloud_threat_detection_attack_path_whitelists":        dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
 			"alicloud_ehpc_users":                                     dataSourceAliCloudEhpcUsers(),
 			"alicloud_realtime_compute_members":                       dataSourceAliCloudRealtimeComputeMembers(),
@@ -1222,6 +1223,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_apig_environment":                                     resourceAliCloudApigEnvironment(),
 			"alicloud_apig_gateway":                                         resourceAliCloudApigGateway(),
 			"alicloud_apig_http_api":                                        resourceAliCloudApigHttpApi(),
+			"alicloud_pai_dsw_temp_file_task":                              resourceAliCloudPaiDswTempFileTask(),
 			"alicloud_mongodb_private_srv_network_address":                  resourceAliCloudMongodbPrivateSrvNetworkAddress(),
 			"alicloud_schedulerx_app_group":                                 resourceAliCloudSchedulerxAppGroup(),
 			"alicloud_schedulerx_job":                                       resourceAliCloudSchedulerxJob(),
