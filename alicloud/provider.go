@@ -370,7 +370,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_kubernetes_addon_metadata":                     dataSourceAlicloudCSKubernetesAddonMetadata(),
 			"alicloud_cr_namespaces":                                    dataSourceAlicloudCRNamespaces(),
 			"alicloud_cr_repos":                                         dataSourceAlicloudCRRepos(),
-			"alicloud_cr_ee_instances":                                  dataSourceAlicloudCrEEInstances(),
+			"alicloud_cr_ee_instances":                                  dataSourceAliCloudCrInstances(),
 			"alicloud_cr_ee_namespaces":                                 dataSourceAlicloudCrEENamespaces(),
 			"alicloud_cr_ee_repos":                                      dataSourceAliCloudCrEERepos(),
 			"alicloud_cr_ee_sync_rules":                                 dataSourceAlicloudCrEESyncRules(),
