@@ -249,3 +249,46 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotPreset(id string
 	}
 	return v.(map[string]interface{}), nil
 }
+
+type CloudSiemService struct {
+	client *connectivity.AliyunClient
+}
+
+// DescribeThreatDetectionDataConnector <<< Encapsulated get interface for ThreatDetection DataConnector.
+func (s *CloudSiemService) DescribeThreatDetectionDataConnector(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	request := map[string]interface{}{
+		"DataConnectorId": id,
+	}
+	var response map[string]interface{}
+	action := "GetDataConnector"
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := client.RpcPost("cloud-siem", "2024-12-12", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"DataConnectorNotExist", "ResourceNotFound"}) {
+			return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.DataConnector", response)
+	if err != nil {
+		return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
+	}
+	data, ok := v.(map[string]interface{})
+	if !ok || data == nil {
+		return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
+	}
+	return data, nil
+}
