@@ -84,7 +84,13 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-* `namespace_quota` - (Optional, Int, Available since v1.268.0) The number of additional namespaces to purchase. The value is an integral multiple of `5`.
+* `kms_encrypted_password` - (Optional, Available since v1.132.0) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored.
+* `kms_encryption_context` - (Optional, MapString, Available since v1.132.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `logistics` - (Optional, ForceNew, Available since v2.1.0) Logistics information. A JSON string describing the delivery address of the instance order, for example: `{"cityCode":"330100","cityName":"Hangzhou","contactName":"Terraform","countryCode":"CN","detailAddress":"No. 1 Example Road","districtCode":"330106","districtName":"Xihu District","email":"tf@example.com","mobilePhone":"15300000000","phone":"1234567","provCode":"330000","provName":"Zhejiang","streetCode":"33010610","streetName":"Zhuantang","zipCode":"310000"}`.
+
+  -> **NOTE:** This parameter only takes effect when the instance is created. Changing it forces Terraform to destroy the existing instance and create a new one.
+
+* `namespace_quota` - (Optional, Int, Available since v1.268.0) Additional namespace quota.
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -107,36 +113,37 @@ The following arguments are supported:
   - ManualRenewal: manual renewal.
 
   Default ManualRenewal.
-* `repo_quota` - (Optional, Int, Available since v1.268.0) The number of additional repositories to purchase. The value is an integral multiple of `1000`.
+* `repo_quota` - (Optional, Int, Available since v1.268.0) Additional repository quota.
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.235.0) The ID of the resource group
 * `tags` - (Optional, Map, Available since v1.288.0) A mapping of tags to assign to the resource.
-* `vpc_quota` - (Optional, Int, Available since v1.268.0) The number of VPC access controls.
+* `vpc_quota` - (Optional, Int, Available since v1.268.0) VPC access control quota.
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `created_time` - (Deprecated since v1.235.0). Field 'created_time' has been deprecated from provider version 1.235.0. New field 'create_time' instead.
-* `kms_encrypted_password` - (Optional, Available since v1.132.0) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored.
-* `kms_encryption_context` - (Optional, MapString, Available since v1.132.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `create_time` - The creation time of the resource
-* `end_time` - Expiration Time
-* `instance_endpoints` - (Available since v1.240.0) Instance Network Access Endpoint List
-  * `domains` - Domain List
-    * `domain` - Domain
-    * `type` - Domain Type
-  * `enable` - enable
-  * `endpoint_type` - Network Access Endpoint Type
-* `region_id` - RegionId
-* `status` - Instance Status
+* `create_time` - The creation time of the resource.
+* `end_time` - Expiration Time.
+* `instance_endpoints` - (Available since v1.240.0) Instance Network Access Endpoint List.
+  * `domains` - Domain List.
+    * `domain` - Domain.
+    * `type` - Domain Type.
+  * `enable` - enable.
+  * `endpoint_type` - Network Access Endpoint Type.
+* `instance_issue` - (Available since v2.1.0) Instance issue.
+* `modified_time` - (Available since v2.1.0) Last modification time, as a Unix timestamp in milliseconds.
+* `region_id` - RegionId.
+* `status` - Instance Status.
+* `tags` - A mapping of tags assigned to the resource.
 
 ## Timeouts
 
@@ -150,5 +157,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 CR Instance can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cr_ee_instance.example <id>
+$ terraform import alicloud_cr_ee_instance.example <instance_id>
 ```
