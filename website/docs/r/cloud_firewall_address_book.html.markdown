@@ -53,7 +53,7 @@ The following arguments are supported:
   - `and`: Only the public IP addresses of ECS instances that match all the specified tags can be added to the Address Book.
   - `or`: The public IP addresses of ECS instances that match one of the specified tags can be added to the Address Book.
 * `lang` - (Optional) The language of the content within the request and response. Valid values: `zh`, `en`.
-* `address_list` - (Optional, List) The list of addresses.
+* `address_list` - (Optional, List) The list of addresses. An address book is an unordered set of addresses, so duplicate entries are ignored: a config containing a repeated address produces no plan diff and the duplicate is not sent to the API.
 * `ecs_tags` - (Optional, Set) A list of ECS tags. See [`ecs_tags`](#ecs_tags) below.
 * `asset_member_uids` - (Optional, List, Available since v1.286.0) The list of member account UIDs of the asset Address Book.
 * `asset_region_resource_types` - (Optional, List, Available since v1.286.0) The list of regions and asset types of the asset Address Book. See [`asset_region_resource_types`](#asset_region_resource_types) below.

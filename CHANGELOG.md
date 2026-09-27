@@ -4,6 +4,10 @@ ENHANCEMENTS:
 
 - resource/alicloud_polardb_cluster_endpoint: support scc_mode.
 
+BUG FIXES:
+
+- resource/alicloud_cloud_firewall_address_book: treat `address_list` as an unordered set of addresses by suppressing diffs when the configured and state lists hold the same set (ignoring order/duplicates) and deduplicating the AddressList sent to AddAddressBook/ModifyAddressBook, fixing a perpetual plan/apply diff and dirty duplicate entries when the config contained repeated IPs.
+
 ## 1.293.0 (September 17, 2026)
 
 - **New Resource:** `alicloud_event_bridge_event_streaming` ([#10243](https://github.com/aliyun/terraform-provider-alicloud/issues/10243))

@@ -841,3 +841,72 @@ func UpperLowerCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) 
 	}
 	return false
 }
+
+// toStringStringSlice converts a []interface{} (as stored in a TypeList of
+// strings) to a []string, returning a non-nil empty slice when the input is
+// nil so callers can safely range over it.
+func toStringStringSlice(items []interface{}) []string {
+	out := make([]string, 0, len(items))
+	for _, v := range items {
+		if v == nil {
+			continue
+		}
+		out = append(out, v.(string))
+	}
+	return out
+}
+
+// dedupStringSlice returns a copy of items with duplicates removed, preserving
+// the first-occurrence order. nil/empty input yields an empty (non-nil) slice.
+func dedupStringSlice(items []string) []string {
+	seen := make(map[string]struct{}, len(items))
+	out := make([]string, 0, len(items))
+	for _, v := range items {
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
+}
+
+// stringSliceSetEqual reports whether old and new contain the same set of
+// strings, ignoring order and duplicates.
+func stringSliceSetEqual(old, new []string) bool {
+	if len(old) == 0 && len(new) == 0 {
+		return true
+	}
+	oset := make(map[string]struct{}, len(old))
+	for _, v := range old {
+		oset[v] = struct{}{}
+	}
+	nset := make(map[string]struct{}, len(new))
+	for _, v := range new {
+		nset[v] = struct{}{}
+	}
+	if len(oset) != len(nset) {
+		return false
+	}
+	for k := range oset {
+		if _, ok := nset[k]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// cloudFirewallAddressListDiffSuppressFunc suppresses diffs for
+// alicloud_cloud_firewall_address_book.address_list when the configured and
+// state values represent the same set of addresses. Because address_list is a
+// TypeList (order-preserving, duplicate-preserving) but an address book is
+// semantically an unordered set of addresses, a config containing a duplicate
+// of an address already in state would otherwise produce a perpetual diff.
+// Comparing the deduplicated sets collapses such no-op diffs while still
+// surfacing genuine additions/removals.
+func cloudFirewallAddressListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldV, newV := d.GetChange("address_list")
+	oldList := toStringStringSlice(oldV.([]interface{}))
+	newList := toStringStringSlice(newV.([]interface{}))
+	return stringSliceSetEqual(oldList, newList)
+}

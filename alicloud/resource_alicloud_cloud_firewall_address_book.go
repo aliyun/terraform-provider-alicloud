@@ -52,10 +52,11 @@ func resourceAliCloudCloudFirewallAddressBook() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"zh", "en"}, false),
 			},
 			"address_list": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:             schema.TypeList,
+				Optional:         true,
+				Computed:         true,
+				Elem:             &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: cloudFirewallAddressListDiffSuppressFunc,
 			},
 			"ecs_tags": {
 				Type:     schema.TypeSet,
@@ -400,7 +401,7 @@ func resourceAliCloudCloudFirewallAddressBookCreate(d *schema.ResourceData, meta
 	}
 
 	if v, ok := d.GetOk("address_list"); ok {
-		request["AddressList"] = strings.Join(expandStringList(v.([]interface{})), ",")
+		request["AddressList"] = strings.Join(dedupStringSlice(expandStringList(v.([]interface{}))), ",")
 	}
 
 	if v, ok := d.GetOk("ecs_tags"); ok {
@@ -557,7 +558,7 @@ func resourceAliCloudCloudFirewallAddressBookUpdate(d *schema.ResourceData, meta
 	if d.HasChange("address_list") {
 		update = true
 		if v, ok := d.GetOk("address_list"); ok {
-			request["AddressList"] = strings.Join(expandStringList(v.([]interface{})), ",")
+			request["AddressList"] = strings.Join(dedupStringSlice(expandStringList(v.([]interface{}))), ",")
 		}
 	}
 

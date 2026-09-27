@@ -2,11 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func TestAccAliCloudCloudFirewallAddressBook_basic0(t *testing.T) {
@@ -45,6 +48,16 @@ func TestAccAliCloudCloudFirewallAddressBook_basic0(t *testing.T) {
 						"address_list.#": "3",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_name":   name,
+					"group_type":   "ip",
+					"description":  name,
+					"address_list": []string{"10.21.0.0/16", "10.22.0.0/16", "10.168.0.0/16", "10.21.0.0/16"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -887,4 +900,127 @@ func AliCloudCloudFirewallAddressBookBasicDependence0(name string) string {
 	data "alicloud_account" "default" {
 	}
 `, name)
+}
+
+func TestUnitCloudFirewallAddressBookToStringStringSlice(t *testing.T) {
+	cases := []struct {
+		name string
+		in   []interface{}
+		want []string
+	}{
+		{"nil", nil, []string{}},
+		{"empty", []interface{}{}, []string{}},
+		{"skips nil entries", []interface{}{nil, "a", nil, "b"}, []string{"a", "b"}},
+		{"plain", []interface{}{"10.0.0.1/32", "10.0.0.2/32"}, []string{"10.0.0.1/32", "10.0.0.2/32"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := toStringStringSlice(tc.in)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("toStringStringSlice(%v) = %v, want %v", tc.in, got, tc.want)
+			}
+			if got == nil {
+				t.Errorf("toStringStringSlice(%v) returned nil, want non-nil slice", tc.in)
+			}
+		})
+	}
+}
+
+func TestUnitCloudFirewallAddressBookDedupStringSlice(t *testing.T) {
+	cases := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{"nil", nil, []string{}},
+		{"empty", []string{}, []string{}},
+		{"no dup", []string{"a", "b", "c"}, []string{"a", "b", "c"}},
+		{"dup preserves first order", []string{"a", "b", "a", "c", "b"}, []string{"a", "b", "c"}},
+		{"all dup", []string{"x", "x", "x"}, []string{"x"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := dedupStringSlice(tc.in)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("dedupStringSlice(%v) = %v, want %v", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestUnitCloudFirewallAddressBookStringSliceSetEqual(t *testing.T) {
+	cases := []struct {
+		name string
+		old  []string
+		new  []string
+		want bool
+	}{
+		{"both empty", []string{}, []string{}, true},
+		{"same order", []string{"a", "b"}, []string{"a", "b"}, true},
+		{"same set different order", []string{"a", "b"}, []string{"b", "a"}, true},
+		{"new has dup of existing", []string{"172.28.36.104/32", "172.28.50.142/32"}, []string{"172.28.36.104/32", "172.28.50.142/32", "172.28.36.104/32"}, true},
+		{"real addition", []string{"a", "b"}, []string{"a", "b", "c"}, false},
+		{"real removal", []string{"a", "b"}, []string{"a"}, false},
+		{"different members", []string{"a", "b"}, []string{"a", "c"}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := stringSliceSetEqual(tc.old, tc.new); got != tc.want {
+				t.Errorf("stringSliceSetEqual(%v, %v) = %v, want %v", tc.old, tc.new, got, tc.want)
+			}
+		})
+	}
+}
+
+// AC4: the strings.Join output sent to the API must contain no duplicates.
+func TestUnitCloudFirewallAddressBookAddressListSentToAPIDeduped(t *testing.T) {
+	configList := []interface{}{"172.28.36.104/32", "172.28.50.142/32", "172.28.36.104/32", "172.28.80.0/23"}
+	joined := strings.Join(dedupStringSlice(expandStringList(configList)), ",")
+	want := "172.28.36.104/32,172.28.50.142/32,172.28.80.0/23"
+	if joined != want {
+		t.Errorf("API AddressList = %q, want %q (no duplicates)", joined, want)
+	}
+}
+
+func TestUnitCloudFirewallAddressBookPlanWithDuplicate(t *testing.T) {
+	resource := resourceAliCloudCloudFirewallAddressBook()
+	state := &terraform.InstanceState{ID: "book-test", Attributes: map[string]string{
+		"group_name": "book-test", "group_type": "ip", "description": "test",
+		"address_list.#": "2", "address_list.0": "10.0.0.1/32", "address_list.1": "10.0.0.2/32",
+	}}
+	base := map[string]interface{}{
+		"group_name": "book-test", "group_type": "ip", "description": "test",
+	}
+	for _, tc := range []struct {
+		name     string
+		list     []interface{}
+		wantDiff bool
+	}{
+		{"duplicate", []interface{}{"10.0.0.1/32", "10.0.0.2/32", "10.0.0.1/32"}, false},
+		{"new address", []interface{}{"10.0.0.1/32", "10.0.0.2/32", "10.0.0.3/32"}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := make(map[string]interface{}, len(base)+1)
+			for k, v := range base {
+				config[k] = v
+			}
+			config["address_list"] = tc.list
+			diff, err := resource.Diff(state, terraform.NewResourceConfigRaw(config), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			changed := false
+			if diff != nil {
+				_, changed = diff.Attributes["address_list.#"]
+				for key := range diff.Attributes {
+					if strings.HasPrefix(key, "address_list.") {
+						changed = true
+					}
+				}
+			}
+			if changed != tc.wantDiff {
+				t.Fatalf("address_list changed = %v, want %v; diff = %#v", changed, tc.wantDiff, diff)
+			}
+		})
+	}
 }
