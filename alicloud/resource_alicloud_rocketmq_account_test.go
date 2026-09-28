@@ -37,12 +37,14 @@ func TestAccAliCloudRocketmqAccount_basic10054(t *testing.T) {
 					"instance_id": "${alicloud_rocketmq_instance.default9hAb83.id}",
 					"username":    name,
 					"password":    "1739867871",
+					"remark":      "tfaccremark1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id": CHECKSET,
 						"username":    name,
 						"password":    CHECKSET,
+						"remark":      "tfaccremark1",
 					}),
 				),
 			},
@@ -59,10 +61,12 @@ func TestAccAliCloudRocketmqAccount_basic10054(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"account_status": "DISABLE",
+					"remark":         "tfaccremark2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"account_status": "DISABLE",
+						"remark":         "tfaccremark2",
 					}),
 				),
 			},
@@ -112,9 +116,6 @@ resource "alicloud_rocketmq_instance" "default9hAb83" {
   instance_name   = var.name
   sub_series_code = "cluster_ha"
   remark          = "example"
-  software {
-    maintain_time = "02:00-06:00"
-  }
 
   tags = {
     Created = "TF"
@@ -173,6 +174,7 @@ func TestAccAliCloudRocketmqAccount_basic10054_twin(t *testing.T) {
 					"instance_id":    "${alicloud_rocketmq_instance.default9hAb83.id}",
 					"username":       name,
 					"password":       "1739867871",
+					"remark":         "tfaccremark",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -180,6 +182,7 @@ func TestAccAliCloudRocketmqAccount_basic10054_twin(t *testing.T) {
 						"instance_id":    CHECKSET,
 						"username":       name,
 						"password":       CHECKSET,
+						"remark":         "tfaccremark",
 					}),
 				),
 			},

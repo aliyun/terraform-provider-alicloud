@@ -42,6 +42,10 @@ func resourceAliCloudRocketmqAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"remark": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"username": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -65,6 +69,9 @@ func resourceAliCloudRocketmqAccountCreate(d *schema.ResourceData, meta interfac
 	request = make(map[string]interface{})
 	request["username"] = d.Get("username")
 	request["password"] = d.Get("password")
+	if v, ok := d.GetOk("remark"); ok {
+		request["remark"] = v
+	}
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -105,6 +112,7 @@ func resourceAliCloudRocketmqAccountRead(d *schema.ResourceData, meta interface{
 
 	d.Set("account_status", objectRaw["accountStatus"])
 	d.Set("password", objectRaw["password"])
+	d.Set("remark", objectRaw["remark"])
 	d.Set("username", objectRaw["username"])
 
 	parts := strings.Split(d.Id(), ":")
@@ -142,6 +150,13 @@ func resourceAliCloudRocketmqAccountUpdate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("password"); ok {
 		query["password"] = StringPointer(v.(string))
+	}
+
+	if !d.IsNewResource() && d.HasChange("remark") {
+		update = true
+	}
+	if v, ok := d.GetOk("remark"); ok {
+		query["remark"] = StringPointer(v.(string))
 	}
 
 	body = request
