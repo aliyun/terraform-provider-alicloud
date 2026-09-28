@@ -138,12 +138,12 @@ The following arguments are supported:
 * `cluster_description` - (Optional, ForceNew) cluster description
 * `cluster_name` - (Optional, ForceNew) ClusterName
 * `cluster_type` - (Optional, ForceNew) cluster type
-* `components` - (Optional, List) Component (software instance) See [`components`](#components) below.
+* `components` - (Optional, List) Component (software instance) See [`components`](#components) below. **Note:** The parameter is immutable after resource creation.
 * `hpn_zone` - (Optional) Cluster Number
 * `ignore_failed_node_tasks` - (Optional) Whether to allow skipping failed nodes. Default value: False
-* `networks` - (Optional, List) Network Information See [`networks`](#networks) below.
+* `networks` - (Optional, List) Network Information See [`networks`](#networks) below. **Note:** The parameter is immutable after resource creation.
 * `nimiz_vswitches` - (Optional, List) Node virtual switch
-* `node_groups` - (Optional, List) Node Group List See [`node_groups`](#node_groups) below.
+* `node_groups` - (Optional, List) Node Group List See [`node_groups`](#node_groups) below. **Note:** The parameter is immutable after resource creation.
 * `open_eni_jumbo_frame` - (Optional) Whether the network interface supports jumbo frames
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `tags` - (Optional, Map) tag
@@ -243,11 +243,17 @@ The networks-ip_allocation_policy-bond_policy-bonds supports the following:
 ### `node_groups`
 
 The node_groups supports the following:
+* `bond_num` - (Optional, Int) The number of RDMA network bonds to configure on each node in the group.
+* `file_system_mount_enabled` - (Optional, Bool) Whether to enable file system mounting for the nodes in the group.
+* `hpn_zone` - (Optional) The high-performance network (HPN) zone of the node group.
 * `image_id` - (Optional) System Image ID
+* `key_pair_name` - (Optional) The name of the key pair used to log on to the nodes in the group. Conflicts with `login_password`.
+* `login_password` - (Optional, Sensitive) The password used to log on to the nodes in the group. Conflicts with `key_pair_name`.
 * `machine_type` - (Optional) Model
 * `node_group_description` - (Optional) Node Group Description
 * `node_group_name` - (Optional) Node Group Name
 * `nodes` - (Optional, List) Node List See [`nodes`](#node_groups-nodes) below.
+* `system_disk` - (Optional, List) The system disk configuration of the nodes in the group. See [`system_disk`](#node_groups-system_disk) below.
 * `user_data` - (Optional) Instance custom data. It needs to be encoded in Base64 mode, and the original data is at most 16KB.
 * `zone_id` - (Optional) Zone ID
 
@@ -260,11 +266,19 @@ The node_groups-nodes supports the following:
 * `vswitch_id` - (Optional) Virtual Switch ID
 * `vpc_id` - (Optional) VPC ID
 
+### `node_groups-system_disk`
+
+The node_groups-system_disk supports the following:
+* `category` - (Optional) The category of the system disk.
+* `performance_level` - (Optional) The performance level of the system disk.
+* `size` - (Optional, Int) The size of the system disk in GiB.
+
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
+* `node_group_ids` - A mapping of node group names to their generated node group IDs, populated from the Lingjun (EFLO) control plane after the cluster is created.
 * `status` - The status of the resource
 
 ## Timeouts
