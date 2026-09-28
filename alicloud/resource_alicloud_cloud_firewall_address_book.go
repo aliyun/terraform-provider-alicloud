@@ -11,6 +11,75 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+// dedupeAddressBookAddressList returns a copy of in with empty strings and
+// duplicates removed, preserving the first-occurrence order. The Cloud Firewall
+// AddressList is semantically an unordered set of addresses; deduping before
+// AddAddressBook/ModifyAddressBook prevents dirty duplicate entries and keeps
+// the value sent to the API aligned with the deduped state.
+func dedupeAddressBookAddressList(in []string) []string {
+	seen := make(map[string]struct{}, len(in))
+	out := make([]string, 0, len(in))
+	for _, s := range in {
+		if s == "" {
+			continue
+		}
+		if _, ok := seen[s]; ok {
+			continue
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
+	}
+	return out
+}
+
+// addressBookAddressListSetEqual reports whether two address_list slices hold
+// the same set of non-empty addresses, ignoring order and duplicates. This is
+// the semantic used to suppress non-meaningful diffs for address_list.
+func addressBookAddressListSetEqual(old, new []string) bool {
+	oldSet := make(map[string]struct{}, len(old))
+	for _, s := range old {
+		if s == "" {
+			continue
+		}
+		oldSet[s] = struct{}{}
+	}
+	newSet := make(map[string]struct{}, len(new))
+	for _, s := range new {
+		if s == "" {
+			continue
+		}
+		newSet[s] = struct{}{}
+	}
+	if len(oldSet) != len(newSet) {
+		return false
+	}
+	for s := range newSet {
+		if _, ok := oldSet[s]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// cloudFirewallAddressBookAddressListDiffSuppressFunc suppresses non-semantic
+// diffs for address_list. address_list is a TypeList (ordered, keeps
+// duplicates), but the Cloud Firewall treats AddressList as an unordered set.
+// Position-by-position comparison therefore reports perpetual diffs when the
+// configuration contains duplicate addresses or when the API returns the set
+// in a different order than the configuration. The SDK invokes the list-level
+// DiffSuppressFunc for every address_list attribute (the container, the count
+// and each indexed element), so we resolve the full old/new lists once via
+// GetChange and suppress when they hold the same set of addresses.
+func cloudFirewallAddressBookAddressListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if old == new {
+		return true
+	}
+	oldRaw, newRaw := d.GetChange("address_list")
+	oldList := expandStringList(oldRaw.([]interface{}))
+	newList := expandStringList(newRaw.([]interface{}))
+	return addressBookAddressListSetEqual(oldList, newList)
+}
+
 func resourceAliCloudCloudFirewallAddressBook() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudCloudFirewallAddressBookCreate,
@@ -52,10 +121,11 @@ func resourceAliCloudCloudFirewallAddressBook() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"zh", "en"}, false),
 			},
 			"address_list": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:             schema.TypeList,
+				Optional:         true,
+				Computed:         true,
+				Elem:             &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: cloudFirewallAddressBookAddressListDiffSuppressFunc,
 			},
 			"ecs_tags": {
 				Type:     schema.TypeSet,
@@ -400,7 +470,7 @@ func resourceAliCloudCloudFirewallAddressBookCreate(d *schema.ResourceData, meta
 	}
 
 	if v, ok := d.GetOk("address_list"); ok {
-		request["AddressList"] = strings.Join(expandStringList(v.([]interface{})), ",")
+		request["AddressList"] = strings.Join(dedupeAddressBookAddressList(expandStringList(v.([]interface{}))), ",")
 	}
 
 	if v, ok := d.GetOk("ecs_tags"); ok {
@@ -557,7 +627,7 @@ func resourceAliCloudCloudFirewallAddressBookUpdate(d *schema.ResourceData, meta
 	if d.HasChange("address_list") {
 		update = true
 		if v, ok := d.GetOk("address_list"); ok {
-			request["AddressList"] = strings.Join(expandStringList(v.([]interface{})), ",")
+			request["AddressList"] = strings.Join(dedupeAddressBookAddressList(expandStringList(v.([]interface{}))), ",")
 		}
 	}
 

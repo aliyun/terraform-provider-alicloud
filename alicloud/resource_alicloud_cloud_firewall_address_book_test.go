@@ -9,6 +9,57 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+func TestUnitCloudFirewallAddressBookDedupeAddressList(t *testing.T) {
+	cases := []struct {
+		name string
+		in   []string
+		out  []string
+	}{
+		{"empty", []string{}, []string{}},
+		{"no_dup", []string{"10.0.0.0/8", "10.1.0.0/8"}, []string{"10.0.0.0/8", "10.1.0.0/8"}},
+		{"dup-keeps-first-order", []string{"10.0.0.0/8", "10.1.0.0/8", "10.0.0.0/8", "10.2.0.0/8", "10.1.0.0/8"}, []string{"10.0.0.0/8", "10.1.0.0/8", "10.2.0.0/8"}},
+		{"drops-empty", []string{"", "10.0.0.0/8", "", "10.0.0.0/8"}, []string{"10.0.0.0/8"}},
+		{"all-dup", []string{"10.0.0.0/8", "10.0.0.0/8", "10.0.0.0/8"}, []string{"10.0.0.0/8"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := dedupeAddressBookAddressList(c.in)
+			if len(got) != len(c.out) {
+				t.Fatalf("dedupe length mismatch: got %#v want %#v", got, c.out)
+			}
+			for i := range got {
+				if got[i] != c.out[i] {
+					t.Fatalf("dedupe order/value mismatch at %d: got %#v want %#v", i, got, c.out)
+				}
+			}
+		})
+	}
+}
+
+func TestUnitCloudFirewallAddressBookAddressListSetEqual(t *testing.T) {
+	cases := []struct {
+		name string
+		old  []string
+		new  []string
+		want bool
+	}{
+		{"both-empty", []string{}, []string{}, true},
+		{"identical", []string{"10.0.0.0/8", "10.1.0.0/8"}, []string{"10.0.0.0/8", "10.1.0.0/8"}, true},
+		{"dup-vs-dedup", []string{"10.0.0.0/8", "10.1.0.0/8"}, []string{"10.0.0.0/8", "10.1.0.0/8", "10.0.0.0/8"}, true},
+		{"reordered", []string{"10.1.0.0/8", "10.0.0.0/8"}, []string{"10.0.0.0/8", "10.1.0.0/8"}, true},
+		{"added", []string{"10.0.0.0/8"}, []string{"10.0.0.0/8", "10.1.0.0/8"}, false},
+		{"removed", []string{"10.0.0.0/8", "10.1.0.0/8"}, []string{"10.0.0.0/8"}, false},
+		{"empty-string-ignored", []string{"10.0.0.0/8"}, []string{"10.0.0.0/8", ""}, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := addressBookAddressListSetEqual(c.old, c.new); got != c.want {
+				t.Fatalf("setEqual(%#v, %#v) = %v, want %v", c.old, c.new, got, c.want)
+			}
+		})
+	}
+}
+
 func TestAccAliCloudCloudFirewallAddressBook_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_address_book.default"
@@ -877,6 +928,89 @@ func TestAccAliCloudCloudFirewallAddressBook_basic7(t *testing.T) {
 }
 
 var AliCloudCloudFirewallAddressBookMap0 = map[string]string{}
+
+func TestAccAliCloudCloudFirewallAddressBook_addressListDuplicate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_address_book.default"
+	checkoutSupportedRegions(t, true, connectivity.CloudFirewallSupportRegions)
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallAddressBook")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewalladdressbook%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallAddressBookBasicDependence0)
+
+	// address_list is semantically an unordered set: duplicate IPs in the
+	// configuration must not create a perpetual diff or dirty API data.
+	// The deduped set is {"10.21.0.0/16", "10.22.0.0/16", "10.168.0.0/16"}.
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_name":   name,
+					"group_type":   "ip",
+					"description":  name,
+					"address_list": []string{"10.21.0.0/16", "10.22.0.0/16", "10.21.0.0/16", "10.168.0.0/16", "10.22.0.0/16"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_name":     name,
+						"group_type":     "ip",
+						"description":    name,
+						"address_list.#": "3",
+					}),
+				),
+			},
+			{
+				// Re-applying the same duplicate config must converge: the
+				// plan is empty (no perpetual diff) because the deduped set
+				// is stable. Without the fix this step fails with a non-empty
+				// plan reporting a spurious "+" duplicate address.
+				Config: testAccConfig(map[string]interface{}{
+					"group_name":   name,
+					"group_type":   "ip",
+					"description":  name,
+					"address_list": []string{"10.21.0.0/16", "10.22.0.0/16", "10.21.0.0/16", "10.168.0.0/16", "10.22.0.0/16"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_list.#": "3",
+					}),
+				),
+			},
+			{
+				// Adding a genuinely new address is still detected as a change.
+				Config: testAccConfig(map[string]interface{}{
+					"group_name":   name,
+					"group_type":   "ip",
+					"description":  name,
+					"address_list": []string{"10.21.0.0/16", "10.22.0.0/16", "10.168.0.0/16", "10.168.1.0/24"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_list.#": "4",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
 
 func AliCloudCloudFirewallAddressBookBasicDependence0(name string) string {
 	return fmt.Sprintf(`
