@@ -136,6 +136,13 @@ func TestAccAliCloudMessageServiceTopic_basic9031(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// SSE runs in cn-shanghai: it is the only probed region where the
+			// SSE create/read round trip works without an account whitelist.
+			// Other regions either hide the SSE fields in the response
+			// (cn-hangzhou, cn-beijing, cn-shenzhen, cn-hongkong,
+			// cn-zhangjiakou) or reject SSE with FeatureNotEnabled behind an
+			// account whitelist (cn-qingdao).
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -178,6 +185,56 @@ func TestAccAliCloudMessageServiceTopic_basic9031(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"max_message_size": "65536",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_sse": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sse_type":      "KMS",
+					"sse_algorithm": "AES-256-GCM",
+					"kms_key_id":    "${alicloud_kms_key.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sse_type":      "KMS",
+						"sse_algorithm": "AES-256-GCM",
+						"kms_key_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sse_type": "SMQ",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sse_type": "SMQ",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "false",
+					"sse_type":      REMOVEKEY,
+					"sse_algorithm": REMOVEKEY,
+					"kms_key_id":    REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_sse":    "false",
+						"sse_type":      REMOVEKEY,
+						"sse_algorithm": REMOVEKEY,
+						"kms_key_id":    REMOVEKEY,
 					}),
 				),
 			},
@@ -247,6 +304,13 @@ func TestAccAliCloudMessageServiceTopic_basic9031_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// SSE runs in cn-shanghai: it is the only probed region where the
+			// SSE create/read round trip works without an account whitelist.
+			// Other regions either hide the SSE fields in the response
+			// (cn-hangzhou, cn-beijing, cn-shenzhen, cn-hongkong,
+			// cn-zhangjiakou) or reject SSE with FeatureNotEnabled behind an
+			// account whitelist (cn-qingdao).
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -258,6 +322,10 @@ func TestAccAliCloudMessageServiceTopic_basic9031_twin(t *testing.T) {
 					"topic_type":       "normal",
 					"enable_logging":   "true",
 					"max_message_size": "65536",
+					"enable_sse":       "true",
+					"sse_type":         "KMS",
+					"sse_algorithm":    "AES-256-GCM",
+					"kms_key_id":       "${alicloud_kms_key.default.id}",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -269,6 +337,10 @@ func TestAccAliCloudMessageServiceTopic_basic9031_twin(t *testing.T) {
 						"topic_type":       "normal",
 						"enable_logging":   "true",
 						"max_message_size": "65536",
+						"enable_sse":       "true",
+						"sse_type":         "KMS",
+						"sse_algorithm":    "AES-256-GCM",
+						"kms_key_id":       CHECKSET,
 						"tags.%":           "2",
 						"tags.Created":     "TF",
 						"tags.For":         "Test",
@@ -300,6 +372,13 @@ func TestAccAliCloudMessageServiceTopic_basic9032(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// SSE runs in cn-shanghai: it is the only probed region where the
+			// SSE create/read round trip works without an account whitelist.
+			// Other regions either hide the SSE fields in the response
+			// (cn-hangzhou, cn-beijing, cn-shenzhen, cn-hongkong,
+			// cn-zhangjiakou) or reject SSE with FeatureNotEnabled behind an
+			// account whitelist (cn-qingdao).
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -344,6 +423,56 @@ func TestAccAliCloudMessageServiceTopic_basic9032(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"max_message_size": "65536",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_sse": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sse_type":      "KMS",
+					"sse_algorithm": "AES-256-GCM",
+					"kms_key_id":    "${alicloud_kms_key.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sse_type":      "KMS",
+						"sse_algorithm": "AES-256-GCM",
+						"kms_key_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sse_type": "SMQ",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sse_type": "SMQ",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "false",
+					"sse_type":      REMOVEKEY,
+					"sse_algorithm": REMOVEKEY,
+					"kms_key_id":    REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_sse":    "false",
+						"sse_type":      REMOVEKEY,
+						"sse_algorithm": REMOVEKEY,
+						"kms_key_id":    REMOVEKEY,
 					}),
 				),
 			},
@@ -413,6 +542,13 @@ func TestAccAliCloudMessageServiceTopic_basic9032_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			// SSE runs in cn-shanghai: it is the only probed region where the
+			// SSE create/read round trip works without an account whitelist.
+			// Other regions either hide the SSE fields in the response
+			// (cn-hangzhou, cn-beijing, cn-shenzhen, cn-hongkong,
+			// cn-zhangjiakou) or reject SSE with FeatureNotEnabled behind an
+			// account whitelist (cn-qingdao).
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -424,6 +560,10 @@ func TestAccAliCloudMessageServiceTopic_basic9032_twin(t *testing.T) {
 					"topic_type":       "fifo",
 					"logging_enabled":  "true",
 					"max_message_size": "65536",
+					"enable_sse":       "true",
+					"sse_type":         "KMS",
+					"sse_algorithm":    "AES-256-GCM",
+					"kms_key_id":       "${alicloud_kms_key.default.id}",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -435,6 +575,10 @@ func TestAccAliCloudMessageServiceTopic_basic9032_twin(t *testing.T) {
 						"topic_type":       "fifo",
 						"logging_enabled":  "true",
 						"max_message_size": "65536",
+						"enable_sse":       "true",
+						"sse_type":         "KMS",
+						"sse_algorithm":    "AES-256-GCM",
+						"kms_key_id":       CHECKSET,
 						"tags.%":           "2",
 						"tags.Created":     "TF",
 						"tags.For":         "Test",
@@ -458,9 +602,13 @@ var AliCloudMessageServiceTopicMap9031 = map[string]string{
 
 func AliCloudMessageServiceTopicBasicDependence9031(name string) string {
 	return fmt.Sprintf(`
-	variable "name" {
-		default = "%s"
-	}
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_kms_key" "default" {
+  pending_window_in_days = 7
+}
 `, name)
 }
 
