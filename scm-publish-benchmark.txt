@@ -1,0 +1,1 @@
+Temporary SCM publishing latency verification. No provider behavior changes.
