@@ -857,9 +857,15 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		for i, EnvironmentVarsValue := range ContainersMap["environment_vars"].(*schema.Set).List() {
 			EnvironmentVarsMap := EnvironmentVarsValue.(map[string]interface{})
 			EnvironmentVars[i] = make(map[string]interface{})
-			EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
-			EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
-			EnvironmentVars[i]["FieldRefFieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+			if EnvironmentVarsMap["key"] != nil {
+				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
+			}
+			if EnvironmentVarsMap["value"] != nil {
+				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+			}
+			if EnvironmentVarsMap["field_ref_field_path"] != nil {
+				EnvironmentVars[i]["FieldRefFieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+			}
 		}
 		Containers[i]["EnvironmentVar"] = EnvironmentVars
 		Containers[i]["WorkingDir"] = ContainersMap["working_dir"]
@@ -967,9 +973,15 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 			for i, EnvironmentVarsValue := range InitContainersMap["environment_vars"].(*schema.Set).List() {
 				EnvironmentVarsMap := EnvironmentVarsValue.(map[string]interface{})
 				EnvironmentVars[i] = make(map[string]interface{})
-				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
-				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
-				EnvironmentVars[i]["FieldRefFieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+				if EnvironmentVarsMap["key"] != nil {
+					EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
+				}
+				if EnvironmentVarsMap["value"] != nil {
+					EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+				}
+				if EnvironmentVarsMap["field_ref_field_path"] != nil {
+					EnvironmentVars[i]["FieldRefFieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+				}
 			}
 			InitContainers[i]["InitContainerEnvironmentVar"] = EnvironmentVars
 			InitContainers[i]["WorkingDir"] = InitContainersMap["working_dir"]
@@ -1110,7 +1122,7 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	d.Set("egress_bandwidth", o["EgressBandwidth"])
 	d.Set("ephemeral_storage", o["EphemeralStorage"])
 	d.Set("load_balancer_weight", o["LoadBalancerWeight"])
-	d.Set("tags", o["Tags"])
+	d.Set("tags", tagsToMap(o["Tags"]))
 	d.Set("instance_types", o["InstanceTypes"])
 	d.Set("spot_strategy", o["SpotStrategy"])
 	d.Set("override", d.Get("override").(bool))
@@ -1241,10 +1253,15 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 					environmentVarsMaps := make([]map[string]interface{}, 0)
 					for _, environmentVarsValue := range m1["EnvironmentVars"].([]interface{}) {
 						environmentVars := environmentVarsValue.(map[string]interface{})
-						environmentVarsMap := map[string]interface{}{
-							"key":                  environmentVars["Key"],
-							"value":                environmentVars["Value"],
-							"field_ref_field_path": environmentVars["FieldRefFieldPath"],
+						environmentVarsMap := map[string]interface{}{}
+						if environmentVars["Key"] != nil {
+							environmentVarsMap["key"] = environmentVars["Key"]
+						}
+						if environmentVars["Value"] != nil {
+							environmentVarsMap["value"] = environmentVars["Value"]
+						}
+						if environmentVars["FieldRefFieldPath"] != nil {
+							environmentVarsMap["field_ref_field_path"] = environmentVars["FieldRefFieldPath"]
 						}
 						environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 					}
@@ -1310,10 +1327,15 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 					environmentVarsMaps := make([]map[string]interface{}, 0)
 					for _, environmentVarsValue := range m1["InitContainerEnvironmentVars"].([]interface{}) {
 						environmentVars := environmentVarsValue.(map[string]interface{})
-						environmentVarsMap := map[string]interface{}{
-							"key":                  environmentVars["Key"],
-							"value":                environmentVars["Value"],
-							"field_ref_field_path": environmentVars["FieldRefFieldPath"],
+						environmentVarsMap := map[string]interface{}{}
+						if environmentVars["Key"] != nil {
+							environmentVarsMap["key"] = environmentVars["Key"]
+						}
+						if environmentVars["Value"] != nil {
+							environmentVarsMap["value"] = environmentVars["Value"]
+						}
+						if environmentVars["FieldRefFieldPath"] != nil {
+							environmentVarsMap["field_ref_field_path"] = environmentVars["FieldRefFieldPath"]
 						}
 						environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 					}
@@ -1616,7 +1638,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		update = true
 		request["LoadBalancerWeight"] = d.Get("load_balancer_weight")
 	}
-	if d.HasChange("tags") {
+	if d.HasChange("tags") || d.Get("override").(bool) {
 		update = true
 		count := 1
 		for key, value := range d.Get("tags").(map[string]interface{}) {
@@ -1642,7 +1664,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		}
 	}
 
-	if d.HasChange("dns_config_options") {
+	if d.HasChange("dns_config_options") || d.Get("override").(bool) {
 		update = true
 		if v, ok := d.GetOk("dns_config_options"); ok {
 			dnsConfigOptionMaps := make([]map[string]interface{}, 0)
@@ -1657,7 +1679,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		}
 	}
 
-	if d.HasChange("security_context_sysctls") {
+	if d.HasChange("security_context_sysctls") || d.Get("override").(bool) {
 		update = true
 		if v, ok := d.GetOk("security_context_sysctls"); ok {
 			securityContextSysctlMaps := make([]map[string]interface{}, 0)
@@ -1690,7 +1712,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		}
 	}
 
-	if d.HasChange("containers") {
+	if d.HasChange("containers") || d.Get("override").(bool) {
 		update = true
 		Containers := make([]map[string]interface{}, len(d.Get("containers").([]interface{})))
 		for i, ContainersValue := range d.Get("containers").([]interface{}) {
@@ -1766,9 +1788,15 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			for i, EnvironmentVarsValue := range ContainersMap["environment_vars"].(*schema.Set).List() {
 				EnvironmentVarsMap := EnvironmentVarsValue.(map[string]interface{})
 				EnvironmentVars[i] = make(map[string]interface{})
-				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
-				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
-				EnvironmentVars[i]["FieldRef.FieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+				if EnvironmentVarsMap["key"] != nil {
+					EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
+				}
+				if EnvironmentVarsMap["value"] != nil {
+					EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+				}
+				if EnvironmentVarsMap["field_ref_field_path"] != nil {
+					EnvironmentVars[i]["FieldRef.FieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+				}
 			}
 			Containers[i]["EnvironmentVar"] = EnvironmentVars
 
@@ -1798,7 +1826,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		request["Container"] = Containers
 	}
 
-	if d.HasChange("init_containers") {
+	if d.HasChange("init_containers") || d.Get("override").(bool) {
 		update = true
 		InitContainers := make([]map[string]interface{}, len(d.Get("init_containers").([]interface{})))
 		for i, InitContainersValue := range d.Get("init_containers").([]interface{}) {
@@ -1821,9 +1849,15 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			for i, EnvironmentVarsValue := range InitContainersMap["environment_vars"].(*schema.Set).List() {
 				EnvironmentVarsMap := EnvironmentVarsValue.(map[string]interface{})
 				EnvironmentVars[i] = make(map[string]interface{})
-				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
-				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
-				EnvironmentVars[i]["FieldRef.FieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+				if EnvironmentVarsMap["key"] != nil {
+					EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
+				}
+				if EnvironmentVarsMap["value"] != nil {
+					EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+				}
+				if EnvironmentVarsMap["field_ref_field_path"] != nil {
+					EnvironmentVars[i]["FieldRef.FieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+				}
 			}
 			InitContainers[i]["InitContainerEnvironmentVar"] = EnvironmentVars
 
@@ -1853,7 +1887,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		request["InitContainer"] = InitContainers
 	}
 
-	if d.HasChange("volumes") {
+	if d.HasChange("volumes") || d.Get("override").(bool) {
 		update = true
 		Volumes := make([]map[string]interface{}, len(d.Get("volumes").(*schema.Set).List()))
 		for i, VolumesValue := range d.Get("volumes").(*schema.Set).List() {

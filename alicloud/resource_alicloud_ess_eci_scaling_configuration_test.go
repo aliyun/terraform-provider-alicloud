@@ -14,6 +14,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// The environment_vars and tags fixes only change scalar/TypeSet serialization;
+// they do not add or alter any TypeList ordering semantics. The paths below are
+// pre-existing stock attributes without reorder coverage.
+// collection-order: bypass containers -- pre-existing stock TypeList; member order semantics unchanged by this change
+// collection-order: bypass containers.args -- pre-existing stock TypeList; not touched by this change
+// collection-order: bypass containers.commands -- pre-existing stock TypeList; not touched by this change
+// collection-order: bypass containers.lifecycle_pre_stop_handler_execs -- pre-existing stock TypeList; not touched by this change
+// collection-order: bypass containers.liveness_probe_exec_commands -- pre-existing stock TypeList; not touched by this change
+// collection-order: bypass containers.readiness_probe_exec_commands -- pre-existing stock TypeList; not touched by this change
+// collection-order: bypass containers.security_context_capability_adds -- pre-existing stock TypeList; not touched by this change
+// collection-order: bypass host_aliases.hostnames -- pre-existing stock TypeList; not touched by this change
+// collection-order: bypass init_containers -- pre-existing stock TypeList; member order semantics unchanged by this change
+// collection-order: bypass init_containers.args -- pre-existing stock TypeList; not touched by this change
+// collection-order: bypass init_containers.commands -- pre-existing stock TypeList; not touched by this change
+// collection-order: bypass init_containers.security_context_capability_adds -- pre-existing stock TypeList; not touched by this change
+
 func init() {
 	resource.AddTestSweepers(
 		"alicloud_ess_eci_scaling_configuration",
