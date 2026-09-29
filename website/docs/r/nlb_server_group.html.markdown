@@ -72,6 +72,13 @@ The following arguments are supported:
 
   - `ipv4` (default): IPv4
   - `DualStack`: dual stack
+* `ip_version_affinity_mode` - (Optional, Computed, Available since v1.295.0) The traffic scheduling policy for dual-stack server groups. Valid values:
+
+  - `NonAffinity` (default): forwards requests to healthy backends regardless of IP version.
+  - `Affinity`: IPv4 requests are forwarded only to IPv4 backends; IPv6 requests are forwarded only to IPv6 backends.
+
+-> **NOTE:** This parameter takes effect only when `address_ip_version` is set to `DualStack`.
+
 * `any_port_enabled` - (Optional, ForceNew, Computed) Specifies whether to enable all-port forwarding. Valid values:
 
   - `true`

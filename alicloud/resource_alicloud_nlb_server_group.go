@@ -33,6 +33,12 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"DualStack", "Ipv4"}, false),
 			},
+			"ip_version_affinity_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"NonAffinity", "Affinity"}, false),
+			},
 			"any_port_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -242,6 +248,9 @@ func resourceAliCloudNlbServerGroupCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("address_ip_version"); ok {
 		request["AddressIPVersion"] = v
 	}
+	if v, ok := d.GetOk("ip_version_affinity_mode"); ok {
+		request["IpVersionAffinityMode"] = v
+	}
 	objectDataLocalMap := make(map[string]interface{})
 
 	if v := d.Get("health_check"); !IsNil(v) {
@@ -353,6 +362,7 @@ func resourceAliCloudNlbServerGroupRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.Set("address_ip_version", objectRaw["AddressIPVersion"])
+	d.Set("ip_version_affinity_mode", objectRaw["IpVersionAffinityMode"])
 	d.Set("any_port_enabled", objectRaw["AnyPortEnabled"])
 	d.Set("connection_drain_enabled", objectRaw["ConnectionDrainEnabled"])
 	d.Set("connection_drain_timeout", objectRaw["ConnectionDrainTimeout"])
@@ -443,6 +453,11 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 	if d.HasChange("preserve_client_ip_enabled") {
 		update = true
 		request["PreserveClientIpEnabled"] = d.Get("preserve_client_ip_enabled")
+	}
+
+	if d.HasChange("ip_version_affinity_mode") {
+		update = true
+		request["IpVersionAffinityMode"] = d.Get("ip_version_affinity_mode")
 	}
 
 	if d.HasChange("health_check") {
