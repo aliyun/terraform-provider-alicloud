@@ -281,10 +281,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
-				Elem:    schema.TypeString,
 				Removed: "Field 'kms_encryption_context' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'kms_encryption_context' to replace it",
 			},
 			"user_ca": {
@@ -404,7 +404,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Description: "cluster local domain ",
 			},
 			"runtime": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -520,7 +520,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Deprecated: "Field 'cluster_ca_cert' has been deprecated from provider version 1.248.0. From version 1.248.0, new DataSource 'alicloud_cs_cluster_credential' is recommended to manage cluster's kubeconfig, you can also save the 'certificate_authority.cluster_cert' attribute content of new DataSource 'alicloud_cs_cluster_credential' to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.",
 			},
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -545,7 +545,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"connections": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -672,10 +672,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ForceNew: true,
 			},
 			// lintignore: S006
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
+			"tags": tagsSchemaWithElements(),
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,

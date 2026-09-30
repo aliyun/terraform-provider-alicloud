@@ -362,10 +362,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
-				Elem: schema.TypeString,
 			},
 			"user_ca": {
 				Type:     schema.TypeString,
@@ -439,10 +439,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				},
 			},
 			// lintignore: S006
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
+			"tags": tagsSchemaWithElements(),
 			"slb_internet_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -479,7 +476,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Removed:  "Field 'node_port_range' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
 			"runtime": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -559,7 +556,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Deprecated: "Field 'cluster_ca_cert' has been deprecated from provider version 1.248.0. From version 1.248.0, new DataSource 'alicloud_cs_cluster_credential' is recommended to manage cluster's kubeconfig, you can also save the 'certificate_authority.cluster_cert' attribute content of new DataSource 'alicloud_cs_cluster_credential' to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.",
 			},
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -584,7 +581,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"connections": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
