@@ -426,12 +426,12 @@ The following attributes are exported:
 * `slb_internet` - The public ip of load balancer.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
-* `connections` - (Map) Map of kubernetes cluster connection information.
+* `connections` - (Set) Set of kubernetes cluster connection information.
   * `api_server_internet` - API Server Internet endpoint.
   * `api_server_intranet` - API Server Intranet endpoint.
   * `master_public_ip` - Master node SSH IP address.
   * `service_domain` - Service Access Domain.
-* `certificate_authority` - (Map, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
+* `certificate_authority` - (Set, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
   * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
   * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.

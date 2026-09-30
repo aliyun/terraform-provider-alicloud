@@ -1192,13 +1192,33 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 	}
 
 	if skipSetCertificateAuthority {
-		d.Set("certificate_authority", map[string]string{
-			"cluster_cert": "",
-			"client_cert":  "",
-			"client_key":   "",
-		})
+		certificateAuthorityMaps := make([]map[string]interface{}, 0)
+		certificateAuthorityMap := make(map[string]interface{})
+		certificateAuthorityMap["cluster_cert"] = ""
+		certificateAuthorityMap["client_cert"] = ""
+		certificateAuthorityMap["client_key"] = ""
+
+		certificateAuthorityMaps = append(certificateAuthorityMaps, certificateAuthorityMap)
+		d.Set("certificate_authority", certificateAuthorityMaps)
 	} else {
-		if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
+		certificateAuthorityMaps := make([]map[string]interface{}, 0)
+		certificateAuthorityMap := make(map[string]interface{})
+
+		if clusterCert, ok := flattenAlicloudCSCertificate(kubeConfig)["cluster_cert"]; ok {
+			certificateAuthorityMap["cluster_cert"] = clusterCert
+		}
+
+		if clientCert, ok := flattenAlicloudCSCertificate(kubeConfig)["client_cert"]; ok {
+			certificateAuthorityMap["client_cert"] = clientCert
+		}
+
+		if clientKey, ok := flattenAlicloudCSCertificate(kubeConfig)["client_key"]; ok {
+			certificateAuthorityMap["client_key"] = clientKey
+		}
+
+		certificateAuthorityMaps = append(certificateAuthorityMaps, certificateAuthorityMap)
+
+		if err := d.Set("certificate_authority", certificateAuthorityMaps); err != nil {
 			return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
 		}
 	}

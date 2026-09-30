@@ -362,10 +362,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
-				Elem: schema.TypeString,
 			},
 			"user_ca": {
 				Type:     schema.TypeString,
@@ -439,10 +439,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				},
 			},
 			// lintignore: S006
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
+			"tags": tagsSchemaWithElements(),
 			"slb_internet_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -479,7 +476,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Removed:  "Field 'node_port_range' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
 			"runtime": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -559,7 +556,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Deprecated: "Field 'cluster_ca_cert' has been deprecated from provider version 1.248.0. From version 1.248.0, new DataSource 'alicloud_cs_cluster_credential' is recommended to manage cluster's kubeconfig, you can also save the 'certificate_authority.cluster_cert' attribute content of new DataSource 'alicloud_cs_cluster_credential' to an appropriate path(like ~/.kube/cluster-ca-cert.pem) for replace it.",
 			},
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -584,7 +581,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"connections": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -1294,21 +1291,24 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// Get slb information and set connect
-	connection := make(map[string]string)
+	connectionsMaps := make([]map[string]interface{}, 0)
+	connectionsMap := make(map[string]interface{})
 	masterURL := object.MasterURL
 	endPoint := make(map[string]string)
 	_ = json.Unmarshal([]byte(masterURL), &endPoint)
-	connection["api_server_internet"] = endPoint["api_server_endpoint"]
-	connection["api_server_intranet"] = endPoint["intranet_api_server_endpoint"]
+	connectionsMap["api_server_internet"] = endPoint["api_server_endpoint"]
+	connectionsMap["api_server_intranet"] = endPoint["intranet_api_server_endpoint"]
 	if endPoint["api_server_endpoint"] != "" {
-		connection["master_public_ip"] = strings.Split(strings.Split(endPoint["api_server_endpoint"], ":")[1], "/")[2]
+		connectionsMap["master_public_ip"] = strings.Split(strings.Split(endPoint["api_server_endpoint"], ":")[1], "/")[2]
 	}
 	if object.Profile != EdgeProfile {
-		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), object.RegionId)
+		connectionsMap["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), object.RegionId)
 	}
 
-	d.Set("connections", connection)
-	d.Set("slb_internet", connection["master_public_ip"])
+	connectionsMaps = append(connectionsMaps, connectionsMap)
+
+	d.Set("connections", connectionsMaps)
+	d.Set("slb_internet", connectionsMap["master_public_ip"])
 	if endPoint["intranet_api_server_endpoint"] != "" {
 		d.Set("slb_intranet", strings.Split(strings.Split(endPoint["intranet_api_server_endpoint"], ":")[1], "/")[2])
 	}
@@ -1668,9 +1668,11 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 		creationArgs.NodePortRange = nodePortRange.(string)
 	}
 
-	if runtime, ok := d.GetOk("runtime"); ok {
-		if v := runtime.(map[string]interface{}); len(v) > 0 {
-			creationArgs.Runtime = expandKubernetesRuntimeConfig(v)
+	if v, ok := d.GetOk("runtime"); ok {
+		for _, runtimeList := range convertToInterfaceArray(v) {
+			runtimeArg := runtimeList.(map[string]interface{})
+
+			creationArgs.Runtime = expandKubernetesRuntimeConfig(runtimeArg)
 		}
 	}
 
