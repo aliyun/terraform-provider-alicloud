@@ -42,10 +42,7 @@ func dataSourceAliCloudArmsEnvironments() *schema.Resource {
 				Optional: true,
 			},
 			// lintignore: S006
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
+			"tags": tagsSchemaWithElements(),
 			"environments": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -126,15 +123,29 @@ func dataSourceAliCloudArmsEnvironments() *schema.Resource {
 func dataSourceAliCloudArmsEnvironmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	var objects []map[string]interface{}
-	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		r, err := regexp.Compile(v.(string))
+	action := "ListEnvironments"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+
+	if v, ok := d.GetOk("environment_type"); ok {
+		request["EnvironmentType"] = v
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		tagsJson, err := convertArrayObjectToJsonString(tagsMap)
 		if err != nil {
 			return WrapError(err)
 		}
-		nameRegex = r
+
+		request["Tag"] = tagsJson
 	}
+
+	var objects []map[string]interface{}
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -146,34 +157,22 @@ func dataSourceAliCloudArmsEnvironmentRead(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	var request map[string]interface{}
-	var response map[string]interface{}
-	var query map[string]interface{}
-	action := "ListEnvironments"
-	var err error
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("environment_type"); ok {
-		request["EnvironmentType"] = v
-	}
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["ResourceGroupId"] = v
-	}
-	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		tagsJson, err := convertArrayObjectToJsonString(tagsMap)
+	var nameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
 		if err != nil {
 			return WrapError(err)
 		}
 
-		//request["Tags"] = tagsJson
-		request["Tag"] = tagsJson
+		nameRegex = r
 	}
+
+	var response map[string]interface{}
+	var err error
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = client.RpcPost("ARMS", "2019-08-08", action, query, request, true)
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -187,7 +186,7 @@ func dataSourceAliCloudArmsEnvironmentRead(d *schema.ResourceData, meta interfac
 	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_arms_environments", action, AlibabaCloudSdkGoERROR)
 	}
 
 	resp, err := jsonpath.Get("$.Data.Environments", response)
@@ -201,11 +200,13 @@ func dataSourceAliCloudArmsEnvironmentRead(d *schema.ResourceData, meta interfac
 		if nameRegex != nil && !nameRegex.MatchString(fmt.Sprint(item["EnvironmentName"])) {
 			continue
 		}
+
 		if len(idsMap) > 0 {
 			if _, ok := idsMap[fmt.Sprint(item["EnvironmentId"])]; !ok {
 				continue
 			}
 		}
+
 		objects = append(objects, item)
 	}
 
@@ -237,6 +238,7 @@ func dataSourceAliCloudArmsEnvironmentRead(d *schema.ResourceData, meta interfac
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
@@ -244,6 +246,7 @@ func dataSourceAliCloudArmsEnvironmentRead(d *schema.ResourceData, meta interfac
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("environments", s); err != nil {
 		return WrapError(err)
 	}
@@ -251,5 +254,6 @@ func dataSourceAliCloudArmsEnvironmentRead(d *schema.ResourceData, meta interfac
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }
