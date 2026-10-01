@@ -1059,7 +1059,7 @@ func TestAccAliCloudClickHouseDBCluster_ColdStorage(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_version":      "23.8",
+					"db_cluster_version":      "25.3",
 					"category":                "Basic",
 					"db_cluster_class":        "S8",
 					"db_cluster_network_type": "vpc",
@@ -1072,7 +1072,7 @@ func TestAccAliCloudClickHouseDBCluster_ColdStorage(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_version":      "23.8",
+						"db_cluster_version":      "25.3",
 						"category":                "Basic",
 						"db_cluster_class":        "S8",
 						"db_cluster_network_type": "vpc",
