@@ -1088,6 +1088,19 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 	})
 }
 
+func TestUnitAliCloudNasFileSystemAgenticStorageTypeValidation(t *testing.T) {
+	validate := resourceAliCloudNasFileSystem().Schema["storage_type"].ValidateFunc
+	if validate == nil {
+		t.Fatal("storage_type ValidateFunc is nil")
+	}
+	if _, errors := validate("Agentic", "storage_type"); len(errors) != 0 {
+		t.Fatalf("Agentic should be accepted: %v", errors)
+	}
+	if _, errors := validate("unknown", "storage_type"); len(errors) == 0 {
+		t.Fatal("unknown storage type should be rejected")
+	}
+}
+
 // Case create_cpfs_file_system 12182
 func TestAccAliCloudNasFileSystem_basic12182(t *testing.T) {
 	var v map[string]interface{}
