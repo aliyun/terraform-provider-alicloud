@@ -430,7 +430,8 @@ func resourceAliCloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 
 	checkValue00 = d.Get("file_system_type")
 	checkValue01 = d.Get("protocol_type")
-	if (checkValue00 == "standard") && (checkValue01 == "NFS") {
+	checkValue02 := d.Get("storage_type")
+	if nasFileSystemSupportsNFSAcl(checkValue00.(string), checkValue01.(string), checkValue02.(string)) {
 		objectRaw, err = nasServiceV2.DescribeFileSystemDescribeNfsAcl(d.Id())
 		if err != nil && !NotFoundError(err) {
 			return WrapError(err)
@@ -449,6 +450,10 @@ func resourceAliCloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 	}
 
 	return nil
+}
+
+func nasFileSystemSupportsNFSAcl(fileSystemType, protocolType, storageType string) bool {
+	return fileSystemType == "standard" && protocolType == "NFS" && storageType != "Agentic"
 }
 
 func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {

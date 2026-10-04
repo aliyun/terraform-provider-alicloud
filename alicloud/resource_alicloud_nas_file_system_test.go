@@ -1101,6 +1101,29 @@ func TestUnitAliCloudNasFileSystemAgenticStorageTypeValidation(t *testing.T) {
 	}
 }
 
+func TestUnitNasFileSystemSupportsNFSAcl(t *testing.T) {
+	tests := []struct {
+		name           string
+		fileSystemType string
+		protocolType   string
+		storageType    string
+		want           bool
+	}{
+		{name: "standard NFS", fileSystemType: "standard", protocolType: "NFS", storageType: "Performance", want: true},
+		{name: "AgenticFS", fileSystemType: "standard", protocolType: "NFS", storageType: "Agentic", want: false},
+		{name: "standard SMB", fileSystemType: "standard", protocolType: "SMB", storageType: "Performance", want: false},
+		{name: "CPFS", fileSystemType: "cpfs", protocolType: "NFS", storageType: "advance_100", want: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := nasFileSystemSupportsNFSAcl(test.fileSystemType, test.protocolType, test.storageType); got != test.want {
+				t.Fatalf("nasFileSystemSupportsNFSAcl() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
 // Case create_cpfs_file_system 12182
 func TestAccAliCloudNasFileSystem_basic12182(t *testing.T) {
 	var v map[string]interface{}
