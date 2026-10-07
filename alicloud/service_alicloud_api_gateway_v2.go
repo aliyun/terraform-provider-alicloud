@@ -470,3 +470,52 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayApi(id string) (object map[strin
 }
 
 // DescribeApiGatewayApi >>> Encapsulated.
+
+// DescribeApiGatewayTrafficControl <<< Encapsulated get interface for ApiGateway TrafficControl.
+
+func (s *ApiGatewayServiceV2) DescribeApiGatewayTrafficControl(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeTrafficControls"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["TrafficControlId"] = id
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFoundTrafficControl"}) {
+			return object, WrapErrorf(NotFoundErr("TrafficControl", id), NotFoundMsg, response)
+		}
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.TrafficControls.TrafficControl[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TrafficControls.TrafficControl[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("TrafficControl", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+// DescribeApiGatewayTrafficControl >>> Encapsulated.
