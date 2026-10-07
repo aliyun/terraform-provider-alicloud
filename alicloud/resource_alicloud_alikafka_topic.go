@@ -35,6 +35,10 @@ func resourceAliCloudAlikafkaTopic() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"config": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"configs": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -59,6 +63,12 @@ func resourceAliCloudAlikafkaTopic() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"min_insync_replicas": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.IntBetween(1, 3),
+			},
 			"partition_num": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -72,6 +82,12 @@ func resourceAliCloudAlikafkaTopic() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"replication_factor": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.IntBetween(1, 3),
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -81,6 +97,10 @@ func resourceAliCloudAlikafkaTopic() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"value": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}
@@ -109,6 +129,12 @@ func resourceAliCloudAlikafkaTopicCreate(d *schema.ResourceData, meta interface{
 	}
 	if v, ok := d.GetOkExists("local_topic"); ok {
 		request["LocalTopic"] = v
+	}
+	if v, ok := d.GetOkExists("replication_factor"); ok {
+		request["ReplicationFactor"] = v
+	}
+	if v, ok := d.GetOkExists("min_insync_replicas"); ok {
+		request["MinInsyncReplicas"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
@@ -225,11 +251,23 @@ func resourceAliCloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 	request["Topic"] = parts[1]
 	request["RegionId"] = client.RegionId
 
-	// In the UpdateTopicConfig, the Config and Value are required; For Terraform, if Config, Value and Configs are set simultaneously, only Configs takes effect.
-	request["Config"] = "skipConfig"
-	request["Value"] = "skipValue"
+	// In the UpdateTopicConfig API, both Config (the config key) and Value (the
+	// corresponding value) are required and applied as a single key=value pair.
+	// When the user specifies `config` and `value`, send them to update one config
+	// entry; otherwise fall back to placeholder values and rely on `configs` (the
+	// bulk JSON) to perform the update.
+	if v, ok := d.GetOk("config"); ok {
+		request["Config"] = v
+	} else {
+		request["Config"] = "skipConfig"
+	}
+	if v, ok := d.GetOk("value"); ok {
+		request["Value"] = v
+	} else {
+		request["Value"] = "skipValue"
+	}
 
-	if d.HasChange("configs") {
+	if d.HasChange("configs") || d.HasChange("config") || d.HasChange("value") {
 		update = true
 	}
 	if v, ok := d.GetOk("configs"); ok {

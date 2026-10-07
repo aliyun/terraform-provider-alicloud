@@ -522,6 +522,80 @@ var AliCloudAlikafkaTopicMap10065 = map[string]string{
 	"region_id":   CHECKSET,
 }
 
+func TestAccAliCloudAlikafkaTopic_replicationFactor(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alikafka_topic.default"
+	ra := resourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlikafkaTopic")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccalikafka%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":         "${alicloud_alikafka_instance.default.id}",
+					"topic":               name,
+					"remark":              name,
+					"local_topic":         "true",
+					"replication_factor":  "3",
+					"min_insync_replicas": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":         CHECKSET,
+						"topic":               name,
+						"remark":              name,
+						"local_topic":         "true",
+						"replication_factor":  "3",
+						"min_insync_replicas": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": "retention.ms",
+					"value":  "3600000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config": "retention.ms",
+						"value":  "3600000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"value": "10800000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config": "retention.ms",
+						"value":  "10800000",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"replication_factor", "min_insync_replicas", "config", "value"},
+			},
+		},
+	})
+}
+
 func AliCloudAlikafkaTopicBasicDependence10065(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
