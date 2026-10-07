@@ -350,6 +350,42 @@ func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 			return nil
 		})
 		addDebug(action, response, request)
+		if isDtsJobNotFoundSignal(err, response) {
+			// An instance that carries historical deletion records can lose the server-side
+			// mapping between the job ID stored in state and the instance, so ModifyDtsJobName
+			// reports that the instance does not exist. Recover the currently valid job ID from
+			// the instance and retry the rename once before failing.
+			resolvedId, resolveErr := dtsSubscriptionJobResolveJobId(d, &dtsService)
+			if resolveErr != nil {
+				log.Printf("[WARN] Failed to resolve the valid DTS job ID under instance %s: %s", d.Get("dts_instance_id"), resolveErr)
+			}
+			if resolveErr == nil && resolvedId != "" && resolvedId != d.Id() {
+				log.Printf("[INFO] The DTS job ID %s of alicloud_dts_subscription_job is no longer valid, retrying %s with the resolved job ID %s.", d.Id(), action, resolvedId)
+				request["DtsJobId"] = resolvedId
+				var retryErr error
+				retryWait := incrementalWait(3*time.Second, 3*time.Second)
+				retryErr = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, retryErr = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+					if retryErr != nil {
+						if NeedRetry(retryErr) {
+							retryWait()
+							return resource.RetryableError(retryErr)
+						}
+						return resource.NonRetryableError(retryErr)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if retryErr == nil && fmt.Sprint(response["Success"]) != "false" {
+					d.SetId(resolvedId)
+					err = nil
+				} else if retryErr != nil {
+					err = retryErr
+				} else {
+					err = fmt.Errorf("%s failed, response: %v", action, response)
+				}
+			}
+		}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -743,6 +779,34 @@ func resourceAliCloudDtsSubscriptionJobStatusFlow(d *schema.ResourceData, meta i
 	}
 
 	return nil
+}
+
+// dtsSubscriptionJobResolveJobId recovers the currently valid DTS job ID from the DTS instance
+// backing this resource. The instance ID remains stable while the job attached to it can be
+// deleted and re-created, leaving the job ID stored in state stale.
+func dtsSubscriptionJobResolveJobId(d *schema.ResourceData, dtsService *DtsService) (string, error) {
+	instanceId := ""
+	if v, ok := d.GetOk("dts_instance_id"); ok {
+		instanceId = fmt.Sprint(v)
+	}
+	if instanceId == "" {
+		return "", fmt.Errorf("dts_instance_id is empty, cannot resolve the valid job ID of alicloud_dts_subscription_job %s", d.Id())
+	}
+	jobs, err := dtsService.DescribeDtsJobsByInstanceId(instanceId, "SUBSCRIBE")
+	if err != nil {
+		return "", WrapError(err)
+	}
+	if len(jobs) == 0 {
+		return "", fmt.Errorf("no DTS subscription job was found under instance %s", instanceId)
+	}
+	if len(jobs) == 1 {
+		return fmt.Sprint(jobs[0]["DtsJobId"]), nil
+	}
+	jobIds := make([]string, 0, len(jobs))
+	for _, job := range jobs {
+		jobIds = append(jobIds, fmt.Sprint(job["DtsJobId"]))
+	}
+	return "", fmt.Errorf("found multiple DTS subscription jobs (%s) under instance %s, cannot determine the valid job ID automatically", strings.Join(jobIds, ","), instanceId)
 }
 
 func convertDtsPaymentTypeResponse(source interface{}) interface{} {

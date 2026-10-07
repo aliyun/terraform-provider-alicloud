@@ -4,14 +4,22 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -609,4 +617,145 @@ resource "alicloud_rds_account" "target_account" {
 }
 
 `, name, os.Getenv("ALICLOUD_REGION"))
+}
+
+// lintignore: R001
+func TestUnitAlicloudDTSSubscriptionJob(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_dts_subscription_job"].Schema).Data(nil, nil)
+	for key, value := range map[string]interface{}{
+		"dts_instance_id":               "dts_instance_id",
+		"dts_job_name":                  "dts_job_name",
+		"payment_type":                  "PayAsYouGo",
+		"source_endpoint_engine_name":   "MySQL",
+		"source_endpoint_instance_type": "RDS",
+		"source_endpoint_region":        "cn-hangzhou",
+		"status":                        "Normal",
+	} {
+		err := d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+
+	readMockResponse := map[string]interface{}{
+		"Checkpoint":    0,
+		"DbObject":      "db_list",
+		"DtsInstanceID": "dts_instance_id",
+		"DtsJobName":    "dts_job_name_renamed",
+		"PayType":       "PostPaid",
+		"Reserved":      "",
+		"SourceEndpoint": map[string]interface{}{
+			"EngineName":   "MySQL",
+			"InstanceType": "RDS",
+			"Region":       "cn-hangzhou",
+		},
+		"Status": "Normal",
+		"SubscriptionDataType": map[string]interface{}{
+			"Ddl": true,
+			"Dml": true,
+		},
+	}
+
+	describeDtsJobsResponse := map[string]interface{}{
+		"Success": true,
+		"DtsJobList": []interface{}{
+			map[string]interface{}{
+				"DtsJobId":      "dts_job_id_resolved",
+				"DtsInstanceID": "dts_instance_id",
+				"Status":        "Normal",
+			},
+		},
+	}
+
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       String(errorCode),
+				Data:       String(errorCode),
+				Message:    String(errorCode),
+				StatusCode: tea.Int(400),
+			}
+		},
+		"ModifyJobNameNormal": func(errorCode string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"Success": true,
+			}, nil
+		},
+		"DescribeDtsJobsNormal": func(errorCode string) (map[string]interface{}, error) {
+			return describeDtsJobsResponse, nil
+		},
+		"DescribeDtsJobsEmpty": func(errorCode string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"Success":    true,
+				"DtsJobList": []interface{}{},
+			}, nil
+		},
+		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
+			return readMockResponse, nil
+		},
+	}
+
+	// The job ID stored in state no longer maps to the instance: the rename first fails with
+	// Forbidden.InstanceNotFound, then the valid job ID is resolved from the instance and the
+	// retry succeeds, refreshing the resource ID.
+	t.Run("UpdateModifyJobNameResolveNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("dts_job_name", &terraform.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"})
+		diff.SetAttribute("dts_instance_id", &terraform.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_subscription_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patcheRead := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsSubscriptionJob", func(*DtsService, string) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		patcheTags := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "ListTagResources", func(*DtsService, string, string) (interface{}, error) {
+			return map[string]interface{}{}, nil
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			case 2:
+				return responseMock["DescribeDtsJobsNormal"]("")
+			default:
+				return responseMock["ModifyJobNameNormal"]("")
+			}
+		})
+		err := resourceAliCloudDtsSubscriptionJobUpdate(resourceData, rawClient)
+		patcheRead.Reset()
+		patcheTags.Reset()
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "dts_job_id_resolved", resourceData.Id())
+	})
+
+	// The rename fails and no valid job remains under the instance: the original failure is
+	// surfaced instead of being silently swallowed.
+	t.Run("UpdateModifyJobNameResolveNotFoundAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.SetAttribute("dts_job_name", &terraform.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"})
+		diff.SetAttribute("dts_instance_id", &terraform.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"})
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_subscription_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			default:
+				return responseMock["DescribeDtsJobsEmpty"]("")
+			}
+		})
+		err := resourceAliCloudDtsSubscriptionJobUpdate(resourceData, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
 }
