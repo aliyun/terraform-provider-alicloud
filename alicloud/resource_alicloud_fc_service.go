@@ -592,25 +592,38 @@ func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCCon
 		confs := v.([]interface{})
 		conf, ok := confs[0].(map[string]interface{})
 
-		if !ok {
+		if !ok || conf == nil {
 			return
+		}
+		vswitchIds := conf["vswitch_ids"].(*schema.Set).List()
+		securityGroupId := conf["security_group_id"].(string)
+		// The resource documentation (website/docs/r/fc_service.html.markdown) states that a
+		// vpc_config block whose vswitch_ids and security_group_id are both empty is considered
+		// empty/unset. Honor that contract: send no VPCConfig and skip the 'role' requirement,
+		// which only applies when vpc_config is actually set. Checking this before dereferencing
+		// vswitchIds[0] also prevents an index-out-of-range panic on an empty vswitch_ids set.
+		if len(vswitchIds) == 0 && securityGroupId == "" {
+			return nil, nil
 		}
 		if role, ok := d.GetOk("role"); !ok || role.(string) == "" {
 			err = WrapError(Error("'role' is required when 'vpc_config' is set."))
 			return
 		}
-		if conf != nil {
-			vswitchIds := conf["vswitch_ids"].(*schema.Set).List()
-			vsw, e := vpcService.DescribeVSwitch(vswitchIds[0].(string))
-			if e != nil {
-				err = WrapError(e)
-				return
-			}
-			config = &fc.VPCConfig{
-				VSwitchIDs:      expandStringList(vswitchIds),
-				SecurityGroupID: StringPointer(conf["security_group_id"].(string)),
-				VPCID:           StringPointer(vsw.VpcId),
-			}
+		if len(vswitchIds) == 0 {
+			// VPCID can only be resolved by looking up a vswitch, so a vpc_config with a
+			// security_group_id but no vswitch_ids cannot build a valid VPCConfig.
+			err = WrapError(Error("'vswitch_ids' must not be empty when 'vpc_config' is set."))
+			return
+		}
+		vsw, e := vpcService.DescribeVSwitch(vswitchIds[0].(string))
+		if e != nil {
+			err = WrapError(e)
+			return
+		}
+		config = &fc.VPCConfig{
+			VSwitchIDs:      expandStringList(vswitchIds),
+			SecurityGroupID: StringPointer(securityGroupId),
+			VPCID:           StringPointer(vsw.VpcId),
 		}
 	}
 	return
