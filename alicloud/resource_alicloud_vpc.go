@@ -616,9 +616,14 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		request["RouteTableName"] = d.Get("system_route_table_name")
 	}
 
-	if v, ok := d.GetOkExists("system_route_table_route_propagation_enable"); (d.IsNewResource() && ok && !v.(bool)) || (!d.IsNewResource() && d.HasChange("system_route_table_route_propagation_enable")) {
-		update = true
-		request["RoutePropagationEnable"] = d.Get("system_route_table_route_propagation_enable")
+	if _, ok := d.GetOkExists("system_route_table_route_propagation_enable"); (d.IsNewResource() && ok) || (!d.IsNewResource() && d.HasChange("system_route_table_route_propagation_enable")) {
+		// The API rejects both enabling an already-enabled propagation and disabling an already-disabled one,
+		// so the request is driven by the live value instead of the state value.
+		target := d.Get("system_route_table_route_propagation_enable")
+		if current, exists := objectRaw["RoutePropagationEnable"]; !exists || current == nil || fmt.Sprint(current) != fmt.Sprint(target) {
+			update = true
+			request["RoutePropagationEnable"] = target
+		}
 	}
 
 	if update {
