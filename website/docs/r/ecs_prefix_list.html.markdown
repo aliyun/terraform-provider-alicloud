@@ -48,7 +48,8 @@ The following arguments are supported:
 * `max_entries` - (Required, ForceNew) The maximum number of entries that the prefix list can contain.  Valid values: 1 to 200.
 * `prefix_list_name` - (Required) The name of the prefix. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with `http://`, `https://`, `com.aliyun`, or `com.alibabacloud`. It can contain letters, digits, colons (:), underscores (_), periods (.), and hyphens (-).
 * `description` - (Optional) The description of the prefix list. The description must be 2 to 256 characters in length and cannot start with `http://` or `https://`.
-* `entry` - (Required) The Entry. The details see Block `entry`. 
+* `resource_group_id` - (Optional, Computed, ForceNew) The ID of the resource group to which the prefix list belongs. If you do not specify this parameter, the prefix list is added to the default resource group.
+* `entry` - (Required) The Entry. The details see Block `entry`.
 
 
 
