@@ -777,9 +777,8 @@ func (s *CmsService) DescribeCmsHybridMonitorFcTask(id string) (object map[strin
 		return
 	}
 	request := map[string]interface{}{
-		"TargetUserId": parts[0],
-		"Namespace":    parts[1],
-		"TaskType":     "aliyun_fc",
+		"Namespace": parts[1],
+		"TaskType":  "aliyun_fc",
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -805,6 +804,9 @@ func (s *CmsService) DescribeCmsHybridMonitorFcTask(id string) (object map[strin
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TaskList", response)
 	}
 	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
+	}
+	if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["TaskId"]) != parts[0] {
 		return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 	}
 	object = v.([]interface{})[0].(map[string]interface{})

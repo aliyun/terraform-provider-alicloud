@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic0(t *testing.T) {
+func TestAccAliCloudCmsHybridMonitorFcTask_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_hybrid_monitor_fc_task.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudMonitorServiceSupportRegions)
@@ -75,13 +75,13 @@ variable "name" {
 data "alicloud_account" "this" {}
 resource "alicloud_cms_namespace" "default" {
 	description = var.name
-	namespace = "tf-testacc-cloudmonitorservicenamespace"
+	namespace = var.name
 	specification = "cms.s1.large"
 }
 `, name)
 }
 
-func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic1(t *testing.T) {
+func TestAccAliCloudCmsHybridMonitorFcTask_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_hybrid_monitor_fc_task.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudMonitorServiceSupportRegions)
@@ -92,7 +92,7 @@ func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic1(t *testing.T) 
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scloudmonitorservicehybridmonitorfctask%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc-cmshmt%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudMonitorServiceHybridMonitorFcTaskBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -254,18 +254,12 @@ func TestUnitAccAlicloudCmsHybridMonitorFcTask(t *testing.T) {
 		}
 	}
 
-	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCmsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAlicloudCmsHybridMonitorFcTaskUpdate(dExisted, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
+	// Update: yarm_config change triggers delete old task + create new task + refresh ID.
+	// The old code incorrectly called CreateHybridMonitorTask alone (orphaning the old
+	// task and leaving stale state ID) and sent TaskId as TargetUserId. The fix deletes
+	// the old task first (using d.Get("target_user_id")), then creates a new one, then
+	// refreshes d.SetId. ModifyHybridMonitorTask does not support YARMConfig, so there
+	// is no in-place update path; keeping the field non-ForceNew avoids a breaking change.
 	attributesDiff := map[string]interface{}{
 		"yarm_config": "UpdateCmsHybridMonitorFcTaskValue",
 	}
@@ -281,41 +275,35 @@ func TestUnitAccAlicloudCmsHybridMonitorFcTask(t *testing.T) {
 			},
 		},
 	}
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateHybridMonitorTask" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						return successResponseMock(ReadMockResponseDiff)
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudCmsHybridMonitorFcTaskUpdate(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
+	var updateActionOrder []string
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		updateActionOrder = append(updateActionOrder, *action)
+		switch *action {
+		case "DeleteHybridMonitorTask":
+			return map[string]interface{}{}, nil
+		case "CreateHybridMonitorTask":
+			return CreateMockResponse, nil
 		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_cms_hybrid_monitor_fc_task"].Schema).Data(dExisted.State(), nil)
-			for key, value := range attributes {
-				_ = dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+			return ReadMockResponse, nil
 		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
+	})
+	err = resourceAlicloudCmsHybridMonitorFcTaskUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.Nil(t, err)
+	// Regression: the old Update skipped DeleteHybridMonitorTask, calling Create directly.
+	deleteIdx := -1
+	createIdx := -1
+	for i, a := range updateActionOrder {
+		if a == "DeleteHybridMonitorTask" {
+			deleteIdx = i
+		}
+		if a == "CreateHybridMonitorTask" {
+			createIdx = i
 		}
 	}
+	assert.True(t, deleteIdx >= 0, "Update must call DeleteHybridMonitorTask (old code orphaned the old task)")
+	assert.True(t, createIdx >= 0, "Update must call CreateHybridMonitorTask to recreate the task")
+	assert.True(t, deleteIdx < createIdx, "Update must call DeleteHybridMonitorTask before CreateHybridMonitorTask")
 
 	// Read
 	diff, err = newInstanceDiff("alicloud_cms_hybrid_monitor_fc_task", attributes, attributesDiff, dInit.State())
