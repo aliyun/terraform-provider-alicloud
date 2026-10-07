@@ -32,7 +32,6 @@ func resourceAlicloudApiGatewayModel() *schema.Resource {
 			"model_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"schema": {
 				Type:     schema.TypeString,
@@ -42,6 +41,7 @@ func resourceAlicloudApiGatewayModel() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchemaForceNew(),
 		},
 	}
 }
@@ -59,6 +59,16 @@ func resourceAlicloudApiGatewayModelCreate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
+	}
+
+	if _, ok := d.GetOk("tags"); ok {
+		added, _ := parsingTags(d)
+		count := 1
+		for key, value := range added {
+			request[fmt.Sprintf("Tag.%d.Key", count)] = key
+			request[fmt.Sprintf("Tag.%d.Value", count)] = value
+			count++
+		}
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -100,6 +110,22 @@ func resourceAlicloudApiGatewayModelRead(d *schema.ResourceData, meta interface{
 	d.Set("schema", object["Schema"])
 	d.Set("description", object["Description"])
 
+	tags := make(map[string]string)
+	if v, ok := object["Tags"]; ok && v != nil {
+		if tagsMap, ok := v.(map[string]interface{}); ok {
+			if tagInfo, ok := tagsMap["TagInfo"].([]interface{}); ok {
+				for _, t := range tagInfo {
+					if tag, ok := t.(map[string]interface{}); ok {
+						if key, ok := tag["Key"]; ok {
+							tags[fmt.Sprint(key)] = fmt.Sprint(tag["Value"])
+						}
+					}
+				}
+			}
+		}
+	}
+	d.Set("tags", tags)
+
 	return nil
 }
 
@@ -131,6 +157,11 @@ func resourceAlicloudApiGatewayModelUpdate(d *schema.ResourceData, meta interfac
 		request["Description"] = v
 	}
 
+	if !d.IsNewResource() && d.HasChange("model_name") {
+		update = true
+		request["NewModelName"] = d.Get("model_name")
+	}
+
 	if update {
 		action := "ModifyModel"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -148,6 +179,9 @@ func resourceAlicloudApiGatewayModelUpdate(d *schema.ResourceData, meta interfac
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if d.HasChange("model_name") {
+			d.SetId(fmt.Sprint(parts[0], ":", d.Get("model_name")))
 		}
 	}
 
