@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudEbsDedicatedBlockStorageCluster() *schema.Resource {
@@ -63,6 +64,20 @@ func resourceAlicloudEbsDedicatedBlockStorageCluster() *schema.Resource {
 				Computed: true,
 				Type:     schema.TypeString,
 			},
+			"period": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.IntInSlice([]int{6, 7, 8, 9, 10, 11, 12, 24, 36}),
+				Description:  "The purchase period. When PeriodUnit is Month, valid values: 6, 7, 8, 9, 10, 11, 12, 24, 36.",
+			},
+			"period_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Month"}, false),
+				Description:  "The unit of the purchase period. Currently only Month is supported.",
+			},
 			"resource_group_id": {
 				Computed: true,
 				Type:     schema.TypeString,
@@ -116,6 +131,12 @@ func resourceAlicloudEbsDedicatedBlockStorageClusterCreate(d *schema.ResourceDat
 		request["Azone"] = v
 	}
 	request["Type"] = d.Get("type")
+	if v, ok := d.GetOk("period"); ok {
+		request["Period"] = v
+	}
+	if v, ok := d.GetOk("period_unit"); ok {
+		request["PeriodUnit"] = v
+	}
 
 	var response map[string]interface{}
 	action := "CreateDedicatedBlockStorageCluster"
