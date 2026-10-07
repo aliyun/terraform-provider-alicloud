@@ -130,6 +130,51 @@ func (s *CmsServiceV2) DescribeCmsDataset(id string) (object map[string]interfac
 	return response, nil
 }
 
+// DescribeCmsDatasetDownloadJob <<< Encapsulated get interface for Cms DatasetDownloadJob.
+func (s *CmsServiceV2) DescribeCmsDatasetDownloadJob(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		return nil, err
+	}
+	workspace := parts[0]
+	datasetName := parts[1]
+	jobName := parts[2]
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/workspace/%s/dataset/%s/downloadjob/%s", workspace, datasetName, jobName)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"WorkspaceNotExist", "DatasetNotExist", "DatasetDownloadJobNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("Cms:DatasetDownloadJob", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeCmsDatasetDownloadJob >>> Encapsulated.
+
 // DescribeCmsWorkspace >>> Encapsulated.
 
 // DescribeCmsIntegrationPolicy <<< Encapsulated get interface for Cms IntegrationPolicy.
