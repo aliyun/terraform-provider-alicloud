@@ -58,13 +58,13 @@ resource "alicloud_cms_prometheus_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `archive_duration` - (Optional, Int) The number of days that data is automatically archived after the storage duration expires. Valid values: `60` to `3650`.
+* `archive_duration` - (Optional, Int) The number of days that data is automatically archived after the storage duration expires. A value of `0` indicates that data is not archived. V1: `60` to `365` days. V2: `60` to `3650` days (`3650` indicates permanent retention).
 * `auth_free_read_policy` - (Optional) The policy for password-free read access.
 * `auth_free_write_policy` - (Optional) The policy for password-free write access.
 * `enable_auth_free_read` - (Optional, Bool) Specifies whether to enable password-free read access. Valid values: `true`, `false`.
 * `enable_auth_free_write` - (Optional, Bool) Specifies whether to enable password-free write access. Valid values: `true`, `false`.
 * `prometheus_instance_name` - (Required) The name of the instance.
-* `storage_duration` - (Optional, Int) The storage duration of the instance in days.
+* `storage_duration` - (Optional, Int) The storage duration of the instance in days. By write volume: `90` or `180`. By metric reporting volume: `15`, `30`, `60`, `90`, or `180`.
 * `workspace` - (Required, ForceNew) The workspace to which the instance belongs.
 
 ## Attributes Reference
