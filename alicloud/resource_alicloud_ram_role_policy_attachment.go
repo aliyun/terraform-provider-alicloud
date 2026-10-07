@@ -41,6 +41,12 @@ func resourceAliCloudRamRolePolicyAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -59,6 +65,9 @@ func resourceAliCloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta 
 	request["PolicyType"] = d.Get("policy_type")
 	request["PolicyName"] = d.Get("policy_name")
 	request["RoleName"] = d.Get("role_name")
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v.(string)
+	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -110,6 +119,11 @@ func resourceAliCloudRamRolePolicyAttachmentRead(d *schema.ResourceData, meta in
 	d.Set("policy_name", objectRaw["PolicyName"])
 	d.Set("policy_type", objectRaw["PolicyType"])
 	d.Set("role_name", parts[3])
+	// ListPoliciesForRole does not echo back ResourceGroupId in its response model;
+	// only set it when the API actually returns the field to avoid clearing user-provided state.
+	if v, ok := objectRaw["ResourceGroupId"]; ok && v != nil {
+		d.Set("resource_group_id", v)
+	}
 
 	return nil
 }
