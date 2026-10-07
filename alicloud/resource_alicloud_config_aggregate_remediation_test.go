@@ -59,12 +59,16 @@ func TestAccAliCloudConfigAggregateRemediation_basic11937(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"remediation_template_id":   "ACS-TAG-TagResourcesIgnoreCaseSensitive",
 					"invoke_type":               "AUTO_EXECUTION",
+					"remediation_source_type":   "CUSTOM",
+					"remediation_type":          "FC",
 					"remediation_origin_params": "{\\\"properties\\\":[{\\\"name\\\":\\\"regionId\\\",\\\"type\\\":\\\"String\\\",\\\"value\\\":\\\"{regionId}\\\",\\\"allowedValues\\\":[],\\\"description\\\":\\\"地域ID\\\"},{\\\"name\\\":\\\"tags\\\",\\\"type\\\":\\\"String\\\",\\\"value\\\":\\\"{\\\\\\\"aaa\\\\\\\":\\\\\\\"bbb\\\\\\\"}\\\",\\\"allowedValues\\\":[],\\\"description\\\":\\\"\\\\n模版tag参数占位符，不用单独设置。\\\"},{\\\"name\\\":\\\"resourceType\\\",\\\"type\\\":\\\"String\\\",\\\"value\\\":\\\"{resourceType}\\\",\\\"allowedValues\\\":[],\\\"description\\\":\\\"资源类型\\\"},{\\\"name\\\":\\\"resourceIds\\\",\\\"type\\\":\\\"ARRAY\\\",\\\"value\\\":\\\"[\\\\\\\"{resourceId}\\\\\\\"]\\\",\\\"allowedValues\\\":[],\\\"description\\\":\\\"资源ID的列表\\\"}]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"remediation_template_id":   "ACS-TAG-TagResourcesIgnoreCaseSensitive",
 						"invoke_type":               "AUTO_EXECUTION",
+						"remediation_source_type":   "CUSTOM",
+						"remediation_type":          "FC",
 						"remediation_origin_params": CHECKSET,
 					}),
 				),
