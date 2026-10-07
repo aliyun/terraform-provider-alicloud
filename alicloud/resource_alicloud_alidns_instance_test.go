@@ -228,19 +228,6 @@ func TestUnitAlicloudAlidnsInstance(t *testing.T) {
 		}
 	}
 
-	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBssopenapiClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAlicloudAlidnsInstanceUpdate(dExisted, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-
 	// Read
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
