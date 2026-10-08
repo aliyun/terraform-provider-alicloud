@@ -1,10 +1,13 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -46,7 +49,7 @@ func resourceAliCloudThreatDetectionCheckConfig() *schema.Resource {
 				Optional: true,
 			},
 			"selected_checks": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -60,6 +63,7 @@ func resourceAliCloudThreatDetectionCheckConfig() *schema.Resource {
 						},
 					},
 				},
+				Set: resourceAliCloudThreatDetectionCheckConfigSelectedChecksHash,
 			},
 			"start_time": {
 				Type:     schema.TypeInt,
@@ -157,11 +161,11 @@ func resourceAliCloudThreatDetectionCheckConfigCreate(d *schema.ResourceData, me
 
 	if _, ok := d.GetOk("selected_checks"); ok {
 		_, newEntry := d.GetChange("selected_checks")
-		added := newEntry
+		addedList := newEntry.(*schema.Set).List()
 
-		if len(added.([]interface{})) > 0 {
+		if len(addedList) > 0 {
 			addedCheckList := make([]interface{}, 0)
-			for _, item := range added.([]interface{}) {
+			for _, item := range addedList {
 				itemMap := item.(map[string]interface{})
 				addedCheckList = append(addedCheckList, map[string]interface{}{
 					"CheckId":   itemMap["check_id"],
@@ -228,6 +232,10 @@ func resourceAliCloudThreatDetectionCheckConfigRead(d *schema.ResourceData, meta
 			selectedChecksListMaps = append(selectedChecksListMaps, selectedChecksListMap)
 		}
 	}
+	// Write the selected checks in a deterministic order so the state content no
+	// longer depends on the unordered GetCheckConfig response order; combined with
+	// the TypeSet schema this removes order-driven drift completely.
+	sortThreatDetectionCheckConfigSelectedChecks(selectedChecksListMaps)
 	d.Set("selected_checks", selectedChecksListMaps)
 
 	cycleDaysRaw := make([]interface{}, 0)
@@ -247,4 +255,19 @@ func resourceAliCloudThreatDetectionCheckConfigUpdate(d *schema.ResourceData, me
 func resourceAliCloudThreatDetectionCheckConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Check Config. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
+}
+
+func resourceAliCloudThreatDetectionCheckConfigSelectedChecksHash(v interface{}) int {
+	m := v.(map[string]interface{})
+	return helper.Hashcode(fmt.Sprintf("%d-%d", formatInt(m["section_id"]), formatInt(m["check_id"])))
+}
+
+func sortThreatDetectionCheckConfigSelectedChecks(checks []map[string]interface{}) {
+	sort.SliceStable(checks, func(i, j int) bool {
+		sectionI, sectionJ := formatInt(checks[i]["section_id"]), formatInt(checks[j]["section_id"])
+		if sectionI != sectionJ {
+			return sectionI < sectionJ
+		}
+		return formatInt(checks[i]["check_id"]) < formatInt(checks[j]["check_id"])
+	})
 }
