@@ -67,6 +67,12 @@ resource "alicloud_polardb_cluster" "default" {
 
 Create a PolarDB PostgreSQL distributed cluster
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=6a2fb509-2f5d-ea60-f6dd-3d048e279b4b8a53b1e7&activeTab=example&spm=docs.r.polardb_cluster.1.6a2fb5092f&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_polardb_node_classes" "default" {
   db_type    = "PostgreSQL"
@@ -105,7 +111,7 @@ When enabling TDE encryption, it is necessary to ensure that there is an AliyunR
 Note: If there is only the role AliyunRDSSInceEncryptionDefaultRole under the account, this example may not be applicable.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=7fe72195-8276-56ac-7eea-a41843688621c173a84b&activeTab=example&spm=docs.r.polardb_cluster.1.7fe7219582&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster&exampleId=7fe72195-8276-56ac-7eea-a41843688621c173a84b&activeTab=example&spm=docs.r.polardb_cluster.2.7fe7219582&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
