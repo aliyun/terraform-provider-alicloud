@@ -595,4 +595,116 @@ resource "alicloud_oss_bucket" "defaultnVj9x3" {
 `, name)
 }
 
+// Case GH#10670: create with index_document only (support_sub_dir=true, type=1),
+// no error_document and no routing_rules — the read-back right after
+// PutBucketWebsite used to fail with ResourceNotfound on a fresh bucket.
+func TestAccAliCloudOssBucketWebsite_basic10670(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oss_bucket_website.default"
+	ra := resourceAttrInit(resourceId, AlicloudOssBucketWebsiteMap10670)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OssServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOssBucketWebsite")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sossbucketwebsite%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOssBucketWebsiteBasicDependence10670)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"index_document": []map[string]interface{}{
+						{
+							"suffix":          "index.html",
+							"support_sub_dir": "true",
+							"type":            "1",
+						},
+					},
+					"bucket": "${alicloud_oss_bucket.defaultnVj9x3.bucket}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":                           CHECKSET,
+						"index_document.0.suffix":          "index.html",
+						"index_document.0.support_sub_dir": "true",
+						"index_document.0.type":            "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudOssBucketWebsiteMap10670 = map[string]string{}
+
+func AlicloudOssBucketWebsiteBasicDependence10670(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_oss_bucket" "defaultnVj9x3" {
+  storage_class = "Standard"
+  lifecycle {
+	ignore_changes = [website]
+  }
+}
+
+
+`, name)
+}
+
+// Case GH#10670 companion: a website configuration may legally contain no
+// IndexDocument at all (the API requires at least one of IndexDocument,
+// ErrorDocument and RoutingRules), so the post-create wait must not poll
+// #IndexDocument for such configurations.
+func TestAccAliCloudOssBucketWebsite_errorDocumentOnly10670(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oss_bucket_website.default"
+	ra := resourceAttrInit(resourceId, AlicloudOssBucketWebsiteMap10670)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OssServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOssBucketWebsite")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sossbucketwebsite%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOssBucketWebsiteBasicDependence10670)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"error_document": []map[string]interface{}{
+						{
+							"key":         "error.html",
+							"http_status": "404",
+						},
+					},
+					"bucket": "${alicloud_oss_bucket.defaultnVj9x3.bucket}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":                       CHECKSET,
+						"error_document.0.key":         "error.html",
+						"error_document.0.http_status": "404",
+					}),
+				),
+			},
+		},
+	})
+}
+
 // Test Oss BucketWebsite. <<< Resource test cases, automatically generated.

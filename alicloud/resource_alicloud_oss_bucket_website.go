@@ -823,7 +823,28 @@ func resourceAliCloudOssBucketWebsiteCreate(d *schema.ResourceData, meta interfa
 
 	d.SetId(fmt.Sprint(*hostMap["bucket"]))
 
+	ossServiceV2 := OssServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssBucketWebsiteStateRefreshFunc(d.Id(), ossBucketWebsiteWaitField(d), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAliCloudOssBucketWebsiteRead(d, meta)
+}
+
+// ossBucketWebsiteWaitField picks the first container the current
+// configuration actually writes. IndexDocument, ErrorDocument and
+// RoutingRules are all optional at both the schema and the API level (the
+// API requires at least one of them), so the post-PUT wait must not poll a
+// container the configuration does not set — it would never become visible.
+func ossBucketWebsiteWaitField(d *schema.ResourceData) string {
+	if !IsNil(d.Get("index_document")) {
+		return "#IndexDocument"
+	}
+	if !IsNil(d.Get("error_document")) {
+		return "#ErrorDocument"
+	}
+	return "#RoutingRules"
 }
 
 func resourceAliCloudOssBucketWebsiteRead(d *schema.ResourceData, meta interface{}) error {
@@ -1512,6 +1533,12 @@ func resourceAliCloudOssBucketWebsiteUpdate(d *schema.ResourceData, meta interfa
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		ossServiceV2 := OssServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ossServiceV2.OssBucketWebsiteStateRefreshFunc(d.Id(), ossBucketWebsiteWaitField(d), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
