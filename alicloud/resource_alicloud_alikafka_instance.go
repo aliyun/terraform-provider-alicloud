@@ -1478,7 +1478,7 @@ func resourceAliCloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 
 	// Pre paid instance can not be release.
 	if d.Get("paid_type").(string) == string(PrePaid) {
-		return nil
+		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
