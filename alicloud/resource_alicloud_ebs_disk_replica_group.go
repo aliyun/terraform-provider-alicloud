@@ -46,6 +46,10 @@ func resourceAliCloudEbsDiskReplicaGroup() *schema.Resource {
 				ConflictsWith: []string{"group_name"},
 				Computed:      true,
 			},
+			"enable_rtc": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"one_shot": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -58,7 +62,7 @@ func resourceAliCloudEbsDiskReplicaGroup() *schema.Resource {
 			"rpo": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
+				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -117,6 +121,9 @@ func resourceAliCloudEbsDiskReplicaGroupCreate(d *schema.ResourceData, meta inte
 	}
 	if v, ok := d.GetOkExists("rpo"); ok {
 		request["RPO"] = v
+	}
+	if v, ok := d.GetOkExists("enable_rtc"); ok {
+		request["EnableRtc"] = v
 	}
 	request["RegionId"] = d.Get("source_region_id")
 	if v, ok := d.GetOk("resource_group_id"); ok {
@@ -181,6 +188,7 @@ func resourceAliCloudEbsDiskReplicaGroupRead(d *schema.ResourceData, meta interf
 	d.Set("destination_region_id", objectRaw["DestinationRegionId"])
 	d.Set("destination_zone_id", objectRaw["DestinationZoneId"])
 	d.Set("disk_replica_group_name", objectRaw["GroupName"])
+	d.Set("enable_rtc", objectRaw["EnableRtc"])
 	d.Set("rpo", objectRaw["RPO"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("source_region_id", objectRaw["SourceRegionId"])
@@ -344,12 +352,22 @@ func resourceAliCloudEbsDiskReplicaGroupUpdate(d *schema.ResourceData, meta inte
 		request["Description"] = d.Get("description")
 	}
 
+	if !d.IsNewResource() && d.HasChange("rpo") {
+		update = true
+		request["RPO"] = d.Get("rpo")
+	}
+
+	if !d.IsNewResource() && d.HasChange("enable_rtc") {
+		update = true
+		request["EnableRtc"] = d.Get("enable_rtc")
+	}
+
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.InvalidStatus"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
