@@ -483,7 +483,7 @@ func resourceAliCloudCloudFirewallAddressBookRead(d *schema.ResourceData, meta i
 	for _, addressListArg := range object["AddressList"].([]interface{}) {
 		addressListItems = append(addressListItems, fmt.Sprint(addressListArg))
 	}
-	d.Set("address_list", addressListItems)
+	d.Set("address_list", cloudFirewallAddressBookAddressOrder(addressListItems, d.Get("address_list").([]interface{})))
 
 	ecsTags := make([]map[string]interface{}, 0)
 	for _, tagListItem := range object["TagList"].([]interface{}) {
@@ -679,4 +679,32 @@ func resourceAliCloudCloudFirewallAddressBookDelete(d *schema.ResourceData, meta
 	}
 
 	return nil
+}
+
+// Cloud Firewall may return addresses in a different order. Retain the current
+// list order for surviving occurrences, then append new occurrences in API
+// order. The API remains authoritative for complete values and multiplicity.
+func cloudFirewallAddressBookAddressOrder(remote []string, previous []interface{}) []string {
+	remaining := make(map[string]int, len(remote))
+	for _, address := range remote {
+		remaining[address]++
+	}
+	ordered := make([]string, 0, len(remote))
+	consumed := make(map[string]int, len(remote))
+	for _, raw := range previous {
+		address, ok := raw.(string)
+		if ok && remaining[address] > 0 {
+			ordered = append(ordered, address)
+			remaining[address]--
+			consumed[address]++
+		}
+	}
+	for _, address := range remote {
+		if consumed[address] > 0 {
+			consumed[address]--
+			continue
+		}
+		ordered = append(ordered, address)
+	}
+	return ordered
 }
