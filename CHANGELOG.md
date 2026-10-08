@@ -278,6 +278,7 @@ ENHANCEMENTS:
 - resource/alicloud_cr_ee_instance: Added the field tags; data-source/alicloud_cr_ee_instances: Added the field tags; testcase/alicloud_cr_ee_instance: Fixed the RAM policy scope of the custom OSS bucket case. ([#10130](https://github.com/aliyun/terraform-provider-alicloud/issues/10130))
 - resource/alicloud_oss_bucket_acl: handle pointer ACL responses; testcase: cover SPI parsing. ([#10132](https://github.com/aliyun/terraform-provider-alicloud/issues/10132))
 - resource/alicloud_amqp_virtual_host: retry the transient instance-not-ready error on create. ([#10147](https://github.com/aliyun/terraform-provider-alicloud/issues/10147))
+- resource/alicloud_nas_file_system: support Agentic storage type. ([#10730](https://github.com/aliyun/terraform-provider-alicloud/issues/10730))
 
 BUG FIXES:
 
