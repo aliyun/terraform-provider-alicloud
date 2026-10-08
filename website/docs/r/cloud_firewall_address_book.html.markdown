@@ -45,7 +45,7 @@ resource "alicloud_cloud_firewall_address_book" "example" {
 
 The following arguments are supported:
 * `group_name` - (Required) The name of the Address Book.
-* `group_type` - (Required, ForceNew) The type of the Address Book. Valid values: `ip`, `ipv6`, `domain`, `port`, `tag`, `asset`, `assetIpv6`.
+* `group_type` - (Required, ForceNew) The type of the Address Book. Valid values: `ip`, `ipv6`, `domain`, `port`, `tag`, `asset`, `assetIpv6`, `ackLabel`, `ackNamespace`, `tagPrivate`.
 **NOTE:** From version 1.213.1, `group_type` can be set to `ipv6`, `domain`, `port`. From version 1.286.0, `group_type` can be set to `asset`, `assetIpv6`.
 * `description` - (Required) The description of the Address Book.
 * `auto_add_tag_ecs` - (Optional, Int) Whether you want to automatically add new matching tags of the ECS IP address to the Address Book. Valid values: `0`, `1`.
@@ -57,6 +57,9 @@ The following arguments are supported:
 * `ecs_tags` - (Optional, Set) A list of ECS tags. See [`ecs_tags`](#ecs_tags) below.
 * `asset_member_uids` - (Optional, List, Available since v1.286.0) The list of member account UIDs of the asset Address Book.
 * `asset_region_resource_types` - (Optional, List, Available since v1.286.0) The list of regions and asset types of the asset Address Book. See [`asset_region_resource_types`](#asset_region_resource_types) below.
+* `ack_cluster_connector_id` - (Optional, ForceNew) The ID of the ACK (Alibaba Cloud Kubernetes) cluster connector. Required when `group_type` is `ackLabel` or `ackNamespace`. The value is obtained from the `DescribeAckClusterConnectors` API.
+* `ack_labels` - (Optional, List) The list of ACK cluster pod labels. Required when `group_type` is `ackLabel`. Up to 10 labels. See [`ack_labels`](#ack_labels) below.
+* `ack_namespaces` - (Optional, List) The list of ACK cluster pod namespaces. Required when `group_type` is `ackNamespace`. Up to 10 namespaces.
 
 ### `ecs_tags`
 
@@ -64,6 +67,13 @@ The ecs_tags supports the following:
 
 * `tag_key` - (Optional) The key of ECS tag that to be matched.
 * `tag_value` - (Optional) The value of ECS tag that to be matched.
+
+### `ack_labels`
+
+The ack_labels supports the following:
+
+* `key` - (Optional) The key of the ACK cluster pod label.
+* `value` - (Optional) The value of the ACK cluster pod label.
 
 ### `asset_region_resource_types`
 
@@ -119,6 +129,7 @@ The ipv6 supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Address Book.
+* `ack_cluster_connector_name` - The name of the ACK cluster connector.
 * `address_list_count` - (Available since v1.286.0) The number of addresses in the Address Book.
 * `reference_count` - (Available since v1.286.0) The number of times that the Address Book is referenced.
 
