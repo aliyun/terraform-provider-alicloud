@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -2221,7 +2222,7 @@ resource "alicloud_vswitch" "default" {
 			if configureNodeType {
 				config["node_type"] = nodeType
 			}
-			diff, err := resourceAliCloudKvstoreInstance().Diff(states[0], terraform.NewResourceConfigRaw(config), testAccProvider.Meta())
+			diff, err := resourceAliCloudKvstoreInstance().Diff(context.Background(), states[0], terraform.NewResourceConfigRaw(config), testAccProvider.Meta())
 			if err != nil {
 				return err
 			}
@@ -3365,22 +3366,21 @@ func TestUnitKvstoreNodeTypeCompatibility(t *testing.T) {
 	} {
 		t.Run(test.nodeType, func(t *testing.T) {
 			config := terraform.NewResourceConfigRaw(map[string]interface{}{"node_type": test.nodeType})
-			warnings, errors := r.Validate(config)
-			assert.Empty(t, errors)
-			assert.Empty(t, warnings, "supported node types must not produce a deprecation warning")
+			diags := r.Validate(config)
+			assert.Empty(t, diags, "supported node types must not produce a deprecation warning")
 
 			data := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{"node_type": test.nodeType})
 			data.SetId("test-instance")
 			state := data.State()
 			for _, config := range []map[string]interface{}{{}, {"node_type": test.nodeType}, {"node_type": test.alias}} {
-				diff, err := r.Diff(state, terraform.NewResourceConfigRaw(config), nil)
+				diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
 				if !assert.NoError(t, err) || diff == nil {
 					continue
 				}
 				assert.NotContains(t, diff.Attributes, "node_type", "existing and imported node types must remain stable")
 				assert.False(t, diff.RequiresNew(), "equivalent node-type aliases must not replace the instance")
 			}
-			diff, err := r.Diff(state, terraform.NewResourceConfigRaw(map[string]interface{}{"node_type": test.other}), nil)
+			diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(map[string]interface{}{"node_type": test.other}), nil)
 			if assert.NoError(t, err) && assert.NotNil(t, diff) && assert.Contains(t, diff.Attributes, "node_type") {
 				assert.True(t, diff.Attributes["node_type"].RequiresNew)
 			}

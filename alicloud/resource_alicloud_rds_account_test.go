@@ -906,7 +906,6 @@ func TestAccAliCloudRdsAccount_passwordWo(t *testing.T) {
 	})
 }
 
-
 // rdsAccountTestClient stands up a credential-free AliyunClient whose RDS
 // transport is pointed at an in-process httptest server, mirroring the
 // ecs-snapshot unit-test construction. This avoids gomonkey binary patching
@@ -955,7 +954,7 @@ func writeGone403(t *testing.T, w http.ResponseWriter) {
 
 func rdsAccountResourceData(t *testing.T) *schema.ResourceData {
 	t.Helper()
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, err := schema.InternalMap(p["alicloud_rds_account"].Schema).Data(nil, nil)
 	if err != nil {
 		t.Fatal(err)

@@ -126,7 +126,7 @@ func TestUnitSetCertsApiError(t *testing.T) {
 	kubeFile := filepath.Join(t.TempDir(), "kubeconfig.yaml")
 	d := csSetCertsTestResourceData(t, csSetCertsClusterAPIError, kubeFile, "", "", "")
 
-	err := setCerts(d, client, false)
+	err := setCerts(d, client, false, true)
 	if err == nil {
 		t.Fatalf("expected an error when the kubeconfig API fails, got nil")
 	}
@@ -140,7 +140,7 @@ func TestUnitSetCertsEmptyConfig(t *testing.T) {
 	kubeFile := filepath.Join(t.TempDir(), "kubeconfig.yaml")
 	d := csSetCertsTestResourceData(t, csSetCertsClusterEmpty, kubeFile, "", "", "")
 
-	err := setCerts(d, client, false)
+	err := setCerts(d, client, false, true)
 	if err == nil {
 		t.Fatalf("expected an error for an empty kubeconfig response, got nil")
 	}
@@ -154,7 +154,7 @@ func TestUnitSetCertsWriteFailure(t *testing.T) {
 	kubeFile := filepath.Join(t.TempDir(), "no-such-dir", "kubeconfig.yaml")
 	d := csSetCertsTestResourceData(t, csSetCertsClusterOK, kubeFile, "", "", "")
 
-	err := setCerts(d, client, false)
+	err := setCerts(d, client, false, true)
 	if err == nil {
 		t.Fatalf("expected an error when writing kube_config fails, got nil")
 	}
@@ -169,7 +169,7 @@ func TestUnitSetCertsSuccess(t *testing.T) {
 	caFile := filepath.Join(dir, "cluster-ca-cert.pem")
 	d := csSetCertsTestResourceData(t, csSetCertsClusterOK, kubeFile, clientCertFile, clientKeyFile, caFile)
 
-	if err := setCerts(d, client, false); err != nil {
+	if err := setCerts(d, client, false, true); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -206,7 +206,7 @@ func TestUnitSetCertsSuccessSkipAuthority(t *testing.T) {
 	kubeFile := filepath.Join(t.TempDir(), "kubeconfig.yaml")
 	d := csSetCertsTestResourceData(t, csSetCertsClusterOK, kubeFile, "", "", "")
 
-	if err := setCerts(d, client, true); err != nil {
+	if err := setCerts(d, client, true, true); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 

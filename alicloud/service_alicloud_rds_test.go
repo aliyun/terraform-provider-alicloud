@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // newTestServerError builds a synthetic SDK ServerError with the given HTTP status
@@ -175,7 +174,7 @@ func TestRdsWaitInstanceHTTP400NotFound(t *testing.T) {
 
 func rdsTestData(t *testing.T, kind, id string) *schema.ResourceData {
 	t.Helper()
-	res := Provider().(*schema.Provider).ResourcesMap[kind]
+	res := Provider().ResourcesMap[kind]
 	d, err := schema.InternalMap(res.Schema).Data(nil, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -236,7 +235,7 @@ func TestRdsChildReadParentConfirmation(t *testing.T) {
 						id += ":ReadOnly"
 					}
 					d := rdsTestData(t, kind, id)
-					res := Provider().(*schema.Provider).ResourcesMap[kind]
+					res := Provider().ResourcesMap[kind]
 					err := res.Read(d, client)
 					if parent == "gone" || parent == "empty" {
 						if err != nil || d.Id() != "" {
@@ -817,7 +816,7 @@ func TestRdsChildReadDistinguishesParentHTTPNotFound(t *testing.T) {
 					id += ":ReadOnly"
 				}
 				d := rdsTestData(t, kind, id)
-				err := Provider().(*schema.Provider).ResourcesMap[kind].Read(d, client)
+				err := Provider().ResourcesMap[kind].Read(d, client)
 				if parentCheck {
 					if err == nil || NotFoundError(err) || d.Id() != id {
 						t.Fatalf("failed parent query must preserve state: err=%v id=%q", err, d.Id())
@@ -928,7 +927,7 @@ func TestRdsChildDeleteRejectsParentHTTPNotFound(t *testing.T) {
 					id += ":ReadOnly"
 				}
 				d := rdsTestData(t, kind, id)
-				err := Provider().(*schema.Provider).ResourcesMap[kind].Delete(d, client)
+				err := Provider().ResourcesMap[kind].Delete(d, client)
 				if err == nil || NotFoundError(err) || d.Id() != id || parents != 1 || mutations != 0 {
 					t.Fatalf("parent lookup failed: err=%v id=%q parents=%d mutations=%d", err, d.Id(), parents, mutations)
 				}
