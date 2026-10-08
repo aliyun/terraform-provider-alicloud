@@ -2198,6 +2198,19 @@ var providerConfig map[string]interface{}
 
 func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{}, error) {
 	log.Println("using terraform version:", p.TerraformVersion)
+	// Load and structurally validate the CLI profile file (when a profile is
+	// configured) up front. A syntactically valid but structurally abnormal
+	// profile file (concurrent writes, truncated writes, manual edits or CLI
+	// version incompatibility) must surface a clear error here instead of
+	// panicking, or silently degrading to an empty configuration, during the
+	// credential lookups below. The getProviderConfig helper intentionally
+	// swallows profile lookup errors to fall back to other credential sources,
+	// so structural validation has to happen before it.
+	if profileCfg, err := loadProfileConfig(d); err != nil {
+		return nil, err
+	} else if profileCfg != nil {
+		providerConfig = profileCfg
+	}
 	var getProviderConfig = func(schemaKey string, profileKey string) string {
 		if schemaKey != "" {
 			if v, ok := d.GetOk(schemaKey); ok && v != nil && v.(string) != "" {
@@ -4283,50 +4296,133 @@ func defaultConfigPath() (string, error) {
 	return filepath.Join(home, ".aliyun", "config.json"), nil
 }
 
-func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {
+// cliConfig models the top-level structure of the Alibaba Cloud CLI profile
+// file (~/.aliyun/config.json) that getConfigFromProfile reads. Decoding into
+// a typed struct — instead of indexing a map[string]interface{} with unchecked
+// single-value type assertions — turns a structurally abnormal "profiles"
+// field (an object, number or string instead of an array, produced by
+// concurrent writes, truncated writes, manual edits or CLI version
+// incompatibility) into a decisive unmarshal error instead of a panic during
+// provider configure.
+type cliConfig struct {
+	Current  string                   `json:"current"`
+	Profiles []map[string]interface{} `json:"profiles"`
+}
 
-	if providerConfig == nil {
-		if v, ok := d.GetOk("profile"); !ok && v.(string) == "" {
-			return nil, nil
-		}
-		current := d.Get("profile").(string)
-		// Set Credentials filename, expanding home directory
-		profilePath, err := homedir.Expand(d.Get("shared_credentials_file").(string))
+// loadProfileConfig reads, parses and structurally validates the Alibaba Cloud
+// CLI profile file for the profile named by the "profile" attribute. It returns
+// the matched profile map, or a clear error when the file is syntactically
+// valid but structurally abnormal (a non-array "profiles" field, a null profile
+// entry, a missing or non-string "mode"), so that provider configure surfaces
+// an explicit profile-file error instead of panicking or silently degrading to
+// an empty configuration. A profile file that does not exist is not treated as a
+// structural defect: the provider keeps the historical fallback to other
+// credential sources in that case.
+func loadProfileConfig(d *schema.ResourceData) (map[string]interface{}, error) {
+	// No profile configured: nothing to load.
+	if v, ok := d.GetOk("profile"); !ok || v.(string) == "" {
+		return nil, nil
+	}
+	current := d.Get("profile").(string)
+
+	// Set credentials filename, expanding the home directory.
+	profilePath, err := homedir.Expand(d.Get("shared_credentials_file").(string))
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	if profilePath == "" {
+		configPath, err := defaultConfigPath()
 		if err != nil {
 			return nil, WrapError(err)
 		}
-		if profilePath == "" {
-			configPath, err := defaultConfigPath()
-			if err != nil {
-				return nil, WrapError(err)
-			}
-			profilePath = configPath
+		profilePath = configPath
+	}
+
+	// A missing profile file is not a structural defect: keep the historical
+	// fallback to other credential sources instead of erroring here.
+	if _, err := os.Stat(profilePath); err != nil {
+		if os.IsNotExist(err) {
+			return make(map[string]interface{}), nil
 		}
-		providerConfig = make(map[string]interface{})
-		_, err = os.Stat(profilePath)
-		if !os.IsNotExist(err) {
-			data, err := ioutil.ReadFile(profilePath)
-			if err != nil {
-				return nil, WrapError(err)
-			}
-			config := map[string]interface{}{}
-			err = json.Unmarshal(data, &config)
-			if err != nil {
-				return nil, WrapError(err)
-			}
-			for _, v := range config["profiles"].([]interface{}) {
-				if current == v.(map[string]interface{})["name"] {
-					providerConfig = v.(map[string]interface{})
-				}
-			}
+		return nil, WrapError(err)
+	}
+
+	data, err := ioutil.ReadFile(profilePath)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	// Decode into a typed struct so a structurally abnormal "profiles" field
+	// (object/number/string instead of array) fails here with a clear error
+	// instead of panicking on a type assertion during the loop below.
+	var cfg cliConfig
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, WrapErrorf(err, "failed to parse profile file %q: invalid JSON", profilePath)
+	}
+
+	// Locate the named profile. Decoding into []map[string]interface{} ensures
+	// elements are maps, but a JSON null entry decodes to a nil map and must
+	// still be reported explicitly. The last matching entry wins, mirroring
+	// the previous behaviour.
+	var providerCfg map[string]interface{}
+	for _, profile := range cfg.Profiles {
+		if profile == nil {
+			return nil, WrapError(fmt.Errorf("profile file %q contains a null profile entry", profilePath))
 		}
+		if name, ok := profile["name"].(string); ok && name == current {
+			providerCfg = profile
+		}
+	}
+	if providerCfg == nil {
+		return nil, WrapError(fmt.Errorf("profile %q is not found in profile file %q", current, profilePath))
+	}
+
+	// Validate the "mode" field: it must be a string. A missing "mode" is
+	// treated as an abnormal profile and reported explicitly rather than
+	// silently degrading to an empty configuration.
+	modeValue, ok := providerCfg["mode"]
+	if !ok {
+		return nil, WrapError(fmt.Errorf("profile %q in profile file %q is missing the required %q field", current, profilePath, "mode"))
+	}
+	if _, ok := modeValue.(string); !ok {
+		return nil, WrapError(fmt.Errorf("profile %q in profile file %q has an invalid %q field: expected a string", current, profilePath, "mode"))
+	}
+
+	return providerCfg, nil
+}
+
+func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {
+	// Lazily load and validate the profile file when it has not been preloaded
+	// (e.g. when invoked directly by tests). providerConfigure preloads the
+	// profile up front so structural errors surface there instead of being
+	// swallowed by the getProviderConfig helper.
+	if providerConfig == nil {
+		cfg, err := loadProfileConfig(d)
+		if err != nil {
+			return nil, err
+		}
+		if cfg == nil {
+			return nil, nil
+		}
+		providerConfig = cfg
 	}
 
 	mode := ""
 	if v, ok := providerConfig["mode"]; ok {
-		mode = v.(string)
+		m, ok := v.(string)
+		if !ok {
+			// loadProfileConfig validates this up front; reaching here means an
+			// invalid profile was loaded directly. Report it instead of
+			// panicking on a single-value type assertion.
+			return nil, WrapError(fmt.Errorf("the %q field of the profile is not a string", "mode"))
+		}
+		mode = m
 	} else {
-		return v, nil
+		// No "mode" means no profile was loaded (the profile file is absent or
+		// no matching profile was found and loadProfileConfig already returned
+		// an empty map). Preserve the fallback to other credential sources
+		// instead of erroring on a missing profile file.
+		return nil, nil
 	}
 	if ProfileKey == "region_id" {
 		return providerConfig["region_id"], nil
