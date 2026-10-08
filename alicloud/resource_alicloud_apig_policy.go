@@ -104,7 +104,7 @@ func resourceAliCloudApigPolicyCreate(d *schema.ResourceData, meta interface{}) 
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RoaPost("APIG", "2024-03-27", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Conflict.DomainIsProcessing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -190,7 +190,7 @@ func resourceAliCloudApigPolicyUpdate(d *schema.ResourceData, meta interface{}) 
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = client.RoaPut("APIG", "2024-03-27", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Conflict.DomainIsProcessing"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -222,7 +222,7 @@ func resourceAliCloudApigPolicyDelete(d *schema.ResourceData, meta interface{}) 
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = client.RoaDelete("APIG", "2024-03-27", action, query, nil, nil, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Conflict.DomainIsProcessing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
