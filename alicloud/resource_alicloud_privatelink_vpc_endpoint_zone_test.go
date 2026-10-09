@@ -3,14 +3,18 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -187,7 +191,11 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 	}
 
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewPrivatelinkClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	// gomonkey cannot intercept the tea-rpc client.NewClient constructor
+	// reliably (its 4-line wrapper gets inlined into the call site), so patch
+	// the DoRequest method instead: a structured non-retryable SDK error must
+	// propagate out of Create.
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -240,7 +248,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 
 	// Update
 	err = resourceAliCloudPrivateLinkVpcEndpointZoneUpdate(dExisted, rawClient)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	// Read
 	attributesDiff := map[string]interface{}{}
@@ -279,8 +287,22 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 		}
 	}
 
+	// The Read ladder's last "{}" case hits the NotFound branch in Read and
+	// clears dExisted.Id(); rebuild dExisted from dInit.State() so Delete gets a
+	// valid "<endpoint_id>:<zone_id>" id instead of panicking on
+	// strings.Split("", ":").
+	attributesDiff = map[string]interface{}{}
+	diff, err = newInstanceDiff("alicloud_privatelink_vpc_endpoint_zone", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_zone"].Schema).Data(dInit.State(), diff)
+
 	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewPrivatelinkClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	// Same reason as the Create block: patch the DoRequest method (the
+	// client.NewClient constructor seam is inlined away by tea-rpc v1.3.4); a
+	// structured non-deny, non-404 SDK error must not be swallowed by Delete.
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -297,7 +319,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 		t.Error(err)
 	}
 	dExisted, _ = schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_zone"].Schema).Data(dInit.State(), diff)
-	errorCodes = []string{"NonRetryableError", "Throttling", "EndpointConnectionOperationDenied", "EndpointLocked", "EndpointOperationDenied", "nil", "EndpointZoneNotFound"}
+	errorCodes = []string{"NonRetryableError", "Throttling", "EndpointConnectionOperationDenied", "EndpointLocked", "EndpointOperationDenied", "nil", "EndpointZoneNotFound", "GatewayLoadBalancerZoneCountDeny"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -321,10 +343,71 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
-		case "EndpointZoneNotFound":
+		case "EndpointZoneNotFound", "GatewayLoadBalancerZoneCountDeny":
+			// GatewayLoadBalancerZoneCountDeny is expected to be treated as
+			// deleted: a GWLB-backed endpoint service requires the endpoint to
+			// keep its minimum zone count, so the backend refuses the removal
+			// and the zone only leaves the endpoint together with the endpoint.
 			assert.Nil(t, err)
 		}
 	}
+}
+
+// TestUnitAlicloudPrivatelinkVpcEndpointZoneDeleteGwlbZoneCountDeny locks the
+// delete behavior against a local RPC stub: a GWLB-backed endpoint service
+// requires the endpoint to keep its minimum zone count, so
+// RemoveZoneFromVpcEndpoint answers GatewayLoadBalancerZoneCountDeny and the
+// zone only leaves the endpoint together with the endpoint itself
+// (DeleteVpcEndpoint). Delete must accept that error instead of failing the
+// destroy.
+func TestUnitAlicloudPrivatelinkVpcEndpointZoneDeleteGwlbZoneCountDeny(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request form: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if got := r.Form.Get("Action"); got != "RemoveZoneFromVpcEndpoint" {
+			t.Errorf("Action = %q, want RemoveZoneFromVpcEndpoint", got)
+		}
+		if got := r.Form.Get("EndpointId"); got != "ep-test" {
+			t.Errorf("EndpointId = %q, want ep-test", got)
+		}
+		if got := r.Form.Get("ZoneId"); got != "cn-hangzhou-a" {
+			t.Errorf("ZoneId = %q, want cn-hangzhou-a", got)
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, `{"RequestId":"mock","HostId":"privatelink.aliyuncs.com","Code":"GatewayLoadBalancerZoneCountDeny","Message":"The GatewayLoadBalancer zone count not support"}`)
+	}))
+	defer server.Close()
+
+	host := server.Listener.Addr().String()
+	t.Setenv("NO_PROXY", host)
+
+	var endpoints sync.Map
+	endpoints.Store("privatelink", host)
+	var signVersions sync.Map
+	cred, err := credentials.NewCredential(new(credentials.Config).SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	assert.Nil(t, err)
+	rawClient, err := (&connectivity.Config{
+		AccessKey:            "test-key",
+		SecretKey:            "test-secret",
+		Credential:           cred,
+		RegionId:             "cn-hangzhou",
+		AccountType:          "test",
+		Protocol:             "http",
+		Endpoints:            &endpoints,
+		SignVersion:          &signVersions,
+		SkipRegionValidation: true,
+	}).Client()
+	assert.Nil(t, err)
+
+	p := Provider().(*schema.Provider).ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_zone"].Schema).Data(nil, nil)
+	d.SetId("ep-test:cn-hangzhou-a")
+
+	err = resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d, rawClient)
+	assert.Nil(t, err)
 }
 
 func TestAccAliCloudPrivateLinkVpcEndpointZone_basic_without_zoneid(t *testing.T) {

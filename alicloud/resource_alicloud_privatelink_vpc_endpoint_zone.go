@@ -206,7 +206,10 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EndpointZoneNotFound"}) || NotFoundError(err) {
+		// GatewayLoadBalancerZoneCountDeny: the backend keeps the minimum zone
+		// count for GWLB-backed endpoint services, so the zone cannot be removed
+		// alone; it leaves the endpoint together with DeleteVpcEndpoint.
+		if IsExpectedErrors(err, []string{"EndpointZoneNotFound", "GatewayLoadBalancerZoneCountDeny"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
