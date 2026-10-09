@@ -86,6 +86,18 @@ resource "alicloud_privatelink_vpc_endpoint_zone" "example" {
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_privatelink_vpc_endpoint_zone&spm=docs.r.privatelink_vpc_endpoint_zone.example&intl_lang=EN_US)
 
+## Resource Dependencies
+
+Reference the managed endpoint's `id` in `endpoint_id` so Terraform destroys the
+zone before the endpoint. When the endpoint requires a separately managed service
+resource attachment, also make the endpoint depend on
+`alicloud_privatelink_vpc_endpoint_service_resource`, either through an attribute
+reference (as in the example above) or an explicit `depends_on`. This keeps the
+backend attached until the endpoint and its zones have been deleted.
+
+If the API rejects zone deletion, Terraform reports the error and retains the
+zone in state. Resolve the service restriction before retrying the destroy.
+
 ## Argument Reference
 
 The following arguments are supported:
