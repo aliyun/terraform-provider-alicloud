@@ -11,7 +11,7 @@ description: |-
 
 Provides a HBase instance resource supports replica set instances only. The HBase provides stable, reliable, and automatic scalable database services.
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
-You can see detail product introduction [here](https://www.alibabacloud.com/help/en/apsaradb-for-hbase/latest/createcluster)
+You can see detail product introduction [ApsaraDB for HBase product introduction](https://www.alibabacloud.com/help/en/apsaradb-for-hbase/latest/createcluster)
 
 -> **NOTE:** Available since v1.67.0.
 
@@ -98,6 +98,7 @@ The following arguments are supported:
 * `account` - (Optional, Available in 1.105.0+) The account of the cluster web ui. Size [0-128].
 * `password` - (Optional, Available in 1.105.0+) The password of the cluster web ui account. Size [0-128].
 * `ip_white` - (Optional, Available in 1.105.0+) The white ip list of the cluster.
+* `ip_whitelist` - (Optional, Available in v1.295.0+) The custom IP whitelist groups of the cluster. Only the groups declared in the configuration are managed. See [`ip_whitelist`](#ip_whitelist) below.
 * `security_groups` - (Optional, Available in 1.105.0+) The security group resource of the cluster.
 * `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
 * `ui_proxy_conn_addrs` - (Available in 1.105.0+) The Web UI proxy addresses of the cluster. See [`ui_proxy_conn_addrs`](#ui_proxy_conn_addrs) below.
@@ -105,6 +106,16 @@ The following arguments are supported:
 * `slb_conn_addrs` - (Available in 1.105.0+) The slb service addresses of the cluster. See [`slb_conn_addrs`](#slb_conn_addrs) below.
 
 -> **NOTE:** Now only instance name can be change. The others(instance_type, disk_size, core_instance_quantity and so on) will be supported in the furture.
+
+-> **NOTE:** `ip_whitelist` manages only the whitelist groups declared in the configuration. The API has no group deletion operation: removing a group from the configuration stops managing it and the group still exists on the server side. Groups that exist on the server side but are not declared in the configuration are never adopted or modified. The `default` group is reserved for `ip_white` and cannot be declared in `ip_whitelist`.
+
+### `ip_whitelist`
+
+The ip_whitelist supports the following:
+
+* `group_name` - (Optional) The name of the whitelist group. It must be set in each declared `ip_whitelist` group. It cannot be `default`, which is managed by `ip_white`.
+* `ip_list` - (Optional) The IP addresses of the whitelist group, separated by commas (`,`). It must be set in each declared `ip_whitelist` group. The order of the addresses does not affect the plan.
+* `ip_version` - (Optional) The IP version of the whitelist group. Valid values: `4`, `6`. Defaults to `4`.
 
 ### `ui_proxy_conn_addrs`
 

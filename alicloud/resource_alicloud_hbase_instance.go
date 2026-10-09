@@ -1,12 +1,14 @@
 package alicloud
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -151,6 +153,35 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Computed:         true,
 				DiffSuppressFunc: whiteIpListDiffSuppressFunc,
 			},
+			"ip_whitelist": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"group_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.All(
+								validation.StringLenBetween(1, 128),
+								validation.StringNotInSlice([]string{"default"}, true),
+							),
+						},
+						"ip_list": {
+							Type:             schema.TypeString,
+							Optional:         true,
+							ValidateFunc:     validation.StringIsNotEmpty,
+							DiffSuppressFunc: whiteIpListDiffSuppressFunc,
+						},
+						"ip_version": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "4",
+							ValidateFunc: validation.StringInSlice([]string{"4", "6"}, false),
+						},
+					},
+				},
+				Set: hbaseIpWhitelistHash,
+			},
 			"security_groups": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -224,6 +255,11 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			},
 		},
 	}
+}
+
+func hbaseIpWhitelistHash(v interface{}) int {
+	m := v.(map[string]interface{})
+	return hashcode.String(m["group_name"].(string) + ":" + m["ip_version"].(string))
 }
 
 func checkParams(request *hbase.CreateClusterRequest) error {
@@ -382,12 +418,29 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	ipWhite := LOCAL_HOST_IP
+	declared := d.Get("ip_whitelist").(*schema.Set)
+	var whitelist []interface{}
 	for _, value := range ipWhitelist.Groups.Group {
-		if value.GroupName == "default" {
+		if value.GroupName == "default" && value.IpVersion == 4 {
 			ipWhite = strings.Join(value.IpList.Ip, ",")
+			continue
+		}
+		entry := map[string]interface{}{
+			"group_name": value.GroupName,
+			"ip_list":    strings.Join(value.IpList.Ip, ","),
+			"ip_version": strconv.Itoa(value.IpVersion),
+		}
+		if declared.Len() > 0 && declared.Contains(entry) {
+			whitelist = append(whitelist, entry)
 		}
 	}
 	d.Set("ip_white", ipWhite)
+	if declared.Len() > 0 {
+		if whitelist == nil {
+			whitelist = make([]interface{}, 0)
+		}
+		d.Set("ip_whitelist", schema.NewSet(hbaseIpWhitelistHash, whitelist))
+	}
 
 	securityGroups, err := hbaseService.DescribeSecurityGroups(d.Id())
 	if err != nil {
@@ -484,6 +537,54 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("ip_white")
+	}
+
+	if d.HasChange("ip_whitelist") {
+		oraw, nraw := d.GetChange("ip_whitelist")
+		os := oraw.(*schema.Set)
+		ns := nraw.(*schema.Set)
+		for _, v := range ns.List() {
+			entry := v.(map[string]interface{})
+			if entry["group_name"].(string) == "" {
+				return WrapError(Error("`ip_whitelist.group_name` is required in each declared ip_whitelist group"))
+			}
+			if entry["ip_list"].(string) == "" {
+				return WrapError(Error("`ip_whitelist.ip_list` is required in each declared ip_whitelist group"))
+			}
+		}
+		for _, v := range ns.List() {
+			entry := v.(map[string]interface{})
+			groupName := entry["group_name"].(string)
+			ipVersion := entry["ip_version"].(string)
+			ipList := entry["ip_list"].(string)
+			// The API has no group deletion operation; entries removed from the
+			// configuration become unmanaged instead of being deleted. Entries
+			// kept in the configuration are reconciled only on real content
+			// changes (IP order changes are suppressed).
+			unchanged := false
+			for _, ov := range os.List() {
+				oe := ov.(map[string]interface{})
+				if oe["group_name"].(string) == groupName && oe["ip_version"].(string) == ipVersion {
+					unchanged = whiteIpListDiffSuppressFunc("ip_list", oe["ip_list"].(string), ipList, d)
+					break
+				}
+			}
+			if unchanged {
+				continue
+			}
+			request := hbase.CreateModifyIpWhitelistRequest()
+			request.ClusterId = d.Id()
+			request.GroupName = groupName
+			request.IpVersion = ipVersion
+			request.IpList = ipList
+			raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+				return hbaseClient.ModifyIpWhitelist(request)
+			})
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+		}
 	}
 
 	if d.HasChange("security_groups") {
