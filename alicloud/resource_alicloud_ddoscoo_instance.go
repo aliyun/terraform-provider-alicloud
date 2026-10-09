@@ -476,8 +476,7 @@ func resourceAliCloudDdoscooInstanceDelete(d *schema.ResourceData, meta interfac
 			return nil
 		}
 		if IsExpectedErrors(err, []string{"InstanceNotExpire"}) {
-			log.Printf("[INFO]  instance cannot be deleted and must wait it to be expired and release it automatically")
-			return nil
+			return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}

@@ -17,6 +17,8 @@ For information about RDS and how to use it, see [What is ApsaraDB for RDS](http
 
 -> **NOTE:** Available since v1.155.0.
 
+-> **NOTE:** Destroying a `PrePaid` instance fails with an error since v2.1.0. To destroy it, set `force_delete` to `true` to convert the instance to `PostPaid` before deletion, or convert it by setting `instance_charge_type` to `PostPaid` and re-applying. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 ### Create RDS MySQL instance

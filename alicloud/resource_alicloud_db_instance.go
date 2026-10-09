@@ -3,7 +3,6 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -2540,8 +2539,7 @@ func resourceAliCloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	if PayType(instance["PayType"].(string)) == Prepaid {
 		force := d.Get("force_delete").(bool)
 		if !force {
-			log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_db_instance. Terraform will remove this resource from the state file, however resources may remain. Set 'force_delete' to true to convert the instance to PostPaid before deletion.")
-			return nil
+			return WrapError(Error("'PrePaid' instance cannot be destroyed: please convert it to 'PostPaid' (set instance_charge_type = \"PostPaid\" and re-apply), or set 'force_delete' to true to convert it to 'PostPaid' before deletion. To remove it from the state only, run 'terraform state rm'."))
 		}
 		if err := transformDBInstancePayTypeForDelete(d, meta); err != nil {
 			return WrapError(err)
