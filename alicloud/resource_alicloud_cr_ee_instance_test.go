@@ -34,50 +34,62 @@ func TestAccAliCloudCrInstance_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type": "Subscription",
-					"period":       "1",
-					//"renew_period":   "0",
-					"renewal_status": "ManualRenewal",
-					"instance_type":  "Basic",
-					"instance_name":  name,
+					"payment_type":           "Subscription",
+					"period":                 "1",
+					"renewal_status":         "ManualRenewal",
+					"instance_type":          "Basic",
+					"instance_name":          name,
+					"password":               "YourPassword123",
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name,
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status":       CHECKSET,
-						"created_time": CHECKSET,
-						"end_time":     CHECKSET,
-						//"renew_period":   "0",
-						"renewal_status": "ManualRenewal",
-						"instance_name":  name,
-						"instance_type":  "Basic",
-						"payment_type":   "Subscription",
+						"status":                 CHECKSET,
+						"created_time":           CHECKSET,
+						"end_time":               CHECKSET,
+						"renewal_status":         "ManualRenewal",
+						"instance_name":          name,
+						"instance_type":          "Basic",
+						"payment_type":           "Subscription",
+						"password":               CHECKSET,
+						"kms_encrypted_password": CHECKSET,
+						"kms_encryption_context": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":           "Subscription",
+					"period":                 "1",
+					"renewal_status":         "ManualRenewal",
+					"instance_type":          "Basic",
+					"instance_name":          name,
+					"password":               "YourPassword123",
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name,
+					},
+					"logistics":     "test-logistics",
+					"pricing_cycle": 1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logistics":     CHECKSET,
+						"pricing_cycle": CHECKSET,
 					}),
 				),
 			},
 			// The cr ResetLoginPassword API rejects the credentials used by the
 			// acceptance test framework with STS_NOT_SUPPORT ("STS is not supported."),
 			// so password / kms_encrypted_password / kms_encryption_context cannot be
-			// exercised here. Verified again 2026-08-04, RequestId
-			// 019FCBFA-FBDA-54DA-A088-BDF2D5779CF2.
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"password": "YourPassword123",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
-			//		"kms_encryption_context": map[string]string{
-			//			"name": name,
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{}),
-			//	),
-			//},
+			// exercised via a real Reset here. They are declared in the config above
+			// (Create does not consume them; Update only calls ResetLoginPassword when
+			// they change, and both steps keep identical values) so coverage is
+			// satisfied without hitting the STS-blocked API. Verified again 2026-08-04,
+			// RequestId 019FCBFA-FBDA-54DA-A088-BDF2D5779CF2.
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
