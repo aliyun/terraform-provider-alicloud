@@ -437,7 +437,9 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("cold_storage", describeClickHouseOSSStorageObject["State"].(string))
+	if v, ok := describeClickHouseOSSStorageObject["State"].(string); ok {
+		d.Set("cold_storage", v)
+	}
 
 	return nil
 }
