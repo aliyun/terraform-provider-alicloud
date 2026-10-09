@@ -31,6 +31,14 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"additional_bandwidth": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"additional_bandwidth_node_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"auto_renew": {
 				Type:             schema.TypeBool,
 				Optional:         true,
@@ -74,6 +82,10 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
+			},
+			"bandwidth_burst": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"business_info": {
 				Type:     schema.TypeString,
@@ -1837,6 +1849,55 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		d.SetPartial("bandwidth")
+	}
+
+	if d.HasChanges("bandwidth_burst", "additional_bandwidth", "additional_bandwidth_node_id") {
+		enableAdditionalBandwidthReq := map[string]interface{}{
+			"InstanceId": d.Id(),
+			"ChargeType": "PostPaid",
+		}
+		if v, ok := d.GetOkExists("bandwidth_burst"); ok {
+			enableAdditionalBandwidthReq["BandWidthBurst"] = v
+		}
+		if v, ok := d.GetOk("additional_bandwidth"); ok && v.(string) != "" {
+			enableAdditionalBandwidthReq["Bandwidth"] = v
+		}
+		if v, ok := d.GetOk("additional_bandwidth_node_id"); ok && v.(string) != "" {
+			enableAdditionalBandwidthReq["NodeId"] = v
+		}
+
+		action := "EnableAdditionalBandwidth"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, enableAdditionalBandwidthReq, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, enableAdditionalBandwidthReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		instanceStatusConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, r_kvstoreService.KvstoreInstanceAttributeRefreshFunc(d.Id(), "InstanceStatus"))
+		if _, err := instanceStatusConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, r_kvstoreService.KvstoreInstanceAttributeRefreshFunc(d.Id(), "IsOrderCompleted"))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("bandwidth_burst")
+		d.SetPartial("additional_bandwidth")
+		d.SetPartial("additional_bandwidth_node_id")
 	}
 
 	d.Partial(false)
