@@ -75,13 +75,35 @@ func resourceAliCloudWhitelistTemplateCreate(d *schema.ResourceData, meta interf
 func resourceAliCloudWhitelistTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
-	template, templateErr := rdsService.DescribeWhitelistTemplate(d.Id())
-	if templateErr != nil {
-		if NotFoundError(templateErr) {
+	var template map[string]interface{}
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		t, e := rdsService.DescribeWhitelistTemplate(d.Id())
+		if e != nil {
+			if NotFoundError(e) {
+				return resource.NonRetryableError(e)
+			}
+			if NeedRetry(e) {
+				return resource.RetryableError(e)
+			}
+			return resource.NonRetryableError(e)
+		}
+		// ModifyWhitelistTemplate is eventually consistent (the create flow already has
+		// to list templates to discover the TemplateId because the API does not return it
+		// synchronously). DescribeWhitelistTemplate may therefore report an empty
+		// IpWhitelist right after create/update, which makes the apply state inconsistent
+		// ("ip_white_list" was present but now absent). Wait until the whitelist is
+		// reflected before writing it back to state.
+		if ips, _ := t["Ips"].(string); ips == "" {
+			return resource.RetryableError(fmt.Errorf("waiting for whitelist template %q to report its ip whitelist", d.Id()))
+		}
+		template = t
+		return nil
+	}); err != nil {
+		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(templateErr)
+		return WrapError(err)
 	}
 	d.Set("template_name", template["TemplateName"])
 	d.Set("ip_white_list", template["Ips"])
