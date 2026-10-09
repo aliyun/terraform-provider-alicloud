@@ -46,7 +46,7 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 			"rule_type": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntInSlice([]int{2, 3, 6}),
+				ValidateFunc: validation.IntInSlice([]int{2, 3, 5, 6}),
 			},
 			"rules": {
 				Type:     schema.TypeSet,
@@ -69,7 +69,7 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 						"value_type": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 6}),
+							ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 5, 6}),
 						},
 						"priority": {
 							Type:     schema.TypeInt,
@@ -78,6 +78,10 @@ func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
 						"region_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"restore_delay": {
+							Type:     schema.TypeInt,
+							Computed: true,
 						},
 					},
 				},
@@ -169,6 +173,7 @@ func resourceAlicloudDdoscooSchedulerRuleRead(d *schema.ResourceData, meta inter
 			ruleMap["type"] = ruleArg["Type"]
 			ruleMap["value"] = ruleArg["Value"]
 			ruleMap["value_type"] = formatInt(ruleArg["ValueType"])
+			ruleMap["restore_delay"] = formatInt(ruleArg["RestoreDelay"])
 			ruleMaps = append(ruleMaps, ruleMap)
 		}
 	}
