@@ -767,6 +767,52 @@ func (s *EfloServiceV2) EfloInvocationStateRefreshFunc(id string, field string, 
 
 // DescribeEfloInvocation >>> Encapsulated.
 
+// DescribeEfloSendFileResults <<< Encapsulated get interface for Eflo Invocation (SendFile).
+
+func (s *EfloServiceV2) DescribeEfloSendFileResults(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InvokeId"] = id
+	request["RegionId"] = client.RegionId
+	action := "DescribeSendFileResults"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// 返回 Invocation 记录（含 InvokeNodes.InvokeNode[*]）。resource Read 从中取资源级字段与首个 NodeId。
+	v, err := jsonpath.Get("$.Invocations.Invocation[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Invocations.Invocation[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("Invocation", id), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+// DescribeEfloSendFileResults >>> Encapsulated.
+
 // DescribeEfloExperimentPlanTemplate <<< Encapsulated get interface for Eflo ExperimentPlanTemplate.
 
 func (s *EfloServiceV2) DescribeEfloExperimentPlanTemplate(id string) (object map[string]interface{}, err error) {
