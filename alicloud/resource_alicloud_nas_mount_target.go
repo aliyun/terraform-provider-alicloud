@@ -61,6 +61,7 @@ func resourceAliCloudNasMountTarget() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"vpc_id": {
