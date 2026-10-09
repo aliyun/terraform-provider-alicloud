@@ -1109,6 +1109,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_delegate_account":                           resourceAliCloudCloudSSODelegateAccount(),
 			"alicloud_dms_enterprise_workspace":                             resourceAliCloudDmsEnterpriseWorkspace(),
 			"alicloud_eflo_er":                                              resourceAliCloudEfloEr(),
+			"alicloud_eflo_er_route_map":                                    resourceAliCloudEfloErRouteMap(),
 			"alicloud_ssl_certificates_service_pca_certificate":             resourceAliCloudSslCertificatesServicePcaCertificate(),
 			"alicloud_threat_detection_attack_path_sensitive_asset_config":  resourceAliCloudThreatDetectionAttackPathSensitiveAssetConfig(),
 			"alicloud_mongodb_global_security_ip_group":                     resourceAliCloudMongodbGlobalSecurityIPGroup(),
