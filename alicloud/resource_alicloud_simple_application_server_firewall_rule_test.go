@@ -33,6 +33,7 @@ func TestAccAlicloudSimpleApplicationServerFirewallRule_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 		},
 		IDRefreshName: resourceId,

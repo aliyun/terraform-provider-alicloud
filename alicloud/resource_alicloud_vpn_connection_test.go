@@ -507,6 +507,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5678(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -890,6 +891,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -1333,6 +1335,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5663(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectRegions)
 		},
 		IDRefreshName: resourceId,
@@ -2057,6 +2060,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5678_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -2183,6 +2187,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -2304,6 +2309,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5663_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectRegions)
 		},
 		IDRefreshName: resourceId,

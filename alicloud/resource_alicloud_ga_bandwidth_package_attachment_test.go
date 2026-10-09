@@ -119,6 +119,7 @@ func TestAccAliCloudGaBandwidthPackageAttachment_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -171,6 +172,7 @@ func TestAccAliCloudGaBandwidthPackageAttachment_basic1_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,

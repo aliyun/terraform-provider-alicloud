@@ -15,6 +15,8 @@ You can see detail product introduction [MongoDB documentation](https://www.alib
 
 -> **NOTE:** Available since v1.40.0.
 
+-> **NOTE:** Destroying a `PrePaid` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 -> **NOTE:**  The following regions don't support create Classic network MongoDB Sharding Instance.
 [`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-3`,`ap-southeast-5`,`me-east-1`,`ap-northeast-1`,`eu-west-1`]
 

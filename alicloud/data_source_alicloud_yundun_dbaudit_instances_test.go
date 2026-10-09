@@ -93,6 +93,8 @@ func TestAccAliCloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 	}
 
 	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckPrePaidResources(t)
 		testAccPreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
 		testAccPreCheckWithAccountSiteType(t, DomesticSite)
 	}

@@ -384,6 +384,7 @@ func TestAccAliCloudVPNGateway_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -739,6 +740,7 @@ func TestAccAliCloudVPNGatewayVPNGateway_basic5658(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -915,6 +917,7 @@ func TestAccAliCloudVPNGatewayVPNGateway_basic5485(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, connectivity.VPNSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -1073,6 +1076,7 @@ func TestAccAliCloudVPNGatewayVPNGateway_basic5632(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, connectivity.VPNSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -1231,6 +1235,7 @@ func TestAccAliCloudVPNGatewayVPNGateway_basic3671(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, connectivity.VPNSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -1535,6 +1540,7 @@ func TestAccAliCloudVPNGatewayVPNGateway_basic5489(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			// testAccPreCheckWithRegions(t, true, connectivity.VPNSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -1696,6 +1702,7 @@ func TestAccAliCloudVPNGatewayVPNGateway_basic5488(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,

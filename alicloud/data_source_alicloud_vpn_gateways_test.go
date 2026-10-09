@@ -13,6 +13,7 @@ func TestAccAlicloudVPNGatewaysDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckPrePaidResources(t)
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
@@ -229,6 +230,7 @@ func TestAccAlicloudVPNGatewaysDataSourceEnhanced(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckPrePaidResources(t)
 	}
 
 	gatewayTypeConf := dataSourceTestAccConfig{

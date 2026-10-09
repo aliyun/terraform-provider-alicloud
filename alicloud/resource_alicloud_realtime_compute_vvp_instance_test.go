@@ -183,6 +183,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		IDRefreshName: resourceId,
@@ -361,6 +362,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithTime(t, []int{14})
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
@@ -458,6 +460,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594_intl(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		IDRefreshName: resourceId,

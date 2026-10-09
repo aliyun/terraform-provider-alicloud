@@ -13,6 +13,8 @@ Provides an Reserved Instance resource.
 
 -> **NOTE:** Available since v1.65.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. A reserved instance cannot be released and remains valid until it expires. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">

@@ -114,6 +114,7 @@ func TestAccAliCloudGaBasicAcceleratorsDataSource_basic0(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckPrePaidResources(t)
 		//testAccPreCheckWithTime(t, []int{1})
 	}
 

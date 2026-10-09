@@ -34,6 +34,7 @@ func TestAccAliCloudGaBasicAccelerator_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -110,6 +111,7 @@ func TestAccAliCloudGaBasicAccelerator_basic0_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,

@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -1563,8 +1562,7 @@ func resourceAlicloudRdsDdrInstanceDelete(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 	if PayType(instance["PayType"].(string)) == Prepaid {
-		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_rds_ddr_instance. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'Subscription' instance cannot be destroyed: please convert it to 'PayAsYouGo' (set payment_type = \"PayAsYouGo\" and re-apply) or unsubscribe it in the console. To remove it from the state only, run 'terraform state rm'."))
 	}
 	action := "DeleteDBInstance"
 	request := map[string]interface{}{

@@ -108,6 +108,8 @@ func TestAccAlicloudSimpleApplicationServerSnapshotsDataSource(t *testing.T) {
 	}
 
 	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckPrePaidResources(t)
 		testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 	}
 

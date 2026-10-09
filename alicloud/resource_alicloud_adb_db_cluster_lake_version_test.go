@@ -34,6 +34,7 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -189,6 +190,7 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,

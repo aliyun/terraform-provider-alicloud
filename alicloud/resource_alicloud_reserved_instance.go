@@ -392,6 +392,5 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 	return nil
 }
 func resourceAliCloudReservedInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	// PurchaseReservedInstancesOffering can not be release.
-	return nil
+	return WrapError(Error("'Subscription' instance cannot be destroyed: a reserved instance cannot be released and remains valid until it expires. To remove it from the state only, run 'terraform state rm'."))
 }

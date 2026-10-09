@@ -15,6 +15,8 @@ For information about RDS remote disaster recovery instance and how to use it, s
 
 -> **NOTE:** Available since v1.198.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, convert the instance to `PayAsYouGo` by setting `payment_type = "PayAsYouGo"` and re-applying, or unsubscribe it in the Alibaba Cloud console. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Because the generation time of the disaster recovery set is uncertain, the query backup set may not have a value, so the following examples may not be executed successfully in one run.

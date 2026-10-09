@@ -467,8 +467,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceDelete(d *schema.ResourceData, me
 
 	if v, ok := d.GetOk("payment_type"); ok {
 		if v == "Subscription" {
-			log.Printf("[WARN] Cannot destroy resource alicloud_realtime_compute_vvp_instance which payment_type valued Subscription. Terraform will remove this resource from the state file, however resources may remain.")
-			return nil
+			return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 		}
 	}
 	client := meta.(*connectivity.AliyunClient)

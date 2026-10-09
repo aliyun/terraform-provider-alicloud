@@ -13,6 +13,8 @@ This resouce used to create a dedicated host and store its initial version. For 
 
 -> **NOTE:** Available since v1.91.0.
 
+-> **NOTE:** Destroying a `PrePaid` instance fails with an error since v2.1.0. To destroy it, convert the instance to `PostPaid` by setting `payment_type = "PostPaid"` and re-applying, or unsubscribe it in the Alibaba Cloud console. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 Basic Usage
 

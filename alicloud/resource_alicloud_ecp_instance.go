@@ -387,8 +387,7 @@ func resourceAliCloudEcpInstanceUpdate(d *schema.ResourceData, meta interface{})
 
 func resourceAliCloudEcpInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("payment_type"); ok && fmt.Sprint(v) == "Subscription" {
-		log.Printf("[WARN] Cannot destroy resource alicloud_ecp_instance which payment_type valued Subscription. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	client := meta.(*connectivity.AliyunClient)

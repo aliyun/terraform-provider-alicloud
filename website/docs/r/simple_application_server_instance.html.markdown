@@ -15,6 +15,8 @@ For information about Simple Application Server Instance and how to use it, see 
 
 -> **NOTE:** Available since v1.135.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Basic Usage
