@@ -429,6 +429,9 @@ func resourceAliCloudCloudSsoAccessConfigurationDelete(d *schema.ResourceData, m
 				addDebug(action, response, removePermissionPolicyFromAccessConfigurationReq)
 
 				if err != nil {
+					if IsExpectedErrors(err, []string{"EntityNotExists.AccessConfiguration"}) || NotFoundError(err) {
+						return nil
+					}
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}

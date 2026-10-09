@@ -82,7 +82,7 @@ func testSweepCloudSsoDirectoryAccessConfigurationProvisioning(region, directory
 	return nil
 }
 
-func TestAccAlicloudCloudSSOAccessConfigurationProvisioning_basic0(t *testing.T) {
+func TestAccAliCloudCloudSSOAccessConfigurationProvisioning_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_sso_access_configuration_provisioning.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudSsoSupportRegions)
@@ -116,6 +116,24 @@ func TestAccAlicloudCloudSSOAccessConfigurationProvisioning_basic0(t *testing.T)
 						"access_configuration_id": CHECKSET,
 						"target_type":             "RD-Account",
 						"target_id":               CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"directory_id":            "${local.directory_id}",
+					"access_configuration_id": "${alicloud_cloud_sso_access_configuration.default.access_configuration_id}",
+					"target_type":             "RD-Account",
+					"target_id":               "${data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id}",
+					"status":                  "Provisioned",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"directory_id":            CHECKSET,
+						"access_configuration_id": CHECKSET,
+						"target_type":             "RD-Account",
+						"target_id":               CHECKSET,
+						"status":                  "Provisioned",
 					}),
 				),
 			},
