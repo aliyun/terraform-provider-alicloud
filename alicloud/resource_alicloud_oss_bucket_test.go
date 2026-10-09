@@ -3,14 +3,22 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	alicloudCredentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func init() {
@@ -2752,4 +2760,468 @@ locals {
 var ossBucketBasicMap = map[string]string{
 	"creation_date":    CHECKSET,
 	"lifecycle_rule.#": "0",
+}
+
+// The tests in this file lock the create/delete pre-check contract of
+// alicloud_oss_bucket against an in-process HTTP mock of the OSS XML API.
+// Every scenario also asserts that no service-level ListBuckets request is
+// issued on any create or delete path.
+
+type ossMockExchange struct {
+	Method   string
+	Path     string
+	RawQuery string
+}
+
+type ossMockServer struct {
+	*httptest.Server
+	mu        sync.Mutex
+	exchanges []ossMockExchange
+}
+
+func newOssMockServer(handler http.HandlerFunc) *ossMockServer {
+	m := &ossMockServer{}
+	m.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		m.mu.Lock()
+		m.exchanges = append(m.exchanges, ossMockExchange{Method: r.Method, Path: r.URL.Path, RawQuery: r.URL.RawQuery})
+		m.mu.Unlock()
+		handler(w, r)
+	}))
+	return m
+}
+
+func (m *ossMockServer) count(method, path, queryKey string) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	n := 0
+	for _, e := range m.exchanges {
+		if e.Method != method || strings.TrimRight(e.Path, "/") != strings.TrimRight(path, "/") {
+			continue
+		}
+		if queryKey == "" || ossQueryKeyPresent(e.RawQuery, queryKey) {
+			n++
+		}
+	}
+	return n
+}
+
+func (m *ossMockServer) assertNoListBuckets(t *testing.T) {
+	t.Helper()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, e := range m.exchanges {
+		if e.Method == http.MethodGet && e.Path == "/" {
+			t.Fatalf("unexpected service-level ListBuckets request: GET /?%s", e.RawQuery)
+		}
+	}
+}
+
+func ossQueryKeyPresent(rawQuery, key string) bool {
+	for _, part := range strings.Split(rawQuery, "&") {
+		if part == key || strings.HasPrefix(part, key+"=") {
+			return true
+		}
+	}
+	return false
+}
+
+func hasOssSubresource(q url.Values, key string) bool {
+	_, ok := q[key]
+	return ok
+}
+
+func writeOssXML(w http.ResponseWriter, status int, body string) {
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(status)
+	fmt.Fprint(w, body)
+}
+
+func writeOssError(w http.ResponseWriter, status int, code string) {
+	writeOssXML(w, status, fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?><Error><Code>%s</Code><Message>mock %s</Message><RequestId>mock-request-id</RequestId><HostId>mock-host</HostId></Error>`, code, code))
+}
+
+func ossBucketInfoXML(name string) string {
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?><BucketInfo><Bucket><Name>%s</Name><Location>oss-cn-hangzhou</Location><CreationDate>2026-09-21T00:00:00.000Z</CreationDate><ExtranetEndpoint>oss-cn-hangzhou.aliyuncs.com</ExtranetEndpoint><IntranetEndpoint>oss-cn-hangzhou-internal.aliyuncs.com</IntranetEndpoint><AccessControlList><Grant>private</Grant></AccessControlList><DataRedundancyType>LRS</DataRedundancyType><Owner><ID>1234567890</ID><DisplayName>1234567890</DisplayName></Owner><StorageClass>Standard</StorageClass></Bucket></BucketInfo>`, name)
+}
+
+// serveEmptyOssBucketSubresources answers every subresource read that
+// resourceAlicloudOssBucketRead issues for a freshly created bucket.
+func serveEmptyOssBucketSubresources(w http.ResponseWriter, r *http.Request) bool {
+	q := r.URL.Query()
+	switch {
+	case hasOssSubresource(q, "cors"):
+		writeOssError(w, http.StatusNotFound, "NoSuchCORSConfiguration")
+	case hasOssSubresource(q, "website"):
+		writeOssError(w, http.StatusNotFound, "NoSuchWebsiteConfiguration")
+	case hasOssSubresource(q, "logging"):
+		writeOssXML(w, http.StatusOK, `<?xml version="1.0" encoding="UTF-8"?><BucketLoggingStatus></BucketLoggingStatus>`)
+	case hasOssSubresource(q, "referer"):
+		writeOssXML(w, http.StatusOK, `<?xml version="1.0" encoding="UTF-8"?><RefererConfiguration><AllowEmptyReferer>true</AllowEmptyReferer><RefererList></RefererList></RefererConfiguration>`)
+	case hasOssSubresource(q, "lifecycle"):
+		writeOssError(w, http.StatusNotFound, "NoSuchLifecycle")
+	case hasOssSubresource(q, "policy"):
+		writeOssError(w, http.StatusNotFound, "NoSuchPolicy")
+	case hasOssSubresource(q, "tagging"):
+		writeOssXML(w, http.StatusOK, `<?xml version="1.0" encoding="UTF-8"?><Tagging><TagSet></TagSet></Tagging>`)
+	case hasOssSubresource(q, "transferAcceleration"):
+		writeOssError(w, http.StatusNotFound, "NoSuchTransferAccelerationConfiguration")
+	case hasOssSubresource(q, "resourceGroup"):
+		writeOssXML(w, http.StatusOK, `<?xml version="1.0" encoding="UTF-8"?><BucketResourceGroupConfiguration><ResourceGroupId></ResourceGroupId></BucketResourceGroupConfiguration>`)
+	case r.Method == http.MethodPut && hasOssSubresource(q, "acl"):
+		writeOssXML(w, http.StatusOK, "")
+	default:
+		return false
+	}
+	return true
+}
+
+func newOssMockClient(t *testing.T, endpoint string) *connectivity.AliyunClient {
+	t.Helper()
+	t.Setenv("HTTP_PROXY", "")
+	t.Setenv("http_proxy", "")
+	t.Setenv("NO_PROXY", "127.0.0.1,localhost")
+	staticCredential, err := alicloudCredentials.NewCredential(new(alicloudCredentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("mock-access-key").
+		SetAccessKeySecret("mock-secret-key"))
+	if err != nil {
+		t.Fatalf("building mock credential failed: %v", err)
+	}
+	endpoints := &sync.Map{}
+	endpoints.Store("oss", endpoint)
+	config := connectivity.Config{
+		AccessKey:            "mock-access-key",
+		SecretKey:            "mock-secret-key",
+		Credential:           staticCredential,
+		Region:               "cn-hangzhou",
+		RegionId:             "cn-hangzhou",
+		AccountType:          "Domestic",
+		Protocol:             "HTTP",
+		SkipRegionValidation: true,
+		Endpoints:            endpoints,
+		SignVersion:          &sync.Map{},
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatalf("building mock OSS client failed: %v", err)
+	}
+	return client
+}
+
+func ossBucketResourceData(t *testing.T, raw map[string]interface{}) *schema.ResourceData {
+	t.Helper()
+	return schema.TestResourceDataRaw(t, resourceAlicloudOssBucket().Schema, raw)
+}
+
+func TestUnitAliCloudOssBucketCreateFailsWhenBucketAlreadyExists(t *testing.T) {
+	bucketName := "mock-existing-bucket"
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		if hasOssSubresource(r.URL.Query(), "bucketInfo") {
+			writeOssXML(w, http.StatusOK, ossBucketInfoXML(bucketName))
+			return
+		}
+		writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName})
+	err := resourceAlicloudOssBucketCreate(d, client)
+	if err == nil {
+		t.Fatal("expected an error when the bucket already exists")
+	}
+	if !strings.Contains(err.Error(), "already exists") {
+		t.Fatalf("expected an import/rename hint, got: %v", err)
+	}
+	if d.Id() != "" {
+		t.Fatalf("expected empty resource ID, got %q", d.Id())
+	}
+	if n := mock.count(http.MethodPut, "/"+bucketName, ""); n != 0 {
+		t.Fatalf("expected no CreateBucket request, got %d", n)
+	}
+	mock.assertNoListBuckets(t)
+}
+
+func TestUnitAliCloudOssBucketCreateFailsWhenPrecheckDenied(t *testing.T) {
+	bucketName := "mock-denied-bucket"
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		if hasOssSubresource(r.URL.Query(), "bucketInfo") {
+			writeOssError(w, http.StatusForbidden, "AccessDenied")
+			return
+		}
+		writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName})
+	err := resourceAlicloudOssBucketCreate(d, client)
+	if err == nil {
+		t.Fatal("expected an error when the pre-creation check is denied")
+	}
+	if d.Id() != "" {
+		t.Fatalf("expected empty resource ID, got %q", d.Id())
+	}
+	if n := mock.count(http.MethodPut, "/"+bucketName, ""); n != 0 {
+		t.Fatalf("expected no CreateBucket request, got %d", n)
+	}
+	mock.assertNoListBuckets(t)
+}
+
+func TestUnitAliCloudOssBucketCreateFailsOnNameConflict(t *testing.T) {
+	bucketName := "mock-conflict-bucket"
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		switch {
+		case hasOssSubresource(q, "bucketInfo"):
+			writeOssError(w, http.StatusNotFound, "NoSuchBucket")
+		case r.Method == http.MethodPut:
+			writeOssError(w, http.StatusConflict, "BucketAlreadyExists")
+		default:
+			writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+		}
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName})
+	err := resourceAlicloudOssBucketCreate(d, client)
+	if err == nil {
+		t.Fatal("expected an error when creation hits a name conflict")
+	}
+	if !strings.Contains(err.Error(), "not available") {
+		t.Fatalf("expected the name-conflict message, got: %v", err)
+	}
+	if d.Id() != "" {
+		t.Fatalf("expected empty resource ID, got %q", d.Id())
+	}
+	if n := mock.count(http.MethodPut, "/"+bucketName, ""); n != 1 {
+		t.Fatalf("expected exactly one CreateBucket request, got %d", n)
+	}
+	mock.assertNoListBuckets(t)
+}
+
+func TestUnitAliCloudOssBucketCreateKeepsIdWhenPostCheckFails(t *testing.T) {
+	bucketName := "mock-postcheck-denied-bucket"
+	var bucketInfoCalls int32
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		switch {
+		case hasOssSubresource(q, "bucketInfo"):
+			if atomic.AddInt32(&bucketInfoCalls, 1) == 1 {
+				writeOssError(w, http.StatusNotFound, "NoSuchBucket")
+				return
+			}
+			writeOssError(w, http.StatusForbidden, "AccessDenied")
+		case r.Method == http.MethodPut && len(q) == 0:
+			writeOssXML(w, http.StatusOK, "")
+		default:
+			writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+		}
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName})
+	err := resourceAlicloudOssBucketCreate(d, client)
+	if err == nil {
+		t.Fatal("expected an error when the post-creation check is denied")
+	}
+	if d.Id() != bucketName {
+		t.Fatalf("expected the created bucket %q to stay tracked, got %q", bucketName, d.Id())
+	}
+	if n := mock.count(http.MethodGet, "/"+bucketName, "bucketInfo"); n != 2 {
+		t.Fatalf("expected no retry on a deterministic post-check failure, got %d GetBucketInfo calls", n)
+	}
+	mock.assertNoListBuckets(t)
+}
+
+func TestUnitAliCloudOssBucketCreateRetriesUntilBucketVisible(t *testing.T) {
+	bucketName := "mock-retry-bucket"
+	var bucketInfoCalls int32
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		switch {
+		case hasOssSubresource(q, "bucketInfo"):
+			if atomic.AddInt32(&bucketInfoCalls, 1) <= 2 {
+				writeOssError(w, http.StatusNotFound, "NoSuchBucket")
+				return
+			}
+			writeOssXML(w, http.StatusOK, ossBucketInfoXML(bucketName))
+		case r.Method == http.MethodPut && len(q) == 0:
+			writeOssXML(w, http.StatusOK, "")
+		case serveEmptyOssBucketSubresources(w, r):
+		default:
+			writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+		}
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName, "acl": "private"})
+	d.MarkNewResource()
+	if err := resourceAlicloudOssBucketCreate(d, client); err != nil {
+		t.Fatalf("expected creation to succeed after the bucket becomes visible, got: %v", err)
+	}
+	if d.Id() != bucketName {
+		t.Fatalf("expected resource ID %q, got %q", bucketName, d.Id())
+	}
+	if n := mock.count(http.MethodGet, "/"+bucketName, "bucketInfo"); n < 3 {
+		t.Fatalf("expected the post-creation wait to retry, got %d GetBucketInfo calls", n)
+	}
+	if n := mock.count(http.MethodPut, "/"+bucketName, ""); n != 1 {
+		t.Fatalf("expected a single CreateBucket request on first creation, got %d PUT requests", n)
+	}
+	if n := mock.count(http.MethodPut, "/"+bucketName, "acl"); n != 0 {
+		t.Fatalf("expected no acl update request on first creation, got %d", n)
+	}
+	mock.assertNoListBuckets(t)
+}
+
+func TestUnitAliCloudOssBucketCreateKeepsIdWhenWaitTimesOut(t *testing.T) {
+	oldTimeout := ossBucketCreateWaitTimeout
+	ossBucketCreateWaitTimeout = 2 * time.Second
+	defer func() { ossBucketCreateWaitTimeout = oldTimeout }()
+
+	bucketName := "mock-timeout-bucket"
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		switch {
+		case hasOssSubresource(q, "bucketInfo"):
+			writeOssError(w, http.StatusNotFound, "NoSuchBucket")
+		case r.Method == http.MethodPut && len(q) == 0:
+			writeOssXML(w, http.StatusOK, "")
+		default:
+			writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+		}
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName})
+	err := resourceAlicloudOssBucketCreate(d, client)
+	if err == nil {
+		t.Fatal("expected an error when the post-creation wait times out")
+	}
+	if d.Id() != bucketName {
+		t.Fatalf("expected the created bucket %q to stay tracked, got %q", bucketName, d.Id())
+	}
+	if n := mock.count(http.MethodGet, "/"+bucketName, "bucketInfo"); n < 3 {
+		t.Fatalf("expected the wait to poll until the timeout, got %d GetBucketInfo calls", n)
+	}
+	mock.assertNoListBuckets(t)
+}
+
+func TestUnitAliCloudOssBucketDeleteSucceedsWhenAlreadyAbsent(t *testing.T) {
+	bucketName := "mock-absent-bucket"
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			writeOssError(w, http.StatusNotFound, "NoSuchBucket")
+			return
+		}
+		writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName})
+	d.SetId(bucketName)
+	if err := resourceAlicloudOssBucketDelete(d, client); err != nil {
+		t.Fatalf("expected delete of an absent bucket to succeed, got: %v", err)
+	}
+	if n := mock.count(http.MethodDelete, "/"+bucketName, ""); n != 1 {
+		t.Fatalf("expected exactly one DeleteBucket request, got %d", n)
+	}
+	if n := mock.count(http.MethodGet, "/"+bucketName, "bucketInfo"); n != 0 {
+		t.Fatalf("expected the post-delete wait to be skipped, got %d GetBucketInfo calls", n)
+	}
+	mock.assertNoListBuckets(t)
+}
+
+func TestUnitAliCloudOssBucketDeleteFailsWhenAccessDenied(t *testing.T) {
+	bucketName := "mock-delete-denied-bucket"
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			writeOssError(w, http.StatusForbidden, "AccessDenied")
+			return
+		}
+		writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName})
+	d.SetId(bucketName)
+	if err := resourceAlicloudOssBucketDelete(d, client); err == nil {
+		t.Fatal("expected an error when delete is denied")
+	}
+	if n := mock.count(http.MethodDelete, "/"+bucketName, ""); n != 1 {
+		t.Fatalf("expected no retry on a deterministic delete failure, got %d DeleteBucket requests", n)
+	}
+	mock.assertNoListBuckets(t)
+}
+
+func TestUnitAliCloudOssBucketDeleteFailsWhenNotEmptyWithoutForceDestroy(t *testing.T) {
+	bucketName := "mock-notempty-bucket"
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			writeOssError(w, http.StatusConflict, "BucketNotEmpty")
+			return
+		}
+		writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName, "force_destroy": false})
+	d.SetId(bucketName)
+	if err := resourceAlicloudOssBucketDelete(d, client); err == nil {
+		t.Fatal("expected an error when the bucket is not empty and force_destroy is false")
+	}
+	if n := mock.count(http.MethodGet, "/"+bucketName, "versions"); n != 0 {
+		t.Fatalf("expected no object cleanup without force_destroy, got %d ListObjectVersions requests", n)
+	}
+	mock.assertNoListBuckets(t)
+}
+
+func TestUnitAliCloudOssBucketDeleteForceDestroyVersions(t *testing.T) {
+	bucketName := "mock-force-destroy-bucket"
+	var deleteCalls int32
+	mock := newOssMockServer(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		switch {
+		case r.Method == http.MethodDelete:
+			if atomic.AddInt32(&deleteCalls, 1) == 1 {
+				writeOssError(w, http.StatusConflict, "BucketNotEmpty")
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		case hasOssSubresource(q, "versions"):
+			writeOssXML(w, http.StatusOK, `<?xml version="1.0" encoding="UTF-8"?><ListVersionsResult><Name>`+bucketName+`</Name><Version><Key>obj1</Key><VersionId>v1</VersionId><IsLatest>true</IsLatest></Version><DeleteMarker><Key>obj2</Key><VersionId>v2</VersionId><IsLatest>false</IsLatest></DeleteMarker></ListVersionsResult>`)
+		case hasOssSubresource(q, "delete"):
+			writeOssXML(w, http.StatusOK, `<?xml version="1.0" encoding="UTF-8"?><DeleteResult><Deleted><Key>obj1</Key><VersionId>v1</VersionId></Deleted><Deleted><Key>obj2</Key><VersionId>v2</VersionId></Deleted></DeleteResult>`)
+		case hasOssSubresource(q, "bucketInfo"):
+			writeOssError(w, http.StatusNotFound, "NoSuchBucket")
+		default:
+			writeOssError(w, http.StatusInternalServerError, "UnexpectedMockRequest")
+		}
+	})
+	defer mock.Close()
+	client := newOssMockClient(t, mock.URL)
+
+	d := ossBucketResourceData(t, map[string]interface{}{"bucket": bucketName, "force_destroy": true})
+	d.SetId(bucketName)
+	if err := resourceAlicloudOssBucketDelete(d, client); err != nil {
+		t.Fatalf("expected force_destroy delete to succeed, got: %v", err)
+	}
+	if n := mock.count(http.MethodDelete, "/"+bucketName, ""); n != 2 {
+		t.Fatalf("expected DeleteBucket to be retried after cleanup, got %d requests", n)
+	}
+	if n := mock.count(http.MethodGet, "/"+bucketName, "versions"); n != 1 {
+		t.Fatalf("expected one ListObjectVersions request, got %d", n)
+	}
+	if n := mock.count(http.MethodPost, "/"+bucketName, "delete"); n != 1 {
+		t.Fatalf("expected one DeleteObjectVersions request, got %d", n)
+	}
+	mock.assertNoListBuckets(t)
 }
