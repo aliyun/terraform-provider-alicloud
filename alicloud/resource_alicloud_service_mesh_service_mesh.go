@@ -52,6 +52,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Computed: true,
 				ValidateFunc: StringInSlice([]string{"Default", "Pro"}, false),
 			},
 			"extra_configuration": {
@@ -532,6 +533,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"service_mesh_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -541,6 +543,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"version": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 		},
 	}
