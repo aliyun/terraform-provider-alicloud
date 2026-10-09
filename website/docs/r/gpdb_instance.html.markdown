@@ -129,8 +129,19 @@ The following arguments are supported:
   -> **NOTE:** If `encryption_type` is set to `CloudDisk`, you must specify an encryption key that resides in the same region as the cloud disk that is specified by EncryptionType. Otherwise, leave this parameter empty.
 
 * `vector_configuration_status` - (Optional, Available since v1.207.2) Specifies whether to enable vector engine optimization. Default value: `disabled`. Valid values: `enabled` and `disabled`.
+* `sql_collector_status` - (Optional, Computed, Available since v1.289.0) Specifies whether to enable or disable the SQL collector (audit logging) of the instance. Valid values:
+  - `Enable`: Enables the SQL collector.
+  - `Disabled`: Disables the SQL collector.
+
+  -> **NOTE:** The GPDB API does not provide an operation to query the SQL collector status, so this attribute is write-only and is not read back into state: drift on the instance is not detected, and removing the attribute from the configuration does not change the collector state on the instance. The SQL collector is supported only for storage reserved mode (`db_instance_mode` = `Classic`) instances and Serverless auto-scheduling instances. See [ModifySQLCollectorPolicy](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-modifysqlcollectorpolicy).
+
 * `maintain_start_time` - (Optional) The start time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 02:00Z.
 * `maintain_end_time` - (Optional) The end time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 03:00Z. start time should be later than end time.
+* `effective_time` - (Optional, Available since v1.289.0) The effective time of an in-place modification: it is passed to the [UpgradeDBVersion](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-upgradedbversion) operation when `minor_version` is changed, and to the [UpgradeDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-upgradedbinstance) operation when `seg_node_num`, `master_node_num`, `instance_spec`, `storage_size`, `serverless_resource`, `cache_storage_size` or `seg_disk_performance_level` is changed. Default value: `Immediate`. Valid values:
+  - `Immediate`: The change takes effect immediately.
+  - `MaintainTime`: The change takes effect during the maintenance window specified by `maintain_start_time` and `maintain_end_time`.
+
+  -> **NOTE:** `effective_time` is an operation-time parameter rather than instance state, so it is not read back into state. When it is set to `MaintainTime`, the apply completes without waiting for the change to take effect, and the instance keeps reporting the previous value until the maintenance window arrives.
 * `resource_management_mode` - (Optional, Available since v1.225.0) Resource management mode. Valid values: `resourceGroup`, `resourceQueue`.
 * `serverless_mode` - (Optional, ForceNew, Available since v1.233.1) The mode of the Serverless instance. Valid values: `Manual`, `Auto`. **NOTE:** `serverless_mode` is valid only when `db_instance_mode` is set to `Serverless`.
 * `serverless_resource` - (Optional, Int, Available since v1.287.0) The computing resource threshold, in ACU. Valid values: `16` to `1024`. **NOTE:** `serverless_resource` is valid only when `db_instance_mode` is set to `ServerlessPro`. The value can be modified in place for `ServerlessPro` instances.
