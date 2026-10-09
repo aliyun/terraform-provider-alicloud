@@ -49,31 +49,32 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Server Group names.
 * `groups` - A list of Nlb Server Groups. Each element contains the following attributes:
-	* `address_ip_version` - The protocol version.
-	* `connection_drain` - Indicates whether connection draining is enabled.
-	* `connection_drain_timeout` - The timeout period of connection draining. Unit: seconds.
-	* `health_check` - The configurations of health checks.
-		* `health_check_interval` - The interval between two consecutive health checks.
-		* `health_check_type` - The protocol that is used for health checks.
-		* `health_check_http_version` - (Available since v1.274.0) The HTTP protocol version for health checks.
-		* `healthy_threshold` - The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy.
-		* `unhealthy_threshold` - The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy.
-		* `health_check_http_code` - The HTTP status codes returned for health checks.
-		* `health_check_url` - The path to which health check requests are sent.
-		* `health_check_connect_port` - The backend port that is used for health checks.
-		* `health_check_connect_timeout` - The maximum timeout period of a health check response.
-		* `health_check_domain` - The domain name that is used for health checks.
-		* `health_check_enabled` - Specifies whether to enable health checks.
-		* `http_check_method` - The HTTP method that is used for health checks.
-	* `protocol` - The protocol used to forward requests to the backend servers.
-	* `related_load_balancer_ids` - The NLB instance.
-	* `scheduler` - The routing algorithm.
-	* `server_count` - The number of server groups associated with the NLB instance.
-	* `server_group_name` - The name of the server group.
-	* `server_group_type` - The type of the server group.
-	* `status` - The status of the server group.
-	* `id` - The ID of the Server Group.
-	* `vpc_id` - The ID of the VPC to which the server group belongs.
-	* `preserve_client_ip_enabled` - Indicates whether client address retention is enabled.
-	* `resource_group_id` - The ID of the resource group to which the security group belongs.
-	* `tags` - A mapping of tags to assign to the resource.
+  * `address_ip_version` - The protocol version.
+  * `ip_version_affinity_mode` - (Available since v1.295.0) The traffic scheduling policy for dual-stack server groups.
+  * `connection_drain` - Indicates whether connection draining is enabled.
+  * `connection_drain_timeout` - The timeout period of connection draining. Unit: seconds.
+  * `health_check` - The configurations of health checks.
+    * `health_check_interval` - The interval between two consecutive health checks.
+    * `health_check_type` - The protocol that is used for health checks.
+    * `health_check_http_version` - (Available since v1.274.0) The HTTP protocol version for health checks.
+    * `healthy_threshold` - The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy.
+    * `unhealthy_threshold` - The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy.
+    * `health_check_http_code` - The HTTP status codes returned for health checks.
+    * `health_check_url` - The path to which health check requests are sent.
+    * `health_check_connect_port` - The backend port that is used for health checks.
+    * `health_check_connect_timeout` - The maximum timeout period of a health check response.
+    * `health_check_domain` - The domain name that is used for health checks.
+    * `health_check_enabled` - Specifies whether to enable health checks.
+    * `http_check_method` - The HTTP method that is used for health checks.
+  * `protocol` - The protocol used to forward requests to the backend servers.
+  * `related_load_balancer_ids` - The NLB instance.
+  * `scheduler` - The routing algorithm.
+  * `server_count` - The number of server groups associated with the NLB instance.
+  * `server_group_name` - The name of the server group.
+  * `server_group_type` - The type of the server group.
+  * `status` - The status of the server group.
+  * `id` - The ID of the Server Group.
+  * `vpc_id` - The ID of the VPC to which the server group belongs.
+  * `preserve_client_ip_enabled` - Indicates whether client address retention is enabled.
+  * `resource_group_id` - The ID of the resource group to which the security group belongs.
+  * `tags` - A mapping of tags to assign to the resource.
