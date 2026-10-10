@@ -396,6 +396,22 @@ func TestUnitAlicloudOOSTemplate(t *testing.T) {
 			"UpdatedBy":       "updated_by",
 			"UpdatedDate":     "updated_date",
 		},
+		// ListTagResources response ($.TagResources.TagResource[*].ResourceId)
+		// populates the computed resource_ids attribute during Read.
+		"TagResources": map[string]interface{}{
+			"TagResource": []interface{}{
+				map[string]interface{}{
+					"ResourceId": "MockTemplateName",
+					"TagKey":     "Created",
+					"TagValue":   "TF1",
+				},
+				map[string]interface{}{
+					"ResourceId": "MockTemplateName",
+					"TagKey":     "For",
+					"TagValue":   "test1",
+				},
+			},
+		},
 	}
 
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
@@ -652,5 +668,48 @@ func TestUnitAlicloudOOSTemplate(t *testing.T) {
 		err := resourceAlicloudOosTemplateRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
+	})
+
+	// Read regression for the computed resource_ids attribute: ListTagResources
+	// echoes one TagResource entry per bound tag, all carrying the same
+	// ResourceId, so the backfill must de-duplicate to a single id. Missing,
+	// null, non-string or empty ResourceId values must be rejected so that the
+	// string "<nil>" (produced by fmt.Sprint on a nil interface) never leaks
+	// into state. This assertion fails against the previous fmt.Sprint backfill
+	// which admitted "<nil>" and "123" entries.
+	t.Run("ReadResourceIdsBackfill", func(t *testing.T) {
+		readMockResponseResourceIds := map[string]interface{}{
+			"Template": map[string]interface{}{
+				"TemplateName":    "MockTemplateName",
+				"CreatedBy":       "created_by",
+				"CreatedDate":     "created_date",
+				"Description":     "description",
+				"HasTrigger":      "has_trigger",
+				"ShareType":       "share_type",
+				"TemplateFormat":  "template_format",
+				"TemplateId":      "template_id",
+				"TemplateType":    "template_type",
+				"TemplateVersion": "template_version",
+				"UpdatedBy":       "updated_by",
+				"UpdatedDate":     "updated_date",
+			},
+			"TagResources": map[string]interface{}{
+				"TagResource": []interface{}{
+					map[string]interface{}{"ResourceId": "MockTemplateName", "TagKey": "Created", "TagValue": "TF1"},
+					map[string]interface{}{"ResourceId": "MockTemplateName", "TagKey": "For", "TagValue": "test1"},
+					map[string]interface{}{"TagKey": "MissingRid"},
+					map[string]interface{}{"ResourceId": nil, "TagKey": "NilRid"},
+					map[string]interface{}{"ResourceId": 123, "TagKey": "IntRid"},
+					map[string]interface{}{"ResourceId": "", "TagKey": "EmptyRid"},
+				},
+			},
+		}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return readMockResponseResourceIds, nil
+		})
+		err := resourceAlicloudOosTemplateRead(d, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, []interface{}{"MockTemplateName"}, d.Get("resource_ids"))
 	})
 }
