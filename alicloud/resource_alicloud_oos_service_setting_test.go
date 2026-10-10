@@ -49,6 +49,7 @@ func TestAccAliCloudOOSServiceSetting_basic0(t *testing.T) {
 					"delivery_oss_bucket_name":  "${alicloud_oss_bucket.default.0.bucket}",
 					"delivery_sls_enabled":      "true",
 					"delivery_sls_project_name": "${alicloud_log_project.default.0.name}",
+					"service_access_rd_enabled": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -57,6 +58,7 @@ func TestAccAliCloudOOSServiceSetting_basic0(t *testing.T) {
 						"delivery_oss_bucket_name":  CHECKSET,
 						"delivery_sls_enabled":      "true",
 						"delivery_sls_project_name": CHECKSET,
+						"service_access_rd_enabled": "false",
 					}),
 				),
 			},
@@ -170,6 +172,8 @@ func TestUnitAliCloudOOSServiceSetting(t *testing.T) {
 		"delivery_oss_bucket_name":  "delivery_oss_bucket_name",
 		"delivery_sls_enabled":      true,
 		"delivery_sls_project_name": "delivery_sls_project_name",
+		"service_access_rd_enabled": false,
+		"rd_folder_ids":             []interface{}{"rd-xxx"},
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -191,6 +195,8 @@ func TestUnitAliCloudOOSServiceSetting(t *testing.T) {
 			"DeliverySlsEnabled":     true,
 			"DeliverySlsProjectName": "delivery_sls_project_name",
 			"RdcEnterpriseId":        "rdc_enterprise_id",
+			"ServiceAccessRdEnabled": true,
+			"RdFolders":              "rd-123",
 		},
 	}
 
@@ -300,7 +306,7 @@ func TestUnitAliCloudOOSServiceSetting(t *testing.T) {
 
 	t.Run("UpdateSetServiceSettingsAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"delivery_oss_enabled", "delivery_oss_bucket_name", "delivery_oss_key_prefix", "delivery_sls_enabled", "delivery_sls_project_name"} {
+		for _, key := range []string{"delivery_oss_enabled", "delivery_oss_bucket_name", "delivery_oss_key_prefix", "delivery_sls_enabled", "delivery_sls_project_name", "service_access_rd_enabled"} {
 			switch p["alicloud_oos_service_setting"].Schema[key].Type {
 			case schema.TypeString:
 				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
@@ -335,7 +341,7 @@ func TestUnitAliCloudOOSServiceSetting(t *testing.T) {
 
 	t.Run("UpdateSetServiceSettingsNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"delivery_oss_enabled", "delivery_oss_bucket_name", "delivery_oss_key_prefix", "delivery_sls_enabled", "delivery_sls_project_name"} {
+		for _, key := range []string{"delivery_oss_enabled", "delivery_oss_bucket_name", "delivery_oss_key_prefix", "delivery_sls_enabled", "delivery_sls_project_name", "service_access_rd_enabled"} {
 			switch p["alicloud_oos_service_setting"].Schema[key].Type {
 			case schema.TypeString:
 				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
