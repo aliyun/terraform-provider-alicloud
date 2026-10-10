@@ -45,10 +45,7 @@ func dataSourceAliCloudExpressConnectRouterExpressConnectRouters() *schema.Resou
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"ACTIVE", "UPDATING", "ASSOCIATING", "DISSOCIATING", "LOCKED_ATTACHING", "LOCKED_DETACHING", "RECLAIMING", "DELETING"}, false),
 			},
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
+			"tags": tagsSchemaWithElements(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
