@@ -119,7 +119,7 @@ func resourceAliCloudMessageServiceQueue() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"SMQ", "KMS"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tagsSchemaWithElements(),
 			"visibility_timeout": {
 				Type:         schema.TypeInt,
 				Optional:     true,
