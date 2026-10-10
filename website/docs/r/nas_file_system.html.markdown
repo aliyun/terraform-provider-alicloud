@@ -206,6 +206,9 @@ The options supports the following:
 
   -> **NOTE:** Description Only file systems of the SMB protocol type are supported.
 
+* `enable_abe` - (Optional, Computed, Available since v1.294.0) Whether to enable the SMB ABE access control function.
+* `vsc_access_point_access_only` - (Optional, Computed, Available since v1.294.0) Whether the VSC mount target of the intelligent computing CPFS file system only supports access through the access point (AP) method. This parameter is only applicable to intelligent computing CPFS file systems.
+
 ### `recycle_bin`
 
 The recycle_bin supports the following:

@@ -104,6 +104,26 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"options": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enable_oplock": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"enable_abe": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"vsc_access_point_access_only": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -196,6 +216,15 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			"capacity":         object["Capacity"],
 			"kms_key_id":       object["KMSKeyId"],
 			"zone_id":          object["ZoneId"],
+		}
+		if optionsRaw, ok := object["Options"].(map[string]interface{}); ok && len(optionsRaw) > 0 {
+			optionsMaps := make([]map[string]interface{}, 0)
+			optionsMap := make(map[string]interface{})
+			optionsMap["enable_oplock"] = optionsRaw["EnableOplock"]
+			optionsMap["enable_abe"] = optionsRaw["EnableABE"]
+			optionsMap["vsc_access_point_access_only"] = optionsRaw["VscAccessPointAccessOnly"]
+			optionsMaps = append(optionsMaps, optionsMap)
+			mapping["options"] = optionsMaps
 		}
 		ids = append(ids, fmt.Sprint(object["FileSystemId"]))
 		descriptions = append(descriptions, object["Description"])
