@@ -37,7 +37,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@6cee1fff3bc9f430dc88bf19794a803ec20120c6
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@d40597393ea770711879b37711492050630b16bf
 
   errcheck:
     name: runner / errcheck
@@ -53,7 +53,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
       - name: errcheck
-        uses: reviewdog/action-golangci-lint@c76cceaaab89abe74e649d2e34c6c9adc26662d2 # v2.10.0
+        uses: reviewdog/action-golangci-lint@284129a3ac23bc5d8ac1522e0b6511df74a8836d # v2.10.2
         with:
           go_version_file: .go-version
           cache: false
