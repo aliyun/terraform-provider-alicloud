@@ -1,3 +1,9 @@
+## 2.0.0-beta6 (Unreleased)
+
+FEATURES:
+
+- **New Ephemeral Resource:** `alicloud_cr_ee_authorization_token` — fetches a temporary Container Registry Enterprise Edition login credential through the `GetAuthorizationToken` API without persisting it to the state or plan, for use in provider configuration, locals, provisioners, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
+
 ## 2.0.0-beta5 (October 10, 2026)
 
 This beta rolls up every change merged from the 1.x line since v2.0.0-beta4 — see the `1.291.0`, `1.292.0`, `1.293.0` and `1.294.0` sections of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only changes below. Changes that merged to the 1.x line after the `1.294.0` changelog cut are also listed below, ahead of their appearance in any released 1.x section.
