@@ -257,6 +257,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_data_backups":                              dataSourceAliCloudGpdbDataBackups(),
 			"alicloud_gpdb_log_backups":                               dataSourceAliCloudGpdbLogbackups(),
 			"alicloud_governance_baselines":                           dataSourceAliCloudGovernanceBaselines(),
+			"alicloud_governance_service":                             dataSourceAliCloudGovernanceService(),
 			"alicloud_vpn_gateway_zones":                              dataSourceAliCloudVPNGatewayZones(),
 			"alicloud_account":                                        dataSourceAlicloudAccount(),
 			"alicloud_caller_identity":                                dataSourceAlicloudCallerIdentity(),
