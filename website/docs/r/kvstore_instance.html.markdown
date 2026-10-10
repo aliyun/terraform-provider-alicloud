@@ -302,6 +302,9 @@ The following attributes are exported:
 * `qps` - Theoretical maximum QPS value.
 * `connection_domain`- Intranet connection address of the KVStore instance.
 * `status` - The status of KVStore DBInstance.
+* `ca_cert_download_url` - The download URL of the CA certificate. This attribute is populated when `ssl_enable` is set to `Enable`.
+* `ca_cert_common_name` - The common name of the CA certificate. **NOTE:** This is a best-effort attribute and may be empty when the upstream API does not return it.
+* `ssl_expired_time` - The expiration time of the SSL certificate. **NOTE:** This is a best-effort attribute and may be empty when the upstream API does not return it.
 
 ## Timeouts
 
