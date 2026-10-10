@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -89,7 +90,9 @@ func resourceAlicloudApiGatewayLogConfigRead(d *schema.ResourceData, meta interf
 	}
 
 	d.Set("sls_project", object["SlsProject"])
-	d.Set("sls_log_store", object["SlsLogStore"])
+	// The SLS Project will be automatically created with prefix `acs_apigateway-` by API Gateway service.
+	// Strip the prefix so that the state matches the user-provided value and avoid perpetual diff/import drift.
+	d.Set("sls_log_store", strings.TrimPrefix(fmt.Sprint(object["SlsLogStore"]), "acs_apigateway-"))
 	d.Set("log_type", object["LogType"])
 
 	return nil
