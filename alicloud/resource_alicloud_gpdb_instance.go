@@ -200,6 +200,17 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"effective_time": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Immediate", "MaintainTime"}, false),
+			},
+			"sql_collector_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Enable", "Disabled"}, false),
+			},
 			"serverless_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -873,6 +884,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["MinorVersion"] = v
 		}
 	}
+	if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+		request["EffectiveTime"] = v
+	}
 	if update {
 		action := "UpgradeDBVersion"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -903,6 +917,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 
 		d.SetPartial("minor_version")
+		d.SetPartial("effective_time")
 	}
 
 	update = false
@@ -1092,6 +1107,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["SegNodeNum"] = v
 		}
 	}
+	if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+		request["EffectiveTime"] = v
+	}
 
 	if update {
 		action := "UpgradeDBInstance"
@@ -1128,6 +1146,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 
 		d.SetPartial("seg_node_num")
+		d.SetPartial("effective_time")
 	}
 
 	update = false
@@ -1142,6 +1161,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["UpgradeType"] = 2
 			request["MasterNodeNum"] = v
 		}
+	}
+	if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+		request["EffectiveTime"] = v
 	}
 
 	if update {
@@ -1179,6 +1201,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 
 		d.SetPartial("master_node_num")
+		d.SetPartial("effective_time")
 	}
 
 	update = false
@@ -1192,6 +1215,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["UpgradeType"] = 1
 			request["InstanceSpec"] = v
 		}
+	}
+	if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+		request["EffectiveTime"] = v
 	}
 	if update {
 		action := "UpgradeDBInstance"
@@ -1224,6 +1250,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("instance_spec")
+		d.SetPartial("effective_time")
 	}
 
 	update = false
@@ -1237,6 +1264,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["UpgradeType"] = 1
 			request["StorageSize"] = v
 		}
+	}
+	if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+		request["EffectiveTime"] = v
 	}
 
 	if update {
@@ -1273,6 +1303,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 
 		d.SetPartial("storage_size")
+		d.SetPartial("effective_time")
 	}
 
 	update = false
@@ -1291,6 +1322,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		if v, ok := d.GetOk("cache_storage_size"); ok {
 			request["CacheStorageSize"] = strconv.Itoa(v.(int))
 		}
+	}
+	if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+		request["EffectiveTime"] = v
 	}
 
 	if update {
@@ -1338,6 +1372,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 
 		d.SetPartial("serverless_resource")
 		d.SetPartial("cache_storage_size")
+		d.SetPartial("effective_time")
 	}
 
 	update = false
@@ -1356,6 +1391,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("seg_disk_performance_level"); ok {
 		modifySegDiskPerformanceLevelReq["SegDiskPerformanceLevel"] = v
+	}
+	if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+		modifySegDiskPerformanceLevelReq["EffectiveTime"] = v
 	}
 
 	if update {
@@ -1384,6 +1422,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 
 		d.SetPartial("seg_disk_performance_level")
+		d.SetPartial("effective_time")
 	}
 
 	update = false
@@ -1628,6 +1667,45 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 
 		d.SetPartial("data_share_status")
+	}
+
+	// ModifySqlCollectorPolicy manages the SQL collector status (Enable/Disabled).
+	// GPDB's DescribeDBInstanceAttribute does not return SQLCollectorStatus and no
+	// dedicated Describe API exists (verified against the OpenAPI definition), so
+	// sql_collector_status is write-only: the configured value is retained in state
+	// and not refreshed from the cloud, which means drift cannot be detected on
+	// refresh. Configure it explicitly to manage the SQL collector.
+	if d.HasChange("sql_collector_status") {
+		if v, ok := d.GetOk("sql_collector_status"); ok && v.(string) != "" {
+			request = map[string]interface{}{
+				"DBInstanceId":       d.Id(),
+				"SQLCollectorStatus": v,
+			}
+			action := "ModifySqlCollectorPolicy"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+			d.SetPartial("sql_collector_status")
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("status") {
