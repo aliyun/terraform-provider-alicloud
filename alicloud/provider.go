@@ -980,6 +980,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sls_metric_stores":                                dataSourceAliCloudSlsMetricStores(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_ecs_snapshot_lock":                                    resourceAliCloudEcsSnapshotLock(),
 			"alicloud_realtime_compute_variable":                            resourceAliCloudRealtimeComputeVariable(),
 			"alicloud_apig_secret":                                          resourceAliCloudApigSecret(),
 			"alicloud_cr_instance_customized_domain":                        resourceAliCloudCrInstanceCustomizedDomain(),
