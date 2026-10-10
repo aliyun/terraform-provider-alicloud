@@ -1056,7 +1056,6 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"service_description":    "test-zejun",
-					"connect_bandwidth":      "3072",
 					"auto_accept_connection": "false",
 					"payer":                  "Endpoint",
 					"service_resource_type":  "nlb",
@@ -1068,7 +1067,6 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"service_description":    "test-zejun",
-						"connect_bandwidth":      "3072",
 						"auto_accept_connection": "false",
 						"payer":                  "Endpoint",
 						"service_resource_type":  "nlb",
@@ -1082,7 +1080,6 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"service_description":   "test-zejun-2",
-					"connect_bandwidth":     "3073",
 					"zone_affinity_enabled": "true",
 					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					//"service_support_ipv6":  "true",
@@ -1090,7 +1087,6 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"service_description":   "test-zejun-2",
-						"connect_bandwidth":     "3073",
 						"zone_affinity_enabled": "true",
 						"resource_group_id":     CHECKSET,
 						//"service_support_ipv6":  "true",
@@ -1100,14 +1096,12 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"service_description":    "test-zejun",
-					"connect_bandwidth":      "3072",
 					"auto_accept_connection": "true",
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"service_description":    "test-zejun",
-						"connect_bandwidth":      "3072",
 						"auto_accept_connection": "true",
 						"resource_group_id":      CHECKSET,
 					}),
@@ -1201,6 +1195,7 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case9628(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointServiceBasicDependence9628)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.WuLanChaBu})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
