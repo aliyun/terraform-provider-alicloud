@@ -182,7 +182,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"runtime": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -308,7 +308,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 			},
 			// computed parameters start
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -333,7 +333,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"connections": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -431,10 +431,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Deprecated: "Field 'log_config' has been removed from provider version 1.103.0. New field 'addons' replaces it.",
 			},
 			// lintignore: S006
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
+			"tags": tagsSchemaWithElements(),
 			"retain_resources": {
 				Type:     schema.TypeList,
 				Optional: true,
