@@ -359,6 +359,45 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				},
 				Optional: true,
 			},
+			"result_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"JSON", "TEXT", "BINARY", "XML", "HTML"}, false),
+			},
+			"result_sample": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringLenBetween(0, 32768),
+			},
+			"fail_result_sample": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringLenBetween(0, 16384),
+			},
+			"error_code_samples": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"code": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"message": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 
 			"api_id": {
 				Type:     schema.TypeString,
@@ -440,6 +479,10 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("auth_type", objectRaw["AuthType"])
 	d.Set("app_code_auth_type", objectRaw["AppCodeAuthType"])
 	d.Set("force_nonce_check", objectRaw["ForceNonceCheck"])
+	d.Set("result_type", objectRaw["ResultType"])
+	d.Set("result_sample", objectRaw["ResultSample"])
+	d.Set("fail_result_sample", objectRaw["FailResultSample"])
+	d.Set("error_code_samples", convertApiGatewayApiErrorCodeSamplesResponse(objectRaw["ErrorCodeSamples"]))
 
 	v := convertApiGatewayApiRequestConfigResponse(objectRaw["RequestConfig"])
 	if err := d.Set("request_config", []map[string]interface{}{v}); err != nil {
@@ -557,9 +600,27 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 	request.ServiceParameters = string(sps)
 	request.ServiceParametersMap = string(spm)
 
+	if d.HasChanges("result_type", "result_sample", "fail_result_sample", "error_code_samples") {
+		update = true
+	}
+	if v, exist := d.GetOk("result_type"); exist {
+		request.ResultType = v.(string)
+	}
+	if v, exist := d.GetOk("result_sample"); exist {
+		request.ResultSample = v.(string)
+	}
+	if v, exist := d.GetOk("fail_result_sample"); exist {
+		request.FailResultSample = v.(string)
+	}
+	if v, exist := d.GetOk("error_code_samples"); exist {
+		errorCodeSamples, err := errorCodeSamplesToJsonStr(v.([]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request.ErrorCodeSamples = errorCodeSamples
+	}
+
 	if update {
-		request.ResultType = ResultType
-		request.ResultSample = ResultSample
 		request.Visibility = Visibility
 		request.AllowSignatureMethod = AllowSignatureMethod
 		request.WebSocketApiType = WebSocketApiType
@@ -591,6 +652,10 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("request_parameters")
 		d.SetPartial("constant_parameters")
 		d.SetPartial("system_parameters")
+		d.SetPartial("result_type")
+		d.SetPartial("result_sample")
+		d.SetPartial("fail_result_sample")
+		d.SetPartial("error_code_samples")
 
 	}
 
@@ -693,8 +758,22 @@ func buildAliyunApiArgs(d *schema.ResourceData, meta interface{}) (*cloudapi.Cre
 	request.ServiceParameters = string(sps)
 	request.ServiceParametersMap = string(spm)
 
-	request.ResultType = ResultType
-	request.ResultSample = ResultSample
+	if v, exist := d.GetOk("result_type"); exist {
+		request.ResultType = v.(string)
+	}
+	if v, exist := d.GetOk("result_sample"); exist {
+		request.ResultSample = v.(string)
+	}
+	if v, exist := d.GetOk("fail_result_sample"); exist {
+		request.FailResultSample = v.(string)
+	}
+	if v, exist := d.GetOk("error_code_samples"); exist {
+		errorCodeSamples, err := errorCodeSamplesToJsonStr(v.([]interface{}))
+		if err != nil {
+			return request, WrapError(err)
+		}
+		request.ErrorCodeSamples = errorCodeSamples
+	}
 	request.Visibility = Visibility
 	request.AllowSignatureMethod = AllowSignatureMethod
 	request.WebSocketApiType = WebSocketApiType
@@ -725,6 +804,26 @@ func requestConfigToJsonStr(l []interface{}) (string, error) {
 	configStr, err := json.Marshal(requestConfig)
 
 	return string(configStr), WrapError(err)
+}
+
+func errorCodeSamplesToJsonStr(l []interface{}) (string, error) {
+	samples := make([]map[string]interface{}, 0, len(l))
+	for _, item := range l {
+		config := item.(map[string]interface{})
+		sample := map[string]interface{}{
+			"Code":    config["code"].(string),
+			"Message": config["message"].(string),
+		}
+		if v, ok := config["description"]; ok {
+			if description := v.(string); description != "" {
+				sample["Description"] = description
+			}
+		}
+		samples = append(samples, sample)
+	}
+	samplesStr, err := json.Marshal(samples)
+
+	return string(samplesStr), WrapError(err)
 }
 
 func getHttpServiceConfig(d *schema.ResourceData) ([]byte, error) {
@@ -1322,4 +1421,34 @@ func convertApiGatewayApiSystemParamsResponse(source interface{}) []map[string]i
 	}
 
 	return systemParams
+}
+
+func convertApiGatewayApiErrorCodeSamplesResponse(source interface{}) []map[string]interface{} {
+	var errorCodeSamples []map[string]interface{}
+	if source == nil {
+		return errorCodeSamples
+	}
+	errorCodeSamplesMap, ok := source.(map[string]interface{})
+	if !ok {
+		return errorCodeSamples
+	}
+	errorCodeSample, ok := errorCodeSamplesMap["ErrorCodeSample"].([]interface{})
+	if !ok {
+		return errorCodeSamples
+	}
+	for _, sample := range errorCodeSample {
+		param := map[string]interface{}{}
+		errorCodeSampleMap, ok := sample.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		param["code"] = errorCodeSampleMap["Code"]
+		param["message"] = errorCodeSampleMap["Message"]
+		if description, ok := errorCodeSampleMap["Description"]; ok && description != "" {
+			param["description"] = description
+		}
+		errorCodeSamples = append(errorCodeSamples, param)
+	}
+
+	return errorCodeSamples
 }
