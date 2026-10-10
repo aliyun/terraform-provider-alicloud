@@ -1,21 +1,42 @@
-## 2.0.0-beta5 (Unreleased)
+## 2.0.0-beta5 (October 10, 2026)
+
+This beta rolls up every change merged from the 1.x line since v2.0.0-beta4 — see the `1.291.0`, `1.292.0`, `1.293.0` and `1.294.0` sections of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only changes below. Changes that merged to the 1.x line after the `1.294.0` changelog cut are also listed below, ahead of their appearance in any released 1.x section.
 
 FEATURES:
 
-- **New Ephemeral Resource:** `alicloud_kms_secret` — reads a KMS secret's value through the `GetSecretValue` API without persisting it to the state or plan, for use in provider configuration, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
-- **New Ephemeral Resource:** `alicloud_oos_secret_parameter` — reads an OOS secret parameter's decrypted value through the `GetSecretParameter` API without persisting it to the state or plan, for use in provider configuration, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
-- **New Ephemeral Resource:** `alicloud_kms_plaintext` — decrypts a KMS ciphertext through the `Decrypt` API without persisting the plaintext to the state or plan, for use in provider configuration, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
-- **New Ephemeral Resource:** `alicloud_cs_cluster_credential` — fetches an ACK cluster kubeconfig through the `DescribeClusterUserKubeconfig` API without persisting the credential to the state or plan, for use in provider configuration, locals, provisioners, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
+- **New Ephemeral Resource:** `alicloud_kms_secret` — reads a KMS secret's value through the `GetSecretValue` API without persisting it to the state or plan, for use in provider configuration, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider. ([#10650](https://github.com/aliyun/terraform-provider-alicloud/issues/10650))
+- **New Ephemeral Resource:** `alicloud_oos_secret_parameter` — reads an OOS secret parameter's decrypted value through the `GetSecretParameter` API without persisting it to the state or plan, for use in provider configuration, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider. ([#10662](https://github.com/aliyun/terraform-provider-alicloud/issues/10662))
+- **New Ephemeral Resource:** `alicloud_kms_plaintext` — decrypts a KMS ciphertext through the `Decrypt` API without persisting the plaintext to the state or plan, for use in provider configuration, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider. ([#10677](https://github.com/aliyun/terraform-provider-alicloud/issues/10677))
+- **New Ephemeral Resource:** `alicloud_cs_cluster_credential` — fetches an ACK cluster kubeconfig through the `DescribeClusterUserKubeconfig` API without persisting the credential to the state or plan, for use in provider configuration, locals, provisioners, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider. ([#10747](https://github.com/aliyun/terraform-provider-alicloud/issues/10747))
+- **New Action:** `alicloud_ssl_certificates_service_pca_cert_sync` — synchronizes a batch of existing PCA (private CA) client certificates to the SSL Certificates service in one shot, the same operation as "Batch Synchronize to SSL Certificates" in the PCA console. Requires Terraform 1.14 or later. Served by the framework provider. ([#10567](https://github.com/aliyun/terraform-provider-alicloud/issues/10567))
+- **New Resource:** `alicloud_ims_user` — the IMS user resource, served by the framework provider. ([#10515](https://github.com/aliyun/terraform-provider-alicloud/issues/10515))
 
 ENHANCEMENTS:
 
-- resource/alicloud_oos_parameter: support the write-only attribute `value_wo` with `value_wo_version` as its change trigger, so the parameter value can be managed without being persisted in the state or plan.
-- resource/alicloud_kms_ciphertext: support the write-only attribute `plaintext_wo` with `plaintext_wo_version` as its change trigger, so the plaintext can be managed without being persisted in the state or plan.
-- resource/alicloud_ssl_certificates_service_certificate: support the write-only attribute `key_wo` with `key_wo_version` as its change trigger, so the certificate private key can be managed without being persisted in the state or plan.
-- resource/alicloud_rds_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan.
-- resource/alicloud_gpdb_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan.
-- resource/alicloud_polardb_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan.
-- resource/alicloud_kvstore_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan.
+- resource/alicloud_oos_parameter: support the write-only attribute `value_wo` with `value_wo_version` as its change trigger, so the parameter value can be managed without being persisted in the state or plan. ([#10505](https://github.com/aliyun/terraform-provider-alicloud/issues/10505))
+- resource/alicloud_kms_ciphertext: support the write-only attribute `plaintext_wo` with `plaintext_wo_version` as its change trigger, so the plaintext can be managed without being persisted in the state or plan. ([#10598](https://github.com/aliyun/terraform-provider-alicloud/issues/10598))
+- resource/alicloud_ssl_certificates_service_certificate: support the write-only attribute `key_wo` with `key_wo_version` as its change trigger, so the certificate private key can be managed without being persisted in the state or plan. ([#10602](https://github.com/aliyun/terraform-provider-alicloud/issues/10602))
+- resource/alicloud_rds_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan. ([#10615](https://github.com/aliyun/terraform-provider-alicloud/issues/10615))
+- resource/alicloud_gpdb_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan. ([#10619](https://github.com/aliyun/terraform-provider-alicloud/issues/10619))
+- resource/alicloud_polardb_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan. ([#10636](https://github.com/aliyun/terraform-provider-alicloud/issues/10636))
+- resource/alicloud_kvstore_account: support the write-only attribute `account_password_wo` with `account_password_wo_version` as its change trigger, so the account password can be managed without being persisted in the state or plan. ([#10637](https://github.com/aliyun/terraform-provider-alicloud/issues/10637))
+- resource/alicloud_nlb_server_group: support ip_version_affinity_mode; data-source/alicloud_nlb_server_groups: support ip_version_affinity_mode. ([#10708](https://github.com/aliyun/terraform-provider-alicloud/issues/10708))
+- data-source/alicloud_cloud_control_prices: add desire_attributes_json to support nested pricing attributes. ([#10742](https://github.com/aliyun/terraform-provider-alicloud/issues/10742))
+- resource/alicloud_apig_policy: retry on transient 409 Conflict.DomainIsProcessing. ([#10736](https://github.com/aliyun/terraform-provider-alicloud/issues/10736))
+- provider: support HTTP proxy for TableStore clients.
+- resource/alicloud_image_import: migrate nvme_support from the disk_device_mapping block to the features block, updating it in place via ModifyImageAttribute instead of forcing a re-import. ([#10607](https://github.com/aliyun/terraform-provider-alicloud/issues/10607))
+- docs: clarify auto_repair requires node-lifecycle-controller and ack-node-problem-detector addons for alicloud_cs_kubernetes_node_pool. ([#10741](https://github.com/aliyun/terraform-provider-alicloud/issues/10741))
+
+BUG FIXES:
+
+- resource/alicloud_oss_bucket_website: fix create failing with ResourceNotfound due to delayed config visibility. ([#10734](https://github.com/aliyun/terraform-provider-alicloud/issues/10734))
+- resource/alicloud_nas_file_system: suppress vpc_id/vswitch_id replace diff; resource/alicloud_nas_mount_target: mark vswitch_id Computed. ([#10461](https://github.com/aliyun/terraform-provider-alicloud/issues/10461))
+- resource/alicloud_vpn_gateway_vpn_attachment: detect nested tunnel updates while preserving set semantics. ([#10523](https://github.com/aliyun/terraform-provider-alicloud/issues/10523))
+- resource/alicloud_cloud_firewall_address_book: prevent address list ordering drift. ([#10750](https://github.com/aliyun/terraform-provider-alicloud/issues/10750))
+- resource/alicloud_threat_detection_check_config: prevent selected checks ordering drift. ([#10745](https://github.com/aliyun/terraform-provider-alicloud/issues/10745))
+- resource/alicloud_gpdb_instance, resource/alicloud_click_house_db_cluster and resource/alicloud_mse_cluster: return an error when destroying PrePaid instances instead of silently removing them from Terraform state. ([#10740](https://github.com/aliyun/terraform-provider-alicloud/issues/10740))
+- resource/alicloud_slb_load_balancer, resource/alicloud_eip_address and resource/alicloud_alikafka_instance: return an error when destroying PrePaid instances instead of silently removing them from Terraform state. ([#10746](https://github.com/aliyun/terraform-provider-alicloud/issues/10746))
+- provider: the `1.294.0` kubeconfig error propagation and nil guards for resource/alicloud_cs_kubernetes, resource/alicloud_cs_managed_kubernetes and resource/alicloud_cs_serverless_kubernetes were reverted on the 1.x line and are not part of this beta. ([#10755](https://github.com/aliyun/terraform-provider-alicloud/issues/10755))
 
 ## 2.0.0-beta4 (August 27, 2026)
 
