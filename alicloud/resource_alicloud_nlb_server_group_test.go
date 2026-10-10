@@ -2914,6 +2914,9 @@ func TestAccAliCloudNlbServerGroup_healthCheckHttpCodeOrder(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check.#": "1",
+						"health_check.0.health_check_http_code.#": "2",
+						"health_check.0.health_check_http_code.0": "http_2xx",
+						"health_check.0.health_check_http_code.1": "http_3xx",
 					}),
 				),
 			},
@@ -2943,11 +2946,131 @@ func TestAccAliCloudNlbServerGroup_healthCheckHttpCodeOrder(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check.#": "1",
+						"health_check.0.health_check_http_code.#": "2",
+						"health_check.0.health_check_http_code.0": "http_3xx",
+						"health_check.0.health_check_http_code.1": "http_2xx",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check": []map[string]interface{}{
+						{
+							"health_check_enabled":   "true",
+							"health_check_type":      "HTTP",
+							"health_check_http_code": []string{"http_2xx", "http_3xx", "http_4xx"},
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check": []map[string]interface{}{
+						{
+							"health_check_enabled":   "true",
+							"health_check_type":      "HTTP",
+							"health_check_http_code": []string{"http_2xx", "http_3xx", "http_4xx"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check.#": "1",
+						"health_check.0.health_check_http_code.#": "3",
+						"health_check.0.health_check_http_code.0": "http_2xx",
+						"health_check.0.health_check_http_code.1": "http_3xx",
+						"health_check.0.health_check_http_code.2": "http_4xx",
 					}),
 				),
 			},
 		},
 	})
+}
+
+func TestAccAliCloudNlbServerGroup_healthCheckHttpCodeOrderCreation(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nlb_server_group.default"
+	ra := resourceAttrInit(resourceId, AliCloudNLBServerGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNlbServerGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snlbservergroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNLBServerGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_group_name": name,
+					"vpc_id":            "${data.alicloud_vpcs.default.vpcs.0.id}",
+					"health_check": []map[string]interface{}{
+						{
+							"health_check_enabled":   "true",
+							"health_check_type":      "HTTP",
+							"health_check_http_code": []string{"http_3xx", "http_2xx"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check.#": "1",
+						"health_check.0.health_check_http_code.#": "2",
+						"health_check.0.health_check_http_code.0": "http_3xx",
+						"health_check.0.health_check_http_code.1": "http_2xx",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check": []map[string]interface{}{
+						{
+							"health_check_enabled":   "true",
+							"health_check_type":      "HTTP",
+							"health_check_http_code": []string{"http_3xx", "http_2xx"},
+						},
+					},
+				}),
+				PlanOnly: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestUnitNlbServerGroupHealthCheckHttpCodeOrder(t *testing.T) {
+	cases := []struct {
+		name     string
+		remote   []interface{}
+		previous []interface{}
+		want     []interface{}
+	}{
+		{"reorder keeps previous order", []interface{}{"http_2xx", "http_3xx"}, []interface{}{"http_3xx", "http_2xx"}, []interface{}{"http_3xx", "http_2xx"}},
+		{"identical order unchanged", []interface{}{"http_2xx", "http_3xx"}, []interface{}{"http_2xx", "http_3xx"}, []interface{}{"http_2xx", "http_3xx"}},
+		{"empty previous keeps api order", []interface{}{"http_2xx", "http_3xx"}, []interface{}{}, []interface{}{"http_2xx", "http_3xx"}},
+		{"new member appended in api order", []interface{}{"http_2xx", "http_3xx", "http_4xx"}, []interface{}{"http_3xx", "http_2xx"}, []interface{}{"http_3xx", "http_2xx", "http_4xx"}},
+		{"removed member is dropped", []interface{}{"http_2xx"}, []interface{}{"http_3xx", "http_2xx"}, []interface{}{"http_2xx"}},
+		{"duplicates consumed once each", []interface{}{"http_2xx", "http_3xx", "http_2xx"}, []interface{}{"http_2xx", "http_2xx", "http_3xx"}, []interface{}{"http_2xx", "http_2xx", "http_3xx"}},
+		{"empty remote returns empty", []interface{}{}, []interface{}{"http_2xx"}, []interface{}{}},
+		{"all members are new", []interface{}{"http_4xx"}, []interface{}{"http_2xx", "http_3xx"}, []interface{}{"http_4xx"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, nlbServerGroupHealthCheckHttpCodeOrder(tc.remote, tc.previous))
+		})
+	}
 }
 
 // Test Nlb ServerGroup. <<< Resource test cases, automatically generated.
