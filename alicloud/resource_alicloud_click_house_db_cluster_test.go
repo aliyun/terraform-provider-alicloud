@@ -364,6 +364,7 @@ func TestAccAliCloudClickHouseDBCluster_basic2(t *testing.T) {
 
 func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	testAccPreCheckPrePaidResources(t)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)

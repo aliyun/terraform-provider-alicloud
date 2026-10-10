@@ -553,6 +553,21 @@ func vpcTypeResourceDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return true
 }
 
+// nasFileSystemVpcDiffSuppressFunc suppresses spurious diffs on vpc_id and vswitch_id
+// for standard and extreme NAS file systems. The NAS DescribeFileSystem API does not
+// return VpcId/QuorumVswId for these file system types, so the value read back into
+// state is empty while the user's config still holds the value supplied at create
+// time. Without suppression this produces a permanent non-empty diff that, combined
+// with ForceNew, forces a destructive replace on every plan. The fields are immutable
+// at the API level (ModifyFileSystem does not accept them), so suppressing the diff
+// for types that never surface the value is safe.
+func nasFileSystemVpcDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if fsType := d.Get("file_system_type").(string); fsType == "standard" || fsType == "extreme" {
+		return true
+	}
+	return false
+}
+
 func routerInterfaceAcceptsideDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return d.Get("role").(string) == string(AcceptingSide)
 }

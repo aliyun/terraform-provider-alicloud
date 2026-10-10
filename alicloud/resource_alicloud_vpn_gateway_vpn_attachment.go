@@ -1,9 +1,11 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
-	"hash/crc32"
 	"log"
+	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -13,22 +15,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func vpnTunnelOptionsSpecificationHash(v interface{}) int {
-	m := v.(map[string]interface{})
-	s := fmt.Sprintf("%d-%s", m["tunnel_index"].(int), m["customer_gateway_id"].(string))
-	h := int(crc32.ChecksumIEEE([]byte(s)))
-	if h < 0 {
-		return -h
-	}
-	return h
-}
-
 func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
-	return &schema.Resource{
-		Create: resourceAliCloudVpnGatewayVpnAttachmentCreate,
-		Read:   resourceAliCloudVpnGatewayVpnAttachmentRead,
-		Update: resourceAliCloudVpnGatewayVpnAttachmentUpdate,
-		Delete: resourceAliCloudVpnGatewayVpnAttachmentDelete,
+	r := &schema.Resource{
+		CustomizeDiff: vpnAttachmentValidateTunnelChanges,
+		Create:        resourceAliCloudVpnGatewayVpnAttachmentCreate,
+		Read:          resourceAliCloudVpnGatewayVpnAttachmentRead,
+		Update:        resourceAliCloudVpnGatewayVpnAttachmentUpdate,
+		Delete:        resourceAliCloudVpnGatewayVpnAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -276,7 +269,6 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
-				Set:      vpnTunnelOptionsSpecificationHash,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"status": {
@@ -299,6 +291,8 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
+							// Preserve the server-reported role even when legacy configuration supplies one.
+							DiffSuppressFunc: func(_, _, _ string, _ *schema.ResourceData) bool { return true },
 						},
 						"tunnel_ike_config": {
 							Type:     schema.TypeList,
@@ -464,6 +458,21 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 			},
 		},
 	}
+	// Role is returned by the service but is not accepted by either attachment
+	// write API. Retain its configuration syntax for compatibility, while the
+	// hash includes every other writable field and excludes service-only values.
+	tunnels := r.Schema["tunnel_options_specification"]
+	fields := tunnels.Elem.(*schema.Resource).Schema
+	hashFields := make(map[string]*schema.Schema, len(fields))
+	for name, field := range fields {
+		hashFields[name] = field
+	}
+	role := *fields["role"]
+	role.Optional = false
+	role.Computed = true
+	hashFields["role"] = &role
+	tunnels.Set = schema.HashResource(&schema.Resource{Schema: hashFields})
+	return r
 }
 
 func resourceAliCloudVpnGatewayVpnAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
@@ -604,13 +613,12 @@ func resourceAliCloudVpnGatewayVpnAttachmentCreate(d *schema.ResourceData, meta 
 	}
 	if v, ok := d.GetOk("tunnel_options_specification"); ok {
 		tunnelOptionsSpecificationMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range v.(*schema.Set).List() {
+		for _, dataLoop1 := range vpnAttachmentSortedTunnels(v.(*schema.Set).List()) {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["CustomerGatewayId"] = dataLoop1Tmp["customer_gateway_id"]
 			dataLoop1Map["EnableDpd"] = dataLoop1Tmp["enable_dpd"]
 			dataLoop1Map["EnableNatTraversal"] = dataLoop1Tmp["enable_nat_traversal"]
-			dataLoop1Map["Role"] = dataLoop1Tmp["role"]
 			dataLoop1Map["TunnelIndex"] = dataLoop1Tmp["tunnel_index"]
 			localData2 := make(map[string]interface{})
 			localAsn3, _ := jsonpath.Get("$[0].local_asn", dataLoop1Tmp["tunnel_bgp_config"])
@@ -818,6 +826,7 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 	if err := d.Set("health_check_config", healthCheckConfigMaps); err != nil {
 		return err
 	}
+	priorIkePsk, _ := d.Get("ike_config.0.psk").(string)
 	ikeConfigMaps := make([]map[string]interface{}, 0)
 	ikeConfigMap := make(map[string]interface{})
 	ikeConfigRaw := make(map[string]interface{})
@@ -832,7 +841,7 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 		ikeConfigMap["ike_pfs"] = ikeConfigRaw["IkePfs"]
 		ikeConfigMap["ike_version"] = ikeConfigRaw["IkeVersion"]
 		ikeConfigMap["local_id"] = ikeConfigRaw["LocalId"]
-		ikeConfigMap["psk"] = ikeConfigRaw["Psk"]
+		ikeConfigMap["psk"] = vpnAttachmentReadPsk(ikeConfigRaw["Psk"], priorIkePsk)
 		ikeConfigMap["remote_id"] = ikeConfigRaw["RemoteId"]
 
 		ikeConfigMaps = append(ikeConfigMaps, ikeConfigMap)
@@ -860,6 +869,20 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
 	tunnelOptionsRaw, _ := jsonpath.Get("$.TunnelOptionsSpecification.TunnelOptions", objectRaw)
+	priorTunnelPsk := make(map[int]string)
+	for _, raw := range d.Get("tunnel_options_specification").(*schema.Set).List() {
+		tunnel, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		psk := ""
+		if list, ok := tunnel["tunnel_ike_config"].([]interface{}); ok && len(list) > 0 {
+			if ike, ok := list[0].(map[string]interface{}); ok {
+				psk, _ = ike["psk"].(string)
+			}
+		}
+		priorTunnelPsk[formatInt(tunnel["tunnel_index"])] = psk
+	}
 	tunnelOptionsSpecificationMaps := make([]map[string]interface{}, 0)
 	if tunnelOptionsRaw != nil {
 		for _, tunnelOptionsChildRaw := range tunnelOptionsRaw.([]interface{}) {
@@ -909,7 +932,7 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 				tunnelIkeConfigMap["ike_pfs"] = tunnelIkeConfigRaw["IkePfs"]
 				tunnelIkeConfigMap["ike_version"] = tunnelIkeConfigRaw["IkeVersion"]
 				tunnelIkeConfigMap["local_id"] = tunnelIkeConfigRaw["LocalId"]
-				tunnelIkeConfigMap["psk"] = tunnelIkeConfigRaw["Psk"]
+				tunnelIkeConfigMap["psk"] = vpnAttachmentReadPsk(tunnelIkeConfigRaw["Psk"], priorTunnelPsk[formatInt(tunnelOptionsChildRaw["TunnelIndex"])])
 				tunnelIkeConfigMap["remote_id"] = tunnelIkeConfigRaw["RemoteId"]
 
 				tunnelIkeConfigMaps = append(tunnelIkeConfigMaps, tunnelIkeConfigMap)
@@ -1020,97 +1043,17 @@ func resourceAliCloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 		request["EnableTunnelsBgp"] = d.Get("enable_tunnels_bgp")
 	}
 
-	if !d.IsNewResource() && d.HasChange("tunnel_options_specification") {
-		update = true
-		if v, ok := d.GetOk("tunnel_options_specification"); ok || d.HasChange("tunnel_options_specification") {
-			tunnelOptionsSpecificationMapsArray := make([]interface{}, 0)
-			for _, dataLoop := range v.(*schema.Set).List() {
-				dataLoopTmp := dataLoop.(map[string]interface{})
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["CustomerGatewayId"] = dataLoopTmp["customer_gateway_id"]
-				dataLoopMap["EnableDpd"] = dataLoopTmp["enable_dpd"]
-				dataLoopMap["EnableNatTraversal"] = dataLoopTmp["enable_nat_traversal"]
-				dataLoopMap["Role"] = dataLoopTmp["role"]
-				dataLoopMap["TunnelIndex"] = dataLoopTmp["tunnel_index"]
-				if !IsNil(dataLoopTmp["tunnel_bgp_config"]) {
-					localData1 := make(map[string]interface{})
-					localAsn3, _ := jsonpath.Get("$[0].local_asn", dataLoopTmp["tunnel_bgp_config"])
-					if localAsn3 != nil && localAsn3 != "" {
-						localData1["LocalAsn"] = localAsn3
-					}
-					localBgpIp3, _ := jsonpath.Get("$[0].local_bgp_ip", dataLoopTmp["tunnel_bgp_config"])
-					if localBgpIp3 != nil && localBgpIp3 != "" {
-						localData1["LocalBgpIp"] = localBgpIp3
-					}
-					tunnelCidr3, _ := jsonpath.Get("$[0].tunnel_cidr", dataLoopTmp["tunnel_bgp_config"])
-					if tunnelCidr3 != nil && tunnelCidr3 != "" {
-						localData1["TunnelCidr"] = tunnelCidr3
-					}
-					dataLoopMap["TunnelBgpConfig"] = localData1
-				}
-				if !IsNil(dataLoopTmp["tunnel_ike_config"]) {
-					localData2 := make(map[string]interface{})
-					ikeAuthAlg1, _ := jsonpath.Get("$[0].ike_auth_alg", dataLoopTmp["tunnel_ike_config"])
-					if ikeAuthAlg1 != nil && ikeAuthAlg1 != "" {
-						localData2["IkeAuthAlg"] = ikeAuthAlg1
-					}
-					ikeEncAlg1, _ := jsonpath.Get("$[0].ike_enc_alg", dataLoopTmp["tunnel_ike_config"])
-					if ikeEncAlg1 != nil && ikeEncAlg1 != "" {
-						localData2["IkeEncAlg"] = ikeEncAlg1
-					}
-					ikeLifetime1, _ := jsonpath.Get("$[0].ike_lifetime", dataLoopTmp["tunnel_ike_config"])
-					if ikeLifetime1 != nil && ikeLifetime1 != "" {
-						localData2["IkeLifetime"] = ikeLifetime1
-					}
-					ikeMode1, _ := jsonpath.Get("$[0].ike_mode", dataLoopTmp["tunnel_ike_config"])
-					if ikeMode1 != nil && ikeMode1 != "" {
-						localData2["IkeMode"] = ikeMode1
-					}
-					ikePfs1, _ := jsonpath.Get("$[0].ike_pfs", dataLoopTmp["tunnel_ike_config"])
-					if ikePfs1 != nil && ikePfs1 != "" {
-						localData2["IkePfs"] = ikePfs1
-					}
-					ikeVersion1, _ := jsonpath.Get("$[0].ike_version", dataLoopTmp["tunnel_ike_config"])
-					if ikeVersion1 != nil && ikeVersion1 != "" {
-						localData2["IkeVersion"] = ikeVersion1
-					}
-					localId1, _ := jsonpath.Get("$[0].local_id", dataLoopTmp["tunnel_ike_config"])
-					if localId1 != nil && localId1 != "" {
-						localData2["LocalId"] = localId1
-					}
-					psk1, _ := jsonpath.Get("$[0].psk", dataLoopTmp["tunnel_ike_config"])
-					if psk1 != nil && psk1 != "" {
-						localData2["Psk"] = psk1
-					}
-					remoteId1, _ := jsonpath.Get("$[0].remote_id", dataLoopTmp["tunnel_ike_config"])
-					if remoteId1 != nil && remoteId1 != "" {
-						localData2["RemoteId"] = remoteId1
-					}
-					dataLoopMap["TunnelIkeConfig"] = localData2
-				}
-				if !IsNil(dataLoopTmp["tunnel_ipsec_config"]) {
-					localData3 := make(map[string]interface{})
-					ipsecAuthAlg1, _ := jsonpath.Get("$[0].ipsec_auth_alg", dataLoopTmp["tunnel_ipsec_config"])
-					if ipsecAuthAlg1 != nil && ipsecAuthAlg1 != "" {
-						localData3["IpsecAuthAlg"] = ipsecAuthAlg1
-					}
-					ipsecEncAlg1, _ := jsonpath.Get("$[0].ipsec_enc_alg", dataLoopTmp["tunnel_ipsec_config"])
-					if ipsecEncAlg1 != nil && ipsecEncAlg1 != "" {
-						localData3["IpsecEncAlg"] = ipsecEncAlg1
-					}
-					ipsecLifetime1, _ := jsonpath.Get("$[0].ipsec_lifetime", dataLoopTmp["tunnel_ipsec_config"])
-					if ipsecLifetime1 != nil && ipsecLifetime1 != "" {
-						localData3["IpsecLifetime"] = ipsecLifetime1
-					}
-					ipsecPfs1, _ := jsonpath.Get("$[0].ipsec_pfs", dataLoopTmp["tunnel_ipsec_config"])
-					if ipsecPfs1 != nil && ipsecPfs1 != "" {
-						localData3["IpsecPfs"] = ipsecPfs1
-					}
-					dataLoopMap["TunnelIpsecConfig"] = localData3
-				}
-				tunnelOptionsSpecificationMapsArray = append(tunnelOptionsSpecificationMapsArray, dataLoopMap)
+	if !d.IsNewResource() && (d.HasChange("tunnel_options_specification") || d.HasChange("enable_tunnels_bgp")) {
+		oldValue, newValue := d.GetChange("tunnel_options_specification")
+		previous := oldValue.(*schema.Set).List()
+		planned := newValue.(*schema.Set).List()
+		tunnels := vpnAttachmentChangedTunnels(previous, planned, d.HasChange("enable_tunnels_bgp"))
+		if len(tunnels) > 0 || len(previous) != len(planned) {
+			if err := vpnAttachmentValidateTunnelUpdate(previous, tunnels, d.Get("enable_tunnels_bgp").(bool)); err != nil {
+				return WrapError(err)
 			}
-			request["TunnelOptionsSpecification"] = tunnelOptionsSpecificationMapsArray
+			update = true
+			request["TunnelOptionsSpecification"] = tunnels
 		}
 	}
 
@@ -1156,6 +1099,9 @@ func resourceAliCloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 				objectDataLocalMap1["IkePfs"] = ikePfs3
 			}
 
+			if psk, ok := objectDataLocalMap1["Psk"].(string); !ok || psk == "" {
+				return WrapError(fmt.Errorf("ike_config: updating IKE config without the current pre-shared key would make the API generate a random 16-character key; the key is empty in state or configuration (for example after import or an explicit empty value), so set a non-empty ike_config.psk explicitly and retry"))
+			}
 			request["IkeConfig"] = convertMapToJsonStringIgnoreError(objectDataLocalMap1)
 		}
 	}
@@ -1237,6 +1183,15 @@ func resourceAliCloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		vpnService := VPNGatewayServiceV2{client}
+		stateConf := BuildStateConf(
+			[]string{"updating", "provisioning", "upgrading", "attaching", "detaching"},
+			[]string{"attached", "active", "init"}, d.Timeout(schema.TimeoutUpdate), 0,
+			vpnService.VpnGatewayVpnAttachmentStateRefreshFunc(d.Id(), "State", []string{"financialLocked", "deleted"}),
+		)
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 	update = false
 	action = "MoveVpnResourceGroup"
@@ -1315,4 +1270,334 @@ func resourceAliCloudVpnGatewayVpnAttachmentDelete(d *schema.ResourceData, meta 
 	}
 
 	return nil
+}
+
+// Empty collections are omitted by RPC serialization, so they cannot remove
+// existing tunnels or reset a configuration block. Reject these plans before
+// sending an update that would leave the remote values unchanged.
+//
+// The guards hold for in-place updates only: a change to a ForceNew field
+// replaces the whole attachment, and the removed configuration is simply not
+// part of the new resource.
+// Full writable hashes detect nested edits. An omitted Optional+Computed value
+// belongs to the same tunnel_index, even when another edit changes its set hash.
+func vpnAttachmentValidateTunnelChanges(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	// The legacy SDK turns an explicit empty Optional+Computed PSK into a
+	// computed value and can restore the old key during Apply. Reject that
+	// explicit request while configuration presence is still observable.
+	if d.Id() != "" && !vpnAttachmentForceNewChanged(d) && d.HasChange("ike_config") && d.NewValueKnown("ike_config.0.psk") {
+		if psk, exists := d.GetOkExists("ike_config.0.psk"); exists && psk == "" {
+			return fmt.Errorf("ike_config: updating IKE config requires a non-empty pre-shared key; ike_config.psk is empty or unavailable")
+		}
+	}
+	const key = "tunnel_options_specification"
+	if !d.NewValueKnown(key) {
+		return nil
+	}
+	// The SDK prefixes set hashes with ~ when configuration contains unknowns.
+	// Keep that diff intact so an explicit unknown never becomes a prior value.
+	if len(d.GetChangedKeysPrefix(key+".~")) != 0 {
+		return nil
+	}
+	previousValue, plannedValue := d.GetChange(key)
+	previous := previousValue.(*schema.Set).List()
+	plannedSet := plannedValue.(*schema.Set)
+	planned := vpnAttachmentCopyTunnels(plannedSet.List())
+	oldByIndex := make(map[int]map[string]interface{}, len(previous))
+	for _, raw := range previous {
+		old := raw.(map[string]interface{})
+		oldByIndex[formatInt(old["tunnel_index"])] = old
+	}
+	// DiffFieldReader rehashes set members after merging computed fields, so
+	// its hashes need not equal the addresses in the original diff. Resolve
+	// those addresses by the required identity fields before inheriting.
+	prefixes := make(map[int]string)
+	for _, address := range d.GetChangedKeysPrefix(key + ".") {
+		if !strings.HasSuffix(address, ".tunnel_index") {
+			continue
+		}
+		prefix := strings.TrimSuffix(address, ".tunnel_index")
+		if gateway, ok := d.Get(prefix + ".customer_gateway_id").(string); ok && gateway != "" {
+			prefixes[formatInt(d.Get(address))] = prefix
+		}
+	}
+	seen := make(map[int]bool)
+	fields := resourceAliCloudVpnGatewayVpnAttachment().Schema[key].Elem.(*schema.Resource).Schema
+	for _, raw := range planned {
+		next := raw.(map[string]interface{})
+		index := formatInt(next["tunnel_index"])
+		if seen[index] {
+			return fmt.Errorf("tunnel_options_specification contains duplicate tunnel_index %d", index)
+		}
+		seen[index] = true
+		if old := oldByIndex[index]; old != nil {
+			prefix := prefixes[index]
+			if prefix == "" {
+				prefix = fmt.Sprintf("%s.%d", key, plannedSet.F(next))
+			}
+			if err := vpnAttachmentInheritComputed(d, prefix, next, old, fields, index); err != nil {
+				return err
+			}
+		}
+	}
+	if !vpnAttachmentForceNewChanged(d) {
+		for index := range oldByIndex {
+			if !seen[index] {
+				return fmt.Errorf("tunnel_options_specification cannot remove existing tunnel_index %d; retain both tunnels in the configuration", index)
+			}
+		}
+	}
+	if !reflect.DeepEqual(planned, plannedSet.List()) {
+		return d.SetNew(key, planned)
+	}
+	return nil
+}
+
+func vpnAttachmentInheritComputed(d *schema.ResourceDiff, prefix string, next, old map[string]interface{}, fields map[string]*schema.Schema, index int) error {
+	for name, field := range fields {
+		address := prefix + "." + name
+		if field.Computed && !field.Optional {
+			next[name] = old[name]
+			continue
+		}
+		// GetOkExists preserves explicit false, zero and empty strings. This
+		// SDK mutates a set hash address to a config list position while
+		// reading, so NewValueKnown alone can report an absent field as known.
+		// Read each original address as well: a merged set member can contain
+		// nil nested blocks even when its configuration contains a block.
+		value, exists := d.GetOkExists(address)
+		if field.Computed && !exists {
+			next[name] = old[name]
+			continue
+		}
+		if exists {
+			next[name] = value
+			if block, ok := value.([]interface{}); ok {
+				next[name] = vpnAttachmentCopyBlock(block)
+			}
+		}
+		if nested, ok := field.Elem.(*schema.Resource); ok && field.Type == schema.TypeList {
+			before, _ := old[name].([]interface{})
+			after, _ := next[name].([]interface{})
+			if len(before) > 0 && len(after) == 0 && !vpnAttachmentForceNewChanged(d) {
+				return fmt.Errorf("%s for tunnel_index %d cannot be cleared with an empty list; omit the block to keep its current values", name, index)
+			}
+			if len(before) > 0 && len(after) > 0 && before[0] != nil && after[0] != nil {
+				if err := vpnAttachmentInheritComputed(d, address+".0", after[0].(map[string]interface{}), before[0].(map[string]interface{}), nested.Schema, index); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func vpnAttachmentSortedTunnels(tunnels []interface{}) []interface{} {
+	sort.Slice(tunnels, func(i, j int) bool {
+		return formatInt(tunnels[i].(map[string]interface{})["tunnel_index"]) < formatInt(tunnels[j].(map[string]interface{})["tunnel_index"])
+	})
+	return tunnels
+}
+
+// vpnAttachmentForceNewChanged reports whether any schema attribute marked
+// ForceNew has a plan-visible change, which means the SDK plans a replacement
+// instead of an in-place update.
+func vpnAttachmentForceNewChanged(d *schema.ResourceDiff) bool {
+	for name, s := range resourceAliCloudVpnGatewayVpnAttachment().Schema {
+		if s.ForceNew && d.HasChange(name) {
+			return true
+		}
+	}
+	return false
+}
+
+// An empty Describe PSK retains the prior secret. Treat every non-empty
+// response as a real value rather than guessing a mask format.
+func vpnAttachmentReadPsk(remote interface{}, prior string) string {
+	value, _ := remote.(string)
+	if value == "" {
+		return prior
+	}
+	return value
+}
+
+// Copy nested blocks before normalizing the planned set.
+func vpnAttachmentCopyTunnels(tunnels []interface{}) []interface{} {
+	copied := make([]interface{}, 0, len(tunnels))
+	for _, raw := range tunnels {
+		tunnel, ok := raw.(map[string]interface{})
+		if !ok {
+			copied = append(copied, raw)
+			continue
+		}
+		result := make(map[string]interface{}, len(tunnel))
+		for key, value := range tunnel {
+			if list, ok := value.([]interface{}); ok && len(list) > 0 {
+				if _, ok := list[0].(map[string]interface{}); ok {
+					result[key] = vpnAttachmentCopyBlock(list)
+					continue
+				}
+			}
+			result[key] = value
+		}
+		copied = append(copied, result)
+	}
+	return copied
+}
+
+func vpnAttachmentCopyBlock(block []interface{}) []interface{} {
+	copied := make([]interface{}, 0, len(block))
+	for _, raw := range block {
+		if m, ok := raw.(map[string]interface{}); ok {
+			result := make(map[string]interface{}, len(m))
+			for key, value := range m {
+				result[key] = value
+			}
+			copied = append(copied, result)
+		} else {
+			copied = append(copied, raw)
+		}
+	}
+	return copied
+}
+
+// Compare API configuration by tunnel_index. Computed status, peer addresses and
+// tunnel IDs must not turn a reorder into a remote update. The planned values
+// are normalized by tunnel_index during planning.
+func vpnAttachmentChangedTunnels(previous, planned []interface{}, includeBGP bool) []interface{} {
+	oldByIndex := make(map[int]map[string]interface{}, len(previous))
+	for _, raw := range previous {
+		old := raw.(map[string]interface{})
+		oldByIndex[formatInt(old["tunnel_index"])] = vpnAttachmentExpandTunnel(old)
+	}
+	result := make([]interface{}, 0, len(planned))
+	for _, raw := range vpnAttachmentSortedTunnels(planned) {
+		tunnel := raw.(map[string]interface{})
+		next := vpnAttachmentExpandTunnel(tunnel)
+		old := oldByIndex[formatInt(tunnel["tunnel_index"])]
+		if !includeBGP && reflect.DeepEqual(old, next) {
+			continue
+		}
+		// Avoid resending unrelated IKE/PSK or IPsec settings for a BGP update.
+		// If IKE changes, send its full block: omitting only Psk can generate a key.
+		for _, group := range []string{"TunnelIkeConfig", "TunnelIpsecConfig", "TunnelBgpConfig"} {
+			if !(includeBGP && group == "TunnelBgpConfig") && old != nil && reflect.DeepEqual(old[group], next[group]) {
+				delete(next, group)
+			}
+		}
+		result = append(result, next)
+	}
+	return result
+}
+
+// Reject tunnel update payloads the API cannot honor safely, before any RPC:
+// an IKE block without Psk makes the API generate a random 16-character key,
+// so it is only acceptable for a newly added tunnel, which has no key to
+// reset; a BGP block without TunnelCidr is rejected by the API whenever BGP
+// is enabled.
+func vpnAttachmentValidateTunnelUpdate(previous, tunnels []interface{}, enableTunnelsBgp bool) error {
+	existing := make(map[int]bool, len(previous))
+	for _, raw := range previous {
+		existing[formatInt(raw.(map[string]interface{})["tunnel_index"])] = true
+	}
+	for _, raw := range tunnels {
+		tunnel, _ := raw.(map[string]interface{})
+		index := formatInt(tunnel["TunnelIndex"])
+		if ike, ok := tunnel["TunnelIkeConfig"].(map[string]interface{}); ok && existing[index] {
+			if psk, _ := ike["Psk"].(string); psk == "" {
+				return fmt.Errorf("tunnel_options_specification tunnel_index %d: updating tunnel_ike_config without the current pre-shared key would make the API generate a random 16-character key; the key is empty in state (for example after import), so set tunnel_ike_config.psk explicitly and retry", index)
+			}
+		}
+		if bgp, ok := tunnel["TunnelBgpConfig"].(map[string]interface{}); ok && enableTunnelsBgp {
+			if cidr, _ := bgp["TunnelCidr"].(string); cidr == "" {
+				return fmt.Errorf("tunnel_options_specification tunnel_index %d: tunnel_bgp_config.tunnel_cidr is required when enable_tunnels_bgp is true; write the complete tunnel_bgp_config block and retry", index)
+			}
+		}
+	}
+	return nil
+}
+
+func vpnAttachmentExpandTunnel(tunnel map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	result["CustomerGatewayId"] = tunnel["customer_gateway_id"]
+	result["EnableDpd"] = tunnel["enable_dpd"]
+	result["EnableNatTraversal"] = tunnel["enable_nat_traversal"]
+	result["TunnelIndex"] = tunnel["tunnel_index"]
+	if !IsNil(tunnel["tunnel_bgp_config"]) {
+		localData1 := make(map[string]interface{})
+		localAsn3, _ := jsonpath.Get("$[0].local_asn", tunnel["tunnel_bgp_config"])
+		if localAsn3 != nil && localAsn3 != "" {
+			localData1["LocalAsn"] = localAsn3
+		}
+		localBgpIp3, _ := jsonpath.Get("$[0].local_bgp_ip", tunnel["tunnel_bgp_config"])
+		if localBgpIp3 != nil && localBgpIp3 != "" {
+			localData1["LocalBgpIp"] = localBgpIp3
+		}
+		tunnelCidr3, _ := jsonpath.Get("$[0].tunnel_cidr", tunnel["tunnel_bgp_config"])
+		if tunnelCidr3 != nil && tunnelCidr3 != "" {
+			localData1["TunnelCidr"] = tunnelCidr3
+		}
+		result["TunnelBgpConfig"] = localData1
+	}
+	if !IsNil(tunnel["tunnel_ike_config"]) {
+		localData2 := make(map[string]interface{})
+		ikeAuthAlg1, _ := jsonpath.Get("$[0].ike_auth_alg", tunnel["tunnel_ike_config"])
+		if ikeAuthAlg1 != nil && ikeAuthAlg1 != "" {
+			localData2["IkeAuthAlg"] = ikeAuthAlg1
+		}
+		ikeEncAlg1, _ := jsonpath.Get("$[0].ike_enc_alg", tunnel["tunnel_ike_config"])
+		if ikeEncAlg1 != nil && ikeEncAlg1 != "" {
+			localData2["IkeEncAlg"] = ikeEncAlg1
+		}
+		ikeLifetime1, _ := jsonpath.Get("$[0].ike_lifetime", tunnel["tunnel_ike_config"])
+		if ikeLifetime1 != nil && ikeLifetime1 != "" {
+			localData2["IkeLifetime"] = ikeLifetime1
+		}
+		ikeMode1, _ := jsonpath.Get("$[0].ike_mode", tunnel["tunnel_ike_config"])
+		if ikeMode1 != nil && ikeMode1 != "" {
+			localData2["IkeMode"] = ikeMode1
+		}
+		ikePfs1, _ := jsonpath.Get("$[0].ike_pfs", tunnel["tunnel_ike_config"])
+		if ikePfs1 != nil && ikePfs1 != "" {
+			localData2["IkePfs"] = ikePfs1
+		}
+		ikeVersion1, _ := jsonpath.Get("$[0].ike_version", tunnel["tunnel_ike_config"])
+		if ikeVersion1 != nil && ikeVersion1 != "" {
+			localData2["IkeVersion"] = ikeVersion1
+		}
+		localId1, _ := jsonpath.Get("$[0].local_id", tunnel["tunnel_ike_config"])
+		if localId1 != nil && localId1 != "" {
+			localData2["LocalId"] = localId1
+		}
+		psk1, _ := jsonpath.Get("$[0].psk", tunnel["tunnel_ike_config"])
+		if psk1 != nil && psk1 != "" {
+			localData2["Psk"] = psk1
+		}
+		remoteId1, _ := jsonpath.Get("$[0].remote_id", tunnel["tunnel_ike_config"])
+		if remoteId1 != nil && remoteId1 != "" {
+			localData2["RemoteId"] = remoteId1
+		}
+		result["TunnelIkeConfig"] = localData2
+	}
+	if !IsNil(tunnel["tunnel_ipsec_config"]) {
+		localData3 := make(map[string]interface{})
+		ipsecAuthAlg1, _ := jsonpath.Get("$[0].ipsec_auth_alg", tunnel["tunnel_ipsec_config"])
+		if ipsecAuthAlg1 != nil && ipsecAuthAlg1 != "" {
+			localData3["IpsecAuthAlg"] = ipsecAuthAlg1
+		}
+		ipsecEncAlg1, _ := jsonpath.Get("$[0].ipsec_enc_alg", tunnel["tunnel_ipsec_config"])
+		if ipsecEncAlg1 != nil && ipsecEncAlg1 != "" {
+			localData3["IpsecEncAlg"] = ipsecEncAlg1
+		}
+		ipsecLifetime1, _ := jsonpath.Get("$[0].ipsec_lifetime", tunnel["tunnel_ipsec_config"])
+		if ipsecLifetime1 != nil && ipsecLifetime1 != "" {
+			localData3["IpsecLifetime"] = ipsecLifetime1
+		}
+		ipsecPfs1, _ := jsonpath.Get("$[0].ipsec_pfs", tunnel["tunnel_ipsec_config"])
+		if ipsecPfs1 != nil && ipsecPfs1 != "" {
+			localData3["IpsecPfs"] = ipsecPfs1
+		}
+		result["TunnelIpsecConfig"] = localData3
+	}
+	return result
 }

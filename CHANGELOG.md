@@ -1,5 +1,9 @@
 ## 1.295.0 (Unreleased)
 
+ENHANCEMENTS:
+
+- resource/alicloud_nlb_server_group: support ip_version_affinity_mode. ([#10705](https://github.com/aliyun/terraform-provider-alicloud/issues/10705))
+
 ## 1.294.0 (October 8, 2026)
 
 - **New Resource:** `alicloud_realtime_compute_variable` ([#10556](https://github.com/aliyun/terraform-provider-alicloud/issues/10556))

@@ -879,7 +879,7 @@ func (s *EcsService) updateImage(d *schema.ResourceData) error {
 	request.RegionId = s.client.RegionId
 	request.ImageId = d.Id()
 
-	if d.HasChange("description") || d.HasChange("name") || d.HasChange("image_name") {
+	if d.HasChange("description") || d.HasChange("name") || d.HasChange("image_name") || d.HasChange("features") {
 		if description, ok := d.GetOk("description"); ok {
 			request.Description = description.(string)
 		}
@@ -890,6 +890,9 @@ func (s *EcsService) updateImage(d *schema.ResourceData) error {
 				request.ImageName = imageName.(string)
 			}
 		}
+		if nvmeSupport, ok := d.GetOk("features.0.nvme_support"); ok {
+			request.Features.NvmeSupport = nvmeSupport.(string)
+		}
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ModifyImageAttribute(request)
 		})
@@ -898,7 +901,6 @@ func (s *EcsService) updateImage(d *schema.ResourceData) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-
 	}
 
 	d.Partial(false)

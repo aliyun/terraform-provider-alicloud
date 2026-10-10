@@ -9,16 +9,24 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAliCloudCloudControlPrices() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAliCloudCloudControlPriceRead,
 		Schema: map[string]*schema.Schema{
-			// lintignore: S006
 			"desire_attributes": {
-				Type:     schema.TypeMap,
-				Optional: true,
+				Type:          schema.TypeMap,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"desire_attributes_json"},
+			},
+			"desire_attributes_json": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"desire_attributes"},
+				ValidateFunc:  validation.StringIsJSON,
 			},
 			"product": {
 				Type:     schema.TypeString,
@@ -137,6 +145,8 @@ func dataSourceAliCloudCloudControlPriceRead(d *schema.ResourceData, meta interf
 	query["regionId"] = StringPointer(client.RegionId)
 	if v, ok := d.GetOk("desire_attributes"); ok {
 		query["resourceAttributes"] = StringPointer(convertObjectToJsonString(v))
+	} else if v, ok := d.GetOk("desire_attributes_json"); ok {
+		query["resourceAttributes"] = StringPointer(v.(string))
 	}
 
 	body = request

@@ -14,6 +14,8 @@ You can see the detail product introduction in the [CreateDBInstance](https://ww
 
 -> **NOTE:** Available since v1.47.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v1.295.0. To destroy it, convert the instance to `PayAsYouGo` by setting `payment_type = "PayAsYouGo"` and re-applying, or unsubscribe it in the Alibaba Cloud console. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Basic Usage
