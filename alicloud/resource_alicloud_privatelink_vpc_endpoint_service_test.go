@@ -640,8 +640,10 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_resource(t *testing.T) {
 				// reattaching a different backend type, so the testing-coverage
 				// check exempts it via this entry. The `resource` set itself is
 				// still verified on import: element identity is stable (Set hashes
-				// on resource_id + resource_type) and zone_id is Computed, so a
-				// refreshed element matches the configured one.
+				// on resource_id + resource_type + zone_id) and Read preserves the
+				// configured zone_id rather than overwriting it with a
+				// server-returned zone, so a refreshed element matches the
+				// configured one.
 				ImportStateVerifyIgnore: []string{"dry_run", "resource.resource_type"},
 			},
 		},
@@ -695,6 +697,124 @@ resource "alicloud_nlb_load_balancer" "default" {
 
 resource "alicloud_nlb_load_balancer" "second" {
   load_balancer_name = "${var.name}-2"
+  vpc_id             = alicloud_vpc.default.id
+  address_type       = "Intranet"
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.zone_a.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  }
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.zone_b.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  }
+}
+`, name)
+}
+
+func TestAccAliCloudPrivatelinkVpcEndpointService_crossZoneResource(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpointService")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scrosszoneresource%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceCrossZoneDependence)
+	// The same NLB backend attached in two different zones: resource_id and
+	// resource_type are identical, only zone_id differs.
+	crossZoneResource := []map[string]interface{}{
+		{
+			"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+			"resource_type": "nlb",
+			"zone_id":       "${data.alicloud_nlb_zones.default.zones.0.id}",
+		},
+		{
+			"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+			"resource_type": "nlb",
+			"zone_id":       "${data.alicloud_nlb_zones.default.zones.1.id}",
+		},
+	}
+	crossZoneConfig := func() string {
+		return testAccConfig(map[string]interface{}{
+			"service_description":    name,
+			"service_resource_type":  "nlb",
+			"auto_accept_connection": "true",
+			"resource":               crossZoneResource,
+		})
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Attach the same NLB backend to the endpoint service in two
+				// different zones. Before the fix the TypeSet Set hash only used
+				// resource_id + resource_type, so the two cross-zone backends
+				// collided into one element and only one survived; with zone_id
+				// in the hash both must register (resource.# = 2).
+				Config: crossZoneConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_description":   name,
+						"service_resource_type": "nlb",
+						"resource.#":            "2",
+					}),
+				),
+			},
+			{
+				// Re-applying the same cross-zone config must produce no diff:
+				// zone_id is part of the element identity and Read preserves the
+				// configured zone rather than overwriting it with a
+				// server-returned zone, so there is no perpetual diff /
+				// detach-attach churn.
+				Config:   crossZoneConfig(),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+func AlicloudPrivatelinkVpcEndpointServiceCrossZoneDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_privatelink_service" "open" {
+  enable = "On"
+}
+
+data "alicloud_nlb_zones" "default" {}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "zone_a" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  cidr_block = "10.1.0.0/16"
+}
+
+resource "alicloud_vswitch" "zone_b" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  cidr_block = "10.2.0.0/16"
+}
+
+resource "alicloud_nlb_load_balancer" "default" {
+  load_balancer_name = "${var.name}-1"
   vpc_id             = alicloud_vpc.default.id
   address_type       = "Intranet"
 
@@ -772,6 +892,23 @@ func TestUnitVpcEndpointServiceConnectBandwidthReadByResourceType(t *testing.T) 
 		setVpcEndpointServiceConnectBandwidth(d, tc.response)
 		assert.Equal(t, tc.expected, d.Get("connect_bandwidth"), tc.name)
 	}
+}
+
+// TestUnitVpcEndpointServiceResourceSetHashIncludesZoneId verifies the inline
+// `resource` TypeSet hashes on resource_id + resource_type + zone_id. Before the
+// fix the hash omitted zone_id, so two backends with the same resource_id +
+// resource_type in different zones collided into a single element and the
+// cross-zone backend was silently lost. This test would fail on the pre-fix
+// hash (Len() == 1) and passes with zone_id in the hash (Len() == 2).
+func TestUnitVpcEndpointServiceResourceSetHashIncludesZoneId(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	rs := p["alicloud_privatelink_vpc_endpoint_service"]
+	d, _ := schema.InternalMap(rs.Schema).Data(nil, nil)
+	assert.Nil(t, d.Set("resource", []map[string]interface{}{
+		{"resource_id": "lb-1", "resource_type": "nlb", "zone_id": "zone-A"},
+		{"resource_id": "lb-1", "resource_type": "nlb", "zone_id": "zone-B"},
+	}))
+	assert.Equal(t, 2, d.Get("resource").(*schema.Set).Len())
 }
 
 // lintignore: R001
