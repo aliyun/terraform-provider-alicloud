@@ -172,6 +172,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_pai_workspace_prompts":                          dataSourceAliCloudPaiWorkspacePrompts(),
 			"alicloud_realtime_compute_variables":                     dataSourceAliCloudRealtimeComputeVariables(),
 			"alicloud_apig_secrets":                                   dataSourceAliCloudApigSecrets(),
 			"alicloud_threat_detection_attack_path_whitelists":        dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
@@ -1255,6 +1256,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_data_works_data_source":                               resourceAliCloudDataWorksDataSource(),
 			"alicloud_data_works_project_member":                            resourceAliCloudDataWorksProjectMember(),
 			"alicloud_pai_workspace_workspace":                              resourceAliCloudPaiWorkspaceWorkspace(),
+			"alicloud_pai_workspace_prompt":                                 resourceAliCloudPaiWorkspacePrompt(),
 			"alicloud_gpdb_database":                                        resourceAliCloudGpdbDatabase(),
 			"alicloud_sls_collection_policy":                                resourceAliCloudSlsCollectionPolicy(),
 			"alicloud_gpdb_db_instance_ip_array":                            resourceAliCloudGpdbDBInstanceIPArray(),
