@@ -72,10 +72,7 @@ func resourceAlicloudOtsInstance() *schema.Resource {
 				},
 			},
 			// lintignore: S006
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
+			"tags": tagsSchemaWithElements(),
 		},
 	}
 }
