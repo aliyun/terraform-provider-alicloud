@@ -905,8 +905,7 @@ func resourceAlicloudClickHouseDbClusterDelete(d *schema.ResourceData, meta inte
 		"DBClusterId": d.Id(),
 	}
 	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
-		log.Printf("[WARN] Cannot destroy resourceClickHouseDbCluster. Because payment_type = 'Subscription'. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {

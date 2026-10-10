@@ -1699,8 +1699,7 @@ func resourceAliCloudGpdbDbInstanceDelete(d *schema.ResourceData, meta interface
 		"DBInstanceId": d.Id(),
 	}
 	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
-		log.Printf("[WARN] Cannot destroy resourceGpdbDbInstance. Because payment_type = 'Subscription'. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'Subscription' instance cannot be destroyed: please convert it to 'PayAsYouGo' (set payment_type = \"PayAsYouGo\" and re-apply) or unsubscribe it in the console. To remove it from the state only, run 'terraform state rm'."))
 	}
 	request["ClientToken"] = buildClientToken("DeleteDBInstance")
 	wait := incrementalWait(3*time.Second, 3*time.Second)

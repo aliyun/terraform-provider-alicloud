@@ -630,8 +630,7 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 }
 func resourceAlicloudSlbLoadBalancerDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("payment_type").(string) == "Subscription" || d.Get("instance_charge_type").(string) == "Prepaid" {
-		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_slb_load_balancer. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}

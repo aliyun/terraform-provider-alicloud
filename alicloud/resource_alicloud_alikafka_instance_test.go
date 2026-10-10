@@ -316,6 +316,7 @@ func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -399,6 +400,7 @@ func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,

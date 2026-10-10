@@ -1114,7 +1114,7 @@ The labels supports the following:
 ### `management`
 
 The management supports the following:
-* `auto_repair` - (Optional, Computed) Whether to enable automatic repair. Valid values: `true`: Automatic repair. `false`: not automatically repaired.
+* `auto_repair` - (Optional, Computed) Whether to enable automatic repair. Valid values: `true`: Automatic repair. `false`: not automatically repaired. When `auto_repair` is `true`, this feature requires the `node-lifecycle-controller` and `ack-node-problem-detector` addons to be installed; see [cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) for installation.
 * `auto_repair_policy` - (Optional, Computed, Set) Automatic repair node policy. See [`auto_repair_policy`](#management-auto_repair_policy) below.
 * `auto_upgrade` - (Optional, Computed) Specifies whether to enable auto update. Valid values: `true`: enables auto update. `false`: disables auto update.
 * `auto_upgrade_policy` - (Optional, Computed, Set) The auto update policy. See [`auto_upgrade_policy`](#management-auto_upgrade_policy) below.

@@ -13,6 +13,8 @@ Provides an Application Load Balancer resource.
 
 -> **NOTE:** Available since v1.123.1.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v1.295.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 -> **NOTE:** At present, to avoid some unnecessary regulation confusion, SLB can not support alicloud international account to create `PayByBandwidth` instance.
 
 -> **NOTE:** The supported specifications vary by region. Currently, not all regions support guaranteed-performance instances.

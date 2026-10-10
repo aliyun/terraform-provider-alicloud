@@ -21,6 +21,12 @@ For information about Event Bridge Event Streaming and how to use it, see [What 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_event_bridge_event_streaming&exampleId=74ffd385-6f9d-9bd2-11a6-9342a95ab1cd9bbbb5ef&activeTab=example&spm=docs.r.event_bridge_event_streaming.0.74ffd3856f&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
@@ -67,6 +73,10 @@ resource "alicloud_event_bridge_event_streaming" "default" {
   })
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_event_bridge_event_streaming&spm=docs.r.event_bridge_event_streaming.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

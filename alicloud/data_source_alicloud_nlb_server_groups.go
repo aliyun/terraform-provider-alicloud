@@ -65,6 +65,10 @@ func dataSourceAlicloudNlbServerGroups() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"ip_version_affinity_mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"connection_drain": {
 							Type:     schema.TypeBool,
 							Computed: true,
@@ -279,6 +283,7 @@ func dataSourceAlicloudNlbServerGroupsRead(d *schema.ResourceData, meta interfac
 	for _, object := range objects {
 		mapping := map[string]interface{}{
 			"address_ip_version":         object["AddressIPVersion"],
+			"ip_version_affinity_mode":   object["IpVersionAffinityMode"],
 			"connection_drain_timeout":   formatInt(object["ConnectionDrainTimeout"]),
 			"protocol":                   object["Protocol"],
 			"related_load_balancer_ids":  object["RelatedLoadBalancerIds"],

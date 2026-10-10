@@ -582,6 +582,7 @@ func TestAccAliCloudEIPAddress_basic4(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{1})
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -737,6 +738,7 @@ func TestAccAliCloudEIPAddress_basic7(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{1})
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
@@ -1026,6 +1028,7 @@ func TestAccAliCloudEIPAddress_basic10(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{1})
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
