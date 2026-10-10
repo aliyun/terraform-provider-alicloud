@@ -501,6 +501,108 @@ func TestAccAliCloudGPDBDBInstance_minorVersion(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudGPDBDBInstance_effectiveTime covers the effective_time attribute.
+// effective_time is an operation-time parameter of UpgradeDBVersion and
+// UpgradeDBInstance rather than instance state, so it is exercised on top of a real
+// in-place modification instead of through an API call of its own:
+//   - it is accepted at creation time and kept in state;
+//   - a real storage_size modification (UpgradeDBInstance) is applied with
+//     effective_time carried in the configuration, so the upgrade request carries
+//     EffectiveTime=Immediate (verifiable with TF_LOG=DEBUG in the remote
+//     acceptance run);
+//   - a minor_version change combined with effective_time MaintainTime is planned
+//     as an in-place update; this step is plan-only on purpose: instances are
+//     provisioned with the latest minor version (a real upgrade cannot be triggered
+//     deterministically) and a MaintainTime modification is deferred to the
+//     maintenance window, which cannot be awaited within a test;
+//   - changing effective_time alone triggers no API call and is persisted.
+func TestAccAliCloudGPDBDBInstance_effectiveTime(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_category":  "HighAvailability",
+					"db_instance_class":     "gpdb.group.segsdx1",
+					"db_instance_mode":      "StorageElastic",
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+					"instance_network_type": "VPC",
+					"instance_spec":         "2C16G",
+					"instance_group_count":  "2",
+					"payment_type":          "PayAsYouGo",
+					"seg_storage_type":      "cloud_essd",
+					"seg_node_num":          "4",
+					"storage_size":          "50",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+					"effective_time":        "Immediate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"effective_time": "Immediate",
+						"minor_version":  CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_size": "500",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_size": "500",
+					}),
+				),
+			},
+			{
+				// Plan-only: both changes must be planned as in-place updates
+				// without applying them (see the function comment).
+				Config: testAccConfig(map[string]interface{}{
+					"minor_version":  "6.3.11.2",
+					"effective_time": "MaintainTime",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"minor_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"effective_time": "MaintainTime",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters", "effective_time"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
@@ -843,6 +945,99 @@ func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudGPDBDBInstance_sqlCollectorStatus covers the sql_collector_status
+// attribute. ModifySQLCollectorPolicy is only supported for storage reserved mode
+// (Classic) instances and Serverless auto-scheduling instances, so the test uses a
+// Serverless instance with serverless_mode Auto (the existing Serverless test uses
+// Manual, which the API does not accept for this operation). The attribute is
+// write-only: the GPDB API has no operation to query the SQL collector status, so
+// the value is never read back and state keeps mirroring the configuration.
+func TestAccAliCloudGPDBDBInstance_sqlCollectorStatus(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(gpdbServerlessTestRegion())})
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_mode":      "Serverless",
+					"description":           name,
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               gpdbServerlessTestZone(),
+					"instance_network_type": "VPC",
+					"instance_spec":         "4C16G",
+					"payment_type":          "PayAsYouGo",
+					"seg_node_num":          "2",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"serverless_mode":       "Auto",
+					"create_sample_data":    "false",
+					"sql_collector_status":  "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_mode":     "Serverless",
+						"serverless_mode":      "Auto",
+						"instance_spec":        "4C16G",
+						"payment_type":         "PayAsYouGo",
+						"sql_collector_status": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sql_collector_status": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sql_collector_status": "Disabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sql_collector_status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sql_collector_status": "Enable",
+					}),
+				),
+			},
+			{
+				// Plan-only with no pending change: the plan must be empty,
+				// i.e. toggling the collector twice leaves no unexpected diff.
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				PlanOnly: true,
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters", "sql_collector_status"},
 			},
 		},
 	})
@@ -1359,6 +1554,62 @@ func AliCloudGPDBDBInstanceBasicDependence2(name string) string {
   		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 	}
 `, name)
+}
+
+// lintignore: R001
+// TestUnitAliCloudGPDBDBInstanceSchemaValidation verifies the schema shape and the
+// ValidateFunc behavior of the new attributes hermetically (no mocking, no network):
+// effective_time is an Optional operation-time parameter that is neither Computed
+// nor ForceNew, sql_collector_status is Optional+Computed (write-only, never read
+// back) and both reject values outside their enumeration at plan time.
+func TestUnitAliCloudGPDBDBInstanceSchemaValidation(t *testing.T) {
+	res := Provider().(*schema.Provider).ResourcesMap["alicloud_gpdb_instance"]
+	if !assert.NotNil(t, res) {
+		t.FailNow()
+	}
+	s := res.Schema
+
+	effectiveTime := s["effective_time"]
+	if assert.NotNil(t, effectiveTime) {
+		assert.Equal(t, schema.TypeString, effectiveTime.Type)
+		assert.True(t, effectiveTime.Optional)
+		assert.False(t, effectiveTime.Computed)
+		assert.False(t, effectiveTime.ForceNew)
+		if assert.NotNil(t, effectiveTime.ValidateFunc) {
+			warns, errs := effectiveTime.ValidateFunc("Immediate", "effective_time")
+			assert.Empty(t, warns)
+			assert.Empty(t, errs)
+			warns, errs = effectiveTime.ValidateFunc("MaintainTime", "effective_time")
+			assert.Empty(t, warns)
+			assert.Empty(t, errs)
+			for _, invalid := range []string{"Now", "immediate", "IMMEDIATE", ""} {
+				_, errs = effectiveTime.ValidateFunc(invalid, "effective_time")
+				assert.NotEmpty(t, errs, "expected %q to be rejected", invalid)
+			}
+		}
+	}
+
+	sqlCollectorStatus := s["sql_collector_status"]
+	if assert.NotNil(t, sqlCollectorStatus) {
+		assert.Equal(t, schema.TypeString, sqlCollectorStatus.Type)
+		assert.True(t, sqlCollectorStatus.Optional)
+		assert.True(t, sqlCollectorStatus.Computed)
+		assert.False(t, sqlCollectorStatus.ForceNew)
+		if assert.NotNil(t, sqlCollectorStatus.ValidateFunc) {
+			warns, errs := sqlCollectorStatus.ValidateFunc("Enable", "sql_collector_status")
+			assert.Empty(t, warns)
+			assert.Empty(t, errs)
+			warns, errs = sqlCollectorStatus.ValidateFunc("Disabled", "sql_collector_status")
+			assert.Empty(t, warns)
+			assert.Empty(t, errs)
+			// RDS accepts Enabled/Disabled; GPDB only accepts Enable/Disabled,
+			// so Enabled and case variants must be rejected here.
+			for _, invalid := range []string{"Enabled", "enabled", "DISABLED", ""} {
+				_, errs = sqlCollectorStatus.ValidateFunc(invalid, "sql_collector_status")
+				assert.NotEmpty(t, errs, "expected %q to be rejected", invalid)
+			}
+		}
+	}
 }
 
 // lintignore: R001
