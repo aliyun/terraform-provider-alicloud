@@ -1088,6 +1088,20 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 	})
 }
 
+func TestUnitAliCloudNasFileSystemAgenticStorageType(t *testing.T) {
+	resourceSchema := resourceAliCloudNasFileSystem()
+	assert.True(t, resourceSchema.Schema["storage_type"].Required)
+	assert.True(t, resourceSchema.Schema["storage_type"].ForceNew)
+	storageTypeValidate := resourceSchema.Schema["storage_type"].ValidateFunc
+	assert.NotNil(t, storageTypeValidate)
+	for _, value := range []string{"Agentic", "Performance", "Capacity", "standard", "advance", "advance_100", "advance_200", "Premium"} {
+		_, validationErrors := storageTypeValidate(value, "storage_type")
+		assert.Empty(t, validationErrors, "storage_type %q should be accepted", value)
+	}
+	_, validationErrors := storageTypeValidate("unknown", "storage_type")
+	assert.NotEmpty(t, validationErrors)
+}
+
 // Case create_cpfs_file_system 12182
 func TestAccAliCloudNasFileSystem_basic12182(t *testing.T) {
 	var v map[string]interface{}
@@ -1876,6 +1890,67 @@ resource "alicloud_vswitch" "CreateVswitchD" {
 
 
 `, name)
+}
+
+// TypeList order coverage: three-step reorder for redundancy_vswitch_ids.
+func TestAccAliCloudNasFileSystem_redundancyVswitchOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasFileSystemMap12188)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccnas%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence12188)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":  "cpfsse-文件系统同城冗余测试-wyf",
+					"storage_type": "advance_100",
+					"encrypt_type": "0",
+					"vpc_id":       "${alicloud_vpc.createEVpc_Cpfs.id}",
+					"redundancy_vswitch_ids": []string{
+						"${alicloud_vswitch.CreateVswitchC.id}", "${alicloud_vswitch.CreateVswitchD.id}", "${alicloud_vswitch.CreateVswitchF.id}"},
+					"capacity":         "500",
+					"protocol_type":    "cpfs",
+					"file_system_type": "cpfsse",
+					"redundancy_type":  "ZRS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"redundancy_vswitch_ids.#": "3",
+						"redundancy_type":          "ZRS",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"redundancy_vswitch_ids": []string{
+						"${alicloud_vswitch.CreateVswitchF.id}", "${alicloud_vswitch.CreateVswitchD.id}", "${alicloud_vswitch.CreateVswitchC.id}"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"redundancy_vswitch_ids": []string{
+						"${alicloud_vswitch.CreateVswitchF.id}", "${alicloud_vswitch.CreateVswitchD.id}", "${alicloud_vswitch.CreateVswitchC.id}"},
+				}),
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
 }
 
 // Test Nas FileSystem. <<< Resource test cases, automatically generated.

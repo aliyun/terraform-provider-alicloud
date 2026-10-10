@@ -215,7 +215,7 @@ func resourceAliCloudNasFileSystem() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Performance", "Capacity", "standard", "advance", "advance_100", "advance_200", "Premium"}, false),
+				ValidateFunc: StringInSlice([]string{"Performance", "Capacity", "standard", "advance", "advance_100", "advance_200", "Premium", "Agentic"}, false),
 			},
 			"tags": tagsSchema(),
 			"vswitch_id": {
