@@ -860,3 +860,63 @@ func (s *ArmsServiceV2) ArmsGrafanaWorkspaceStateRefreshFunc(id string, field st
 }
 
 // DescribeArmsGrafanaWorkspace >>> Encapsulated.
+
+// DescribeArmsNotificationPolicy <<< Encapsulated get interface for Arms NotificationPolicy.
+func (s *ArmsServiceV2) DescribeArmsNotificationPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["Ids"] = id
+	query["Page"] = 1
+	query["Size"] = PageSizeXLarge
+	query["IsDetail"] = true
+
+	action := "ListNotificationPolicies"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("ARMS", "2019-08-08", action, query, request)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"404"}) {
+			return object, WrapErrorf(NotFoundErr("NotificationPolicy", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	code, _ := jsonpath.Get("$.Code", response)
+	if InArray(fmt.Sprint(code), []string{"404"}) {
+		return object, WrapErrorf(NotFoundErr("NotificationPolicy", id), NotFoundMsg, response)
+	}
+
+	v, err := jsonpath.Get("$.PageBean.NotificationPolicies[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageBean.NotificationPolicies[*]", response)
+	}
+
+	list, ok := v.([]interface{})
+	if !ok || len(list) == 0 {
+		return object, WrapErrorf(NotFoundErr("NotificationPolicy", id), NotFoundMsg, response)
+	}
+
+	first, ok := list[0].(map[string]interface{})
+	if !ok {
+		return object, WrapErrorf(fmt.Errorf("unexpected NotificationPolicies element type %T", list[0]), DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return first, nil
+}
+
+// DescribeArmsNotificationPolicy >>> Encapsulated.
