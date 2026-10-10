@@ -1,2 +1,3 @@
 package validation
-func Value()int{return 1}
+
+func Value() int { return 1 }

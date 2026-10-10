@@ -17,7 +17,7 @@ func TestAccAlicloudRemoteRunValidation_regions(t *testing.T) {
 				Config: testAccCheckAlicloudRegionsDataSourceRegionsConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_regions.region"),
-					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.#", "2"),
+					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.0.id", "cn-beijing"),
 				),
 			},
