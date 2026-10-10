@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -88,6 +89,11 @@ func resourceAlicloudOosTemplate() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"resource_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -166,6 +172,36 @@ func resourceAlicloudOosTemplateRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("updated_by", object["UpdatedBy"])
 	d.Set("updated_date", object["UpdatedDate"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+
+	// $.ResourceIds is exposed as a computed attribute and sourced from
+	// ListTagResources ($.TagResources.TagResource[*].ResourceId). The query
+	// is scoped to the current template, so de-duplicate the echoed resource
+	// ids that ListTagResources returns once per bound tag. Only non-empty
+	// string ResourceId values are accepted; missing, null or non-string
+	// entries are ignored so that "<nil>" never leaks into state.
+	tagResp, err := oosService.ListOosTemplateTagResources(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	tagResources, _ := jsonpath.Get("$.TagResources.TagResource", tagResp)
+	resourceIds := make([]string, 0)
+	seen := make(map[string]bool)
+	for _, tagResource := range convertToInterfaceArray(tagResources) {
+		tagResourceMap, ok := tagResource.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		rid, ok := tagResourceMap["ResourceId"].(string)
+		if !ok || rid == "" {
+			continue
+		}
+		if seen[rid] {
+			continue
+		}
+		seen[rid] = true
+		resourceIds = append(resourceIds, rid)
+	}
+	d.Set("resource_ids", resourceIds)
 	return nil
 }
 

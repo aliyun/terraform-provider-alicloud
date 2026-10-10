@@ -40,6 +40,39 @@ func (s *OosService) DescribeOosTemplate(id string) (object map[string]interface
 	return object, nil
 }
 
+// ListOosTemplateTagResources queries the OOS tags bound to a template via
+// ListTagResources. The Template resource exposes $.ResourceIds as a computed
+// attribute sourced from $.TagResources.TagResource[*].ResourceId, so a Read
+// calls this with ResourceType=template and the template name as the only
+// resource id to enumerate the tagged resource ids.
+func (s *OosService) ListOosTemplateTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	action := "ListTagResources"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"ResourceType": "template",
+		"ResourceIds":  convertObjectToJsonString(expandSingletonToList(id)),
+	}
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
 func (s *OosService) DescribeOosExecution(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
