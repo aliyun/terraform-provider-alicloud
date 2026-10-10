@@ -61,13 +61,14 @@ The following arguments are supported:
 * `destination_region_id` - (Required, ForceNew) The ID of the region to which the disaster recovery site belongs.
 * `destination_zone_id` - (Required, ForceNew) The ID of the zone to which the disaster recovery site belongs.
 * `disk_replica_group_name` - (Optional, Available since v1.245.0) Consistent replication group name.
+* `enable_rtc` - (Optional, Available since v1.295.0) Whether to enable Replication Time Control (RTC) for all replication pairs in the consistent replication group. Valid values: `true` and `false`. Defaults to `false`. Updating `enable_rtc` requires the replication group to be in the `created` or `stopped` state; otherwise the API returns an `OperationDenied.InvalidStatus` error.
 * `one_shot` - (Optional, Available since v1.245.0) Whether to synchronize immediately. Value range:
   - true: Start data synchronization immediately.
   - false: Data Synchronization starts after the RPO time period.
 
 Default value: false.
 * `pair_ids` - (Optional, Set, Available since v1.245.0) List of replication pair IDs contained in a consistent replication group.
-* `rpo` - (Optional, ForceNew, Int) The RPO value set by the consistency group in seconds. Currently only 900 seconds are supported.
+* `rpo` - (Optional, Computed, Int) The RPO value set by the consistency group in seconds. Currently only 900 seconds are supported. When `rpo` is not set, it is assigned by the server (600 in the tested scenario). Updating `rpo` requires the replication group to be in the `created` or `stopped` state; otherwise the API returns an `OperationDenied.InvalidStatus` error.
 * `resource_group_id` - (Optional, Computed, Available since v1.245.0) resource group ID of enterprise
 * `reverse_replicate` - (Optional, Available since v1.245.0) Specifies whether to enable the reverse replication sub-feature. Valid values: true and false. Default value: true.
 * `source_region_id` - (Required, ForceNew) The ID of the region to which the production site belongs.

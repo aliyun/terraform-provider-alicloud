@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -121,7 +122,7 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"rpo":                     "900",
+					"enable_rtc":              "true",
 					"source_region_id":        "${var.disk-region}",
 					"description":             "cctest",
 					"destination_region_id":   "${var.disk-region}",
@@ -132,7 +133,8 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rpo":                     "900",
+						"enable_rtc":              "true",
+						"rpo":                     "600",
 						"source_region_id":        CHECKSET,
 						"description":             "cctest",
 						"destination_region_id":   CHECKSET,
@@ -165,6 +167,26 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"rpo": "900",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rpo": "900",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_rtc": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_rtc": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"disk_replica_group_name": name + "_update",
 					"pair_ids": []string{
 						"${alicloud_ebs_disk_replica_pair.defaultUCZMS9.id}"},
@@ -177,43 +199,12 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"status":   "normal",
-					"one_shot": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status":   "normal",
-						"one_shot": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "failovered",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "failovered",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status":            "stopped",
-					"reverse_replicate": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status":            "stopped",
-						"reverse_replicate": "false",
-					}),
-				),
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"rpo":        "900",
+						"enable_rtc": "false",
+					}),
 				),
 			},
 			{
@@ -278,6 +269,102 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudEbsDiskReplicaGroup_statusTransition preserves the
+// Start -> Failover -> Reprotect status-transition scenario split out of
+// TestAccAliCloudEbsDiskReplicaGroup_basic0. The chain is kept verbatim but
+// skipped: a failovered group can no longer remove pairs or be deleted, and
+// Reprotect is rejected with OperationDenied.OperateNotAllowedForStandby, a
+// documented site-role restriction (the error code is recorded in the
+// official error code tables of ReprotectDiskReplicaGroup and
+// ModifyDiskReplicaGroup) that is deterministically triggered in the ACC
+// environment, so the main chain keeps the group in created state to keep
+// import and destroy verification reachable.
+func TestAccAliCloudEbsDiskReplicaGroup_statusTransition(t *testing.T) {
+	t.Skipf("ReprotectDiskReplicaGroup is deterministically rejected with 403 OperationDenied.OperateNotAllowedForStandby in the ACC environment regardless of the reverse_replicate value (false: task 11906, true: task 11910, same error code) - a documented site-role restriction whose deterministic ACC-environment triggering is an environmental observation, not a provider defect; resume the full status-transition chain once the EBS service team confirms/authorizes the site-role conditions.")
+	var v map[string]interface{}
+	resourceId := "alicloud_ebs_disk_replica_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudEbsDiskReplicaGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEbsDiskReplicaGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccebs%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsDiskReplicaGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_rtc":              "true",
+					"source_region_id":        "${var.disk-region}",
+					"description":             "cctest",
+					"destination_region_id":   "${var.disk-region}",
+					"destination_zone_id":     "${var.dst-disk-zone}",
+					"source_zone_id":          "${var.src-disk-zone}",
+					"disk_replica_group_name": name,
+					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_rtc":              "true",
+						"rpo":                     "600",
+						"source_region_id":        CHECKSET,
+						"description":             "cctest",
+						"destination_region_id":   CHECKSET,
+						"destination_zone_id":     CHECKSET,
+						"source_zone_id":          CHECKSET,
+						"disk_replica_group_name": name,
+						"resource_group_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":   "normal",
+					"one_shot": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":   "normal",
+						"one_shot": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "failovered",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "failovered",
+					}),
+				),
+			},
+			{
+				// After a completed failover this step switches back to the reverse-replication direction (reverse_replicate=true, the API default). ReverseReplicate=false is the documented cancel-failover path that restores the original replication direction; in the ACC environment it is deterministically rejected with OperationDenied.OperateNotAllowedForStandby (task 11906) - an environmental observation, not general cloud semantics.
+				Config: testAccConfig(map[string]interface{}{
+					"status":            "stopped",
+					"reverse_replicate": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":            "stopped",
+						"reverse_replicate": "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AlicloudEbsDiskReplicaGroupMap0 = map[string]string{}
 
 func AlicloudEbsDiskReplicaGroupBasicDependence0(name string) string {
@@ -331,4 +418,53 @@ resource "alicloud_ebs_disk_replica_pair" "defaultUCZMS9" {
 
 
 `, name)
+}
+
+// Regression lock: an existing configuration that does not set `enable_rtc` or
+// `rpo` must not produce a plan diff against state backfilled by the server
+// (measured: RPO=600, EnableRtc=false). A 600->0 drift on `rpo` would trigger
+// a spurious ModifyDiskReplicaGroup call sending RPO=0 on the next apply.
+func TestUnitEbsDiskReplicaGroupUnsetRpoEnableRtcNoPlanDiff(t *testing.T) {
+	res := resourceAliCloudEbsDiskReplicaGroup()
+
+	state := &terraform.InstanceState{
+		ID: "rg-12345",
+		Attributes: map[string]string{
+			"id":                      "rg-12345",
+			"source_region_id":        "cn-hangzhou",
+			"source_zone_id":          "cn-hangzhou-i",
+			"destination_region_id":   "cn-hangzhou",
+			"destination_zone_id":     "cn-hangzhou-h",
+			"disk_replica_group_name": "tfaccebs12345",
+			"enable_rtc":              "false",
+			"rpo":                     "600",
+			"one_shot":                "false",
+			"reverse_replicate":       "false",
+			"status":                  "normal",
+			"resource_group_id":       "rg-acctest",
+		},
+	}
+
+	rawConfig := map[string]interface{}{
+		"source_region_id":        "cn-hangzhou",
+		"source_zone_id":          "cn-hangzhou-i",
+		"destination_region_id":   "cn-hangzhou",
+		"destination_zone_id":     "cn-hangzhou-h",
+		"disk_replica_group_name": "tfaccebs12345",
+	}
+
+	diff, err := res.Diff(state, terraform.NewResourceConfigRaw(rawConfig), nil)
+	if err != nil {
+		t.Fatalf("Diff failed: %s", err)
+	}
+	if diff == nil {
+		// nil InstanceDiff means an entirely empty plan, which satisfies AC4.
+		return
+	}
+
+	for _, key := range []string{"rpo", "enable_rtc"} {
+		if attr, ok := diff.Attributes[key]; ok {
+			t.Fatalf("unset %q must not produce a plan diff, got old=%q new=%q (diff.Empty=%v, attributes=%v)", key, attr.Old, attr.New, diff.Empty(), diff.Attributes)
+		}
+	}
 }
