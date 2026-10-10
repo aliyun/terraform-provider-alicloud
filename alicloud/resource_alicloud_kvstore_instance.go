@@ -276,6 +276,18 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Disable", "Enable", "Update"}, false),
 			},
+			"ca_cert_download_url": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ca_cert_common_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ssl_expired_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"secondary_zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -751,6 +763,9 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		}
 	} else {
 		d.Set("ssl_enable", describeInstanceSSLObject.SSLEnabled)
+		d.Set("ca_cert_download_url", describeInstanceSSLObject.CertDownloadURL)
+		d.Set("ca_cert_common_name", describeInstanceSSLObject.CertCommonName)
+		d.Set("ssl_expired_time", describeInstanceSSLObject.SSLExpiredTime)
 	}
 
 	var securityIpGroupName string

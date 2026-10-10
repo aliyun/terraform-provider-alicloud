@@ -705,7 +705,8 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ssl_enable": "Enable",
+						"ssl_enable":           "Enable",
+						"ca_cert_download_url": CHECKSET,
 					}),
 				),
 			},
