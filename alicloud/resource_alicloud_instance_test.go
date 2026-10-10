@@ -1072,6 +1072,484 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudECSInstanceAdditionalAttributes(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceConfigAdditionalAttributes%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceECSInstanceVpcDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": NOSET,
+					}),
+				),
+			},
+			{
+				// additional_attributes is a query-time parameter that is never returned
+				// by DescribeInstances, so an instance created without it imports without
+				// ignoring this attribute.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": []string{"META_OPTIONS", "LOGIN_AS_NON_ROOT"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": []string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": "3",
+					}),
+				),
+			},
+			{
+				// An explicit empty set keeps the attribute unset in state while the
+				// request falls back to the default attribute set.
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": CLEARLIST,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": []string{
+						"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT", "DISK_HIGH_DENSITY_MODE",
+						"CPU_OPTIONS_TOPOLOGY_TYPE", "TF_TEST_ATTRIBUTE_06", "TF_TEST_ATTRIBUTE_07", "TF_TEST_ATTRIBUTE_08",
+						"TF_TEST_ATTRIBUTE_09", "TF_TEST_ATTRIBUTE_10", "TF_TEST_ATTRIBUTE_11",
+					},
+				}),
+				ExpectError: regexp.MustCompile("attribute supports 10 item maximum"),
+			},
+			{
+				// The harness reuses the last step's config for the destroy phase, so
+				// the final step must stay valid or cleanup aborts and leaves the
+				// dependency resources behind.
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": []string{"META_OPTIONS"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSInstanceDataDisksOrder(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceDataDisksOrder%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceMemberOrderDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "ecs.c8i.2xlarge",
+					"availability_zone":    "cn-hangzhou-b",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"force_delete":         "true",
+					"data_disks": []map[string]interface{}{
+						{
+							"name":     "${var.name}-disk-a",
+							"size":     "20",
+							"category": "cloud_essd",
+						},
+						{
+							"name":     "${var.name}-disk-b",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":     name,
+						"data_disks.#":      "2",
+						"data_disks.0.name": name + "-disk-a",
+						"data_disks.1.name": name + "-disk-b",
+						"force_delete":      "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "ecs.c8i.2xlarge",
+					"availability_zone":    "cn-hangzhou-b",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"force_delete":         "true",
+					"data_disks": []map[string]interface{}{
+						{
+							"name":     "${var.name}-disk-b",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+						{
+							"name":     "${var.name}-disk-a",
+							"size":     "20",
+							"category": "cloud_essd",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "ecs.c8i.2xlarge",
+					"availability_zone":    "cn-hangzhou-b",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"force_delete":         "true",
+					"data_disks": []map[string]interface{}{
+						{
+							"name":     "${var.name}-disk-b",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+						{
+							"name":     "${var.name}-disk-a",
+							"size":     "20",
+							"category": "cloud_essd",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":     name,
+						"data_disks.#":      "2",
+						"data_disks.0.name": name + "-disk-b",
+						"data_disks.1.name": name + "-disk-a",
+						"force_delete":      "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSInstanceNetworkInterfacesOrder(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceNetworkInterfacesOrder%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceMemberOrderDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "ecs.c8i.2xlarge",
+					"availability_zone":    "cn-hangzhou-b",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"force_delete":         "true",
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
+						},
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.default.1.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":                             name,
+						"network_interfaces.#":                      "2",
+						"network_interfaces.0.vswitch_id":           CHECKSET,
+						"network_interfaces.1.vswitch_id":           CHECKSET,
+						"network_interfaces.0.security_group_ids.#": "1",
+						"network_interfaces.1.security_group_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "ecs.c8i.2xlarge",
+					"availability_zone":    "cn-hangzhou-b",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"force_delete":         "true",
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.default.1.id}"},
+						},
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "ecs.c8i.2xlarge",
+					"availability_zone":    "cn-hangzhou-b",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"force_delete":         "true",
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.default.1.id}"},
+						},
+						{
+							"vswitch_id":         "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{"${alicloud_security_group.default.0.id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":                             name,
+						"network_interfaces.#":                      "2",
+						"network_interfaces.0.security_group_ids.#": "1",
+						"network_interfaces.1.security_group_ids.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSInstanceNetworkInterfaceSecurityGroupIdsOrder(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceNetworkInterfaceSecurityGroupIdsOrder%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceMemberOrderDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "ecs.c8i.2xlarge",
+					"availability_zone":    "cn-hangzhou-b",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"force_delete":         "true",
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{
+								"${alicloud_security_group.default.0.id}",
+								"${alicloud_security_group.default.1.id}",
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":                             name,
+						"network_interfaces.#":                      "1",
+						"network_interfaces.0.security_group_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "ecs.c8i.2xlarge",
+					"availability_zone":    "cn-hangzhou-b",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"force_delete":         "true",
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{
+								"${alicloud_security_group.default.1.id}",
+								"${alicloud_security_group.default.0.id}",
+							},
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "ecs.c8i.2xlarge",
+					"availability_zone":    "cn-hangzhou-b",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"system_disk_category": "cloud_essd",
+					"instance_name":        "${var.name}",
+					"force_delete":         "true",
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.default.id}",
+							"security_group_ids": []string{
+								"${alicloud_security_group.default.1.id}",
+								"${alicloud_security_group.default.0.id}",
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":                             name,
+						"network_interfaces.#":                      "1",
+						"network_interfaces.0.security_group_ids.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceInstanceMemberOrderDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_images" "default" {
+  instance_type = "ecs.c8i.2xlarge"
+  most_recent   = true
+  owners        = "system"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "172.16.0.0/16"
+  zone_id      = "cn-hangzhou-b"
+  vpc_id       = alicloud_vpc.default.id
+}
+
+resource "alicloud_security_group" "default" {
+  count  = 2
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+`, name)
+}
+
 func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
@@ -4052,7 +4530,7 @@ func TestAccAliCloudInstanceImageOptionsAndKmsPassword(t *testing.T) {
 			return fmt.Errorf("instance ID is missing from state")
 		}
 		service := EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-		instance, err := service.DescribeInstance(rs.Primary.ID)
+		instance, err := service.DescribeInstance(rs.Primary.ID, nil)
 		if err != nil {
 			return err
 		}
