@@ -46,7 +46,18 @@ The following arguments are supported:
 * `enable_logging` - (Optional, Bool, Available since v1.241.0) Specifies whether to enable the logging feature. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
+* `enable_sse` - (Optional, Bool, Available since v1.295.0) Specifies whether to enable server-side encryption (SSE) for the messages sent to the topic. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `kms_key_id` - (Optional, Available since v1.295.0) The ID of the customer master key (CMK) in Key Management Service (KMS). This parameter is required when `sse_type` is set to `KMS`.
 * `max_message_size` - (Optional, Int) The maximum length of the message that is sent to the topic. Default value: `65536`. Valid values: `1024` to `65536`. Unit: bytes.
+* `sse_algorithm` - (Optional, Available since v1.295.0) The encryption algorithm that is used to encrypt the messages sent to the topic. Valid value: `AES-256-GCM`.
+* `sse_type` - (Optional, Available since v1.295.0) The type of server-side encryption (SSE). Valid values:
+  - `SMQ`: The keys that are managed by Message Service are used to encrypt and decrypt messages.
+  - `KMS`: The customer master key (CMK) that is managed by Key Management Service (KMS) is used to encrypt and decrypt messages.
+-> **NOTE:** Server-side encryption (SSE) is available only after the feature is enabled for your account. To enable the feature, submit a ticket. Before you set `sse_type` to `KMS`, make sure that a symmetric key of the AES-256 key spec is created in KMS in the same region and within the same account as the topic, and that the service-linked role `AliyunMNSAccessingKMSRole` is authorized.
+
+-> **NOTE:** To disable SSE, you must set `enable_sse` to `false` and remove `sse_type`, `sse_algorithm`, and `kms_key_id` from the configuration at the same time. SSE takes effect only on the messages that are sent after SSE is enabled or disabled, and existing messages are not encrypted or decrypted again.
 * `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
 * `topic_name` - (Required, ForceNew) The name of the topic.
 * `topic_type` - (Optional, ForceNew, Computed, Available since v1.283.0) The type of the topic. Default value: `normal`. Valid values:
@@ -60,6 +71,7 @@ The following arguments will be discarded. Please use new fields as soon as poss
 The following attributes are exported:
 * `id` - The resource ID in terraform of Topic.
 * `create_time` - (Available since v1.241.0) The time when the topic was created.
+* `encryption_enabled` - (Available since v1.295.0) Indicates whether server-side encryption is applied to the topic. The value remains `true` after server-side encryption is disabled because existing messages are still stored as encrypted.
 
 ## Timeouts
 
