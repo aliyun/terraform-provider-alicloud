@@ -48,6 +48,10 @@ resource "alicloud_pai_workspace_experiment" "default" {
   artifact_uri    = "oss://yyt-409262.oss-cn-hangzhou.aliyuncs.com/example/"
   experiment_name = var.name
   workspace_id    = alicloud_pai_workspace_workspace.defaultDI9fsL.id
+  labels {
+    key   = "team"
+    value = "dev"
+  }
 }
 ```
 
@@ -59,7 +63,14 @@ The following arguments are supported:
 * `accessibility` - (Optional, Computed) Experimental Visibility
 * `artifact_uri` - (Required, ForceNew) ArtifactUri is default OSS storage path of the output of trials in the experiment
 * `experiment_name` - (Required) Name is the name of the experiment, unique in a namespace
+* `labels` - (Optional, List) Labels are tags of the experiment. See [`labels`](#labels) below.
 * `workspace_id` - (Required, ForceNew) WorkspaceId is the workspace id which contains the experiment
+
+### `labels`
+
+The labels supports the following:
+* `key` - (Optional) The key of the experiment label.
+* `value` - (Optional) The value of the experiment label.
 
 ## Attributes Reference
 
