@@ -39,6 +39,10 @@ BUG FIXES:
 - resource/alicloud_kvstore_instance, resource/alicloud_redis_tair_instance, resource/alicloud_mongodb_instance and resource/alicloud_rocketmq_instance: return an error when destroying PrePaid instances instead of silently removing them from Terraform state. ([#10672](https://github.com/aliyun/terraform-provider-alicloud/issues/10672))
 - resource/alicloud_cloud_monitor_service_metric_alarm_rule: suppress JSON-equivalent resources diffs caused by API-side key reordering. ([#10679](https://github.com/aliyun/terraform-provider-alicloud/issues/10679))
 
+BUG FIXES:
+
+- resource/alicloud_apig_gateway: mark the vswitch block as Computed so Manual-mode gateways are not force-replaced on every plan by the Read back-fill.
+
 ## 1.293.0 (September 17, 2026)
 
 - **New Resource:** `alicloud_event_bridge_event_streaming` ([#10243](https://github.com/aliyun/terraform-provider-alicloud/issues/10243))
