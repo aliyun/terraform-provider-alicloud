@@ -204,7 +204,6 @@ func resourceAlicloudCSKubernetesAddonDelete(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapError(err)
 	}
-	clusterId := parts[0]
 	addonName := parts[1]
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
@@ -213,7 +212,9 @@ func resourceAlicloudCSKubernetesAddonDelete(d *schema.ResourceData, meta interf
 	}
 	csClient := CsClient{client}
 
-	addon, err := csClient.GetCsKubernetesAddonInstance(clusterId, addonName)
+	// GetCsKubernetesAddonInstance does not populate Required or SupportedActions,
+	// which the guard below relies on, so DescribeCsKubernetesAddon is used here.
+	addon, err := csClient.DescribeCsKubernetesAddon(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
