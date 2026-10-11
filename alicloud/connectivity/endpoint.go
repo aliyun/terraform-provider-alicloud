@@ -349,6 +349,8 @@ var irregularProductEndpoint = map[string]string{
 	"alidns":                  "alidns.aliyuncs.com",
 	"openapiexplorer":         "openapi-mcp.cn-hangzhou.aliyuncs.com",
 	"computenestsupplier":     "computenestsupplier.cn-hangzhou.aliyuncs.com",
+	// the endpoint registered in the location service for agentloop is an intranet-only share endpoint
+	"agentloop": "agentloop.%s.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
