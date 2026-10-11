@@ -39,6 +39,10 @@ func dataSourceAlicloudEbsDiskReplicaGroups() *schema.Resource {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
+						"enable_rtc": {
+							Computed: true,
+							Type:     schema.TypeBool,
+						},
 						"destination_region_id": {
 							Computed: true,
 							Type:     schema.TypeString,
@@ -161,6 +165,7 @@ func dataSourceAlicloudEbsDiskReplicaGroupsRead(d *schema.ResourceData, meta int
 		mapping := map[string]interface{}{
 			"id":                    fmt.Sprint(object["ReplicaGroupId"]),
 			"description":           object["Description"],
+			"enable_rtc":            object["EnableRtc"],
 			"destination_region_id": object["DestinationRegionId"],
 			"destination_zone_id":   object["DestinationZoneId"],
 			"group_name":            object["GroupName"],

@@ -26,6 +26,7 @@ func TestAccAlicloudEbsDiskReplicaGroupsDataSource(t *testing.T) {
 			"groups.#":                       "1",
 			"groups.0.id":                    CHECKSET,
 			"groups.0.description":           fmt.Sprintf("tf-testAccEbsDiskReplicaGroup%d", rand),
+			"groups.0.enable_rtc":            CHECKSET,
 			"groups.0.destination_region_id": CHECKSET,
 			"groups.0.destination_zone_id":   CHECKSET,
 			"groups.0.group_name":            fmt.Sprintf("tf-testAccEbsDiskReplicaGroup%d", rand),
