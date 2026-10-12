@@ -1156,3 +1156,76 @@ func (s *EcsServiceV2) DescribeEcsDataDisksByNodeId(nodeId string) (objects []ma
 
 	return objects, nil
 }
+
+// DescribeEcsVsc <<< Encapsulated get interface for Ecs Vsc.
+func (s *EcsServiceV2) DescribeEcsVsc(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeVscs"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["VscIds"] = convertListToJsonString([]interface{}{id})
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Vscs", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Vscs", response)
+	}
+	if v == nil {
+		return object, WrapErrorf(NotFoundErr("Vsc", id), NotFoundMsg, response)
+	}
+	result, ok := v.([]interface{})
+	if !ok || len(result) == 0 {
+		return object, WrapErrorf(NotFoundErr("Vsc", id), NotFoundMsg, response)
+	}
+	for _, item := range result {
+		if m, ok := item.(map[string]interface{}); ok && fmt.Sprint(m["VscId"]) == id {
+			return m, nil
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("Vsc", id), NotFoundMsg, response)
+}
+
+func (s *EcsServiceV2) EcsVscStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEcsVsc(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		v, e := jsonpath.Get(field, object)
+		if e != nil {
+			return nil, "", WrapError(e)
+		}
+		currentStatus := fmt.Sprint(v)
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEcsVsc >>> Encapsulated.
