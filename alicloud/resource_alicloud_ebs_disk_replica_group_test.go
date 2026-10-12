@@ -121,7 +121,7 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"rpo":                     "900",
+					"enable_rtc":              "true",
 					"source_region_id":        "${var.disk-region}",
 					"description":             "cctest",
 					"destination_region_id":   "${var.disk-region}",
@@ -132,7 +132,7 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rpo":                     "900",
+						"enable_rtc":              "true",
 						"source_region_id":        CHECKSET,
 						"description":             "cctest",
 						"destination_region_id":   CHECKSET,
@@ -211,6 +211,18 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"rpo":        "900",
+					"enable_rtc": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rpo":        "900",
+						"enable_rtc": "false",
+					}),
+				),
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -279,6 +291,92 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 }
 
 var AlicloudEbsDiskReplicaGroupMap0 = map[string]string{}
+
+func TestAccAliCloudEbsDiskReplicaGroup_rtc(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ebs_disk_replica_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudEbsDiskReplicaGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEbsDiskReplicaGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccebs%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsDiskReplicaGroupRtcDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_rtc":              "true",
+					"source_region_id":        "${var.disk-region}",
+					"description":             "cctest",
+					"destination_region_id":   "${var.disk-region}",
+					"destination_zone_id":     "${var.dst-disk-zone}",
+					"source_zone_id":          "${var.src-disk-zone}",
+					"disk_replica_group_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_rtc":              "true",
+						"source_region_id":        CHECKSET,
+						"description":             "cctest",
+						"destination_region_id":   CHECKSET,
+						"destination_zone_id":     CHECKSET,
+						"source_zone_id":          CHECKSET,
+						"disk_replica_group_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rpo":        "900",
+					"enable_rtc": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rpo":        "900",
+						"enable_rtc": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"one_shot", "reverse_replicate"},
+			},
+		},
+	})
+}
+
+func AlicloudEbsDiskReplicaGroupRtcDependence0(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "disk-region" {
+  default = "cn-hangzhou"
+}
+
+variable "dst-disk-zone" {
+  default = "cn-hangzhou-h"
+}
+
+variable "src-disk-zone" {
+  default = "cn-hangzhou-i"
+}
+
+`, name)
+}
 
 func AlicloudEbsDiskReplicaGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(`
