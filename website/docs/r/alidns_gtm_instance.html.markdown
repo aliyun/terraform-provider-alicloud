@@ -66,7 +66,7 @@ The following arguments are supported:
 * `alert_config` - (Optional) The alert notification methods. See [`alert_config`](#alert_config) below for details.
 * `alert_group` - (Optional) The alert group.
 * `force_update` - (Optional) The force update.
-* `cname_type` - (Optional) The access type of the CNAME domain name. Valid value: `PUBLIC`.
+* `cname_type` - (Optional) The access type of the CNAME domain name. Valid value: `PUBLIC`. **Note: The parameter is immutable after resource creation.**
 * `instance_name` - (Required) The name of the instance.
 * `lang` - (Optional) The lang.
 * `payment_type` - (Required, ForceNew) The Payment Type of the resource. Valid value: `Subscription`.
