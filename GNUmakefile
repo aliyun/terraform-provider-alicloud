@@ -178,6 +178,8 @@ commit:
 #   make ci-check SKIP_TEST=1        # Skip resource integration tests
 #   make ci-check SKIP_BUILD=1       # Skip build check
 #   make ci-check-quick              # Quick check (skip build, tests, errcheck, and example tests)
+#   CI_CHECK_BASE=<commit> make ci-check-quick  # Compare that base to the current working tree
+# An explicit base must exist locally. Unset it to retain the default change detection.
 ci-check: fmtcheck
 	@echo "Building for current OS only..."
 	@OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \

@@ -90,6 +90,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --skip-resource-test      Skip resource integration tests (default: enabled)"
       echo "  --quick                   Skip build, tests, errcheck, example tests, and resource tests (faster checks)"
       echo "  --strict                  Check ALL docs (like CI), not just changed files"
+      echo "  CI_CHECK_BASE=<commit>    Compare this local Git base to the working tree (environment variable)"
       echo "  -h, --help                Show this help message"
       echo ""
       echo "Note: By default, example tests are ENABLED and will create real resources."
@@ -215,18 +216,26 @@ fi
 # 1. Uncommitted changes (if any)
 # 2. Latest commit changes
 # 3. All changes from master branch
-CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
+# Remote/CI callers can select one explicit baseline for every check. The working
+# tree may include staged, unstaged and intent-to-add files.
+if [ -n "${CI_CHECK_BASE:-}" ]; then
+  git rev-parse --verify "${CI_CHECK_BASE}^{commit}" >/dev/null
+  CHANGED_FILES=$(git diff --name-only "$CI_CHECK_BASE" --)
+else
+  CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
 
-if [ -z "$CHANGED_FILES" ]; then
-  # No uncommitted changes, check the latest commit
-  echo -e "${BLUE}Checking latest commit changes...${NC}"
-  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
-fi
+  if [ -z "$CHANGED_FILES" ]; then
+    # No uncommitted changes, check the latest commit
+    echo -e "${BLUE}Checking latest commit changes...${NC}"
+    CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
+  fi
 
-if [ -z "$CHANGED_FILES" ]; then
-  # No changes in latest commit, fall back to comparing with master
-  echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
-  CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
+  if [ -z "$CHANGED_FILES" ]; then
+    # No changes in latest commit, fall back to comparing with master
+    echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
+    CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
+  fi
+
 fi
 
 if [ -z "$CHANGED_FILES" ]; then
@@ -245,6 +254,16 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Checking Required Tools${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo
+
+# Go installs tools into GOBIN, or the first GOPATH entry's bin directory.
+# Minimal runners may not include that directory in PATH. Export it for child
+# checks too, while preserving any tools already selected by the caller.
+GO_TOOL_BIN=$(go env GOBIN)
+if [ -z "$GO_TOOL_BIN" ]; then
+  GO_TOOL_PATH=$(go env GOPATH)
+  GO_TOOL_BIN="${GO_TOOL_PATH%%:*}/bin"
+fi
+export PATH="$PATH:$GO_TOOL_BIN"
 
 # Check for goimports (needed for code quality checks)
 if ! command -v goimports &> /dev/null; then
@@ -318,7 +337,9 @@ if [ -n "$RESOURCE_CHANGES" ]; then
   TEMP_DIFF=$(mktemp)
   
   # Generate diff: prioritize uncommitted changes, then latest commit, then compare with master
-  if git diff --name-only HEAD 2>/dev/null | grep -q .; then
+  if [ -n "${CI_CHECK_BASE:-}" ]; then
+    git diff "$CI_CHECK_BASE" -- > "$TEMP_DIFF"
+  elif git diff --name-only HEAD 2>/dev/null | grep -q .; then
     # There are uncommitted changes
     git diff HEAD > "$TEMP_DIFF"
   else
@@ -327,7 +348,7 @@ if [ -n "$RESOURCE_CHANGES" ]; then
   fi
   
   # If diff is empty, try comparing with master
-  if [ ! -s "$TEMP_DIFF" ]; then
+  if [ -z "${CI_CHECK_BASE:-}" ] && [ ! -s "$TEMP_DIFF" ]; then
     git diff origin/master...HEAD > "$TEMP_DIFF" 2>/dev/null || git diff master...HEAD > "$TEMP_DIFF" 2>/dev/null || true
   fi
   
@@ -548,9 +569,13 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
   # Create a temporary diff file
   TEMP_DIFF=$(mktemp)
   
-  # Always check only the latest commit (not all changes from master)
-  git diff HEAD~1 HEAD > "$TEMP_DIFF"
-  echo -e "${BLUE}  Checking only latest commit${NC}"
+  if [ -n "${CI_CHECK_BASE:-}" ]; then
+    git diff "$CI_CHECK_BASE" -- > "$TEMP_DIFF"
+    echo -e "${BLUE}  Checking changes against ${CI_CHECK_BASE}${NC}"
+  else
+    git diff HEAD~1 HEAD > "$TEMP_DIFF"
+    echo -e "${BLUE}  Checking only latest commit${NC}"
+  fi
   
   if [ -s "$TEMP_DIFF" ]; then
     if go run "$SCRIPT_DIR/consistency/consistency_check.go" -fileNames="$TEMP_DIFF"; then
