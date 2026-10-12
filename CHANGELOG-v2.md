@@ -1,3 +1,20 @@
+## 2.0.0 (October 12, 2026)
+
+This is the first stable (GA) release of the AliCloud provider v2. It rolls up everything from the `2.0.0-beta1`–`2.0.0-beta5` series — see those sections below — plus the changes merged from the 1.x line since the `1.294.0` changelog cut. For migration instructions from 1.x, see the [Version 2 Upgrade Guide](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/version-2-upgrade).
+
+FEATURES:
+
+- **New Resource:** `alicloud_cloud_firewall_fw_switch` — the protection switch for an internet boundary firewall asset; the resource's presence enables protection for the public IP asset (`ProtectStatus=open`) and its removal disables protection (`ProtectStatus=closed`). ([#10748](https://github.com/aliyun/terraform-provider-alicloud/issues/10748))
+
+ENHANCEMENTS:
+
+- resource/alicloud_nas_file_system: support the Agentic storage type for standard file systems. ([#10774](https://github.com/aliyun/terraform-provider-alicloud/issues/10774))
+- resource/alicloud_ebs_disk_replica_group: support `enable_rtc` and updatable `rpo`; data-source/alicloud_ebs_disk_replica_groups: export `enable_rtc`. ([#10775](https://github.com/aliyun/terraform-provider-alicloud/issues/10775))
+
+BUG FIXES:
+
+- resource/alicloud_nlb_server_group: preserve `health_check_http_code` order in read to avoid plan drift. ([#10762](https://github.com/aliyun/terraform-provider-alicloud/issues/10762))
+
 ## 2.0.0-beta5 (October 10, 2026)
 
 This beta rolls up every change merged from the 1.x line since v2.0.0-beta4 — see the `1.291.0`, `1.292.0`, `1.293.0` and `1.294.0` sections of [CHANGELOG.md](CHANGELOG.md) — plus the v2-only changes below. Changes that merged to the 1.x line after the `1.294.0` changelog cut are also listed below, ahead of their appearance in any released 1.x section.
