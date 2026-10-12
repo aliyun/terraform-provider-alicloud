@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	roaCS "github.com/alibabacloud-go/cs-20151215/v8/client"
@@ -41,25 +42,7 @@ func dataSourceAlicloudCSClusterCredential() *schema.Resource {
 			"certificate_authority": {
 				Type:     schema.TypeMap,
 				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"cluster_cert": {
-							Type:      schema.TypeString,
-							Sensitive: true,
-							Computed:  true,
-						},
-						"client_cert": {
-							Type:      schema.TypeString,
-							Sensitive: true,
-							Computed:  true,
-						},
-						"client_key": {
-							Type:      schema.TypeString,
-							Sensitive: true,
-							Computed:  true,
-						},
-					},
-				},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"expiration": {
 				Type:     schema.TypeString,
@@ -124,7 +107,13 @@ func csClusterAuthDescriptionAttributes(d *schema.ResourceData, meta interface{}
 	d.Set("cluster_name", tea.StringValue(cluster.Name))
 	d.Set("kube_config", tea.StringValue(credential.Config))
 	d.Set("expiration", tea.StringValue(credential.Expiration))
-	d.Set("certificate_authority", flattenAlicloudCSCertificate(credential))
+	certificateAuthority, err := flattenAlicloudCSCertificate(credential)
+	if err != nil {
+		return WrapError(fmt.Errorf("failed to parse kubeconfig for cluster %s: %s", clusterId, err))
+	}
+	if err := d.Set("certificate_authority", certificateAuthority); err != nil {
+		return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
+	}
 	d.SetId(dataResourceIdHash([]string{clusterId}))
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
