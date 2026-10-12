@@ -1133,3 +1133,102 @@ func parseKibanaPvlResult(result interface{}) (map[string]interface{}, error) {
 
 	return pvlInfoMap, nil
 }
+
+func (s *ElasticsearchService) DescribeSnapshotSetting(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "DescribeSnapshotSetting"
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RoaGetWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/snapshot-setting", id), nil, nil, nil)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
+				return retry.RetryableError(err)
+			}
+			addDebug(action, response, nil)
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, nil)
+		return nil
+	})
+
+	addDebug(action, response, nil)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Result", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Result", response)
+	}
+	object = v.(map[string]interface{})
+
+	return object, WrapError(err)
+}
+
+func snapshotSettingAttribute(object map[string]interface{}, keys ...string) interface{} {
+	for _, key := range keys {
+		if v, ok := object[key]; ok && v != nil {
+			return v
+		}
+	}
+	return nil
+}
+
+func updateElasticsearchSnapshotSetting(client *connectivity.AliyunClient, instanceId string, enable bool, quartzRegex string, timeout time.Duration) error {
+	action := "UpdateSnapshotSetting"
+
+	content := make(map[string]interface{})
+	content["enable"] = enable
+	if enable && quartzRegex != "" {
+		content["quartzRegex"] = quartzRegex
+	}
+	requestQuery := map[string]*string{
+		"clientToken": StringPointer(buildClientToken(action)),
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := retry.Retry(timeout, func() *retry.RetryError {
+		response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/snapshot-setting", instanceId), requestQuery, nil, content, false)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InstanceStatusNotSupportCurrentAction", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError"}) || NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, nil)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+
+	elasticsearchService := ElasticsearchService{client}
+	return elasticsearchService.waitSnapshotSettingConsistent(instanceId, enable, quartzRegex, timeout)
+}
+
+func (s *ElasticsearchService) waitSnapshotSettingConsistent(id string, enable bool, quartzRegex string, timeout time.Duration) error {
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	return retry.Retry(timeout, func() *retry.RetryError {
+		object, err := s.DescribeSnapshotSetting(id)
+		if err != nil {
+			if NotFoundError(err) || IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		gotEnable, _ := snapshotSettingAttribute(object, "Enable", "enable").(bool)
+		gotQuartzRegex, _ := snapshotSettingAttribute(object, "QuartzRegex", "quartzRegex").(string)
+		if gotEnable != enable {
+			wait()
+			return retry.RetryableError(Error("waiting for the snapshot setting to take effect, expected enable [%v] but got [%v]", enable, gotEnable))
+		}
+		if enable && quartzRegex != "" && gotQuartzRegex != quartzRegex {
+			wait()
+			return retry.RetryableError(Error("waiting for the snapshot setting to take effect, expected quartzRegex [%s] but got [%s]", quartzRegex, gotQuartzRegex))
+		}
+		return nil
+	})
+}

@@ -90,6 +90,7 @@ func sweepVpcsWithCallbacks(region string, rpc vpcSweepRPC, deleteSelected func(
 		"tf-test-",
 		"testAcc",
 		"tf-example",
+		"terraform-example",
 		"tf-test",
 	}
 
