@@ -402,7 +402,13 @@ func resourceAliCloudNlbServerGroupRead(d *schema.ResourceData, meta interface{}
 			healthCheckHttpCodeRaw = healthCheckRaw["HealthCheckHttpCode"].([]interface{})
 		}
 
-		healthCheckMap["health_check_http_code"] = healthCheckHttpCodeRaw
+		previousHealthCheckHttpCode := make([]interface{}, 0)
+		if v := d.Get("health_check.0.health_check_http_code"); v != nil {
+			if list, ok := v.([]interface{}); ok {
+				previousHealthCheckHttpCode = list
+			}
+		}
+		healthCheckMap["health_check_http_code"] = nlbServerGroupHealthCheckHttpCodeOrder(healthCheckHttpCodeRaw, previousHealthCheckHttpCode)
 		healthCheckMaps = append(healthCheckMaps, healthCheckMap)
 	}
 	if err := d.Set("health_check", healthCheckMaps); err != nil {
@@ -637,4 +643,31 @@ func resourceAliCloudNlbServerGroupDelete(d *schema.ResourceData, meta interface
 	}
 
 	return nil
+}
+
+// Preserve known health_check_http_code members in their previous state order
+// and append new API members. Consuming each match once preserves duplicate
+// counts and remote removals.
+func nlbServerGroupHealthCheckHttpCodeOrder(remote, previous []interface{}) []interface{} {
+	ordered := make([]interface{}, 0, len(remote))
+	used := make([]bool, len(remote))
+	for _, prev := range previous {
+		prevCode, ok := prev.(string)
+		if !ok {
+			continue
+		}
+		for i, candidate := range remote {
+			if code, ok := candidate.(string); ok && !used[i] && prevCode == code {
+				ordered = append(ordered, candidate)
+				used[i] = true
+				break
+			}
+		}
+	}
+	for i, item := range remote {
+		if !used[i] {
+			ordered = append(ordered, item)
+		}
+	}
+	return ordered
 }
