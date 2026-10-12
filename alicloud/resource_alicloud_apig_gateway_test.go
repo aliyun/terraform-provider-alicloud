@@ -498,6 +498,116 @@ resource "alicloud_vswitch" "j" {
 `, name)
 }
 
+// Test Apig Gateway. zones TypeList reorder convergence coverage.
+func TestAccAliCloudApigGateway_zoneOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_apig_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudApigGatewayMap10903)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ApigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeApigGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccapig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigGatewayBasicDependence10903)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"gateway_name": name,
+					"spec":         "aigw.small.x1",
+					"vpc": []map[string]interface{}{
+						{
+							"vpc_id": "${alicloud_vswitch.j.vpc_id}",
+						},
+					},
+					"network_access_config": []map[string]interface{}{
+						{
+							"type": "Intranet",
+						},
+					},
+					"zone_config": []map[string]interface{}{
+						{
+							"select_option": "Manual",
+						},
+					},
+					"vswitch": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.j.id}",
+						},
+					},
+					"log_config": []map[string]interface{}{
+						{
+							"sls": []map[string]interface{}{
+								{
+									"enable": "false",
+								},
+							},
+						},
+					},
+					"zones": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.j.id}",
+							"zone_id":    "${alicloud_vswitch.j.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.k.id}",
+							"zone_id":    "${alicloud_vswitch.k.zone_id}",
+						},
+					},
+					"payment_type":      "PayAsYouGo",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"gateway_type":      "AI",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zones.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zones": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.k.id}",
+							"zone_id":    "${alicloud_vswitch.k.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.j.id}",
+							"zone_id":    "${alicloud_vswitch.j.zone_id}",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zones": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.k.id}",
+							"zone_id":    "${alicloud_vswitch.k.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.j.id}",
+							"zone_id":    "${alicloud_vswitch.j.zone_id}",
+						},
+					},
+				}),
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 // Test Apig Gateway. <<< Resource test cases, automatically generated.
 
 // Test Apig Gateway. gateway_edition coverage.
@@ -598,5 +708,134 @@ data "alicloud_vpcs" "default" {
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
+`, name)
+}
+
+// Case 自动续费_renewal: covers Subscription auto-renew fields via BssOpenApi SetRenewal/QueryAvailableInstances.
+func TestAccAliCloudApigGateway_basicRenewal(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_apig_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudApigGatewayMapRenewal)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ApigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeApigGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sapiggateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigGatewayBasicDependenceRenewal)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"gateway_name": name,
+					"spec":         "apigw.small.x1",
+					"vpc": []map[string]interface{}{
+						{
+							"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
+						},
+					},
+					"network_access_config": []map[string]interface{}{
+						{
+							"type": "Intranet",
+						},
+					},
+					"zone_config": []map[string]interface{}{
+						{
+							"select_option": "Auto",
+						},
+					},
+					"vswitch": []map[string]interface{}{
+						{
+							"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
+						},
+					},
+					"log_config": []map[string]interface{}{
+						{
+							"sls": []map[string]interface{}{
+								{
+									"enable": "false",
+								},
+							},
+						},
+					},
+					"payment_type":        "Subscription",
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"renewal_status":      "AutoRenewal",
+					"renew_period":        "1",
+					"renewal_period_unit": "M",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"gateway_name":        name,
+						"spec":                "apigw.small.x1",
+						"payment_type":        "Subscription",
+						"resource_group_id":   CHECKSET,
+						"renewal_status":      "AutoRenewal",
+						"renew_period":        "1",
+						"renewal_period_unit": "M",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renew_period": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status":      "AutoRenewal",
+						"renew_period":        "2",
+						"renewal_period_unit": "M",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "ManualRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status": "ManualRenewal",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"log_config", "network_access_config", "zone_config", "renew_period", "renewal_period_unit", "renewal_status"},
+			},
+		},
+	})
+}
+
+var AlicloudApigGatewayMapRenewal = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudApigGatewayBasicDependenceRenewal(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+
 `, name)
 }

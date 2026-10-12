@@ -100,6 +100,9 @@ The following arguments are supported:
 * `payment_type` - (Required, ForceNew) Payment type. Valid values:
   - PayAsYouGo: Pay-as-you-go.
   - Subscription: Subscription.
+* `renew_period` - (Optional, Int, Computed, Available since v1.294.0) The auto renewal period of the instance. The unit is specified by `renewal_period_unit`. It takes effect only when `payment_type` is `Subscription`, and is required when `renewal_status` is `AutoRenewal`.
+* `renewal_period_unit` - (Optional, Computed, Available since v1.294.0) The unit of the auto renewal period. Valid values: `M` (month), `Y` (year). It takes effect only when `payment_type` is `Subscription`.
+* `renewal_status` - (Optional, Computed, Available since v1.294.0) The auto renewal status of the instance. Valid values: `AutoRenewal` (auto renewal), `ManualRenewal` (manual renewal), `NotRenewal` (no renewal). It takes effect only when `payment_type` is `Subscription`.
 * `resource_group_id` - (Optional, Computed) The ID of the destination resource group.
 * `spec` - (Optional, ForceNew) Gateway specification:  
   - apigw.small.x1: Small specification.  
