@@ -112,11 +112,20 @@ func (s *EcsService) DescribeZones(d *schema.ResourceData) (zones []ecs.Zone, er
 	}
 }
 
-func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err error) {
+// defaultInstanceAdditionalAttributes is the deduplicated union of the attribute sets
+// previously hardcoded in DescribeInstance and DescribeEcsInstance. The DescribeInstances
+// response only carries attributes included in this parameter, so the union keeps both
+// existing read paths working when callers do not specify their own set.
+var defaultInstanceAdditionalAttributes = []string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT", "DISK_HIGH_DENSITY_MODE", "CPU_OPTIONS_TOPOLOGY_TYPE"}
+
+func (s *EcsService) DescribeInstance(id string, additionalAttributes []string) (instance ecs.Instance, err error) {
 	request := ecs.CreateDescribeInstancesRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceIds = convertListToJsonString([]interface{}{id})
-	request.AdditionalAttributes = &[]string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT", "DISK_HIGH_DENSITY_MODE"}
+	if len(additionalAttributes) == 0 {
+		additionalAttributes = defaultInstanceAdditionalAttributes
+	}
+	request.AdditionalAttributes = &additionalAttributes
 
 	var response *ecs.DescribeInstancesResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)
@@ -1024,7 +1033,7 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 		timeout = DefaultTimeout
 	}
 	for {
-		instance, err := s.DescribeInstance(instanceId)
+		instance, err := s.DescribeInstance(instanceId, nil)
 		if err != nil && !NotFoundError(err) {
 			return err
 		}
@@ -1046,7 +1055,7 @@ func (s *EcsService) WaitForEcsInstance(instanceId string, status Status, timeou
 // WaitForInstance waits for instance to given status
 func (s *EcsService) InstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeInstance(id)
+		object, err := s.DescribeInstance(id, nil)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -1179,7 +1188,7 @@ func (s *EcsService) WaitForVpcAttributesChanged(instanceId, vswitchId, privateI
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 
-		instance, err := s.DescribeInstance(instanceId)
+		instance, err := s.DescribeInstance(instanceId, nil)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -3803,7 +3812,7 @@ func (s *EcsService) isSupportedNetworkCardIndex(instanceType string) (bool, err
 	return false, nil
 }
 
-func (s *EcsService) DescribeEcsInstance(id string) (object map[string]interface{}, err error) {
+func (s *EcsService) DescribeEcsInstance(id string, additionalAttributes []string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -3812,7 +3821,10 @@ func (s *EcsService) DescribeEcsInstance(id string) (object map[string]interface
 	query = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["InstanceIds"] = convertListToJsonString([]interface{}{id})
-	request["AdditionalAttributes"] = []string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT", "LOGIN_AS_NON_ROOT", "CPU_OPTIONS_TOPOLOGY_TYPE"}
+	if len(additionalAttributes) == 0 {
+		additionalAttributes = defaultInstanceAdditionalAttributes
+	}
+	request["AdditionalAttributes"] = additionalAttributes
 
 	action := "DescribeInstances"
 
