@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
+func resourceAliCloudDtsSynchronizationJob() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDtsSynchronizationJobCreate,
-		Read:   resourceAlicloudDtsSynchronizationJobRead,
-		Update: resourceAlicloudDtsSynchronizationJobUpdate,
-		Delete: resourceAlicloudDtsSynchronizationJobDelete,
+		Create: resourceAliCloudDtsSynchronizationJobCreate,
+		Read:   resourceAliCloudDtsSynchronizationJobRead,
+		Update: resourceAliCloudDtsSynchronizationJobUpdate,
+		Delete: resourceAliCloudDtsSynchronizationJobDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -280,6 +280,10 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"reserved": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -295,7 +299,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "ConfigureDtsJob"
@@ -428,6 +432,9 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("dts_bis_label"); ok {
 		request["DtsBisLabel"] = v
 	}
+	if v, ok := d.GetOk("reserved"); ok {
+		request["Reserve"] = v
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
@@ -453,9 +460,10 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudDtsSynchronizationJobUpdate(d, meta)
+	return resourceAliCloudDtsSynchronizationJobUpdate(d, meta)
 }
-func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudDtsSynchronizationJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := DtsService{client}
 	object, err := dtsService.DescribeDtsSynchronizationJob(d.Id())
@@ -505,6 +513,7 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	d.Set("status", object["Status"])
 	d.Set("structure_initialization", migrationModeObj["StructureInitialization"])
 	d.Set("synchronization_direction", object["SynchronizationDirection"])
+	d.Set("reserved", object["Reserved"])
 
 	parameters, err := dtsService.QueryChangedJobParameters(d.Id())
 	if err != nil {
@@ -518,7 +527,8 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 
 	return nil
 }
-func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -595,7 +605,7 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		d.SetPartial("source_endpoint_user_name")
 
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err = resourceAliCloudDtsSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
 			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
 		}
@@ -635,7 +645,7 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		d.SetPartial("destination_endpoint_user_name")
 
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err = resourceAliCloudDtsSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
 			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
 		}
@@ -679,7 +689,7 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 
 	if d.HasChange("status") {
 		target := d.Get("status").(string)
-		err := resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err := resourceAliCloudDtsSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -689,10 +699,14 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		"DtsInstanceId": d.Get("dts_instance_id"),
 	}
 	modifyDtsJobReq["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("db_list") {
+	if !d.IsNewResource() && (d.HasChange("db_list") || d.HasChange("reserved")) {
 
 		if v, ok := d.GetOk("db_list"); ok {
 			modifyDtsJobReq["DbList"] = v
+		}
+
+		if v, ok := d.GetOk("reserved"); ok {
+			modifyDtsJobReq["Reserved"] = v
 		}
 
 		action := "ModifyDtsJob"
@@ -719,7 +733,7 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		d.SetPartial("db_list")
 
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err = resourceAliCloudDtsSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
 			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
 		}
@@ -765,7 +779,7 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err = resourceAliCloudDtsSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
 			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
 		}
@@ -845,16 +859,17 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			// d.SetPartial("job_parameters")
 
 			target := d.Get("status").(string)
-			err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+			err = resourceAliCloudDtsSynchronizationJobStatusFlow(d, meta, target)
 			if err != nil {
 				return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
 			}
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudDtsSynchronizationJobRead(d, meta)
+	return resourceAliCloudDtsSynchronizationJobRead(d, meta)
 }
-func resourceAlicloudDtsSynchronizationJobDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudDtsSynchronizationJobDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDtsJob"
 	var response map[string]interface{}
@@ -889,7 +904,7 @@ func resourceAlicloudDtsSynchronizationJobDelete(d *schema.ResourceData, meta in
 	return nil
 }
 
-func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, meta interface{}, target string) error {
+func resourceAliCloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, meta interface{}, target string) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	dtsService := DtsService{client}

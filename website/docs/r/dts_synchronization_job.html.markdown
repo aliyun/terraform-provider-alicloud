@@ -203,6 +203,7 @@ The following arguments supported:
 * `destination_endpoint_role` - (Optional, ForceNew) The role name of the Alibaba Cloud account to which the target instance belongs. This parameter must be entered when data migration or synchronization across Alibaba Cloud accounts is performed. For the permissions and authorization methods required by this role.
 * `dest_primary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the primary vSwitch on the destination side of a VPC NAT connection.
 * `dest_secondary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the secondary vSwitch on the destination side of a VPC NAT connection.
+* `reserved` - (Optional, Available since v1.295.0) The reserved parameters of DTS. The update method is append rather than overwrite. The value is in the MAP JSON format. You can specify this parameter to meet special requirements, such as whether to automatically start a precheck. The usage is similar to that of the Reserve parameter. For details, see [Reserve parameter description](https://help.aliyun.com/en/dts/developer-reference/reserve-parameter-description).
 * `dts_bis_label` - (Optional, ForceNew) The environment label of the DTS instance. The value is: **normal**, **online**.
 
 -> **NOTE:** `src_primary_vswitch_id`, `src_secondary_vswitch_id`, `dest_primary_vswitch_id` and `dest_secondary_vswitch_id` are only used when the job is created. They are not refreshed from the server, and are not populated by `terraform import`.
