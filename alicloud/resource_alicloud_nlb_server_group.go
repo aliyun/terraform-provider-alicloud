@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -124,10 +126,11 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 							Computed: true,
 						},
 						"health_check_http_code": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
+							Type:             schema.TypeList,
+							Optional:         true,
+							Computed:         true,
+							DiffSuppressFunc: nlbServerGroupHealthCheckHttpCodeDiffSuppressFunc,
+							Elem:             &schema.Schema{Type: schema.TypeString},
 						},
 						"health_check_type": {
 							Type:         schema.TypeString,
@@ -397,18 +400,7 @@ func resourceAliCloudNlbServerGroupRead(d *schema.ResourceData, meta interface{}
 		healthCheckMap["unhealthy_threshold"] = healthCheckRaw["UnhealthyThreshold"]
 		healthCheckMap["health_check_http_version"] = healthCheckRaw["HealthCheckHttpVersion"]
 
-		healthCheckHttpCodeRaw := make([]interface{}, 0)
-		if healthCheckRaw["HealthCheckHttpCode"] != nil {
-			healthCheckHttpCodeRaw = healthCheckRaw["HealthCheckHttpCode"].([]interface{})
-		}
-
-		previousHealthCheckHttpCode := make([]interface{}, 0)
-		if v := d.Get("health_check.0.health_check_http_code"); v != nil {
-			if list, ok := v.([]interface{}); ok {
-				previousHealthCheckHttpCode = list
-			}
-		}
-		healthCheckMap["health_check_http_code"] = nlbServerGroupHealthCheckHttpCodeOrder(healthCheckHttpCodeRaw, previousHealthCheckHttpCode)
+		healthCheckMap["health_check_http_code"] = healthCheckRaw["HealthCheckHttpCode"]
 		healthCheckMaps = append(healthCheckMaps, healthCheckMap)
 	}
 	if err := d.Set("health_check", healthCheckMaps); err != nil {
@@ -645,29 +637,70 @@ func resourceAliCloudNlbServerGroupDelete(d *schema.ResourceData, meta interface
 	return nil
 }
 
-// Preserve known health_check_http_code members in their previous state order
-// and append new API members. Consuming each match once preserves duplicate
-// counts and remote removals.
-func nlbServerGroupHealthCheckHttpCodeOrder(remote, previous []interface{}) []interface{} {
-	ordered := make([]interface{}, 0, len(remote))
-	used := make([]bool, len(remote))
-	for _, prev := range previous {
-		prevCode, ok := prev.(string)
+// nlbServerGroupHealthCheckHttpCodeDiffSuppressFunc suppresses order-only
+// changes on health_check_http_code: the API accepts the codes as a set and
+// returns them in an arbitrary order, so member order is not part of the
+// attribute's semantics. The SDK invokes the suppressor once per changed list
+// element, where the element values alone cannot decide reorder-ness, so the
+// full old and new lists are read from the resource data. The unit net calls
+// this function with a nil ResourceData and the member lists serialized as
+// comma-joined strings.
+func nlbServerGroupHealthCheckHttpCodeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d == nil {
+		return nlbServerGroupHealthCheckHttpCodeSameMembers(strings.Split(old, ","), strings.Split(new, ","))
+	}
+	i := strings.LastIndexByte(k, '.')
+	if i <= 0 {
+		return false
+	}
+	o, n := d.GetChange(k[:i])
+	oldList, ok := o.([]interface{})
+	if !ok {
+		return false
+	}
+	newList, ok := n.([]interface{})
+	if !ok {
+		return false
+	}
+	oldMembers, ok := nlbServerGroupHealthCheckHttpCodeMembers(oldList)
+	if !ok {
+		return false
+	}
+	newMembers, ok := nlbServerGroupHealthCheckHttpCodeMembers(newList)
+	if !ok {
+		return false
+	}
+	return nlbServerGroupHealthCheckHttpCodeSameMembers(oldMembers, newMembers)
+}
+
+// nlbServerGroupHealthCheckHttpCodeMembers converts a state or config list to
+// its member strings; a non-string member never suppresses.
+func nlbServerGroupHealthCheckHttpCodeMembers(list []interface{}) ([]string, bool) {
+	members := make([]string, len(list))
+	for i, item := range list {
+		member, ok := item.(string)
 		if !ok {
-			continue
+			return nil, false
 		}
-		for i, candidate := range remote {
-			if code, ok := candidate.(string); ok && !used[i] && prevCode == code {
-				ordered = append(ordered, candidate)
-				used[i] = true
-				break
-			}
+		members[i] = member
+	}
+	return members, true
+}
+
+// nlbServerGroupHealthCheckHttpCodeSameMembers reports whether two member
+// lists carry the same members with the same multiplicity, ignoring order.
+func nlbServerGroupHealthCheckHttpCodeSameMembers(old, new []string) bool {
+	if len(old) != len(new) {
+		return false
+	}
+	sortedOld := append([]string(nil), old...)
+	sortedNew := append([]string(nil), new...)
+	sort.Strings(sortedOld)
+	sort.Strings(sortedNew)
+	for i := range sortedNew {
+		if sortedNew[i] != sortedOld[i] {
+			return false
 		}
 	}
-	for i, item := range remote {
-		if !used[i] {
-			ordered = append(ordered, item)
-		}
-	}
-	return ordered
+	return true
 }
