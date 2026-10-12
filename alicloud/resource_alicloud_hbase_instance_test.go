@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +14,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -411,6 +414,182 @@ func TestAccAliCloudHBaseInstanceVpc(t *testing.T) {
 						"cold_storage_size":   "900",
 					}),
 				),
+			},
+		},
+	})
+}
+
+func testAccCheckHBaseIpWhitelistGroups(resourceId string, expects map[string]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		service := HBaseService{client}
+		resp, err := service.DescribeIpWhitelist(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		for groupName, expected := range expects {
+			found := false
+			for _, g := range resp.Groups.Group {
+				// The default group is managed by ip_white over IPv4 only.
+				if g.GroupName != groupName || (groupName == "default" && g.IpVersion != 4) {
+					continue
+				}
+				found = true
+				got := strings.Split(strings.Join(g.IpList.Ip, ","), ",")
+				want := strings.Split(expected, ",")
+				sort.Strings(got)
+				sort.Strings(want)
+				if !reflect.DeepEqual(got, want) {
+					return fmt.Errorf("whitelist group %q: got ip list %v, want %v", groupName, got, want)
+				}
+			}
+			if !found {
+				return fmt.Errorf("whitelist group %q not found in DescribeIpWhitelist response for %s", groupName, rs.Primary.ID)
+			}
+		}
+		return nil
+	}
+}
+
+func TestAccAliCloudHBaseInstanceWhitelist(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbase_instance.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HBaseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHBaseInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sWhitelist%d", defaultRegionToTest, rand)
+	groupV4 := fmt.Sprintf("tf_white_%d", rand)
+	groupV6 := fmt.Sprintf("tf_white6_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbaseBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// AC1: a declared custom group is applied and read back from the API.
+				Config: testAccConfig(map[string]interface{}{
+					"name":                  "${var.name}",
+					"engine":                "hbaseue",
+					"engine_version":        "2.0",
+					"master_instance_type":  "hbase.sn1.2xlarge",
+					"core_instance_type":    "hbase.sn1.2xlarge",
+					"core_disk_type":        "cloud_ssd",
+					"vswitch_id":            "${local.vswitch_id}",
+					"immediate_delete_flag": "true",
+					"deletion_protection":   "false",
+					"ip_white":              "192.168.0.1",
+					"cold_storage_size":     "800",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"group_name": groupV4,
+							"ip_list":    "192.168.1.1,192.168.1.2",
+							"ip_version": "4",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":           name,
+						"ip_white":       "192.168.0.1",
+						"ip_whitelist.#": "1",
+					}),
+					testAccCheckHBaseIpWhitelistGroups(resourceId, map[string]string{
+						"default": "192.168.0.1",
+						groupV4:   "192.168.1.1,192.168.1.2",
+					}),
+				),
+			},
+			{
+				// AC2: an IPv6 group works next to the IPv4 group.
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"group_name": groupV4,
+							"ip_list":    "192.168.1.1,192.168.1.2",
+							"ip_version": "4",
+						},
+						{
+							"group_name": groupV6,
+							"ip_list":    "fd00::1",
+							"ip_version": "6",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_whitelist.#": "2",
+					}),
+					testAccCheckHBaseIpWhitelistGroups(resourceId, map[string]string{
+						"default": "192.168.0.1",
+						groupV4:   "192.168.1.1,192.168.1.2",
+						groupV6:   "fd00::1",
+					}),
+				),
+			},
+			{
+				// AC4: reordering the IP list (and the group blocks) is a no-op.
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"group_name": groupV6,
+							"ip_list":    "fd00::1",
+							"ip_version": "6",
+						},
+						{
+							"group_name": groupV4,
+							"ip_list":    "192.168.1.2,192.168.1.1",
+							"ip_version": "4",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_whitelist.#": "2",
+					}),
+					testAccCheckHBaseIpWhitelistGroups(resourceId, map[string]string{
+						groupV4: "192.168.1.1,192.168.1.2",
+					}),
+				),
+			},
+			{
+				// AC3: removing the declaration stops managing the groups; they
+				// still exist on the server side, and ip_white keeps managing the
+				// default group.
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelist": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_white":       "192.168.0.1",
+						"ip_whitelist.#": "0",
+					}),
+					testAccCheckHBaseIpWhitelistGroups(resourceId, map[string]string{
+						"default": "192.168.0.1",
+						groupV4:   "192.168.1.1,192.168.1.2",
+						groupV6:   "fd00::1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"immediate_delete_flag"},
 			},
 		},
 	})
