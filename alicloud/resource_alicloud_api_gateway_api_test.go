@@ -1658,3 +1658,233 @@ func TestAccAliCloudApigatewayApi_backend(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAliCloudApigatewayApi_result(t *testing.T) {
+	var api *cloudapi.DescribeApiResponse
+	resourceId := "alicloud_api_gateway_api.default"
+	ra := resourceAttrInit(resourceId, apiGatewayApiMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &api, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApiGatewayApi_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayApiConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${alicloud_api_gateway_group.default.name}",
+					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"description": "tf_testAcc_api description",
+					"auth_type":   "APP",
+					"request_config": []map[string]string{{
+						"protocol": "HTTP",
+						"method":   "GET",
+						"path":     "/test/path",
+						"mode":     "MAPPING",
+					}},
+					"service_type": "HTTP",
+					"http_service_config": []map[string]string{{
+						"address": "http://apigateway-backend.alicloudapi.com:8080",
+						"method":  "GET",
+						"path":    "/web/cloudapi",
+						"timeout": "20",
+					}},
+					"result_type":        "JSON",
+					"result_sample":      "test result sample",
+					"fail_result_sample": "test fail result sample",
+					"error_code_samples": []map[string]string{
+						{
+							"code":        "MissingParameter",
+							"message":     "The parameter is missing",
+							"description": "the first error code sample",
+						},
+						{
+							"code":    "InvalidParameter",
+							"message": "The parameter is invalid",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"result_type":                      "JSON",
+						"result_sample":                    "test result sample",
+						"fail_result_sample":               "test fail result sample",
+						"error_code_samples.#":             "2",
+						"error_code_samples.0.code":        "MissingParameter",
+						"error_code_samples.0.message":     "The parameter is missing",
+						"error_code_samples.0.description": "the first error code sample",
+						"error_code_samples.1.code":        "InvalidParameter",
+						"error_code_samples.1.message":     "The parameter is invalid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"error_code_samples": []map[string]string{
+						{
+							"code":    "InvalidParameter",
+							"message": "The parameter is invalid",
+						},
+						{
+							"code":        "MissingParameter",
+							"message":     "The parameter is missing",
+							"description": "the first error code sample",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"error_code_samples": []map[string]string{
+						{
+							"code":    "InvalidParameter",
+							"message": "The parameter is invalid",
+						},
+						{
+							"code":        "MissingParameter",
+							"message":     "The parameter is missing",
+							"description": "the first error code sample",
+						},
+					},
+				}),
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"error_code_samples.#":             "2",
+						"error_code_samples.0.code":        "InvalidParameter",
+						"error_code_samples.0.message":     "The parameter is invalid",
+						"error_code_samples.0.description": REMOVEKEY,
+						"error_code_samples.1.code":        "MissingParameter",
+						"error_code_samples.1.message":     "The parameter is missing",
+						"error_code_samples.1.description": "the first error code sample",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"result_type":        "TEXT",
+					"result_sample":      "test result sample update",
+					"fail_result_sample": "test fail result sample update",
+					"error_code_samples": []map[string]string{
+						{
+							"code":        "InvalidParameter",
+							"message":     "The parameter is invalid",
+							"description": "the invalid parameter error code sample",
+						},
+						{
+							"code":        "MissingParameter",
+							"message":     "The parameter is missing",
+							"description": "the first error code sample modified",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"result_type":                      "TEXT",
+						"result_sample":                    "test result sample update",
+						"fail_result_sample":               "test fail result sample update",
+						"error_code_samples.#":             "2",
+						"error_code_samples.0.code":        "InvalidParameter",
+						"error_code_samples.0.message":     "The parameter is invalid",
+						"error_code_samples.0.description": "the invalid parameter error code sample",
+						"error_code_samples.1.code":        "MissingParameter",
+						"error_code_samples.1.message":     "The parameter is missing",
+						"error_code_samples.1.description": "the first error code sample modified",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"error_code_samples": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"error_code_samples.#":      "2",
+						"error_code_samples.0.code": "InvalidParameter",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudApigatewayApi_result_default(t *testing.T) {
+	var api *cloudapi.DescribeApiResponse
+	resourceId := "alicloud_api_gateway_api.default"
+	ra := resourceAttrInit(resourceId, apiGatewayApiMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &api, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApiGatewayApi_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayApiConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${alicloud_api_gateway_group.default.name}",
+					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"description": "tf_testAcc_api description",
+					"auth_type":   "APP",
+					"request_config": []map[string]string{{
+						"protocol": "HTTP",
+						"method":   "GET",
+						"path":     "/test/path",
+						"mode":     "MAPPING",
+					}},
+					"service_type": "HTTP",
+					"http_service_config": []map[string]string{{
+						"address": "http://apigateway-backend.alicloudapi.com:8080",
+						"method":  "GET",
+						"path":    "/web/cloudapi",
+						"timeout": "20",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"result_sample":        "",
+						"fail_result_sample":   "",
+						"error_code_samples.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}

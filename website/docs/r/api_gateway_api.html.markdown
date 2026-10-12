@@ -152,6 +152,10 @@ The following arguments are supported:
 * `force_nonce_check` - (Optional, Type: bool, Available in v1.140+) Whether to prevent API replay attack. Default value: `false`.
 * `backend_id` - (Optional, Available since v1.279.0) The ID of the API Gateway Backend. When specified, the API references an existing backend created by `alicloud_api_gateway_backend`.
 * `backend_enabled` - (Optional, Available since v1.279.0) Specifies whether to enable the backend service. When set to `true`, the `backend_id` will be sent to the API.
+* `result_type` - (Optional, Computed) The format of the response result returned by the backend service. Valid values: `JSON`, `TEXT`, `BINARY`, `XML` and `HTML`. Default value: `JSON`.
+* `result_sample` - (Optional, Computed) The sample of the response result returned by the backend service, which is used to generate the API documentation. The maximum length is 32 KB.
+* `fail_result_sample` - (Optional, Computed) The sample of the response result returned by the backend service when the API call fails, which is used to generate the API documentation. The maximum length is 16 KB.
+* `error_code_samples` - (Optional, Computed, List) The error code samples returned by the backend service, which are used to generate the API documentation. See [`error_code_samples`](#error_code_samples) below.
 
 ### `request_config`
 
@@ -246,6 +250,14 @@ The system_parameters mapping supports the following:
 * `name` - (Required) System parameter name which supports values including in [system parameter list](https://www.alibabacloud.com/help/doc-detail/43677.html).
 * `in` - (Required) System parameter location; values: 'HEAD' and 'QUERY'.
 * `name_service` - (Required) Backend service's parameter name.
+
+### `error_code_samples`
+
+The error_code_samples mapping supports the following:
+
+* `code` - (Optional) The error code returned by the backend service.
+* `message` - (Optional) The error message corresponding to the error code.
+* `description` - (Optional) The description of the error code.
 
 ## Attributes Reference
 

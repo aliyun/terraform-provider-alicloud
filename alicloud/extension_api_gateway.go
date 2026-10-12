@@ -80,8 +80,6 @@ const (
 	CatalogRequest           = "REQUEST"
 	CatalogConstant          = "CONSTANT"
 	CatalogSystem            = "SYSTEM"
-	ResultType               = "JSON"
-	ResultSample             = "Result Sample"
 	Visibility               = "PRIVATE"
 	AllowSignatureMethod     = "HmacSHA256"
 	WebSocketApiType         = "COMMON"
