@@ -20,7 +20,8 @@ func main() {
 	docsFileNameParts := strings.Split(docsFileName, "/")
 	resourceName := "alicloud_" + strings.TrimSuffix(docsFileNameParts[len(docsFileNameParts)-1], ".html.markdown")
 	expectedTitle := "# " + resourceName
-	if len(docsFileNameParts) > 1 && docsFileNameParts[len(docsFileNameParts)-2] == "e" {
+	if len(docsFileNameParts) > 1 &&
+		(docsFileNameParts[len(docsFileNameParts)-2] == "e" || docsFileNameParts[len(docsFileNameParts)-2] == "ephemeral-resources") {
 		expectedTitle = "# Ephemeral: " + resourceName
 	}
 	exitCode := 0
