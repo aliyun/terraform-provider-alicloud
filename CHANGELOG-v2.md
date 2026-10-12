@@ -1,3 +1,9 @@
+## 2.1.0 (Unreleased)
+
+FEATURES:
+
+- **New Ephemeral Resource:** `alicloud_sts_token` — fetches a temporary access credential by assuming a RAM role through the `AssumeRole` API without persisting it to the state or plan, for use in a second provider instance, provisioners, write-only attributes, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
+
 ## 2.0.0 (October 12, 2026)
 
 This is the first stable release of the 2.x line. It rolls up every change merged from the 1.x line since v2.0.0-beta5 — no additional 1.x section has been cut since `1.294.0` (`1.295.0` remains unreleased) — plus the v2-only changes below. Changes that merged to the 1.x line after the v2.0.0-beta5 cut are also listed below; with the 1.x line no longer maintained after this release, they will never appear in a released 1.x section.

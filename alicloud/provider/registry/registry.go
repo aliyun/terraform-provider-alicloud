@@ -16,6 +16,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oos"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sts"
 )
 
 // A managed resource and a data source may share a name; two managed resources may
@@ -37,6 +38,7 @@ var servicePackages = []conns.ServicePackage{
 	oos.ServicePackage(),
 	cs.ServicePackage(),
 	cr.ServicePackage(),
+	sts.ServicePackage(),
 }
 
 var validateOnce sync.Once
