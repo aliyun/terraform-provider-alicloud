@@ -103,24 +103,24 @@ func testSweepCRNamespace(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
-	var v *cr.GetNamespaceResponse
+// Test Cr Namespace. >>> Resource test cases, automatically generated.
+// Case Namespace 生命周期 5730
+func TestAccAliCloudCrNamespace_basic5730(t *testing.T) {
+	var v map[string]interface{}
 	resourceId := "alicloud_cr_namespace.default"
-	ra := resourceAttrInit(resourceId, crNamespaceMap)
-	serviceFunc := func() interface{} {
-		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	ra := resourceAttrInit(resourceId, AlicloudCrNamespaceMap5730)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCrNamespace")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc-cr-ns-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCRNamespaceConfigDependence)
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccr%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCrNamespaceBasicDependence5730)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -128,67 +128,231 @@ func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":               name,
-					"auto_create":        "false",
-					"default_visibility": "PUBLIC",
+					"namespace_name":    name,
+					"instance_id":       "${alicloud_cr_ee_instance.defaultTwqdy8.id}",
+					"auto_create_repo":  "false",
+					"default_repo_type": "PRIVATE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":               name,
-						"auto_create":        "false",
-						"default_visibility": "PUBLIC",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"auto_create": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"auto_create": "true",
+						"namespace_name":    name,
+						"instance_id":       CHECKSET,
+						"auto_create_repo":  "false",
+						"default_repo_type": "PRIVATE",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"default_visibility": "PRIVATE",
+					"auto_create_repo":  "true",
+					"default_repo_type": "PUBLIC",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"default_visibility": "PRIVATE",
+						"auto_create_repo":  "true",
+						"default_repo_type": "PUBLIC",
 					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"name":               name,
-					"auto_create":        "false",
-					"default_visibility": "PUBLIC",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":               name,
-						"auto_create":        "false",
-						"default_visibility": "PUBLIC",
-					}),
-				),
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
 }
 
-func resourceCRNamespaceConfigDependence(name string) string {
-	return ""
+var AlicloudCrNamespaceMap5730 = map[string]string{
+	"status":       CHECKSET,
+	"namespace_id": CHECKSET,
 }
 
-var crNamespaceMap = map[string]string{
-	"name":               CHECKSET,
-	"auto_create":        CHECKSET,
-	"default_visibility": CHECKSET,
+func AlicloudCrNamespaceBasicDependence5730(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
 }
+
+resource "alicloud_cr_ee_instance" "defaultTwqdy8" {
+  instance_name  = "auto-test-731"
+  renewal_status = "ManualRenewal"
+  image_scanner  = "ACR"
+  period         = "1"
+  instance_type  = "Basic"
+}
+
+
+`, name)
+}
+
+// Case Namespace 生命周期_succ 5850
+func TestAccAliCloudCrNamespace_basic5850(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_namespace.default"
+	ra := resourceAttrInit(resourceId, AlicloudCrNamespaceMap5850)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCrNamespace")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccr%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCrNamespaceBasicDependence5850)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name":    name,
+					"instance_id":       "${alicloud_cr_ee_instance.defaultTwqdy8.id}",
+					"auto_create_repo":  "false",
+					"default_repo_type": "PRIVATE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":    name,
+						"instance_id":       CHECKSET,
+						"auto_create_repo":  "false",
+						"default_repo_type": "PRIVATE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_create_repo":  "true",
+					"default_repo_type": "PUBLIC",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_create_repo":  "true",
+						"default_repo_type": "PUBLIC",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCrNamespaceMap5850 = map[string]string{
+	"status":       CHECKSET,
+	"namespace_id": CHECKSET,
+}
+
+func AlicloudCrNamespaceBasicDependence5850(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cr_ee_instance" "defaultTwqdy8" {
+  instance_name  = "auto-test-instance"
+  renewal_status = "ManualRenewal"
+  image_scanner  = "ACR"
+  period         = "1"
+  instance_type  = "Basic"
+}
+
+
+`, name)
+}
+
+// Case Namespace 生命周期_副本1706083189606 5840
+func TestAccAliCloudCrNamespace_basic5840(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_namespace.default"
+	ra := resourceAttrInit(resourceId, AlicloudCrNamespaceMap5840)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCrNamespace")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacccr%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCrNamespaceBasicDependence5840)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_name":    name,
+					"instance_id":       "${alicloud_cr_ee_instance.defaultTwqdy8.id}",
+					"auto_create_repo":  "false",
+					"default_repo_type": "PRIVATE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace_name":    name,
+						"instance_id":       CHECKSET,
+						"auto_create_repo":  "false",
+						"default_repo_type": "PRIVATE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_create_repo":  "true",
+					"default_repo_type": "PUBLIC",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_create_repo":  "true",
+						"default_repo_type": "PUBLIC",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudCrNamespaceMap5840 = map[string]string{
+	"status":       CHECKSET,
+	"namespace_id": CHECKSET,
+}
+
+func AlicloudCrNamespaceBasicDependence5840(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cr_ee_instance" "defaultTwqdy8" {
+  default_oss_bucket = "true"
+  renewal_status     = "ManualRenewal"
+  period             = "1"
+  instance_name      = "api-test-345"
+  image_scanner      = "ACR"
+  payment_type       = "Subscription"
+  instance_type      = "Basic"
+}
+
+
+`, name)
+}
+
+// Test Cr Namespace. <<< Resource test cases, automatically generated.
