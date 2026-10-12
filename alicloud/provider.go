@@ -1048,6 +1048,7 @@ func Provider() *schema.Provider {
 			"alicloud_live_domain":                                          resourceAliCloudLiveDomain(),
 			"alicloud_oss_bucket_overwrite_config":                          resourceAliCloudOssBucketOverwriteConfig(),
 			"alicloud_cloud_firewall_user_alarm_config":                     resourceAliCloudCloudFirewallUserAlarmConfig(),
+			"alicloud_cloud_firewall_fw_switch":                             resourceAliCloudCloudFirewallFwSwitch(),
 			"alicloud_oss_bucket_archive_direct_read":                       resourceAliCloudOssBucketArchiveDirectRead(),
 			"alicloud_oss_bucket_response_header":                           resourceAliCloudOssBucketResponseHeader(),
 			"alicloud_ddoscoo_web_cc_rule":                                  resourceAliCloudDdosCooWebCcRule(),
