@@ -31,15 +31,20 @@ func TestListReorderCoverage(t *testing.T) {
 		pass      bool
 	}{
 		{"diff and convergent apply", valid, true},
+		{"convergent apply without plan", fixture(apply + reorderedApply), true},
 		{"explicit convergent apply", fixture(apply + plan + strings.Replace(reorderedApply, "{Config:", "{ExpectNonEmptyPlan:false,Config:", 1)), true},
 		{"apply retained builder snapshot", fixture(apply + plan + `{Config:testAccConfig(map[string]interface{}{})},`), true},
-		{"empty plan", fixture(apply + strings.Replace(plan, "ExpectNonEmptyPlan:true", "ExpectNonEmptyPlan:false", 1) + reorderedApply), false},
-		{"default empty plan", fixture(apply + strings.Replace(plan, ",ExpectNonEmptyPlan:true", "", 1) + reorderedApply), false},
+		{"clean plan only step between applies", fixture(apply + strings.Replace(plan, "ExpectNonEmptyPlan:true", "ExpectNonEmptyPlan:false", 1) + reorderedApply), true},
+		{"plan only step without ExpectNonEmptyPlan", fixture(apply + strings.Replace(plan, ",ExpectNonEmptyPlan:true", "", 1) + reorderedApply), true},
+		{"repeated plan only step", fixture(apply + plan + plan + reorderedApply), true},
 		{"diff without apply", fixture(apply + plan), false},
 		{"nonconvergent apply", fixture(apply + plan + strings.Replace(reorderedApply, "{Config:", "{ExpectNonEmptyPlan:true,Config:", 1)), false},
 		{"apply original order", fixture(apply + plan + apply), false},
 		{"apply changed membership", fixture(apply + plan + strings.Replace(reorderedApply, `"b","a"`, `"b","c"`, 1)), false},
 		{"apply changed sibling", fixture(apply + plan + strings.Replace(reorderedApply, `"ids":`, `"name":"changed","ids":`, 1)), false},
+		{"plan changed membership", fixture(apply + strings.Replace(plan, `"b","a"`, `"b","c"`, 1) + reorderedApply), true},
+		{"plan changed sibling", fixture(apply + strings.Replace(plan, `"ids":`, `"name":"changed","ids":`, 1) + reorderedApply), false},
+		{"unchanged plan step", fixture(apply + strings.Replace(plan, `"b","a"`, `"a","b"`, 1) + reorderedApply), true},
 		{"intervening import", fixture(apply + plan + `{ImportState:true},` + reorderedApply), false},
 		{"apply is plan only", fixture(apply + plan + strings.Replace(reorderedApply, "{Config:", "{PlanOnly:true,Config:", 1)), false},
 		{"apply error", fixture(apply + plan + strings.Replace(reorderedApply, "{Config:", "{ExpectError:err,Config:", 1)), false},
@@ -54,23 +59,18 @@ func TestListReorderCoverage(t *testing.T) {
 		{"inline region guard unsupported", strings.Replace(valid, "resource.Test(t,", `if !isRegionSupported(){t.Skip("region")}; resource.Test(t,`, 1), false},
 		{"initial apply nonconvergent", fixture(strings.Replace(apply, "{Config:", "{ExpectNonEmptyPlan:true,Config:", 1) + plan + reorderedApply), false},
 		{"comment cannot waive coverage", "// collection-order: ordered ids -- API ordering rationale.\n" + fixture(apply), false},
-		{"unchanged", fixture(apply + strings.Replace(plan, `"b","a"`, `"a","b"`, 1) + reorderedApply), false},
-		{"plan changed membership", fixture(apply + strings.Replace(plan, `"b","a"`, `"b","c"`, 1) + reorderedApply), false},
 		{"duplicates only", strings.ReplaceAll(valid, `"b"`, `"a"`), false},
-		{"apply without plan", fixture(apply + reorderedApply), false},
 		{"comment only", fixture(apply + "/*" + plan + reorderedApply + "*/"), false},
 		{"go build header", "//go:build ignore\n\n" + valid, false},
 		{"legacy build header", "// +build ignore\n\n" + valid, false},
 		{"go build mention after package", strings.Replace(valid, "func TestAcc", "//go:build example\nfunc TestAcc", 1), true},
 		{"legacy build mention after package", strings.Replace(valid, "func TestAcc", "// +build example\nfunc TestAcc", 1), true},
 		{"ordinary header comment", "// go:build example\n\n" + valid, true},
-		{"plan changed sibling", fixture(apply + strings.Replace(plan, `"ids":`, `"name":"changed","ids":`, 1) + reorderedApply), false},
 		{"other resource", strings.Replace(valid, "alicloud_example.default", "alicloud_other.default", 1), false},
 		{"not TestAcc", strings.Replace(valid, "TestAccExample", "TestUnitExample", 1), false},
 		{"unused steps", strings.Replace(valid, "resource.Test(t, resource.TestCase{Steps:", "unused(resource.TestCase{Steps:", 1), false},
 		{"conditional call", strings.Replace(valid, "resource.Test(t,", "if false { return }; resource.Test(t,", 1), false},
 		{"removed before plan", fixture(apply + `{Config:testAccConfig(map[string]interface{}{"ids":REMOVEKEY})},` + plan + reorderedApply), false},
-		{"intervening plan", fixture(apply + plan + plan + reorderedApply), false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -145,5 +145,117 @@ func TestConstructorAliasesShareCoverage(t *testing.T) {
  {Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}})},`)
 	if issues := Check("test.go", []byte(src), "alicloud_old_example", r, "alicloud_example"); len(issues) > 0 {
 		t.Fatal(issues)
+	}
+}
+
+func exampleOrderSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return old == new
+}
+
+func suppressedFixture(steps, unit string) string {
+	return `package alicloud
+import (
+ "testing"
+ "github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+)
+` + unit + `
+func TestAccExample(t *testing.T) {
+ resourceId := "alicloud_example.default"
+ testAccConfig := resourceTestAccConfigFunc(resourceId, "test", dependence)
+ resource.Test(t, resource.TestCase{Steps: []resource.TestStep{` + steps + `}})
+}`
+}
+
+func exampleOrderUnitNet() string {
+	return `func TestUnitExampleOrderSuppress(t *testing.T) {
+ testCases := []struct {
+  name     string
+  old      string
+  new      string
+  expected bool
+ }{
+  {"ReorderOnly", "a,b", "b,a", true},
+  {"MemberAdded", "a,b", "a,b,c", false},
+ }
+ for _, tc := range testCases {
+  if got := exampleOrderSuppressFunc("ids", tc.old, tc.new, nil); got != tc.expected {
+   t.Fatalf("case %s: got %v", tc.name, got)
+  }
+ }
+}`
+}
+
+func TestSuppressedListCoverage(t *testing.T) {
+	r := &schema.Resource{Schema: map[string]*schema.Schema{"ids": {Type: schema.TypeList, Optional: true, DiffSuppressFunc: exampleOrderSuppressFunc}}}
+	apply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"},"name":"same"})},`
+	reorderedApply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"},"name":"same"})},`
+	reorderedPlan := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}}),PlanOnly:true,ExpectNonEmptyPlan:true},`
+	unit := exampleOrderUnitNet()
+	cases := []struct {
+		name, src string
+		pass      bool
+	}{
+		{"suppressed reorder with bounded net", suppressedFixture(apply+reorderedApply, unit), true},
+		{"no reordered apply", suppressedFixture(apply, unit), false},
+		{"reordered plan only expects clean plan", suppressedFixture(apply+strings.Replace(reorderedApply, "{Config:", "{PlanOnly:true,Config:", 1), unit), true},
+		{"reordered plan only without prior apply", suppressedFixture(strings.Replace(reorderedApply, "{Config:", "{PlanOnly:true,Config:", 1), unit), false},
+		{"reordered apply nonconvergent", suppressedFixture(apply+strings.Replace(reorderedApply, "{Config:", "{ExpectNonEmptyPlan:true,Config:", 1), unit), false},
+		{"reordered apply changed membership", suppressedFixture(apply+strings.Replace(reorderedApply, `"b","a"`, `"b","c"`, 1), unit), false},
+		{"reordered apply changed sibling", suppressedFixture(apply+strings.Replace(reorderedApply, `"ids":`, `"name":"changed","ids":`, 1), unit), false},
+		{"plan-only diff step between applies", suppressedFixture(apply+reorderedPlan+reorderedApply, unit), true},
+		{"missing net", suppressedFixture(apply+reorderedApply, ""), false},
+		{"net without reorder case", suppressedFixture(apply+reorderedApply, strings.Replace(unit, `{"ReorderOnly", "a,b", "b,a", true},`, `{"SameOrder", "a,b", "a,b", true},`, 1)), false},
+		{"net without membership case", suppressedFixture(apply+reorderedApply, strings.Replace(unit, `{"MemberAdded", "a,b", "a,b,c", false},`, `{"SameOrder", "a,b", "a,b", false},`, 1)), false},
+		{"net reorder case unsuppressed", suppressedFixture(apply+reorderedApply, strings.Replace(unit, `"b,a", true},`, `"b,a", false},`, 1)), false},
+		{"net membership case suppressed", suppressedFixture(apply+reorderedApply, strings.Replace(unit, `"a,b,c", false},`, `"a,b,c", true},`, 1)), false},
+		{"bypass marker", "// collection-order: bypass ids -- pre-existing attribute outside this change.\n" + suppressedFixture(apply, ""), true},
+		{"bypass marker without reason", "// collection-order: bypass ids\n" + suppressedFixture(apply, ""), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			issues := Check("test.go", []byte(tc.src), "alicloud_example", r)
+			if (len(issues) == 0) != tc.pass {
+				t.Fatalf("issues=%v want pass=%v", issues, tc.pass)
+			}
+		})
+	}
+}
+
+func TestSuppressedCandidateNames(t *testing.T) {
+	r := &schema.Resource{Schema: map[string]*schema.Schema{
+		"ids":  {Type: schema.TypeList, Optional: true, DiffSuppressFunc: exampleOrderSuppressFunc},
+		"anon": {Type: schema.TypeList, Optional: true, DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool { return true }},
+		"set":  {Type: schema.TypeSet, Optional: true, DiffSuppressFunc: exampleOrderSuppressFunc},
+	}}
+	suppressed := Suppressed(r)
+	if len(suppressed) != 2 || suppressed["ids"] != "exampleOrderSuppressFunc" || suppressed["anon"] != "" {
+		t.Fatalf("unexpected suppressed map: %v", suppressed)
+	}
+}
+
+func TestAnonymousSuppressorRejected(t *testing.T) {
+	r := &schema.Resource{Schema: map[string]*schema.Schema{"ids": {Type: schema.TypeList, Optional: true, DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool { return true }}}}
+	issues := Check("test.go", []byte(fixture(`{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"}})},`)), "alicloud_example", r)
+	if len(issues) != 1 || !strings.Contains(issues[0], "anonymous DiffSuppressFunc") {
+		t.Fatalf("issues=%v", issues)
+	}
+}
+
+func TestMixedSuppressedAndPlainCoverage(t *testing.T) {
+	r := &schema.Resource{Schema: map[string]*schema.Schema{
+		"ids":   {Type: schema.TypeList, Optional: true, DiffSuppressFunc: exampleOrderSuppressFunc},
+		"plain": {Type: schema.TypeList, Optional: true},
+	}}
+	step1 := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"},"plain":[]string{"x","y"},"name":"same"})},`
+	step2 := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}})},`
+	step3 := `{Config:testAccConfig(map[string]interface{}{"plain":[]string{"y","x"}}),PlanOnly:true,ExpectNonEmptyPlan:true},`
+	step4 := `{Config:testAccConfig(map[string]interface{}{"plain":[]string{"y","x"}})},`
+	unit := exampleOrderUnitNet()
+	if issues := Check("test.go", []byte(suppressedFixture(step1+step2+step3+step4, unit)), "alicloud_example", r); len(issues) > 0 {
+		t.Fatal(issues)
+	}
+	issues := Check("test.go", []byte(suppressedFixture(step1+step2, unit)), "alicloud_example", r)
+	if len(issues) != 1 || !strings.Contains(issues[0], "plain") {
+		t.Fatalf("issues=%v", issues)
 	}
 }
