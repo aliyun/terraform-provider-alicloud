@@ -162,9 +162,10 @@ The following arguments are supported:
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `storage_type` - (Required, ForceNew) The storage type.
-  - When FileSystemType = standard, the values are Performance, Capacity, and Premium.
+  - When FileSystemType = standard, the values are Performance, Capacity, Premium, and Agentic.
   - When FileSystemType = extreme, the value is standard or advance.
   - When FileSystemType = cpfs, the values are advance_100(100MB/s/TiB baseline) and advance_200(200MB/s/TiB baseline).
+  - When storage_type = Agentic, the general-purpose NAS features `recycle_bin`, `nfs_acl` and `smb_acl` are not supported and must be omitted; Agentic file systems are currently in whitelist mode and you must submit a ticket to apply for the feature before use.
 
 * `tags` - (Optional, Map, Available since v1.153.0) Label information collection.
 
