@@ -1,11 +1,28 @@
 # TypeList Order Coverage
 
-`TypeList Order Coverage` requires resources touched by a PR to test that reordering
-a configurable multi-member `TypeList` produces a diff and then converges after
-applying that order. It reads registered Provider schemas and inspects real
-acceptance-test steps. It does **not** run cloud operations: the acceptance runner
-must execute the test to verify apply, refresh and post-apply convergence.
-The implementation retains its historical directory name, `scripts/collection-order`.
+`TypeList Order Coverage` requires resources touched by a PR to carry a convergent
+reorder test for every configurable multi-member `TypeList` attribute: apply the
+members in one order, then apply a permutation of them, and require the second
+apply's post-apply plan to be empty. It reads registered Provider schemas and
+inspects real acceptance-test steps. It does **not** run cloud operations: the
+acceptance runner must execute the test to verify apply, refresh and post-apply
+convergence. The implementation retains its historical directory name,
+`scripts/collection-order`.
+
+The covered property is convergence, not a diff expectation. Whether a reorder
+produces a diff depends on the attribute's semantics and the API's ordering
+contract, which only the acceptance run observes:
+
+- An API that echoes the submitted order applies a real update and converges.
+- An order-insensitive attribute suppressed with a `DiffSuppressFunc` treats the
+  reorder as a clean no-op and converges.
+- A canonicalizing API without suppression leaves the post-apply plan dirty and
+  the test fails — the exact defect this coverage exists to catch.
+
+The checker reports attributes that lack this coverage. It is an advisory
+signal for review, not a verdict: review establishes the API's ordering
+contract and decides whether a reported gap belongs to the change or to
+pre-existing stock.
 
 ## Scope
 
@@ -28,26 +45,26 @@ fields, including nested paths. Removed fields, computed-only fields/subtrees,
 `TypeList` children inside a `TypeSet` or single-item container are still checked.
 
 For a list nested inside a multi-member set, keep the outer set members in the
-same literal order in all three configurations and reorder only the inner list.
+same literal order in both configurations and reorder only the inner list.
 The checker compares outer containers by index; it does not match set members by
 identity. Review the correspondence between those members manually.
 
 The SDK defines [TypeList as ordered and TypeSet as unordered](https://developer.hashicorp.com/terraform/plugin/sdkv2/schemas/schema-types#typelist).
 Ordinary `TypeSet` attributes do not need a repeated per-resource reorder test.
-Custom set hashing or conversions can have targeted tests when needed. Comments
-cannot exempt a `TypeList` from the required acceptance steps.
+Custom set hashing or conversions can have targeted tests when needed. Free-form
+comments cannot exempt a `TypeList`; only the structured bypass marker (see
+Bypassing stock attributes) is recognized.
 
 ## Required acceptance steps
 
-Use at least two distinct, valid members and three adjacent steps in an actual
-`TestAcc...(*testing.T)` function in `resource_alicloud_<name>_test.go`:
+Use at least two distinct, valid members and two steps over the same resource
+in an actual `TestAcc...(*testing.T)` function in
+`resource_alicloud_<name>_test.go`:
 
 1. Apply configuration A successfully.
-2. Change only the target list's order to B, with `PlanOnly: true` and
-   `ExpectNonEmptyPlan: true`.
-3. Apply the same complete configuration B normally, with
-   `ExpectNonEmptyPlan: false` or omitted. The SDK then requires the post-apply
-   plan to be empty, including its refresh check.
+2. Apply the same complete configuration with only the target list's order
+   changed, with `ExpectNonEmptyPlan` false or omitted. The SDK then requires
+   the post-apply plan to be empty, including its refresh check.
 
 ```go
 func TestAccExample_memberOrder(t *testing.T) {
@@ -75,37 +92,32 @@ func TestAccExample_memberOrder(t *testing.T) {
                         "${alicloud_example_member.first.id}",
                     },
                 }),
-                PlanOnly: true,
-                ExpectNonEmptyPlan: true,
-            },
-            {
-                Config: testAccConfig(map[string]interface{}{
-                    "member_ids": []string{
-                        "${alicloud_example_member.second.id}",
-                        "${alicloud_example_member.first.id}",
-                    },
-                }),
-                ExpectNonEmptyPlan: false,
             },
         },
     })
 }
 ```
 
-A nonempty reorder plan alone is insufficient: list schema semantics can create
-a diff even when the remote API discards order. Applying B and requiring an empty
-post-apply plan catches that failure to converge. Do not set
-`ExpectNonEmptyPlan: true` on either apply step or apply B before checking its
-plan. Each candidate path needs its own isolated sequence; nested lists of maps
-and slices are supported. Review still establishes the API's ordering contract.
+Plan-only steps between the two applies are allowed — they do not apply, so they
+do not interrupt the pair — including the older `PlanOnly: true,
+ExpectNonEmptyPlan: true` form that asserts the reorder surfaces as a diff.
+Nothing requires that assertion: expecting a non-empty plan encodes a claim
+about the API's ordering contract, which the checker cannot know and review
+establishes. Applying the permutation and requiring an empty post-apply plan is
+what makes the coverage real: a diff alone cannot distinguish an order-preserving
+API from a list schema surfacing order that the remote side discards.
+
+Do not set `ExpectNonEmptyPlan: true` on either apply step. Each candidate path
+needs its own isolated sequence; nested lists of maps and slices are supported.
 
 The checker parses Go AST rather than searching for names or comments. It follows
 the config builder's cumulative top-level map updates, including `REMOVEKEY`,
 `CLEARMAP` and `CLEARLIST`, and compares complete snapshots. Membership changes,
-other configuration changes, a missing final apply, and `lifecycle.ignore_changes`
-cannot count. Skipped, error-expected, import, destroy, refresh and plan-only steps
-cannot stand in for a normal apply. Do not set `Taint` on any of the three steps,
-including the reorder plan; replacement caused by schema `ForceNew` is allowed.
+other configuration changes in the second apply, and `lifecycle.ignore_changes`
+cannot count. Skipped, error-expected, import, destroy, refresh and plan-only
+steps cannot stand in for the convergent apply, except the suppressed-attribute
+form in Suppressed order coverage. Do not set `Taint` on either apply step;
+replacement caused by schema `ForceNew` is allowed.
 
 Supported proof is deliberately narrow: inline `resource.Test`/`ParallelTest`,
 literal `TestCase.Steps`, a directly initialized `resourceTestAccConfigFunc`, and
@@ -116,9 +128,77 @@ aliases and builder calls outside Config do not count as coverage. Use the form
 above when a test cannot be recognized. This is a coverage check, not a Go
 interpreter or a substitute for reviewing helper/dependency behavior.
 
+## Suppressed order coverage
+
+When member order is semantically meaningless for an attribute, suppression in
+the schema is the correct carrier: a `DiffSuppressFunc` declares that order-only
+changes are not drift. A suppressed attribute satisfies the required coverage
+with the two steps above — the reordered apply is a clean no-op that converges —
+or, when even a no-op apply is undesirable (for example on `ForceNew`
+attributes), with a plan-only step asserting a clean plan over the reordered
+configuration:
+
+```go
+{
+    Config: testAccConfig(map[string]interface{}{
+        "zone_ids": []string{"zone-b", "zone-a"},
+    }),
+    PlanOnly: true,
+},
+```
+
+The suppressor must be a named top-level function; anonymous functions and bound
+methods cannot be bound to a unit net.
+
+The resource's test file must also carry a bounded-suppressor unit net: a
+table-driven `go test` function exercising the suppressor with both case shapes:
+
+- a reorder-only case — same members, different order — expecting suppression
+  (`true`);
+- a membership-change case — different members — expecting no suppression
+  (`false`).
+
+```go
+func TestUnitExampleZoneIdsOrderSuppress(t *testing.T) {
+    testCases := []struct {
+        name     string
+        old      string
+        new      string
+        expected bool
+    }{
+        {"ReorderOnly", "zone-a,zone-b", "zone-b,zone-a", true},
+        {"MemberAdded", "zone-a,zone-b", "zone-a,zone-b,zone-c", false},
+    }
+    for _, tc := range testCases {
+        if got := exampleZoneIdsOrderSuppressFunc("zone_ids", tc.old, tc.new, nil); got != tc.expected {
+            t.Fatalf("case %s: got %v", tc.name, got)
+        }
+    }
+}
+```
+
+The unit net is the regression guard against over-broad suppressors: an
+unconditional suppressor that also swallows member additions or removals turns
+real updates into silent no-ops, and the membership case fails at `go test`
+time. Whether the API actually canonicalizes member order stays a review
+question; be ready to cite wire evidence when review asks.
+
+## Bypassing stock attributes
+
+Pre-existing uncovered attributes surface whenever their resource file is
+touched. To mark one as known stock debt, use the structured bypass marker on
+its own comment line; the reason is required:
+
+```go
+// collection-order: bypass health_check.http_code -- pre-existing attribute outside this change
+```
+
+Review verifies the reason against the diff: a bypass on an attribute the PR
+itself adds or changes is not stock and does not qualify.
+
 ## Migrating existing tests
 
-Keep existing `fmt.Sprintf`-based tests and add a separate three-step `TestAcc`
+Keep existing `fmt.Sprintf`-based tests and add a separate two-step `TestAcc`
 function in the same resource test file, using the example above. Move the target
 resource's attributes into its config maps; extract only dependency HCL into
 `func exampleDependence(name string) string`. The dependency function may still
