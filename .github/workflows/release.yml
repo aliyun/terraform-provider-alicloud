@@ -1,4 +1,4 @@
-# Terraform Provider v2 prerelease workflow.
+# Terraform Provider v2 release workflow.
 name: Release
 
 on:
@@ -21,11 +21,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Validate prerelease tag
+      - name: Validate release tag
         shell: bash
         run: |
-          if [[ ! "${GITHUB_REF_NAME}" =~ ^v2\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-(beta|rc)([1-9][0-9]*)$ ]]; then
-            echo "Invalid v2 prerelease tag: ${GITHUB_REF_NAME}" >&2
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v2\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(beta|rc)([1-9][0-9]*))?$ ]]; then
+            echo "Invalid v2 release tag: ${GITHUB_REF_NAME}" >&2
             exit 1
           fi
       - name: Validate release branch ancestry

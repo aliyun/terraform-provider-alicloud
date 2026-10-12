@@ -1,8 +1,21 @@
-## 2.0.0-beta6 (Unreleased)
+## 2.0.0 (October 12, 2026)
+
+This is the first stable release of the 2.x line. It rolls up every change merged from the 1.x line since v2.0.0-beta5 — no additional 1.x section has been cut since `1.294.0` (`1.295.0` remains unreleased) — plus the v2-only changes below. Changes that merged to the 1.x line after the v2.0.0-beta5 cut are also listed below; with the 1.x line no longer maintained after this release, they will never appear in a released 1.x section.
 
 FEATURES:
 
-- **New Ephemeral Resource:** `alicloud_cr_ee_authorization_token` — fetches a temporary Container Registry Enterprise Edition login credential through the `GetAuthorizationToken` API without persisting it to the state or plan, for use in provider configuration, locals, provisioners, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider.
+- **New Ephemeral Resource:** `alicloud_cr_ee_authorization_token` — fetches a temporary Container Registry Enterprise Edition login credential through the `GetAuthorizationToken` API without persisting it to the state or plan, for use in provider configuration, locals, provisioners, and other ephemeral resources. Requires Terraform 1.10 or later. Served by the framework provider. ([#10776](https://github.com/aliyun/terraform-provider-alicloud/issues/10776))
+- **New Resource:** `alicloud_cloud_firewall_fw_switch`. ([#10748](https://github.com/aliyun/terraform-provider-alicloud/issues/10748))
+
+ENHANCEMENTS:
+
+- resource/alicloud_nas_file_system: support Agentic storage type for standard file systems; skip general-purpose NAS recycle bin/ACL calls on Agentic file systems. ([#10774](https://github.com/aliyun/terraform-provider-alicloud/issues/10774))
+- resource/alicloud_ebs_disk_replica_group: support enable_rtc and updatable rpo; data-source/alicloud_ebs_disk_replica_groups: export enable_rtc. ([#10775](https://github.com/aliyun/terraform-provider-alicloud/issues/10775))
+- docs: add MySQL 8.4 version to RDS documentation. ([#10722](https://github.com/aliyun/terraform-provider-alicloud/issues/10722))
+
+BUG FIXES:
+
+- resource/alicloud_nlb_server_group: preserve health_check_http_code order in read. ([#10762](https://github.com/aliyun/terraform-provider-alicloud/issues/10762))
 
 ## 2.0.0-beta5 (October 10, 2026)
 
