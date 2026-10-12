@@ -501,6 +501,205 @@ func TestAccAliCloudGPDBDBInstance_minorVersion(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudGPDBDBInstanceSqlCollectorAndEffectiveTime covers the
+// effective_time and sql_collector_status attributes.
+//   - sql_collector_status is toggled Enable -> Disabled -> Enable, exercising
+//     the ModifySqlCollectorPolicy operation on each transition. It is write-only
+//     (GPDB exposes no Describe API for the SQL collector status), so the value is
+//     retained in state from the configuration rather than refreshed from the cloud;
+//     the assertions therefore verify the configured value stays in state.
+//   - effective_time is a control parameter forwarded to UpgradeDBVersion and
+//     UpgradeDBInstance; setting it to Immediate keeps upgrades on the immediate
+//     path, and the value is likewise retained in state.
+func TestAccAliCloudGPDBDBInstanceSqlCollectorAndEffectiveTime(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_category":  "HighAvailability",
+					"db_instance_class":     "gpdb.group.segsdx1",
+					"db_instance_mode":      "StorageElastic",
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+					"instance_network_type": "VPC",
+					"instance_spec":         "2C16G",
+					"instance_group_count":  "2",
+					"payment_type":          "PayAsYouGo",
+					"seg_storage_type":      "cloud_essd",
+					"seg_node_num":          "4",
+					"storage_size":          "50",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+					"effective_time":        "Immediate",
+					"sql_collector_status":  "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"effective_time":       "Immediate",
+						"sql_collector_status": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sql_collector_status": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sql_collector_status": "Disabled",
+						"effective_time":       "Immediate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sql_collector_status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sql_collector_status": "Enable",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "db_instance_class", "security_ip_list", "instance_group_count", "create_sample_data", "parameters", "effective_time", "sql_collector_status"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudGPDBDBInstanceIpWhitelistOrder covers list-order drift for the
+// ip_whitelist TypeList: apply members in one order, then a PlanOnly step that
+// reorders the members (ExpectNonEmptyPlan:true), then a converging apply in the
+// reordered order. This satisfies the TypeList Order Coverage gate
+// (scripts/collection-order), which requires adjacent apply A -> reordered
+// PlanOnly -> apply B for every configurable multi-member TypeList.
+func TestAccAliCloudGPDBDBInstanceIpWhitelistOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_category":  "HighAvailability",
+					"db_instance_class":     "gpdb.group.segsdx1",
+					"db_instance_mode":      "StorageElastic",
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+					"instance_network_type": "VPC",
+					"instance_spec":         "2C16G",
+					"instance_group_count":  "2",
+					"payment_type":          "PayAsYouGo",
+					"seg_storage_type":      "cloud_essd",
+					"seg_node_num":          "4",
+					"storage_size":          "50",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_mode": "StorageElastic",
+						"payment_type":     "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"ip_group_name":    "group1",
+							"security_ip_list": "11.0.0.1",
+						},
+						{
+							"ip_group_name":    "group2",
+							"security_ip_list": "12.0.0.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_whitelist.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"ip_group_name":    "group2",
+							"security_ip_list": "12.0.0.1",
+						},
+						{
+							"ip_group_name":    "group1",
+							"security_ip_list": "11.0.0.1",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"ip_group_name":    "group2",
+							"security_ip_list": "12.0.0.1",
+						},
+						{
+							"ip_group_name":    "group1",
+							"security_ip_list": "11.0.0.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_whitelist.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
