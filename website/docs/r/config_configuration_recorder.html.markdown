@@ -26,14 +26,11 @@ For information about Alicloud Config Configuration Recorder and how to use it, 
 
 ```terraform
 resource "alicloud_config_configuration_recorder" "example" {
-  resource_types = [
-    "ACS::ECS::Instance",
-    "ACS::ECS::Disk"
-    # other resource types ...
-  ]
+  resource_types = ["all"]
 }
-
 ```
+
+-> **NOTE:** If you set `resource_types` to `all`, all resource types supported by Cloud Config are monitored.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_config_configuration_recorder&spm=docs.r.config_configuration_recorder.example&intl_lang=EN_US)
 
@@ -41,10 +38,8 @@ resource "alicloud_config_configuration_recorder" "example" {
 
 The following arguments are supported:
 
-* `enterprise_edition` - (Optional, ForceNew) - Whether to use the enterprise version configuration audit. Valid values: `true` and `false`. Default value `false`. For enterprise accounts, We recommend you to use the resource [alicloud_config_aggregator](https://www.terraform.io/docs/providers/alicloud/r/config_aggregator).
+* `enterprise_edition` - (Optional, ForceNew) - Whether to upgrade Cloud Config for Enterprise. Valid values: `true` and `false`. Default value: `false`. **Note:** Cloud Config for Enterprise is upgraded to the account group feature. For enterprise accounts, we recommend that you use the resource [alicloud_config_aggregator](https://www.terraform.io/docs/providers/alicloud/r/config_aggregator).
 * `resource_types` - (Optional) A list of resource types to be monitored. [Resource types that support Cloud Config.](https://www.alibabacloud.com/help/en/doc-detail/127411.htm)
-  * If you use an ordinary account, the `resource_types` supports the update operation after the process of creation is completed.
-  * If you use an enterprise account, the `resource_types` does not support updating. 
 
 ## Attributes Reference
 
