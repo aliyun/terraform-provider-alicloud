@@ -248,3 +248,133 @@ data "alicloud_instance_types" "default" {
 }
 `, name)
 }
+
+// Case 3: time-division elasticity assurance (PeriodUnit=Day + RecurrenceRules)
+func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_elasticity_assurance.default"
+	ra := resourceAttrInit(resourceId, AliCloudEcsElasticityAssuranceMap1716)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsElasticityAssurance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sEcsElasticityAssurance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsElasticityAssuranceBasicDependence1716)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_amount":                     "1",
+					"zone_ids":                            []string{"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"},
+					"instance_type":                       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"private_pool_options_name":           name,
+					"private_pool_options_match_criteria": "Open",
+					"period":                              "1",
+					"period_unit":                         "Day",
+					"assurance_times":                     "Unlimited",
+					"recurrence_rules": []map[string]interface{}{
+						{
+							"recurrence_type":  "Daily",
+							"recurrence_value": "1",
+							"start_hour":       "8",
+							"end_hour":         "12",
+						},
+						{
+							"recurrence_type":  "Daily",
+							"recurrence_value": "1",
+							"start_hour":       "13",
+							"end_hour":         "17",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_amount":                     "1",
+						"zone_ids.#":                          "1",
+						"instance_type.#":                     "1",
+						"private_pool_options_name":           name,
+						"private_pool_options_match_criteria": "Open",
+						"period":                              "1",
+						"period_unit":                         "Day",
+						"assurance_times":                     "Unlimited",
+						"recurrence_rules.#":                  "2",
+						"recurrence_rules.0.recurrence_type":  "Daily",
+						"recurrence_rules.0.recurrence_value": "1",
+						"recurrence_rules.0.start_hour":       "8",
+						"recurrence_rules.0.end_hour":         "12",
+						"recurrence_rules.1.recurrence_type":  "Daily",
+						"recurrence_rules.1.recurrence_value": "1",
+						"recurrence_rules.1.start_hour":       "13",
+						"recurrence_rules.1.end_hour":         "17",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"recurrence_rules": []map[string]interface{}{
+						{
+							"recurrence_type":  "Daily",
+							"recurrence_value": "1",
+							"start_hour":       "13",
+							"end_hour":         "17",
+						},
+						{
+							"recurrence_type":  "Daily",
+							"recurrence_value": "1",
+							"start_hour":       "8",
+							"end_hour":         "12",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"recurrence_rules": []map[string]interface{}{
+						{
+							"recurrence_type":  "Daily",
+							"recurrence_value": "1",
+							"start_hour":       "13",
+							"end_hour":         "17",
+						},
+						{
+							"recurrence_type":  "Daily",
+							"recurrence_value": "1",
+							"start_hour":       "8",
+							"end_hour":         "12",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"recurrence_rules.#":                  "2",
+						"recurrence_rules.0.recurrence_type":  "Daily",
+						"recurrence_rules.0.recurrence_value": "1",
+						"recurrence_rules.0.start_hour":       "13",
+						"recurrence_rules.0.end_hour":         "17",
+						"recurrence_rules.1.recurrence_type":  "Daily",
+						"recurrence_rules.1.recurrence_value": "1",
+						"recurrence_rules.1.start_hour":       "8",
+						"recurrence_rules.1.end_hour":         "12",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "period_unit"},
+			},
+		},
+	})
+}

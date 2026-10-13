@@ -70,17 +70,18 @@ func resourceAliCloudEcsElasticityAssurance() *schema.Resource {
 				Type:     schema.TypeList,
 				Required: true,
 				ForceNew: true,
+				MaxItems: 1,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+				ValidateFunc: IntBetween(1, 365),
 			},
 			"period_unit": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: StringInSlice([]string{"Month", "Year", "Day"}, false),
 			},
 			"private_pool_options_match_criteria": {
 				Type:     schema.TypeString,
@@ -92,6 +93,36 @@ func resourceAliCloudEcsElasticityAssurance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"recurrence_rules": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"start_hour": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"recurrence_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: StringInSlice([]string{"Daily", "Weekly", "Monthly"}, false),
+						},
+						"end_hour": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+						},
+						"recurrence_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
 			},
 			"region_id": {
 				Type:     schema.TypeString,
@@ -129,6 +160,7 @@ func resourceAliCloudEcsElasticityAssurance() *schema.Resource {
 				Type:     schema.TypeList,
 				Required: true,
 				ForceNew: true,
+				MaxItems: 1,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
@@ -190,6 +222,19 @@ func resourceAliCloudEcsElasticityAssuranceCreate(d *schema.ResourceData, meta i
 	}
 	if v, ok := d.GetOkExists("period"); ok {
 		request["Period"] = v
+	}
+	if v, ok := d.GetOk("recurrence_rules"); ok {
+		recurrenceRulesMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.([]interface{}) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["StartHour"] = dataLoopTmp["start_hour"]
+			dataLoopMap["EndHour"] = dataLoopTmp["end_hour"]
+			dataLoopMap["RecurrenceType"] = dataLoopTmp["recurrence_type"]
+			dataLoopMap["RecurrenceValue"] = dataLoopTmp["recurrence_value"]
+			recurrenceRulesMapsArray = append(recurrenceRulesMapsArray, dataLoopMap)
+		}
+		request["RecurrenceRules"] = recurrenceRulesMapsArray
 	}
 	if v, ok := d.GetOk("zone_ids"); ok {
 		zoneIdMapsArray := v.([]interface{})
@@ -265,6 +310,25 @@ func resourceAliCloudEcsElasticityAssuranceRead(d *schema.ResourceData, meta int
 			d.Set("instance_amount", allocatedResourceMap["TotalAmount"])
 			d.Set("zone_ids", []string{fmt.Sprint(allocatedResourceMap["zoneId"])})
 		}
+	}
+
+	recurrenceRulesMaps := make([]map[string]interface{}, 0)
+	if v, ok := objectRaw["RecurrenceRules"].(map[string]interface{}); ok {
+		for _, recurrenceRuleChildRaw := range convertToInterfaceArray(v["RecurrenceRule"]) {
+			if recurrenceRuleChildRaw == nil {
+				continue
+			}
+			recurrenceRule := recurrenceRuleChildRaw.(map[string]interface{})
+			recurrenceRulesMap := make(map[string]interface{})
+			recurrenceRulesMap["start_hour"] = recurrenceRule["StartHour"]
+			recurrenceRulesMap["end_hour"] = recurrenceRule["EndHour"]
+			recurrenceRulesMap["recurrence_type"] = recurrenceRule["RecurrenceType"]
+			recurrenceRulesMap["recurrence_value"] = recurrenceRule["RecurrenceValue"]
+			recurrenceRulesMaps = append(recurrenceRulesMaps, recurrenceRulesMap)
+		}
+	}
+	if err := d.Set("recurrence_rules", recurrenceRulesMaps); err != nil {
+		return WrapError(err)
 	}
 
 	objectRaw, err = ecsServiceV2.DescribeElasticityAssuranceDescribeElasticityAssuranceAutoRenewAttribute(d.Id())

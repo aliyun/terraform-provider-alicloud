@@ -84,13 +84,26 @@ Default value: Year
 * `period` - (Optional) Length of purchase. The unit of duration is determined by the 'period_unit' parameter. Default value: 1.
   - When the `period_unit` parameter is set to Month, the valid values are 1, 2, 3, 4, 5, 6, 7, 8, and 9.
   - When the `period_unit` parameter is set to Year, the valid values are 1, 2, 3, 4, and 5.
-* `period_unit` - (Optional) Duration unit. Value range:-Month: Month-Year: YearDefault value: Year
+  - When the `period_unit` parameter is set to Day, the valid values are 1 to 365.
+* `period_unit` - (Optional) Duration unit. Value range:-Month: Month-Year: Year-Day: Day. Default value: Year
 * `private_pool_options_match_criteria` - (Optional, ForceNew) The matching mode of flexible guarantee service. Possible values:-Open: flexible guarantee service for Open mode.-Target: specifies the flexible guarantee service of the mode.
 * `private_pool_options_name` - (Optional) The name of the flexible protection service.
+* `recurrence_rules` - (Optional, ForceNew, List, Available since v1.294.0) The list of recurrence rules for the time-division elasticity assurance. A maximum of 20 rules can be specified. When `period_unit` is set to `Day`, this parameter must be specified to create a time-division elasticity assurance. See [`recurrence_rules`](#recurrence_rules) below.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `start_time` - (Optional, ForceNew) Flexible guarantee service effective time.
 * `tags` - (Optional) The tag key-value pair information bound by the elastic guarantee service.
 * `zone_ids` - (Required, ForceNew, List) The zone ID of the region to which the elastic Protection Service belongs. Currently, only the creation of flexible protection services in one available area is supported.
+
+### `recurrence_rules`
+
+The recurrence_rules supports the following:
+* `start_hour` - (Optional, ForceNew, Int, Available since v1.294.0) The time when the time-division elasticity assurance takes effect. The value must be on the hour. **NOTE:** You must specify both `start_hour` and `end_hour`, and the difference between them must be at least 4 hours.
+* `end_hour` - (Optional, ForceNew, Int, Available since v1.294.0) The time when the time-division elasticity assurance ends. The value must be on the hour. **NOTE:** You must specify both `start_hour` and `end_hour`, and the difference between them must be at least 4 hours.
+* `recurrence_type` - (Optional, ForceNew, Available since v1.294.0) The policy type of the recurrence rule. Valid values: `Daily`, `Weekly`, `Monthly`. **NOTE:** You must specify both `recurrence_type` and `recurrence_value`.
+* `recurrence_value` - (Optional, ForceNew, Available since v1.294.0) The value on which the recurrence rule is executed.
+  - When `recurrence_type` is set to `Daily`, only one value can be specified. Valid values: 1 to 31. The value indicates the interval in days at which the rule is executed.
+  - When `recurrence_type` is set to `Weekly`, multiple values can be specified and must be separated by commas (,). The values 0, 1, 2, 3, 4, 5, and 6 indicate Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, and Saturday in sequence. For example, `1,2` indicates that the rule is executed on Monday and Tuesday.
+  - When `recurrence_type` is set to `Monthly`, the format is `A-B`. Valid values of A and B: 1 to 31, and B must be greater than or equal to A. For example, `1-5` indicates that the rule is executed from the 1st to the 5th day of each month. **NOTE:** You must specify both `recurrence_type` and `recurrence_value`.
 
 ## Attributes Reference
 
