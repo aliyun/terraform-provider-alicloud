@@ -156,6 +156,11 @@ func TestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
 			"instances.0.availability_zone":     CHECKSET,
 			"instances.0.creation_time":         CHECKSET,
 			"instances.0.charge_type":           CHECKSET,
+			"instances.0.db_instance_net_type":  CHECKSET,
+			"instances.0.instance_deploy_type":  CHECKSET,
+			"instances.0.lock_mode":             CHECKSET,
+			"instances.0.lock_reason":           "0",
+			"instances.0.expire_time":           CHECKSET,
 		}
 	}
 	var fakeAlicloudGpdbInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
