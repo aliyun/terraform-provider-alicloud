@@ -154,11 +154,16 @@ func (s *ElasticsearchServiceV2) DescribeInstanceListKibanaPvlNetwork(id string)
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Result[*]", response)
 	}
 
-	if len(v.([]interface{})) == 0 {
+	kibanaPvlNetwork, err := parseKibanaPvlResult(v)
+	if err != nil {
+		return object, WrapErrorf(err, "get kibana pvl network error %s", id)
+	}
+
+	if kibanaPvlNetwork == nil {
 		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return kibanaPvlNetwork, nil
 }
 
 func (s *ElasticsearchServiceV2) ElasticsearchInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {

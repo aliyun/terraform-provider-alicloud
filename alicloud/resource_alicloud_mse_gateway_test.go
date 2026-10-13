@@ -136,11 +136,16 @@ func TestAccAliCloudMSEGateway_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"spec":         "MSE_GTW_2_4_200_c",
-					"replica":      "2",
-					"vpc_id":       "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_id":   "${data.alicloud_vswitches.default.ids.0}",
-					"gateway_name": "${var.name}",
+					"spec":              "MSE_GTW_2_4_200_c",
+					"replica":           "2",
+					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"gateway_name":      "${var.name}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -149,17 +154,42 @@ func TestAccAliCloudMSEGateway_basic0(t *testing.T) {
 						"vpc_id":       CHECKSET,
 						"vswitch_id":   CHECKSET,
 						"gateway_name": name,
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
 					}),
+					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "data.alicloud_resource_manager_resource_groups.default", "groups.1.id"),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"gateway_name": "${var.name}_update",
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"gateway_name": name + "_update",
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"gateway_name": name + "_update",
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "data.alicloud_resource_manager_resource_groups.default", "groups.0.id"),
 				),
 			},
 			{
@@ -230,6 +260,9 @@ var AlicloudMSEGatewayMap0 = map[string]string{
 	"status": CHECKSET,
 }
 
+// TestAccAliCloudMSEGateway_basic1 references the second vSwitch of the default
+// VPC for backup_vswitch_id; in accounts with only one vSwitch it fails at plan
+// time (known environment limitation, not a provider defect).
 func AlicloudMSEGatewayBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -248,6 +281,9 @@ data "alicloud_vswitches" "default" {
 data "alicloud_vswitches" "backup" {
 	vpc_id  = data.alicloud_vpcs.default.ids.0
 	zone_id = data.alicloud_zones.default.zones.1.id
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 `, name)
@@ -270,6 +306,11 @@ func TestUnitAlicloudMSEGateway(t *testing.T) {
 		"slb_spec":                  "slb_spec",
 		"internet_slb_spec":         "internet_slb_spec",
 		"delete_slb":                true,
+		"resource_group_id":         "resource_group_id",
+		"tags": map[string]interface{}{
+			"Created": "TF",
+			"For":     "Test",
+		},
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -287,13 +328,15 @@ func TestUnitAlicloudMSEGateway(t *testing.T) {
 		"Success": "true",
 		"Code":    "200",
 		"Data": map[string]interface{}{
-			"Spec":     "spec",
-			"Replica":  2,
-			"Vpc":      "vpc_id",
-			"Vswitch":  "vswitch_id",
-			"Vswitch2": "backup_vswitch_id",
-			"Name":     "gateway_name",
-			"Status":   "2",
+			"Spec":            "spec",
+			"Replica":         2,
+			"Vpc":             "vpc_id",
+			"Vswitch":         "vswitch_id",
+			"Vswitch2":        "backup_vswitch_id",
+			"Name":            "gateway_name",
+			"Status":          "2",
+			"ResourceGroupId": "resource_group_id",
+			"MseTag":          `{"Created":"TF-read","For":"Test-read","acs:rm:rgId":"rg-acs-test"}`,
 		},
 	}
 
@@ -559,6 +602,26 @@ func TestUnitAlicloudMSEGateway(t *testing.T) {
 		patchSlbList.Reset()
 		assert.Nil(t, err)
 	})
+	t.Run("UpdateModifyResourceGroupNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.Attributes["resource_group_id"] = &terraform.ResourceAttrDiff{Old: "resource_group_id_old", New: "resource_group_id"}
+		resourceData1, _ := schema.InternalMap(p["alicloud_mse_gateway"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return responseMock["UpdateNormal"]("")
+		})
+		patchDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&MseService{}), "DescribeMseGateway", func(*MseService, string) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		patchSlbList := gomonkey.ApplyMethod(reflect.TypeOf(&MseService{}), "ListGatewaySlb", func(*MseService, string) (map[string]interface{}, error) {
+			return responseMock["SlbListNormal"]("")
+		})
+		err := resourceAlicloudMseGatewayUpdate(resourceData1, rawClient)
+		patches.Reset()
+		patchDescribe.Reset()
+		patchSlbList.Reset()
+		assert.Nil(t, err)
+	})
 
 	// Delete
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
@@ -692,5 +755,8 @@ func TestUnitAlicloudMSEGateway(t *testing.T) {
 		patcheDorequest.Reset()
 		patchSlbList.Reset()
 		assert.Nil(t, err)
+		// GetGateway returns tags in the MseTag JSON string; user tags must be
+		// kept and acs: system tags filtered by the Read path.
+		assert.Equal(t, map[string]interface{}{"Created": "TF-read", "For": "Test-read"}, d.Get("tags"))
 	})
 }
