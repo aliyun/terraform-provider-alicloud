@@ -5022,7 +5022,8 @@ variable "name" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_resource_manager_resource_group" "target" {
-  display_name = "%s"
+  display_name        = "%s"
+  resource_group_name = "%s"
 }
 
 resource "alicloud_vpc" "defaultLPXHTQ" {
@@ -5042,5 +5043,5 @@ resource "alicloud_vswitch" "defaultAislbL" {
 }
 
 
-`, name, name)
+`, name, name, name)
 }
