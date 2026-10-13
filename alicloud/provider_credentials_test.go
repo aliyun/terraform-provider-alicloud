@@ -112,7 +112,10 @@ EOF
 		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
 		// 读取配置文件验证
-		profileConfig := loadProfileConfig(resourceData)
+		profileConfig, err := loadProfileConfig(resourceData)
+		if err != nil {
+			t.Fatalf("loadProfileConfig failed: %v", err)
+		}
 
 		if profileConfig == nil {
 			t.Fatal("Provider config is nil")
@@ -203,7 +206,10 @@ func TestProviderCredentials_OAuthMode(t *testing.T) {
 		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
 		// 读取配置文件验证
-		profileConfig := loadProfileConfig(resourceData)
+		profileConfig, err := loadProfileConfig(resourceData)
+		if err != nil {
+			t.Fatalf("loadProfileConfig failed: %v", err)
+		}
 
 		if profileConfig == nil {
 			t.Fatal("Provider config is nil")
@@ -312,7 +318,10 @@ EOF
 			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
 			// 每个 provider 实例独立解析自身的 profile
-			profileConfig := loadProfileConfig(resourceData)
+			profileConfig, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatalf("loadProfileConfig failed: %v", err)
+			}
 
 			if profileConfig == nil {
 				t.Fatal("Provider config is nil")
@@ -396,7 +405,14 @@ func TestProviderCredentials_GetConfigFromProfile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val := getConfigFromProfile(loadProfileConfig(resourceData), tt.profileKey)
+			profileConfig, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatalf("loadProfileConfig failed: %v", err)
+			}
+			val, err := getConfigFromProfile(profileConfig, tt.profileKey)
+			if err != nil {
+				t.Fatalf("getConfigFromProfile failed: %v", err)
+			}
 
 			if tt.shouldBeNil {
 				if val != nil {
@@ -453,7 +469,14 @@ func TestProviderCredentials_AdvancedModesReturnNil(t *testing.T) {
 			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
 			// 对于高级模式，access_key_id 应该返回 nil
-			val := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id")
+			profileConfig, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatalf("loadProfileConfig failed: %v", err)
+			}
+			val, err := getConfigFromProfile(profileConfig, "access_key_id")
+			if err != nil {
+				t.Fatalf("getConfigFromProfile failed: %v", err)
+			}
 
 			// 高级模式应该返回 nil（凭证通过 CLIProfileCredentialsProvider 动态获取）
 			if val != nil {
@@ -512,7 +535,15 @@ func TestProviderCredentials_PriorityOrder(t *testing.T) {
 		if v, ok := resourceData.GetOk("access_key"); ok && v != nil && v.(string) != "" {
 			accessKey = v.(string)
 		} else {
-			if v := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id"); v != nil {
+			profileConfig, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatalf("loadProfileConfig failed: %v", err)
+			}
+			v, err := getConfigFromProfile(profileConfig, "access_key_id")
+			if err != nil {
+				t.Fatalf("getConfigFromProfile failed: %v", err)
+			}
+			if v != nil {
 				accessKey = v.(string)
 			}
 		}
@@ -531,7 +562,14 @@ func TestProviderCredentials_PriorityOrder(t *testing.T) {
 
 		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
-		val := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id")
+		profileConfig, err := loadProfileConfig(resourceData)
+		if err != nil {
+			t.Fatalf("loadProfileConfig failed: %v", err)
+		}
+		val, err := getConfigFromProfile(profileConfig, "access_key_id")
+		if err != nil {
+			t.Fatalf("getConfigFromProfile failed: %v", err)
+		}
 
 		if val != "PROFILE_AK" {
 			t.Errorf("Expected profile config 'PROFILE_AK', got '%v'", val)
@@ -548,7 +586,14 @@ func TestProviderCredentials_ConfigFileNotFound(t *testing.T) {
 
 	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
-	val := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id")
+	profileConfig, err := loadProfileConfig(resourceData)
+	if err != nil {
+		t.Fatalf("loadProfileConfig failed: %v", err)
+	}
+	val, err := getConfigFromProfile(profileConfig, "access_key_id")
+	if err != nil {
+		t.Fatalf("getConfigFromProfile failed: %v", err)
+	}
 
 	// 文件不存在时应该返回 nil（不报错）
 	if val != nil {
@@ -646,22 +691,28 @@ func TestProviderCredentials_MultiAliasIsolation(t *testing.T) {
 	}
 
 	// profile 解析层复核：先加载 A 再加载 B，两次结果互不污染
-	profileConfigA := loadProfileConfig(resourceDataA)
-	profileConfigB := loadProfileConfig(resourceDataB)
-	if got := getConfigFromProfile(profileConfigA, "access_key_id"); got != "ALIAS_A_AK" {
-		t.Errorf("profile A access_key_id = %v, want ALIAS_A_AK", got)
+	profileConfigA, err := loadProfileConfig(resourceDataA)
+	if err != nil {
+		t.Fatalf("loadProfileConfig failed for alias A: %v", err)
 	}
-	if got := getConfigFromProfile(profileConfigB, "access_key_id"); got != "ALIAS_B_AK" {
-		t.Errorf("profile B access_key_id = %v, want ALIAS_B_AK", got)
+	profileConfigB, err := loadProfileConfig(resourceDataB)
+	if err != nil {
+		t.Fatalf("loadProfileConfig failed for alias B: %v", err)
 	}
-	if got := getConfigFromProfile(profileConfigB, "sts_token"); got != "ALIAS_B_STS" {
-		t.Errorf("profile B sts_token = %v, want ALIAS_B_STS", got)
+	if got, gerr := getConfigFromProfile(profileConfigA, "access_key_id"); gerr != nil || got != "ALIAS_A_AK" {
+		t.Errorf("profile A access_key_id = %v (err=%v), want ALIAS_A_AK", got, gerr)
 	}
-	if got := getConfigFromProfile(profileConfigA, "region_id"); got != "cn-hangzhou" {
-		t.Errorf("profile A region_id = %v, want cn-hangzhou", got)
+	if got, gerr := getConfigFromProfile(profileConfigB, "access_key_id"); gerr != nil || got != "ALIAS_B_AK" {
+		t.Errorf("profile B access_key_id = %v (err=%v), want ALIAS_B_AK", got, gerr)
 	}
-	if got := getConfigFromProfile(profileConfigB, "region_id"); got != "cn-beijing" {
-		t.Errorf("profile B region_id = %v, want cn-beijing", got)
+	if got, gerr := getConfigFromProfile(profileConfigB, "sts_token"); gerr != nil || got != "ALIAS_B_STS" {
+		t.Errorf("profile B sts_token = %v (err=%v), want ALIAS_B_STS", got, gerr)
+	}
+	if got, gerr := getConfigFromProfile(profileConfigA, "region_id"); gerr != nil || got != "cn-hangzhou" {
+		t.Errorf("profile A region_id = %v (err=%v), want cn-hangzhou", got, gerr)
+	}
+	if got, gerr := getConfigFromProfile(profileConfigB, "region_id"); gerr != nil || got != "cn-beijing" {
+		t.Errorf("profile B region_id = %v (err=%v), want cn-beijing", got, gerr)
 	}
 }
 
@@ -718,16 +769,20 @@ func TestProviderCredentials_ConcurrentAliasesNoRace(t *testing.T) {
 		wg.Add(1)
 		go func(ap aliasProfile) {
 			defer wg.Done()
-			profileConfig := loadProfileConfig(ap.resourceData)
-			if got := getConfigFromProfile(profileConfig, "access_key_id"); got != ap.accessKey {
+			profileConfig, err := loadProfileConfig(ap.resourceData)
+			if err != nil {
+				errCh <- fmt.Errorf("loadProfileConfig failed: %v", err)
+				return
+			}
+			if got, gerr := getConfigFromProfile(profileConfig, "access_key_id"); gerr != nil || got != ap.accessKey {
 				errCh <- fmt.Errorf("access_key_id contaminated: want %q, got %v", ap.accessKey, got)
 				return
 			}
-			if got := getConfigFromProfile(profileConfig, "access_key_secret"); got != ap.secretKey {
+			if got, gerr := getConfigFromProfile(profileConfig, "access_key_secret"); gerr != nil || got != ap.secretKey {
 				errCh <- fmt.Errorf("access_key_secret contaminated: want %q, got %v", ap.secretKey, got)
 				return
 			}
-			if got := getConfigFromProfile(profileConfig, "region_id"); got != ap.regionId {
+			if got, gerr := getConfigFromProfile(profileConfig, "region_id"); gerr != nil || got != ap.regionId {
 				errCh <- fmt.Errorf("region_id contaminated: want %q, got %v", ap.regionId, got)
 				return
 			}
@@ -1892,28 +1947,43 @@ func TestProviderConfigure_GetConfigFromProfile_AdvancedModes(t *testing.T) {
 			resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
 
 			// 每个 provider 实例独立加载自身的 profile
-			profileConfig := loadProfileConfig(resourceData)
+			profileConfig, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatalf("loadProfileConfig failed: %v", err)
+			}
 
 			// 测试获取 region_id（应该正常返回，因为 region_id 是特例）
-			region := getConfigFromProfile(profileConfig, "region_id")
+			region, err := getConfigFromProfile(profileConfig, "region_id")
+			if err != nil {
+				t.Fatalf("getConfigFromProfile(region_id) failed: %v", err)
+			}
 			if region != "cn-hangzhou" {
 				t.Errorf("Expected region_id 'cn-hangzhou', got '%v' for mode %s", region, mode)
 			}
 
 			// 测试获取 mode（对于高级模式应该返回 nil，除了 region_id 之外的所有字段都返回 nil）
-			modeValue := getConfigFromProfile(profileConfig, "mode")
+			modeValue, err := getConfigFromProfile(profileConfig, "mode")
+			if err != nil {
+				t.Fatalf("getConfigFromProfile(mode) failed: %v", err)
+			}
 			if modeValue != nil {
 				t.Errorf("Expected nil for mode in advanced mode %s, got %v", mode, modeValue)
 			}
 
 			// 测试获取 access_key_id（对于高级模式应该返回 nil）
-			accessKey := getConfigFromProfile(profileConfig, "access_key_id")
+			accessKey, err := getConfigFromProfile(profileConfig, "access_key_id")
+			if err != nil {
+				t.Fatalf("getConfigFromProfile(access_key_id) failed: %v", err)
+			}
 			if accessKey != nil {
 				t.Errorf("Expected nil for access_key_id in mode %s, got %v", mode, accessKey)
 			}
 
 			// 测试获取 ram_role_name（对于高级模式应该返回 nil）
-			ramRoleName := getConfigFromProfile(profileConfig, "ram_role_name")
+			ramRoleName, err := getConfigFromProfile(profileConfig, "ram_role_name")
+			if err != nil {
+				t.Fatalf("getConfigFromProfile(ram_role_name) failed: %v", err)
+			}
 			if ramRoleName != nil {
 				t.Errorf("Expected nil for ram_role_name in mode %s, got %v", mode, ramRoleName)
 			}
@@ -2163,10 +2233,423 @@ func TestGetConfigFromProfile_EmptySharedCredentialsFile(t *testing.T) {
 	}
 	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
-	val := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id")
+	profileConfig, err := loadProfileConfig(resourceData)
+	if err != nil {
+		t.Fatalf("loadProfileConfig failed: %v", err)
+	}
+	val, err := getConfigFromProfile(profileConfig, "access_key_id")
+	if err != nil {
+		t.Fatalf("getConfigFromProfile failed: %v", err)
+	}
 
 	// Default config absent under temp home: profile not loaded -> graceful.
 	if val != nil {
 		t.Errorf("Expected nil value when default config file is absent, got %v", val)
+	}
+}
+
+// TestUnitGetConfigFromProfile_InvalidJSON verifies that a truncated or otherwise
+// invalid credentials file surfaces a parse error carrying the file path, the
+// profile name and the parse reason, instead of degrading to an empty config
+// that later reports a misleading missing-credential error.
+func TestUnitGetConfigFromProfile_InvalidJSON(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "alicloud-test-invalid-json-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	configPath := filepath.Join(tmpDir, "config.json")
+	// Truncated JSON, as produced when the file is cut off mid-write.
+	if err := os.WriteFile(configPath, []byte(`{"profiles": [{"name": "broken-profile", "mode": "AK"`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	raw := map[string]interface{}{
+		"profile":                 "broken-profile",
+		"shared_credentials_file": configPath,
+		"region":                  "cn-beijing",
+	}
+	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
+
+	profileConfig, err := loadProfileConfig(resourceData)
+	if err == nil {
+		t.Fatalf("Expected an error for a truncated JSON credentials file, got value %v", profileConfig)
+	}
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, configPath) {
+		t.Errorf("Expected error to contain the file path %s, got: %s", configPath, errMsg)
+	}
+	if !strings.Contains(errMsg, "broken-profile") {
+		t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "invalid JSON") {
+		t.Errorf("Expected error to contain the parse reason, got: %s", errMsg)
+	}
+}
+
+// TestUnitGetConfigFromProfile_StructureMismatch verifies that a syntactically
+// valid JSON file with an unexpected structure returns an error instead of
+// panicking; the per-instance load never caches a failed result, so a later
+// call retries from disk.
+func TestUnitGetConfigFromProfile_StructureMismatch(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "alicloud-test-bad-struct-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	cases := []struct {
+		name    string
+		content string
+	}{
+		{"MissingProfilesField", `{"current": "p1"}`},
+		{"ProfilesNotArray", `{"profiles": "not-an-array", "current": "p1"}`},
+		{"ProfileEntryNotObject", `{"profiles": ["just-a-string"], "current": "p1"}`},
+		{"ProfileEntryNotObjectNumber", `{"profiles": [42], "current": "p1"}`},
+		{"ModeNotString", `{"profiles": [{"name": "p1", "mode": 123}], "current": "p1"}`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			configPath := filepath.Join(tmpDir, tc.name+".json")
+			if err := os.WriteFile(configPath, []byte(tc.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			raw := map[string]interface{}{
+				"profile":                 "p1",
+				"shared_credentials_file": configPath,
+				"region":                  "cn-beijing",
+			}
+			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
+
+			profileConfig, err := loadProfileConfig(resourceData)
+			if err == nil {
+				t.Fatalf("Expected an error for malformed profile structure (%s), got value %v", tc.name, profileConfig)
+			}
+			if !strings.Contains(err.Error(), configPath) || !strings.Contains(err.Error(), "p1") {
+				t.Errorf("Expected error to contain the file path and profile name, got: %s", err.Error())
+			}
+		})
+	}
+}
+
+// TestUnitGetConfigFromProfile_RetryAfterParseFailure verifies that a failed
+// load is not cached: after the credentials file is repaired, a later call in
+// the same process re-reads the file and succeeds.
+func TestUnitGetConfigFromProfile_RetryAfterParseFailure(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "alicloud-test-retry-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	configPath := filepath.Join(tmpDir, "config.json")
+	if err := os.WriteFile(configPath, []byte(`{"profiles": [{"name": "retry-profile"`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	raw := map[string]interface{}{
+		"profile":                 "retry-profile",
+		"shared_credentials_file": configPath,
+		"region":                  "cn-beijing",
+	}
+	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
+
+	if _, err := loadProfileConfig(resourceData); err == nil {
+		t.Fatal("Expected a parse error for the truncated credentials file")
+	}
+
+	valid := map[string]interface{}{
+		"profiles": []map[string]interface{}{
+			{
+				"name":              "retry-profile",
+				"mode":              "AK",
+				"access_key_id":     "RETRY_AK",
+				"access_key_secret": "RETRY_SK",
+				"region_id":         "cn-hangzhou",
+			},
+		},
+		"current": "retry-profile",
+	}
+	validData, err := json.Marshal(valid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(configPath, validData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	profileConfig, err := loadProfileConfig(resourceData)
+	if err != nil {
+		t.Fatalf("Expected the retry to re-read the repaired file, got error: %v", err)
+	}
+	val, err := getConfigFromProfile(profileConfig, "access_key_id")
+	if err != nil {
+		t.Fatalf("getConfigFromProfile failed: %v", err)
+	}
+	if val != "RETRY_AK" {
+		t.Errorf("Expected RETRY_AK after retrying with the repaired file, got %v", val)
+	}
+}
+
+// TestUnitGetConfigFromProfile_ProfileModeKeySemantics locks the per-mode key
+// semantics of the profile switch: static keys are only returned for their
+// matching mode and yield empty strings otherwise.
+func TestUnitGetConfigFromProfile_ProfileModeKeySemantics(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "alicloud-test-mode-semantics-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	configs := map[string]map[string]interface{}{
+		"AK": {
+			"name":              "sem-ak",
+			"mode":              "AK",
+			"access_key_id":     "AK_ID",
+			"access_key_secret": "AK_SECRET",
+			"sts_token":         "STS_TOK",
+			"ram_role_name":     "ROLE_NAME",
+			"region_id":         "cn-hangzhou",
+		},
+		"EcsRamRole": {
+			"name":          "sem-ecs",
+			"mode":          "EcsRamRole",
+			"ram_role_name": "ECS_ROLE",
+			"region_id":     "cn-hangzhou",
+		},
+		"StsToken": {
+			"name":              "sem-sts",
+			"mode":              "StsToken",
+			"access_key_id":     "STS_AK_ID",
+			"access_key_secret": "STS_SK",
+			"sts_token":         "STS_TOK",
+			"region_id":         "cn-hangzhou",
+		},
+		"RamRoleArn": {
+			"name":              "sem-rra",
+			"mode":              "RamRoleArn",
+			"access_key_id":     "RRA_AK_ID",
+			"access_key_secret": "RRA_SK",
+			"ram_role_arn":      "acs:ram::1234567890123456:role/tf",
+			"ram_session_name":  "tf-session",
+			"expired_seconds":   900,
+			"region_id":         "cn-hangzhou",
+		},
+	}
+
+	// mode -> profileKey -> expected value.
+	expectations := map[string]map[string]interface{}{
+		"AK": {
+			"access_key_id": "AK_ID",
+			"sts_token":     "",
+			"ram_role_name": "",
+		},
+		"EcsRamRole": {
+			"access_key_id": "",
+			"ram_role_name": "ECS_ROLE",
+			"sts_token":     "",
+		},
+		"StsToken": {
+			"sts_token":     "STS_TOK",
+			"access_key_id": "STS_AK_ID",
+			"ram_role_name": "",
+		},
+		"RamRoleArn": {
+			"ram_role_arn":     "acs:ram::1234567890123456:role/tf",
+			"ram_session_name": "tf-session",
+			"expired_seconds":  float64(900),
+			"sts_token":        "",
+		},
+	}
+
+	for mode, profile := range configs {
+		t.Run(fmt.Sprintf("Mode_%s", mode), func(t *testing.T) {
+			configPath := filepath.Join(tmpDir, fmt.Sprintf("config_%s.json", mode))
+			content, err := json.Marshal(map[string]interface{}{
+				"profiles": []map[string]interface{}{profile},
+				"current":  profile["name"],
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(configPath, content, 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			raw := map[string]interface{}{
+				"profile":                 profile["name"],
+				"shared_credentials_file": configPath,
+				"region":                  "cn-beijing",
+			}
+			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
+
+			profileConfig, err := loadProfileConfig(resourceData)
+			if err != nil {
+				t.Fatalf("loadProfileConfig failed for mode %s: %v", mode, err)
+			}
+			for profileKey, expected := range expectations[mode] {
+				val, err := getConfigFromProfile(profileConfig, profileKey)
+				if err != nil {
+					t.Fatalf("Failed to get %q from profile mode %s: %v", profileKey, mode, err)
+				}
+				if val != expected {
+					t.Errorf("Mode %s key %q: expected %v, got %v", mode, profileKey, expected, val)
+				}
+			}
+		})
+	}
+}
+
+// TestUnitProviderConfigure_InvalidProfileJSON verifies that providerConfigure
+// propagates the credentials file parse error with its file path, profile name
+// and reason, and no longer masks it with the generic missing-credential
+// message.
+func TestUnitProviderConfigure_InvalidProfileJSON(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "alicloud-test-cfg-invalid-json-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	configPath := filepath.Join(tmpDir, "config.json")
+	if err := os.WriteFile(configPath, []byte(`{"profiles": [{"name": "broken"`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	raw := map[string]interface{}{
+		"profile":                 "broken",
+		"shared_credentials_file": configPath,
+		"region":                  "cn-hangzhou",
+	}
+	provider := Provider()
+	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
+
+	_, diags := providerConfigure(context.Background(), resourceData, provider)
+	if !diags.HasError() {
+		t.Fatal("Expected providerConfigure to fail for a corrupt credentials file")
+	}
+
+	errMsg := ""
+	for _, d := range diags {
+		errMsg += d.Summary + " " + d.Detail
+	}
+	if !strings.Contains(errMsg, configPath) {
+		t.Errorf("Expected error to contain the file path %s, got: %s", configPath, errMsg)
+	}
+	if !strings.Contains(errMsg, "broken") {
+		t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "invalid JSON") {
+		t.Errorf("Expected error to contain the parse reason, got: %s", errMsg)
+	}
+	if strings.Contains(errMsg, "no valid credential sources") {
+		t.Errorf("The real parse error must not be masked by the generic missing-credential message, got: %s", errMsg)
+	}
+}
+
+// TestUnitProviderConfigure_ProfileAccessKeyNotString locks the profile value
+// type guard in getProviderConfig: a non-string access_key_id in the
+// credentials file must surface a type error naming the attribute and the
+// profile instead of silently producing a broken credential.
+func TestUnitProviderConfigure_ProfileAccessKeyNotString(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "alicloud-test-cfg-ak-type-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	configPath := filepath.Join(tmpDir, "config.json")
+	writeTestProfileFile(t, configPath, map[string]interface{}{
+		"name":              "typed-ak",
+		"mode":              "AK",
+		"access_key_id":     123,
+		"access_key_secret": "TYPED_SK",
+		"region_id":         "cn-hangzhou",
+	})
+
+	// TestResourceDataRaw internally runs a schema diff that applies env
+	// DefaultFunc; clear the access-key env defaults so an ambient
+	// ALICLOUD_ACCESS_KEY cannot short-circuit the profile type guard.
+	t.Setenv("ALICLOUD_ACCESS_KEY", "")
+	t.Setenv("ALIBABA_CLOUD_ACCESS_KEY_ID", "")
+	t.Setenv("ALIBABACLOUD_ACCESS_KEY_ID", "")
+
+	provider := Provider()
+	resourceData := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+		"profile":                 "typed-ak",
+		"shared_credentials_file": configPath,
+		"region":                  "cn-hangzhou",
+	})
+
+	_, diags := providerConfigure(context.Background(), resourceData, provider)
+	if !diags.HasError() {
+		t.Fatal("Expected providerConfigure to fail when access_key_id is not a string")
+	}
+
+	errMsg := ""
+	for _, d := range diags {
+		errMsg += d.Summary + " " + d.Detail
+	}
+	if !strings.Contains(errMsg, "access_key_id") {
+		t.Errorf("Expected error to name the attribute access_key_id, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "typed-ak") {
+		t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "must be a string") {
+		t.Errorf("Expected error to contain the type expectation, got: %s", errMsg)
+	}
+}
+
+// TestUnitProviderConfigure_ProfileExpiredSecondsNotNumber locks the
+// expired_seconds type guard in providerConfigure: a non-number
+// expired_seconds in a RamRoleArn profile must surface a type error naming
+// the attribute and the profile instead of a runtime conversion panic.
+func TestUnitProviderConfigure_ProfileExpiredSecondsNotNumber(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "alicloud-test-cfg-exp-type-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	configPath := filepath.Join(tmpDir, "config.json")
+	writeTestProfileFile(t, configPath, map[string]interface{}{
+		"name":              "typed-exp",
+		"mode":              "RamRoleArn",
+		"access_key_id":     "TYPED_EXP_AK",
+		"access_key_secret": "TYPED_EXP_SK",
+		"ram_role_arn":      "acs:ram::1234567890123456:role/tf",
+		"ram_session_name":  "tf-session",
+		"expired_seconds":   "900",
+		"region_id":         "cn-hangzhou",
+	})
+
+	provider := Provider()
+	resourceData := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+		"profile":                 "typed-exp",
+		"shared_credentials_file": configPath,
+		"region":                  "cn-hangzhou",
+	})
+
+	_, diags := providerConfigure(context.Background(), resourceData, provider)
+	if !diags.HasError() {
+		t.Fatal("Expected providerConfigure to fail when expired_seconds is not a number")
+	}
+
+	errMsg := ""
+	for _, d := range diags {
+		errMsg += d.Summary + " " + d.Detail
+	}
+	if !strings.Contains(errMsg, "expired_seconds") {
+		t.Errorf("Expected error to name the attribute expired_seconds, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "typed-exp") {
+		t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "must be a number") {
+		t.Errorf("Expected error to contain the type expectation, got: %s", errMsg)
 	}
 }
