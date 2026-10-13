@@ -280,6 +280,7 @@ The following arguments are supported:
   - `0`: Disables automatic minor version update.
 * `bandwidth` - (Optional, Int) The total bandwidth of the instance. **NOTE:** From version 1.232.0, `bandwidth` can be set. If the instance is a cluster instance, `bandwidth` must be divisible by the number of `shard_count` in the instance, and if the instance is a read/write splitting instance, `bandwidth` cannot be set.
 * `connection_string` - (Deprecated since v1.101.0) Indicates whether the address is a private endpoint.
+* `global_security_group_list` - (Optional, List, Available since v2.1.0) The list of Global Security Group Ids.
 
   -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
