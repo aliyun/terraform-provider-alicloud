@@ -254,6 +254,11 @@ echo
 # Check for goimports (needed for code quality checks)
 if ! command -v goimports &> /dev/null; then
   install_tool "goimports" "go install golang.org/x/tools/cmd/goimports@latest"
+  # Add GOPATH/bin to PATH so newly installed tools are discoverable
+  GOBIN_DIR="$(go env GOPATH 2>/dev/null)/bin"
+  if [[ -d "$GOBIN_DIR" ]] && [[ ":$PATH:" != *":$GOBIN_DIR:"* ]]; then
+    export PATH="$GOBIN_DIR:$PATH"
+  fi
 fi
 
 if command -v goimports &> /dev/null; then
