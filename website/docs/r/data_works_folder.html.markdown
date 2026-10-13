@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Data Works Folder resource.
 ---
 
-# alicloud\_data\_works\_folder
+# alicloud_data_works_folder
 
 Provides a Data Works Folder resource.
 
-For information about Data Works Folder and how to use it, see [What is Folder](https://help.aliyun.com/document_detail/173940.html).
+For information about Data Works Folder and how to use it, see [What is Folder](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2020-05-18-createfolder).
 
--> **NOTE:** Available in v1.131.0+.
+-> **NOTE:** Available since v1.131.0.
 
 ## Example Usage
 
@@ -39,12 +39,14 @@ resource "alicloud_data_works_folder" "example" {
 The following arguments are supported:
 
 * `folder_path` - (Required) Folder Path. The folder path composed with for part: `Business Flow/{Business Flow Name}/[folderDi|folderMaxCompute|folderGeneral|folderJdbc|folderUserDefined]/{Directory Name}`. The first segment of path must be `Business Flow`, and sencond segment of path must be a Business Flow Name within the project. The third part of path must be one of those keywords:`folderDi|folderMaxCompute|folderGeneral|folderJdbc|folderUserDefined`. Then the finial part of folder path can be specified in yourself.
-* `project_id` - (Required, ForceNew, Available in v1.131.0+) The ID of the project.
+* `project_id` - (Optional, ForceNew, Available in v1.131.0+) The ID of the DataWorks workspace. You can obtain the workspace ID from the workspace configuration page in the DataWorks console. Either this parameter or `project_identifier` must be specified to determine which DataWorks workspace this folder belongs to.
+* `project_identifier` - (Optional) The name of the DataWorks workspace. You can obtain the workspace name from the workspace configuration page in the DataWorks console. Either this parameter or `project_id` must be specified to determine which DataWorks workspace this folder belongs to.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
+* `folder_id` - The ID of the DataWorks folder.
 * `id` - The resource ID of Folder. The value formats as `<folder_id>:<$.ProjectId>`.
 
 ## Import
