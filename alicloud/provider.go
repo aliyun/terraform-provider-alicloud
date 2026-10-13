@@ -2210,8 +2210,6 @@ func Provider() *schema.Provider {
 	return provider
 }
 
-var providerConfig map[string]interface{}
-
 // hcl2shimUnknownValue mirrors terraform-plugin-sdk's internal
 // hcl2shim.UnknownVariableValue. Under SDK v2 the shim hands this sentinel string
 // to d.Get/d.GetOk for any provider-config attribute whose value is unknown until
@@ -2255,13 +2253,17 @@ func mapString(m map[string]interface{}, key string) (string, bool) {
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Provider) (interface{}, diag.Diagnostics) {
 	log.Println("using terraform version:", p.TerraformVersion)
+	// profileConfig is resolved per Configure call from this instance's own
+	// profile / shared_credentials_file, so multiple provider aliases in one
+	// Terraform process never share (or contaminate) each other's profile.
+	profileConfig := loadProfileConfig(d)
 	var getProviderConfig = func(schemaKey string, profileKey string) string {
 		if schemaKey != "" {
 			if v, ok := cfgString(d, schemaKey); ok {
 				return v
 			}
 		}
-		if v, err := getConfigFromProfile(d, profileKey); err == nil && v != nil {
+		if v := getConfigFromProfile(profileConfig, profileKey); v != nil {
 			return v.(string)
 		}
 		return ""
@@ -2283,7 +2285,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	}
 
 	// TODO: supports all of profile modes after credentials supporting setting timeout
-	profileMode := fmt.Sprint(providerConfig["mode"])
+	profileMode := fmt.Sprint(profileConfig["mode"])
 	// Support advanced profile modes: CloudSSO, ChainableRamRoleArn, External, OAuth
 	if (accessKey == "" || secretKey == "") && profileName != "" &&
 		(profileMode == "ChainableRamRoleArn" || profileMode == "CloudSSO" ||
@@ -2372,8 +2374,8 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 
 	config.RamRoleArn = getProviderConfig("", "ram_role_arn")
 	config.RamRoleSessionName = getProviderConfig("", "ram_session_name")
-	expiredSeconds, err := getConfigFromProfile(d, "expired_seconds")
-	if err == nil && expiredSeconds != nil {
+	expiredSeconds := getConfigFromProfile(profileConfig, "expired_seconds")
+	if expiredSeconds != nil {
 		config.RamRoleSessionExpiration = (int)(expiredSeconds.(float64))
 	}
 
@@ -2413,10 +2415,11 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	}
 
 	if v, ok := d.GetOk("assume_role_with_oidc"); ok && len(v.([]interface{})) == 1 {
-		config.AssumeRoleWithOidc, err = getAssumeRoleWithOIDCConfig(v.([]interface{})[0].(map[string]interface{}))
+		assumeRoleWithOidc, err := getAssumeRoleWithOIDCConfig(v.([]interface{})[0].(map[string]interface{}))
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
+		config.AssumeRoleWithOidc = assumeRoleWithOidc
 		log.Printf("[INFO] assume_role_with_oidc configuration set: (RoleArn: %q, SessionName: %q, SessionExpiration: %d, OIDCProviderArn: %s)",
 			config.AssumeRoleWithOidc.RoleARN, config.AssumeRoleWithOidc.RoleSessionName, config.AssumeRoleWithOidc.DurationSeconds, config.AssumeRoleWithOidc.OIDCProviderArn)
 	}
@@ -4342,83 +4345,91 @@ func defaultConfigPath() (string, error) {
 	return filepath.Join(home, ".aliyun", "config.json"), nil
 }
 
-func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {
-
-	if providerConfig == nil {
-		if v, ok := d.GetOk("profile"); !ok && v.(string) == "" {
-			return nil, nil
-		}
-		current := d.Get("profile").(string)
-		// Set Credentials filename, expanding home directory
-		profilePath, err := homedir.Expand(d.Get("shared_credentials_file").(string))
+// loadProfileConfig resolves the aliyun CLI profile selected by this provider
+// instance's own "profile" / "shared_credentials_file" attributes. It reads
+// the profile file on every call and returns a fresh map, so the result is
+// scoped to the calling provider instance and can never leak into (or be
+// replaced by) another provider alias's configuration. Returns nil when no
+// profile is configured or the profile cannot be loaded.
+func loadProfileConfig(d *schema.ResourceData) map[string]interface{} {
+	if v, ok := d.GetOk("profile"); !ok || v.(string) == "" {
+		return nil
+	}
+	current := d.Get("profile").(string)
+	// Set Credentials filename, expanding home directory
+	profilePath, err := homedir.Expand(d.Get("shared_credentials_file").(string))
+	if err != nil {
+		return nil
+	}
+	if profilePath == "" {
+		configPath, err := defaultConfigPath()
 		if err != nil {
-			return nil, WrapError(err)
+			return nil
 		}
-		if profilePath == "" {
-			configPath, err := defaultConfigPath()
-			if err != nil {
-				return nil, WrapError(err)
-			}
-			profilePath = configPath
+		profilePath = configPath
+	}
+	profileConfig := make(map[string]interface{})
+	_, err = os.Stat(profilePath)
+	if !os.IsNotExist(err) {
+		data, err := ioutil.ReadFile(profilePath)
+		if err != nil {
+			return nil
 		}
-		providerConfig = make(map[string]interface{})
-		_, err = os.Stat(profilePath)
-		if !os.IsNotExist(err) {
-			data, err := ioutil.ReadFile(profilePath)
-			if err != nil {
-				return nil, WrapError(err)
-			}
-			config := map[string]interface{}{}
-			err = json.Unmarshal(data, &config)
-			if err != nil {
-				return nil, WrapError(err)
-			}
-			for _, v := range config["profiles"].([]interface{}) {
-				if current == v.(map[string]interface{})["name"] {
-					providerConfig = v.(map[string]interface{})
-				}
+		config := map[string]interface{}{}
+		err = json.Unmarshal(data, &config)
+		if err != nil {
+			return nil
+		}
+		for _, v := range config["profiles"].([]interface{}) {
+			if current == v.(map[string]interface{})["name"] {
+				profileConfig = v.(map[string]interface{})
 			}
 		}
 	}
+	return profileConfig
+}
 
+// getConfigFromProfile extracts ProfileKey from an already-loaded profile
+// config map (see loadProfileConfig), applying the per-mode gating rules.
+func getConfigFromProfile(profileConfig map[string]interface{}, ProfileKey string) interface{} {
 	mode := ""
-	if v, ok := providerConfig["mode"]; ok {
+	if v, ok := profileConfig["mode"]; ok {
 		mode = v.(string)
 	} else {
-		return v, nil
+		return v
 	}
 	if ProfileKey == "region_id" {
-		return providerConfig["region_id"], nil
+		return profileConfig["region_id"]
 	}
 	// For advanced profile modes, credentials are obtained dynamically via CLIProfileCredentialsProvider
 	if mode == "ChainableRamRoleArn" || mode == "CloudSSO" ||
 		mode == "External" || mode == "OAuth" {
-		return nil, nil
+		return nil
 	}
 	switch ProfileKey {
 	case "access_key_id", "access_key_secret":
 		if mode == "EcsRamRole" {
-			return "", nil
+			return ""
 		}
 	case "ram_role_name":
 		if mode != "EcsRamRole" {
-			return "", nil
+			return ""
 		}
 	case "sts_token":
 		if mode != "StsToken" {
-			return "", nil
+			return ""
 		}
 	case "ram_role_arn", "ram_session_name":
 		if mode != "RamRoleArn" {
-			return "", nil
+			return ""
 		}
 	case "expired_seconds":
 		if mode != "RamRoleArn" {
-			return float64(0), nil
+			return float64(0)
 		}
 	}
 
-	return providerConfig[ProfileKey], nil
+	return profileConfig[ProfileKey]
 }
 
 func getAssumeRoleWithOIDCConfig(tfMap map[string]interface{}) (*connectivity.AssumeRoleWithOidc, error) {
