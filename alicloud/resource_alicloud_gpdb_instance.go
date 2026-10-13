@@ -191,6 +191,12 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"enabled", "disabled"}, false),
 			},
+			"sql_collector_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Enable", "Disabled"}, false),
+			},
 			"maintain_start_time": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -200,6 +206,11 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"effective_time": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Immediate", "MaintainTime"}, false),
 			},
 			"serverless_mode": {
 				Type:         schema.TypeString,
@@ -755,6 +766,14 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 	request := make(map[string]interface{})
 	d.Partial(true)
 
+	// effective_time is an operation-time parameter of UpgradeDBVersion/UpgradeDBInstance
+	// rather than instance state: it is sent whenever an upgrade or scaling call is
+	// triggered and never read back from the API.
+	effectiveTime := ""
+	if v, ok := d.GetOk("effective_time"); ok {
+		effectiveTime = v.(string)
+	}
+
 	if d.HasChange("tags") {
 		if err := gpdbService.SetResourceTags(d, "ALIYUN::GPDB::INSTANCE"); err != nil {
 			return WrapError(err)
@@ -871,6 +890,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["MinorVersion"] = v
 		}
 	}
+	if effectiveTime != "" {
+		request["EffectiveTime"] = effectiveTime
+	}
 	if update {
 		action := "UpgradeDBVersion"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -894,10 +916,21 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		// reporting its previous status and minor version for a short window before the
 		// upgrade takes effect, so wait until the instance is back to a settled status
 		// (Running, or IDLE for serverless instances) and reports the target minor version.
-		minorVersionTarget := fmt.Sprint(request["MinorVersion"])
-		minorVersionStateConf := BuildStateConf([]string{}, []string{minorVersionTarget}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbService.GpdbDbInstanceMinorVersionStateRefreshFunc(d.Id(), minorVersionTarget))
-		if _, err := minorVersionStateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		// When effective_time is MaintainTime the upgrade is deferred to the maintenance
+		// window: the instance keeps its current minor version until the window arrives,
+		// so only wait for a settled status, otherwise the target value wait would block
+		// until the update timeout expires.
+		if effectiveTime != "MaintainTime" {
+			minorVersionTarget := fmt.Sprint(request["MinorVersion"])
+			minorVersionStateConf := BuildStateConf([]string{}, []string{minorVersionTarget}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbService.GpdbDbInstanceMinorVersionStateRefreshFunc(d.Id(), minorVersionTarget))
+			if _, err := minorVersionStateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		} else {
+			stateConf := BuildStateConf([]string{}, []string{"Running", "IDLE"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 
 	}
@@ -1084,6 +1117,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["SegNodeNum"] = v
 		}
 	}
+	if effectiveTime != "" {
+		request["EffectiveTime"] = effectiveTime
+	}
 
 	if update {
 		action := "UpgradeDBInstance"
@@ -1119,11 +1155,15 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 
 		// UpgradeDBInstance scaling is asynchronous and the instance keeps reporting Running
 		// for a short window before the resize takes effect, so also wait until the new value
-		// is actually applied to avoid Read observing the stale value.
-		segNodeNumTarget := fmt.Sprint(d.Get("seg_node_num"))
-		segNodeNumStateConf := BuildStateConf([]string{}, []string{segNodeNumTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "SegNodeNum", segNodeNumTarget, []string{"Running"}))
-		if _, err := segNodeNumStateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		// is actually applied to avoid Read observing the stale value. With effective_time
+		// MaintainTime the resize is deferred to the maintenance window, so skip the target
+		// value wait: the instance keeps reporting the old value until the window arrives.
+		if effectiveTime != "MaintainTime" {
+			segNodeNumTarget := fmt.Sprint(d.Get("seg_node_num"))
+			segNodeNumStateConf := BuildStateConf([]string{}, []string{segNodeNumTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "SegNodeNum", segNodeNumTarget, []string{"Running"}))
+			if _, err := segNodeNumStateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 	}
 
@@ -1139,6 +1179,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["UpgradeType"] = 2
 			request["MasterNodeNum"] = v
 		}
+	}
+	if effectiveTime != "" {
+		request["EffectiveTime"] = effectiveTime
 	}
 
 	if update {
@@ -1168,11 +1211,15 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 
 		// UpgradeDBInstance scaling is asynchronous and the instance keeps reporting Running
 		// for a short window before the resize takes effect, so also wait until the new value
-		// is actually applied to avoid Read observing the stale value.
-		masterNodeNumTarget := fmt.Sprint(d.Get("master_node_num"))
-		masterNodeNumStateConf := BuildStateConf([]string{}, []string{masterNodeNumTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "MasterNodeNum", masterNodeNumTarget, []string{"Running"}))
-		if _, err := masterNodeNumStateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		// is actually applied to avoid Read observing the stale value. With effective_time
+		// MaintainTime the resize is deferred to the maintenance window, so skip the target
+		// value wait: the instance keeps reporting the old value until the window arrives.
+		if effectiveTime != "MaintainTime" {
+			masterNodeNumTarget := fmt.Sprint(d.Get("master_node_num"))
+			masterNodeNumStateConf := BuildStateConf([]string{}, []string{masterNodeNumTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "MasterNodeNum", masterNodeNumTarget, []string{"Running"}))
+			if _, err := masterNodeNumStateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 	}
 
@@ -1187,6 +1234,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["UpgradeType"] = 1
 			request["InstanceSpec"] = v
 		}
+	}
+	if effectiveTime != "" {
+		request["EffectiveTime"] = effectiveTime
 	}
 	if update {
 		action := "UpgradeDBInstance"
@@ -1212,11 +1262,15 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 		// UpgradeDBInstance scaling is asynchronous and the instance keeps reporting Running
 		// for a short window before the resize takes effect, so also wait until the new value
-		// is actually applied to avoid Read observing the stale value.
-		instanceSpecTarget := fmt.Sprint(d.Get("instance_spec"))
-		instanceSpecStateConf := BuildStateConf([]string{}, []string{instanceSpecTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "InstanceSpec", instanceSpecTarget, []string{"Running"}))
-		if _, err := instanceSpecStateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		// is actually applied to avoid Read observing the stale value. With effective_time
+		// MaintainTime the resize is deferred to the maintenance window, so skip the target
+		// value wait: the instance keeps reporting the old value until the window arrives.
+		if effectiveTime != "MaintainTime" {
+			instanceSpecTarget := fmt.Sprint(d.Get("instance_spec"))
+			instanceSpecStateConf := BuildStateConf([]string{}, []string{instanceSpecTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "InstanceSpec", instanceSpecTarget, []string{"Running"}))
+			if _, err := instanceSpecStateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 	}
 
@@ -1231,6 +1285,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["UpgradeType"] = 1
 			request["StorageSize"] = v
 		}
+	}
+	if effectiveTime != "" {
+		request["EffectiveTime"] = effectiveTime
 	}
 
 	if update {
@@ -1259,11 +1316,15 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 
 		// UpgradeDBInstance scaling is asynchronous and the instance keeps reporting Running
 		// for a short window before the resize takes effect, so also wait until the new value
-		// is actually applied to avoid Read observing the stale value.
-		storageSizeTarget := fmt.Sprint(d.Get("storage_size"))
-		storageSizeStateConf := BuildStateConf([]string{}, []string{storageSizeTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "StorageSize", storageSizeTarget, []string{"Running"}))
-		if _, err := storageSizeStateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		// is actually applied to avoid Read observing the stale value. With effective_time
+		// MaintainTime the resize is deferred to the maintenance window, so skip the target
+		// value wait: the instance keeps reporting the old value until the window arrives.
+		if effectiveTime != "MaintainTime" {
+			storageSizeTarget := fmt.Sprint(d.Get("storage_size"))
+			storageSizeStateConf := BuildStateConf([]string{}, []string{storageSizeTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "StorageSize", storageSizeTarget, []string{"Running"}))
+			if _, err := storageSizeStateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 
 	}
@@ -1284,6 +1345,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		if v, ok := d.GetOk("cache_storage_size"); ok {
 			request["CacheStorageSize"] = strconv.Itoa(v.(int))
 		}
+	}
+	if effectiveTime != "" {
+		request["EffectiveTime"] = effectiveTime
 	}
 
 	if update {
@@ -1313,19 +1377,23 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		// UpgradeDBInstance scaling is asynchronous and the instance keeps reporting Running
 		// (or IDLE for ServerlessPro instances) for a short window before the resize takes
 		// effect, so also wait until the new values are actually applied to avoid Read
-		// observing the stale values.
-		if d.HasChange("serverless_resource") {
-			serverlessResourceTarget := fmt.Sprint(d.Get("serverless_resource"))
-			serverlessResourceStateConf := BuildStateConf([]string{}, []string{serverlessResourceTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "ServerlessResource", serverlessResourceTarget, []string{"Running", "IDLE"}))
-			if _, err := serverlessResourceStateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+		// observing the stale values. With effective_time MaintainTime the resize is deferred
+		// to the maintenance window, so skip the target value waits: the instance keeps
+		// reporting the old values until the window arrives.
+		if effectiveTime != "MaintainTime" {
+			if d.HasChange("serverless_resource") {
+				serverlessResourceTarget := fmt.Sprint(d.Get("serverless_resource"))
+				serverlessResourceStateConf := BuildStateConf([]string{}, []string{serverlessResourceTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "ServerlessResource", serverlessResourceTarget, []string{"Running", "IDLE"}))
+				if _, err := serverlessResourceStateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
 			}
-		}
-		if d.HasChange("cache_storage_size") {
-			cacheStorageSizeTarget := fmt.Sprint(d.Get("cache_storage_size"))
-			cacheStorageSizeStateConf := BuildStateConf([]string{}, []string{cacheStorageSizeTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "CacheStorageSize", cacheStorageSizeTarget, []string{"Running", "IDLE"}))
-			if _, err := cacheStorageSizeStateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+			if d.HasChange("cache_storage_size") {
+				cacheStorageSizeTarget := fmt.Sprint(d.Get("cache_storage_size"))
+				cacheStorageSizeStateConf := BuildStateConf([]string{}, []string{cacheStorageSizeTarget}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceScaleStateRefreshFunc(d.Id(), "CacheStorageSize", cacheStorageSizeTarget, []string{"Running", "IDLE"}))
+				if _, err := cacheStorageSizeStateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
 			}
 		}
 
@@ -1347,6 +1415,9 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("seg_disk_performance_level"); ok {
 		modifySegDiskPerformanceLevelReq["SegDiskPerformanceLevel"] = v
+	}
+	if effectiveTime != "" {
+		modifySegDiskPerformanceLevelReq["EffectiveTime"] = effectiveTime
 	}
 
 	if update {
@@ -1457,6 +1528,50 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
+	}
+
+	update = false
+	request = map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+
+	// sql_collector_status is write-only (GPDB has no SQL collector query API, so Read
+	// never refreshes it); no IsNewResource guard here so that a value set at create
+	// time is applied right after the instance is running via the create tail call
+	// into this update path.
+	if v, ok := d.GetOk("sql_collector_status"); ok && d.HasChange("sql_collector_status") {
+		update = true
+		request["SQLCollectorStatus"] = v
+	}
+
+	if update {
+		action := "ModifySQLCollectorPolicy"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		// The API also supports Serverless auto-scheduling instances whose stable status
+		// is IDLE, so wait for either settled status.
+		stateConf := BuildStateConf([]string{}, []string{"Running", "IDLE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("sql_collector_status")
 	}
 
 	if d.HasChange("parameters") {
