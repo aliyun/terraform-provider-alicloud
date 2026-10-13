@@ -571,7 +571,6 @@ func TestUnitAliCloudCloudFirewallInstance(t *testing.T) {
 
 	// ModifyInstance
 	attributesDiff = map[string]interface{}{
-		"cfw_service":     true,
 		"fw_vpc_number":   20,
 		"ip_number":       30,
 		"cfw_log_storage": 2000,

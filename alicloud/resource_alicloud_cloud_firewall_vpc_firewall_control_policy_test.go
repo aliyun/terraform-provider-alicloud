@@ -190,7 +190,7 @@ func TestUnitAliCloudCloudFirewallVpcFirewallControlPolicy(t *testing.T) {
 		"destination":      "ModifyVpcFirewallControlPolicyValue",
 		"destination_type": "ModifyVpcFirewallControlPolicyValue",
 		"proto":            "ModifyVpcFirewallControlPolicyValue",
-		"release":          false,
+		"release":          "false",
 		"source":           "ModifyVpcFirewallControlPolicyValue",
 		"source_type":      "ModifyVpcFirewallControlPolicyValue",
 	}

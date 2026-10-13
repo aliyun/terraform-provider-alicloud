@@ -1313,9 +1313,10 @@ func vpnAttachmentValidateTunnelChanges(ctx context.Context, d *schema.ResourceD
 		old := raw.(map[string]interface{})
 		oldByIndex[formatInt(old["tunnel_index"])] = old
 	}
-	// DiffFieldReader rehashes set members after merging computed fields, so
-	// its hashes need not equal the addresses in the original diff. Resolve
-	// those addresses by the required identity fields before inheriting.
+	// Raw diff entries for changed members live at their configuration
+	// set-hash addresses, while unchanged members keep their state
+	// addresses. Resolve the configuration addresses by the required
+	// identity fields before inheriting computed values.
 	prefixes := make(map[int]string)
 	for _, address := range changedKeys {
 		if !strings.HasSuffix(address, ".tunnel_index") {
@@ -1372,6 +1373,10 @@ func vpnAttachmentInheritComputed(d *schema.ResourceDiff, prefix string, next, o
 		// nil nested blocks even when its configuration contains a block.
 		value, exists := d.GetOkExists(address)
 		if field.Computed && !exists {
+			if _, isBlock := field.Elem.(*schema.Resource); isBlock && field.Type == schema.TypeList &&
+				!vpnAttachmentForceNewChanged(d) && vpnAttachmentMemberConfigured(d, prefix, fields, name) {
+				return fmt.Errorf("%s for tunnel_index %d cannot be cleared; write the complete block with its current values, or change a ForceNew field such as tunnel_bandwidth to rebuild the attachment", name, index)
+			}
 			next[name] = old[name]
 			continue
 		}
@@ -1395,6 +1400,23 @@ func vpnAttachmentInheritComputed(d *schema.ResourceDiff, prefix string, next, o
 		}
 	}
 	return nil
+}
+
+// vpnAttachmentMemberConfigured reports whether every writable member field
+// other than skip is observable in the configuration at prefix. When that
+// holds, a computed block that reads back as unset can only mean the
+// configuration removed it, so the change is rejected instead of silently
+// restored.
+func vpnAttachmentMemberConfigured(d *schema.ResourceDiff, prefix string, fields map[string]*schema.Schema, skip string) bool {
+	for name, field := range fields {
+		if name == skip || (field.Computed && !field.Optional) || field.DiffSuppressFunc != nil {
+			continue
+		}
+		if _, exists := d.GetOkExists(prefix + "." + name); !exists {
+			return false
+		}
+	}
+	return true
 }
 
 func vpnAttachmentSortedTunnels(tunnels []interface{}) []interface{} {

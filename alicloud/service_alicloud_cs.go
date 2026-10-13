@@ -1170,6 +1170,15 @@ func GetKubernetesNetworkName(cluster *cs.KubernetesClusterDetail) (network stri
 	return "", fmt.Errorf("no network addon found")
 }
 
+// A node reports no IP address while it is still initialising or has failed, so
+// callers must treat an absent address as an empty value rather than index into it.
+func csNodePrivateIp(ipAddress []string) string {
+	if len(ipAddress) == 0 {
+		return ""
+	}
+	return ipAddress[0]
+}
+
 // setCertificateAuthorityAttribute must be false for resources whose schema
 // does not declare certificate_authority. Terraform Plugin SDK v2 rejects
 // writes to undeclared state addresses.

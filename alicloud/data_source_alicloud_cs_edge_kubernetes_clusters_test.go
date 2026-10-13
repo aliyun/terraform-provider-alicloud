@@ -9,6 +9,7 @@ import (
 )
 
 func TestAccAliCloudCSEdgeKubernetesClustersDataSource(t *testing.T) {
+	t.Skip("standalone ACK@Edge cluster creation was disabled by the product on 2026-09-03 and new clusters are rejected with 400 EdgeClusterNotSupported, so the alicloud_cs_edge_kubernetes fixture can no longer be provisioned")
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_cs_edge_kubernetes_clusters.default"
 

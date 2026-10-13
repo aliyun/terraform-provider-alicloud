@@ -358,7 +358,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 				subMapping := map[string]interface{}{
 					"id":         node.InstanceId,
 					"name":       node.InstanceName,
-					"private_ip": node.IpAddress[0],
+					"private_ip": csNodePrivateIp(node.IpAddress),
 				}
 				workerNodes = append(workerNodes, subMapping)
 			}

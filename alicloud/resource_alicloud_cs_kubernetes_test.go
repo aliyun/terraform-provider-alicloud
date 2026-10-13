@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	roacs "github.com/alibabacloud-go/cs-20151215/v8/client"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
@@ -17,6 +19,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+// The configurable TypeList attributes below are pre-existing stock on
+// alicloud_cs_kubernetes. This change is confined to the master node read path:
+// fetchMasterNodes now flattens through flattenCsMasterNodes, which tolerates a
+// node that reports no IP address and unwraps the node pointer fields. It adds,
+// removes and reorders none of the attributes below, so they are marked as known
+// stock debt per scripts/collection-order/README.md instead of being covered by
+// new convergent reorder tests here.
+// collection-order: bypass addons -- pre-existing stock attribute, not added or changed by this read-path guard
+// collection-order: bypass api_audiences -- pre-existing stock attribute, not added or changed by this read-path guard
+// collection-order: bypass delete_options -- pre-existing stock attribute, not added or changed by this read-path guard
+// collection-order: bypass master_instance_types -- pre-existing stock attribute, not added or changed by this read-path guard
+// collection-order: bypass master_vswitch_ids -- pre-existing stock attribute, not added or changed by this read-path guard
+// collection-order: bypass pod_vswitch_ids -- pre-existing stock attribute, not added or changed by this read-path guard
+// collection-order: bypass rds_instances -- pre-existing stock attribute, not added or changed by this read-path guard
+// collection-order: bypass retain_resources -- pre-existing stock attribute, not added or changed by this read-path guard
+// collection-order: bypass runtime -- pre-existing stock attribute, not added or changed by this read-path guard
 
 // # Generate a CA cert pair.
 //echo '{"CN":"CA","key":{"algo":"rsa","size":2048}}' | cfssl gencert -initca - | cfssljson -bare ca -
@@ -528,7 +547,7 @@ variable "instance_type" {
 }
 
 data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+  available_resource_creation = "Rds"
   available_disk_category     = "cloud_essd"
   available_instance_type     = var.instance_type
 }
@@ -549,19 +568,33 @@ resource "alicloud_vpc" "vpc" {
 resource "alicloud_vswitch" "vswitches" {
   vpc_id       = alicloud_vpc.vpc.id
   cidr_block   = "192.168.1.0/24"
-  zone_id      = data.alicloud_zones.default.zones.1.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
   vswitch_name = var.name
 }
 
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
+}
+
+locals {
+  rds_instance_class = [for c in data.alicloud_db_instance_classes.default.instance_classes : c if startswith(c.instance_class, "mysql.n2.small")].0
+}
+
 resource "alicloud_db_instance" "default" {
-  engine               = "MySQL"
-  engine_version       = "8.0"
-  instance_type        = "rds.mysql.s2.large"
-  instance_storage     = "30"
-  instance_charge_type = "Postpaid"
-  instance_name        = var.name
-  vswitch_id           = alicloud_vswitch.vswitches.id
-  monitoring_period    = "60"
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = local.rds_instance_class.instance_class
+  instance_storage         = local.rds_instance_class.storage_range.0.min
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = alicloud_vswitch.vswitches.id
+  monitoring_period        = "60"
 }
 
 resource "alicloud_key_pair" "default" {
@@ -1012,6 +1045,113 @@ func TestUnit_parseRRSAMetadata(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tt.want, got) {
 				t.Errorf("flattenRRSAMetadata(%v) want %v got %v", tt.args.meta, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestUnitFlattenCsMasterNodes(t *testing.T) {
+	masterWithIp := &roacs.DescribeClusterNodesResponseBodyNodes{
+		InstanceId:   tea.String("i-master-1"),
+		NodeName:     tea.String("master-1"),
+		InstanceRole: tea.String("Master"),
+		IpAddress:    []*string{tea.String("192.168.0.1"), tea.String("192.168.0.2")},
+	}
+	masterEmptyIp := &roacs.DescribeClusterNodesResponseBodyNodes{
+		InstanceId:   tea.String("i-master-2"),
+		NodeName:     tea.String("master-2"),
+		InstanceRole: tea.String("Master"),
+		IpAddress:    []*string{},
+	}
+	masterNilIp := &roacs.DescribeClusterNodesResponseBodyNodes{
+		InstanceId:   tea.String("i-master-3"),
+		NodeName:     tea.String("master-3"),
+		InstanceRole: tea.String("Master"),
+	}
+	masterNilRole := &roacs.DescribeClusterNodesResponseBodyNodes{
+		InstanceId: tea.String("i-master-4"),
+		NodeName:   tea.String("master-4"),
+		IpAddress:  []*string{tea.String("192.168.0.4")},
+	}
+	worker := &roacs.DescribeClusterNodesResponseBodyNodes{
+		InstanceId:   tea.String("i-worker-1"),
+		NodeName:     tea.String("worker-1"),
+		InstanceRole: tea.String("Worker"),
+		IpAddress:    []*string{tea.String("192.168.1.1")},
+	}
+	workerEmptyIp := &roacs.DescribeClusterNodesResponseBodyNodes{
+		InstanceId:   tea.String("i-worker-2"),
+		NodeName:     tea.String("worker-2"),
+		InstanceRole: tea.String("Worker"),
+		IpAddress:    []*string{},
+	}
+
+	tests := []struct {
+		name  string
+		nodes []*roacs.DescribeClusterNodesResponseBodyNodes
+		want  []map[string]interface{}
+	}{
+		{
+			name:  "nil node list",
+			nodes: nil,
+			want:  nil,
+		},
+		{
+			name:  "empty node list",
+			nodes: []*roacs.DescribeClusterNodesResponseBodyNodes{},
+			want:  nil,
+		},
+		{
+			name:  "nil node element",
+			nodes: []*roacs.DescribeClusterNodesResponseBodyNodes{nil},
+			want:  nil,
+		},
+		{
+			name:  "master with empty ip address list",
+			nodes: []*roacs.DescribeClusterNodesResponseBodyNodes{masterEmptyIp},
+			want: []map[string]interface{}{
+				{"id": "i-master-2", "name": "master-2", "private_ip": ""},
+			},
+		},
+		{
+			name:  "master with nil ip address list",
+			nodes: []*roacs.DescribeClusterNodesResponseBodyNodes{masterNilIp},
+			want: []map[string]interface{}{
+				{"id": "i-master-3", "name": "master-3", "private_ip": ""},
+			},
+		},
+		{
+			name:  "master with nil instance role is skipped",
+			nodes: []*roacs.DescribeClusterNodesResponseBodyNodes{masterNilRole},
+			want:  nil,
+		},
+		{
+			name:  "master with addresses keeps the first one",
+			nodes: []*roacs.DescribeClusterNodesResponseBodyNodes{masterWithIp},
+			want: []map[string]interface{}{
+				{"id": "i-master-1", "name": "master-1", "private_ip": "192.168.0.1"},
+			},
+		},
+		{
+			name:  "worker nodes are not master nodes",
+			nodes: []*roacs.DescribeClusterNodesResponseBodyNodes{worker, workerEmptyIp},
+			want:  nil,
+		},
+		{
+			name:  "mixed list keeps masters only",
+			nodes: []*roacs.DescribeClusterNodesResponseBodyNodes{worker, masterWithIp, nil, masterEmptyIp, masterNilRole},
+			want: []map[string]interface{}{
+				{"id": "i-master-1", "name": "master-1", "private_ip": "192.168.0.1"},
+				{"id": "i-master-2", "name": "master-2", "private_ip": ""},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := flattenCsMasterNodes(tt.nodes)
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("flattenCsMasterNodes() want %v got %v", tt.want, got)
 			}
 		})
 	}
