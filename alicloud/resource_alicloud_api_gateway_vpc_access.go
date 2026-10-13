@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -49,6 +50,7 @@ func resourceAliCloudApiGatewayVpcAccess() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchemaForceNewWithElements(),
 		},
 	}
 }
@@ -62,6 +64,17 @@ func resourceAliCloudApiGatewayVpcAccessCreate(d *schema.ResourceData, meta inte
 	request.InstanceId = d.Get("instance_id").(string)
 	request.Port = requests.NewInteger(d.Get("port").(int))
 	request.VpcTargetHostName = d.Get("vpc_target_host_name").(string)
+	if tags, ok := d.GetOk("tags"); ok {
+		if request.QueryParams == nil {
+			request.QueryParams = make(map[string]string)
+		}
+		index := 1
+		for key, value := range tags.(map[string]interface{}) {
+			request.QueryParams[fmt.Sprintf("Tag.%d.Key", index)] = key
+			request.QueryParams[fmt.Sprintf("Tag.%d.Value", index)] = value.(string)
+			index++
+		}
+	}
 
 	var raw interface{}
 	var err error
@@ -110,6 +123,30 @@ func resourceAliCloudApiGatewayVpcAccessRead(d *schema.ResourceData, meta interf
 	d.Set("vpc_target_host_name", object["VpcTargetHostName"])
 	if v, ok := object["VpcAccessId"]; ok {
 		d.Set("vpc_access_id", v)
+	}
+	if v, ok := object["Tags"]; ok {
+		if tagsMap, ok := v.(map[string]interface{}); ok {
+			if tagInfos, ok := tagsMap["TagInfo"].([]interface{}); ok && len(tagInfos) > 0 {
+				result := make(map[string]string)
+				for _, ti := range tagInfos {
+					tiMap, ok := ti.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					key := fmt.Sprint(tiMap["Key"])
+					value := fmt.Sprint(tiMap["Value"])
+					if strings.HasPrefix(key, "aliyun") || strings.HasPrefix(key, "acs:") || strings.HasPrefix(key, "http://") || strings.HasPrefix(key, "https://") {
+						continue
+					}
+					result[key] = value
+				}
+				if len(result) > 0 {
+					if err := d.Set("tags", result); err != nil {
+						return WrapError(err)
+					}
+				}
+			}
+		}
 	}
 
 	return nil

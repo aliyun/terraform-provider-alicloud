@@ -129,6 +129,61 @@ func TestAccAliCloudApiGatewayVpcAccess_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudApiGatewayVpcAccess_tags(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_api_gateway_vpc_access.default"
+	ra := resourceAttrInit(resourceId, AliCloudApiGatewayVpcAccessMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeApiGatewayVpcAccess")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sApiGatewayVpcAccessTags-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudApiGatewayVpcAccessBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                 name,
+					"vpc_id":               "${alicloud_vpc.default.id}",
+					"instance_id":          "${alicloud_instance.default.id}",
+					"port":                 "8080",
+					"vpc_target_host_name": "www.example.com",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "vpc access test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"vpc_id":               CHECKSET,
+						"instance_id":          CHECKSET,
+						"port":                 "8080",
+						"vpc_target_host_name": "www.example.com",
+						"tags.%":               "2",
+						"tags.Created":         "TF",
+						"tags.For":             "vpc access test",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AliCloudApiGatewayVpcAccessMap0 = map[string]string{}
 
 func AliCloudApiGatewayVpcAccessBasicDependence0(name string) string {
