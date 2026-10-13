@@ -1,5 +1,8 @@
 ## 1.295.0 (Unreleased)
 
+- **New Resource:** `alicloud_hologram_user`
+- **New Data Source:** `alicloud_hologram_users`
+
 ENHANCEMENTS:
 
 - resource/alicloud_nlb_server_group: support ip_version_affinity_mode. ([#10705](https://github.com/aliyun/terraform-provider-alicloud/issues/10705))

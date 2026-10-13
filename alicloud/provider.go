@@ -173,6 +173,7 @@ func Provider() *schema.Provider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"alicloud_hologram_users":                                 dataSourceAliCloudHologramUsers(),
 			"alicloud_realtime_compute_variables":                     dataSourceAliCloudRealtimeComputeVariables(),
 			"alicloud_apig_secrets":                                   dataSourceAliCloudApigSecrets(),
 			"alicloud_threat_detection_attack_path_whitelists":        dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
@@ -981,6 +982,7 @@ func Provider() *schema.Provider {
 			"alicloud_sls_metric_stores":                                dataSourceAliCloudSlsMetricStores(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_hologram_user":                                        resourceAliCloudHologramUser(),
 			"alicloud_realtime_compute_variable":                            resourceAliCloudRealtimeComputeVariable(),
 			"alicloud_apig_secret":                                          resourceAliCloudApigSecret(),
 			"alicloud_cr_instance_customized_domain":                        resourceAliCloudCrInstanceCustomizedDomain(),
