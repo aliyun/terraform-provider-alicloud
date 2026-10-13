@@ -49,8 +49,8 @@ The following arguments are supported:
 
 * `contact_groups` - (Optional) The alert group to which alert notifications will be sent.
 * `monitor_group_name` - (Optional) The name of the application group.
-* `resource_group_id` - (Optional, Available since v1.141.0) The ID of the resource group.
-* `resource_group_name` - (Optional, Available since v1.141.0) The name of the resource group.
+* `resource_group_id` - (Optional, Available since v1.141.0) The ID of the resource group. The resource group binding is set at resource creation and cannot be changed; updating this field will return an error. To change the binding, recreate the resource.
+* `resource_group_name` - (Optional, Available since v1.141.0) The name of the resource group. The resource group binding is set at resource creation and cannot be changed; updating this field will return an error. To change the binding, recreate the resource.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
