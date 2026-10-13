@@ -39,6 +39,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/errwrap v1.1.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
+	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
@@ -65,13 +66,6 @@ require (
 
 require (
 	github.com/PaesslerAG/gval v1.0.0 // indirect
-	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
-	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/satori/go.uuid v1.2.0 // indirect
-	golang.org/x/mod v0.38.0 // indirect
-)
-
-require (
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
@@ -100,6 +94,7 @@ require (
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
@@ -119,7 +114,6 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/go-checkpoint v0.5.0 // indirect
-	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.7.0 // indirect
@@ -143,6 +137,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -155,6 +150,7 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tidwall/gjson v1.14.2 // indirect
@@ -171,6 +167,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
