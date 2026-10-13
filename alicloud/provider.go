@@ -816,6 +816,7 @@ func Provider() *schema.Provider {
 			"alicloud_ecs_image_pipelines":                              dataSourceAlicloudEcsImagePipelines(),
 			"alicloud_hbr_ots_backup_plans":                             dataSourceAlicloudHbrOtsBackupPlans(),
 			"alicloud_hbr_ots_snapshots":                                dataSourceAlicloudHbrOtsSnapshots(),
+			"alicloud_hbr_policy_bindings":                              dataSourceAlicloudHbrPolicyBindings(),
 			"alicloud_bastionhost_host_share_keys":                      dataSourceAlicloudBastionhostHostShareKeys(),
 			"alicloud_ecs_network_interface_permissions":                dataSourceAlicloudEcsNetworkInterfacePermissions(),
 			"alicloud_mse_engine_namespaces":                            dataSourceAlicloudMseEngineNamespaces(),
