@@ -4640,7 +4640,7 @@ func TestAccAliCloudRdsDBInstance_CustomIPArray(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testaccdbinstanceconfig%d", rand)
-	customArrayName := fmt.Sprintf("tf-testacc-custom-%d", rand)
+	customArrayName := fmt.Sprintf("tf_testacc_custom_%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
