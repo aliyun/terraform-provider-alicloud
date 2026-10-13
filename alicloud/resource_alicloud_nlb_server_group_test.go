@@ -1976,7 +1976,7 @@ func TestAccAliCloudNlbServerGroup_basic4662(t *testing.T) {
 					"preserve_client_ip_enabled": "true",
 					"connection_drain_enabled":   "true",
 					"any_port_enabled":           "true",
-					"protocol":                   "TCPSSL",
+					"protocol":                   "TCP_UDP",
 					"server_group_type":          "Instance",
 					"server_group_name":          name + "_update",
 					"vpc_id":                     "${alicloud_vpc.defaultEyoN1M.id}",
@@ -2006,7 +2006,7 @@ func TestAccAliCloudNlbServerGroup_basic4662(t *testing.T) {
 						"preserve_client_ip_enabled": "true",
 						"connection_drain_enabled":   "true",
 						"any_port_enabled":           "true",
-						"protocol":                   "TCPSSL",
+						"protocol":                   "TCP_UDP",
 						"server_group_type":          "Instance",
 						"server_group_name":          name + "_update",
 						"vpc_id":                     CHECKSET,
@@ -2535,7 +2535,7 @@ func TestAccAliCloudNlbServerGroup_basic4662_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"any_port_enabled":  "false",
-					"protocol":          "TCPSSL",
+					"protocol":          "TCP_UDP",
 					"server_group_type": "Instance",
 					"server_group_name": name,
 					"vpc_id":            "${alicloud_vpc.defaultEyoN1M.id}",
@@ -2569,7 +2569,7 @@ func TestAccAliCloudNlbServerGroup_basic4662_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"any_port_enabled":         "false",
-						"protocol":                 "TCPSSL",
+						"protocol":                 "TCP_UDP",
 						"server_group_type":        "Instance",
 						"server_group_name":        name,
 						"vpc_id":                   CHECKSET,
