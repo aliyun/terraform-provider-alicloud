@@ -1656,3 +1656,59 @@ func (s *ThreatDetectionServiceV2) ThreatDetectionAttackPathWhitelistStateRefres
 }
 
 // DescribeThreatDetectionAttackPathWhitelist >>> Encapsulated.
+
+// DescribeThreatDetectionDataSourceTemplate <<< Encapsulated get interface for ThreatDetection DataSourceTemplate.
+// DataSourceTemplate has no dedicated Get API; this method calls ListDataSourceTemplates
+// and returns the entry whose dataSourceTemplateId matches the given id.
+func (s *ThreatDetectionServiceV2) DescribeThreatDetectionDataSourceTemplate(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	action := "ListDataSourceTemplates"
+	request := make(map[string]interface{})
+	query := make(map[string]interface{})
+	request["DataSourceTemplateIds"] = []interface{}{id}
+	request["PageNumber"] = "1"
+	request["PageSize"] = "20"
+	if region := client.RegionId; region != "" {
+		request["RegionId"] = region
+	}
+
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		resp, e := client.RpcPost("cloud-siem", "2024-12-12", action, query, request, true)
+		if e != nil {
+			if NeedRetry(e) {
+				wait()
+				return resource.RetryableError(e)
+			}
+			return resource.NonRetryableError(e)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, e := jsonpath.Get("$.data", response)
+	if e != nil || v == nil {
+		return object, WrapErrorf(NotFoundErr("ThreatDetection:DataSourceTemplate", id), NotFoundMsg, response)
+	}
+	templates, ok := v.([]interface{})
+	if !ok {
+		return object, WrapErrorf(NotFoundErr("ThreatDetection:DataSourceTemplate", id), NotFoundMsg, response)
+	}
+	for _, raw := range templates {
+		tmpl, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(tmpl["dataSourceTemplateId"]) == id {
+			return tmpl, nil
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("ThreatDetection:DataSourceTemplate", id), NotFoundMsg, response)
+}
+
+// DescribeThreatDetectionDataSourceTemplate >>> Encapsulated.
