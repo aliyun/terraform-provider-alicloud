@@ -13,9 +13,13 @@ This data source provides the ECS instance types of Alibaba Cloud.
 
 -> **NOTE:** Available since v1.0.0.
 
-~> **NOTE:** By default, only the upgraded instance types are returned. If you want to get outdated instance types, you must set `is_outdated` to true.
-
 ~> **NOTE:** If one instance type is sold out, it will not be exported.
+
+~> **NOTE:** When `spot_strategy` is set to `SpotWithPriceLimit` or `SpotAsPriceGo`, the underlying `DescribeAvailableResource` call excludes instance families that do not offer a spot SKU (for example `ecs.u2i-*` and other legacy general-purpose families). If a family you expect is missing, retry with the default `spot_strategy=NoSpot` to confirm whether the spot filter is what is removing it.
+
+~> **NOTE:** When `image_id` is set, the returned list is the intersection with `DescribeImageSupportInstanceTypes`, which will narrow the result to instance types that the given image explicitly supports. If a specification you expect is missing, temporarily remove `image_id` to confirm whether the image compatibility check is filtering it out.
+
+~> **NOTE:** This data source passes `IoOptimized=optimized` to `DescribeAvailableResource` by default. Setting `is_outdated=true` flips this to `IoOptimized=none`, which currently returns an empty result set in tested regions because legacy non-I/O-optimized instance families have been retired from ECS. Do not rely on `is_outdated=true` as a way to broaden the result; use `spot_strategy=NoSpot` and remove `image_id` first when troubleshooting missing types.
 
 ## Example Usage
 
@@ -100,7 +104,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `system_disk_category` - (Optional, ForceNew, Available since v1.120.0) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd_entry`, `cloud_auto`. 
   **NOTE**: Its default value `cloud_efficiency` has been removed from the version v1.150.0.
-* `image_id` - (Optional, ForceNew, Available since v1.163.0) The ID of the image.
+* `image_id` - (Optional, ForceNew, Available since v1.163.0) The ID of the image. **NOTE:** When set, the result is intersected with `DescribeImageSupportInstanceTypes`, so any instance type that the given image does not explicitly support will be filtered out. Remove `image_id` to see the full unfiltered set.
 * `minimum_eni_ipv6_address_quantity` (Optional, ForceNew, Available since v1.193.0) The minimum number of IPv6 addresses per ENI. **Note:** If an instance type supports fewer IPv6 addresses per ENI than the specified value, information about the instance type is not queried.
 * `minimum_eni_private_ip_address_quantity` (Optional, ForceNew, Available since v1.223.1) The minimum expected IPv4 address upper limit of a single ENI when querying instance specifications. **Note:** If an instance type supports fewer IPv4 addresses per ENI than the specified value, information about the instance type is not queried.
 
