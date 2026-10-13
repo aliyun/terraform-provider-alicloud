@@ -88,6 +88,10 @@ The following arguments are supported:
   - `ddosDip`: Anti-DDoS Premium.
 **NOTE:** From version 1.214.0, `product_type` can be set to `ddosDip`.
 * `period` - (Optional, Int) The duration that you will buy DdosCoo instance (in month). Valid values: [1~9], `12`, `24`, `36`. Default value: `1`. At present, the provider does not support modify `period`.
+* `pricing_cycle` - (Optional, Int) The billing cycle of the instance. This parameter is only valid at creation and cannot be modified.
+* `renewal_status` - (Optional) The auto-renewal status of the instance. Valid values: `AutoRenewal`, `ManualRenewal`. This parameter is only valid at creation and cannot be modified.
+* `renewal_period` - (Optional, Int) The auto-renewal period of the instance. This parameter is required when `renewal_status` is set to `AutoRenewal` and is only valid at creation.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group to which the instance belongs. When set, it is passed to tag operations.
 * `tags` - (Optional, Map, Available since v1.248.0) A mapping of tags to assign to the resource.
 * `modify_type` - (Optional, Available since v1.248.0) The type of modification. Valid values: `UPGRADE`, `DOWNGRADE`.
 

@@ -252,6 +252,10 @@ func TestAccAliCloudDdosCooInstance_basic0(t *testing.T) {
 					"service_bandwidth": "100",
 					"port_count":        "50",
 					"domain_count":      "50",
+					"pricing_cycle":     1,
+					"renewal_status":    "ManualRenewal",
+					"renewal_period":    1,
+					"resource_group_id": "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -390,7 +394,7 @@ func TestAccAliCloudDdosCooInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type", "pricing_cycle", "renewal_status", "renewal_period", "resource_group_id"},
 			},
 		},
 	})
@@ -457,7 +461,7 @@ func TestAccAliCloudDdosCooInstance_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type", "pricing_cycle", "renewal_status", "renewal_period", "resource_group_id"},
 			},
 		},
 	})
@@ -635,7 +639,7 @@ func TestAccAliCloudDdosCooInstance_basic0_intl(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type", "pricing_cycle", "renewal_status", "renewal_period", "resource_group_id"},
 			},
 		},
 	})
@@ -803,7 +807,7 @@ func TestAccAliCloudDdosCooInstance_basic1_dip(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type", "pricing_cycle", "renewal_status", "renewal_period", "resource_group_id"},
 			},
 		},
 	})
@@ -972,7 +976,7 @@ func TestAccAliCloudDdosCooInstance_basic1_dip_intl(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type"},
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period", "modify_type", "pricing_cycle", "renewal_status", "renewal_period", "resource_group_id"},
 			},
 		},
 	})
