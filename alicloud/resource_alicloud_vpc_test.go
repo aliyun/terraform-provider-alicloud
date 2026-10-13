@@ -35,7 +35,7 @@ func init() {
 			"alicloud_ots_instance",
 			"alicloud_router_interface",
 			"alicloud_route_table",
-			"alicloud_cen_instance",
+			"alicloud_cen_instance_attachment",
 			"alicloud_edas_cluster",
 			"alicloud_edas_k8s_cluster",
 			"alicloud_network_acl",

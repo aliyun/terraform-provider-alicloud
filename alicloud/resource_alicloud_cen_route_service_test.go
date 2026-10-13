@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"strings"
 	"testing"
 	"time"
 
@@ -28,14 +27,6 @@ func testSweepCenRouteService(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-		"tf_example",
-		"tf-example",
-		"terraform-example",
-	}
-
 	request := cbn.CreateDescribeCensRequest()
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
@@ -45,22 +36,15 @@ func testSweepCenRouteService(region string) error {
 			return cbnClient.DescribeCens(request)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to retrieve cen instance in service list: %s", err)
+			return WrapErrorf(err, "Failed to retrieve CEN instances")
 		}
 
 		response, _ := raw.(*cbn.DescribeCensResponse)
 
 		for _, v := range response.Cens.Cen {
-			skip := true
-			if !sweepAll() {
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(v.Name), strings.ToLower(prefix)) {
-						skip = false
-					}
-				}
-				if skip {
-					log.Printf("[INFO] Skipping cen instance: %s ", v.Name)
-				}
+			if !sweepAll() && !sweepTestCenName(v.Name) {
+				log.Printf("[INFO] Skipping cen instance: %s", v.Name)
+				continue
 			}
 			cenIds = append(cenIds, v.CenId)
 		}
@@ -90,6 +74,19 @@ func testSweepCenRouteService(region string) error {
 			response, _ := raw.(*cbn.DescribeRouteServicesInCenResponse)
 
 			for _, item := range response.RouteServiceEntries.RouteServiceEntry {
+				if !sweepCenChildInRegion(region, item.HostRegionId) || !sweepCenChildInRegion(region, item.AccessRegionId) {
+					log.Printf("[INFO] Skipping CEN route service outside sweep region: %s", item.HostVpcId)
+					continue
+				}
+				if sweepingVpcs() {
+					allowed, err := sweepableVpcAttachment(client, item.HostVpcId)
+					if err != nil {
+						return err
+					}
+					if !allowed {
+						continue
+					}
+				}
 				id := fmt.Sprintf("%v:%v:%v:%v:%v", item.CenId, item.HostRegionId, item.Host, item.AccessRegionId, item.HostVpcId)
 				if err := deleteCenRouteService(id, client); err != nil {
 					log.Printf("[ERROR] Failed to delete cen route service (%s): %s.", cenId, err)

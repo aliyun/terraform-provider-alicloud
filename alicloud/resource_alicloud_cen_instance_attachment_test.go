@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"strings"
@@ -34,14 +35,6 @@ func testSweepCenInstanceAttachment(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-		"tf_example",
-		"tf-example",
-		"terraform-example",
-	}
-
 	request := cbn.CreateDescribeCensRequest()
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
@@ -51,22 +44,15 @@ func testSweepCenInstanceAttachment(region string) error {
 			return cbnClient.DescribeCens(request)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to retrieve cen instance in service list: %s", err)
+			return WrapErrorf(err, "Failed to retrieve CEN instances")
 		}
 
 		response, _ := raw.(*cbn.DescribeCensResponse)
 
 		for _, v := range response.Cens.Cen {
-			skip := true
-			if !sweepAll() {
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(v.Name), strings.ToLower(prefix)) {
-						skip = false
-					}
-				}
-				if skip {
-					log.Printf("[INFO] Skipping cen instance: %s ", v.Name)
-				}
+			if !sweepAll() && !sweepTestCenName(v.Name) {
+				log.Printf("[INFO] Skipping cen instance: %s", v.Name)
+				continue
 			}
 			cenIds = append(cenIds, v.CenId)
 		}
@@ -96,6 +82,23 @@ func testSweepCenInstanceAttachment(region string) error {
 			response, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
 
 			for _, item := range response.ChildInstances.ChildInstance {
+				if !sweepCenChildInRegion(region, item.ChildInstanceRegionId) {
+					log.Printf("[INFO] Skipping CEN attachment outside sweep region: %s", item.ChildInstanceId)
+					continue
+				}
+				if sweepingVpcs() {
+					if item.ChildInstanceType != "VPC" {
+						continue
+					}
+					allowed, err := sweepableVpcAttachment(client, item.ChildInstanceId)
+					if err != nil {
+						return err
+					}
+					if !allowed {
+						log.Printf("[INFO] Skipping non-test VPC attachment: %s", item.ChildInstanceId)
+						continue
+					}
+				}
 				id := fmt.Sprintf("%v:%v:%v:%v", item.CenId, item.ChildInstanceId, item.ChildInstanceType, item.ChildInstanceRegionId)
 				if err := deleteCenInstancAttachmet(id, client); err != nil {
 					log.Printf("[ERROR] Failed to delete cen instance attachment (%s): %s", cenId, err)
@@ -470,4 +473,39 @@ func resourceCenInstanceAttachmentConfigDependence(name string) string {
 var CenInstanceAttachmentBasicMap = map[string]string{
 	"child_instance_owner_id": CHECKSET,
 	"status":                  CHECKSET,
+}
+
+func sweepingVpcs() bool {
+	selected := flag.Lookup("sweep-run")
+	return selected != nil && strings.Contains(strings.ToLower(selected.Value.String()), "alicloud_vpc")
+}
+
+func sweepableVpcAttachment(client *connectivity.AliyunClient, id string) (bool, error) {
+	response, err := client.RpcPost("Vpc", "2016-04-28", "DescribeVpcs", nil, map[string]interface{}{
+		"RegionId": client.RegionId, "VpcId": id, "PageSize": 10, "PageNumber": 1,
+	}, true)
+	if err != nil {
+		return false, err
+	}
+	vpcs, ok := response["Vpcs"].(map[string]interface{})
+	if !ok {
+		return false, fmt.Errorf("invalid VPC lookup response")
+	}
+	rows, ok := vpcs["Vpc"].([]interface{})
+	if !ok {
+		return false, fmt.Errorf("invalid VPC lookup rows")
+	}
+	for _, row := range rows {
+		vpc, ok := row.(map[string]interface{})
+		if !ok {
+			return false, fmt.Errorf("invalid VPC lookup row")
+		}
+		if fmt.Sprint(vpc["VpcId"]) != id {
+			continue
+		}
+		// Unknown default status fails closed.
+		isDefault, ok := vpc["IsDefault"].(bool)
+		return ok && sweepTestVpcName(fmt.Sprint(vpc["VpcName"]), isDefault), nil
+	}
+	return false, nil
 }
