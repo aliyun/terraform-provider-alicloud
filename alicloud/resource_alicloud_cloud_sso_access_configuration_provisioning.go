@@ -143,7 +143,7 @@ func resourceAlicloudCloudSsoAccessConfigurationProvisioningDelete(d *schema.Res
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExists.AccessConfigurationProvisioning"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExists.AccessConfigurationProvisioning", "EntityNotExists.AccessConfiguration"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
