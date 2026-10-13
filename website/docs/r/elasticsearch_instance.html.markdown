@@ -122,7 +122,7 @@ The following arguments are supported:
 
 -> **NOTE:**  This parameter is required when RenewalStatus is set to AutoRenewal.  
 
-* `resource_group_id` - (Optional, ForceNew, Computed, Available since v1.86.0) The ID of the resource group to which the instance belongs.
+* `resource_group_id` - (Optional, Computed, Available since v1.86.0) The ID of the resource group to which the instance belongs. Updating this field moves the instance to the target resource group via ResourceManager MoveResources.
 * `setting_config` - (Optional, Computed, Map, Available since v1.125.0) YML configuration file settings for the instance.
 * `tags` - (Optional, Computed, Map, Available since v1.73.0) Instance tag group.
 * `update_strategy` - (Optional, Available since v1.267.0) Elasticsearch update strategy (for example, index updates, cluster upgrades, or service deployments). Valid values:

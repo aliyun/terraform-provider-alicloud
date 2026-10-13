@@ -294,7 +294,6 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			// lintignore: S006
 			"setting_config": {
@@ -1059,6 +1058,42 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	var body map[string]interface{}
 	update := false
 	d.Partial(true)
+
+	// Move the instance to another resource group via ResourceManager.MoveResources
+	// when resource_group_id changes. On create, the resource group is already set
+	// via the createInstance body, so this only applies to in-place updates.
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		moveReq := map[string]interface{}{
+			"ResourceGroupId": d.Get("resource_group_id"),
+			"Resources": []interface{}{
+				map[string]interface{}{
+					"ResourceType": "instance",
+					"ResourceId":   d.Id(),
+					"Service":      "elasticsearch",
+					"RegionId":     client.RegionId,
+				},
+			},
+		}
+		const moveAction = "MoveResources"
+		var moveResp map[string]interface{}
+		moveWait := incrementalWait(3*time.Second, 5*time.Second)
+		if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			var err error
+			moveResp, err = client.RpcPost("ResourceManager", "2020-03-31", moveAction, nil, moveReq, false)
+			if err != nil {
+				if NeedRetry(err) {
+					moveWait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		}); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), moveAction, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(moveAction, moveResp, moveReq)
+		d.SetPartial("resource_group_id")
+	}
 
 	elasticsearchServiceV2 := ElasticsearchServiceV2{client}
 	objectRaw, _ := elasticsearchServiceV2.DescribeElasticsearchInstance(d.Id())
