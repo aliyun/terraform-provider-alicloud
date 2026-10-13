@@ -1037,6 +1037,7 @@ func Provider() *schema.Provider {
 			"alicloud_cms_integration_policy":                               resourceAliCloudCmsIntegrationPolicy(),
 			"alicloud_cms_workspace":                                        resourceAliCloudCmsWorkspace(),
 			"alicloud_cms_dataset":                                          resourceAliCloudCmsDataset(),
+			"alicloud_cms_memory_store_api_key":                             resourceAliCloudCmsMemoryStoreAPIKey(),
 			"alicloud_cloud_firewall_vpc_firewall_control_policy_order":     resourceAliCloudCloudFirewallVpcFirewallControlPolicyOrder(),
 			"alicloud_cloud_firewall_nat_firewall_control_policy_order":     resourceAliCloudCloudFirewallNatFirewallControlPolicyOrder(),
 			"alicloud_esa_custom_response_code_rule":                        resourceAliCloudEsaCustomResponseCodeRule(),
