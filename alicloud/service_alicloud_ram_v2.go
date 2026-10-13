@@ -1393,3 +1393,61 @@ func (s *RamServiceV2) DescribeRamAccessKeyPolicy(id string) (object map[string]
 }
 
 // DescribeRamAccessKeyPolicy >>> Encapsulated.
+
+// DescribeRamMFADevice <<< Encapsulated get interface for Ram MFADevice.
+func (s *RamServiceV2) DescribeRamMFADevice(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	action := "ListVirtualMFADevices"
+
+	for {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		v, err := jsonpath.Get("$.VirtualMFADevices.VirtualMFADevice[*]", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VirtualMFADevices.VirtualMFADevice[*]", response)
+		}
+
+		result, _ := v.([]interface{})
+		for _, item := range result {
+			device := item.(map[string]interface{})
+			if fmt.Sprint(device["SerialNumber"]) == id {
+				return device, nil
+			}
+		}
+
+		if isTruncated, _ := response["IsTruncated"].(bool); !isTruncated {
+			break
+		}
+
+		marker, _ := response["Marker"].(string)
+		if marker == "" || marker == fmt.Sprint(request["Marker"]) {
+			break
+		}
+		request["Marker"] = marker
+	}
+
+	return object, WrapErrorf(NotFoundErr("MFADevice", id), NotFoundMsg, response)
+}
+
+// DescribeRamMFADevice >>> Encapsulated.
