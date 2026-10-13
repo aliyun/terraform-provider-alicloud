@@ -56,6 +56,11 @@ func resourceAliCloudRamRole() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"allow_console_login": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"role_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -147,6 +152,10 @@ func resourceAliCloudRamRoleCreate(d *schema.ResourceData, meta interface{}) err
 		request["MaxSessionDuration"] = v
 	}
 
+	if v, ok := d.GetOkExists("allow_console_login"); ok {
+		request["AllowConsoleLogin"] = v
+	}
+
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
 		tagsMapJSON, err := convertListMapToJsonString(tagsMap)
@@ -223,6 +232,7 @@ func resourceAliCloudRamRoleRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("create_time", objectRaw["CreateDate"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("max_session_duration", objectRaw["MaxSessionDuration"])
+	d.Set("allow_console_login", objectRaw["AllowConsoleLogin"])
 	d.Set("role_id", objectRaw["RoleId"])
 	d.Set("role_name", objectRaw["RoleName"])
 	d.Set("name", objectRaw["RoleName"])
@@ -285,6 +295,11 @@ func resourceAliCloudRamRoleUpdate(d *schema.ResourceData, meta interface{}) err
 		if v, ok := d.GetOkExists("max_session_duration"); ok {
 			request["NewMaxSessionDuration"] = v
 		}
+	}
+
+	if d.HasChange("allow_console_login") {
+		update = true
+		request["NewAllowConsoleLogin"] = d.Get("allow_console_login")
 	}
 
 	if d.HasChange("assume_role_policy_document") {
