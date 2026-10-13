@@ -261,6 +261,43 @@ func (s *EcsService) LeaveSecurityGroups(instanceId string, securityGroupIds []s
 	return nil
 }
 
+// ModifyInstanceSecurityGroups replaces the full set of security groups attached to an
+// ECS instance in a single atomic ModifyInstanceAttribute call. Unlike the incremental
+// LeaveSecurityGroups/JoinSecurityGroups pair, this supports cross-type migration
+// (e.g. basic -> advanced security group) because ECS requires an instance to always
+// belong to at least one security group and forbids mixing basic and advanced types,
+// so removing the old group before joining the new one always fails.
+func (s *EcsService) ModifyInstanceSecurityGroups(instanceId string, securityGroupIds []string) error {
+	if len(securityGroupIds) == 0 {
+		return nil
+	}
+	request := ecs.CreateModifyInstanceAttributeRequest()
+	request.InstanceId = instanceId
+	request.RegionId = s.client.RegionId
+	sgs := make([]string, len(securityGroupIds))
+	copy(sgs, securityGroupIds)
+	request.SecurityGroupIds = &sgs
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyInstanceAttribute(request)
+		})
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{Throttling, "OperationConflict", "LastRequestProcessing", "LastOrderProcessing", "InternalError", "UnknownError"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
 func (s *EcsService) DescribeSecurityGroup(id string) (group ecs.DescribeSecurityGroupAttributeResponse, err error) {
 	request := ecs.CreateDescribeSecurityGroupAttributeRequest()
 	request.SecurityGroupId = id
