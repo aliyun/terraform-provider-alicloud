@@ -111,6 +111,10 @@ func testSweepVpcs(region string) error {
 
 	for _, id := range vpcIds {
 		log.Printf("[INFO] Deleting VPC: (%s)", id)
+		// Proactively clean up all dependent resources within the VPC before
+		// attempting to delete it, so VPCs with leftover dependencies are swept
+		// even when the dependency sweepers missed them by name prefix.
+		sweepVpcDependentResources(client, id)
 		action := "DeleteVpc"
 		request := map[string]interface{}{
 			"VpcId":    id,
@@ -134,6 +138,149 @@ func testSweepVpcs(region string) error {
 		}
 	}
 	return nil
+}
+
+// listDependentResources queries resources filtered by a parameter (typically
+// VpcId, or ResourceId for FlowLogs) and returns the raw item maps. It handles
+// pagination and returns an empty slice when no resources are found.
+func listDependentResources(client *connectivity.AliyunClient, product, version, action, responsePath, paramKey, paramValue string) []map[string]interface{} {
+	items := make([]map[string]interface{}, 0)
+	request := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		paramKey:     paramValue,
+		"PageSize":    PageSizeLarge,
+		"PageNumber":  1,
+	}
+	for {
+		response, err := client.RpcPost(product, version, action, nil, request, true)
+		if err != nil {
+			log.Printf("[ERROR] Failed to list %s for %s=%s: %v", action, paramKey, paramValue, err)
+			return items
+		}
+		resp, err := jsonpath.Get(responsePath, response)
+		if err != nil {
+			return items
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			if item, ok := v.(map[string]interface{}); ok {
+				items = append(items, item)
+			}
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return items
+}
+
+// deleteDependentResource deletes a single resource by ID using RpcPost with retry.
+func deleteDependentResource(client *connectivity.AliyunClient, product, version, action, idField, id string) {
+	log.Printf("[INFO] Deleting %s: %s", action, id)
+	request := map[string]interface{}{
+		idField:     id,
+		"RegionId":  client.RegionId,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
+		_, err := client.RpcPost(product, version, action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		log.Printf("[ERROR] Failed to delete %s (%s): %v", action, id, err)
+	}
+}
+
+// sweepVpcDependentResources proactively queries and deletes all dependent
+// resources within the specified VPC before the VPC itself can be deleted.
+// This ensures VPCs with leftover dependencies are properly cleaned up,
+// regardless of whether the dependency sweepers caught them by name prefix.
+// The deletion order follows Alibaba Cloud VPC dependency constraints:
+// VSwitches, NAT Gateways, Security Groups, custom Route Tables, Network ACLs,
+// VPN Gateways, HaVips, Flow Logs, and IPv6 Gateways.
+func sweepVpcDependentResources(client *connectivity.AliyunClient, vpcId string) {
+	vpcService := VpcService{client}
+	ecsService := EcsService{client}
+
+	// 1. Delete VSwitches in the VPC
+	for _, item := range listDependentResources(client, "Vpc", "2016-04-28", "DescribeVSwitches", "$.VSwitches.VSwitch", "VpcId", vpcId) {
+		if id := fmt.Sprint(item["VSwitchId"]); id != "" {
+			if err := vpcService.sweepVSwitch(id); err != nil {
+				log.Printf("[ERROR] Failed to delete VSwitch %s in VPC %s: %v", id, vpcId, err)
+			}
+		}
+	}
+
+	// 2. Delete NAT Gateways in the VPC (Force=true via sweepNatGateway)
+	for _, item := range listDependentResources(client, "Vpc", "2016-04-28", "DescribeNatGateways", "$.NatGateways.NatGateway", "VpcId", vpcId) {
+		if id := fmt.Sprint(item["NatGatewayId"]); id != "" {
+			if err := vpcService.sweepNatGateway(id); err != nil {
+				log.Printf("[ERROR] Failed to delete NAT Gateway %s in VPC %s: %v", id, vpcId, err)
+			}
+		}
+	}
+
+	// 3. Delete Security Groups in the VPC (ECS API)
+	for _, item := range listDependentResources(client, "Ecs", "2014-05-26", "DescribeSecurityGroups", "$.SecurityGroups.SecurityGroup", "VpcId", vpcId) {
+		if id := fmt.Sprint(item["SecurityGroupId"]); id != "" {
+			if err := ecsService.sweepSecurityGroup(id); err != nil {
+				log.Printf("[ERROR] Failed to delete Security Group %s in VPC %s: %v", id, vpcId, err)
+			}
+		}
+	}
+
+	// 4. Delete custom Route Tables in the VPC (skip System route tables)
+	for _, item := range listDependentResources(client, "Vpc", "2016-04-28", "DescribeRouteTableList", "$.RouterTableList.RouterTableListType", "VpcId", vpcId) {
+		if fmt.Sprint(item["RouteTableType"]) == "System" {
+			continue
+		}
+		if id := fmt.Sprint(item["RouteTableId"]); id != "" {
+			deleteDependentResource(client, "Vpc", "2016-04-28", "DeleteRouteTable", "RouteTableId", id)
+		}
+	}
+
+	// 5. Delete Network ACLs in the VPC
+	for _, item := range listDependentResources(client, "Vpc", "2016-04-28", "DescribeNetworkAcls", "$.NetworkAcls.NetworkAcl", "VpcId", vpcId) {
+		if id := fmt.Sprint(item["NetworkAclId"]); id != "" {
+			deleteDependentResource(client, "Vpc", "2016-04-28", "DeleteNetworkAcl", "NetworkAclId", id)
+		}
+	}
+
+	// 6. Delete VPN Gateways in the VPC
+	for _, item := range listDependentResources(client, "Vpc", "2016-04-28", "DescribeVpnGateways", "$.VpnGateways.VpnGateway", "VpcId", vpcId) {
+		if id := fmt.Sprint(item["VpnGatewayId"]); id != "" {
+			deleteDependentResource(client, "Vpc", "2016-04-28", "DeleteVpnGateway", "VpnGatewayId", id)
+		}
+	}
+
+	// 7. Delete HaVips in the VPC
+	for _, item := range listDependentResources(client, "Vpc", "2016-04-28", "DescribeHaVips", "$.HaVips.HaVip", "VpcId", vpcId) {
+		if id := fmt.Sprint(item["HaVipId"]); id != "" {
+			deleteDependentResource(client, "Vpc", "2016-04-28", "DeleteHaVip", "HaVipId", id)
+		}
+	}
+
+	// 8. Delete Flow Logs associated with the VPC (ResourceId = VpcId)
+	for _, item := range listDependentResources(client, "Vpc", "2016-04-28", "DescribeFlowLogs", "$.FlowLogs.FlowLog", "ResourceId", vpcId) {
+		if id := fmt.Sprint(item["FlowLogId"]); id != "" {
+			deleteDependentResource(client, "Vpc", "2016-04-28", "DeleteFlowLog", "FlowLogId", id)
+		}
+	}
+
+	// 9. Delete IPv6 Gateways in the VPC
+	for _, item := range listDependentResources(client, "Vpc", "2016-04-28", "DescribeIpv6Gateways", "$.Ipv6Gateways.Ipv6Gateway", "VpcId", vpcId) {
+		if id := fmt.Sprint(item["Ipv6GatewayId"]); id != "" {
+			deleteDependentResource(client, "Vpc", "2016-04-28", "DeleteIpv6Gateway", "Ipv6GatewayId", id)
+		}
+	}
 }
 
 func TestAccAliCloudVPC_basic(t *testing.T) {

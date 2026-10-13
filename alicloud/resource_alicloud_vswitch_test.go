@@ -45,8 +45,7 @@ func init() {
 			"alicloud_vpn_gateway",
 			"alicloud_mongodb_instance",
 			"alicloud_mongodb_sharding_instance",
-			"alicloud_gpdb_instance",
-			"alicloud_bastionhost_instance",
+			// alicloud_gpdb_instance sweeper is not registered (only alicloud_gpdb_elastic_instance exists)
 			"alicloud_yundun_dbaudit_instance",
 			"alicloud_emr_cluster",
 			"alicloud_polardb_cluster",
@@ -54,8 +53,8 @@ func init() {
 			"alicloud_cassandra_cluster",
 			"alicloud_network_acl",
 			"alicloud_nat_gateway",
-			"alicloud_alicloud_service_mesh_service_mesh",
-			"alicloud_nlb_load_balancer",
+			// alicloud_alicloud_service_mesh_service_mesh and alicloud_nlb_load_balancer
+			// sweepers are not registered; remove to avoid sweeper chain failure
 		},
 	})
 }
