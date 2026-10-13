@@ -86,6 +86,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Security Group.
 * `create_time` - (Available since v1.239.0) The time when the security group was created.
+* `service_managed` - (Computed) Whether the security group is service-managed.
 
 ## Timeouts
 
