@@ -144,7 +144,7 @@ The following arguments are supported:
 * `auto_split` - (Optional) Determines whether to automatically split a shard. Default to `false`.
 * `enable_web_tracking` - (Optional) Whether open webtracking. webtracking network tracing, support the collection of HTML log, H5, Ios and android platforms.
 * `encrypt_conf` - (Optional, Computed, List, Available since 1.124.0) Encrypted storage of data, providing data static protection capability, encrypt_conf can be updated since 1.188.0 (only enable change is supported when updating logstore). See [`encrypt_conf`](#encrypt_conf) below.
-* `hot_ttl` - (Optional, Int, Available since 1.202.0) The ttl of hot storage. Default to 30, at least 30, hot storage ttl must be less than ttl.
+* `hot_ttl` - (Optional, Int, Available since 1.202.0) The ttl of hot storage. Set to `0` to disable hot storage; otherwise an integer from `7` to the value of `retention_period`. The hot storage retention period cannot exceed the data retention period.
 * `infrequent_access_ttl` - (Optional, Int, Available since v1.229.0) Low frequency storage time
 * `logstore_name` - (Optional, ForceNew, Available since v1.215.0) The log store, which is unique in the same project. You need to specify one of the attributes: `logstore_name`, `name`.
 * `max_split_shard_count` - (Optional, Int) The maximum number of shards for automatic split, which is in the range of 1 to 256. You must specify this parameter when autoSplit is true.

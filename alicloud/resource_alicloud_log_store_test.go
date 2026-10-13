@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -1231,6 +1232,89 @@ func TestAccAliCloudLogStore_multi(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
+			},
+		},
+	})
+}
+
+// testAccLogStoreValidationConfig builds a minimal alicloud_log_store config for
+// schema-validation tests. Empty values omit the attribute so each step only
+// exercises the field under test (no state accumulation across steps).
+func testAccLogStoreValidationConfig(retentionPeriod, maxSplitShardCount, hotTTL string) string {
+	config := `
+resource "alicloud_log_project" "foo" {
+  name        = "tf-testacc-log-store-validation"
+  description = "validation test"
+}
+
+resource "alicloud_log_store" "default" {
+  project = "${alicloud_log_project.foo.name}"
+  name    = "tf-testacc-log-store-validation"
+`
+	if retentionPeriod != "" {
+		config += fmt.Sprintf("  retention_period = %s\n", retentionPeriod)
+	}
+	if maxSplitShardCount != "" {
+		config += fmt.Sprintf("  max_split_shard_count = %s\n", maxSplitShardCount)
+	}
+	if hotTTL != "" {
+		config += fmt.Sprintf("  hot_ttl = %s\n", hotTTL)
+	}
+	config += "}\n"
+	return config
+}
+
+// TestAccAliCloudLogStore_fieldValidation verifies that out-of-range values for
+// retention_period, max_split_shard_count and hot_ttl are rejected at plan time.
+func TestAccAliCloudLogStore_fieldValidation(t *testing.T) {
+	var v *sls.LogStore
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, logStoreMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// retention_period below the minimum (valid range: 1-3650)
+			{
+				Config:      testAccLogStoreValidationConfig("0", "", ""),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`expected retention_period to be in the range \(1 - 3650\), got 0`),
+			},
+			// retention_period above the maximum
+			{
+				Config:      testAccLogStoreValidationConfig("3651", "", ""),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`expected retention_period to be in the range \(1 - 3650\), got 3651`),
+			},
+			// max_split_shard_count below the minimum (valid range: 1-256)
+			{
+				Config:      testAccLogStoreValidationConfig("", "0", ""),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`expected max_split_shard_count to be in the range \(1 - 256\), got 0`),
+			},
+			// max_split_shard_count above the maximum
+			{
+				Config:      testAccLogStoreValidationConfig("", "257", ""),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`expected max_split_shard_count to be in the range \(1 - 256\), got 257`),
+			},
+			// hot_ttl between 1 and 6 is invalid (must be 0 to disable, or >= 7)
+			{
+				Config:      testAccLogStoreValidationConfig("3650", "", "5"),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`expected hot_ttl to be 0 \(disable hot storage\) or at least 7, got 5`),
+			},
+			// hot_ttl must not exceed retention_period
+			{
+				Config:      testAccLogStoreValidationConfig("30", "", "100"),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`hot_ttl \(100\) must be less than or equal to retention_period \(30\)`),
 			},
 		},
 	})
