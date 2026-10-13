@@ -173,12 +173,22 @@ func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) e
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		message_typeVal, err := formatInt(object["MessageType"])
+		if err != nil {
+			return err
+		}
+
+		relationVal, err := formatInt(object["Relation"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"independent_naming": object["IndependentNaming"],
 			"instance_id":        object["InstanceId"],
-			"message_type":       formatInt(object["MessageType"]),
+			"message_type":       message_typeVal,
 			"owner":              object["Owner"],
-			"relation":           formatInt(object["Relation"]),
+			"relation":           relationVal,
 			"relation_name":      object["RelationName"],
 			"remark":             object["Remark"],
 			"id":                 fmt.Sprint(object["Topic"]),

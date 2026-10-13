@@ -11,7 +11,7 @@ import (
 )
 
 func TestUnitFlattenPolarDBGatewayAttribute(t *testing.T) {
-	endpoints := flattenPolarDBGatewayEndpoints(map[string]interface{}{
+	endpoints, endpointsErr := flattenPolarDBGatewayEndpoints(map[string]interface{}{
 		"Endpoint": []interface{}{
 			map[string]interface{}{
 				"Address": "gw.example.com", "EndpointId": "gwe-1", "GwClusterId": "gw-1",
@@ -23,6 +23,9 @@ func TestUnitFlattenPolarDBGatewayAttribute(t *testing.T) {
 			},
 		},
 	})
+	if endpointsErr != nil {
+		t.Fatalf("flattenPolarDBGatewayEndpoints got an error: %v", endpointsErr)
+	}
 	wantEndpoints := []map[string]interface{}{
 		{
 			"address": "gw.example.com", "endpoint_id": "gwe-1", "gateway_id": "gw-1",

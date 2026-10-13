@@ -656,12 +656,17 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		discountVal, err := formatInt(object["Discount"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                   fmt.Sprint(object["ContainerGroupId"]),
 			"container_group_id":   fmt.Sprint(object["ContainerGroupId"]),
 			"container_group_name": object["ContainerGroupName"],
 			"cpu":                  object["Cpu"],
-			"discount":             formatInt(object["Discount"]),
+			"discount":             discountVal,
 			"eni_instance_id":      object["EniInstanceId"],
 			"expired_time":         object["ExpiredTime"],
 			"failed_time":          object["FailedTime"],

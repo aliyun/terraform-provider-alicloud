@@ -172,14 +172,24 @@ func dataSourceAlicloudNasAutoSnapshotPoliciesRead(d *schema.ResourceData, meta 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		file_system_numsVal, err := formatInt(object["FileSystemNums"])
+		if err != nil {
+			return err
+		}
+
+		retention_daysVal, err := formatInt(object["RetentionDays"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                        fmt.Sprint(object["AutoSnapshotPolicyId"]),
 			"auto_snapshot_policy_id":   fmt.Sprint(object["AutoSnapshotPolicyId"]),
 			"auto_snapshot_policy_name": object["AutoSnapshotPolicyName"],
 			"create_time":               object["CreateTime"],
-			"file_system_nums":          formatInt(object["FileSystemNums"]),
+			"file_system_nums":          file_system_numsVal,
 			"repeat_weekdays":           strings.Split(object["RepeatWeekdays"].(string), ","),
-			"retention_days":            formatInt(object["RetentionDays"]),
+			"retention_days":            retention_daysVal,
 			"status":                    object["Status"],
 			"time_points":               strings.Split(object["TimePoints"].(string), ","),
 		}

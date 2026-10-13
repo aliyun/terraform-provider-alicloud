@@ -345,7 +345,11 @@ func resourceAliCloudEcsNetworkInterfaceRead(d *schema.ResourceData, meta interf
 	}
 	d.Set("ipv4_prefixes", ipv4PrefixSetList)
 	d.Set("ipv4_prefix_count", len(ipv4PrefixSetList))
-	d.Set("queue_number", formatInt(object["QueueNumber"]))
+	queue_numberVal, err := formatInt(object["QueueNumber"])
+	if err != nil {
+		return err
+	}
+	d.Set("queue_number", queue_numberVal)
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("security_group_ids", object["SecurityGroupIds"].(map[string]interface{})["SecurityGroupId"])
 	d.Set("security_groups", object["SecurityGroupIds"].(map[string]interface{})["SecurityGroupId"])

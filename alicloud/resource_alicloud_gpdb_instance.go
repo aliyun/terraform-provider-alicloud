@@ -638,8 +638,16 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("payment_type", convertGpdbDbInstancePaymentTypeResponse(object["PayType"]))
 	d.Set("instance_charge_type", object["PayType"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
-	d.Set("master_cu", formatInt(object["MasterCU"]))
-	d.Set("seg_node_num", formatInt(object["SegNodeNum"]))
+	master_cuVal, err := formatInt(object["MasterCU"])
+	if err != nil {
+		return err
+	}
+	d.Set("master_cu", master_cuVal)
+	seg_node_numVal, err := formatInt(object["SegNodeNum"])
+	if err != nil {
+		return err
+	}
+	d.Set("seg_node_num", seg_node_numVal)
 	d.Set("seg_storage_type", object["StorageType"])
 	d.Set("seg_disk_performance_level", convertGpdbDbInstanceSegDiskPerformanceLevelResponse(object["SegDiskPerformanceLevel"]))
 	d.Set("encryption_type", object["EncryptionType"])
@@ -649,24 +657,44 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("maintain_end_time", object["MaintainEndTime"])
 	d.Set("serverless_mode", object["ServerlessMode"])
 	if v, ok := object["ServerlessResource"]; ok && v != nil && fmt.Sprint(v) != "" && fmt.Sprint(v) != "0" {
-		d.Set("serverless_resource", formatInt(v))
+		serverless_resourceVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("serverless_resource", serverless_resourceVal)
 	}
 	if v, ok := object["CacheStorageSize"]; ok && v != nil && fmt.Sprint(v) != "" && fmt.Sprint(v) != "0" {
-		d.Set("cache_storage_size", formatInt(v))
+		cache_storage_sizeVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("cache_storage_size", cache_storage_sizeVal)
 	}
 	d.Set("prod_type", object["ProdType"])
 	d.Set("description", object["DBInstanceDescription"])
 	d.Set("connection_string", object["ConnectionString"])
 	d.Set("port", object["Port"])
-	d.Set("master_node_num", formatInt(object["MasterNodeNum"]))
+	master_node_numVal, err := formatInt(object["MasterNodeNum"])
+	if err != nil {
+		return err
+	}
+	d.Set("master_node_num", master_node_numVal)
 	d.Set("status", object["DBInstanceStatus"])
 
 	if v, ok := object["SegmentCounts"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("node_num", formatInt(v))
+		node_numVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("node_num", node_numVal)
 	}
 
 	if v, ok := object["StorageSize"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("storage_size", formatInt(v))
+		storage_sizeVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("storage_size", storage_sizeVal)
 	}
 
 	if v, ok := object["Tags"].(map[string]interface{}); ok {

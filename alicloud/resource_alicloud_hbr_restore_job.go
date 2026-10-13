@@ -326,7 +326,11 @@ func resourceAlicloudHbrRestoreJobRead(d *schema.ResourceData, meta interface{})
 	d.Set("udm_detail", object["UdmDetail"])
 
 	if object["TargetCreateTime"] != nil {
-		t := int64(formatInt(object["TargetCreateTime"]))
+		targetCreateTime, err := formatInt(object["TargetCreateTime"])
+		if err != nil {
+			return err
+		}
+		t := int64(targetCreateTime)
 		d.Set("target_create_time", ConvertNasFileSystemUnixToString(d.Get("target_create_time").(string), t))
 	}
 
@@ -342,7 +346,11 @@ func resourceAlicloudHbrRestoreJobRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("cross_account_type", object["CrossAccountType"])
-	d.Set("cross_account_user_id", formatInt(object["CrossAccountUserId"]))
+	cross_account_user_idVal, err := formatInt(object["CrossAccountUserId"])
+	if err != nil {
+		return err
+	}
+	d.Set("cross_account_user_id", cross_account_user_idVal)
 	d.Set("cross_account_role_name", object["CrossAccountRoleName"])
 
 	return nil

@@ -204,6 +204,11 @@ func dataSourceAlicloudExpressConnectVbrPconnAssociationsRead(d *schema.Resource
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		vlan_idVal, err := formatInt(object["VlanId"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                       fmt.Sprint(object["VbrId"], ":", object["PhysicalConnectionId"]),
 			"circuit_code":             object["CircuitCode"],
@@ -217,7 +222,7 @@ func dataSourceAlicloudExpressConnectVbrPconnAssociationsRead(d *schema.Resource
 			"physical_connection_id":   object["PhysicalConnectionId"],
 			"status":                   object["Status"],
 			"vbr_id":                   object["VbrId"],
-			"vlan_id":                  formatInt(object["VlanId"]),
+			"vlan_id":                  vlan_idVal,
 		}
 
 		ids = append(ids, fmt.Sprint(object["VbrId"], ":", object["PhysicalConnectionId"]))

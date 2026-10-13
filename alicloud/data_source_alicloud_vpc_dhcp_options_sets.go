@@ -179,6 +179,11 @@ func dataSourceAlicloudVpcDhcpOptionsSetsRead(d *schema.ResourceData, meta inter
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		associate_vpc_countVal, err := formatInt(object["AssociateVpcCount"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"dhcp_options_set_description": object["DhcpOptionsSetDescription"],
 			"id":                           fmt.Sprint(object["DhcpOptionsSetId"]),
@@ -188,7 +193,7 @@ func dataSourceAlicloudVpcDhcpOptionsSetsRead(d *schema.ResourceData, meta inter
 			"domain_name_servers":          object["DhcpOptions"].(map[string]interface{})["DomainNameServers"],
 			"owner_id":                     fmt.Sprint(object["OwnerId"]),
 			"status":                       object["Status"],
-			"associate_vpc_count":          formatInt(object["AssociateVpcCount"]),
+			"associate_vpc_count":          associate_vpc_countVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["DhcpOptionsSetName"])

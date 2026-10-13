@@ -147,7 +147,11 @@ func resourceAlicloudHbrEcsBackupClientRead(d *schema.ResourceData, meta interfa
 		d.Set("proxy_host", object["Settings"].(map[string]interface{})["ProxyHost"])
 		d.Set("proxy_password", object["Settings"].(map[string]interface{})["ProxyPassword"])
 		d.Set("proxy_user", object["Settings"].(map[string]interface{})["ProxyUser"])
-		d.Set("proxy_port", fmt.Sprint(formatInt(object["Settings"].(map[string]interface{})["ProxyPort"])))
+		settings, err := formatInt(object["Settings"].(map[string]interface{})["ProxyPort"])
+		if err != nil {
+			return err
+		}
+		d.Set("proxy_port", fmt.Sprint(settings))
 	}
 	return nil
 }

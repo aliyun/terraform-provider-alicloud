@@ -598,7 +598,11 @@ func resourceAlicloudCSEdgeKubernetesRead(d *schema.ResourceData, meta interface
 			d.Set("worker_disk_category", Interface2String(v))
 		}
 		if v, ok := object.Parameters["WorkerSystemDiskSize"]; ok {
-			d.Set("worker_disk_size", formatInt(v))
+			worker_disk_sizeVal, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			d.Set("worker_disk_size", worker_disk_sizeVal)
 		}
 		// Node pools created through the SDK v2 nodepools request keep this
 		// setting in kubernetes_config.cms_enabled. The cluster-level legacy
@@ -680,7 +684,11 @@ func resourceAlicloudCSEdgeKubernetesRead(d *schema.ResourceData, meta interface
 		d.Set("slb_internet_enabled", Interface2Bool(v))
 	}
 	if v, ok := capabilities["NodeCIDRMask"]; ok {
-		d.Set("node_cidr_mask", formatInt(v))
+		node_cidr_maskVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("node_cidr_mask", node_cidr_maskVal)
 	}
 
 	// Get slb information and set connect

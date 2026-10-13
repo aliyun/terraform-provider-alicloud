@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
+func TestAccAliCloudECDSimpleOfficeSite_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_simple_office_site.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDSimpleOfficeSiteMap0)
@@ -36,13 +36,15 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cidr_block": "172.16.0.0/12",
+					"cen_id":       "${alicloud_cen_instance.default.id}",
+					"cen_owner_id": "${alicloud_cen_instance.default.id}",
+					"cidr_block":   "172.16.0.0/12",
 					// todo: need to check the `bandwidth` and `enable_internet_access` after fixing the issue occurred in ap-southeast-1
 					"enable_internet_access": "false",
 					"enable_admin_access":    "true",
@@ -61,7 +63,8 @@ func TestAccAlicloudECDSimpleOfficeSite_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"sso_enabled": "true",
+					"cen_owner_id": "cen_owner_id",
+					"sso_enabled":  "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

@@ -396,7 +396,11 @@ func dataSourceAliCloudAlbLoadBalancersRead(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alb_load_balancers", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.LoadBalancers", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		totalCount, formatErr := formatInt(response["TotalCount"])
+		if formatErr != nil {
+			return formatErr
+		}
+		if totalCount != 0 && err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.LoadBalancers", response)
 		}
 		result, _ := resp.([]interface{})

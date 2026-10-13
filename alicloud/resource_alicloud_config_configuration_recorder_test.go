@@ -18,7 +18,7 @@ import (
 
 // alicloud_config_configuration_recorder used to open CloudConfig service.
 // There can stop the service manually first before running the testcase.
-func SkipTestAccAliCloudConfigConfigurationRecorder_basic(t *testing.T) {
+func TestAccAliCloudConfigConfigurationRecorder_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_configuration_recorder.default"
 	ra := resourceAttrInit(resourceId, ConfigConfigurationRecorderMap)
@@ -34,9 +34,9 @@ func SkipTestAccAliCloudConfigConfigurationRecorder_basic(t *testing.T) {
 			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

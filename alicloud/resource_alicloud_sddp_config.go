@@ -100,7 +100,11 @@ func resourceAlicloudSddpConfigRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("code", d.Id())
 	d.Set("description", object["Description"])
-	d.Set("value", fmt.Sprint(formatInt(object["Value"])))
+	configValue, err := formatInt(object["Value"])
+	if err != nil {
+		return err
+	}
+	d.Set("value", fmt.Sprint(configValue))
 	return nil
 }
 func resourceAlicloudSddpConfigUpdate(d *schema.ResourceData, meta interface{}) error {

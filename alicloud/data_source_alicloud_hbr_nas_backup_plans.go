@@ -199,7 +199,11 @@ func dataSourceAlicloudHbrNasBackupPlansRead(d *schema.ResourceData, meta interf
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
-		t := int64(formatInt(object["CreateTime"]))
+		createTime, err := formatInt(object["CreateTime"])
+		if err != nil {
+			return err
+		}
+		t := int64(createTime)
 		mapping := map[string]interface{}{
 			"backup_type":          object["BackupType"],
 			"create_time":          ConvertNasFileSystemUnixToString("2006-01-02T15:04:05CST", t),

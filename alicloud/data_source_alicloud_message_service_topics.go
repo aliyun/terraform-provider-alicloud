@@ -190,17 +190,39 @@ func dataSourceAlicloudMessageServiceTopicsRead(d *schema.ResourceData, meta int
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		message_countVal, err := formatInt(object["MessageCount"])
+		if err != nil {
+			return err
+		}
+		max_message_sizeVal, err := formatInt(object["MaxMessageSize"])
+		if err != nil {
+			return err
+		}
+		message_retention_periodVal, err := formatInt(object["MessageRetentionPeriod"])
+		if err != nil {
+			return err
+		}
+
+		last_modify_timeVal, err := formatInt(object["LastModifyTime"])
+		if err != nil {
+			return err
+		}
+		create_timeVal, err := formatInt(object["CreateTime"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                       fmt.Sprint(object["TopicName"]),
 			"topic_name":               fmt.Sprint(object["TopicName"]),
-			"message_count":            formatInt(object["MessageCount"]),
-			"max_message_size":         formatInt(object["MaxMessageSize"]),
-			"message_retention_period": formatInt(object["MessageRetentionPeriod"]),
+			"message_count":            message_countVal,
+			"max_message_size":         max_message_sizeVal,
+			"message_retention_period": message_retention_periodVal,
 			"logging_enabled":          object["LoggingEnabled"],
 			"topic_url":                object["TopicUrl"],
 			"topic_inner_url":          object["TopicInnerUrl"],
-			"last_modify_time":         formatInt(object["LastModifyTime"]),
-			"create_time":              formatInt(object["CreateTime"]),
+			"last_modify_time":         last_modify_timeVal,
+			"create_time":              create_timeVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["TopicName"])

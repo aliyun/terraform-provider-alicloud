@@ -123,7 +123,11 @@ func dataSourceAliCloudSlsMachineGroupRead(d *schema.ResourceData, meta interfac
 		if len(result) < PageSizeLarge {
 			break
 		}
-		offset := formatInt(*query["offset"]) + PageSizeLarge
+		offsetFromQuery, err := formatInt(*query["offset"])
+		if err != nil {
+			return err
+		}
+		offset := offsetFromQuery + PageSizeLarge
 		query["offset"] = StringPointer(strconv.Itoa(offset))
 	}
 

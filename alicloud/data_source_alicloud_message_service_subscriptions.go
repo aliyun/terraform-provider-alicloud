@@ -200,6 +200,15 @@ func dataSourceAlicloudMessageServiceSubscriptionsRead(d *schema.ResourceData, m
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		last_modify_timeVal, err := formatInt(object["LastModifyTime"])
+		if err != nil {
+			return err
+		}
+		create_timeVal, err := formatInt(object["CreateTime"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                    fmt.Sprint(object["TopicName"], ":", object["SubscriptionName"]),
 			"topic_name":            object["TopicName"],
@@ -210,8 +219,8 @@ func dataSourceAlicloudMessageServiceSubscriptionsRead(d *schema.ResourceData, m
 			"notify_strategy":       object["NotifyStrategy"],
 			"topic_owner":           object["TopicOwner"],
 			"subscription_url":      object["SubscriptionURL"],
-			"last_modify_time":      formatInt(object["LastModifyTime"]),
-			"create_time":           formatInt(object["CreateTime"]),
+			"last_modify_time":      last_modify_timeVal,
+			"create_time":           create_timeVal,
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))

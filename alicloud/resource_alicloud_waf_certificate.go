@@ -87,7 +87,11 @@ func resourceAlicloudWafCertificateCreate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_waf_certificate", action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Domain"], ":", formatInt(response["CertificateId"])))
+		certificateId, err := formatInt(response["CertificateId"])
+		if err != nil {
+			return err
+		}
+		d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Domain"], ":", certificateId))
 		return resourceAlicloudWafCertificateRead(d, meta)
 	}
 
@@ -128,7 +132,11 @@ func resourceAlicloudWafCertificateCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_waf_certificate", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Domain"], ":", formatInt(response["CertificateId"])))
+	actualCertificateId, err := formatInt(response["CertificateId"])
+	if err != nil {
+		return err
+	}
+	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Domain"], ":", actualCertificateId))
 
 	return resourceAlicloudWafCertificateRead(d, meta)
 }

@@ -143,13 +143,27 @@ func TestAccAliCloudROSStack_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"stack_name":        name,
-					"stack_policy_body": `{\"Statement\": [{\"Action\": \"Update:Delete\", \"Resource\": \"*\", \"Effect\": \"Allow\", \"Principal\": \"*\"}]}`,
-					"template_body":     `{\"ROSTemplateFormatVersion\":\"2015-09-01\", \"Parameters\": {\"VpcName\": {\"Type\": \"String\"},\"InstanceType\": {\"Type\": \"String\"}}}`,
+					"create_option":                   "CreateStackValue",
+					"deletion_protection":             "Disabled",
+					"disable_rollback":                "false",
+					"ram_role_name":                   "CreateStackValue",
+					"replacement_option":              "UpdateStackValue",
+					"retain_all_resources":            "true",
+					"stack_policy_during_update_body": "UpdateStackValue",
+					"stack_policy_during_update_url":  "UpdateStackValue",
+					"stack_policy_url":                "CreateStackValue",
+					"template_url":                    "CreateStackValue",
+					"template_version":                "CreateStackValue",
+					"use_previous_parameters":         "true",
+					"stack_name":                      name,
+					"stack_policy_body":               `{\"Statement\": [{\"Action\": \"Update:Delete\", \"Resource\": \"*\", \"Effect\": \"Allow\", \"Principal\": \"*\"}]}`,
+					"template_body":                   `{\"ROSTemplateFormatVersion\":\"2015-09-01\", \"Parameters\": {\"VpcName\": {\"Type\": \"String\"},\"InstanceType\": {\"Type\": \"String\"}}}`,
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "ROS",
 					},
+					"notification_urls": []string{"http://tf-testacc.example.com/ros-event"},
+					"retain_resources":  []string{},
 					"parameters": []map[string]interface{}{
 						{
 							"parameter_key":   "VpcName",
@@ -180,6 +194,9 @@ func TestAccAliCloudROSStack_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"disable_rollback":  "true",
+					"ram_role_name":     "UpdateStackValue",
+					"template_version":  "UpdateStackValue",
 					"stack_policy_body": `{\"Statement\": [{\"Action\": \"Update:*\", \"Resource\": \"*\", \"Effect\": \"Allow\", \"Principal\": \"*\"}]}`,
 					"template_body":     `{\"ROSTemplateFormatVersion\":\"2015-09-01\", \"Description\" : \"模板描述信息，可用于说明模板的适用场景、架构说明等。\", \"Parameters\": {\"VpcName\": {\"Type\": \"String\"},\"InstanceType\": {\"Type\": \"String\"}}}`,
 					"parameters": []map[string]interface{}{

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,9 +27,9 @@ func TestAccAliCloudDcdnWafRule_basic2264(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -88,7 +89,8 @@ func TestAccAliCloudDcdnWafRule_basic2264(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"rule_name": "${var.name}_update",
+					"waf_group_ids": "${alicloud_dcdn_waf_policy.default.id}",
+					"rule_name":     "${var.name}_update",
 					"conditions": []map[string]interface{}{
 						{
 							"key":      "IP",
@@ -97,15 +99,15 @@ func TestAccAliCloudDcdnWafRule_basic2264(t *testing.T) {
 						},
 						{
 							"key":      "Header",
-							"sub_key":  "a",
+							"sub_key":  "a-upd-upd",
 							"op_value": "eq",
 							"values":   "b",
 						},
 					},
 					"status":    "off",
-					"cc_status": "on",
+					"cc_status": "off",
 					"action":    "deny",
-					"effect":    "rule",
+					"effect":    "service",
 					"rate_limit": []map[string]interface{}{
 						{
 							"target":    "Session",
@@ -139,6 +141,32 @@ func TestAccAliCloudDcdnWafRule_basic2264(t *testing.T) {
 						"rate_limit.0.status.0.ratio": "40",
 					}),
 				),
+			},
+			{
+				// sub_key only applies to header/cookie/query targets and the
+				// status count threshold cannot be verified against a shared
+				// policy. Removing the required rule_name stops the plan
+				// before the placeholder reaches the API.
+				Config: testAccConfig(map[string]interface{}{
+					"rate_limit": []map[string]interface{}{
+						{
+							"target":    "IP",
+							"interval":  "5",
+							"threshold": "5",
+							"ttl":       "1800",
+							"sub_key":   "x-forwarded-for",
+							"status": []map[string]interface{}{
+								{
+									"code":  "200",
+									"count": "100",
+									"ratio": "60",
+								},
+							},
+						},
+					},
+					"rule_name": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,
@@ -185,12 +213,17 @@ func TestAccAliCloudDcdnWafRule_basic2624(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"status": []map[string]interface{}{
+						{
+							"count": "ratio",
+						},
+					},
 					"action":      "deny",
 					"policy_id":   "${alicloud_dcdn_waf_policy.default.id}",
 					"remote_addr": []string{"1.1.1.1", "2.2.2.0/24", "::1", "abcd::abcd"},
@@ -262,9 +295,9 @@ func TestAccAliCloudDcdnWafRule_basic2749(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -360,9 +393,9 @@ func TestAccAliCloudDcdnWafRule_basic2753(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -444,9 +477,9 @@ func TestAccAliCloudDcdnWafRule_basic_for_waf_group(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

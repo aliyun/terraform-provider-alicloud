@@ -318,9 +318,21 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("engine_minor_version", objectRaw["EngineMinorVersion"])
-	d.Set("node_count", formatInt(objectRaw["NodeCount"]))
-	d.Set("node_scale_max", formatInt(objectRaw["NodeScaleMax"]))
-	d.Set("node_scale_min", formatInt(objectRaw["NodeScaleMin"]))
+	node_countVal, formatErr := formatInt(objectRaw["NodeCount"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("node_count", node_countVal)
+	node_scale_maxVal, formatErr := formatInt(objectRaw["NodeScaleMax"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("node_scale_max", node_scale_maxVal)
+	node_scale_minVal, formatErr := formatInt(objectRaw["NodeScaleMin"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("node_scale_min", node_scale_minVal)
 	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("scale_max", objectRaw["ScaleMax"])

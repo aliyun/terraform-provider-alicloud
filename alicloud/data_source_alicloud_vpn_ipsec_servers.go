@@ -247,6 +247,16 @@ func dataSourceAlicloudVpnIpsecServersRead(d *schema.ResourceData, meta interfac
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		max_connectionsVal, err := formatInt(object["MaxConnections"])
+		if err != nil {
+			return err
+		}
+
+		online_client_countVal, err := formatInt(object["OnlineClientCount"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"client_ip_pool":            object["ClientIpPool"],
 			"create_time":               object["CreationTime"],
@@ -258,9 +268,9 @@ func dataSourceAlicloudVpnIpsecServersRead(d *schema.ResourceData, meta interfac
 			"ipsec_server_id":           fmt.Sprint(object["IpsecServerId"]),
 			"ipsec_server_name":         object["IpsecServerName"],
 			"local_subnet":              object["LocalSubnet"],
-			"max_connections":           formatInt(object["MaxConnections"]),
+			"max_connections":           max_connectionsVal,
 			"multi_factor_auth_enabled": object["MultiFactorAuthEnabled"],
-			"online_client_count":       formatInt(object["OnlineClientCount"]),
+			"online_client_count":       online_client_countVal,
 			"psk":                       object["Psk"],
 			"psk_enabled":               object["PskEnabled"],
 			"vpn_gateway_id":            object["VpnGatewayId"],
@@ -273,7 +283,11 @@ func dataSourceAlicloudVpnIpsecServersRead(d *schema.ResourceData, meta interfac
 			if ikeConfigArg, ok := ikeConfig.(map[string]interface{}); ok {
 				ikeConfigMap["ike_auth_alg"] = ikeConfigArg["IkeAuthAlg"]
 				ikeConfigMap["ike_enc_alg"] = ikeConfigArg["IkeEncAlg"]
-				ikeConfigMap["ike_lifetime"] = formatInt(ikeConfigArg["IkeLifetime"])
+				ikeLifetime, err := formatInt(ikeConfigArg["IkeLifetime"])
+				if err != nil {
+					return err
+				}
+				ikeConfigMap["ike_lifetime"] = ikeLifetime
 				ikeConfigMap["ike_mode"] = ikeConfigArg["IkeMode"]
 				ikeConfigMap["ike_pfs"] = ikeConfigArg["IkePfs"]
 				ikeConfigMap["ike_version"] = ikeConfigArg["IkeVersion"]
@@ -292,7 +306,11 @@ func dataSourceAlicloudVpnIpsecServersRead(d *schema.ResourceData, meta interfac
 			if ipsecConfigArg, ok := ipsecConfig.(map[string]interface{}); ok {
 				ipsecConfigMap["ipsec_auth_alg"] = ipsecConfigArg["IpsecAuthAlg"]
 				ipsecConfigMap["ipsec_enc_alg"] = ipsecConfigArg["IpsecEncAlg"]
-				ipsecConfigMap["ipsec_lifetime"] = formatInt(ipsecConfigArg["IpsecLifetime"])
+				ipsecLifetime, err := formatInt(ipsecConfigArg["IpsecLifetime"])
+				if err != nil {
+					return err
+				}
+				ipsecConfigMap["ipsec_lifetime"] = ipsecLifetime
 				ipsecConfigMap["ipsec_pfs"] = ipsecConfigArg["IpsecPfs"]
 				ipsecConfigSli = append(ipsecConfigSli, ipsecConfigMap)
 			}

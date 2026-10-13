@@ -1537,7 +1537,10 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				if err != nil {
 					return WrapError(err)
 				}
-				index := formatInt(v)
+				index, indexErr := formatInt(v)
+				if indexErr != nil {
+					return indexErr
+				}
 				if len(clusterAttribute.DBNodes) <= index {
 					return WrapError(Error("The specified db_node_id exceeded DBNodes range."))
 				}
@@ -1871,10 +1874,25 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	// On import, cn_node_class/dn_node_class are absent from state, so detect
 	// distributed clusters from the API response instead
 	if !isDistributed {
-		if v, ok := clusterInfo["CnNodeCount"]; ok && v != nil && formatInt(v) > 0 {
-			isDistributed = true
-		} else if v, ok := clusterInfo["DnNodeCount"]; ok && v != nil && formatInt(v) > 0 {
-			isDistributed = true
+		if v, ok := clusterInfo["CnNodeCount"]; ok && v != nil {
+			cnNodeCountVal, cnNodeCountErr := formatInt(v)
+			if cnNodeCountErr != nil {
+				return cnNodeCountErr
+			}
+			if cnNodeCountVal > 0 {
+				isDistributed = true
+			}
+		}
+		if !isDistributed {
+			if v, ok := clusterInfo["DnNodeCount"]; ok && v != nil {
+				dnNodeCountVal, dnNodeCountErr := formatInt(v)
+				if dnNodeCountErr != nil {
+					return dnNodeCountErr
+				}
+				if dnNodeCountVal > 0 {
+					isDistributed = true
+				}
+			}
 		}
 	}
 	if isDistributed {
@@ -1945,10 +1963,18 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 			}
 		}
 		if v, ok := clusterInfo["CnNodeCount"]; ok && v != nil {
-			d.Set("cn_node_num", formatInt(v))
+			cn_node_numVal, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			d.Set("cn_node_num", cn_node_numVal)
 		}
 		if v, ok := clusterInfo["DnNodeCount"]; ok && v != nil {
-			d.Set("dn_node_num", formatInt(v))
+			dn_node_numVal, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			d.Set("dn_node_num", dn_node_numVal)
 		}
 	} else {
 		// Only set db_node_class for non-distributed clusters
@@ -1977,17 +2003,53 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapError(err)
 		}
-		d.Set("scale_min", formatInt(serverlessInfo["ScaleMin"]))
-		d.Set("scale_max", formatInt(serverlessInfo["ScaleMax"]))
-		d.Set("scale_ro_num_min", formatInt(serverlessInfo["ScaleRoNumMin"]))
-		d.Set("scale_ro_num_max", formatInt(serverlessInfo["ScaleRoNumMax"]))
+		scale_minVal, err := formatInt(serverlessInfo["ScaleMin"])
+		if err != nil {
+			return err
+		}
+		d.Set("scale_min", scale_minVal)
+		scale_maxVal, err := formatInt(serverlessInfo["ScaleMax"])
+		if err != nil {
+			return err
+		}
+		d.Set("scale_max", scale_maxVal)
+		scale_ro_num_minVal, err := formatInt(serverlessInfo["ScaleRoNumMin"])
+		if err != nil {
+			return err
+		}
+		d.Set("scale_ro_num_min", scale_ro_num_minVal)
+		scale_ro_num_maxVal, err := formatInt(serverlessInfo["ScaleRoNumMax"])
+		if err != nil {
+			return err
+		}
+		d.Set("scale_ro_num_max", scale_ro_num_maxVal)
 		d.Set("allow_shut_down", serverlessInfo["AllowShutDown"])
-		d.Set("seconds_until_auto_pause", formatInt(serverlessInfo["SecondsUntilAutoPause"]))
-		d.Set("scale_ap_ro_num_min", formatInt(serverlessInfo["ScaleApRoNumMin"]))
-		d.Set("scale_ap_ro_num_max", formatInt(serverlessInfo["ScaleApRoNumMax"]))
+		seconds_until_auto_pauseVal, err := formatInt(serverlessInfo["SecondsUntilAutoPause"])
+		if err != nil {
+			return err
+		}
+		d.Set("seconds_until_auto_pause", seconds_until_auto_pauseVal)
+		scale_ap_ro_num_minVal, err := formatInt(serverlessInfo["ScaleApRoNumMin"])
+		if err != nil {
+			return err
+		}
+		d.Set("scale_ap_ro_num_min", scale_ap_ro_num_minVal)
+		scale_ap_ro_num_maxVal, err := formatInt(serverlessInfo["ScaleApRoNumMax"])
+		if err != nil {
+			return err
+		}
+		d.Set("scale_ap_ro_num_max", scale_ap_ro_num_maxVal)
 		d.Set("serverless_rule_mode", serverlessInfo["ServerlessRuleMode"])
-		d.Set("serverless_rule_cpu_shrink_threshold", formatInt(serverlessInfo["ServerlessRuleCpuShrinkThreshold"]))
-		d.Set("serverless_rule_cpu_enlarge_threshold", formatInt(serverlessInfo["ServerlessRuleCpuEnlargeThreshold"]))
+		serverless_rule_cpu_shrink_thresholdVal, err := formatInt(serverlessInfo["ServerlessRuleCpuShrinkThreshold"])
+		if err != nil {
+			return err
+		}
+		d.Set("serverless_rule_cpu_shrink_threshold", serverless_rule_cpu_shrink_thresholdVal)
+		serverless_rule_cpu_enlarge_thresholdVal, err := formatInt(serverlessInfo["ServerlessRuleCpuEnlargeThreshold"])
+		if err != nil {
+			return err
+		}
+		d.Set("serverless_rule_cpu_enlarge_threshold", serverless_rule_cpu_enlarge_thresholdVal)
 		serverlessSwitch := ""
 		if v, ok := serverlessInfo["Switch"]; ok {
 			serverlessSwitch = fmt.Sprint(v)
@@ -2005,7 +2067,11 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 			}
 		} else {
 			d.Set("db_node_id", dbNodeIdIndex)
-			d.Set("hot_replica_mode", clusterAttribute.DBNodes[formatInt(dbNodeIdIndex)].HotReplicaMode)
+			dbNodeIdIndexValue, err := formatInt(dbNodeIdIndex)
+			if err != nil {
+				return err
+			}
+			d.Set("hot_replica_mode", clusterAttribute.DBNodes[dbNodeIdIndexValue].HotReplicaMode)
 		}
 	}
 	creationCategory, categoryOk := d.GetOk("creation_category")
@@ -2495,8 +2561,14 @@ func classifyPolarDBDistributedNode(node map[string]interface{}) (string, error)
 }
 
 func validatePolarDBDistributedNodeCounts(clusterInfo map[string]interface{}, cnSubGroupCount, dnSubGroupCount int) error {
-	expectedCnCount := formatInt(clusterInfo["CnNodeCount"])
-	expectedDnCount := formatInt(clusterInfo["DnNodeCount"])
+	expectedCnCount, expectedCnCountErr := formatInt(clusterInfo["CnNodeCount"])
+	if expectedCnCountErr != nil {
+		return expectedCnCountErr
+	}
+	expectedDnCount, expectedDnCountErr := formatInt(clusterInfo["DnNodeCount"])
+	if expectedDnCountErr != nil {
+		return expectedDnCountErr
+	}
 	if expectedCnCount != cnSubGroupCount || expectedDnCount != dnSubGroupCount {
 		return fmt.Errorf("distributed node classification mismatch: API reports %d logical CN and %d logical DN nodes, classified %d CN and %d DN subgroups", expectedCnCount, expectedDnCount, cnSubGroupCount, dnSubGroupCount)
 	}
@@ -2530,7 +2602,11 @@ func reconcilePolarDBDistributedNodes(d *schema.ResourceData, client *connectivi
 		if _, ok := clusterInfo[countKey]; !ok {
 			return WrapError(fmt.Errorf("%s is missing from distributed cluster %s response", countKey, d.Id()))
 		}
-		if d.Get(nodeType+"_node_num").(int) < formatInt(clusterInfo[countKey]) {
+		nodeCount, err := formatInt(clusterInfo[countKey])
+		if err != nil {
+			return err
+		}
+		if d.Get(nodeType+"_node_num").(int) < nodeCount {
 			needsTopology = true
 		}
 	}
@@ -2586,7 +2662,10 @@ func reconcilePolarDBDistributedNodes(d *schema.ResourceData, client *connectivi
 			continue
 		}
 		targetCount := d.Get(countKey).(int)
-		currentCount := formatInt(clusterInfo[countKeys[nodeType]])
+		currentCount, currentCountErr := formatInt(clusterInfo[countKeys[nodeType]])
+		if currentCountErr != nil {
+			return currentCountErr
+		}
 		if targetCount == currentCount {
 			continue
 		}

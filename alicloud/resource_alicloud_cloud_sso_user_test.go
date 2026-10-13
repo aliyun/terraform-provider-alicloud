@@ -58,7 +58,11 @@ func testSweepCloudSsoDirectoryUser(region, directoryId string) error {
 	}
 
 	resp, err := jsonpath.Get("$.Users", response)
-	if formatInt(response["TotalCounts"]) != 0 && err != nil {
+	totalCount, formatErr := formatInt(response["TotalCounts"])
+	if formatErr != nil {
+		return formatErr
+	}
+	if totalCount != 0 && err != nil {
 		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Users", action, err)
 		return nil
 	}

@@ -476,7 +476,11 @@ func resourceAliCloudCloudFirewallAddressBookRead(d *schema.ResourceData, meta i
 	d.Set("tag_relation", object["TagRelation"])
 
 	if v, ok := object["AutoAddTagEcs"]; ok {
-		d.Set("auto_add_tag_ecs", formatInt(v))
+		auto_add_tag_ecsVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("auto_add_tag_ecs", auto_add_tag_ecsVal)
 	}
 
 	addressListItems := make([]string, 0)
@@ -498,7 +502,11 @@ func resourceAliCloudCloudFirewallAddressBookRead(d *schema.ResourceData, meta i
 	if v, ok := object["AssetMemberUids"].([]interface{}); ok {
 		assetMemberUids := make([]int, 0)
 		for _, assetMemberUid := range v {
-			assetMemberUids = append(assetMemberUids, formatInt(assetMemberUid))
+			assetMemberUidValue, err := formatInt(assetMemberUid)
+			if err != nil {
+				return err
+			}
+			assetMemberUids = append(assetMemberUids, assetMemberUidValue)
 		}
 
 		d.Set("asset_member_uids", assetMemberUids)
@@ -509,11 +517,19 @@ func resourceAliCloudCloudFirewallAddressBookRead(d *schema.ResourceData, meta i
 	}
 
 	if v, ok := object["AddressListCount"]; ok {
-		d.Set("address_list_count", formatInt(v))
+		address_list_countVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("address_list_count", address_list_countVal)
 	}
 
 	if v, ok := object["ReferenceCount"]; ok {
-		d.Set("reference_count", formatInt(v))
+		reference_countVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("reference_count", reference_countVal)
 	}
 
 	return nil

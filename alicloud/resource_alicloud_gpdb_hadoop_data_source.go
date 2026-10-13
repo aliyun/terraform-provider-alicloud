@@ -222,7 +222,11 @@ func resourceAliCloudGpdbHadoopDataSourceRead(d *schema.ResourceData, meta inter
 		d.Set("yarn_conf", objectRaw["YarnConf"])
 	}
 	if objectRaw["DataSourceId"] != nil {
-		d.Set("data_source_id", formatInt(objectRaw["DataSourceId"]))
+		data_source_idVal, err := formatInt(objectRaw["DataSourceId"])
+		if err != nil {
+			return err
+		}
+		d.Set("data_source_id", data_source_idVal)
 	}
 
 	parts := strings.Split(d.Id(), ":")

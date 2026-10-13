@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -35,9 +36,9 @@ func TestAccAliCloudROSChangeSet_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -58,10 +59,33 @@ func TestAccAliCloudROSChangeSet_basic(t *testing.T) {
 				),
 			},
 			{
+				// notification_urls endpoints and the parameter set are
+				// stack-specific and cannot be shared here; removing the
+				// required change_set_name stops the plan before the
+				// placeholders reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"disable_rollback":                "true",
+					"notification_urls":               []string{"https://tfacc.example.com/notify"},
+					"parameters":                      []map[string]interface{}{{"parameter_key": "Key1", "parameter_value": "Value1"}},
+					"ram_role_name":                   "tfacc-placeholder",
+					"replacement_option":              "Available",
+					"stack_id":                        "stack-tfacc-placeholder",
+					"stack_policy_body":               `{\"ROSTemplateFormatVersion\":\"2015-09-01\"}`,
+					"stack_policy_during_update_body": "tfacc-placeholder",
+					"stack_policy_during_update_url":  "https://tfacc.example.com/policy",
+					"stack_policy_url":                "https://tfacc.example.com/policy-url",
+					"template_url":                    "https://tfacc.example.com/template.json",
+					"timeout_in_minutes":              "1",
+					"use_previous_parameters":         "true",
+					"change_set_name":                 REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"notification_urls", "ram_role_name", "replacement_option", "stack_policy_body", "stack_policy_during_update_body", "stack_policy_during_update_url", "stack_policy_url", "template_url", "use_previous_parameters", "template_body"},
+				ImportStateVerifyIgnore: []string{"notification_urls", "ram_role_name", "replacement_option", "stack_policy_body", "stack_policy_during_update_body", "stack_policy_during_update_url", "stack_policy_url", "template_url", "use_previous_parameters"},
 			},
 		},
 	})

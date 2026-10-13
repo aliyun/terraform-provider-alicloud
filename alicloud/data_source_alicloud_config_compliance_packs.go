@@ -203,6 +203,11 @@ func dataSourceAlicloudConfigCompliancePacksRead(d *schema.ResourceData, meta in
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		risk_levelVal, err := formatInt(object["RiskLevel"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"account_id":                  fmt.Sprint(object["AccountId"]),
 			"id":                          fmt.Sprint(object["CompliancePackId"]),
@@ -210,7 +215,7 @@ func dataSourceAlicloudConfigCompliancePacksRead(d *schema.ResourceData, meta in
 			"compliance_pack_name":        object["CompliancePackName"],
 			"compliance_pack_template_id": object["CompliancePackTemplateId"],
 			"description":                 object["Description"],
-			"risk_level":                  formatInt(object["RiskLevel"]),
+			"risk_level":                  risk_levelVal,
 			"status":                      object["Status"],
 		}
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {

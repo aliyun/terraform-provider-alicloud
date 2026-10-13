@@ -151,7 +151,11 @@ func resourceAliCloudNasAccessRuleRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("ipv6_source_cidr_ip", objectRaw["Ipv6SourceCidrIp"])
-	d.Set("priority", formatInt(objectRaw["Priority"]))
+	priorityVal, err := formatInt(objectRaw["Priority"])
+	if err != nil {
+		return err
+	}
+	d.Set("priority", priorityVal)
 	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("rw_access_type", objectRaw["RWAccess"])
 	d.Set("source_cidr_ip", objectRaw["SourceCidrIp"])

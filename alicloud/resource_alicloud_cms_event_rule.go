@@ -343,7 +343,11 @@ func resourceAliCloudCloudMonitorServiceEventRuleRead(d *schema.ResourceData, me
 
 	d.Set("rule_name", object["Name"])
 	d.Set("group_id", object["GroupId"])
-	d.Set("silence_time", formatInt(object["SilenceTime"]))
+	silence_timeVal, err := formatInt(object["SilenceTime"])
+	if err != nil {
+		return err
+	}
+	d.Set("silence_time", silence_timeVal)
 	d.Set("description", object["Description"])
 	d.Set("status", object["State"])
 

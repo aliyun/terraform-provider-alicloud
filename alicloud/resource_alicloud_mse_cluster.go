@@ -249,7 +249,11 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("cluster_type", object["ClusterType"])
 	d.Set("cluster_specification", object["ClusterSpecification"])
-	d.Set("instance_count", formatInt(object["InstanceCount"]))
+	instance_countVal, err := formatInt(object["InstanceCount"])
+	if err != nil {
+		return err
+	}
+	d.Set("instance_count", instance_countVal)
 	d.Set("pub_network_flow", object["PubNetworkFlow"])
 	d.Set("mse_version", object["MseVersion"])
 	d.Set("net_type", object["NetType"])

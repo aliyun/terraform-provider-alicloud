@@ -328,10 +328,20 @@ func dataSourceAlicloudAlidnsAccessStrategiesRead(d *schema.ResourceData, meta i
 				defaultAddrPoolList := v.([]interface{})
 				for _, v := range defaultAddrPoolList {
 					if m1, ok := v.(map[string]interface{}); ok {
+
+						addr_countVal, err := formatInt(m1["AddrCount"])
+						if err != nil {
+							return err
+						}
+
+						lba_weightVal, err := formatInt(m1["LbaWeight"])
+						if err != nil {
+							return err
+						}
 						temp1 := map[string]interface{}{
-							"addr_count":   formatInt(m1["AddrCount"]),
+							"addr_count":   addr_countVal,
 							"addr_pool_id": m1["Id"],
-							"lba_weight":   formatInt(m1["LbaWeight"]),
+							"lba_weight":   lba_weightVal,
 							"name":         m1["Name"],
 						}
 						defaultAddrPool = append(defaultAddrPool, temp1)
@@ -342,15 +352,27 @@ func dataSourceAlicloudAlidnsAccessStrategiesRead(d *schema.ResourceData, meta i
 
 		mapping["default_addr_pools"] = defaultAddrPool
 		if v, ok := getResp["DefaultAvailableAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["default_available_addr_num"] = formatInt(v)
+			defaultAvailableAddrNum, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["default_available_addr_num"] = defaultAvailableAddrNum
 		}
 		mapping["default_latency_optimization"] = getResp["DefaultLatencyOptimization"]
 		mapping["default_lba_strategy"] = getResp["DefaultLbaStrategy"]
 		if v, ok := getResp["DefaultMaxReturnAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["default_max_return_addr_num"] = formatInt(v)
+			defaultMaxReturnAddrNum, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["default_max_return_addr_num"] = defaultMaxReturnAddrNum
 		}
 		if v, ok := getResp["DefaultMinAvailableAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["default_min_available_addr_num"] = formatInt(v)
+			defaultMinAvailableAddrNum, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["default_min_available_addr_num"] = defaultMinAvailableAddrNum
 		}
 		mapping["failover_addr_pool_type"] = getResp["FailoverAddrPoolType"]
 		mapping["access_mode"] = getResp["AccessMode"]
@@ -362,10 +384,20 @@ func dataSourceAlicloudAlidnsAccessStrategiesRead(d *schema.ResourceData, meta i
 				failoverAddrPoolList := v.([]interface{})
 				for _, v := range failoverAddrPoolList {
 					if m1, ok := v.(map[string]interface{}); ok {
+
+						addrCountValue, err := formatInt(m1["AddrCount"])
+						if err != nil {
+							return err
+						}
+
+						lbaWeightValue, err := formatInt(m1["LbaWeight"])
+						if err != nil {
+							return err
+						}
 						temp1 := map[string]interface{}{
-							"addr_count":   formatInt(m1["AddrCount"]),
+							"addr_count":   addrCountValue,
 							"addr_pool_id": m1["Id"],
-							"lba_weight":   formatInt(m1["LbaWeight"]),
+							"lba_weight":   lbaWeightValue,
 							"name":         m1["Name"],
 						}
 						failoverAddrPool = append(failoverAddrPool, temp1)
@@ -375,15 +407,27 @@ func dataSourceAlicloudAlidnsAccessStrategiesRead(d *schema.ResourceData, meta i
 		}
 		mapping["failover_addr_pools"] = failoverAddrPool
 		if v, ok := getResp["FailoverAvailableAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["failover_available_addr_num"] = formatInt(v)
+			failoverAvailableAddrNum, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["failover_available_addr_num"] = failoverAvailableAddrNum
 		}
 		mapping["failover_latency_optimization"] = getResp["FailoverLatencyOptimization"]
 		mapping["failover_lba_strategy"] = getResp["FailoverLbaStrategy"]
 		if v, ok := getResp["FailoverMaxReturnAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["failover_max_return_addr_num"] = formatInt(v)
+			failoverMaxReturnAddrNum, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["failover_max_return_addr_num"] = failoverMaxReturnAddrNum
 		}
 		if v, ok := getResp["FailoverMinAvailableAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["failover_min_available_addr_num"] = formatInt(v)
+			failoverMinAvailableAddrNum, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["failover_min_available_addr_num"] = failoverMinAvailableAddrNum
 		}
 		mapping["instance_id"] = getResp["InstanceId"]
 

@@ -210,22 +210,65 @@ func dataSourceAlicloudMessageServiceQueuesRead(d *schema.ResourceData, meta int
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		delay_secondsVal, err := formatInt(object["DelaySeconds"])
+		if err != nil {
+			return err
+		}
+		maximum_message_sizeVal, err := formatInt(object["MaximumMessageSize"])
+		if err != nil {
+			return err
+		}
+		message_retention_periodVal, err := formatInt(object["MessageRetentionPeriod"])
+		if err != nil {
+			return err
+		}
+		visibility_timeoutVal, err := formatInt(object["VisibilityTimeout"])
+		if err != nil {
+			return err
+		}
+		polling_wait_secondsVal, err := formatInt(object["PollingWaitSeconds"])
+		if err != nil {
+			return err
+		}
+
+		active_messagesVal, err := formatInt(object["ActiveMessages"])
+		if err != nil {
+			return err
+		}
+		inactive_messagesVal, err := formatInt(object["InactiveMessages"])
+		if err != nil {
+			return err
+		}
+		delay_messagesVal, err := formatInt(object["DelayMessages"])
+		if err != nil {
+			return err
+		}
+
+		last_modify_timeVal, err := formatInt(object["LastModifyTime"])
+		if err != nil {
+			return err
+		}
+		create_timeVal, err := formatInt(object["CreateTime"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                       fmt.Sprint(object["QueueName"]),
 			"queue_name":               fmt.Sprint(object["QueueName"]),
-			"delay_seconds":            formatInt(object["DelaySeconds"]),
-			"maximum_message_size":     formatInt(object["MaximumMessageSize"]),
-			"message_retention_period": formatInt(object["MessageRetentionPeriod"]),
-			"visibility_timeout":       formatInt(object["VisibilityTimeout"]),
-			"polling_wait_seconds":     formatInt(object["PollingWaitSeconds"]),
+			"delay_seconds":            delay_secondsVal,
+			"maximum_message_size":     maximum_message_sizeVal,
+			"message_retention_period": message_retention_periodVal,
+			"visibility_timeout":       visibility_timeoutVal,
+			"polling_wait_seconds":     polling_wait_secondsVal,
 			"logging_enabled":          object["LoggingEnabled"],
-			"active_messages":          formatInt(object["ActiveMessages"]),
-			"inactive_messages":        formatInt(object["InactiveMessages"]),
-			"delay_messages":           formatInt(object["DelayMessages"]),
+			"active_messages":          active_messagesVal,
+			"inactive_messages":        inactive_messagesVal,
+			"delay_messages":           delay_messagesVal,
 			"queue_url":                object["QueueUrl"],
 			"queue_internal_url":       object["QueueInternalUrl"],
-			"last_modify_time":         formatInt(object["LastModifyTime"]),
-			"create_time":              formatInt(object["CreateTime"]),
+			"last_modify_time":         last_modify_timeVal,
+			"create_time":              create_timeVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["QueueName"])

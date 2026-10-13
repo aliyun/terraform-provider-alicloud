@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -97,7 +98,7 @@ func testSweepEmrCluster(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEmrCluster_basic(t *testing.T) {
+func TestAccAliCloudEmrCluster_basic(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default"
@@ -116,7 +117,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -181,6 +182,83 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "tfacc-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":   "2",
+						"tags.For": "tfacc-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                 "tfacc-cluster",
+					"eas_enable":           "true",
+					"key_pair_name":        "tfacc-keypair",
+					"period":               "12",
+					"option_software_list": []string{"HBASE"},
+					"bootstrap_action": []map[string]interface{}{
+						{
+							"name":                    "tfacc-boot",
+							"path":                    "oss://tfacc/boot.sh",
+							"arg":                     "--tfacc=1",
+							"execution_target":        "tfacc-group",
+							"execution_moment":        "AFTER_STARTED",
+							"execution_fail_strategy": "FAILED_BLOCKED",
+						},
+					},
+					"configs": []map[string]interface{}{
+						{
+							"service_name": "YARN",
+							"file_name":    "yarn-site",
+							"config_key":   "yarn.scheduler.maximum-allocation-mb",
+							"config_value": "8192",
+						},
+					},
+					"meta_store_conf": []map[string]interface{}{
+						{
+							"db_url":       "jdbc:mysql://tfacc:3306/hms?useSSL=false",
+							"db_user_name": "tfaccuser",
+							"db_password":  "TfaccPass123!",
+						},
+					},
+					"modify_cluster_service_config": []map[string]interface{}{
+						{
+							"service_name":            "YARN",
+							"config_params":           "yarn.node-labels.enabled",
+							"comment":                 "tfacc-comment",
+							"config_type":             "tfacc-type",
+							"custom_config_params":    "{}",
+							"group_id":                "g-tfacc-placeholder",
+							"host_instance_id":        "i-tfacc-placeholder",
+							"refresh_host_config":     "true",
+							"gateway_cluster_id_list": []string{"c-tfacc-placeholder"},
+						},
+					},
+					"host_group": []map[string]interface{}{
+						{
+							"host_group_type":              "MASTER",
+							"charge_type":                  "PrePaid",
+							"period":                       "12",
+							"auto_renew":                   "true",
+							"decommission_timeout":         "60",
+							"enable_graceful_decommission": "true",
+							"gpu_driver":                   "cuda_10.1",
+							"instance_list":                "i-tfacc-1,i-tfacc-2",
+							"sys_disk_type":                "cloud_essd",
+							"sys_disk_capacity":            "80",
+						},
+					},
+					"vswitch_id": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -190,7 +268,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEmrCluster_hadoop_cluster(t *testing.T) {
+func TestAccAliCloudEmrCluster_hadoop_cluster(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default"
@@ -208,7 +286,7 @@ func TestAccAlicloudEmrCluster_hadoop_cluster(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -299,7 +377,7 @@ func TestAccAlicloudEmrCluster_hadoop_cluster(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
+func TestAccAliCloudEmrCluster_local_storage(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default"
@@ -318,7 +396,7 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -391,7 +469,7 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEmrCluster_gateway(t *testing.T) {
+func TestAccAliCloudEmrCluster_gateway(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default_gateway"
@@ -410,7 +488,7 @@ func TestAccAlicloudEmrCluster_gateway(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -459,7 +537,7 @@ func TestAccAlicloudEmrCluster_gateway(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
+func TestAccAliCloudEmrCluster_multicluster(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default.0"
@@ -478,9 +556,9 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

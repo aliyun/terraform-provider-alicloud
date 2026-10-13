@@ -288,6 +288,25 @@ func dataSourceAliCloudGaEndpointGroupsRead(d *schema.ResourceData, meta interfa
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		health_check_interval_secondsVal, err := formatInt(object["HealthCheckIntervalSeconds"])
+		if err != nil {
+			return err
+		}
+
+		health_check_portVal, err := formatInt(object["HealthCheckPort"])
+		if err != nil {
+			return err
+		}
+
+		threshold_countVal, err := formatInt(object["ThresholdCount"])
+		if err != nil {
+			return err
+		}
+		traffic_percentageVal, err := formatInt(object["TrafficPercentage"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                            fmt.Sprint(object["EndpointGroupId"]),
 			"endpoint_group_id":             fmt.Sprint(object["EndpointGroupId"]),
@@ -295,12 +314,12 @@ func dataSourceAliCloudGaEndpointGroupsRead(d *schema.ResourceData, meta interfa
 			"endpoint_group_region":         object["EndpointGroupRegion"],
 			"name":                          object["Name"],
 			"description":                   object["Description"],
-			"health_check_interval_seconds": formatInt(object["HealthCheckIntervalSeconds"]),
+			"health_check_interval_seconds": health_check_interval_secondsVal,
 			"health_check_path":             object["HealthCheckPath"],
-			"health_check_port":             formatInt(object["HealthCheckPort"]),
+			"health_check_port":             health_check_portVal,
 			"health_check_protocol":         object["HealthCheckProtocol"],
-			"threshold_count":               formatInt(object["ThresholdCount"]),
-			"traffic_percentage":            formatInt(object["TrafficPercentage"]),
+			"threshold_count":               threshold_countVal,
+			"traffic_percentage":            traffic_percentageVal,
 			"endpoint_group_ip_list":        object["EndpointGroupIpList"],
 			"status":                        object["State"],
 		}

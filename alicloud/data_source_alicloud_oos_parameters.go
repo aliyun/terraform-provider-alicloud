@@ -249,12 +249,17 @@ func dataSourceAliCloudOosParametersRead(d *schema.ResourceData, meta interface{
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		parameter_versionVal, err := formatInt(object["ParameterVersion"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                fmt.Sprint(object["Name"]),
 			"parameter_name":    fmt.Sprint(object["Name"]),
 			"parameter_id":      object["Id"],
 			"type":              object["Type"],
-			"parameter_version": formatInt(object["ParameterVersion"]),
+			"parameter_version": parameter_versionVal,
 			"share_type":        object["ShareType"],
 			"resource_group_id": object["ResourceGroupId"],
 			"description":       object["Description"],

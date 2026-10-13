@@ -169,15 +169,27 @@ func resourceAlicloudSddpDataLimitRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	if v, ok := object["AuditStatus"]; ok {
-		d.Set("audit_status", formatInt(v))
+		audit_statusVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("audit_status", audit_statusVal)
 	}
 	d.Set("engine_type", object["EngineType"])
 	if v, ok := object["LogStoreDay"]; ok {
-		d.Set("log_store_day", formatInt(v))
+		log_store_dayVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("log_store_day", log_store_dayVal)
 	}
 	d.Set("parent_id", object["ParentId"])
 	if v, ok := object["Port"]; ok {
-		d.Set("port", formatInt(v))
+		portVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("port", portVal)
 	}
 	d.Set("service_region_id", object["RegionId"])
 	d.Set("resource_type", object["ResourceTypeCode"])

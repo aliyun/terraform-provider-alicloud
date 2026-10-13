@@ -876,7 +876,11 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	if v, ok := object.Parameters["MasterSystemDiskSize"]; ok && object.Profile != EdgeProfile {
-		d.Set("master_disk_size", formatInt(v))
+		master_disk_sizeVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("master_disk_size", master_disk_sizeVal)
 	}
 	if v, ok := object.Parameters["MasterSnapshotPolicyId"]; ok && object.Profile != EdgeProfile {
 		d.Set("master_disk_snapshot_policy_id", Interface2String(v))
@@ -889,10 +893,18 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 				d.Set("master_auto_renew", Interface2Bool(v))
 			}
 			if v, ok := object.Parameters["MasterAutoRenewPeriod"]; ok {
-				d.Set("master_auto_renew_period", formatInt(v))
+				master_auto_renew_periodVal, err := formatInt(v)
+				if err != nil {
+					return err
+				}
+				d.Set("master_auto_renew_period", master_auto_renew_periodVal)
 			}
 			if v, ok := object.Parameters["MasterPeriod"]; ok {
-				d.Set("master_period", formatInt(v))
+				master_periodVal, err := formatInt(v)
+				if err != nil {
+					return err
+				}
+				d.Set("master_period", master_periodVal)
 			}
 			if v, ok := object.Parameters["MasterPeriodUnit"]; ok {
 				d.Set("master_period_unit", Interface2String(v))
@@ -918,7 +930,11 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			d.Set("worker_disk_category", Interface2String(v))
 		}
 		if v, ok := object.Parameters["WorkerSystemDiskSize"]; ok {
-			d.Set("worker_disk_size", formatInt(v))
+			worker_disk_sizeVal, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			d.Set("worker_disk_size", worker_disk_sizeVal)
 		}
 		if v, ok := object.Parameters["CloudMonitorFlags"]; ok {
 			d.Set("install_cloud_monitor", Interface2Bool(v))
@@ -981,7 +997,11 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("slb_internet_enabled", Interface2Bool(v))
 	}
 	if v, ok := capabilities["NodeCIDRMask"]; ok {
-		d.Set("node_cidr_mask", formatInt(v))
+		node_cidr_maskVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("node_cidr_mask", node_cidr_maskVal)
 	}
 
 	// Get slb information and set connect

@@ -34,6 +34,7 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":  "${alicloud_security_group.default.0.id}",
 					"description":        "${var.name}",
 					"license_code":       "bhah_ent_50_asset",
 					"plan_code":          "cloudbastion",
@@ -67,7 +68,8 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": name + "_update",
+					"resource_group_id": "true",
+					"description":       name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

@@ -225,12 +225,20 @@ func resourceAlicloudHbrOtsBackupPlanRead(d *schema.ResourceData, meta interface
 	d.Set("backup_type", object["BackupType"])
 	d.Set("ots_backup_plan_name", object["PlanName"])
 	d.Set("instance_name", object["InstanceName"])
-	d.Set("retention", fmt.Sprint(formatInt(object["Retention"])))
+	actualRetention, err := formatInt(object["Retention"])
+	if err != nil {
+		return err
+	}
+	d.Set("retention", fmt.Sprint(actualRetention))
 	d.Set("schedule", object["Schedule"])
 	d.Set("vault_id", object["VaultId"])
 	d.Set("disabled", object["Disabled"])
 	d.Set("cross_account_type", object["CrossAccountType"])
-	d.Set("cross_account_user_id", formatInt(object["CrossAccountUserId"]))
+	cross_account_user_idVal, err := formatInt(object["CrossAccountUserId"])
+	if err != nil {
+		return err
+	}
+	d.Set("cross_account_user_id", cross_account_user_idVal)
 	d.Set("cross_account_role_name", object["CrossAccountRoleName"])
 
 	otsDetails := make([]map[string]interface{}, 0)

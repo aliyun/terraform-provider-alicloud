@@ -242,7 +242,11 @@ func resourceAliCloudConfigAggregateConfigRuleRead(d *schema.ResourceData, meta 
 	d.Set("region_ids_scope", object["RegionIdsScope"])
 	d.Set("resource_group_ids_scope", object["ResourceGroupIdsScope"])
 	d.Set("resource_types_scope", object["Scope"].(map[string]interface{})["ComplianceResourceTypes"])
-	d.Set("risk_level", formatInt(object["RiskLevel"]))
+	risk_levelVal, err := formatInt(object["RiskLevel"])
+	if err != nil {
+		return err
+	}
+	d.Set("risk_level", risk_levelVal)
 	d.Set("source_identifier", object["Source"].(map[string]interface{})["Identifier"])
 	d.Set("source_owner", object["Source"].(map[string]interface{})["Owner"])
 	d.Set("status", object["ConfigRuleState"])

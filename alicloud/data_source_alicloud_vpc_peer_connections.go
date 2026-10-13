@@ -187,11 +187,21 @@ func dataSourceAlicloudVpcPeerConnectionsRead(d *schema.ResourceData, meta inter
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		accepting_ali_uidVal, err := formatInt(object["AcceptingOwnerUid"])
+		if err != nil {
+			return err
+		}
+
+		bandwidthVal, err := formatInt(object["Bandwidth"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"accepting_ali_uid":    formatInt(object["AcceptingOwnerUid"]),
+			"accepting_ali_uid":    accepting_ali_uidVal,
 			"accepting_region_id":  object["AcceptingRegionId"],
 			"accepting_vpc_id":     object["AcceptingVpc"].(map[string]interface{})["VpcId"],
-			"bandwidth":            formatInt(object["Bandwidth"]),
+			"bandwidth":            bandwidthVal,
 			"create_time":          object["GmtCreate"],
 			"description":          object["Description"],
 			"id":                   fmt.Sprint(object["InstanceId"]),

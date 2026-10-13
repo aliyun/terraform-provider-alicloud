@@ -76,7 +76,11 @@ func resourceAlicloudDmsEnterpriseProxyCreate(d *schema.ResourceData, meta inter
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dms_enterprise_proxy", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(formatInt(response["ProxyId"])))
+	proxyId, err := formatInt(response["ProxyId"])
+	if err != nil {
+		return err
+	}
+	d.SetId(fmt.Sprint(proxyId))
 
 	return resourceAlicloudDmsEnterpriseProxyRead(d, meta)
 }
@@ -92,7 +96,11 @@ func resourceAlicloudDmsEnterpriseProxyRead(d *schema.ResourceData, meta interfa
 		}
 		return WrapError(err)
 	}
-	d.Set("instance_id", fmt.Sprint(formatInt(object["InstanceId"])))
+	instanceId, err := formatInt(object["InstanceId"])
+	if err != nil {
+		return err
+	}
+	d.Set("instance_id", fmt.Sprint(instanceId))
 	return nil
 }
 func resourceAlicloudDmsEnterpriseProxyUpdate(d *schema.ResourceData, meta interface{}) error {

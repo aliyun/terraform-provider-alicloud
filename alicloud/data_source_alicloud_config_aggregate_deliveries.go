@@ -179,8 +179,14 @@ func dataSourceAlicloudConfigAggregateDeliveriesRead(d *schema.ResourceData, met
 				continue
 			}
 		}
-		if statusOk && status.(int) != formatInt(item["Status"]) {
-			continue
+		if statusOk {
+			statusVal, statusErr := formatInt(item["Status"])
+			if statusErr != nil {
+				return statusErr
+			}
+			if status.(int) != statusVal {
+				continue
+			}
 		}
 		objects = append(objects, item)
 	}
@@ -188,6 +194,11 @@ func dataSourceAlicloudConfigAggregateDeliveriesRead(d *schema.ResourceData, met
 	names := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		statusVal, err := formatInt(object["Status"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"account_id":                             fmt.Sprint(object["AccountId"]),
 			"aggregator_id":                          object["AggregatorId"],
@@ -203,7 +214,7 @@ func dataSourceAlicloudConfigAggregateDeliveriesRead(d *schema.ResourceData, met
 			"description":                            object["Description"],
 			"non_compliant_notification":             object["NonCompliantNotification"],
 			"oversized_data_oss_target_arn":          object["OversizedDataOSSTargetArn"],
-			"status":                                 formatInt(object["Status"]),
+			"status":                                 statusVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["DeliveryChannelName"].(string))

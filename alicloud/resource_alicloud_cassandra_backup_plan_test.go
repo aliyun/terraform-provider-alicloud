@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func SkipTestAccAlicloudCassandraBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudCassandraBackupPlan_basic0(t *testing.T) {
 	// Cassandra has been offline
 	t.Skip("Cassandra has been offline")
 	var v map[string]interface{}
@@ -36,9 +36,9 @@ func SkipTestAccAlicloudCassandraBackupPlan_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

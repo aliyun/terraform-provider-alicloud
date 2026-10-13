@@ -214,7 +214,11 @@ func resourceAlicloudArmsPrometheusAlertRuleRead(d *schema.ResourceData, meta in
 			return WrapError(err)
 		}
 	}
-	d.Set("dispatch_rule_id", fmt.Sprint(formatInt(object["DispatchRuleId"])))
+	dispatchRuleId, err := formatInt(object["DispatchRuleId"])
+	if err != nil {
+		return err
+	}
+	d.Set("dispatch_rule_id", fmt.Sprint(dispatchRuleId))
 	d.Set("duration", object["Duration"])
 	d.Set("expression", object["Expression"])
 	if v, ok := object["Labels"].([]interface{}); ok {
@@ -235,7 +239,11 @@ func resourceAlicloudArmsPrometheusAlertRuleRead(d *schema.ResourceData, meta in
 	d.Set("message", object["Message"])
 	d.Set("notify_type", object["NotifyType"])
 	d.Set("prometheus_alert_rule_name", object["AlertName"])
-	d.Set("status", fmt.Sprint(formatInt(object["Status"])))
+	actualStatus, err := formatInt(object["Status"])
+	if err != nil {
+		return err
+	}
+	d.Set("status", fmt.Sprint(actualStatus))
 	d.Set("type", object["Type"])
 	return nil
 }

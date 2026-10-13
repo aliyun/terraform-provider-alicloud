@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -31,6 +32,7 @@ func TestAccAliCloudArmsPrometheus_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"sub_clusters_json":   "60",
 					"cluster_type":        "remote-write",
 					"grafana_instance_id": "free",
 					"cluster_name":        name,
@@ -60,9 +62,10 @@ func TestAccAliCloudArmsPrometheus_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"duration":         "180",
-					"archive_duration": "90",
-					"payment_type":     "POSTPAY_GB",
+					"sub_clusters_json": "61",
+					"duration":          "180",
+					"archive_duration":  "90",
+					"payment_type":      "POSTPAY_GB",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -96,6 +99,17 @@ func TestAccAliCloudArmsPrometheus_basic0(t *testing.T) {
 						"tags.For":     "Prometheus_Update",
 					}),
 				),
+			},
+			{
+				// cluster_id only applies to cluster_type "aliyun-cs" (an existing ACK
+				// cluster) and rebinding grafana_instance_id needs a dedicated Grafana
+				// workspace; neither is available to this test. Removing the required
+				// grafana_instance_id stops the plan before the sentinel reaches the API.
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_id":          "",
+					"grafana_instance_id": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:      resourceId,

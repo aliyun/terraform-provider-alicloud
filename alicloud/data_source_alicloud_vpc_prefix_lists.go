@@ -153,7 +153,11 @@ func dataSourceAlicloudVpcPrefixListsRead(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpc_prefix_lists", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.PrefixLists", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		totalCount, formatErr := formatInt(response["TotalCount"])
+		if formatErr != nil {
+			return formatErr
+		}
+		if totalCount != 0 && err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PrefixLists", response)
 		}
 		if result, ok := resp.([]interface{}); ok && len(result) > 0 {
@@ -180,10 +184,15 @@ func dataSourceAlicloudVpcPrefixListsRead(d *schema.ResourceData, meta interface
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		max_entriesVal, err := formatInt(object["MaxEntries"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"create_time":             object["CreationTime"],
 			"ip_version":              object["IpVersion"],
-			"max_entries":             formatInt(object["MaxEntries"]),
+			"max_entries":             max_entriesVal,
 			"id":                      fmt.Sprint(object["PrefixListId"]),
 			"prefix_list_id":          fmt.Sprint(object["PrefixListId"]),
 			"prefix_list_name":        object["PrefixListName"],

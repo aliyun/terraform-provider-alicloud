@@ -524,7 +524,11 @@ func dataSourceAlicloudDBInstancesRead(d *schema.ResourceData, meta interface{})
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	return rdsInstancesDescription(d, meta, objects, formatInt(response["TotalRecordCount"]))
+	totalRecordCount, err := formatInt(response["TotalRecordCount"])
+	if err != nil {
+		return err
+	}
+	return rdsInstancesDescription(d, meta, objects, totalRecordCount)
 }
 
 func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, objects []interface{}, totalCount int) error {

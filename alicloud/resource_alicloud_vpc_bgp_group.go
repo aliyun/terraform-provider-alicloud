@@ -167,11 +167,19 @@ func resourceAliCloudExpressConnectBgpGroupRead(d *schema.ResourceData, meta int
 	d.Set("bgp_group_name", objectRaw["Name"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("ip_version", objectRaw["IpVersion"])
-	d.Set("is_fake_asn", formatBool(objectRaw["IsFake"]))
+	is_fake_asnVal, err := formatBool(objectRaw["IsFake"])
+	if err != nil {
+		return err
+	}
+	d.Set("is_fake_asn", is_fake_asnVal)
 	d.Set("local_asn", objectRaw["LocalAsn"])
 	d.Set("peer_asn", objectRaw["PeerAsn"])
 	d.Set("region_id", objectRaw["RegionId"])
-	d.Set("route_limit", formatInt(objectRaw["RouteLimit"]))
+	route_limitVal, err := formatInt(objectRaw["RouteLimit"])
+	if err != nil {
+		return err
+	}
+	d.Set("route_limit", route_limitVal)
 	d.Set("router_id", objectRaw["RouterId"])
 	d.Set("status", objectRaw["Status"])
 

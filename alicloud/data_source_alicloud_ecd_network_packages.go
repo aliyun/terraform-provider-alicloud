@@ -147,8 +147,13 @@ func dataSourceAlicloudEcdNetworkPackagesRead(d *schema.ResourceData, meta inter
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		bandwidthVal, err := formatInt(object["Bandwidth"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"bandwidth":            formatInt(object["Bandwidth"]),
+			"bandwidth":            bandwidthVal,
 			"create_time":          object["CreateTime"],
 			"expired_time":         object["ExpiredTime"],
 			"internet_charge_type": object["InternetChargeType"],

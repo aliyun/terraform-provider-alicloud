@@ -138,7 +138,11 @@ func resourceAlicloudEcsPrefixListRead(d *schema.ResourceData, meta interface{})
 	}
 
 	if v, ok := object["MaxEntries"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("max_entries", formatInt(v))
+		max_entriesVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("max_entries", max_entriesVal)
 	}
 	d.Set("prefix_list_name", object["PrefixListName"])
 	return nil

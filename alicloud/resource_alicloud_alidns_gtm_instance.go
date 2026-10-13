@@ -250,7 +250,11 @@ func resourceAlicloudAlidnsGtmInstanceRead(d *schema.ResourceData, meta interfac
 		d.Set("public_user_domain_name", config["PublicUserDomainName"])
 		d.Set("public_zone_name", config["PubicZoneName"])
 		if v, ok := config["Ttl"]; ok {
-			d.Set("ttl", formatInt(v))
+			ttlVal, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			d.Set("ttl", ttlVal)
 		}
 
 		if alertGroup, ok := config["AlertGroup"]; ok && alertGroup != nil {

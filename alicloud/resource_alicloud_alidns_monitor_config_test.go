@@ -35,6 +35,7 @@ func TestAccAliCloudAlidnsMonitorConfig_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"lang":                "HTTP",
 					"addr_pool_id":        "${alicloud_alidns_address_pool.default.id}",
 					"evaluation_count":    "1",
 					"interval":            "60",
@@ -62,6 +63,8 @@ func TestAccAliCloudAlidnsMonitorConfig_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"interval":         "61",
+					"lang":             "HTTPS",
 					"evaluation_count": "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(

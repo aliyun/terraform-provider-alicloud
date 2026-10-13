@@ -244,7 +244,11 @@ func resourceAliCloudSslCertificatesServiceCertificateApplyRead(d *schema.Resour
 	d.Set("cert_identifier", objectRaw["CertIdentifier"])
 	// Only populated once the certificate authority has issued the certificate.
 	if v, ok := objectRaw["CertificateId"]; ok && v != nil {
-		d.Set("certificate_id", formatInt(v))
+		certificate_idVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("certificate_id", certificate_idVal)
 	}
 
 	domainValidationList := make([]map[string]interface{}, 0)

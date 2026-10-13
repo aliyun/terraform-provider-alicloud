@@ -180,7 +180,11 @@ func resourceAlicloudHbrHanaInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("hana_name", object["HanaName"])
 	d.Set("host", object["Host"])
 	if v, ok := object["InstanceNumber"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("instance_number", formatInt(v))
+		instance_numberVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("instance_number", instance_numberVal)
 	}
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("status", object["Status"])

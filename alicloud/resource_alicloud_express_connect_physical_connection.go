@@ -184,7 +184,11 @@ func resourceAliCloudExpressConnectPhysicalConnectionRead(d *schema.ResourceData
 	d.Set("line_operator", object["LineOperator"])
 	d.Set("type", object["Type"])
 	d.Set("port_type", object["PortType"])
-	d.Set("bandwidth", fmt.Sprint(formatInt(object["Bandwidth"])))
+	actualBandwidth, err := formatInt(object["Bandwidth"])
+	if err != nil {
+		return err
+	}
+	d.Set("bandwidth", fmt.Sprint(actualBandwidth))
 	d.Set("circuit_code", object["CircuitCode"])
 	d.Set("peer_location", object["PeerLocation"])
 	d.Set("redundant_physical_connection_id", object["RedundantPhysicalConnectionId"])

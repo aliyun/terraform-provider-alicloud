@@ -194,7 +194,11 @@ func resourceAliCloudCloudPhoneInstanceGroupRead(d *schema.ResourceData, meta in
 	d.Set("image_id", objectRaw["ImageId"])
 	d.Set("instance_group_name", objectRaw["InstanceGroupName"])
 	d.Set("instance_group_spec", objectRaw["InstanceGroupSpec"])
-	d.Set("number_of_instances", formatInt(objectRaw["NumberOfInstances"]))
+	number_of_instancesVal, err := formatInt(objectRaw["NumberOfInstances"])
+	if err != nil {
+		return err
+	}
+	d.Set("number_of_instances", number_of_instancesVal)
 	d.Set("status", objectRaw["InstanceGroupStatus"])
 
 	return nil

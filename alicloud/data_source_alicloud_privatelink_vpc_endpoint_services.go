@@ -215,13 +215,18 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		connect_bandwidthVal, err := formatInt(object["ConnectBandwidth"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                        fmt.Sprint(object["ServiceId"]),
 			"service_id":                fmt.Sprint(object["ServiceId"]),
 			"vpc_endpoint_service_name": object["ServiceName"],
 			"service_description":       object["ServiceDescription"],
 			"service_domain":            object["ServiceDomain"],
-			"connect_bandwidth":         formatInt(object["ConnectBandwidth"]),
+			"connect_bandwidth":         connect_bandwidthVal,
 			"auto_accept_connection":    object["AutoAcceptEnabled"],
 			"service_business_status":   object["ServiceBusinessStatus"],
 			"status":                    object["ServiceStatus"],

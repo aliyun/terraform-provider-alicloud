@@ -321,7 +321,11 @@ func resourceAliCloudResourceManagerMultiAccountDeliveryChannelRead(d *schema.Re
 		resourceChangeDeliveryRaw = objectRaw["ResourceChangeDelivery"].(map[string]interface{})
 	}
 	if len(resourceChangeDeliveryRaw) > 0 {
-		resourceChangeDeliveryMap["enabled"] = formatBool(resourceChangeDeliveryRaw["Enabled"])
+		resourceChangeDeliveryRawEnabled, err := formatBool(resourceChangeDeliveryRaw["Enabled"])
+		if err != nil {
+			return err
+		}
+		resourceChangeDeliveryMap["enabled"] = resourceChangeDeliveryRawEnabled
 		resourceChangeDeliveryMap["target_arn"] = resourceChangeDeliveryRaw["TargetArn"]
 		resourceChangeDeliveryMap["target_type"] = resourceChangeDeliveryRaw["TargetType"]
 
@@ -351,7 +355,11 @@ func resourceAliCloudResourceManagerMultiAccountDeliveryChannelRead(d *schema.Re
 	if len(resourceSnapshotDeliveryRaw) > 0 {
 		resourceSnapshotDeliveryMap["custom_expression"] = resourceSnapshotDeliveryRaw["CustomExpression"]
 		resourceSnapshotDeliveryMap["delivery_time"] = resourceSnapshotDeliveryRaw["DeliveryTime"]
-		resourceSnapshotDeliveryMap["enabled"] = formatBool(resourceSnapshotDeliveryRaw["Enabled"])
+		resourceSnapshotDeliveryRawEnabled, err := formatBool(resourceSnapshotDeliveryRaw["Enabled"])
+		if err != nil {
+			return err
+		}
+		resourceSnapshotDeliveryMap["enabled"] = resourceSnapshotDeliveryRawEnabled
 		resourceSnapshotDeliveryMap["target_arn"] = resourceSnapshotDeliveryRaw["TargetArn"]
 		resourceSnapshotDeliveryMap["target_type"] = resourceSnapshotDeliveryRaw["TargetType"]
 

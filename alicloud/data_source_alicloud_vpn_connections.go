@@ -516,8 +516,16 @@ func vpnConnectionsDescriptionAttributes(d *schema.ResourceData, vpnSetTypes []v
 				tunnelOptionsSpecificationMap := make(map[string]interface{})
 				tunnelOptionsChild1Raw := tunnelOptionsChild1Raw.(map[string]interface{})
 				tunnelOptionsSpecificationMap["customer_gateway_id"] = tunnelOptionsChild1Raw["CustomerGatewayId"]
-				tunnelOptionsSpecificationMap["enable_dpd"] = formatBool(tunnelOptionsChild1Raw["EnableDpd"])
-				tunnelOptionsSpecificationMap["enable_nat_traversal"] = formatBool(tunnelOptionsChild1Raw["EnableNatTraversal"])
+				enableDpd, err := formatBool(tunnelOptionsChild1Raw["EnableDpd"])
+				if err != nil {
+					return err
+				}
+				tunnelOptionsSpecificationMap["enable_dpd"] = enableDpd
+				enableNatTraversal, err := formatBool(tunnelOptionsChild1Raw["EnableNatTraversal"])
+				if err != nil {
+					return err
+				}
+				tunnelOptionsSpecificationMap["enable_nat_traversal"] = enableNatTraversal
 				tunnelOptionsSpecificationMap["internet_ip"] = tunnelOptionsChild1Raw["InternetIp"]
 				tunnelOptionsSpecificationMap["role"] = tunnelOptionsChild1Raw["Role"]
 				tunnelOptionsSpecificationMap["state"] = tunnelOptionsChild1Raw["State"]
@@ -553,7 +561,11 @@ func vpnConnectionsDescriptionAttributes(d *schema.ResourceData, vpnSetTypes []v
 				if len(tunnelIkeConfig1Raw) > 0 {
 					tunnelIkeConfigMap["ike_auth_alg"] = tunnelIkeConfig1Raw["IkeAuthAlg"]
 					tunnelIkeConfigMap["ike_enc_alg"] = tunnelIkeConfig1Raw["IkeEncAlg"]
-					tunnelIkeConfigMap["ike_lifetime"] = formatInt(tunnelIkeConfig1Raw["IkeLifetime"])
+					ikeLifetime, err := formatInt(tunnelIkeConfig1Raw["IkeLifetime"])
+					if err != nil {
+						return err
+					}
+					tunnelIkeConfigMap["ike_lifetime"] = ikeLifetime
 					tunnelIkeConfigMap["ike_mode"] = tunnelIkeConfig1Raw["IkeMode"]
 					tunnelIkeConfigMap["ike_pfs"] = tunnelIkeConfig1Raw["IkePfs"]
 					tunnelIkeConfigMap["ike_version"] = tunnelIkeConfig1Raw["IkeVersion"]
@@ -574,7 +586,11 @@ func vpnConnectionsDescriptionAttributes(d *schema.ResourceData, vpnSetTypes []v
 				if len(tunnelIpsecConfig1Raw) > 0 {
 					tunnelIpsecConfigMap["ipsec_auth_alg"] = tunnelIpsecConfig1Raw["IpsecAuthAlg"]
 					tunnelIpsecConfigMap["ipsec_enc_alg"] = tunnelIpsecConfig1Raw["IpsecEncAlg"]
-					tunnelIpsecConfigMap["ipsec_lifetime"] = formatInt(tunnelIpsecConfig1Raw["IpsecLifetime"])
+					ipsecLifetime, err := formatInt(tunnelIpsecConfig1Raw["IpsecLifetime"])
+					if err != nil {
+						return err
+					}
+					tunnelIpsecConfigMap["ipsec_lifetime"] = ipsecLifetime
 					tunnelIpsecConfigMap["ipsec_pfs"] = tunnelIpsecConfig1Raw["IpsecPfs"]
 
 					tunnelIpsecConfigMaps = append(tunnelIpsecConfigMaps, tunnelIpsecConfigMap)

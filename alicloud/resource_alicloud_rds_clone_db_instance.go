@@ -602,7 +602,11 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("db_instance_class", object["DBInstanceClass"])
 	d.Set("db_instance_description", object["DBInstanceDescription"])
 	if v, ok := object["DBInstanceStorage"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("db_instance_storage", formatInt(v))
+		db_instance_storageVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("db_instance_storage", db_instance_storageVal)
 	}
 	d.Set("db_instance_storage_type", object["DBInstanceStorageType"])
 	d.Set("dedicated_host_group_id", object["DedicatedHostGroupId"])

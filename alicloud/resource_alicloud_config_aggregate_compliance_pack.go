@@ -222,7 +222,11 @@ func resourceAliCloudConfigAggregateCompliancePackRead(d *schema.ResourceData, m
 	d.Set("aggregator_compliance_pack_id", object["CompliancePackId"])
 	d.Set("aggregate_compliance_pack_name", object["CompliancePackName"])
 	d.Set("description", object["Description"])
-	d.Set("risk_level", formatInt(object["RiskLevel"]))
+	risk_levelVal, err := formatInt(object["RiskLevel"])
+	if err != nil {
+		return err
+	}
+	d.Set("risk_level", risk_levelVal)
 	d.Set("compliance_pack_template_id", object["CompliancePackTemplateId"])
 	d.Set("status", object["Status"])
 

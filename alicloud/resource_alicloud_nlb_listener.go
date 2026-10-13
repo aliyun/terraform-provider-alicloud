@@ -311,7 +311,11 @@ func resourceAliCloudNlbListenerRead(d *schema.ResourceData, meta interface{}) e
 		d.Set("cps", objectRaw["Cps"])
 	}
 	if objectRaw["EndPort"] != nil {
-		d.Set("end_port", formatInt(objectRaw["EndPort"]))
+		end_portVal, err := formatInt(objectRaw["EndPort"])
+		if err != nil {
+			return err
+		}
+		d.Set("end_port", end_portVal)
 	}
 	if objectRaw["IdleTimeout"] != nil {
 		d.Set("idle_timeout", objectRaw["IdleTimeout"])
@@ -347,7 +351,11 @@ func resourceAliCloudNlbListenerRead(d *schema.ResourceData, meta interface{}) e
 		d.Set("server_group_id", objectRaw["ServerGroupId"])
 	}
 	if objectRaw["StartPort"] != nil {
-		d.Set("start_port", formatInt(objectRaw["StartPort"]))
+		start_portVal, err := formatInt(objectRaw["StartPort"])
+		if err != nil {
+			return err
+		}
+		d.Set("start_port", start_portVal)
 	}
 	if objectRaw["ListenerStatus"] != nil {
 		d.Set("status", objectRaw["ListenerStatus"])

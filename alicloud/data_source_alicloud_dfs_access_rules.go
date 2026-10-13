@@ -125,6 +125,11 @@ func dataSourceAlicloudDfsAccessRulesRead(d *schema.ResourceData, meta interface
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		priorityVal, err := formatInt(object["Priority"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"access_group_id": object["AccessGroupId"],
 			"id":              fmt.Sprint(object["AccessGroupId"], ":", object["AccessRuleId"]),
@@ -132,7 +137,7 @@ func dataSourceAlicloudDfsAccessRulesRead(d *schema.ResourceData, meta interface
 			"create_time":     object["CreateTime"],
 			"description":     object["Description"],
 			"network_segment": object["NetworkSegment"],
-			"priority":        formatInt(object["Priority"]),
+			"priority":        priorityVal,
 			"rw_access_type":  object["RWAccessType"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))

@@ -222,23 +222,43 @@ func dataSourceAlicloudSmartagFlowLogsRead(d *schema.ResourceData, meta interfac
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		active_agingVal, err := formatInt(object["ActiveAging"])
+		if err != nil {
+			return err
+		}
+
+		inactive_agingVal, err := formatInt(object["InactiveAging"])
+		if err != nil {
+			return err
+		}
+
+		netflow_server_portVal, err := formatInt(object["NetflowServerPort"])
+		if err != nil {
+			return err
+		}
+
+		total_sag_numVal, err := formatInt(object["TotalSagNum"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"active_aging":        formatInt(object["ActiveAging"]),
+			"active_aging":        active_agingVal,
 			"description":         object["Description"],
 			"id":                  fmt.Sprint(object["FlowLogId"]),
 			"flow_log_id":         fmt.Sprint(object["FlowLogId"]),
 			"flow_log_name":       object["Name"],
-			"inactive_aging":      formatInt(object["InactiveAging"]),
+			"inactive_aging":      inactive_agingVal,
 			"logstore_name":       object["LogstoreName"],
 			"netflow_server_ip":   object["NetflowServerIp"],
-			"netflow_server_port": formatInt(object["NetflowServerPort"]),
+			"netflow_server_port": netflow_server_portVal,
 			"netflow_version":     object["NetflowVersion"],
 			"output_type":         object["OutputType"],
 			"project_name":        object["ProjectName"],
 			"resource_group_id":   object["ResourceGroupId"],
 			"sls_region_id":       object["SlsRegionId"],
 			"status":              object["Status"],
-			"total_sag_num":       formatInt(object["TotalSagNum"]),
+			"total_sag_num":       total_sag_numVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])

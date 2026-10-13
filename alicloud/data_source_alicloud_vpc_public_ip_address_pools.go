@@ -173,7 +173,11 @@ func dataSourceAlicloudVpcPublicIpAddressPoolsRead(d *schema.ResourceData, meta 
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpc_public_ip_address_pools", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.PublicIpAddressPoolList", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		totalCount, formatErr := formatInt(response["TotalCount"])
+		if formatErr != nil {
+			return formatErr
+		}
+		if totalCount != 0 && err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PublicIpAddressPoolList", response)
 		}
 		result, _ := resp.([]interface{})
@@ -199,6 +203,15 @@ func dataSourceAlicloudVpcPublicIpAddressPoolsRead(d *schema.ResourceData, meta 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		total_ip_numVal, err := formatInt(object["TotalIpNum"])
+		if err != nil {
+			return err
+		}
+		used_ip_numVal, err := formatInt(object["UsedIpNum"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                          fmt.Sprint(object["PublicIpAddressPoolId"]),
 			"public_ip_address_pool_id":   fmt.Sprint(object["PublicIpAddressPoolId"]),
@@ -208,8 +221,8 @@ func dataSourceAlicloudVpcPublicIpAddressPoolsRead(d *schema.ResourceData, meta 
 			"status":                      object["Status"],
 			"region_id":                   object["RegionId"],
 			"user_type":                   object["UserType"],
-			"total_ip_num":                formatInt(object["TotalIpNum"]),
-			"used_ip_num":                 formatInt(object["UsedIpNum"]),
+			"total_ip_num":                total_ip_numVal,
+			"used_ip_num":                 used_ip_numVal,
 			"create_time":                 object["CreationTime"],
 			"ip_address_remaining":        object["IpAddressRemaining"],
 		}

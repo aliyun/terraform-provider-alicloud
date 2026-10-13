@@ -173,9 +173,14 @@ func dataSourceAlicloudCenInterRegionTrafficQosQueuesRead(d *schema.ResourceData
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		dscpsVal, err := convertJsonStringToStringList(object["Dscps"].([]interface{}))
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":    fmt.Sprint(object["TrafficQosQueueId"]),
-			"dscps": convertJsonStringToStringList(object["Dscps"].([]interface{})),
+			"dscps": dscpsVal,
 			"inter_region_traffic_qos_queue_description": object["TrafficQosQueueDescription"],
 			"inter_region_traffic_qos_queue_id":          object["TrafficQosQueueId"],
 			"inter_region_traffic_qos_queue_name":        object["TrafficQosQueueName"],

@@ -203,6 +203,11 @@ func dataSourceAlicloudDdoscooDomainResourcesRead(d *schema.ResourceData, meta i
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		rs_typeVal, err := formatInt(object["RsType"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"black_list":      object["BlackList"],
 			"cc_enabled":      object["CcEnabled"],
@@ -217,7 +222,7 @@ func dataSourceAlicloudDdoscooDomainResourcesRead(d *schema.ResourceData, meta i
 			"policy_mode":     object["PolicyMode"],
 			"proxy_enabled":   object["ProxyEnabled"],
 			"real_servers":    object["RealServers"],
-			"rs_type":         formatInt(object["RsType"]),
+			"rs_type":         rs_typeVal,
 			"ssl_ciphers":     object["SslCiphers"],
 			"ssl_protocols":   object["SslProtocols"],
 			"white_list":      object["WhiteList"],

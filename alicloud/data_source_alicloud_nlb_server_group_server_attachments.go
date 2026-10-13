@@ -170,16 +170,26 @@ func dataSourceAlicloudNlbServerGroupServerAttachmentsRead(d *schema.ResourceDat
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		portVal, err := formatInt(object["Port"])
+		if err != nil {
+			return err
+		}
+
+		weightVal, err := formatInt(object["Weight"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":              fmt.Sprint(object["ServerGroupId"], ":", object["ServerId"], ":", object["ServerType"], ":", object["Port"]),
 			"description":     object["Description"],
-			"port":            formatInt(object["Port"]),
+			"port":            portVal,
 			"server_group_id": object["ServerGroupId"],
 			"server_id":       object["ServerId"],
 			"server_ip":       object["ServerIp"],
 			"server_type":     object["ServerType"],
 			"status":          object["Status"],
-			"weight":          formatInt(object["Weight"]),
+			"weight":          weightVal,
 			"zone_id":         object["ZoneId"],
 		}
 

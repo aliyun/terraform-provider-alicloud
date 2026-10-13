@@ -220,7 +220,11 @@ func dataSourceAlicloudAlidnsGtmInstancesRead(d *schema.ResourceData, meta inter
 			mapping["public_rr"] = config["PublicRr"]
 			mapping["public_user_domain_name"] = config["PublicUserDomainName"]
 			if v, ok := config["Ttl"]; ok {
-				mapping["ttl"] = formatInt(v)
+				ttlValue, err := formatInt(v)
+				if err != nil {
+					return err
+				}
+				mapping["ttl"] = ttlValue
 			}
 			if v, ok := config["AlertGroup"].(string); ok {
 				vv, err := convertJsonStringToList(v)

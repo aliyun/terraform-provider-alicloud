@@ -180,7 +180,11 @@ func resourceAliCloudConfigDeliveryRead(d *schema.ResourceData, meta interface{}
 		d.Set("oversized_data_oss_target_arn", objectRaw["OversizedDataOSSTargetArn"])
 	}
 	if objectRaw["Status"] != nil {
-		d.Set("status", formatInt(objectRaw["Status"]))
+		statusVal, err := formatInt(objectRaw["Status"])
+		if err != nil {
+			return err
+		}
+		d.Set("status", statusVal)
 	}
 
 	return nil

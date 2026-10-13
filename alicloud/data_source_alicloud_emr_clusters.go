@@ -655,6 +655,15 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		periodVal, err := formatInt(object["Period"])
+		if err != nil {
+			return err
+		}
+		running_timeVal, err := formatInt(object["RunningTime"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                    fmt.Sprint(object["Id"]),
 			"cluster_id":            fmt.Sprint(object["Id"]),
@@ -666,8 +675,8 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 			"machine_type":          object["MachineType"],
 			"meta_store_type":       object["MetaStoreType"],
 			"payment_type":          object["ChargeType"],
-			"period":                formatInt(object["Period"]),
-			"running_time":          formatInt(object["RunningTime"]),
+			"period":                periodVal,
+			"running_time":          running_timeVal,
 			"status":                object["Status"],
 			"type":                  object["Type"],
 			"has_uncompleted_order": object["HasUncompletedOrder"],
@@ -821,20 +830,42 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 		if hostGroupList, ok := getResp1["HostGroupList"].(map[string]interface{})["HostGroup"].([]interface{}); ok {
 			for _, v := range hostGroupList {
 				if m1, ok := v.(map[string]interface{}); ok {
+
+					cpu_coreVal, err := formatInt(m1["CpuCore"])
+					if err != nil {
+						return err
+					}
+					disk_capacityVal, err := formatInt(m1["DiskCapacity"])
+					if err != nil {
+						return err
+					}
+					disk_countVal, err := formatInt(m1["DiskCount"])
+					if err != nil {
+						return err
+					}
+
+					memory_capacityVal, err := formatInt(m1["MemoryCapacity"])
+					if err != nil {
+						return err
+					}
+					node_countVal, err := formatInt(m1["NodeCount"])
+					if err != nil {
+						return err
+					}
 					temp1 := map[string]interface{}{
 						"band_width":             m1["BandWidth"],
 						"charge_type":            m1["ChargeType"],
-						"cpu_core":               formatInt(m1["CpuCore"]),
-						"disk_capacity":          formatInt(m1["DiskCapacity"]),
-						"disk_count":             formatInt(m1["DiskCount"]),
+						"cpu_core":               cpu_coreVal,
+						"disk_capacity":          disk_capacityVal,
+						"disk_count":             disk_countVal,
 						"disk_type":              m1["DiskType"],
 						"host_group_change_type": m1["HostGroupChangeType"],
 						"host_group_id":          m1["HostGroupId"],
 						"host_group_name":        m1["HostGroupName"],
 						"host_group_type":        m1["HostGroupType"],
 						"instance_type":          m1["InstanceType"],
-						"memory_capacity":        formatInt(m1["MemoryCapacity"]),
-						"node_count":             formatInt(m1["NodeCount"]),
+						"memory_capacity":        memory_capacityVal,
+						"node_count":             node_countVal,
 						"period":                 m1["Period"],
 					}
 					if m1["Nodes"] != nil {
@@ -903,7 +934,11 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 	if err := d.Set("clusters", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err := formatInt(response["TotalCount"])
+	if err != nil {
+		return err
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 

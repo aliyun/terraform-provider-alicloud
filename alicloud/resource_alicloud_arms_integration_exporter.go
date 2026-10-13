@@ -103,7 +103,11 @@ func resourceAlicloudArmsIntegrationExporterRead(d *schema.ResourceData, meta in
 	d.Set("cluster_id", object["ClusterId"])
 	d.Set("integration_type", object["IntegrationType"])
 	d.Set("param", object["Param"])
-	d.Set("instance_id", formatInt(object["InstanceId"]))
+	instance_idVal, err := formatInt(object["InstanceId"])
+	if err != nil {
+		return err
+	}
+	d.Set("instance_id", instance_idVal)
 
 	return nil
 }

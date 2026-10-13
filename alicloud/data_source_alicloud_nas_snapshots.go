@@ -197,13 +197,27 @@ func dataSourceAlicloudNasSnapshotsRead(d *schema.ResourceData, meta interface{}
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		encrypt_typeVal, err := formatInt(object["EncryptType"])
+		if err != nil {
+			return err
+		}
+
+		remain_timeVal, err := formatInt(object["RemainTime"])
+		if err != nil {
+			return err
+		}
+		retention_daysVal, err := formatInt(object["RetentionDays"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"create_time":                object["CreateTime"],
 			"description":                object["Description"],
-			"encrypt_type":               formatInt(object["EncryptType"]),
+			"encrypt_type":               encrypt_typeVal,
 			"progress":                   object["Progress"],
-			"remain_time":                formatInt(object["RemainTime"]),
-			"retention_days":             formatInt(object["RetentionDays"]),
+			"remain_time":                remain_timeVal,
+			"retention_days":             retention_daysVal,
 			"id":                         fmt.Sprint(object["SnapshotId"]),
 			"snapshot_id":                fmt.Sprint(object["SnapshotId"]),
 			"snapshot_name":              object["SnapshotName"],

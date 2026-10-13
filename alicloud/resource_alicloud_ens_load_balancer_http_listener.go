@@ -274,7 +274,11 @@ func resourceAliCloudEnsLoadBalancerHttpListenerRead(d *schema.ResourceData, met
 		d.Set("listener_port", listenerPort)
 	}
 
-	if v := formatInt(objectRaw["BackendServerPort"]); v > 0 {
+	vVal, err := formatInt(objectRaw["BackendServerPort"])
+	if err != nil {
+		return err
+	}
+	if v := vVal; v > 0 {
 		d.Set("backend_server_port", v)
 	}
 	d.Set("description", objectRaw["Description"])
@@ -288,21 +292,53 @@ func resourceAliCloudEnsLoadBalancerHttpListenerRead(d *schema.ResourceData, met
 	if objectRaw["HealthCheck"] == "on" {
 		d.Set("health_check_domain", objectRaw["HealthCheckDomain"])
 		d.Set("health_check_uri", objectRaw["HealthCheckURI"])
-		d.Set("healthy_threshold", formatInt(objectRaw["HealthyThreshold"]))
-		d.Set("unhealthy_threshold", formatInt(objectRaw["UnhealthyThreshold"]))
-		d.Set("health_check_timeout", formatInt(objectRaw["HealthCheckTimeout"]))
-		if v := formatInt(objectRaw["HealthCheckConnectPort"]); v > 0 {
+		healthy_thresholdVal, err := formatInt(objectRaw["HealthyThreshold"])
+		if err != nil {
+			return err
+		}
+		d.Set("healthy_threshold", healthy_thresholdVal)
+		unhealthy_thresholdVal, err := formatInt(objectRaw["UnhealthyThreshold"])
+		if err != nil {
+			return err
+		}
+		d.Set("unhealthy_threshold", unhealthy_thresholdVal)
+		health_check_timeoutVal, err := formatInt(objectRaw["HealthCheckTimeout"])
+		if err != nil {
+			return err
+		}
+		d.Set("health_check_timeout", health_check_timeoutVal)
+		healthCheckConnectPort, err := formatInt(objectRaw["HealthCheckConnectPort"])
+		if err != nil {
+			return err
+		}
+		if v := healthCheckConnectPort; v > 0 {
 			d.Set("health_check_connect_port", v)
 		}
-		d.Set("health_check_interval", formatInt(objectRaw["HealthCheckInterval"]))
+		health_check_intervalVal, err := formatInt(objectRaw["HealthCheckInterval"])
+		if err != nil {
+			return err
+		}
+		d.Set("health_check_interval", health_check_intervalVal)
 		d.Set("health_check_http_code", objectRaw["HealthCheckHttpCode"])
 		d.Set("health_check_method", objectRaw["HealthCheckMethod"])
 	}
-	d.Set("idle_timeout", formatInt(objectRaw["IdleTimeout"]))
-	d.Set("request_timeout", formatInt(objectRaw["RequestTimeout"]))
+	idle_timeoutVal, err := formatInt(objectRaw["IdleTimeout"])
+	if err != nil {
+		return err
+	}
+	d.Set("idle_timeout", idle_timeoutVal)
+	request_timeoutVal, err := formatInt(objectRaw["RequestTimeout"])
+	if err != nil {
+		return err
+	}
+	d.Set("request_timeout", request_timeoutVal)
 	d.Set("x_forwarded_for", objectRaw["XForwardedFor"])
 	d.Set("listener_forward", objectRaw["ListenerForward"])
-	if v := formatInt(objectRaw["ForwardPort"]); v > 0 {
+	forwardPort, err := formatInt(objectRaw["ForwardPort"])
+	if err != nil {
+		return err
+	}
+	if v := forwardPort; v > 0 {
 		d.Set("forward_port", v)
 	}
 	d.Set("status", objectRaw["Status"])

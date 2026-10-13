@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -18,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func SkipTestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
+func TestAccAliCloudHBRRestoreJob_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
@@ -38,9 +39,9 @@ func SkipTestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -74,15 +75,24 @@ func SkipTestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"target_client_id":      "cl-tfacc-placeholder",
+					"target_data_source_id": "ds-tfacc-placeholder",
+					"udm_detail":            "{}",
+					"vault_id":              REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude"},
 			},
 		},
 	})
 }
 
-func SkipTestAccAlicloudHBRRestoreJob_basic1(t *testing.T) {
+func TestAccAliCloudHBRRestoreJob_basic1(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}
@@ -101,9 +111,9 @@ func SkipTestAccAlicloudHBRRestoreJob_basic1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -132,13 +142,13 @@ func SkipTestAccAlicloudHBRRestoreJob_basic1(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude"},
 			},
 		},
 	})
 }
 
-func SkipTestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
+func TestAccAliCloudHBRRestoreJob_basic2(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}
@@ -157,9 +167,9 @@ func SkipTestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -186,13 +196,13 @@ func SkipTestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude"},
 			},
 		},
 	})
 }
 
-func SkipTestAccAlicloudHBRRestoreJob_basic3(t *testing.T) {
+func TestAccAliCloudHBRRestoreJob_basic3(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}
@@ -212,9 +222,9 @@ func SkipTestAccAlicloudHBRRestoreJob_basic3(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -243,13 +253,13 @@ func SkipTestAccAlicloudHBRRestoreJob_basic3(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude"},
 			},
 		},
 	})
 }
 
-func SkipTestAccAlicloudHBRRestoreJob_basic4(t *testing.T) {
+func TestAccAliCloudHBRRestoreJob_basic4(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}
@@ -268,9 +278,9 @@ func SkipTestAccAlicloudHBRRestoreJob_basic4(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -304,9 +314,23 @@ func SkipTestAccAlicloudHBRRestoreJob_basic4(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"ots_detail": []map[string]interface{}{
+						{
+							"overwrite_existing": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ots_detail.#": "1",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude"},
 			},
 		},
 	})

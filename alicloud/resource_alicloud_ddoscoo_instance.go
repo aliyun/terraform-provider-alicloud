@@ -295,7 +295,11 @@ func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 
 	d.Set("address_type", objectRaw["IpVersion"])
 	d.Set("create_time", objectRaw["CreateTime"])
-	d.Set("edition_sale", convertEditionResponse(formatInt(objectRaw["Edition"])))
+	edition, formatErr := formatInt(objectRaw["Edition"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("edition_sale", convertEditionResponse(edition))
 	d.Set("name", objectRaw["Remark"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("ip", objectRaw["Ip"])

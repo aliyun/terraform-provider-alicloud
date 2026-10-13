@@ -205,8 +205,18 @@ func dataSourceAlicloudDbfsInstancesRead(d *schema.ResourceData, meta interface{
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		attach_node_numberVal, err := formatInt(object["AttachNodeNumber"])
+		if err != nil {
+			return err
+		}
+
+		sizeVal, err := formatInt(object["SizeG"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"attach_node_number":      formatInt(object["AttachNodeNumber"]),
+			"attach_node_number":      attach_node_numberVal,
 			"category":                object["Category"],
 			"create_time":             object["CreatedTime"],
 			"dbfs_cluster_id":         object["DBFSClusterId"],
@@ -219,7 +229,7 @@ func dataSourceAlicloudDbfsInstancesRead(d *schema.ResourceData, meta interface{
 			"payment_type":            convertDbfsInstancePaymentTypeResponse(fmt.Sprint(object["PayType"])),
 			"performance_level":       object["PerformanceLevel"],
 			"raid_stripe_unit_number": fmt.Sprint(object["RaidStrip"]),
-			"size":                    formatInt(object["SizeG"]),
+			"size":                    sizeVal,
 			"status":                  object["Status"],
 			"zone_id":                 object["ZoneId"],
 		}

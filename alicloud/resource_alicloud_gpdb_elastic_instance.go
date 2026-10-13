@@ -259,7 +259,15 @@ func resourceAlicloudGpdbElasticInstanceRead(d *schema.ResourceData, meta interf
 	d.Set("encryption_key", instance["EncryptionKey"])
 	d.Set("encryption_type", instance["EncryptionType"])
 	d.Set("tags", tagsToMap(instance["Tags"]))
-	d.Set("instance_spec", fmt.Sprintf("%dC%dG", formatInt(instance["CpuCores"]), formatInt(instance["MemorySize"])))
+	cpuCores, err := formatInt(instance["CpuCores"])
+	if err != nil {
+		return err
+	}
+	memorySize, err := formatInt(instance["MemorySize"])
+	if err != nil {
+		return err
+	}
+	d.Set("instance_spec", fmt.Sprintf("%dC%dG", cpuCores, memorySize))
 
 	if v, exist := instance["PayType"]; exist {
 		d.Set("payment_type", convertGpdbInstancePaymentTypeResponse(v.(string)))

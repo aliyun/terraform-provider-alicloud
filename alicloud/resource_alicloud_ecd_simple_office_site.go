@@ -159,7 +159,11 @@ func resourceAlicloudEcdSimpleOfficeSiteRead(d *schema.ResourceData, meta interf
 	}
 	// todo:  bandwidth depends on network_package resource， you can find it in alicloud_ecd_network_package
 	if v, ok := object["Bandwidth"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("bandwidth", formatInt(v))
+		bandwidthVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("bandwidth", bandwidthVal)
 	}
 	d.Set("cen_id", object["CenId"])
 	d.Set("cidr_block", object["CidrBlock"])

@@ -340,11 +340,27 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 	d.Set("endpoint_protocol_version", object["EndpointProtocolVersion"])
 	d.Set("health_check_enabled", object["HealthCheckEnabled"])
 	d.Set("health_check_path", object["HealthCheckPath"])
-	d.Set("health_check_port", formatInt(object["HealthCheckPort"]))
+	health_check_portVal, err := formatInt(object["HealthCheckPort"])
+	if err != nil {
+		return err
+	}
+	d.Set("health_check_port", health_check_portVal)
 	d.Set("health_check_protocol", object["HealthCheckProtocol"])
-	d.Set("health_check_interval_seconds", formatInt(object["HealthCheckIntervalSeconds"]))
-	d.Set("threshold_count", formatInt(object["ThresholdCount"]))
-	d.Set("traffic_percentage", formatInt(object["TrafficPercentage"]))
+	health_check_interval_secondsVal, err := formatInt(object["HealthCheckIntervalSeconds"])
+	if err != nil {
+		return err
+	}
+	d.Set("health_check_interval_seconds", health_check_interval_secondsVal)
+	threshold_countVal, err := formatInt(object["ThresholdCount"])
+	if err != nil {
+		return err
+	}
+	d.Set("threshold_count", threshold_countVal)
+	traffic_percentageVal, err := formatInt(object["TrafficPercentage"])
+	if err != nil {
+		return err
+	}
+	d.Set("traffic_percentage", traffic_percentageVal)
 	d.Set("name", object["Name"])
 	d.Set("description", object["Description"])
 

@@ -132,7 +132,11 @@ func resourceAlicloudEcsStorageCapacityUnitRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 	if v, ok := object["Capacity"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("capacity", formatInt(v))
+		capacityVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("capacity", capacityVal)
 	}
 	d.Set("description", object["Description"])
 	d.Set("start_time", object["StartTime"])

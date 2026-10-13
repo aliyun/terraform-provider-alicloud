@@ -26,17 +26,18 @@ func TestAccAliCloudSLBRuleUpdate(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
-					"frontend_port":    "${alicloud_slb_listener.default.frontend_port}",
-					"domain":           "*.aliyun.com",
-					"url":              "/image",
-					"server_group_id":  "${alicloud_slb_server_group.default.id}",
+					"delete_protection_validation": "false",
+					"load_balancer_id":             "${alicloud_slb_load_balancer.default.id}",
+					"frontend_port":                "${alicloud_slb_listener.default.frontend_port}",
+					"domain":                       "*.aliyun.com",
+					"url":                          "/image",
+					"server_group_id":              "${alicloud_slb_server_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -242,7 +243,7 @@ func TestAccAliCloudSLBRuleUpdate(t *testing.T) {
 					"frontend_port":             "${alicloud_slb_listener.default.frontend_port}",
 					"domain":                    "*.aliyun.com",
 					"url":                       "/image",
-					"server_group_id":           "${alicloud_slb_server_group.default.id}",
+					"server_group_id":           "wrr",
 					"cookie":                    "23ffsa",
 					"cookie_timeout":            "100",
 					"health_check_http_code":    "http_2xx",

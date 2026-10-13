@@ -157,18 +157,34 @@ func resourceAlicloudDdoscooSchedulerRuleRead(d *schema.ResourceData, meta inter
 
 	d.Set("rule_name", d.Id())
 	d.Set("cname", object["Cname"])
-	d.Set("rule_type", formatInt(object["RuleType"]))
+	rule_typeVal, err := formatInt(object["RuleType"])
+	if err != nil {
+		return err
+	}
+	d.Set("rule_type", rule_typeVal)
 	ruleMaps := make([]map[string]interface{}, 0)
 	if v, ok := object["Rules"].([]interface{}); ok {
 		for _, rule := range v {
 			ruleMap := map[string]interface{}{}
 			ruleArg := rule.(map[string]interface{})
-			ruleMap["priority"] = formatInt(ruleArg["Priority"])
+			ruleArgPriority, err := formatInt(ruleArg["Priority"])
+			if err != nil {
+				return err
+			}
+			ruleMap["priority"] = ruleArgPriority
 			ruleMap["region_id"] = ruleArg["RegionId"]
-			ruleMap["status"] = formatInt(ruleArg["Status"])
+			ruleArgStatus, err := formatInt(ruleArg["Status"])
+			if err != nil {
+				return err
+			}
+			ruleMap["status"] = ruleArgStatus
 			ruleMap["type"] = ruleArg["Type"]
 			ruleMap["value"] = ruleArg["Value"]
-			ruleMap["value_type"] = formatInt(ruleArg["ValueType"])
+			valueType, err := formatInt(ruleArg["ValueType"])
+			if err != nil {
+				return err
+			}
+			ruleMap["value_type"] = valueType
 			ruleMaps = append(ruleMaps, ruleMap)
 		}
 	}

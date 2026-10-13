@@ -102,7 +102,11 @@ func resourceAliCloudSslCertificatesServiceCertificateValidationRead(d *schema.R
 	// GetCertificateDetail, a string on ListCertificates. formatInt normalises whichever form
 	// comes back. It is only set once issuance has produced a certificate.
 	if v, ok := objectRaw["CertificateId"]; ok && v != nil {
-		d.Set("certificate_id", formatInt(v))
+		certificate_idVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("certificate_id", certificate_idVal)
 	}
 	d.Set("cert_identifier", objectRaw["CertIdentifier"])
 	d.Set("certificate_status", objectRaw["CertificateStatus"])

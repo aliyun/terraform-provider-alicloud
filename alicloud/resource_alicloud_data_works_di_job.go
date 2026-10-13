@@ -642,7 +642,11 @@ func resourceAliCloudDataWorksDiJobRead(d *schema.ResourceData, meta interface{}
 		d.Set("source_data_source_type", objectRaw["SourceDataSourceType"])
 	}
 	if objectRaw["DIJobId"] != nil {
-		d.Set("di_job_id", formatInt(objectRaw["DIJobId"]))
+		di_job_idVal, err := formatInt(objectRaw["DIJobId"])
+		if err != nil {
+			return err
+		}
+		d.Set("di_job_id", di_job_idVal)
 	}
 	if objectRaw["ProjectId"] != nil {
 		d.Set("project_id", objectRaw["ProjectId"])

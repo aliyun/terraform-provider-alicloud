@@ -102,12 +102,20 @@ func resourceAlicloudWafProtectionModuleRead(d *schema.ResourceData, meta interf
 	d.Set("defense_type", parts[2])
 	d.Set("domain", parts[1])
 	d.Set("instance_id", parts[0])
-	d.Set("mode", formatInt(object["Mode"]))
+	modeVal, err := formatInt(object["Mode"])
+	if err != nil {
+		return err
+	}
+	d.Set("mode", modeVal)
 	describeProtectionModuleStatusObject, err := wafOpenapiService.DescribeProtectionModuleStatus(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("status", formatInt(describeProtectionModuleStatusObject["ModuleStatus"]))
+	statusVal, err := formatInt(describeProtectionModuleStatusObject["ModuleStatus"])
+	if err != nil {
+		return err
+	}
+	d.Set("status", statusVal)
 	return nil
 }
 func resourceAlicloudWafProtectionModuleUpdate(d *schema.ResourceData, meta interface{}) error {

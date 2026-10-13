@@ -208,6 +208,11 @@ func dataSourceAlicloudConfigAggregateCompliancePacksRead(d *schema.ResourceData
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		risk_levelVal, err := formatInt(object["RiskLevel"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"account_id":                     fmt.Sprint(object["AccountId"]),
 			"aggregate_compliance_pack_name": object["CompliancePackName"],
@@ -215,7 +220,7 @@ func dataSourceAlicloudConfigAggregateCompliancePacksRead(d *schema.ResourceData
 			"aggregator_compliance_pack_id":  fmt.Sprint(object["CompliancePackId"]),
 			"compliance_pack_template_id":    object["CompliancePackTemplateId"],
 			"description":                    object["Description"],
-			"risk_level":                     formatInt(object["RiskLevel"]),
+			"risk_level":                     risk_levelVal,
 			"status":                         object["Status"],
 		}
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {

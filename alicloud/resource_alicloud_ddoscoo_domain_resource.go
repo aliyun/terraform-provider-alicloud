@@ -260,7 +260,11 @@ func resourceAliCloudDdosCooDomainResourceRead(d *schema.ResourceData, meta inte
 
 	d.Set("cname", objectRaw["Cname"])
 	d.Set("https_ext", objectRaw["HttpsExt"])
-	d.Set("ocsp_enabled", formatBool(convertDdosCooDomainResourceWebRulesOcspEnabledResponse(objectRaw["OcspEnabled"])))
+	ocsp_enabledVal, formatErr := formatBool(convertDdosCooDomainResourceWebRulesOcspEnabledResponse(objectRaw["OcspEnabled"]))
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("ocsp_enabled", ocsp_enabledVal)
 	d.Set("rs_type", objectRaw["RsType"])
 	d.Set("ssl13_enabled", objectRaw["Ssl13Enabled"])
 	d.Set("ssl_ciphers", objectRaw["SslCiphers"])

@@ -20,12 +20,22 @@ func (c *CdnService) convertCdnSourcesToString(v []interface{}) (string, error) 
 	arrayMaps := make([]interface{}, len(v))
 	for i, vv := range v {
 		item := vv.(map[string]interface{})
+
+		priorityVal, err := formatInt(item["priority"])
+		if err != nil {
+			return "", err
+		}
+
+		weightVal, err := formatInt(item["weight"])
+		if err != nil {
+			return "", err
+		}
 		arrayMaps[i] = map[string]interface{}{
 			"content":  item["content"],
 			"port":     item["port"],
-			"priority": formatInt(item["priority"]),
+			"priority": priorityVal,
 			"type":     item["type"],
-			"weight":   formatInt(item["weight"]),
+			"weight":   weightVal,
 		}
 	}
 	maps, err := json.Marshal(arrayMaps)

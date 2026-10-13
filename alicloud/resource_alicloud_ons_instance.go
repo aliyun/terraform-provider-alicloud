@@ -119,11 +119,27 @@ func resourceAlicloudOnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	}
 	d.Set("instance_name", object["InstanceName"])
 	d.Set("name", object["InstanceName"])
-	d.Set("instance_type", formatInt(object["InstanceType"]))
-	d.Set("release_time", fmt.Sprint(formatInt(object["ReleaseTime"])))
+	instance_typeVal, err := formatInt(object["InstanceType"])
+	if err != nil {
+		return err
+	}
+	d.Set("instance_type", instance_typeVal)
+	releaseTime, err := formatInt(object["ReleaseTime"])
+	if err != nil {
+		return err
+	}
+	d.Set("release_time", fmt.Sprint(releaseTime))
 	d.Set("remark", object["Remark"])
-	d.Set("status", formatInt(object["InstanceStatus"]))
-	d.Set("instance_status", formatInt(object["InstanceStatus"]))
+	statusVal, err := formatInt(object["InstanceStatus"])
+	if err != nil {
+		return err
+	}
+	d.Set("status", statusVal)
+	instance_statusVal, err := formatInt(object["InstanceStatus"])
+	if err != nil {
+		return err
+	}
+	d.Set("instance_status", instance_statusVal)
 
 	listTagResourcesObject, err := onsService.ListTagResources(d.Id(), "INSTANCE")
 	if err != nil {

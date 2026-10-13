@@ -276,7 +276,11 @@ func resourceAliCloudDtsSubscriptionJobRead(d *schema.ResourceData, meta interfa
 		}
 		return WrapError(err)
 	}
-	d.Set("checkpoint", fmt.Sprint(formatInt(object["Checkpoint"])))
+	actualCheckpoint, err := formatInt(object["Checkpoint"])
+	if err != nil {
+		return err
+	}
+	d.Set("checkpoint", fmt.Sprint(actualCheckpoint))
 	d.Set("db_list", object["DbObject"])
 	d.Set("dts_instance_id", object["DtsInstanceID"])
 	d.Set("dts_job_name", object["DtsJobName"])

@@ -66,11 +66,25 @@ func dataSourceAlicloudConfigConfigurationRecordersRead(d *schema.ResourceData, 
 	addDebug(action, response, request)
 
 	s := make([]map[string]interface{}, 0)
+
+	accountId, err := formatInt(response["ConfigurationRecorder"].(map[string]interface{})["AccountId"])
+	if err != nil {
+		return err
+	}
+	accountIdValue, err := formatInt(response["ConfigurationRecorder"].(map[string]interface{})["AccountId"])
+	if err != nil {
+		return err
+	}
+
+	organization_master_idVal, err := formatInt(response["ConfigurationRecorder"].(map[string]interface{})["OrganizationMasterId"])
+	if err != nil {
+		return err
+	}
 	mapping := map[string]interface{}{
-		"id":                         fmt.Sprint(formatInt(response["ConfigurationRecorder"].(map[string]interface{})["AccountId"])),
-		"account_id":                 fmt.Sprint(formatInt(response["ConfigurationRecorder"].(map[string]interface{})["AccountId"])),
+		"id":                         fmt.Sprint(accountId),
+		"account_id":                 fmt.Sprint(accountIdValue),
 		"organization_enable_status": response["ConfigurationRecorder"].(map[string]interface{})["OrganizationEnableStatus"],
-		"organization_master_id":     formatInt(response["ConfigurationRecorder"].(map[string]interface{})["OrganizationMasterId"]),
+		"organization_master_id":     organization_master_idVal,
 		"resource_types":             response["ConfigurationRecorder"].(map[string]interface{})["ResourceTypes"],
 		"status":                     response["ConfigurationRecorder"].(map[string]interface{})["ConfigurationRecorderStatus"],
 	}

@@ -789,7 +789,11 @@ func (s *GpdbService) GpdbDbInstanceScaleStateRefreshFunc(id, field, target stri
 		status := fmt.Sprint(object["DBInstanceStatus"])
 		current := fmt.Sprint(object[field])
 		if _, ok := object[field].(float64); ok {
-			current = fmt.Sprint(formatInt(object[field]))
+			fieldValue, err := formatInt(object[field])
+			if err != nil {
+				return nil, "", err
+			}
+			current = fmt.Sprint(fieldValue)
 		}
 		for _, stableStatus := range stableStatuses {
 			if status == stableStatus && current == target {

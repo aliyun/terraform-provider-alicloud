@@ -159,18 +159,37 @@ func dataSourceAlicloudEcsActivationsRead(d *schema.ResourceData, meta interface
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		deregistered_countVal, err := formatInt(object["DeregisteredCount"])
+		if err != nil {
+			return err
+		}
+
+		instance_countVal, err := formatInt(object["InstanceCount"])
+		if err != nil {
+			return err
+		}
+
+		registered_countVal, err := formatInt(object["RegisteredCount"])
+		if err != nil {
+			return err
+		}
+		time_to_live_in_hoursVal, err := formatInt(object["TimeToLiveInHours"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                    fmt.Sprint(object["ActivationId"]),
 			"activation_id":         fmt.Sprint(object["ActivationId"]),
 			"create_time":           object["CreationTime"],
-			"deregistered_count":    formatInt(object["DeregisteredCount"]),
+			"deregistered_count":    deregistered_countVal,
 			"description":           object["Description"],
 			"disabled":              object["Disabled"],
-			"instance_count":        formatInt(object["InstanceCount"]),
+			"instance_count":        instance_countVal,
 			"instance_name":         object["InstanceName"],
 			"ip_address_range":      object["IpAddressRange"],
-			"registered_count":      formatInt(object["RegisteredCount"]),
-			"time_to_live_in_hours": formatInt(object["TimeToLiveInHours"]),
+			"registered_count":      registered_countVal,
+			"time_to_live_in_hours": time_to_live_in_hoursVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
@@ -184,7 +203,11 @@ func dataSourceAlicloudEcsActivationsRead(d *schema.ResourceData, meta interface
 	if err := d.Set("activations", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err := formatInt(response["TotalCount"])
+	if err != nil {
+		return err
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

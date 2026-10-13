@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudClickHouseBackupPolicy_basic0(t *testing.T) {
+func TestAccAliCloudClickHouseBackupPolicy_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.ClickHouseBackupPolicySupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_backup_policy.default"
@@ -36,9 +36,9 @@ func TestAccAlicloudClickHouseBackupPolicy_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -602,7 +602,11 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("db_instance_storage", object["DBInstanceStorage"])
 	d.Set("storage_engine", object["StorageEngine"])
 	d.Set("storage_type", convertMongoDBInstanceStorageTypeResponse(fmt.Sprint(object["StorageType"])))
-	d.Set("provisioned_iops", formatInt(object["ProvisionedIops"]))
+	provisioned_iopsVal, formatErr := formatInt(object["ProvisionedIops"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("provisioned_iops", provisioned_iopsVal)
 	d.Set("vpc_id", object["VPCId"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
@@ -611,8 +615,16 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("network_type", object["NetworkType"])
 	d.Set("name", object["DBInstanceDescription"])
 	d.Set("instance_charge_type", object["ChargeType"])
-	d.Set("replication_factor", formatInt(object["ReplicationFactor"]))
-	d.Set("readonly_replicas", formatInt(object["ReadonlyReplicas"]))
+	replication_factorVal, formatErr := formatInt(object["ReplicationFactor"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("replication_factor", replication_factorVal)
+	readonly_replicasVal, formatErr := formatInt(object["ReadonlyReplicas"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("readonly_replicas", readonly_replicasVal)
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("maintain_start_time", object["MaintainStartTime"])
 	d.Set("maintain_end_time", object["MaintainEndTime"])
@@ -632,7 +644,11 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.Set("auto_renew", formatBool(autoRenewalAttribute["AutoRenew"]))
+		auto_renewVal, err := formatBool(autoRenewalAttribute["AutoRenew"])
+		if err != nil {
+			return err
+		}
+		d.Set("auto_renew", auto_renewVal)
 		d.Set("auto_renew_duration", autoRenewalAttribute["Duration"])
 	}
 
@@ -697,13 +713,33 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 		d.Set("backup_period", strings.Split(backupPeriod.(string), ","))
 	}
 
-	d.Set("backup_retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
-	d.Set("backup_retention_policy_on_cluster_deletion", formatInt(backupPolicy["BackupRetentionPolicyOnClusterDeletion"]))
-	d.Set("enable_backup_log", formatInt(backupPolicy["EnableBackupLog"]))
-	d.Set("log_backup_retention_period", formatInt(backupPolicy["LogBackupRetentionPeriod"]))
+	backup_retention_periodVal, formatErr := formatInt(backupPolicy["BackupRetentionPeriod"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("backup_retention_period", backup_retention_periodVal)
+	backup_retention_policy_on_cluster_deletionVal, formatErr := formatInt(backupPolicy["BackupRetentionPolicyOnClusterDeletion"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("backup_retention_policy_on_cluster_deletion", backup_retention_policy_on_cluster_deletionVal)
+	enable_backup_logVal, formatErr := formatInt(backupPolicy["EnableBackupLog"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("enable_backup_log", enable_backup_logVal)
+	log_backup_retention_periodVal, formatErr := formatInt(backupPolicy["LogBackupRetentionPeriod"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("log_backup_retention_period", log_backup_retention_periodVal)
 	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
 	d.Set("backup_interval", backupPolicy["BackupInterval"])
-	d.Set("retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
+	retention_periodVal, formatErr := formatInt(backupPolicy["BackupRetentionPeriod"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("retention_period", retention_periodVal)
 
 	// https://next.api.aliyun.com/api/Dds/2015-12-01/DescribeDBInstanceAttribute
 	if object["KindCode"] == "0" || object["StorageType"] == "local_ssd" {
@@ -1200,7 +1236,11 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 	if fmt.Sprint(autoRenewalAttribute["Duration"]) != fmt.Sprint(v) && ok {
 		update = true
 	}
-	if formatBool(modifyInstanceAutoRenewalAttributeReq["AutoRenew"]) {
+	autoRenew, formatErr := formatBool(modifyInstanceAutoRenewalAttributeReq["AutoRenew"])
+	if formatErr != nil {
+		return formatErr
+	}
+	if autoRenew {
 		modifyInstanceAutoRenewalAttributeReq["Duration"] = fmt.Sprint(v)
 	}
 

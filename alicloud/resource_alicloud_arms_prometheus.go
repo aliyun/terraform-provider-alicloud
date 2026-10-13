@@ -189,8 +189,16 @@ func resourceAliCloudArmsPrometheusRead(d *schema.ResourceData, meta interface{}
 	d.Set("cluster_name", object["ClusterName"])
 	d.Set("sub_clusters_json", object["SubClustersJson"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
-	d.Set("duration", formatInt(object["StorageDuration"]))
-	d.Set("archive_duration", formatInt(object["ArchiveDuration"]))
+	durationVal, err := formatInt(object["StorageDuration"])
+	if err != nil {
+		return err
+	}
+	d.Set("duration", durationVal)
+	archive_durationVal, err := formatInt(object["ArchiveDuration"])
+	if err != nil {
+		return err
+	}
+	d.Set("archive_duration", archive_durationVal)
 	d.Set("payment_type", object["PaymentType"])
 
 	listTagResourcesObject, err := armsService.ListTagResources(d.Id(), "PROMETHEUS")

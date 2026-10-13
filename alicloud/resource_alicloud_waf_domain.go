@@ -259,16 +259,52 @@ func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("domain_name", parts[1])
 	d.Set("domain", parts[1])
 	d.Set("instance_id", parts[0])
-	d.Set("cluster_type", convertClusterTypeResponse(formatInt(object["ClusterType"])))
+	clusterType, err := formatInt(object["ClusterType"])
+	if err != nil {
+		return err
+	}
+	d.Set("cluster_type", convertClusterTypeResponse(clusterType))
 	d.Set("cname", object["Cname"])
-	d.Set("connection_time", formatInt(object["ConnectionTime"]))
-	d.Set("http2_port", convertJsonStringToStringList(object["Http2Port"]))
-	d.Set("http_port", convertJsonStringToStringList(object["HttpPort"]))
-	d.Set("http_to_user_ip", convertHttpToUserIpResponse(formatInt(object["HttpToUserIp"])))
-	d.Set("https_port", convertJsonStringToStringList(object["HttpsPort"]))
-	d.Set("https_redirect", convertHttpsRedirectResponse(formatInt(object["HttpsRedirect"])))
-	d.Set("is_access_product", convertIsAccessProductResponse(formatInt(object["IsAccessProduct"])))
-	d.Set("load_balancing", convertLoadBalancingResponse(formatInt(object["LoadBalancing"])))
+	connection_timeVal, err := formatInt(object["ConnectionTime"])
+	if err != nil {
+		return err
+	}
+	d.Set("connection_time", connection_timeVal)
+	http2_portVal, err := convertJsonStringToStringList(object["Http2Port"])
+	if err != nil {
+		return err
+	}
+	d.Set("http2_port", http2_portVal)
+	http_portVal, err := convertJsonStringToStringList(object["HttpPort"])
+	if err != nil {
+		return err
+	}
+	d.Set("http_port", http_portVal)
+	httpToUserIp, err := formatInt(object["HttpToUserIp"])
+	if err != nil {
+		return err
+	}
+	d.Set("http_to_user_ip", convertHttpToUserIpResponse(httpToUserIp))
+	https_portVal, err := convertJsonStringToStringList(object["HttpsPort"])
+	if err != nil {
+		return err
+	}
+	d.Set("https_port", https_portVal)
+	httpsRedirect, err := formatInt(object["HttpsRedirect"])
+	if err != nil {
+		return err
+	}
+	d.Set("https_redirect", convertHttpsRedirectResponse(httpsRedirect))
+	isAccessProduct, err := formatInt(object["IsAccessProduct"])
+	if err != nil {
+		return err
+	}
+	d.Set("is_access_product", convertIsAccessProductResponse(isAccessProduct))
+	loadBalancing, err := formatInt(object["LoadBalancing"])
+	if err != nil {
+		return err
+	}
+	d.Set("load_balancing", convertLoadBalancingResponse(loadBalancing))
 	if v, ok := object["LogHeaders"].([]interface{}); ok {
 		logHeaders := make([]map[string]interface{}, 0)
 		for _, val := range v {
@@ -282,10 +318,18 @@ func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) err
 			return WrapError(err)
 		}
 	}
-	d.Set("read_time", formatInt(object["ReadTime"]))
+	read_timeVal, err := formatInt(object["ReadTime"])
+	if err != nil {
+		return err
+	}
+	d.Set("read_time", read_timeVal)
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("source_ips", object["SourceIps"])
-	d.Set("write_time", formatInt(object["WriteTime"]))
+	write_timeVal, err := formatInt(object["WriteTime"])
+	if err != nil {
+		return err
+	}
+	d.Set("write_time", write_timeVal)
 	return nil
 }
 func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) error {

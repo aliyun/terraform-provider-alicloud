@@ -372,6 +372,11 @@ func dataSourceAliCloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		attachment_countVal, err := formatInt(object["AttachmentCount"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":               fmt.Sprint(object["PolicyName"]),
 			"policy_name":      fmt.Sprint(object["PolicyName"]),
@@ -379,7 +384,7 @@ func dataSourceAliCloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 			"type":             object["PolicyType"],
 			"description":      object["Description"],
 			"default_version":  object["DefaultVersion"],
-			"attachment_count": formatInt(object["AttachmentCount"]),
+			"attachment_count": attachment_countVal,
 			"create_date":      object["CreateDate"],
 			"update_date":      object["UpdateDate"],
 		}

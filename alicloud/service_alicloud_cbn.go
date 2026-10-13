@@ -794,9 +794,9 @@ func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, failStates []st
 func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
-	parts, err1 := ParseResourceId(id, 2)
-	if err1 != nil {
-		return nil, WrapError(err1)
+	parts, opErr := ParseResourceId(id, 2)
+	if opErr != nil {
+		return nil, WrapError(opErr)
 	}
 	action := "ListTransitRouterPeerAttachments"
 	request := map[string]interface{}{
@@ -1043,9 +1043,9 @@ func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, fa
 func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
-	parts, err1 := ParseResourceId(id, 2)
-	if err1 != nil {
-		return nil, WrapError(err1)
+	parts, opErr := ParseResourceId(id, 2)
+	if opErr != nil {
+		return nil, WrapError(opErr)
 	}
 	action := "ListTransitRouterRouteEntries"
 	request := map[string]interface{}{
@@ -1112,9 +1112,9 @@ func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, failS
 func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
-	parts, err1 := ParseResourceId(id, 2)
-	if err1 != nil {
-		return nil, WrapError(err1)
+	parts, opErr := ParseResourceId(id, 2)
+	if opErr != nil {
+		return nil, WrapError(opErr)
 	}
 	action := "ListTransitRouterRouteTables"
 	request := map[string]interface{}{
@@ -1929,7 +1929,11 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainPeerMember(id string
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
 	}
-	if formatInt(count) == 0 {
+	totalCount, err := formatInt(count)
+	if err != nil {
+		return nil, err
+	}
+	if totalCount == 0 {
 		return object, WrapErrorf(NotFoundErr("CEN.TransitRouterMulticastDomainPeerMember", id), NotFoundWithResponse, response)
 	}
 	v, err := jsonpath.Get("$.TransitRouterMulticastGroups[0]", response)

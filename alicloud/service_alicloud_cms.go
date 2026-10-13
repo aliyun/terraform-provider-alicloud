@@ -458,7 +458,11 @@ func (s *CmsService) DescribeCmsMonitorGroup(id string) (object map[string]inter
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 	} else {
-		if fmt.Sprint(formatInt(v.([]interface{})[0].(map[string]interface{})["GroupId"])) != id {
+		groupId, err := formatInt(v.([]interface{})[0].(map[string]interface{})["GroupId"])
+		if err != nil {
+			return nil, err
+		}
+		if fmt.Sprint(groupId) != id {
 			return object, WrapErrorf(NotFoundErr("CloudMonitorService", id), NotFoundWithResponse, response)
 		}
 	}

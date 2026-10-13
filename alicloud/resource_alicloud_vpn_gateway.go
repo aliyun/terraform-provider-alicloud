@@ -288,7 +288,11 @@ func resourceAliCloudVPNGatewayVPNGatewayRead(d *schema.ResourceData, meta inter
 
 	e := jsonata.MustCompile("$substringBefore($.Spec, \"M\")")
 	evaluation, _ := e.Eval(objectRaw)
-	d.Set("bandwidth", formatInt(evaluation))
+	bandwidthVal, err := formatInt(evaluation)
+	if err != nil {
+		return err
+	}
+	d.Set("bandwidth", bandwidthVal)
 
 	d.Set("instance_charge_type", convertPaymentTypeToChargeType(d.Get("payment_type")))
 	d.Set("name", d.Get("vpn_gateway_name"))

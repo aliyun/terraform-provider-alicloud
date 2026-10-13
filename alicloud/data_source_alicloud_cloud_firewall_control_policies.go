@@ -270,6 +270,16 @@ func dataSourceAliCloudCloudFirewallControlPoliciesRead(d *schema.ResourceData, 
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		orderVal, err := formatInt(object["Order"])
+		if err != nil {
+			return err
+		}
+
+		releaseVal, err := formatBool(object["Release"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                      fmt.Sprintf("%v:%v", object["AclUuid"], object["Direction"]),
 			"acl_uuid":                fmt.Sprint(object["AclUuid"]),
@@ -289,9 +299,9 @@ func dataSourceAliCloudCloudFirewallControlPoliciesRead(d *schema.ResourceData, 
 			"dns_result":              object["DnsResult"],
 			"dns_result_time":         fmt.Sprint(object["DnsResultTime"]),
 			"hit_times":               fmt.Sprint(object["HitTimes"]),
-			"order":                   formatInt(object["Order"]),
+			"order":                   orderVal,
 			"proto":                   object["Proto"],
-			"release":                 formatBool(object["Release"]),
+			"release":                 releaseVal,
 			"source":                  object["Source"],
 			"source_group_cidrs":      object["SourceGroupCidrs"],
 			"source_group_type":       object["SourceGroupType"],

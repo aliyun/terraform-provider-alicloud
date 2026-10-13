@@ -139,7 +139,11 @@ func resourceAliCloudExpressConnectBgpPeerRead(d *schema.ResourceData, meta inte
 	}
 
 	if v, ok := objectRaw["BfdMultiHop"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("bfd_multi_hop", formatInt(v))
+		bfd_multi_hopVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("bfd_multi_hop", bfd_multi_hopVal)
 	}
 	d.Set("bgp_group_id", objectRaw["BgpGroupId"])
 	d.Set("bgp_peer_name", objectRaw["Name"])

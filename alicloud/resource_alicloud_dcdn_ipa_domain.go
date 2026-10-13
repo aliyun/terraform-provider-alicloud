@@ -152,12 +152,22 @@ func resourceAlicloudDcdnIpaDomainRead(d *schema.ResourceData, meta interface{})
 			sourceMaps := make([]map[string]interface{}, 0)
 			for _, val := range sourceMap {
 				item := val.(map[string]interface{})
+
+				portVal, err := formatInt(item["Port"])
+				if err != nil {
+					return err
+				}
+
+				weightVal, err := formatInt(item["Weight"])
+				if err != nil {
+					return err
+				}
 				temp := map[string]interface{}{
 					"content":  item["Content"],
-					"port":     formatInt(item["Port"]),
+					"port":     portVal,
 					"priority": item["Priority"],
 					"type":     item["Type"],
-					"weight":   formatInt(item["Weight"]),
+					"weight":   weightVal,
 				}
 				sourceMaps = append(sourceMaps, temp)
 			}

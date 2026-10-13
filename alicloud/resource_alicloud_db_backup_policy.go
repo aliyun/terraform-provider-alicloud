@@ -236,16 +236,40 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 	d.Set("instance_id", d.Id())
 	d.Set("backup_time", object["PreferredBackupTime"])
 	d.Set("backup_period", strings.Split(object["PreferredBackupPeriod"].(string), ","))
-	d.Set("retention_period", formatInt(object["BackupRetentionPeriod"]))
+	retention_periodVal, err := formatInt(object["BackupRetentionPeriod"])
+	if err != nil {
+		return err
+	}
+	d.Set("retention_period", retention_periodVal)
 	d.Set("preferred_backup_time", object["PreferredBackupTime"])
 	d.Set("preferred_backup_period", strings.Split(object["PreferredBackupPeriod"].(string), ","))
-	d.Set("backup_retention_period", formatInt(object["BackupRetentionPeriod"]))
+	backup_retention_periodVal, err := formatInt(object["BackupRetentionPeriod"])
+	if err != nil {
+		return err
+	}
+	d.Set("backup_retention_period", backup_retention_periodVal)
 	d.Set("log_backup", object["BackupLog"] == "Enable")
 	d.Set("enable_backup_log", object["EnableBackupLog"] == "1")
-	d.Set("log_retention_period", formatInt(object["LogBackupRetentionPeriod"]))
-	d.Set("log_backup_retention_period", formatInt(object["LogBackupRetentionPeriod"]))
-	d.Set("local_log_retention_hours", formatInt(object["LocalLogRetentionHours"]))
-	d.Set("local_log_retention_space", formatInt(object["LocalLogRetentionSpace"]))
+	log_retention_periodVal, err := formatInt(object["LogBackupRetentionPeriod"])
+	if err != nil {
+		return err
+	}
+	d.Set("log_retention_period", log_retention_periodVal)
+	log_backup_retention_periodVal, err := formatInt(object["LogBackupRetentionPeriod"])
+	if err != nil {
+		return err
+	}
+	d.Set("log_backup_retention_period", log_backup_retention_periodVal)
+	local_log_retention_hoursVal, err := formatInt(object["LocalLogRetentionHours"])
+	if err != nil {
+		return err
+	}
+	d.Set("local_log_retention_hours", local_log_retention_hoursVal)
+	local_log_retention_spaceVal, err := formatInt(object["LocalLogRetentionSpace"])
+	if err != nil {
+		return err
+	}
+	d.Set("local_log_retention_space", local_log_retention_spaceVal)
 	d.Set("released_keep_policy", object["ReleasedKeepPolicy"])
 	d.Set("category", object["Category"])
 	d.Set("enable_increment_data_backup", object["EnableIncrementDataBackup"].(bool))
@@ -267,12 +291,24 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 		d.Set("backup_interval", object["BackupInterval"])
 	}
 	if instance["Engine"] == "SQLServer" && instance["Category"] == "AlwaysOn" {
-		d.Set("backup_priority", formatInt(object["BackupPriority"]))
+		backup_priorityVal, err := formatInt(object["BackupPriority"])
+		if err != nil {
+			return err
+		}
+		d.Set("backup_priority", backup_priorityVal)
 	}
 	d.Set("log_backup_frequency", object["LogBackupFrequency"])
 	d.Set("compress_type", object["CompressType"])
-	d.Set("archive_backup_retention_period", formatInt(object["ArchiveBackupRetentionPeriod"]))
-	d.Set("archive_backup_keep_count", formatInt(object["ArchiveBackupKeepCount"]))
+	archive_backup_retention_periodVal, err := formatInt(object["ArchiveBackupRetentionPeriod"])
+	if err != nil {
+		return err
+	}
+	d.Set("archive_backup_retention_period", archive_backup_retention_periodVal)
+	archive_backup_keep_countVal, err := formatInt(object["ArchiveBackupKeepCount"])
+	if err != nil {
+		return err
+	}
+	d.Set("archive_backup_keep_count", archive_backup_keep_countVal)
 	d.Set("archive_backup_keep_policy", object["ArchiveBackupKeepPolicy"])
 	if instance["Engine"] == "MySQL" && instance["DBInstanceStorageType"] == "local_ssd" && object["EnableIncrementDataBackup"].(bool) {
 		d.Set("inc_backup_interval", object["IncBackupInterval"])

@@ -268,13 +268,23 @@ func dataSourceAlicloudEciVirtualNodesRead(d *schema.ResourceData, meta interfac
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		cpuVal, err := formatInt(object["Cpu"])
+		if err != nil {
+			return err
+		}
+
+		memoryVal, err := formatInt(object["Memory"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"cpu":               formatInt(object["Cpu"]),
+			"cpu":               cpuVal,
 			"create_time":       object["CreationTime"],
 			"eni_instance_id":   object["EniInstanceId"],
 			"internet_ip":       object["InternetIp"],
 			"intranet_ip":       object["IntranetIp"],
-			"memory":            formatInt(object["Memory"]),
+			"memory":            memoryVal,
 			"ram_role_name":     object["RamRoleName"],
 			"resource_group_id": object["ResourceGroupId"],
 			"security_group_id": object["SecurityGroupId"],
@@ -291,8 +301,13 @@ func dataSourceAlicloudEciVirtualNodesRead(d *schema.ResourceData, meta interfac
 		if eventsList, ok := object["Events"].([]interface{}); ok {
 			for _, v := range eventsList {
 				if m1, ok := v.(map[string]interface{}); ok {
+
+					countVal, err := formatInt(m1["Count"])
+					if err != nil {
+						return err
+					}
 					temp1 := map[string]interface{}{
-						"count":           formatInt(m1["Count"]),
+						"count":           countVal,
 						"first_timestamp": m1["FirstTimestamp"],
 						"last_timestamp":  m1["LastTimestamp"],
 						"message":         m1["Message"],

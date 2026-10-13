@@ -35,6 +35,7 @@ func TestAccAliCloudAlidnsInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"payment_type":   "Subscription",
 					"dns_security":   "basic",
 					"domain_numbers": "2",
 					"period":         "1",

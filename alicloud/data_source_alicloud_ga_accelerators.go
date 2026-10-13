@@ -232,21 +232,31 @@ func dataSourceAlicloudGaAcceleratorsRead(d *schema.ResourceData, meta interface
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		bandwidthVal, err := formatInt(object["Bandwidth"])
+		if err != nil {
+			return err
+		}
+
+		expired_timeVal, err := formatInt(object["ExpiredTime"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"id":               fmt.Sprint(object["AcceleratorId"]),
-			"accelerator_id":   fmt.Sprint(object["AcceleratorId"]),
-			"accelerator_name": object["Name"],
-			"bandwidth":        formatInt(object["Bandwidth"]),
+			"id":                     fmt.Sprint(object["AcceleratorId"]),
+			"accelerator_id":         fmt.Sprint(object["AcceleratorId"]),
+			"accelerator_name":       object["Name"],
+			"bandwidth":              bandwidthVal,
 			"bandwidth_billing_type": object["BandwidthBillingType"],
-			"cen_id":           object["CenId"],
-			"ddos_id":          object["DdosId"],
-			"description":      object["Description"],
-			"dns_name":         object["DnsName"],
-			"expired_time":     formatInt(object["ExpiredTime"]),
-			"payment_type":     object["InstanceChargeType"],
-			"second_dns_name":  object["SecondDnsName"],
-			"spec":             object["Spec"],
-			"status":           object["State"],
+			"cen_id":                 object["CenId"],
+			"ddos_id":                object["DdosId"],
+			"description":            object["Description"],
+			"dns_name":               object["DnsName"],
+			"expired_time":           expired_timeVal,
+			"payment_type":           object["InstanceChargeType"],
+			"second_dns_name":        object["SecondDnsName"],
+			"spec":                   object["Spec"],
+			"status":                 object["State"],
 		}
 
 		ipSetConfigSli := make([]map[string]interface{}, 0)

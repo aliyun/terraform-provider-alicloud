@@ -220,16 +220,48 @@ func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		mapping["cluster_type"] = convertClusterTypeResponse(formatInt(getResp["ClusterType"]))
+		clusterType, err := formatInt(getResp["ClusterType"])
+		if err != nil {
+			return err
+		}
+		mapping["cluster_type"] = convertClusterTypeResponse(clusterType)
 		mapping["cname"] = getResp["Cname"]
 		mapping["connection_time"] = getResp["ConnectionTime"]
-		mapping["http2_port"] = convertJsonStringToStringList(getResp["Http2Port"])
-		mapping["http_port"] = convertJsonStringToStringList(getResp["HttpPort"])
-		mapping["http_to_user_ip"] = convertHttpToUserIpResponse(formatInt(getResp["HttpToUserIp"]))
-		mapping["https_port"] = convertJsonStringToStringList(getResp["HttpsPort"])
-		mapping["https_redirect"] = convertHttpsRedirectResponse(formatInt(getResp["HttpsRedirect"]))
-		mapping["is_access_product"] = convertIsAccessProductResponse(formatInt(getResp["IsAccessProduct"]))
-		mapping["load_balancing"] = convertLoadBalancingResponse(formatInt(getResp["LoadBalancing"]))
+		http2Port, err := convertJsonStringToStringList(getResp["Http2Port"])
+		if err != nil {
+			return err
+		}
+		mapping["http2_port"] = http2Port
+		httpPort, err := convertJsonStringToStringList(getResp["HttpPort"])
+		if err != nil {
+			return err
+		}
+		mapping["http_port"] = httpPort
+		httpToUserIp, err := formatInt(getResp["HttpToUserIp"])
+		if err != nil {
+			return err
+		}
+		mapping["http_to_user_ip"] = convertHttpToUserIpResponse(httpToUserIp)
+		httpsPort, err := convertJsonStringToStringList(getResp["HttpsPort"])
+		if err != nil {
+			return err
+		}
+		mapping["https_port"] = httpsPort
+		httpsRedirect, err := formatInt(getResp["HttpsRedirect"])
+		if err != nil {
+			return err
+		}
+		mapping["https_redirect"] = convertHttpsRedirectResponse(httpsRedirect)
+		isAccessProduct, err := formatInt(getResp["IsAccessProduct"])
+		if err != nil {
+			return err
+		}
+		mapping["is_access_product"] = convertIsAccessProductResponse(isAccessProduct)
+		loadBalancing, err := formatInt(getResp["LoadBalancing"])
+		if err != nil {
+			return err
+		}
+		mapping["load_balancing"] = convertLoadBalancingResponse(loadBalancing)
 		if v, ok := getResp["LogHeaders"].([]interface{}); ok {
 			logHeaders := make([]map[string]interface{}, 0)
 			for _, val := range v {

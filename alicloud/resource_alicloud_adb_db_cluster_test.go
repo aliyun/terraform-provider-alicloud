@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -119,12 +120,16 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":  "3.0",
+					"modify_type":         "PayAsYouGo",
+					"switch_mode":         "1",
 					"db_cluster_category": "Cluster",
 					"db_node_class":       "C8",
 					"description":         name,
 					"db_node_count":       "1",
 					"db_node_storage":     "100",
 					"mode":                "reserver",
+					"zone_id":             "${data.alicloud_adb_zones.default.ids.0}",
 					"vswitch_id":          "${local.vswitch_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -142,7 +147,13 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_class": "C32",
+					"compute_resource":       "8Core32GB",
+					"db_cluster_category":    "MixedStorage",
+					"disk_performance_level": "PL1",
+					"elastic_io_resource":    "1",
+					"mode":                   "flexible",
+					"switch_mode":            "2",
+					"db_node_class":          "C32",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -278,6 +289,16 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 						"tags.For":        "test-update",
 					}),
 				),
+			},
+			{
+				// The kernel version is assigned by the service per region and
+				// cannot be pinned from the test. Removing the required mode
+				// stops the plan before the placeholder reaches the API.
+				Config: testAccConfig(map[string]interface{}{
+					"kernel_version": "3.2.1",
+					"mode":           REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,

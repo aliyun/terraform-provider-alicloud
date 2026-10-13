@@ -33,12 +33,13 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 
 				Config: testAccConfig(map[string]interface{}{
+					"platform":          "AutoRenewal",
 					"instance_type":     "ecs.g6.large",
 					"instance_amount":   "1",
 					"period_unit":       "Month",
@@ -51,12 +52,14 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 					"renewal_status":    "AutoRenewal",
 					"auto_renew_period": "36",
 					"tags":              map[string]interface{}{"Created": "TF", "Foo": "Bar"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_type":     "ecs.g6.large",
 						"instance_amount":   "1",
 						"period_unit":       "Month",
+						"resource_group_id": CHECKSET,
 						"offering_type":     "All Upfront",
 						"name":              name,
 						"description":       "ReservedInstance",
@@ -195,7 +198,7 @@ func TestAccAliCloudReservedInstanceBasic1(t *testing.T) {
 			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -262,6 +265,10 @@ func resourceReservedInstanceBasicConfigDependence(name string) string {
 	
 	data "alicloud_instance_types" "default" {
 		instance_type_family = "ecs.g7"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+		status = "OK"
 	}
 `, name)
 }

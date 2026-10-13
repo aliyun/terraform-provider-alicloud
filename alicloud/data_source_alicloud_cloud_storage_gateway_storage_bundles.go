@@ -181,7 +181,11 @@ func dataSourceAlicloudCloudStorageGatewayStorageBundlesRead(d *schema.ResourceD
 		return WrapError(err)
 	}
 
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err := formatInt(response["TotalCount"])
+	if err != nil {
+		return err
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 

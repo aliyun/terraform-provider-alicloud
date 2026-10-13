@@ -126,23 +126,52 @@ func dataSourceAlicloudWafInstancesRead(d *schema.ResourceData, meta interface{}
 				continue
 			}
 		}
-		if statusOk && status.(int) != formatInt(item["Status"]) {
-			continue
+		if statusOk {
+			statusVal, statusErr := formatInt(item["Status"])
+			if statusErr != nil {
+				return statusErr
+			}
+			if status.(int) != statusVal {
+				continue
+			}
 		}
 		objects = append(objects, item)
 	}
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		end_dateVal, err := formatInt(object["EndDate"])
+		if err != nil {
+			return err
+		}
+		in_debtVal, err := formatInt(object["InDebt"])
+		if err != nil {
+			return err
+		}
+
+		remain_dayVal, err := formatInt(object["RemainDay"])
+		if err != nil {
+			return err
+		}
+		statusVal, err := formatInt(object["Status"])
+		if err != nil {
+			return err
+		}
+
+		trialVal, err := formatInt(object["Trial"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"end_date":          formatInt(object["EndDate"]),
-			"in_debt":           formatInt(object["InDebt"]),
+			"end_date":          end_dateVal,
+			"in_debt":           in_debtVal,
 			"id":                fmt.Sprint(object["InstanceId"]),
 			"instance_id":       object["InstanceId"],
-			"remain_day":        formatInt(object["RemainDay"]),
-			"status":            formatInt(object["Status"]),
+			"remain_day":        remain_dayVal,
+			"status":            statusVal,
 			"subscription_type": object["SubscriptionType"],
-			"trial":             formatInt(object["Trial"]),
+			"trial":             trialVal,
 		}
 		ids = append(ids, fmt.Sprint(object["InstanceId"]))
 		s = append(s, mapping)

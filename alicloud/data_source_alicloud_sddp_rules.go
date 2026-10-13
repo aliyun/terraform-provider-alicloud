@@ -284,12 +284,32 @@ func dataSourceAlicloudSddpRulesRead(d *schema.ResourceData, meta interface{}) e
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		categoryVal, err := formatInt(object["Category"])
+		if err != nil {
+			return err
+		}
+
+		custom_typeVal, err := formatInt(object["CustomType"])
+		if err != nil {
+			return err
+		}
+
+		statusVal, err := formatInt(object["Status"])
+		if err != nil {
+			return err
+		}
+
+		warn_levelVal, err := formatInt(object["WarnLevel"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"category":         formatInt(object["Category"]),
+			"category":         categoryVal,
 			"category_name":    object["CategoryName"],
 			"content":          object["Content"],
 			"content_category": object["ContentCategory"],
-			"custom_type":      formatInt(object["CustomType"]),
+			"custom_type":      custom_typeVal,
 			"description":      object["Description"],
 			"display_name":     object["DisplayName"],
 			"gmt_modified":     fmt.Sprint(object["GmtModified"]),
@@ -303,10 +323,10 @@ func dataSourceAlicloudSddpRulesRead(d *schema.ResourceData, meta interface{}) e
 			"id":               fmt.Sprint(object["Id"]),
 			"rule_id":          fmt.Sprint(object["Id"]),
 			"stat_express":     object["StatExpress"],
-			"status":           formatInt(object["Status"]),
+			"status":           statusVal,
 			"target":           object["Target"],
 			"user_id":          fmt.Sprint(object["UserId"]),
-			"warn_level":       formatInt(object["WarnLevel"]),
+			"warn_level":       warn_levelVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

@@ -236,22 +236,42 @@ func dataSourceAlicloudEcsAutoSnapshotPoliciesRead(d *schema.ResourceData, meta 
 				return WrapError(err)
 			}
 		}
+
+		copied_snapshots_retention_daysVal, err := formatInt(object["CopiedSnapshotsRetentionDays"])
+		if err != nil {
+			return err
+		}
+
+		disk_numsVal, err := formatInt(object["DiskNums"])
+		if err != nil {
+			return err
+		}
+
+		retention_daysVal, err := formatInt(object["RetentionDays"])
+		if err != nil {
+			return err
+		}
+
+		volume_numsVal, err := formatInt(object["VolumeNums"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                              fmt.Sprint(object["AutoSnapshotPolicyId"]),
 			"auto_snapshot_policy_id":         fmt.Sprint(object["AutoSnapshotPolicyId"]),
 			"auto_snapshot_policy_name":       object["AutoSnapshotPolicyName"],
 			"association_type":                object["AssociationType"],
-			"copied_snapshots_retention_days": formatInt(object["CopiedSnapshotsRetentionDays"]),
+			"copied_snapshots_retention_days": copied_snapshots_retention_daysVal,
 			"create_time":                     object["CreationTime"],
-			"disk_nums":                       formatInt(object["DiskNums"]),
+			"disk_nums":                       disk_numsVal,
 			"enable_cross_region_copy":        object["EnableCrossRegionCopy"],
 			"region_id":                       object["RegionId"],
 			"repeat_weekdays":                 repeatWeekdays,
-			"retention_days":                  formatInt(object["RetentionDays"]),
+			"retention_days":                  retention_daysVal,
 			"status":                          object["Status"],
 			"target_copy_regions":             targetCopyRegions,
 			"time_points":                     timePoints,
-			"volume_nums":                     formatInt(object["VolumeNums"]),
+			"volume_nums":                     volume_numsVal,
 		}
 
 		tags := make(map[string]interface{})

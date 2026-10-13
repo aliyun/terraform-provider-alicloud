@@ -1158,10 +1158,22 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeKvstoreInstance", AlibabaCloudSdkGoERROR)
 		}
-		curReplica := formatInt(instance["ReplicaCount"])
-		curSlaveReplica := formatInt(instance["SlaveReplicaCount"])
-		curReadOnly := formatInt(instance["ReadOnlyCount"])
-		curSlaveReadOnly := formatInt(instance["SlaveReadOnlyCount"])
+		curReplica, curReplicaErr := formatInt(instance["ReplicaCount"])
+		if curReplicaErr != nil {
+			return curReplicaErr
+		}
+		curSlaveReplica, curSlaveReplicaErr := formatInt(instance["SlaveReplicaCount"])
+		if curSlaveReplicaErr != nil {
+			return curSlaveReplicaErr
+		}
+		curReadOnly, curReadOnlyErr := formatInt(instance["ReadOnlyCount"])
+		if curReadOnlyErr != nil {
+			return curReadOnlyErr
+		}
+		curSlaveReadOnly, curSlaveReadOnlyErr := formatInt(instance["SlaveReadOnlyCount"])
+		if curSlaveReadOnlyErr != nil {
+			return curSlaveReadOnlyErr
+		}
 		if curReplica > 0 || curSlaveReplica > 0 {
 			migrateToOtherZoneReq["SlaveReplicaCount"] = 0
 			migrateToOtherZoneReq["ReplicaCount"] = curReplica + curSlaveReplica

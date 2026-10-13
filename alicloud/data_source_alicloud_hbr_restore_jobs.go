@@ -295,6 +295,11 @@ func dataSourceAlicloudHbrRestoreJobsRead(d *schema.ResourceData, meta interface
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		progressVal, err := formatInt(object["Progress"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                    fmt.Sprint(object["RestoreId"], ":", object["RestoreType"]),
 			"actual_bytes":          fmt.Sprint(object["ActualBytes"]),
@@ -310,7 +315,7 @@ func dataSourceAlicloudHbrRestoreJobsRead(d *schema.ResourceData, meta interface
 			"items_total":           fmt.Sprint(object["ItemsTotal"]),
 			"options":               object["Options"],
 			"parent_id":             object["ParentId"],
-			"progress":              formatInt(object["Progress"]),
+			"progress":              progressVal,
 			"restore_job_id":        object["RestoreId"],
 			"restore_type":          object["RestoreType"],
 			"snapshot_hash":         object["SnapshotHash"],

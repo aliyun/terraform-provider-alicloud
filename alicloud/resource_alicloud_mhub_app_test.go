@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -151,7 +152,7 @@ func testSweepMHUBApp(region string) error {
 	return nil
 }
 
-func TestAccAlicloudMHUBApp_basic0(t *testing.T) {
+func TestAccAliCloudMHUBApp_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mhub_app.default"
 	ra := resourceAttrInit(resourceId, AlicloudMHUBAppMap0)
@@ -190,7 +191,9 @@ func TestAccAlicloudMHUBApp_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"app_name": "tf_testaccmhubapp",
+					"package_name": "com.test.android-upd",
+					"type":         "iOS",
+					"app_name":     "tf_testaccmhubapp",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -232,6 +235,17 @@ func TestAccAlicloudMHUBApp_basic0(t *testing.T) {
 						"encoded_icon": CHECKSET,
 					}),
 				),
+			},
+			{
+				// bundle_id conflicts with package_name and is only valid for an
+				// iOS-type app, so it cannot be exercised alongside the existing
+				// Android package_name steps. Removing the required type stops the
+				// plan before the placeholder reaches the API.
+				Config: testAccConfig(map[string]interface{}{
+					"bundle_id": "com.example.tfacc",
+					"type":      REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,

@@ -135,15 +135,27 @@ func resourceAlicloudAlidnsMonitorConfigRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	if v, ok := object["EvaluationCount"]; ok {
-		d.Set("evaluation_count", formatInt(v))
+		evaluation_countVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("evaluation_count", evaluation_countVal)
 	}
 	if v, ok := object["Interval"]; ok {
-		d.Set("interval", formatInt(v))
+		intervalVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("interval", intervalVal)
 	}
 	d.Set("monitor_extend_info", object["MonitorExtendInfo"])
 	d.Set("protocol_type", object["ProtocolType"])
 	if v, ok := object["Timeout"]; ok {
-		d.Set("timeout", formatInt(v))
+		timeoutVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("timeout", timeoutVal)
 	}
 	if ispCityNodesList, ok := object["IspCityNodes"]; ok {
 		ispCityNodesArg := ispCityNodesList.(map[string]interface{})

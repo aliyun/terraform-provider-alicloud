@@ -207,9 +207,18 @@ func dataSourceAlicloudThreatDetectionBackupPoliciesRead(d *schema.ResourceData,
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		idVal, err := formatInt(object["Id"])
+		if err != nil {
+			return err
+		}
+		backup_policy_idVal, err := formatInt(object["Id"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"id":                 formatInt(object["Id"]),
-			"backup_policy_id":   formatInt(object["Id"]),
+			"id":                 idVal,
+			"backup_policy_id":   backup_policy_idVal,
 			"backup_policy_name": object["Name"],
 			"policy":             object["Policy"],
 			"policy_region_id":   object["PolicyRegionId"],

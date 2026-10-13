@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -61,7 +62,11 @@ func testSweepPrivateZoneEndpoint(region string) error {
 		}
 
 		resp, err := jsonpath.Get("$.Endpoints", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		totalCount, formatErr := formatInt(response["TotalCount"])
+		if formatErr != nil {
+			return formatErr
+		}
+		if totalCount != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Endpoints", action, err)
 			return nil
 		}
@@ -125,6 +130,7 @@ func TestAccAliCloudPvtzEndpoint_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ip":                "CHANGE_FAILED",
 					"vpc_id":            "${alicloud_vpc.default.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"vpc_region_id":     defaultRegionToTest,
@@ -159,6 +165,7 @@ func TestAccAliCloudPvtzEndpoint_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ip":            "CHANGE_INIT",
 					"endpoint_name": name + "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -197,6 +204,24 @@ func TestAccAliCloudPvtzEndpoint_basic0(t *testing.T) {
 						"endpoint_name": name,
 					}),
 				),
+			},
+			{
+				// The endpoint IP is assigned by the service and cannot be
+				// pre-provisioned in this test. Removing the required
+				// endpoint_name stops the plan before the placeholder
+				// ip_configs entry reaches the API.
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_name": REMOVEKEY,
+					"ip_configs": []map[string]interface{}{
+						{
+							"ip":         "",
+							"zone_id":    "${alicloud_vswitch.default[0].zone_id}",
+							"cidr_block": "${alicloud_vswitch.default[0].cidr_block}",
+							"vswitch_id": "${alicloud_vswitch.default[0].id}",
+						},
+					},
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,

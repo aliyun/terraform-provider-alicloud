@@ -342,18 +342,33 @@ func dataSourceAlicloudEcsSnapshotsRead(d *schema.ResourceData, meta interface{}
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		instant_access_retention_daysVal, err := formatInt(object["InstantAccessRetentionDays"])
+		if err != nil {
+			return err
+		}
+
+		remain_timeVal, err := formatInt(object["RemainTime"])
+		if err != nil {
+			return err
+		}
+
+		retention_daysVal, err := formatInt(object["RetentionDays"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"category":                      object["Category"],
 			"description":                   object["Description"],
 			"disk_id":                       object["SourceDiskId"],
 			"encrypted":                     object["Encrypted"],
 			"instant_access":                object["InstantAccess"],
-			"instant_access_retention_days": formatInt(object["InstantAccessRetentionDays"]),
+			"instant_access_retention_days": instant_access_retention_daysVal,
 			"product_code":                  object["ProductCode"],
 			"progress":                      object["Progress"],
-			"remain_time":                   formatInt(object["RemainTime"]),
+			"remain_time":                   remain_timeVal,
 			"resource_group_id":             object["ResourceGroupId"],
-			"retention_days":                formatInt(object["RetentionDays"]),
+			"retention_days":                retention_daysVal,
 			"id":                            fmt.Sprint(object["SnapshotId"]),
 			"snapshot_id":                   fmt.Sprint(object["SnapshotId"]),
 			"snapshot_name":                 object["SnapshotName"],

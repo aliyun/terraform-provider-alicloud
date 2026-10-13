@@ -192,11 +192,19 @@ func dataSourceAliCloudSslCertificatesServiceInstanceCertificateRead(d *schema.R
 
 		// ListCertificates types CertificateId as a string while every other API in this
 		// product returns an integer; normalise it so the declared type holds.
-		mapping["id"] = formatInt(objectRaw["CertificateId"])
+		actualId, err := formatInt(objectRaw["CertificateId"])
+		if err != nil {
+			return err
+		}
+		mapping["id"] = actualId
 
 		mapping["algorithm"] = objectRaw["Algorithm"]
 		mapping["cert_identifier"] = objectRaw["CertIdentifier"]
-		mapping["certificate_id"] = formatInt(objectRaw["CertificateId"])
+		certificateId, err := formatInt(objectRaw["CertificateId"])
+		if err != nil {
+			return err
+		}
+		mapping["certificate_id"] = certificateId
 		mapping["certificate_name"] = objectRaw["CertificateName"]
 		mapping["certificate_source"] = objectRaw["CertificateSource"]
 		mapping["certificate_status"] = objectRaw["CertificateStatus"]

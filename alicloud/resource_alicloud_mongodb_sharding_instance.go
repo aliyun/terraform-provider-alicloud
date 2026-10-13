@@ -686,7 +686,11 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	d.Set("engine_version", object["EngineVersion"])
 	d.Set("storage_engine", object["StorageEngine"])
 	d.Set("storage_type", object["StorageType"])
-	d.Set("provisioned_iops", formatInt(object["ProvisionedIops"]))
+	provisioned_iopsVal, formatErr := formatInt(object["ProvisionedIops"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("provisioned_iops", provisioned_iopsVal)
 	d.Set("protocol_type", object["ProtocolType"])
 	d.Set("vpc_id", object["VPCId"])
 	d.Set("vswitch_id", object["VSwitchId"])
@@ -725,7 +729,11 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 			return WrapError(err)
 		}
 
-		d.Set("auto_renew", formatBool(autoRenewalAttribute["AutoRenew"]))
+		auto_renewVal, err := formatBool(autoRenewalAttribute["AutoRenew"])
+		if err != nil {
+			return err
+		}
+		d.Set("auto_renew", auto_renewVal)
 		d.Set("auto_renew_duration", autoRenewalAttribute["Duration"])
 	}
 
@@ -775,11 +783,31 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 
 	d.Set("backup_time", backupPolicy["PreferredBackupTime"])
 	d.Set("backup_period", strings.Split(backupPolicy["PreferredBackupPeriod"].(string), ","))
-	d.Set("retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
-	d.Set("backup_retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
-	d.Set("backup_retention_policy_on_cluster_deletion", formatInt(backupPolicy["BackupRetentionPolicyOnClusterDeletion"]))
-	d.Set("enable_backup_log", formatInt(backupPolicy["EnableBackupLog"]))
-	d.Set("log_backup_retention_period", formatInt(backupPolicy["LogBackupRetentionPeriod"]))
+	retention_periodVal, formatErr := formatInt(backupPolicy["BackupRetentionPeriod"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("retention_period", retention_periodVal)
+	backup_retention_periodVal, formatErr := formatInt(backupPolicy["BackupRetentionPeriod"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("backup_retention_period", backup_retention_periodVal)
+	backup_retention_policy_on_cluster_deletionVal, formatErr := formatInt(backupPolicy["BackupRetentionPolicyOnClusterDeletion"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("backup_retention_policy_on_cluster_deletion", backup_retention_policy_on_cluster_deletionVal)
+	enable_backup_logVal, formatErr := formatInt(backupPolicy["EnableBackupLog"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("enable_backup_log", enable_backup_logVal)
+	log_backup_retention_periodVal, formatErr := formatInt(backupPolicy["LogBackupRetentionPeriod"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("log_backup_retention_period", log_backup_retention_periodVal)
 	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
 	d.Set("backup_interval", backupPolicy["BackupInterval"])
 
@@ -843,7 +871,11 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 				}
 
 				if port, ok := MongosListArg["Port"]; ok {
-					MongosListItemMap["port"] = formatInt(port)
+					portValue, err := formatInt(port)
+					if err != nil {
+						return err
+					}
+					MongosListItemMap["port"] = portValue
 				}
 
 				MongosListMaps = append(MongosListMaps, MongosListItemMap)
@@ -865,11 +897,19 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 				}
 
 				if nodeStorage, ok := shardListArg["NodeStorage"]; ok {
-					shardListItemMap["node_storage"] = formatInt(nodeStorage)
+					nodeStorageValue, err := formatInt(nodeStorage)
+					if err != nil {
+						return err
+					}
+					shardListItemMap["node_storage"] = nodeStorageValue
 				}
 
 				if readonlyReplicas, ok := shardListArg["ReadonlyReplicas"]; ok {
-					shardListItemMap["readonly_replicas"] = formatInt(readonlyReplicas)
+					readonlyReplicasValue, err := formatInt(readonlyReplicas)
+					if err != nil {
+						return err
+					}
+					shardListItemMap["readonly_replicas"] = readonlyReplicasValue
 				}
 
 				if nodeId, ok := shardListArg["NodeId"]; ok {
@@ -907,7 +947,11 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 				}
 
 				if port, ok := configServerListArg["Port"]; ok {
-					configServerListItemMap["port"] = formatInt(port)
+					portNum, err := formatInt(port)
+					if err != nil {
+						return err
+					}
+					configServerListItemMap["port"] = portNum
 				}
 
 				if maxConnections, ok := configServerListArg["MaxConnections"]; ok {
@@ -1347,7 +1391,11 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 	if fmt.Sprint(autoRenewalAttribute["Duration"]) != fmt.Sprint(v) && ok {
 		update = true
 	}
-	if formatBool(modifyInstanceAutoRenewalAttributeReq["AutoRenew"]) {
+	autoRenew, formatErr := formatBool(modifyInstanceAutoRenewalAttributeReq["AutoRenew"])
+	if formatErr != nil {
+		return formatErr
+	}
+	if autoRenew {
 		modifyInstanceAutoRenewalAttributeReq["Duration"] = fmt.Sprint(v)
 	}
 

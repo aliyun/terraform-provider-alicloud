@@ -183,6 +183,11 @@ func dataSourceAlicloudMhubAppsRead(d *schema.ResourceData, meta interface{}) er
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		appType, err := formatInt(object["Type"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":           fmt.Sprintf("%s:%s", ProductId, object["AppKey"]),
 			"app_key":      fmt.Sprint(object["AppKey"]),
@@ -191,7 +196,7 @@ func dataSourceAlicloudMhubAppsRead(d *schema.ResourceData, meta interface{}) er
 			"encoded_icon": object["EncodedIcon"],
 			"industry_id":  fmt.Sprint(object["IndustryId"]),
 			"package_name": object["PackageName"],
-			"type":         convertTypeResponse(formatInt(object["Type"])),
+			"type":         convertTypeResponse(appType),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])

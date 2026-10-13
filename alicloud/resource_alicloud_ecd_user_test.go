@@ -103,7 +103,7 @@ func testSweepEcdUser(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECDUser_basic0(t *testing.T) {
+func TestAccAliCloudECDUser_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_user.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDUserMap0)

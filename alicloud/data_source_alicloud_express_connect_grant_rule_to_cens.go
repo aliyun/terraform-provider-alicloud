@@ -136,10 +136,15 @@ func dataSourceAlicloudExpressConnectGrantRuleToCensRead(d *schema.ResourceData,
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		cen_owner_idVal, err := formatInt(object["CenOwnerId"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":           fmt.Sprintf("%v:%v:%v", object["CenInstanceId"], object["CenOwnerId"], request["InstanceId"]),
 			"cen_id":       fmt.Sprint(object["CenInstanceId"]),
-			"cen_owner_id": formatInt(object["CenOwnerId"]),
+			"cen_owner_id": cen_owner_idVal,
 			"create_time":  object["CreationTime"],
 		}
 

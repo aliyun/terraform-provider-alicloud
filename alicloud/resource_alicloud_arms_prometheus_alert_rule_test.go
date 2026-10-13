@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
+func TestAccAliCloudARMSPrometheusAlertRule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_prometheus_alert_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudARMSPrometheusAlertRuleMap0)
@@ -35,9 +35,9 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -63,6 +63,8 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"dispatch_rule_id":           "${alicloud_arms_dispatch_rule.default.id}",
+					"notify_type":                "DISPATCH_RULE",
 					"prometheus_alert_rule_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -168,7 +170,7 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudARMSPrometheusAlertRule_basic1(t *testing.T) {
+func TestAccAliCloudARMSPrometheusAlertRule_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_prometheus_alert_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudARMSPrometheusAlertRuleMap0)
@@ -184,9 +186,9 @@ func TestAccAlicloudARMSPrometheusAlertRule_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

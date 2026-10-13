@@ -416,7 +416,11 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("log_storage", objectRaw["LogStorage"])
 	d.Set("payment_type", convertKmsInstanceKmsInstanceChargeTypeResponse(objectRaw["ChargeType"]))
 	d.Set("product_version", objectRaw["ProductVersion"])
-	d.Set("secret_num", formatInt(objectRaw["SecretNum"]))
+	secret_numVal, formatErr := formatInt(objectRaw["SecretNum"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("secret_num", secret_numVal)
 	d.Set("spec", objectRaw["Spec"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("vpc_id", objectRaw["VpcId"])

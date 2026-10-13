@@ -196,16 +196,32 @@ func resourceAliCloudSddpRuleRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	d.Set("rule_name", object["Name"])
-	d.Set("category", convertSddpRuleCategoryResponse(formatInt(object["Category"])))
+	actualCategory, err := formatInt(object["Category"])
+	if err != nil {
+		return err
+	}
+	d.Set("category", convertSddpRuleCategoryResponse(actualCategory))
 	d.Set("content", object["Content"])
 	d.Set("content_category", object["ContentCategory"])
 	d.Set("product_code", object["ProductCode"])
-	d.Set("warn_level", formatInt(object["WarnLevel"]))
+	warn_levelVal, err := formatInt(object["WarnLevel"])
+	if err != nil {
+		return err
+	}
+	d.Set("warn_level", warn_levelVal)
 	d.Set("stat_express", object["StatExpress"])
 	d.Set("target", object["Target"])
-	d.Set("status", formatInt(object["Status"]))
+	statusVal, err := formatInt(object["Status"])
+	if err != nil {
+		return err
+	}
+	d.Set("status", statusVal)
 	d.Set("description", object["Description"])
-	d.Set("custom_type", formatInt(object["CustomType"]))
+	custom_typeVal, err := formatInt(object["CustomType"])
+	if err != nil {
+		return err
+	}
+	d.Set("custom_type", custom_typeVal)
 
 	if riskLevelId, ok := object["RiskLevelId"]; ok {
 		d.Set("risk_level_id", fmt.Sprint(riskLevelId))
