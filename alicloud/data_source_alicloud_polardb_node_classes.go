@@ -152,15 +152,22 @@ func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta i
 		zondId := AvailableZone.ZoneId
 		ids = append(ids, zondId)
 
+		realDBType := dbType.(string)
+		if dbType == "PostgreSQL" {
+			realDBType = "pg"
+		} else if dbType == "Oracle" {
+			realDBType = "pgo"
+		}
 		supportedEngines := make([]interface{}, 0)
 		for _, supportedEngine := range AvailableZone.SupportedEngines {
 			if len(supportedEngine.AvailableResources) == 0 {
 				continue
 			}
-			if dbTypeGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(dbType.(string))) {
+
+			if dbTypeGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(realDBType)) {
 				continue
 			}
-			if dbVersionGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(dbVersion.(string))) {
+			if dbVersionGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(realDBType)) {
 				continue
 			}
 			var dbNodeClasses []map[string]string
