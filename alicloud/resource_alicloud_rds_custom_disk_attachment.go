@@ -49,6 +49,10 @@ func resourceAliCloudRdsCustomDiskAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -122,6 +126,7 @@ func resourceAliCloudRdsCustomDiskAttachmentRead(d *schema.ResourceData, meta in
 	d.Set("status", objectRaw["Status"])
 	d.Set("disk_id", objectRaw["DiskId"])
 	d.Set("instance_id", objectRaw["InstanceId"])
+	d.Set("zone_id", objectRaw["ZoneId"])
 
 	return nil
 }
