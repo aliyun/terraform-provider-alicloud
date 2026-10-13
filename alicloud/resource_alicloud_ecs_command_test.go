@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudECSCommand_basic(t *testing.T) {
+func TestAccAliCloudECSCommand_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_command.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsCommandMap)
@@ -40,32 +40,36 @@ func TestAccAlicloudECSCommand_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"command_content": "bHMK",
-					"description":     "For Terraform Test",
-					"name":            name,
-					"type":            "RunShellScript",
-					"working_dir":     "/root",
+					"command_content":  "bHMK",
+					"content_encoding": "Base64",
+					"description":      "For Terraform Test",
+					"enable_parameter": false,
+					"name":             name,
+					"type":             "RunShellScript",
+					"working_dir":      "/root",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"command_content": "bHMK",
-						"description":     "For Terraform Test",
-						"name":            name,
-						"type":            "RunShellScript",
-						"working_dir":     "/root",
+						"command_content":  "bHMK",
+						"content_encoding": "Base64",
+						"description":      "For Terraform Test",
+						"name":             name,
+						"type":             "RunShellScript",
+						"working_dir":      "/root",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudECSCommand_basic1(t *testing.T) {
+func TestAccAliCloudECSCommand_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_command.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsCommandMap)
@@ -88,28 +92,50 @@ func TestAccAlicloudECSCommand_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"command_content": "bHMK",
-					"description":     "For Terraform Test",
-					"name":            name,
-					"type":            "RunShellScript",
-					"working_dir":     "/root",
-					"timeout":         "60",
+					"command_content":   "bHMK",
+					"content_encoding":  "Base64",
+					"description":       "For Terraform Test",
+					"name":              name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"type":              "RunShellScript",
+					"working_dir":       "/root",
+					"timeout":           "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"command_content": "bHMK",
-						"description":     "For Terraform Test",
-						"name":            name,
-						"type":            "RunShellScript",
-						"working_dir":     "/root",
-						"timeout":         "60",
+						"command_content":   "bHMK",
+						"content_encoding":  "Base64",
+						"description":       "For Terraform Test",
+						"name":              name,
+						"resource_group_id": CHECKSET,
+						"type":              "RunShellScript",
+						"working_dir":       "/root",
+						"timeout":           "60",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"command_content":   "bHMK",
+					"content_encoding":  "Base64",
+					"description":       "For Terraform Test",
+					"name":              name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"type":              "RunShellScript",
+					"working_dir":       "/root",
+					"timeout":           "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
 			},
 		},
 	})
@@ -120,7 +146,10 @@ var AlicloudEcsCommandMap = map[string]string{
 }
 
 func AlicloudEcsCommandBasicDependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+data "alicloud_resource_manager_resource_groups" "default" {
+}
+`)
 }
 
 // lintignore: R001
@@ -130,12 +159,14 @@ func TestUnitAlicloudECSCommand(t *testing.T) {
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_command"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
-		"command_content": "bHMK",
-		"description":     "description",
-		"name":            "name",
-		"type":            "RunShellScript",
-		"working_dir":     "/root",
-		"timeout":         60,
+		"command_content":   "bHMK",
+		"content_encoding":  "Base64",
+		"description":       "description",
+		"name":              "name",
+		"resource_group_id": "rg-test",
+		"type":              "RunShellScript",
+		"working_dir":       "/root",
+		"timeout":           60,
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -155,8 +186,10 @@ func TestUnitAlicloudECSCommand(t *testing.T) {
 				map[string]interface{}{
 					"Name":            "name",
 					"CommandContent":  "bHMK",
+					"ContentEncoding": "Base64",
 					"Description":     "description",
 					"EnableParameter": "enable_parameter",
+					"ResourceGroupId": "rg-test",
 					"Timeout":         60,
 					"Type":            "RunShellScript",
 					"WorkingDir":      "/root",
@@ -363,5 +396,24 @@ func TestUnitAlicloudECSCommand(t *testing.T) {
 		err := resourceAlicloudEcsCommandRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
+	})
+
+	//Update
+	t.Run("UpdateMockNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAlicloudEcsCommandUpdate(d, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
 	})
 }
