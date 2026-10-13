@@ -249,3 +249,47 @@ func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotPreset(id string
 	}
 	return v.(map[string]interface{}), nil
 }
+
+func (s *ThreatDetectionService) DescribeThreatDetectionVulAutoConfig(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeAutoFixConfig"
+	client := s.client
+	request := map[string]interface{}{
+		"ConfigId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"AutoFixConfigNotExist", "InvalidId", "ConfigId.NotFound"}) {
+			return nil, WrapErrorf(NotFoundErr("TDS:VulAutoConfig", id), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+	if v == nil {
+		return nil, WrapErrorf(NotFoundErr("TDS:VulAutoConfig", id), NotFoundWithResponse, response)
+	}
+	object = v.(map[string]interface{})
+	// The resource is considered not found when the primary key ConfigId is absent or empty.
+	if fmt.Sprint(object["ConfigId"]) == "" || fmt.Sprint(object["ConfigId"]) == "<nil>" {
+		return nil, WrapErrorf(NotFoundErr("TDS:VulAutoConfig", id), NotFoundWithResponse, response)
+	}
+	return object, nil
+}
