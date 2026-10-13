@@ -23,11 +23,13 @@ func TestAccAliCloudCmsAggTaskGroup_basic8019(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccms%d", rand)
+	fromTime := time.Now().Unix()
 	toTime := time.Now().AddDate(0, 0, 2).Unix()
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAggTaskGroupBasicDependence8019)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -190,6 +192,31 @@ func TestAccAliCloudCmsAggTaskGroup_basic8019(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"from_time": fromTime,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"from_time": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "agg-task-group",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "agg-task-group",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -210,11 +237,13 @@ func TestAccAliCloudCmsAggTaskGroup_basic8019_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccms%d", rand)
+	fromTime := time.Now().Unix()
 	toTime := time.Now().AddDate(0, 0, 2).Unix()
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAggTaskGroupBasicDependence8019)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -230,14 +259,19 @@ func TestAccAliCloudCmsAggTaskGroup_basic8019_twin(t *testing.T) {
 					"cron_expr":                  "0/1 * * * *",
 					"delay":                      "60",
 					"description":                name,
+					"from_time":                  fromTime,
 					"max_retries":                "18",
 					"max_run_time_in_seconds":    "200",
 					"precheck_string":            `{\"policy\":\"skip\",\"prometheusId\":\"` + "${alicloud_cms_prometheus_instance.default.0.id}" + `\",\"query\":\"noPrecheck\",\"threshold\":0.5,\"timeout\":20,\"type\":\"none\"}`,
 					"schedule_mode":              "Cron",
 					"schedule_time_expr":         "@s",
 					"status":                     "Running",
-					"to_time":                    toTime,
-					"override_if_exists":         "true",
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "agg-task-group",
+					},
+					"to_time":            toTime,
+					"override_if_exists": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -248,12 +282,16 @@ func TestAccAliCloudCmsAggTaskGroup_basic8019_twin(t *testing.T) {
 						"cron_expr":               "0/1 * * * *",
 						"delay":                   "60",
 						"description":             name,
+						"from_time":               CHECKSET,
 						"max_retries":             "18",
 						"max_run_time_in_seconds": "200",
 						"precheck_string":         CHECKSET,
 						"schedule_mode":           "Cron",
 						"schedule_time_expr":      "@s",
 						"status":                  "Running",
+						"tags.%":                  "2",
+						"tags.Created":            "TF",
+						"tags.For":                "agg-task-group",
 						"to_time":                 CHECKSET,
 					}),
 				),
@@ -284,6 +322,10 @@ func AliCloudCmsAggTaskGroupBasicDependence8019(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
 }
 
 resource "alicloud_log_project" "default" {

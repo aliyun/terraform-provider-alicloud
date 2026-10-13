@@ -69,6 +69,17 @@ func resourceAliCloudCmsAggTaskGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"from_time": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if newTs, err := strconv.Atoi(new); err == nil && int64(newTs) <= time.Now().Unix() {
+						return true
+					}
+					return false
+				},
+			},
 			"max_retries": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -117,6 +128,12 @@ func resourceAliCloudCmsAggTaskGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Running", "Stopped"}, false),
+			},
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"target_prometheus_id": {
 				Type:     schema.TypeString,
@@ -174,8 +191,21 @@ func resourceAliCloudCmsAggTaskGroupCreate(d *schema.ResourceData, meta interfac
 		request["maxRunTimeInSeconds"] = v
 	}
 	request["targetPrometheusId"] = d.Get("target_prometheus_id")
+	if v, ok := d.GetOkExists("from_time"); ok {
+		request["fromTime"] = v
+	}
 	if v, ok := d.GetOkExists("to_time"); ok {
 		request["toTime"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMaps := make([]map[string]interface{}, 0)
+		for key, value := range v.(map[string]interface{}) {
+			tagsMaps = append(tagsMaps, map[string]interface{}{
+				"key":   key,
+				"value": value,
+			})
+		}
+		request["tags"] = tagsMaps
 	}
 	if v, ok := d.GetOkExists("max_retries"); ok {
 		request["maxRetries"] = v
@@ -243,7 +273,34 @@ func resourceAliCloudCmsAggTaskGroupRead(d *schema.ResourceData, meta interface{
 	d.Set("schedule_time_expr", objectRaw["scheduleTimeExpr"])
 	d.Set("status", objectRaw["status"])
 	d.Set("target_prometheus_id", objectRaw["targetPrometheusId"])
+	d.Set("from_time", objectRaw["fromTime"])
 	d.Set("to_time", objectRaw["toTime"])
+
+	tagsMaps := make(map[string]interface{})
+	if tagsRaw, ok := objectRaw["tags"]; ok && tagsRaw != nil {
+		for _, tagRaw := range convertToInterfaceArray(tagsRaw) {
+			tagMap, ok := tagRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			key := tagMap["key"]
+			if key == nil {
+				key = tagMap["Key"]
+			}
+			value := tagMap["value"]
+			if value == nil {
+				value = tagMap["Value"]
+			}
+			if key != nil && value != nil {
+				keyStr := fmt.Sprint(key)
+				if strings.HasPrefix(keyStr, "acs:") {
+					continue
+				}
+				tagsMaps[keyStr] = fmt.Sprint(value)
+			}
+		}
+	}
+	d.Set("tags", tagsMaps)
 	d.Set("agg_task_group_id", objectRaw["aggTaskGroupId"])
 	d.Set("source_prometheus_id", objectRaw["sourcePrometheusId"])
 
@@ -323,6 +380,12 @@ func resourceAliCloudCmsAggTaskGroupUpdate(d *schema.ResourceData, meta interfac
 		update = true
 	}
 	request["targetPrometheusId"] = d.Get("target_prometheus_id")
+	if d.HasChange("from_time") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("from_time"); ok || d.HasChange("from_time") {
+		request["fromTime"] = v
+	}
 	if d.HasChange("to_time") {
 		update = true
 	}
