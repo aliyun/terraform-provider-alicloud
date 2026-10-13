@@ -100,15 +100,19 @@ The following arguments are supported:
 * `compact_topic` - (Optional, ForceNew, Bool) The cleanup policy for the topic. This parameter is available only if you set the storage engine of the topic to Local storage. Valid values:
   - false: The delete cleanup policy is used.
   - true: The compact cleanup policy is used.
+* `config` - (Optional) The key of the topic configuration item to update. It is used together with `value` to update a single topic configuration entry via the `UpdateTopicConfig` API. The key name depends on the instance type, for example `retention.ms` or `retention.hours`.
 * `configs` - (Optional, Available since v1.262.1) The advanced configurations.
 * `instance_id` - (Required, ForceNew) The ID of the instance.
 * `local_topic` - (Optional, ForceNew, Bool) The storage engine of the topic. Valid values:
   - false: Cloud storage.
   - true: Local storage.
+* `min_insync_replicas` - (Optional, ForceNew, Int) The minimum number of ISR (in-sync replicas). This parameter can be specified only when `local_topic` is `true` or the instance is the open source version (local disk). The value must be less than `replication_factor`. Valid values: 1 to 3.
 * `partition_num` - (Optional, Int) The number of partitions in the topic.
 * `remark` - (Required) The description of the topic.
+* `replication_factor` - (Optional, ForceNew, Int) The number of topic replicas. This parameter can be specified only when `local_topic` is `true` or the instance is the open source version (local disk). Valid values: 1 to 3.
 * `tags` - (Optional, Map, Available since v1.63.0) A mapping of tags to assign to the resource.
 * `topic` - (Required, ForceNew) The topic name.
+* `value` - (Optional) The value of the topic configuration item to update. It is used together with `config` to update a single topic configuration entry via the `UpdateTopicConfig` API.
 
 ## Attributes Reference
 
