@@ -733,6 +733,68 @@ func parameterToHash(v interface{}) int {
 	return helper.Hashcode(m["name"].(string) + "|" + m["value"].(string))
 }
 
+// modifyDBInstanceSecurityIps calls ModifySecurityIps to create or update a
+// whitelist group. It is shared by the Create and Update flows so that the
+// request construction, retry and Running-state wait logic stay consistent.
+func (s *RdsService) modifyDBInstanceSecurityIps(d *schema.ResourceData) error {
+	client := s.client
+	ipList := expandStringList(d.Get("security_ips").(*schema.Set).List())
+	ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+	// default disable connect from outside
+	if ipstr == "" {
+		ipstr = LOCAL_HOST_IP
+	}
+	action := "ModifySecurityIps"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
+		"SecurityIps":  ipstr,
+		"SourceIp":     client.SourceIp,
+	}
+	if v, ok := d.GetOk("db_instance_ip_array_name"); ok && v.(string) != "" {
+		request["DBInstanceIPArrayName"] = v
+	}
+	if v, ok := d.GetOk("db_instance_ip_array_attribute"); ok && v.(string) != "" {
+		request["DBInstanceIPArrayAttribute"] = v
+	}
+	if v, ok := d.GetOk("security_ip_type"); ok && v.(string) != "" {
+		request["SecurityIPType"] = v
+	}
+	if v, ok := d.GetOk("whitelist_network_type"); ok && v.(string) != "" {
+		request["WhitelistNetworkType"] = v
+	}
+	if v, ok := d.GetOk("modify_mode"); ok && v.(string) != "" {
+		request["ModifyMode"] = v
+	}
+	if v, ok := d.GetOk("fresh_white_list_readins"); ok && v.(string) != "" {
+		request["FreshWhiteListReadins"] = v
+	}
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	var err error
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, s.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
+}
+
 func resourceAliCloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
@@ -753,6 +815,17 @@ func resourceAliCloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	// If a custom whitelist group is specified, create it explicitly via
+	// ModifySecurityIps after the instance becomes Running. CreateDBInstance
+	// only supports SecurityIPList (the default group) and has no
+	// DBInstanceIPArrayName parameter, so the custom group must be created
+	// separately to avoid polluting the default group with the user's IPs.
+	if v, ok := d.GetOk("db_instance_ip_array_name"); ok && v.(string) != "" && v.(string) != "default" {
+		if err = rdsService.modifyDBInstanceSecurityIps(d); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifySecurityIps", AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	return resourceAliCloudDBInstanceUpdate(d, meta)
@@ -1722,59 +1795,8 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if d.HasChange("security_ips") {
-		ipList := expandStringList(d.Get("security_ips").(*schema.Set).List())
-
-		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
-		// default disable connect from outside
-		if ipstr == "" {
-			ipstr = LOCAL_HOST_IP
-		}
-		action := "ModifySecurityIps"
-		request := map[string]interface{}{
-			"RegionId":     client.RegionId,
-			"DBInstanceId": d.Id(),
-			"SecurityIps":  ipstr,
-			"SourceIp":     client.SourceIp,
-		}
-		if v, ok := d.GetOk("db_instance_ip_array_name"); ok && v.(string) != "" {
-			request["DBInstanceIPArrayName"] = v
-		}
-		if v, ok := d.GetOk("db_instance_ip_array_attribute"); ok && v.(string) != "" {
-			request["DBInstanceIPArrayAttribute"] = v
-		}
-		if v, ok := d.GetOk("security_ip_type"); ok && v.(string) != "" {
-			request["SecurityIPType"] = v
-		}
-		if v, ok := d.GetOk("whitelist_network_type"); ok && v.(string) != "" {
-			request["WhitelistNetworkType"] = v
-		}
-		if v, ok := d.GetOk("modify_mode"); ok && v.(string) != "" {
-			request["ModifyMode"] = v
-		}
-		if v, ok := d.GetOk("fresh_white_list_readins"); ok && v.(string) != "" {
-			request["FreshWhiteListReadins"] = v
-		}
-		var response map[string]interface{}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(action, response, request)
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		if err = rdsService.modifyDBInstanceSecurityIps(d); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifySecurityIps", AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("security_ips")
 		d.SetPartial("db_instance_ip_array_name")
@@ -2737,8 +2759,15 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 
 	request["SecurityIPList"] = LOCAL_HOST_IP
-	if len(d.Get("security_ips").(*schema.Set).List()) > 0 {
-		request["SecurityIPList"] = strings.Join(expandStringList(d.Get("security_ips").(*schema.Set).List())[:], COMMA_SEPARATED)
+	// When a custom whitelist group is specified (db_instance_ip_array_name is
+	// set and not "default"), keep the default group at LOCAL_HOST_IP during
+	// instance creation to avoid polluting it with the user's security_ips.
+	// The custom group is created via ModifySecurityIps after the instance
+	// becomes Running.
+	if v, ok := d.GetOk("db_instance_ip_array_name"); !ok || v.(string) == "" || v.(string) == "default" {
+		if len(d.Get("security_ips").(*schema.Set).List()) > 0 {
+			request["SecurityIPList"] = strings.Join(expandStringList(d.Get("security_ips").(*schema.Set).List())[:], COMMA_SEPARATED)
+		}
 	}
 
 	if v, ok := d.GetOk("zone_id_slave_a"); ok {

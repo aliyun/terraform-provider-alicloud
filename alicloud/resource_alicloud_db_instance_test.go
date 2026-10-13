@@ -4628,6 +4628,144 @@ func testAccCheckKeyValueInMaps(ps []map[string]interface{}, propName, key, valu
 	}
 }
 
+func TestAccAliCloudRdsDBInstance_CustomIPArray(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testaccdbinstanceconfig%d", rand)
+	customArrayName := fmt.Sprintf("tf-testacc-custom-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                    "MySQL",
+					"engine_version":            "8.0",
+					"instance_type":             "mysql.n1e.small.1",
+					"instance_storage":          "20",
+					"instance_charge_type":      "Postpaid",
+					"instance_name":             "${var.name}",
+					"vswitch_id":                "${local.vswitch_id}",
+					"db_instance_storage_type":  "cloud_essd",
+					"security_ips":              []string{"10.168.1.12", "100.69.7.112"},
+					"db_instance_ip_array_name": customArrayName,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceSecurityIpArray(resourceId, customArrayName, "10.168.1.12,100.69.7.112"),
+					testAccCheck(map[string]string{
+						"db_instance_ip_array_name": customArrayName,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                    "MySQL",
+					"engine_version":            "8.0",
+					"instance_type":             "mysql.n1e.small.1",
+					"instance_storage":          "20",
+					"instance_charge_type":      "Postpaid",
+					"instance_name":             "${var.name}",
+					"vswitch_id":                "${local.vswitch_id}",
+					"db_instance_storage_type":  "cloud_essd",
+					"security_ips":              []string{"10.168.1.13", "100.69.7.113"},
+					"db_instance_ip_array_name": customArrayName,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceSecurityIpArray(resourceId, customArrayName, "10.168.1.13,100.69.7.113"),
+					testAccCheck(map[string]string{
+						"db_instance_ip_array_name": customArrayName,
+					}),
+				),
+			},
+		},
+	})
+}
+
+// testAccCheckDBInstanceSecurityIpArray verifies that the custom whitelist
+// group contains the expected IPs and that the default group is not polluted
+// (still contains only 127.0.0.1).
+func testAccCheckDBInstanceSecurityIpArray(n, customArrayName, expectedCustomIps string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No DB Instance ID is set")
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		resp, err := rdsService.DescribeDBSecurityIps(rs.Primary.ID)
+		log.Printf("[DEBUG] check instance %s security ip array %#v", rs.Primary.ID, resp)
+		if err != nil {
+			return err
+		}
+		if len(resp) < 1 {
+			return fmt.Errorf("DB security ip not found")
+		}
+		customFound, defaultFound := false, false
+		expectedCustomSet := make(map[string]bool)
+		for _, ip := range strings.Split(expectedCustomIps, ",") {
+			ip = strings.TrimSpace(ip)
+			if ip != "" {
+				expectedCustomSet[ip] = true
+			}
+		}
+		for _, item := range resp {
+			ipArray := item.(map[string]interface{})
+			arrayName := ipArray["DBInstanceIPArrayName"].(string)
+			securityIps := ipArray["SecurityIPList"].(string)
+			actualSet := make(map[string]bool)
+			for _, ip := range strings.Split(securityIps, ",") {
+				ip = strings.TrimSpace(ip)
+				if ip != "" {
+					actualSet[ip] = true
+				}
+			}
+			if arrayName == customArrayName {
+				customFound = true
+				for ip := range expectedCustomSet {
+					if !actualSet[ip] {
+						return fmt.Errorf("custom whitelist group %q expected to contain IP %q, got %q", customArrayName, ip, securityIps)
+					}
+				}
+			}
+			if arrayName == "default" {
+				defaultFound = true
+				// Default group should not be polluted with the user's IPs.
+				for ip := range expectedCustomSet {
+					if actualSet[ip] {
+						return fmt.Errorf("default whitelist group should not contain user IP %q, got %q", ip, securityIps)
+					}
+				}
+				if !actualSet[LOCAL_HOST_IP] {
+					return fmt.Errorf("default whitelist group expected to contain %q, got %q", LOCAL_HOST_IP, securityIps)
+				}
+			}
+		}
+		if !customFound {
+			return fmt.Errorf("custom whitelist group %q not found", customArrayName)
+		}
+		if !defaultFound {
+			return fmt.Errorf("default whitelist group not found")
+		}
+		return nil
+	}
+}
+
 var instanceBasicMap = map[string]string{
 	"engine":               "MySQL",
 	"engine_version":       "5.6",
