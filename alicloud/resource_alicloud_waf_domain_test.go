@@ -117,12 +117,13 @@ func TestAccAliCloudWafDomain(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"domain_name":       name,
 					"domain":            name,
 					"instance_id":       "${data.alicloud_waf_instances.default.ids.0}",
 					"is_access_product": "Off",
@@ -305,7 +306,7 @@ func TestAccAliCloudWafDomain(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"domain":            name,
 					"instance_id":       "${data.alicloud_waf_instances.default.ids.0}",
-					"cluster_type":      "PhysicalCluster",
+					"cluster_type":      "VirtualCluster",
 					"connection_time":   "30",
 					"http2_port":        []string{"8443"},
 					"http_port":         []string{"80"},

@@ -169,8 +169,14 @@ func dataSourceAlicloudConfigAggregatorsRead(d *schema.ResourceData, meta interf
 					continue
 				}
 			}
-			if statusOk && status.(string) != "" && status.(string) != convertConfigAggregatorStatusResponse(formatInt(item["AggregatorStatus"])) {
-				continue
+			if statusOk && status.(string) != "" {
+				aggregatorStatusVal, aggregatorStatusErr := formatInt(item["AggregatorStatus"])
+				if aggregatorStatusErr != nil {
+					return aggregatorStatusErr
+				}
+				if status.(string) != convertConfigAggregatorStatusResponse(aggregatorStatusVal) {
+					continue
+				}
 			}
 			objects = append(objects, item)
 		}
@@ -184,6 +190,11 @@ func dataSourceAlicloudConfigAggregatorsRead(d *schema.ResourceData, meta interf
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		v194, err194 := formatInt(object["AggregatorStatus"])
+		if err194 != nil {
+			return err194
+		}
 		mapping := map[string]interface{}{
 			"account_id":      fmt.Sprint(object["AccountId"]),
 			"id":              fmt.Sprint(object["AggregatorId"]),
@@ -191,7 +202,7 @@ func dataSourceAlicloudConfigAggregatorsRead(d *schema.ResourceData, meta interf
 			"aggregator_name": object["AggregatorName"],
 			"aggregator_type": object["AggregatorType"],
 			"description":     object["Description"],
-			"status":          convertConfigAggregatorStatusResponse(formatInt(object["AggregatorStatus"])),
+			"status":          convertConfigAggregatorStatusResponse(v194),
 		}
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(mapping["id"]))

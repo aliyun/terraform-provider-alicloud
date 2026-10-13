@@ -67,7 +67,11 @@ func testSweepECIVirtualNode(region string) error {
 
 		resp, err := jsonpath.Get("$.VirtualNodes", response)
 
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v70, err70 := formatInt(response["TotalCount"])
+		if err70 != nil {
+			return err70
+		}
+		if v70 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.VirtualNodes", action, err)
 			return nil
 		}
@@ -114,7 +118,7 @@ func testSweepECIVirtualNode(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEciVirtualNode_basic0(t *testing.T) {
+func TestAccAliCloudEciVirtualNode_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_virtual_node.default"
 	ra := resourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)
@@ -137,11 +141,13 @@ func TestAccAlicloudEciVirtualNode_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_group_id": "${alicloud_security_group.default.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.1}",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"virtual_node_name": name,
-					"eip_instance_id":   "${alicloud_eip_address.default.id}",
+					"enable_public_network": "true",
+					"zone_id":               "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"security_group_id":     "${alicloud_security_group.default.id}",
+					"vswitch_id":            "${data.alicloud_vswitches.default.ids.1}",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"virtual_node_name":     name,
+					"eip_instance_id":       "${alicloud_eip_address.default.id}",
 					"taints": []map[string]interface{}{
 						{
 							"effect": "NoSchedule",
@@ -168,6 +174,38 @@ func TestAccAlicloudEciVirtualNode_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_public_network": "true",
+					"zone_id":               "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"security_group_id":     "${alicloud_security_group.default.id}",
+					"vswitch_id":            "${data.alicloud_vswitches.default.ids.1}",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"virtual_node_name":     name,
+					"eip_instance_id":       "${alicloud_eip_address.default.id}",
+					"taints": []map[string]interface{}{
+						{
+							"effect": "NoExecute",
+							"key":    "Tf2",
+							"value":  "Test2",
+						},
+					},
+					"kube_config": "${var.kube_config}",
+					"tags": map[string]string{
+						"Created": "Tf1",
+						"For":     "Test1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"resource_group_id": CHECKSET,
+						"virtual_node_name": name,
+						"tags.%":            "2",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -177,7 +215,7 @@ func TestAccAlicloudEciVirtualNode_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEciVirtualNode_basic2(t *testing.T) {
+func TestAccAliCloudEciVirtualNode_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_virtual_node.default"
 	ra := resourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)

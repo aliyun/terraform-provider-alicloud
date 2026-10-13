@@ -159,18 +159,37 @@ func dataSourceAlicloudEcsActivationsRead(d *schema.ResourceData, meta interface
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		deregistered_countVal, err166 := formatInt(object["DeregisteredCount"])
+		if err166 != nil {
+			return err166
+		}
+
+		instance_countVal, err169 := formatInt(object["InstanceCount"])
+		if err169 != nil {
+			return err169
+		}
+
+		registered_countVal, err172 := formatInt(object["RegisteredCount"])
+		if err172 != nil {
+			return err172
+		}
+		time_to_live_in_hoursVal, err173 := formatInt(object["TimeToLiveInHours"])
+		if err173 != nil {
+			return err173
+		}
 		mapping := map[string]interface{}{
 			"id":                    fmt.Sprint(object["ActivationId"]),
 			"activation_id":         fmt.Sprint(object["ActivationId"]),
 			"create_time":           object["CreationTime"],
-			"deregistered_count":    formatInt(object["DeregisteredCount"]),
+			"deregistered_count":    deregistered_countVal,
 			"description":           object["Description"],
 			"disabled":              object["Disabled"],
-			"instance_count":        formatInt(object["InstanceCount"]),
+			"instance_count":        instance_countVal,
 			"instance_name":         object["InstanceName"],
 			"ip_address_range":      object["IpAddressRange"],
-			"registered_count":      formatInt(object["RegisteredCount"]),
-			"time_to_live_in_hours": formatInt(object["TimeToLiveInHours"]),
+			"registered_count":      registered_countVal,
+			"time_to_live_in_hours": time_to_live_in_hoursVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
@@ -184,7 +203,11 @@ func dataSourceAlicloudEcsActivationsRead(d *schema.ResourceData, meta interface
 	if err := d.Set("activations", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err187 := formatInt(response["TotalCount"])
+	if err187 != nil {
+		return err187
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

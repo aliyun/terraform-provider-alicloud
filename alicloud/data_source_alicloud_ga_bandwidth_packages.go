@@ -180,8 +180,13 @@ func dataSourceAlicloudGaBandwidthPackagesRead(d *schema.ResourceData, meta inte
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		bandwidthVal, err184 := formatInt(object["Bandwidth"])
+		if err184 != nil {
+			return err184
+		}
 		mapping := map[string]interface{}{
-			"bandwidth":                 formatInt(object["Bandwidth"]),
+			"bandwidth":                 bandwidthVal,
 			"id":                        fmt.Sprint(object["BandwidthPackageId"]),
 			"bandwidth_package_id":      fmt.Sprint(object["BandwidthPackageId"]),
 			"bandwidth_package_name":    object["Name"],

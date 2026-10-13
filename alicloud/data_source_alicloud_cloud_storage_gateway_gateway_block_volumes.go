@@ -232,12 +232,50 @@ func dataSourceAlicloudCloudStorageGatewayGatewayBlockVolumesRead(d *schema.Reso
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		chunk_sizeVal, err240 := formatInt(object["ChunkSize"])
+		if err240 != nil {
+			return err240
+		}
+
+		lun_idVal, err249 := formatInt(object["LunId"])
+		if err249 != nil {
+			return err249
+		}
+
+		portVal, err253 := formatInt(object["Port"])
+		if err253 != nil {
+			return err253
+		}
+
+		sizeVal, err255 := formatInt(object["Size"])
+		if err255 != nil {
+			return err255
+		}
+
+		statusVal, err257 := formatInt(object["Status"])
+		if err257 != nil {
+			return err257
+		}
+
+		total_downloadVal, err259 := formatInt(object["TotalDownload"])
+		if err259 != nil {
+			return err259
+		}
+		total_uploadVal, err260 := formatInt(object["TotalUpload"])
+		if err260 != nil {
+			return err260
+		}
+		volume_stateVal, err261 := formatInt(object["VolumeState"])
+		if err261 != nil {
+			return err261
+		}
 		mapping := map[string]interface{}{
 			"address":                   object["Address"],
 			"cache_mode":                object["CacheMode"],
 			"chap_enabled":              object["ChapEnabled"],
 			"chap_in_user":              fmt.Sprint(object["ChapInUser"]),
-			"chunk_size":                formatInt(object["ChunkSize"]),
+			"chunk_size":                chunk_sizeVal,
 			"disk_id":                   object["DiskId"],
 			"disk_type":                 object["DiskType"],
 			"enabled":                   object["Enabled"],
@@ -246,19 +284,19 @@ func dataSourceAlicloudCloudStorageGatewayGatewayBlockVolumesRead(d *schema.Reso
 			"id":                        fmt.Sprint(request["GatewayId"], ":", object["IndexId"]),
 			"index_id":                  fmt.Sprint(object["IndexId"]),
 			"local_path":                object["LocalPath"],
-			"lun_id":                    formatInt(object["LunId"]),
+			"lun_id":                    lun_idVal,
 			"oss_bucket_name":           object["OssBucketName"],
 			"oss_bucket_ssl":            object["OssBucketSsl"],
 			"oss_endpoint":              object["OssEndpoint"],
-			"port":                      formatInt(object["Port"]),
+			"port":                      portVal,
 			"protocol":                  object["Protocol"],
-			"size":                      formatInt(object["Size"]),
+			"size":                      sizeVal,
 			"state":                     object["State"],
-			"status":                    formatInt(object["Status"]),
+			"status":                    statusVal,
 			"target":                    object["Target"],
-			"total_download":            formatInt(object["TotalDownload"]),
-			"total_upload":              formatInt(object["TotalUpload"]),
-			"volume_state":              formatInt(object["VolumeState"]),
+			"total_download":            total_downloadVal,
+			"total_upload":              total_uploadVal,
+			"volume_state":              volume_stateVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])

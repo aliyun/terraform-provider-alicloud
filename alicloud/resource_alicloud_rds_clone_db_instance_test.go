@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -71,7 +72,7 @@ var cloneInstanceClusterMap = map[string]string{
 	"zone_id_slave_b": CHECKSET,
 }
 
-func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
+func TestAccAliCloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 	resourceId := "alicloud_rds_clone_db_instance.default"
@@ -89,9 +90,9 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -276,6 +277,67 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_type":              "FullBackup",
+					"certificate":              "-----BEGIN CERTIFICATE-----\ntfacc\n-----END CERTIFICATE-----",
+					"db_name":                  "tfaccdb",
+					"db_names":                 "[\"tfaccdb\"]",
+					"dedicated_host_group_id":  "dhg-tfacc-placeholder",
+					"direction":                "Up",
+					"effective_time":           "2026-01-01T12:05:05Z",
+					"encryption_key":           "key-tfacc-placeholder",
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"force_restart":            "true",
+					"ha_mode":                  "RPO",
+					"password":                 "YourPassword_123",
+					"period":                   "Year",
+					"private_ip_address":       "172.16.0.10",
+					"private_key":              "-----BEGIN PRIVATE KEY-----\ntfacc\n-----END PRIVATE KEY-----",
+					"released_keep_policy":     "Delete",
+					"resource_group_id":        "rg-tfacc-placeholder",
+					"restore_table":            "false",
+					"restore_time":             "2026-01-01T11:05:05Z",
+					"role_arn":                 "acs:ram::1234567890123456:role/tfacc-placeholder",
+					"server_cert":              "-----BEGIN CERTIFICATE-----\ntfacc-server\n-----END CERTIFICATE-----",
+					"server_key":               "-----BEGIN PRIVATE KEY-----\ntfacc-server\n-----END PRIVATE KEY-----",
+					"source_biz":               "1",
+					"switch_time":              "2026-01-01T13:05:05Z",
+					"sync_mode":                "Sync",
+					"table_meta":               "[{\"name\":\"tfacc\",\"type\":\"int\"}]",
+					"tde_status":               "Enabled",
+					"used_time":                "12",
+					"db_instance_storage_type": "cloud_essd2",
+					"payment_type":             "Subscription",
+					"serverless_config": []map[string]interface{}{
+						{
+							"auto_pause":   "true",
+							"switch_force": "true",
+						},
+					},
+					"parameters": []map[string]interface{}{
+						{
+							"name":  "tfacc_param",
+							"value": "1",
+						},
+					},
+					"pg_hba_conf": []map[string]interface{}{
+						{
+							"type":        "host",
+							"database":    "all",
+							"user":        "all",
+							"address":     "0.0.0.0/0",
+							"mask":        "255.255.255.255",
+							"method":      "md5",
+							"option":      "sameuser",
+							"priority_id": "0",
+						},
+					},
+					"source_db_instance_id": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -286,7 +348,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 }
 
 // SSL function and pg_hba_conf function incompatible, so add this test case for pg_hba_conf without ssl function.
-func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
+func TestAccAliCloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 	resourceId := "alicloud_rds_clone_db_instance.default"
@@ -304,9 +366,9 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -423,7 +485,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsCloneDBInstanceMySQL_ServerlessBasic(t *testing.T) {
+func TestAccAliCloudRdsCloneDBInstanceMySQL_ServerlessBasic(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_rds_clone_db_instance.default"
 	ra := resourceAttrInit(resourceId, cloneInstanceBasicMap)
@@ -442,9 +504,9 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_ServerlessBasic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ServerlessSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -518,7 +580,7 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_ServerlessBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsCloneDBInstanceMySQL_Cluster(t *testing.T) {
+func TestAccAliCloudRdsCloneDBInstanceMySQL_Cluster(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -537,9 +599,9 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_Cluster(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -778,7 +840,7 @@ resource "alicloud_rds_backup" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsCloneDBInstanceMySQL_ServerlessStandard(t *testing.T) {
+func TestAccAliCloudRdsCloneDBInstanceMySQL_ServerlessStandard(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_rds_clone_db_instance.default"
 	ra := resourceAttrInit(resourceId, cloneInstanceBasicMap)
@@ -797,9 +859,9 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_ServerlessStandard(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ServerlessSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -940,7 +1002,7 @@ resource "alicloud_rds_backup" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsCloneDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
+func TestAccAliCloudRdsCloneDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_rds_clone_db_instance.default"
 	ra := resourceAttrInit(resourceId, cloneInstanceBasicMap)
@@ -959,9 +1021,9 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ServerlessSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1085,7 +1147,7 @@ resource "alicloud_rds_backup" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsCloneDBInstancegeneral_essd(t *testing.T) {
+func TestAccAliCloudRdsCloneDBInstancegeneral_essd(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_rds_clone_db_instance.default"
 	ra := resourceAttrInit(resourceId, cloneInstanceBasicMap)
@@ -1102,9 +1164,9 @@ func TestAccAlicloudRdsCloneDBInstancegeneral_essd(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1186,7 +1248,7 @@ resource "alicloud_rds_backup" "default" {
 
 `, name)
 }
-func TestAccAlicloudRdsCloneDBInstanceSQLServer_ServerlessHA(t *testing.T) {
+func TestAccAliCloudRdsCloneDBInstanceSQLServer_ServerlessHA(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_rds_clone_db_instance.default"
 	ra := resourceAttrInit(resourceId, cloneInstanceBasicMap)
@@ -1205,9 +1267,9 @@ func TestAccAlicloudRdsCloneDBInstanceSQLServer_ServerlessHA(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ServerlessSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -166,14 +166,23 @@ func dataSourceAlicloudNasAccessGroupsRead(d *schema.ResourceData, meta interfac
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		mount_target_countVal, err175 := formatInt(object["MountTargetCount"])
+		if err175 != nil {
+			return err175
+		}
+		rule_countVal, err176 := formatInt(object["RuleCount"])
+		if err176 != nil {
+			return err176
+		}
 		mapping := map[string]interface{}{
 			"id":                 fmt.Sprint(object["AccessGroupName"], ":", request["FileSystemType"]),
 			"access_group_name":  object["AccessGroupName"],
 			"access_group_type":  object["AccessGroupType"],
 			"type":               object["AccessGroupType"],
 			"description":        object["Description"],
-			"mount_target_count": formatInt(object["MountTargetCount"]),
-			"rule_count":         formatInt(object["RuleCount"]),
+			"mount_target_count": mount_target_countVal,
+			"rule_count":         rule_countVal,
 		}
 		ids = append(ids, fmt.Sprint(object["AccessGroupName"], ":", request["FileSystemType"]))
 		names = append(names, object["AccessGroupName"])

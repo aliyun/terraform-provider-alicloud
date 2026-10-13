@@ -28,9 +28,9 @@ func TestAccAliCloudDataWorksDiJob_basic8957(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -169,7 +169,7 @@ func TestAccAliCloudDataWorksDiJob_basic8957(t *testing.T) {
 						{
 							"source_object_selection_rules": []map[string]interface{}{
 								{
-									"action":          "Include",
+									"action":          "Exclude",
 									"expression":      "3333",
 									"expression_type": "Exact",
 									"object_type":     "3333",
@@ -183,7 +183,7 @@ func TestAccAliCloudDataWorksDiJob_basic8957(t *testing.T) {
 								{
 									"action":          "Include",
 									"expression":      "lsc_test01",
-									"expression_type": "Exact",
+									"expression_type": "Regex",
 									"object_type":     "3333",
 								},
 							},

@@ -239,6 +239,11 @@ func dataSourceAlicloudRosStacksRead(d *schema.ResourceData, meta interface{}) e
 	names := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		timeout_in_minutesVal, err251 := formatInt(object["TimeoutInMinutes"])
+		if err251 != nil {
+			return err251
+		}
 		mapping := map[string]interface{}{
 			"disable_rollback":     object["DisableRollback"],
 			"drift_detection_time": object["DriftDetectionTime"],
@@ -248,7 +253,7 @@ func dataSourceAlicloudRosStacksRead(d *schema.ResourceData, meta interface{}) e
 			"stack_id":             fmt.Sprint(object["StackId"]),
 			"stack_name":           object["StackName"],
 			"status_reason":        object["StatusReason"],
-			"timeout_in_minutes":   formatInt(object["TimeoutInMinutes"]),
+			"timeout_in_minutes":   timeout_in_minutesVal,
 		}
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(object["StackId"]))

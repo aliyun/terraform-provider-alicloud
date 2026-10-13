@@ -189,7 +189,11 @@ func resourceAliCloudGovernanceAccountRead(d *schema.ResourceData, meta interfac
 		d.Set("status", objectRaw["Status"])
 	}
 	if objectRaw["AccountUid"] != nil {
-		d.Set("account_id", formatInt(objectRaw["AccountUid"]))
+		account_idVal, err192 := formatInt(objectRaw["AccountUid"])
+		if err192 != nil {
+			return err192
+		}
+		d.Set("account_id", account_idVal)
 	}
 
 	tag1Raw, _ := jsonpath.Get("$.Inputs.Tag", objectRaw)
@@ -210,7 +214,11 @@ func resourceAliCloudGovernanceAccountRead(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	d.Set("account_id", formatInt(d.Id()))
+	account_idVal2, err213 := formatInt(d.Id())
+	if err213 != nil {
+		return err213
+	}
+	d.Set("account_id", account_idVal2)
 
 	return nil
 }

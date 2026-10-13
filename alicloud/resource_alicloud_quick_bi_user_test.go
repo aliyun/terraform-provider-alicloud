@@ -108,7 +108,7 @@ func testSweepQuickBIUser(region string) error {
 	return nil
 }
 
-func TestAccAlicloudQuickBIUser_basic0(t *testing.T) {
+func TestAccAliCloudQuickBIUser_basic0(t *testing.T) {
 	t.Skip()
 	var v map[string]interface{}
 	resourceId := "alicloud_quick_bi_user.default"
@@ -131,6 +131,7 @@ func TestAccAlicloudQuickBIUser_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"account_id":      "${local.account_name}",
 					"nick_name":       name,
 					"account_name":    "${local.account_name}",
 					"admin_user":      "false",
@@ -149,7 +150,8 @@ func TestAccAlicloudQuickBIUser_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"admin_user": "true",
+					"account_name": "true",
+					"admin_user":   "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -181,7 +183,7 @@ func TestAccAlicloudQuickBIUser_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"admin_user":      "false",
-					"auth_admin_user": "false",
+					"auth_admin_user": "true",
 					"user_type":       "Developer",
 				}),
 				Check: resource.ComposeTestCheckFunc(

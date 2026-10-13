@@ -36,12 +36,13 @@ func TestAccAliCloudDdosCooSchedulerRule_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"param":     "CreateSchedulerRuleValue",
 					"rule_name": name,
 					"rule_type": "6",
 					"rules": []map[string]string{
@@ -87,7 +88,7 @@ func TestAccAliCloudDdosCooSchedulerRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"rule_type": "6",
+					"rule_type": "7",
 					"rules": []map[string]string{
 						{
 							"priority":   "100",
@@ -98,16 +99,16 @@ func TestAccAliCloudDdosCooSchedulerRule_basic(t *testing.T) {
 						},
 						{
 							"priority":   "50",
-							"region_id":  "cn-hangzhou",
-							"type":       "A",
-							"value":      "170.33.14.193",
+							"region_id":  "cn-beijing",
+							"type":       "CNAME",
+							"value":      "demo.example.com",
 							"value_type": "6",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rule_type": "6",
+						"rule_type": "7",
 						"rules.#":   "2",
 					}),
 				),

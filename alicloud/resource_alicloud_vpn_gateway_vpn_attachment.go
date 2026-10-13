@@ -613,7 +613,11 @@ func resourceAliCloudVpnGatewayVpnAttachmentCreate(d *schema.ResourceData, meta 
 	}
 	if v, ok := d.GetOk("tunnel_options_specification"); ok {
 		tunnelOptionsSpecificationMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range vpnAttachmentSortedTunnels(v.(*schema.Set).List()) {
+		sortedTunnels, sortedTunnelsErr := vpnAttachmentSortedTunnels(v.(*schema.Set).List())
+		if sortedTunnelsErr != nil {
+			return WrapError(sortedTunnelsErr)
+		}
+		for _, dataLoop1 := range sortedTunnels {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["CustomerGatewayId"] = dataLoop1Tmp["customer_gateway_id"]
@@ -795,7 +799,11 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 		vpnBgpConfigRaw = objectRaw["VpnBgpConfig"].(map[string]interface{})
 	}
 	if len(vpnBgpConfigRaw) > 0 {
-		bgpConfigMap["enable"] = formatBool(vpnBgpConfigRaw["EnableBgp"])
+		v798, err798 := formatBool(vpnBgpConfigRaw["EnableBgp"])
+		if err798 != nil {
+			return err798
+		}
+		bgpConfigMap["enable"] = v798
 		bgpConfigMap["local_asn"] = vpnBgpConfigRaw["LocalAsn"]
 		bgpConfigMap["local_bgp_ip"] = vpnBgpConfigRaw["LocalBgpIp"]
 		bgpConfigMap["status"] = vpnBgpConfigRaw["Status"]
@@ -814,7 +822,11 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 	}
 	if len(vcoHealthCheckRaw) > 0 {
 		healthCheckConfigMap["dip"] = vcoHealthCheckRaw["Dip"]
-		healthCheckConfigMap["enable"] = formatBool(vcoHealthCheckRaw["Enable"])
+		v817, err817 := formatBool(vcoHealthCheckRaw["Enable"])
+		if err817 != nil {
+			return err817
+		}
+		healthCheckConfigMap["enable"] = v817
 		healthCheckConfigMap["interval"] = vcoHealthCheckRaw["Interval"]
 		healthCheckConfigMap["policy"] = vcoHealthCheckRaw["Policy"]
 		healthCheckConfigMap["retry"] = vcoHealthCheckRaw["Retry"]
@@ -881,7 +893,11 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 				psk, _ = ike["psk"].(string)
 			}
 		}
-		priorTunnelPsk[formatInt(tunnel["tunnel_index"])] = psk
+		v884, err884 := formatInt(tunnel["tunnel_index"])
+		if err884 != nil {
+			return err884
+		}
+		priorTunnelPsk[v884] = psk
 	}
 	tunnelOptionsSpecificationMaps := make([]map[string]interface{}, 0)
 	if tunnelOptionsRaw != nil {
@@ -889,8 +905,16 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 			tunnelOptionsSpecificationMap := make(map[string]interface{})
 			tunnelOptionsChildRaw := tunnelOptionsChildRaw.(map[string]interface{})
 			tunnelOptionsSpecificationMap["customer_gateway_id"] = tunnelOptionsChildRaw["CustomerGatewayId"]
-			tunnelOptionsSpecificationMap["enable_dpd"] = formatBool(tunnelOptionsChildRaw["EnableDpd"])
-			tunnelOptionsSpecificationMap["enable_nat_traversal"] = formatBool(tunnelOptionsChildRaw["EnableNatTraversal"])
+			v892, err892 := formatBool(tunnelOptionsChildRaw["EnableDpd"])
+			if err892 != nil {
+				return err892
+			}
+			tunnelOptionsSpecificationMap["enable_dpd"] = v892
+			v893, err893 := formatBool(tunnelOptionsChildRaw["EnableNatTraversal"])
+			if err893 != nil {
+				return err893
+			}
+			tunnelOptionsSpecificationMap["enable_nat_traversal"] = v893
 			tunnelOptionsSpecificationMap["internet_ip"] = tunnelOptionsChildRaw["InternetIp"]
 			tunnelOptionsSpecificationMap["role"] = tunnelOptionsChildRaw["Role"]
 			tunnelOptionsSpecificationMap["state"] = tunnelOptionsChildRaw["State"]
@@ -908,7 +932,11 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 			}
 			if len(tunnelBgpConfigRaw) > 0 {
 				tunnelBgpConfigMap["bgp_status"] = tunnelBgpConfigRaw["BgpStatus"]
-				tunnelBgpConfigMap["local_asn"] = formatInt(tunnelBgpConfigRaw["LocalAsn"])
+				v911, err911 := formatInt(tunnelBgpConfigRaw["LocalAsn"])
+				if err911 != nil {
+					return err911
+				}
+				tunnelBgpConfigMap["local_asn"] = v911
 				tunnelBgpConfigMap["local_bgp_ip"] = tunnelBgpConfigRaw["LocalBgpIp"]
 				tunnelBgpConfigMap["peer_asn"] = tunnelBgpConfigRaw["PeerAsn"]
 				tunnelBgpConfigMap["peer_bgp_ip"] = tunnelBgpConfigRaw["PeerBgpIp"]
@@ -927,12 +955,20 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 			if len(tunnelIkeConfigRaw) > 0 {
 				tunnelIkeConfigMap["ike_auth_alg"] = tunnelIkeConfigRaw["IkeAuthAlg"]
 				tunnelIkeConfigMap["ike_enc_alg"] = tunnelIkeConfigRaw["IkeEncAlg"]
-				tunnelIkeConfigMap["ike_lifetime"] = formatInt(tunnelIkeConfigRaw["IkeLifetime"])
+				v930, err930 := formatInt(tunnelIkeConfigRaw["IkeLifetime"])
+				if err930 != nil {
+					return err930
+				}
+				tunnelIkeConfigMap["ike_lifetime"] = v930
 				tunnelIkeConfigMap["ike_mode"] = tunnelIkeConfigRaw["IkeMode"]
 				tunnelIkeConfigMap["ike_pfs"] = tunnelIkeConfigRaw["IkePfs"]
 				tunnelIkeConfigMap["ike_version"] = tunnelIkeConfigRaw["IkeVersion"]
 				tunnelIkeConfigMap["local_id"] = tunnelIkeConfigRaw["LocalId"]
-				tunnelIkeConfigMap["psk"] = vpnAttachmentReadPsk(tunnelIkeConfigRaw["Psk"], priorTunnelPsk[formatInt(tunnelOptionsChildRaw["TunnelIndex"])])
+				v935, err935 := formatInt(tunnelOptionsChildRaw["TunnelIndex"])
+				if err935 != nil {
+					return err935
+				}
+				tunnelIkeConfigMap["psk"] = vpnAttachmentReadPsk(tunnelIkeConfigRaw["Psk"], priorTunnelPsk[v935])
 				tunnelIkeConfigMap["remote_id"] = tunnelIkeConfigRaw["RemoteId"]
 
 				tunnelIkeConfigMaps = append(tunnelIkeConfigMaps, tunnelIkeConfigMap)
@@ -948,7 +984,11 @@ func resourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 			if len(tunnelIpsecConfigRaw) > 0 {
 				tunnelIpsecConfigMap["ipsec_auth_alg"] = tunnelIpsecConfigRaw["IpsecAuthAlg"]
 				tunnelIpsecConfigMap["ipsec_enc_alg"] = tunnelIpsecConfigRaw["IpsecEncAlg"]
-				tunnelIpsecConfigMap["ipsec_lifetime"] = formatInt(tunnelIpsecConfigRaw["IpsecLifetime"])
+				v951, err951 := formatInt(tunnelIpsecConfigRaw["IpsecLifetime"])
+				if err951 != nil {
+					return err951
+				}
+				tunnelIpsecConfigMap["ipsec_lifetime"] = v951
 				tunnelIpsecConfigMap["ipsec_pfs"] = tunnelIpsecConfigRaw["IpsecPfs"]
 
 				tunnelIpsecConfigMaps = append(tunnelIpsecConfigMaps, tunnelIpsecConfigMap)
@@ -1047,7 +1087,10 @@ func resourceAliCloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 		oldValue, newValue := d.GetChange("tunnel_options_specification")
 		previous := oldValue.(*schema.Set).List()
 		planned := newValue.(*schema.Set).List()
-		tunnels := vpnAttachmentChangedTunnels(previous, planned, d.HasChange("enable_tunnels_bgp"))
+		tunnels, tunnelsErr := vpnAttachmentChangedTunnels(previous, planned, d.HasChange("enable_tunnels_bgp"))
+		if tunnelsErr != nil {
+			return WrapError(tunnelsErr)
+		}
 		if len(tunnels) > 0 || len(previous) != len(planned) {
 			if err := vpnAttachmentValidateTunnelUpdate(previous, tunnels, d.Get("enable_tunnels_bgp").(bool)); err != nil {
 				return WrapError(err)
@@ -1311,7 +1354,11 @@ func vpnAttachmentValidateTunnelChanges(ctx context.Context, d *schema.ResourceD
 	oldByIndex := make(map[int]map[string]interface{}, len(previous))
 	for _, raw := range previous {
 		old := raw.(map[string]interface{})
-		oldByIndex[formatInt(old["tunnel_index"])] = old
+		v1309, err1309 := formatInt(old["tunnel_index"])
+		if err1309 != nil {
+			return err1309
+		}
+		oldByIndex[v1309] = old
 	}
 	// DiffFieldReader rehashes set members after merging computed fields, so
 	// its hashes need not equal the addresses in the original diff. Resolve
@@ -1323,14 +1370,21 @@ func vpnAttachmentValidateTunnelChanges(ctx context.Context, d *schema.ResourceD
 		}
 		prefix := strings.TrimSuffix(address, ".tunnel_index")
 		if gateway, ok := d.Get(prefix + ".customer_gateway_id").(string); ok && gateway != "" {
-			prefixes[formatInt(d.Get(address))] = prefix
+			v1321, err1321 := formatInt(d.Get(address))
+			if err1321 != nil {
+				return err1321
+			}
+			prefixes[v1321] = prefix
 		}
 	}
 	seen := make(map[int]bool)
 	fields := resourceAliCloudVpnGatewayVpnAttachment().Schema[key].Elem.(*schema.Resource).Schema
 	for _, raw := range planned {
 		next := raw.(map[string]interface{})
-		index := formatInt(next["tunnel_index"])
+		index, indexErr := formatInt(next["tunnel_index"])
+		if indexErr != nil {
+			return indexErr
+		}
 		if seen[index] {
 			return fmt.Errorf("tunnel_options_specification contains duplicate tunnel_index %d", index)
 		}
@@ -1397,11 +1451,19 @@ func vpnAttachmentInheritComputed(d *schema.ResourceDiff, prefix string, next, o
 	return nil
 }
 
-func vpnAttachmentSortedTunnels(tunnels []interface{}) []interface{} {
+func vpnAttachmentSortedTunnels(tunnels []interface{}) ([]interface{}, error) {
+	indexes := make([]int, len(tunnels))
+	for i, raw := range tunnels {
+		indexVal, err := formatInt(raw.(map[string]interface{})["tunnel_index"])
+		if err != nil {
+			return nil, err
+		}
+		indexes[i] = indexVal
+	}
 	sort.Slice(tunnels, func(i, j int) bool {
-		return formatInt(tunnels[i].(map[string]interface{})["tunnel_index"]) < formatInt(tunnels[j].(map[string]interface{})["tunnel_index"])
+		return indexes[i] < indexes[j]
 	})
-	return tunnels
+	return tunnels, nil
 }
 
 // vpnAttachmentForceNewChanged reports whether any schema attribute marked
@@ -1469,17 +1531,29 @@ func vpnAttachmentCopyBlock(block []interface{}) []interface{} {
 // Compare API configuration by tunnel_index. Computed status, peer addresses and
 // tunnel IDs must not turn a reorder into a remote update. The planned values
 // are normalized by tunnel_index during planning.
-func vpnAttachmentChangedTunnels(previous, planned []interface{}, includeBGP bool) []interface{} {
+func vpnAttachmentChangedTunnels(previous, planned []interface{}, includeBGP bool) ([]interface{}, error) {
 	oldByIndex := make(map[int]map[string]interface{}, len(previous))
 	for _, raw := range previous {
 		old := raw.(map[string]interface{})
-		oldByIndex[formatInt(old["tunnel_index"])] = vpnAttachmentExpandTunnel(old)
+		oldIndexVal, err := formatInt(old["tunnel_index"])
+		if err != nil {
+			return nil, err
+		}
+		oldByIndex[oldIndexVal] = vpnAttachmentExpandTunnel(old)
+	}
+	sortedPlanned, err := vpnAttachmentSortedTunnels(planned)
+	if err != nil {
+		return nil, err
 	}
 	result := make([]interface{}, 0, len(planned))
-	for _, raw := range vpnAttachmentSortedTunnels(planned) {
+	for _, raw := range sortedPlanned {
 		tunnel := raw.(map[string]interface{})
 		next := vpnAttachmentExpandTunnel(tunnel)
-		old := oldByIndex[formatInt(tunnel["tunnel_index"])]
+		tunnelIndexVal, err := formatInt(tunnel["tunnel_index"])
+		if err != nil {
+			return nil, err
+		}
+		old := oldByIndex[tunnelIndexVal]
 		if !includeBGP && reflect.DeepEqual(old, next) {
 			continue
 		}
@@ -1492,7 +1566,7 @@ func vpnAttachmentChangedTunnels(previous, planned []interface{}, includeBGP boo
 		}
 		result = append(result, next)
 	}
-	return result
+	return result, nil
 }
 
 // Reject tunnel update payloads the API cannot honor safely, before any RPC:
@@ -1503,11 +1577,18 @@ func vpnAttachmentChangedTunnels(previous, planned []interface{}, includeBGP boo
 func vpnAttachmentValidateTunnelUpdate(previous, tunnels []interface{}, enableTunnelsBgp bool) error {
 	existing := make(map[int]bool, len(previous))
 	for _, raw := range previous {
-		existing[formatInt(raw.(map[string]interface{})["tunnel_index"])] = true
+		v1501, err1501 := formatInt(raw.(map[string]interface{})["tunnel_index"])
+		if err1501 != nil {
+			return err1501
+		}
+		existing[v1501] = true
 	}
 	for _, raw := range tunnels {
 		tunnel, _ := raw.(map[string]interface{})
-		index := formatInt(tunnel["TunnelIndex"])
+		index, indexErr := formatInt(tunnel["TunnelIndex"])
+		if indexErr != nil {
+			return indexErr
+		}
 		if ike, ok := tunnel["TunnelIkeConfig"].(map[string]interface{}); ok && existing[index] {
 			if psk, _ := ike["Psk"].(string); psk == "" {
 				return fmt.Errorf("tunnel_options_specification tunnel_index %d: updating tunnel_ike_config without the current pre-shared key would make the API generate a random 16-character key; the key is empty in state (for example after import), so set tunnel_ike_config.psk explicitly and retry", index)

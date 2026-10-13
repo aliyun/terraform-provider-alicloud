@@ -373,6 +373,16 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		elastic_io_resourceVal, err393 := formatInt(object["ElasticIOResource"])
+		if err393 != nil {
+			return err393
+		}
+
+		portVal, err402 := formatInt(object["Port"])
+		if err402 != nil {
+			return err402
+		}
 		mapping := map[string]interface{}{
 			"commodity_code":          object["CommodityCode"],
 			"compute_resource":        object["ComputeResource"],
@@ -390,7 +400,7 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 			"description":             object["DBClusterDescription"],
 			"disk_type":               object["DiskType"],
 			"dts_job_id":              object["DtsJobId"],
-			"elastic_io_resource":     formatInt(object["ElasticIOResource"]),
+			"elastic_io_resource":     elastic_io_resourceVal,
 			"engine":                  object["Engine"],
 			"executor_count":          object["ExecutorCount"],
 			"expire_time":             object["ExpireTime"],
@@ -399,7 +409,7 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 			"lock_reason":             object["LockReason"],
 			"payment_type":            convertAdbDBClusterPaymentTypeResponse(object["PayType"].(string)),
 			"charge_type":             getChargeType(object["PayType"].(string)),
-			"port":                    formatInt(object["Port"]),
+			"port":                    portVal,
 			"rds_instance_id":         object["RdsInstanceId"],
 			"region_id":               object["RegionId"],
 			"resource_group_id":       object["ResourceGroupId"],
@@ -489,7 +499,11 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 	if err := d.Set("clusters", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err492 := formatInt(response["TotalCount"])
+	if err492 != nil {
+		return err492
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

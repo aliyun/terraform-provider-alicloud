@@ -72,8 +72,13 @@ func dataSourceAlicloudClickHouseBackupPoliciesRead(d *schema.ResourceData, meta
 		return WrapError(err)
 	}
 	s := make([]map[string]interface{}, 0)
+
+	backup_retention_periodVal, err76 := formatInt(object["BackupRetentionPeriod"])
+	if err76 != nil {
+		return err76
+	}
 	mapping := map[string]interface{}{
-		"backup_retention_period": formatInt(object["BackupRetentionPeriod"]),
+		"backup_retention_period": backup_retention_periodVal,
 		"id":                      fmt.Sprint(dbClusterId),
 		"db_cluster_id":           fmt.Sprint(dbClusterId),
 		"preferred_backup_period": strings.Split(object["PreferredBackupPeriod"].(string), ","),

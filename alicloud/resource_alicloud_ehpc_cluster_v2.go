@@ -1137,14 +1137,34 @@ func resourceAliCloudEhpcClusterV2Read(d *schema.ResourceData, meta interface{})
 	d.Set("cluster_vpc_id", objectRaw["ClusterVpcId"])
 	d.Set("create_time", objectRaw["ClusterCreateTime"])
 	deletionProtection := fmt.Sprint(objectRaw["DeleteProtection"])
-	d.Set("deletion_protection", formatBool(deletionProtection))
+	deletion_protectionVal, err1140 := formatBool(deletionProtection)
+	if err1140 != nil {
+		return err1140
+	}
+	d.Set("deletion_protection", deletion_protectionVal)
 	d.Set("ehpc_version", objectRaw["EhpcVersion"])
 	d.Set("enable_scale_in", objectRaw["EnableScaleIn"])
 	d.Set("enable_scale_out", objectRaw["EnableScaleOut"])
-	d.Set("grow_interval", formatInt(objectRaw["GrowInterval"]))
-	d.Set("idle_interval", formatInt(objectRaw["IdleInterval"]))
-	d.Set("max_core_count", formatInt(objectRaw["MaxCoreCount"]))
-	d.Set("max_count", formatInt(objectRaw["MaxCount"]))
+	grow_intervalVal, err1144 := formatInt(objectRaw["GrowInterval"])
+	if err1144 != nil {
+		return err1144
+	}
+	d.Set("grow_interval", grow_intervalVal)
+	idle_intervalVal, err1145 := formatInt(objectRaw["IdleInterval"])
+	if err1145 != nil {
+		return err1145
+	}
+	d.Set("idle_interval", idle_intervalVal)
+	max_core_countVal, err1146 := formatInt(objectRaw["MaxCoreCount"])
+	if err1146 != nil {
+		return err1146
+	}
+	d.Set("max_core_count", max_core_countVal)
+	max_countVal, err1147 := formatInt(objectRaw["MaxCount"])
+	if err1147 != nil {
+		return err1147
+	}
+	d.Set("max_count", max_countVal)
 	d.Set("modify_time", objectRaw["ClusterModifyTime"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("security_group_id", objectRaw["SecurityGroupId"])

@@ -41,14 +41,19 @@ func TestAccAliCloudSDDPInstance_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type": "Subscription",
-					"sddp_version": "version_company",
-					"sdc":          "3",
-					"sd_cbool":     "no",
-					"period":       "1",
-					"ud_cbool":     "yes",
-					"udc":          "2000",
-					"dataphin":     "yes",
+					"dataphin_count": "CreateInstance",
+					"logistics":      "yes",
+					"oss_size":       "3000",
+					"renew_period":   "1",
+					"renewal_status": "CreateInstance",
+					"payment_type":   "Subscription",
+					"sddp_version":   "version_company",
+					"sdc":            "3",
+					"sd_cbool":       "no",
+					"period":         "1",
+					"ud_cbool":       "yes",
+					"udc":            "2000",
+					"dataphin":       "yes",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -63,8 +68,14 @@ func TestAccAliCloudSDDPInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"modify_type": "Upgrade",
-					"sdc":         "8",
+					"dataphin_count": "ModifyInstance",
+					"logistics":      "no",
+					"oss_size":       "3001",
+					"renew_period":   "2",
+					"renewal_status": "AutoRenewal",
+					"sddp_version":   "version_audit",
+					"modify_type":    "Upgrade",
+					"sdc":            "8",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

@@ -129,11 +129,16 @@ func dataSourceAlicloudBrainIndustrialPidOrganizationsRead(d *schema.ResourceDat
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		pid_organization_levelVal, err136 := formatInt(object["OrganizationLevel"])
+		if err136 != nil {
+			return err136
+		}
 		mapping := map[string]interface{}{
 			"parent_pid_organization_id": object["ParentOrganizationId"],
 			"id":                         fmt.Sprint(object["OrganizationId"]),
 			"pid_organization_id":        fmt.Sprint(object["OrganizationId"]),
-			"pid_organization_level":     formatInt(object["OrganizationLevel"]),
+			"pid_organization_level":     pid_organization_levelVal,
 			"pid_organization_name":      object["OrganizationName"],
 		}
 		ids = append(ids, fmt.Sprint(object["OrganizationId"]))

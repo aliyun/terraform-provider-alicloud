@@ -2384,7 +2384,10 @@ func TestAccAliCloudVpnGatewayVpnAttachment_roleSwitch(t *testing.T) {
 		seen := map[int]bool{}
 		for _, raw := range tunnels {
 			tunnel := raw.(map[string]interface{})
-			index := formatInt(tunnel["TunnelIndex"])
+			index, indexErr := formatInt(tunnel["TunnelIndex"])
+			if indexErr != nil {
+				return indexErr
+			}
 			if index < 1 || index > 2 || seen[index] || vpnAttachmentStateAttrByIndex(entry.Primary, index, "role") != fmt.Sprint(tunnel["Role"]) {
 				return fmt.Errorf("SAFE_TUNNEL_CONFIGURATION_MISMATCH")
 			}
@@ -2887,7 +2890,11 @@ func TestUnitVpnGatewayVpnAttachmentOptionalComputedRead(t *testing.T) {
 	if err := r.Read(d, client); err != nil {
 		t.Fatal(err)
 	}
-	if len(vpnAttachmentUnitStateTunnels(d)) != 2 {
+	stateTunnels, stateTunnelsErr := vpnAttachmentUnitStateTunnels(d)
+	if stateTunnelsErr != nil {
+		t.Fatalf("vpnAttachmentUnitStateTunnels got an error: %v", stateTunnelsErr)
+	}
+	if len(stateTunnels) != 2 {
 		t.Fatal("read did not retain both tunnels")
 	}
 	vpnAttachmentUnitAssertNoDiff(t, r, d.State(), config, client)
@@ -2974,7 +2981,11 @@ func TestUnitVpnGatewayVpnAttachmentReadPSK(t *testing.T) {
 			if got := d.Get("ike_config.0.psk"); got != value {
 				t.Errorf("top-level PSK = %q, want API value %q", got, value)
 			}
-			for _, raw := range vpnAttachmentUnitStateTunnels(d) {
+			stateTunnels, stateTunnelsErr := vpnAttachmentUnitStateTunnels(d)
+			if stateTunnelsErr != nil {
+				t.Fatalf("vpnAttachmentUnitStateTunnels got an error: %v", stateTunnelsErr)
+			}
+			for _, raw := range stateTunnels {
 				ike := raw.(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})
 				if got := ike["psk"]; got != value {
 					t.Errorf("tunnel PSK = %q, want API value %q", got, value)
@@ -2996,7 +3007,11 @@ func TestUnitVpnGatewayVpnAttachmentReadStableOrder(t *testing.T) {
 	if err := r.Read(d, client); err != nil {
 		t.Fatal(err)
 	}
-	for i, value := range vpnAttachmentUnitStateTunnels(d) {
+	stateTunnels, stateTunnelsErr := vpnAttachmentUnitStateTunnels(d)
+	if stateTunnelsErr != nil {
+		t.Fatalf("vpnAttachmentUnitStateTunnels got an error: %v", stateTunnelsErr)
+	}
+	for i, value := range stateTunnels {
 		if got := value.(map[string]interface{})["tunnel_index"]; got != i+1 {
 			t.Errorf("state tunnel at position %d = %v, want index %d", i, got, i+1)
 		}
@@ -3321,7 +3336,11 @@ func TestUnitVpnGatewayVpnAttachmentReadMaskedPSK(t *testing.T) {
 		if got := d.Get("ike_config.0.psk"); got != "old-top-level-test-psk" {
 			t.Errorf("top-level PSK = %q, want the prior configured value", got)
 		}
-		for position, raw := range vpnAttachmentUnitStateTunnels(d) {
+		stateTunnels, stateTunnelsErr := vpnAttachmentUnitStateTunnels(d)
+		if stateTunnelsErr != nil {
+			t.Fatalf("vpnAttachmentUnitStateTunnels got an error: %v", stateTunnelsErr)
+		}
+		for position, raw := range stateTunnels {
 			ike := raw.(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})
 			want := fmt.Sprintf("initial-test-psk-%d", position+1)
 			if got := ike["psk"]; got != want {
@@ -3352,7 +3371,11 @@ func TestUnitVpnGatewayVpnAttachmentReadMaskedPSK(t *testing.T) {
 		if got := d.Get("ike_config.0.psk"); got != "************" {
 			t.Errorf("top-level PSK = %q, want the adopted API value, not the prior", got)
 		}
-		for position, raw := range vpnAttachmentUnitStateTunnels(d) {
+		stateTunnels, stateTunnelsErr := vpnAttachmentUnitStateTunnels(d)
+		if stateTunnelsErr != nil {
+			t.Fatalf("vpnAttachmentUnitStateTunnels got an error: %v", stateTunnelsErr)
+		}
+		for position, raw := range stateTunnels {
 			ike := raw.(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})
 			if got := ike["psk"]; got != "************" {
 				t.Errorf("tunnel %d PSK = %q, want the adopted API value, not the prior", position+1, got)
@@ -3454,11 +3477,15 @@ func vpnAttachmentUnitAssertNoDiff(t *testing.T, r *schema.Resource, state *terr
 	}
 }
 
-func vpnAttachmentUnitStateTunnels(d *schema.ResourceData) []interface{} {
+func vpnAttachmentUnitStateTunnels(d *schema.ResourceData) ([]interface{}, error) {
 	if set, ok := d.Get("tunnel_options_specification").(*schema.Set); ok {
-		return vpnAttachmentSortedTunnels(set.List())
+		tunnels, tunnelsErr := vpnAttachmentSortedTunnels(set.List())
+		if tunnelsErr != nil {
+			return nil, tunnelsErr
+		}
+		return tunnels, nil
 	}
-	return d.Get("tunnel_options_specification").([]interface{})
+	return d.Get("tunnel_options_specification").([]interface{}), nil
 }
 
 func vpnAttachmentUnitConfig() map[string]interface{} {
@@ -3590,7 +3617,10 @@ func TestAccAliCloudVPNGatewayVpnAttachment_tunnelOrder(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("SAFE_TUNNEL_DATA_MISSING")
 				}
-				index := formatInt(tunnel["TunnelIndex"])
+				index, indexErr := formatInt(tunnel["TunnelIndex"])
+				if indexErr != nil {
+					return indexErr
+				}
 				if (index != 1 && index != 2) || seen[index] {
 					return fmt.Errorf("SAFE_TUNNEL_INDEX_MISMATCH")
 				}
@@ -4047,7 +4077,11 @@ func TestUnitVpnGatewayVpnAttachmentSetHashWritableOnly(t *testing.T) {
 					value, _ := target[name].(bool)
 					target[name] = !value
 				case schema.TypeInt:
-					target[name] = formatInt(target[name]) + 1
+					v4000, err4000 := formatInt(target[name])
+					if err4000 != nil {
+						t.Fatalf("formatInt got an error: %v", err4000)
+					}
+					target[name] = v4000 + 1
 				case schema.TypeString:
 					target[name] = fmt.Sprint(target[name]) + "-changed"
 				default:
@@ -4465,7 +4499,10 @@ func vpnAttachmentCheckConfiguration(resourceID string, originalID *string, expe
 			if !ok {
 				return mismatch
 			}
-			index := formatInt(tunnel["TunnelIndex"])
+			index, indexErr := formatInt(tunnel["TunnelIndex"])
+			if indexErr != nil {
+				return indexErr
+			}
 			if seen[index] || want[index] == nil {
 				return mismatch
 			}

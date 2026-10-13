@@ -373,7 +373,11 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 	if err := d.Set("gateways", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err376 := formatInt(response["TotalCount"])
+	if err376 != nil {
+		return err376
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

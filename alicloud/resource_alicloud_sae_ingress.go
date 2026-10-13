@@ -243,7 +243,11 @@ func resourceAlicloudSaeIngressRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if v, ok := object["ListenerPort"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("listener_port", formatInt(v))
+		listener_portVal, err246 := formatInt(v)
+		if err246 != nil {
+			return err246
+		}
+		d.Set("listener_port", listener_portVal)
 	}
 
 	defaultRuleConfig := make([]map[string]interface{}, 0)

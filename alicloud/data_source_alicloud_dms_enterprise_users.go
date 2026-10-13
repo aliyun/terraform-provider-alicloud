@@ -180,9 +180,14 @@ func dataSourceAlicloudDmsEnterpriseUsersRead(d *schema.ResourceData, meta inter
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		parent_uidVal, err185 := formatInt(object["ParentUid"])
+		if err185 != nil {
+			return err185
+		}
 		mapping := map[string]interface{}{
 			"mobile":     object["Mobile"],
-			"parent_uid": formatInt(object["ParentUid"]),
+			"parent_uid": parent_uidVal,
 			"role_ids":   object["RoleIdList"].(map[string]interface{})["RoleIds"],
 			"role_names": object["RoleNameList"].(map[string]interface{})["RoleNames"],
 			"status":     object["State"],

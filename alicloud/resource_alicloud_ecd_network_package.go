@@ -92,7 +92,11 @@ func resourceAlicloudEcdNetworkPackageRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	if v, ok := object["Bandwidth"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("bandwidth", formatInt(v))
+		bandwidthVal, err95 := formatInt(v)
+		if err95 != nil {
+			return err95
+		}
+		d.Set("bandwidth", bandwidthVal)
 	}
 	d.Set("internet_charge_type", object["InternetChargeType"])
 	d.Set("office_site_id", object["OfficeSiteId"])

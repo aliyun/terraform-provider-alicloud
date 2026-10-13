@@ -73,8 +73,13 @@ func testSweepCmsMonitorgroup(region string) error {
 			log.Printf("[INFO] Delete Cms Monitor Group: %s ", name)
 
 			delAction := "DeleteMonitorGroup"
+
+			v77, err77 := formatInt(item["GroupId"])
+			if err77 != nil {
+				return err77
+			}
 			delRequest := map[string]interface{}{
-				"GroupId": fmt.Sprint(formatInt(item["GroupId"])),
+				"GroupId": fmt.Sprint(v77),
 			}
 			_, err = client.RpcPost("Cms", "2019-01-01", delAction, nil, delRequest, false)
 			if err != nil {
@@ -89,7 +94,7 @@ func testSweepCmsMonitorgroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
+func TestAccAliCloudCmsMonitorGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_monitor_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
@@ -106,9 +111,9 @@ func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -183,7 +188,7 @@ func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
+func TestAccAliCloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_monitor_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudCmsMonitorGroupMap)
@@ -200,9 +205,9 @@ func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

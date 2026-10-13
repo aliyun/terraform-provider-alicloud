@@ -117,7 +117,11 @@ func resourceAlicloudEcdUserRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("end_user_id", d.Id())
 	d.Set("email", object["Email"])
 	d.Set("phone", object["Phone"])
-	d.Set("status", convertEcdUserStatusResponse(fmt.Sprint(formatInt(object["Status"]))))
+	v120, err120 := formatInt(object["Status"])
+	if err120 != nil {
+		return err120
+	}
+	d.Set("status", convertEcdUserStatusResponse(fmt.Sprint(v120)))
 	return nil
 }
 func resourceAlicloudEcdUserUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -132,7 +136,11 @@ func resourceAlicloudEcdUserUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapError(err)
 		}
 		if target, ok := d.GetOk("status"); ok {
-			if convertEcdUserStatusRequest(strconv.Itoa(formatInt(object["Status"]))) != target {
+			v135, err135 := formatInt(object["Status"])
+			if err135 != nil {
+				return err135
+			}
+			if convertEcdUserStatusRequest(strconv.Itoa(v135)) != target {
 				if target == "Unlocked" {
 					request := map[string]interface{}{
 						"Users": []string{d.Id()},

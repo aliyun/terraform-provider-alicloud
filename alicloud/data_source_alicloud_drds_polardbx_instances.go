@@ -283,7 +283,11 @@ func dataSourceAliCloudDrdsPolardbxInstancesRead(d *schema.ResourceData, meta in
 	if err := d.Set("instances", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalNumber"])); err != nil {
+	total_countVal, err286 := formatInt(response["TotalNumber"])
+	if err286 != nil {
+		return err286
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

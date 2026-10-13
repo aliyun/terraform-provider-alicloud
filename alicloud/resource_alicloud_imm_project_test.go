@@ -128,7 +128,7 @@ func testSweepIMMProject(region string) error {
 	}
 }
 
-func TestAccAlicloudIMMProject_basic0(t *testing.T) {
+func TestAccAliCloudIMMProject_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_imm_project.default"
 	ra := resourceAttrInit(resourceId, AlicloudIMMProjectMap0)

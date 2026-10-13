@@ -187,7 +187,11 @@ func dataSourceAlicloudEcsNetworkInterfacePermissionsRead(d *schema.ResourceData
 	if err := d.Set("permissions", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err190 := formatInt(response["TotalCount"])
+	if err190 != nil {
+		return err190
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

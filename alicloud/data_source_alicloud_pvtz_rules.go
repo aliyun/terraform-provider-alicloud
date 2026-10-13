@@ -217,7 +217,11 @@ func dataSourceAlicloudPvtzRulesRead(d *schema.ResourceData, meta interface{}) e
 				forwardConfigArg := forwardConfigArgs.(map[string]interface{})
 				forwardConfigsMap := make(map[string]interface{})
 				forwardConfigsMap["ip"] = forwardConfigArg["Ip"]
-				forwardConfigsMap["port"] = formatInt(forwardConfigArg["Port"])
+				v220, err220 := formatInt(forwardConfigArg["Port"])
+				if err220 != nil {
+					return err220
+				}
+				forwardConfigsMap["port"] = v220
 				forwardConfigsSli = append(forwardConfigsSli, forwardConfigsMap)
 			}
 		}

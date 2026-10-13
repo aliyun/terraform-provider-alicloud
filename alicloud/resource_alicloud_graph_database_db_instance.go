@@ -196,7 +196,11 @@ func resourceAlicloudGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta in
 	d.Set("db_instance_network_type", object["DBInstanceNetworkType"])
 	d.Set("db_instance_storage_type", object["DBInstanceStorageType"])
 	d.Set("db_node_class", object["DBNodeClass"])
-	d.Set("db_node_storage", formatInt(object["DBNodeStorage"]))
+	db_node_storageVal, err199 := formatInt(object["DBNodeStorage"])
+	if err199 != nil {
+		return err199
+	}
+	d.Set("db_node_storage", db_node_storageVal)
 	d.Set("db_version", object["DBVersion"])
 	d.Set("payment_type", convertGraphDatabaseDbInstancePaymentTypeResponse(object["PayType"]))
 	d.Set("status", object["DBInstanceStatus"])

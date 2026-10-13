@@ -260,18 +260,32 @@ func dataSourceAliCloudPvtzZonesRead(d *schema.ResourceData, meta interface{}) e
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		record_countVal, err269 := formatInt(object["RecordCount"])
+		if err269 != nil {
+			return err269
+		}
+
+		create_timestampVal, err273 := formatInt(object["CreateTimestamp"])
+		if err273 != nil {
+			return err273
+		}
+		update_timestampVal, err274 := formatInt(object["UpdateTimestamp"])
+		if err274 != nil {
+			return err274
+		}
 		mapping := map[string]interface{}{
 			"id":                fmt.Sprint(object["ZoneId"]),
 			"zone_id":           fmt.Sprint(object["ZoneId"]),
 			"zone_name":         object["ZoneName"],
 			"name":              object["ZoneName"],
 			"proxy_pattern":     object["ProxyPattern"],
-			"record_count":      formatInt(object["RecordCount"]),
+			"record_count":      record_countVal,
 			"resource_group_id": object["ResourceGroupId"],
 			"remark":            object["Remark"],
 			"is_ptr":            object["IsPtr"],
-			"create_timestamp":  formatInt(object["CreateTimestamp"]),
-			"update_timestamp":  formatInt(object["UpdateTimestamp"]),
+			"create_timestamp":  create_timestampVal,
+			"update_timestamp":  update_timestampVal,
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))

@@ -143,14 +143,24 @@ func dataSourceAlicloudDmsEnterpriseProxiesRead(d *schema.ResourceData, meta int
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		https_portVal, err149 := formatInt(object["HttpsPort"])
+		if err149 != nil {
+			return err149
+		}
+
+		protocol_portVal, err153 := formatInt(object["ProtocolPort"])
+		if err153 != nil {
+			return err153
+		}
 		mapping := map[string]interface{}{
 			"creator_id":     fmt.Sprint(object["CreatorId"]),
 			"creator_name":   object["CreatorName"],
-			"https_port":     formatInt(object["HttpsPort"]),
+			"https_port":     https_portVal,
 			"instance_id":    fmt.Sprint(object["InstanceId"]),
 			"private_enable": object["PrivateEnable"],
 			"private_host":   object["PrivateHost"],
-			"protocol_port":  formatInt(object["ProtocolPort"]),
+			"protocol_port":  protocol_portVal,
 			"protocol_type":  object["ProtocolType"],
 			"id":             fmt.Sprint(object["ProxyId"]),
 			"proxy_id":       fmt.Sprint(object["ProxyId"]),

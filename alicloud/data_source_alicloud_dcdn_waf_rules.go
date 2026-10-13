@@ -328,8 +328,16 @@ func dataSourceAlicloudDcdnWafRulesRead(d *schema.ResourceData, meta interface{}
 				statusMap := make(map[string]interface{}, 0)
 				statusObj := v.(map[string]interface{})
 				statusMap["code"] = statusObj["code"]
-				statusMap["ratio"] = formatInt(statusObj["ratio"])
-				statusMap["count"] = formatInt(statusObj["count"])
+				v331, err331 := formatInt(statusObj["ratio"])
+				if err331 != nil {
+					return err331
+				}
+				statusMap["ratio"] = v331
+				v332, err332 := formatInt(statusObj["count"])
+				if err332 != nil {
+					return err332
+				}
+				statusMap["count"] = v332
 				rateLimitMap["status"] = []interface{}{statusMap}
 			}
 			mapping["rate_limit"] = []interface{}{rateLimitMap}

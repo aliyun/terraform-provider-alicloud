@@ -601,8 +601,14 @@ func resourceAliCloudThreatDetectionInstanceRead(d *schema.ResourceData, meta in
 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("payment_type", objectRaw["SubscriptionType"])
-	if v, ok := objectRaw["RenewalDuration"]; ok && formatInt(v) != 0 {
-		d.Set("renew_period", formatInt(objectRaw["RenewalDuration"]))
+	if v, ok := objectRaw["RenewalDuration"]; ok {
+		renew_periodVal, err605 := formatInt(v)
+		if err605 != nil {
+			return err605
+		}
+		if renew_periodVal != 0 {
+			d.Set("renew_period", renew_periodVal)
+		}
 	}
 	d.Set("renewal_period_unit", objectRaw["RenewalDurationUnit"])
 	d.Set("renewal_status", objectRaw["RenewStatus"])

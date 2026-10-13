@@ -76,7 +76,7 @@ func TestAccAliCloudEnsLoadBalancerHttpListener_basic(t *testing.T) {
 					"health_check_timeout":      "10",
 					"health_check_connect_port": "81",
 					"health_check_interval":     "5",
-					"health_check_http_code":    "http_2xx",
+					"health_check_http_code":    "http_3xx",
 					"health_check_method":       "get",
 					"idle_timeout":              "30",
 					"request_timeout":           "90",

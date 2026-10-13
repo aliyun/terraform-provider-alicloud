@@ -288,7 +288,11 @@ func resourceAliCloudSslCertificatesServicePcaCertUpdate(d *schema.ResourceData,
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "UploadFlag", objectRaw)
 		}
-		if formatInt(currentStatus) != target {
+		v291, err291 := formatInt(currentStatus)
+		if err291 != nil {
+			return err291
+		}
+		if v291 != target {
 			if target == 1 {
 				action := "UploadPcaCertToCas"
 				request = make(map[string]interface{})

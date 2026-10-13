@@ -133,6 +133,11 @@ func dataSourceAlicloudVpnPbrRouteEntriesRead(d *schema.ResourceData, meta inter
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		weightVal, err144 := formatInt(object["Weight"])
+		if err144 != nil {
+			return err144
+		}
 		mapping := map[string]interface{}{
 			"create_time":    object["CreateTime"],
 			"id":             fmt.Sprint(object["VpnInstanceId"], ":", object["NextHop"], ":", object["RouteSource"], ":", object["RouteDest"]),
@@ -141,7 +146,7 @@ func dataSourceAlicloudVpnPbrRouteEntriesRead(d *schema.ResourceData, meta inter
 			"route_dest":     object["RouteDest"],
 			"route_source":   object["RouteSource"],
 			"status":         object["State"],
-			"weight":         formatInt(object["Weight"]),
+			"weight":         weightVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

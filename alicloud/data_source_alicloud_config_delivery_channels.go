@@ -136,8 +136,14 @@ func dataSourceAlicloudConfigDeliveryChannelsRead(d *schema.ResourceData, meta i
 				continue
 			}
 		}
-		if statusOk && status.(int) != formatInt(item["Status"]) {
-			continue
+		if statusOk {
+			statusVal, statusErr := formatInt(item["Status"])
+			if statusErr != nil {
+				return statusErr
+			}
+			if status.(int) != statusVal {
+				continue
+			}
 		}
 		objects = append(objects, item)
 	}
@@ -145,6 +151,11 @@ func dataSourceAlicloudConfigDeliveryChannelsRead(d *schema.ResourceData, meta i
 	names := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		statusVal, err157 := formatInt(object["Status"])
+		if err157 != nil {
+			return err157
+		}
 		mapping := map[string]interface{}{
 			"delivery_channel_assume_role_arn": object["DeliveryChannelAssumeRoleArn"],
 			"delivery_channel_condition":       object["DeliveryChannelCondition"],
@@ -154,7 +165,7 @@ func dataSourceAlicloudConfigDeliveryChannelsRead(d *schema.ResourceData, meta i
 			"delivery_channel_target_arn":      object["DeliveryChannelTargetArn"],
 			"delivery_channel_type":            object["DeliveryChannelType"],
 			"description":                      object["Description"],
-			"status":                           formatInt(object["Status"]),
+			"status":                           statusVal,
 		}
 		ids = append(ids, fmt.Sprint(object["DeliveryChannelId"]))
 		names = append(names, object["DeliveryChannelName"].(string))

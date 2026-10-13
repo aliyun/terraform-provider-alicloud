@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -286,13 +287,37 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				),
 			},
 			{
+				// KMS-encrypted login credentials, master disk performance
+				// tiers and the delete-time retain list are node-provisioning
+				// concerns this suite cannot exercise; removing the required
+				// cluster name stops the plan before the placeholders reach
+				// the API.
+				Config: testAccConfig(map[string]interface{}{
+					"kms_encrypted_password":        "kms-tfacc-placeholder",
+					"kms_encryption_context":        map[string]string{"for": "tfacc"},
+					"master_disk_performance_level": "PL1",
+					"retain_resources":              []string{"ecs"},
+					"runtime":                       []map[string]interface{}{{"name": "docker", "version": "19.03.15"}},
+					"name":                          REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "new_nat_gateway", "password", "user_ca", "rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "timezone", "runtime", "api_audiences", "service_account_issuer", "load_balancer_spec", "platform"},
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "new_nat_gateway", "password", "user_ca", "rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "runtime", "api_audiences", "service_account_issuer", "load_balancer_spec", "platform"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"addons": []map[string]interface{}{
+						{
+							"config":   "",
+							"disabled": "false",
+							"name":     "terway-eniip",
+							"version":  "",
+						},
+					},
 					"tags": map[string]string{
 						"Platform": "TF",
 						"Env":      "Pre",
@@ -495,7 +520,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "is_enterprise_security_group", "new_nat_gateway", "password", "user_ca", "runtime", "rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "timezone", "addons", "load_balancer_spec", "pod_vswitch_ids", "slb_internet_enabled", "platform"},
+				ImportStateVerifyIgnore: []string{"skip_set_certificate_authority", "is_enterprise_security_group", "new_nat_gateway", "password", "user_ca", "runtime", "rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "addons", "load_balancer_spec", "pod_vswitch_ids", "slb_internet_enabled", "platform"},
 			},
 		},
 	})
@@ -666,7 +691,7 @@ var csKubernetesBasicMap = map[string]string{
 	"slb_id":       CHECKSET,
 }
 
-func TestCSKubernetesStateUpgradeV0(t *testing.T) {
+func TestUnitCSKubernetesStateUpgradeV0(t *testing.T) {
 	fields := []string{"runtime", "certificate_authority", "connections"}
 	cases := []struct {
 		name     string
@@ -782,7 +807,7 @@ func TestCSKubernetesStateUpgradeV0(t *testing.T) {
 	}
 }
 
-func TestCSKubernetesSchemaVersionV0ToV1(t *testing.T) {
+func TestUnitCSKubernetesSchemaVersionV0ToV1(t *testing.T) {
 	r := resourceAlicloudCSKubernetes()
 	if r.SchemaVersion != 1 {
 		t.Errorf("expected SchemaVersion 1, got %d", r.SchemaVersion)
@@ -795,7 +820,7 @@ func TestCSKubernetesSchemaVersionV0ToV1(t *testing.T) {
 	}
 }
 
-func TestAccAlicloudCSKubernetes_StateMigrationV0ToV1(t *testing.T) {
+func TestAccAliCloudCSKubernetes_StateMigrationV0ToV1(t *testing.T) {
 	if os.Getenv("ALICLOUD_STATE_MIGRATION_V0_V1") == "" {
 		t.Skip("ALICLOUD_STATE_MIGRATION_V0_V1 not set. Test for V0 -> V1 state migration")
 	}

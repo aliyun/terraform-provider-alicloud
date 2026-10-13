@@ -67,7 +67,11 @@ func testSweepCmsMetricRuleTemplate(region string) error {
 
 		resp, err := jsonpath.Get("$.Templates.Template", response)
 
-		if formatInt(response["Total"]) != 0 && err != nil {
+		v70, err70 := formatInt(response["Total"])
+		if err70 != nil {
+			return err70
+		}
+		if v70 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Templates.Template", action, err)
 			return nil
 		}

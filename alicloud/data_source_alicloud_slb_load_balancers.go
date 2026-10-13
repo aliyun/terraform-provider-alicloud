@@ -528,12 +528,17 @@ func dataSourceAlicloudSlbLoadBalancersRead(d *schema.ResourceData, meta interfa
 	slbs := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		create_time_stampVal, err536 := formatInt(object["CreateTimeStamp"])
+		if err536 != nil {
+			return err536
+		}
 		mapping := map[string]interface{}{
 			"address":                        object["Address"],
 			"address_ip_version":             object["AddressIPVersion"],
 			"address_type":                   object["AddressType"],
 			"create_time":                    object["CreateTime"],
-			"create_time_stamp":              formatInt(object["CreateTimeStamp"]),
+			"create_time_stamp":              create_time_stampVal,
 			"id":                             fmt.Sprint(object["LoadBalancerId"]),
 			"load_balancer_id":               fmt.Sprint(object["LoadBalancerId"]),
 			"load_balancer_name":             object["LoadBalancerName"],
@@ -599,11 +604,16 @@ func dataSourceAlicloudSlbLoadBalancersRead(d *schema.ResourceData, meta interfa
 		if backendServerList, ok := getResp["BackendServers"].(map[string]interface{})["BackendServer"].([]interface{}); ok {
 			for _, v := range backendServerList {
 				if m1, ok := v.(map[string]interface{}); ok {
+
+					weightVal, err606 := formatInt(m1["Weight"])
+					if err606 != nil {
+						return err606
+					}
 					temp1 := map[string]interface{}{
 						"description": m1["Description"],
 						"server_id":   m1["ServerId"],
 						"type":        m1["Type"],
-						"weight":      formatInt(m1["Weight"]),
+						"weight":      weightVal,
 					}
 					backendServer = append(backendServer, temp1)
 				}
@@ -620,8 +630,13 @@ func dataSourceAlicloudSlbLoadBalancersRead(d *schema.ResourceData, meta interfa
 		if listenerPortAndProtocalList, ok := getResp["ListenerPortsAndProtocal"].(map[string]interface{})["ListenerPortAndProtocal"].([]interface{}); ok {
 			for _, v := range listenerPortAndProtocalList {
 				if m1, ok := v.(map[string]interface{}); ok {
+
+					listener_portVal, err624 := formatInt(m1["ListenerPort"])
+					if err624 != nil {
+						return err624
+					}
 					temp1 := map[string]interface{}{
-						"listener_port":     formatInt(m1["ListenerPort"]),
+						"listener_port":     listener_portVal,
 						"listener_protocal": m1["ListenerProtocal"],
 					}
 					listenerPortAndProtocal = append(listenerPortAndProtocal, temp1)
@@ -634,11 +649,21 @@ func dataSourceAlicloudSlbLoadBalancersRead(d *schema.ResourceData, meta interfa
 		if listenerPortAndProtocolList, ok := getResp["ListenerPortsAndProtocol"].(map[string]interface{})["ListenerPortAndProtocol"].([]interface{}); ok {
 			for _, v := range listenerPortAndProtocolList {
 				if m1, ok := v.(map[string]interface{}); ok {
+
+					forward_portVal, err639 := formatInt(m1["ForwardPort"])
+					if err639 != nil {
+						return err639
+					}
+
+					listener_portVal2, err641 := formatInt(m1["ListenerPort"])
+					if err641 != nil {
+						return err641
+					}
 					temp1 := map[string]interface{}{
 						"description":       m1["Description"],
-						"forward_port":      formatInt(m1["ForwardPort"]),
+						"forward_port":      forward_portVal,
 						"listener_forward":  m1["ListenerForward"],
-						"listener_port":     formatInt(m1["ListenerPort"]),
+						"listener_port":     listener_portVal2,
 						"listener_protocol": m1["ListenerProtocol"],
 					}
 					listenerPortAndProtocol = append(listenerPortAndProtocol, temp1)
@@ -670,7 +695,11 @@ func dataSourceAlicloudSlbLoadBalancersRead(d *schema.ResourceData, meta interfa
 	if err := d.Set("slbs", slbs); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err673 := formatInt(response["TotalCount"])
+	if err673 != nil {
+		return err673
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

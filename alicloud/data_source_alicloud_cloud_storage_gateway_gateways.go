@@ -256,6 +256,16 @@ func dataSourceAlicloudCloudStorageGatewayGatewaysRead(d *schema.ResourceData, m
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		expire_statusVal, err266 := formatInt(object["ExpireStatus"])
+		if err266 != nil {
+			return err266
+		}
+
+		public_network_bandwidthVal, err278 := formatInt(object["PublicNetworkBandwidth"])
+		if err278 != nil {
+			return err278
+		}
 		mapping := map[string]interface{}{
 			"activated_time":              fmt.Sprint(object["ActivatedTime"]),
 			"buy_url":                     object["BuyURL"],
@@ -263,7 +273,7 @@ func dataSourceAlicloudCloudStorageGatewayGatewaysRead(d *schema.ResourceData, m
 			"create_time":                 fmt.Sprint(object["CreatedTime"]),
 			"description":                 object["Description"],
 			"ecs_instance_id":             object["EcsInstanceId"],
-			"expire_status":               formatInt(object["ExpireStatus"]),
+			"expire_status":               expire_statusVal,
 			"expired_time":                fmt.Sprint(object["ExpiredTime"]),
 			"gateway_class":               object["GatewayClass"],
 			"id":                          fmt.Sprint(object["GatewayId"]),
@@ -275,7 +285,7 @@ func dataSourceAlicloudCloudStorageGatewayGatewaysRead(d *schema.ResourceData, m
 			"is_release_after_expiration": object["IsReleaseAfterExpiration"],
 			"location":                    object["Location"],
 			"payment_type":                convertCsgGatewayPaymentTypeResp(object["IsPostPaid"].(bool)),
-			"public_network_bandwidth":    formatInt(object["PublicNetworkBandwidth"]),
+			"public_network_bandwidth":    public_network_bandwidthVal,
 			"renew_url":                   object["RenewURL"],
 			"status":                      object["Status"],
 			"storage_bundle_id":           object["StorageBundleId"],
@@ -302,7 +312,11 @@ func dataSourceAlicloudCloudStorageGatewayGatewaysRead(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err305 := formatInt(response["TotalCount"])
+	if err305 != nil {
+		return err305
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 

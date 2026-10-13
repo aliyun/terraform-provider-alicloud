@@ -141,11 +141,16 @@ func dataSourceAlicloudArmsIntegrationExportersRead(d *schema.ResourceData, meta
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		instance_idVal, err148 := formatInt(object["InstanceId"])
+		if err148 != nil {
+			return err148
+		}
 		mapping := map[string]interface{}{
 			"id":               fmt.Sprintf("%v:%v:%v", object["ClusterId"], object["IntegrationType"], object["InstanceId"]),
 			"cluster_id":       fmt.Sprint(object["ClusterId"]),
 			"integration_type": fmt.Sprint(object["IntegrationType"]),
-			"instance_id":      formatInt(object["InstanceId"]),
+			"instance_id":      instance_idVal,
 			"param":            object["Param"],
 			"instance_name":    object["InstanceName"],
 			"exporter_type":    object["ExporterType"],

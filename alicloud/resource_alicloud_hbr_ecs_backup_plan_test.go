@@ -37,12 +37,13 @@ func TestAccAliCloudHbrEcsBackupPlan_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"detail":                  "CreateBackupPlanValue",
 					"vault_id":                "${alicloud_hbr_vault.default.id}",
 					"instance_id":             "${alicloud_instance.default.id}",
 					"backup_type":             "COMPLETE",
@@ -67,6 +68,7 @@ func TestAccAliCloudHbrEcsBackupPlan_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"detail":    "UpdateBackupPlanValue",
 					"retention": "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(

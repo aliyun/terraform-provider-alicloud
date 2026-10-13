@@ -196,7 +196,11 @@ func resourceAlicloudHbrServerBackupPlanRead(d *schema.ResourceData, meta interf
 		detail["enable_fs_freeze"] = v["enableFsFreeze"]
 		detail["pre_script_path"] = v["preScriptPath"]
 		detail["post_script_path"] = v["postScriptPath"]
-		detail["timeout_in_seconds"] = formatInt(v["timeoutInSeconds"])
+		v199, err199 := formatInt(v["timeoutInSeconds"])
+		if err199 != nil {
+			return err199
+		}
+		detail["timeout_in_seconds"] = v199
 		detail["do_copy"] = v["doCopy"]
 		detail["destination_region_id"] = v["destinationRegionId"]
 		detail["destination_retention"] = v["destinationRetention"]
@@ -211,11 +215,19 @@ func resourceAlicloudHbrServerBackupPlanRead(d *schema.ResourceData, meta interf
 
 	d.Set("ecs_server_backup_plan_name", object["PlanName"])
 	d.Set("instance_id", object["InstanceId"])
-	d.Set("retention", formatInt(object["Retention"]))
+	retentionVal, err214 := formatInt(object["Retention"])
+	if err214 != nil {
+		return err214
+	}
+	d.Set("retention", retentionVal)
 	d.Set("schedule", object["Schedule"])
 	d.Set("disabled", object["Disabled"])
 	d.Set("cross_account_type", object["CrossAccountType"])
-	d.Set("cross_account_user_id", formatInt(object["CrossAccountUserId"]))
+	cross_account_user_idVal, err218 := formatInt(object["CrossAccountUserId"])
+	if err218 != nil {
+		return err218
+	}
+	d.Set("cross_account_user_id", cross_account_user_idVal)
 	d.Set("cross_account_role_name", object["CrossAccountRoleName"])
 
 	return nil

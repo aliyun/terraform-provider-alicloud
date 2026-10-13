@@ -41,6 +41,7 @@ func TestAccAliCloudSDDPDataLimit_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"lang":              "lang",
 					"audit_status":      "0",
 					"engine_type":       "MySQL",
 					"parent_id":         "${local.parent_id}",

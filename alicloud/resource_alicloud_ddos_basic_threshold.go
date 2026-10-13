@@ -121,19 +121,35 @@ func resourceAliCloudDdosBasicThresholdRead(d *schema.ResourceData, meta interfa
 	d.Set("internet_ip", parts[2])
 
 	if v, ok := object["Bps"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("bps", formatInt(v))
+		bpsVal, err124 := formatInt(v)
+		if err124 != nil {
+			return err124
+		}
+		d.Set("bps", bpsVal)
 	}
 
 	if v, ok := object["Pps"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("pps", formatInt(v))
+		ppsVal, err128 := formatInt(v)
+		if err128 != nil {
+			return err128
+		}
+		d.Set("pps", ppsVal)
 	}
 
 	if v, ok := object["MaxBps"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("max_bps", formatInt(v))
+		max_bpsVal, err132 := formatInt(v)
+		if err132 != nil {
+			return err132
+		}
+		d.Set("max_bps", max_bpsVal)
 	}
 
 	if v, ok := object["MaxPps"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("max_pps", formatInt(v))
+		max_ppsVal, err136 := formatInt(v)
+		if err136 != nil {
+			return err136
+		}
+		d.Set("max_pps", max_ppsVal)
 	}
 
 	return nil

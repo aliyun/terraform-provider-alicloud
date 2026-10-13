@@ -210,7 +210,11 @@ func resourceAliCloudConfigCompliancePackRead(d *schema.ResourceData, meta inter
 
 	d.Set("compliance_pack_name", object["CompliancePackName"])
 	d.Set("description", object["Description"])
-	d.Set("risk_level", formatInt(object["RiskLevel"]))
+	risk_levelVal, err213 := formatInt(object["RiskLevel"])
+	if err213 != nil {
+		return err213
+	}
+	d.Set("risk_level", risk_levelVal)
 	d.Set("compliance_pack_template_id", object["CompliancePackTemplateId"])
 	d.Set("status", object["Status"])
 

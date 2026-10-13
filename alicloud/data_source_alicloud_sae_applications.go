@@ -443,7 +443,11 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		mapping["config_map_mount_desc"] = configMapMountDesc
 
 		if v, ok := getResp["Cpu"]; ok && fmt.Sprint(v) != "0" {
-			mapping["cpu"] = formatInt(v)
+			v446, err446 := formatInt(v)
+			if err446 != nil {
+				return err446
+			}
+			mapping["cpu"] = v446
 		}
 		mapping["custom_host_alias"] = getResp["CustomHostAlias"]
 		mapping["edas_container_version"] = getResp["EdasContainerVersion"]
@@ -454,10 +458,18 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		mapping["jdk"] = getResp["Jdk"]
 		mapping["liveness"] = getResp["Liveness"]
 		if v, ok := getResp["Memory"]; ok && fmt.Sprint(v) != "0" {
-			mapping["memory"] = formatInt(v)
+			v457, err457 := formatInt(v)
+			if err457 != nil {
+				return err457
+			}
+			mapping["memory"] = v457
 		}
 		if v, ok := getResp["MinReadyInstances"]; ok && fmt.Sprint(v) != "0" {
-			mapping["min_ready_instances"] = formatInt(v)
+			v460, err460 := formatInt(v)
+			if err460 != nil {
+				return err460
+			}
+			mapping["min_ready_instances"] = v460
 		}
 		mapping["mount_host"] = getResp["MountHost"]
 		mapping["nas_id"] = getResp["NasId"]
@@ -488,12 +500,20 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		mapping["pre_stop"] = getResp["PreStop"]
 		mapping["readiness"] = getResp["Readiness"]
 		if v, ok := getResp["Replicas"]; ok && fmt.Sprint(v) != "0" {
-			mapping["replicas"] = formatInt(v)
+			v491, err491 := formatInt(v)
+			if err491 != nil {
+				return err491
+			}
+			mapping["replicas"] = v491
 		}
 		mapping["security_group_id"] = getResp["SecurityGroupId"]
 		mapping["sls_configs"] = getResp["SlsConfigs"]
 		if v, ok := getResp["TerminationGracePeriodSeconds"]; ok && fmt.Sprint(v) != "0" {
-			mapping["termination_grace_period_seconds"] = formatInt(v)
+			v496, err496 := formatInt(v)
+			if err496 != nil {
+				return err496
+			}
+			mapping["termination_grace_period_seconds"] = v496
 		}
 		mapping["timezone"] = getResp["Timezone"]
 		mapping["tomcat_config"] = getResp["TomcatConfig"]

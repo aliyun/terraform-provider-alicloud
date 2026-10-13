@@ -539,7 +539,11 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 		d.Set("storage_performance_level", convertRedisTairInstanceInstancesDBInstanceAttributeStorageTypeResponse(objectRaw["StorageType"]))
 	}
 	if objectRaw["Storage"] != nil {
-		d.Set("storage_size_gb", formatInt(objectRaw["Storage"]))
+		storage_size_gbVal, err530 := formatInt(objectRaw["Storage"])
+		if err530 != nil {
+			return err530
+		}
+		d.Set("storage_size_gb", storage_size_gbVal)
 	}
 	if objectRaw["InstanceName"] != nil {
 		d.Set("tair_instance_name", objectRaw["InstanceName"])

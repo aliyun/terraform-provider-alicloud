@@ -152,7 +152,11 @@ func dataSourceAlicloudAlbSecurityPoliciesRead(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alb_security_policies", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.SecurityPolicies", response)
-		if formatInt(response["Total"]) != 0 && err != nil {
+		v155, err155 := formatInt(response["Total"])
+		if err155 != nil {
+			return err155
+		}
+		if v155 != 0 && err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.SecurityPolicies", response)
 		}
 		result, _ := resp.([]interface{})

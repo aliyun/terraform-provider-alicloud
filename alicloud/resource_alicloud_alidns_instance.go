@@ -168,9 +168,17 @@ func resourceAlicloudAlidnsInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("payment_type", getQueryInstanceObject["SubscriptionType"])
 	d.Set("renewal_status", getQueryInstanceObject["RenewStatus"])
 	if fmt.Sprint(getQueryInstanceObject["RenewalDurationUnit"]) == "M" {
-		d.Set("renew_period", formatInt(getQueryInstanceObject["RenewalDuration"]))
+		renew_periodVal, err171 := formatInt(getQueryInstanceObject["RenewalDuration"])
+		if err171 != nil {
+			return err171
+		}
+		d.Set("renew_period", renew_periodVal)
 	} else {
-		d.Set("renew_period", formatInt(getQueryInstanceObject["RenewalDuration"])*12)
+		v173, err173 := formatInt(getQueryInstanceObject["RenewalDuration"])
+		if err173 != nil {
+			return err173
+		}
+		d.Set("renew_period", v173*12)
 	}
 
 	return nil

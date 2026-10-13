@@ -188,6 +188,15 @@ func dataSourceAlicloudVpcBgpGroupsRead(d *schema.ResourceData, meta interface{}
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		local_asnVal, err200 := formatInt(object["LocalAsn"])
+		if err200 != nil {
+			return err200
+		}
+		peer_asnVal, err201 := formatInt(object["PeerAsn"])
+		if err201 != nil {
+			return err201
+		}
 		mapping := map[string]interface{}{
 			"auth_key":       object["AuthKey"],
 			"id":             fmt.Sprint(object["BgpGroupId"]),
@@ -197,8 +206,8 @@ func dataSourceAlicloudVpcBgpGroupsRead(d *schema.ResourceData, meta interface{}
 			"ip_version":     object["IpVersion"],
 			"is_fake_asn":    object["IsFake"],
 			"keepalive":      object["Keepalive"],
-			"local_asn":      formatInt(object["LocalAsn"]),
-			"peer_asn":       formatInt(object["PeerAsn"]),
+			"local_asn":      local_asnVal,
+			"peer_asn":       peer_asnVal,
 			"route_limit":    object["RouteLimit"],
 			"router_id":      object["RouterId"],
 			"status":         object["Status"],

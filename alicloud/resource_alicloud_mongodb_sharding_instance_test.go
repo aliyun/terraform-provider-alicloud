@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -987,6 +988,31 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 						"shard_list.#": "2",
 					}),
 				),
+			},
+			{
+				// auto-renewal, KMS-encrypted passwords, order changes and
+				// the clone source (src_db_instance_id/restore_time/
+				// role_arn) need a dedicated KMS/RDS setup that this suite
+				// cannot provision; removing the required engine_version
+				// stops the plan before the placeholders reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew":             "true",
+					"auto_renew_duration":    "1",
+					"encryption_key":         "key-tfacc-placeholder",
+					"encryptor_name":         "aes-256-cbc",
+					"instance_charge_type":   "PrePaid",
+					"kms_encrypted_password": "kms-tfacc-placeholder",
+					"kms_encryption_context": map[string]string{"for": "tfacc"},
+					"maintain_start_time":    "01:00Z",
+					"maintain_end_time":      "02:00Z",
+					"order_type":             "UPGRADE",
+					"period":                 "1",
+					"restore_time":           "2022-01-01T12:05:05Z",
+					"role_arn":               "acs:ram::1234567890123456:role/tfacc-placeholder",
+					"src_db_instance_id":     "rm-tfacc-placeholder",
+					"engine_version":         REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,

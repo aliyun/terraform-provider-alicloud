@@ -176,7 +176,11 @@ func resourceAlicloudPvtzZoneRead(d *schema.ResourceData, meta interface{}) erro
 	}
 	d.Set("is_ptr", object["IsPtr"])
 	d.Set("proxy_pattern", object["ProxyPattern"])
-	d.Set("record_count", formatInt(object["RecordCount"]))
+	record_countVal, err179 := formatInt(object["RecordCount"])
+	if err179 != nil {
+		return err179
+	}
+	d.Set("record_count", record_countVal)
 	d.Set("remark", object["Remark"])
 	d.Set("zone_name", object["ZoneName"])
 	d.Set("name", object["ZoneName"])

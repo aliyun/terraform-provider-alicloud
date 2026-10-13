@@ -140,12 +140,20 @@ func resourceAliCloudCloudStorageGatewayGatewayCacheDiskRead(d *schema.ResourceD
 	}
 
 	d.Set("gateway_id", parts[0])
-	d.Set("cache_disk_size_in_gb", formatInt(object["SizeInGB"]))
+	cache_disk_size_in_gbVal, err143 := formatInt(object["SizeInGB"])
+	if err143 != nil {
+		return err143
+	}
+	d.Set("cache_disk_size_in_gb", cache_disk_size_in_gbVal)
 	d.Set("cache_disk_category", object["CacheType"])
 	d.Set("performance_level", object["PerformanceLevel"])
 	d.Set("cache_id", object["CacheId"])
 	d.Set("local_file_path", object["LocalFilePath"])
-	d.Set("status", formatInt(object["ExpireStatus"]))
+	statusVal, err148 := formatInt(object["ExpireStatus"])
+	if err148 != nil {
+		return err148
+	}
+	d.Set("status", statusVal)
 
 	return nil
 }

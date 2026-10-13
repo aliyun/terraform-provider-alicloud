@@ -149,8 +149,14 @@ func dataSourceAlicloudActiontrailHistoryDeliveryJobsRead(d *schema.ResourceData
 					continue
 				}
 			}
-			if statusOk && status.(int) != formatInt(item["JobStatus"]) {
-				continue
+			if statusOk {
+				jobStatusVal, jobStatusErr := formatInt(item["JobStatus"])
+				if jobStatusErr != nil {
+					return jobStatusErr
+				}
+				if status.(int) != jobStatusVal {
+					continue
+				}
 			}
 			objects = append(objects, item)
 		}
@@ -162,6 +168,11 @@ func dataSourceAlicloudActiontrailHistoryDeliveryJobsRead(d *schema.ResourceData
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		statusVal, err172 := formatInt(object["JobStatus"])
+		if err172 != nil {
+			return err172
+		}
 		mapping := map[string]interface{}{
 			"create_time":             object["CreatedTime"],
 			"end_time":                object["EndTime"],
@@ -169,7 +180,7 @@ func dataSourceAlicloudActiontrailHistoryDeliveryJobsRead(d *schema.ResourceData
 			"history_delivery_job_id": fmt.Sprint(object["JobId"]),
 			"home_region":             object["HomeRegion"],
 			"start_time":              object["StartTime"],
-			"status":                  formatInt(object["JobStatus"]),
+			"status":                  statusVal,
 			"trail_name":              object["TrailName"],
 			"updated_time":            object["UpdatedTime"],
 		}
@@ -189,9 +200,14 @@ func dataSourceAlicloudActiontrailHistoryDeliveryJobsRead(d *schema.ResourceData
 			jobStatusListArg, _ := jobStatusList.([]interface{})
 			for _, v := range jobStatusListArg {
 				if m1, ok := v.(map[string]interface{}); ok {
+
+					statusVal2, err194 := formatInt(m1["Status"])
+					if err194 != nil {
+						return err194
+					}
 					temp1 := map[string]interface{}{
 						"region": m1["Region"],
-						"status": formatInt(m1["Status"]),
+						"status": statusVal2,
 					}
 					jobStatus = append(jobStatus, temp1)
 				}

@@ -60,7 +60,11 @@ func testSweepAlbRule(region string) error {
 
 		resp, err := jsonpath.Get("$.Rules", response)
 
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v63, err63 := formatInt(response["TotalCount"])
+		if err63 != nil {
+			return err63
+		}
+		if v63 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Rules", action, err)
 			return nil
 		}
@@ -175,6 +179,26 @@ func TestAccAliCloudALBRule_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"rule_name": name + "Update",
+					"rule_actions": []map[string]interface{}{
+						{
+							"traffic_mirror_config": []map[string]interface{}{
+								{
+									"target_type": "ForwardGroupMirror",
+									"mirror_group_config": []map[string]interface{}{
+										{
+											"server_group_tuples": []map[string]interface{}{
+												{
+													"server_group_id": "${alicloud_alb_server_group.default.id}",
+												},
+											},
+										},
+									},
+								},
+							},
+							"order": "9",
+							"type":  "TrafficMirror",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

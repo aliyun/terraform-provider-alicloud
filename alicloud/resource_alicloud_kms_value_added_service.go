@@ -246,7 +246,11 @@ func resourceAliCloudKmsValueAddedServiceRead(d *schema.ResourceData, meta inter
 	// RenewalDuration is omitted unless the instance is automatically renewed, and formatInt panics on
 	// the missing value, so keep whatever the state already holds.
 	if v, ok := objectRaw["RenewalDuration"]; ok && v != nil {
-		d.Set("renew_period", formatInt(convertKmsValueAddedServiceDataInstanceListRenewalDurationResponse(v)))
+		renew_periodVal, err249 := formatInt(convertKmsValueAddedServiceDataInstanceListRenewalDurationResponse(v))
+		if err249 != nil {
+			return err249
+		}
+		d.Set("renew_period", renew_periodVal)
 	}
 	d.Set("renew_status", objectRaw["RenewStatus"])
 	d.Set("status", objectRaw["Status"])

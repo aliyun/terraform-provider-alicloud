@@ -354,12 +354,22 @@ func dataSourceAlicloudCmsHybridMonitorSlsTasksRead(d *schema.ResourceData, meta
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		collect_intervalVal, err358 := formatInt(object["CollectInterval"])
+		if err358 != nil {
+			return err358
+		}
+
+		collect_timoutVal, err362 := formatInt(object["CollectTimout"])
+		if err362 != nil {
+			return err362
+		}
 		mapping := map[string]interface{}{
-			"collect_interval":           formatInt(object["CollectInterval"]),
+			"collect_interval":           collect_intervalVal,
 			"collect_target_endpoint":    object["CollectTargetEndpoint"],
 			"collect_target_path":        object["CollectTargetPath"],
 			"collect_target_type":        object["CollectTargetType"],
-			"collect_timout":             formatInt(object["CollectTimout"]),
+			"collect_timout":             collect_timoutVal,
 			"create_time":                object["CreateTime"],
 			"description":                object["Description"],
 			"extra_info":                 object["ExtraInfo"],

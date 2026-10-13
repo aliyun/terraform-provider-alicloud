@@ -536,6 +536,29 @@ func dataSourceAliCloudEcsDisksRead(d *schema.ResourceData, meta interface{}) er
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		iopsVal, err556 := formatInt(object["IOPS"])
+		if err556 != nil {
+			return err556
+		}
+		iops_readVal, err557 := formatInt(object["IOPSRead"])
+		if err557 != nil {
+			return err557
+		}
+		iops_writeVal, err558 := formatInt(object["IOPSWrite"])
+		if err558 != nil {
+			return err558
+		}
+
+		mount_instance_numVal, err562 := formatInt(object["MountInstanceNum"])
+		if err562 != nil {
+			return err562
+		}
+
+		sizeVal, err568 := formatInt(object["Size"])
+		if err568 != nil {
+			return err568
+		}
 		mapping := map[string]interface{}{
 			"attached_time":                    object["AttachedTime"],
 			"auto_snapshot_policy_id":          object["AutoSnapshotPolicyId"],
@@ -553,19 +576,19 @@ func dataSourceAliCloudEcsDisksRead(d *schema.ResourceData, meta interface{}) er
 			"encrypted":                        string(OnFlag),
 			"expired_time":                     object["ExpiredTime"],
 			"expiration_time":                  object["ExpiredTime"],
-			"iops":                             formatInt(object["IOPS"]),
-			"iops_read":                        formatInt(object["IOPSRead"]),
-			"iops_write":                       formatInt(object["IOPSWrite"]),
+			"iops":                             iopsVal,
+			"iops_read":                        iops_readVal,
+			"iops_write":                       iops_writeVal,
 			"image_id":                         object["ImageId"],
 			"instance_id":                      object["InstanceId"],
 			"kms_key_id":                       object["KMSKeyId"],
-			"mount_instance_num":               formatInt(object["MountInstanceNum"]),
+			"mount_instance_num":               mount_instance_numVal,
 			"payment_type":                     convertEcsDiskPaymentTypeResponse(object["DiskChargeType"].(string)),
 			"performance_level":                object["PerformanceLevel"],
 			"portable":                         object["Portable"],
 			"product_code":                     object["ProductCode"],
 			"resource_group_id":                object["ResourceGroupId"],
-			"size":                             formatInt(object["Size"]),
+			"size":                             sizeVal,
 			"snapshot_id":                      object["SourceSnapshotId"],
 			"status":                           object["Status"],
 			"zone_id":                          object["ZoneId"],
@@ -640,7 +663,11 @@ func dataSourceAliCloudEcsDisksRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err643 := formatInt(response["TotalCount"])
+	if err643 != nil {
+		return err643
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

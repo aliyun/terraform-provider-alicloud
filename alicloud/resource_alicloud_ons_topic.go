@@ -137,7 +137,11 @@ func resourceAlicloudOnsTopicRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("instance_id", parts[0])
 	d.Set("topic_name", parts[1])
 	d.Set("topic", parts[1])
-	d.Set("message_type", formatInt(object["MessageType"]))
+	message_typeVal, err140 := formatInt(object["MessageType"])
+	if err140 != nil {
+		return err140
+	}
+	d.Set("message_type", message_typeVal)
 	d.Set("remark", object["Remark"])
 	d.Set("tags", tagsToMap(object["Tags"].(map[string]interface{})["Tag"]))
 
@@ -145,7 +149,11 @@ func resourceAlicloudOnsTopicRead(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("perm", formatInt(onsTopicStatusObject["Perm"]))
+	permVal, err148 := formatInt(onsTopicStatusObject["Perm"])
+	if err148 != nil {
+		return err148
+	}
+	d.Set("perm", permVal)
 	return nil
 }
 func resourceAlicloudOnsTopicUpdate(d *schema.ResourceData, meta interface{}) error {

@@ -93,7 +93,11 @@ func resourceAlicloudDirectMailReceiversRead(d *schema.ResourceData, meta interf
 	d.Set("description", object["Desc"])
 	d.Set("receivers_alias", object["ReceiversAlias"])
 	d.Set("receivers_name", object["ReceiversName"])
-	d.Set("status", formatInt(object["ReceiversStatus"]))
+	statusVal, err96 := formatInt(object["ReceiversStatus"])
+	if err96 != nil {
+		return err96
+	}
+	d.Set("status", statusVal)
 	return nil
 }
 func resourceAlicloudDirectMailReceiversDelete(d *schema.ResourceData, meta interface{}) error {

@@ -561,7 +561,11 @@ func dataSourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta 
 		}
 		if len(vcoHealthCheckRaw) > 0 {
 			healthCheckConfigMap["dip"] = vcoHealthCheckRaw["Dip"]
-			healthCheckConfigMap["enable"] = formatBool(vcoHealthCheckRaw["Enable"])
+			v564, err564 := formatBool(vcoHealthCheckRaw["Enable"])
+			if err564 != nil {
+				return err564
+			}
+			healthCheckConfigMap["enable"] = v564
 			healthCheckConfigMap["interval"] = vcoHealthCheckRaw["Interval"]
 			healthCheckConfigMap["policy"] = vcoHealthCheckRaw["Policy"]
 			healthCheckConfigMap["retry"] = vcoHealthCheckRaw["Retry"]
@@ -615,8 +619,16 @@ func dataSourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta 
 				tunnelOptionsSpecificationMap := make(map[string]interface{})
 				tunnelOptionsChildRaw := tunnelOptionsChildRaw.(map[string]interface{})
 				tunnelOptionsSpecificationMap["customer_gateway_id"] = tunnelOptionsChildRaw["CustomerGatewayId"]
-				tunnelOptionsSpecificationMap["enable_dpd"] = formatBool(tunnelOptionsChildRaw["EnableDpd"])
-				tunnelOptionsSpecificationMap["enable_nat_traversal"] = formatBool(tunnelOptionsChildRaw["EnableNatTraversal"])
+				v618, err618 := formatBool(tunnelOptionsChildRaw["EnableDpd"])
+				if err618 != nil {
+					return err618
+				}
+				tunnelOptionsSpecificationMap["enable_dpd"] = v618
+				v619, err619 := formatBool(tunnelOptionsChildRaw["EnableNatTraversal"])
+				if err619 != nil {
+					return err619
+				}
+				tunnelOptionsSpecificationMap["enable_nat_traversal"] = v619
 				tunnelOptionsSpecificationMap["internet_ip"] = tunnelOptionsChildRaw["InternetIp"]
 				tunnelOptionsSpecificationMap["role"] = tunnelOptionsChildRaw["Role"]
 				tunnelOptionsSpecificationMap["state"] = tunnelOptionsChildRaw["State"]
@@ -634,7 +646,11 @@ func dataSourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta 
 				}
 				if len(tunnelBgpConfigRaw) > 0 {
 					tunnelBgpConfigMap["bgp_status"] = tunnelBgpConfigRaw["BgpStatus"]
-					tunnelBgpConfigMap["local_asn"] = formatInt(tunnelBgpConfigRaw["LocalAsn"])
+					v637, err637 := formatInt(tunnelBgpConfigRaw["LocalAsn"])
+					if err637 != nil {
+						return err637
+					}
+					tunnelBgpConfigMap["local_asn"] = v637
 					tunnelBgpConfigMap["local_bgp_ip"] = tunnelBgpConfigRaw["LocalBgpIp"]
 					tunnelBgpConfigMap["peer_asn"] = tunnelBgpConfigRaw["PeerAsn"]
 					tunnelBgpConfigMap["peer_bgp_ip"] = tunnelBgpConfigRaw["PeerBgpIp"]
@@ -653,7 +669,11 @@ func dataSourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta 
 				if len(tunnelIkeConfigRaw) > 0 {
 					tunnelIkeConfigMap["ike_auth_alg"] = tunnelIkeConfigRaw["IkeAuthAlg"]
 					tunnelIkeConfigMap["ike_enc_alg"] = tunnelIkeConfigRaw["IkeEncAlg"]
-					tunnelIkeConfigMap["ike_lifetime"] = formatInt(tunnelIkeConfigRaw["IkeLifetime"])
+					v656, err656 := formatInt(tunnelIkeConfigRaw["IkeLifetime"])
+					if err656 != nil {
+						return err656
+					}
+					tunnelIkeConfigMap["ike_lifetime"] = v656
 					tunnelIkeConfigMap["ike_mode"] = tunnelIkeConfigRaw["IkeMode"]
 					tunnelIkeConfigMap["ike_pfs"] = tunnelIkeConfigRaw["IkePfs"]
 					tunnelIkeConfigMap["ike_version"] = tunnelIkeConfigRaw["IkeVersion"]
@@ -674,7 +694,11 @@ func dataSourceAliCloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta 
 				if len(tunnelIpsecConfigRaw) > 0 {
 					tunnelIpsecConfigMap["ipsec_auth_alg"] = tunnelIpsecConfigRaw["IpsecAuthAlg"]
 					tunnelIpsecConfigMap["ipsec_enc_alg"] = tunnelIpsecConfigRaw["IpsecEncAlg"]
-					tunnelIpsecConfigMap["ipsec_lifetime"] = formatInt(tunnelIpsecConfigRaw["IpsecLifetime"])
+					v677, err677 := formatInt(tunnelIpsecConfigRaw["IpsecLifetime"])
+					if err677 != nil {
+						return err677
+					}
+					tunnelIpsecConfigMap["ipsec_lifetime"] = v677
 					tunnelIpsecConfigMap["ipsec_pfs"] = tunnelIpsecConfigRaw["IpsecPfs"]
 
 					tunnelIpsecConfigMaps = append(tunnelIpsecConfigMaps, tunnelIpsecConfigMap)

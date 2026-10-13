@@ -59,7 +59,11 @@ func testSweepAlbSecurityPolicy(region string) error {
 		}
 
 		resp, err := jsonpath.Get("$.SecurityPolicies", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v62, err62 := formatInt(response["TotalCount"])
+		if err62 != nil {
+			return err62
+		}
+		if v62 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.SecurityPolicies", action, err)
 			return nil
 		}
@@ -139,6 +143,7 @@ func TestAccAliCloudALBSecurityPolicy_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"security_policy_name": "tf-testAcc-test-secrity-new",
 				}),
 				Check: resource.ComposeTestCheckFunc(

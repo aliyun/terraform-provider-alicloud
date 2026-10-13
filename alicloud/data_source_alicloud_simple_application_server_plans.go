@@ -150,24 +150,54 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 			}
 		}
 
-		if bandwidthOk && bandwidth.(int) != 0 && bandwidth.(int) != formatInt(item["Bandwidth"]) {
-			continue
+		if bandwidthOk && bandwidth.(int) != 0 {
+			bandwidthVal, bandwidthErr := formatInt(item["Bandwidth"])
+			if bandwidthErr != nil {
+				return bandwidthErr
+			}
+			if bandwidth.(int) != bandwidthVal {
+				continue
+			}
 		}
 
-		if coreOk && core.(int) != 0 && core.(int) != formatInt(item["Core"]) {
-			continue
+		if coreOk && core.(int) != 0 {
+			coreVal, coreErr := formatInt(item["Core"])
+			if coreErr != nil {
+				return coreErr
+			}
+			if core.(int) != coreVal {
+				continue
+			}
 		}
 
-		if diskSizeOk && diskSize.(int) != 0 && diskSize.(int) != formatInt(item["DiskSize"]) {
-			continue
+		if diskSizeOk && diskSize.(int) != 0 {
+			diskSizeVal, diskSizeErr := formatInt(item["DiskSize"])
+			if diskSizeErr != nil {
+				return diskSizeErr
+			}
+			if diskSize.(int) != diskSizeVal {
+				continue
+			}
 		}
 
-		if memoryOk && memory.(float64) != 0 && memory.(float64) != formatFloat64(item["Memory"]) {
-			continue
+		if memoryOk && memory.(float64) != 0 {
+			memoryVal, memoryErr := formatFloat64(item["Memory"])
+			if memoryErr != nil {
+				return memoryErr
+			}
+			if memory.(float64) != memoryVal {
+				continue
+			}
 		}
 
-		if flowOk && flow.(int) != 0 && flow.(int) != formatInt(item["Flow"]) {
-			continue
+		if flowOk && flow.(int) != 0 {
+			flowVal, flowErr := formatInt(item["Flow"])
+			if flowErr != nil {
+				return flowErr
+			}
+			if flow.(int) != flowVal {
+				continue
+			}
 		}
 
 		if v, ok := d.GetOk("platform"); ok && v.(string) != "" && !strings.Contains(fmt.Sprint(item["SupportPlatform"]), v.(string)) {
@@ -179,14 +209,36 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		bandwidthVal, err183 := formatInt(object["Bandwidth"])
+		if err183 != nil {
+			return err183
+		}
+		coreVal, err184 := formatInt(object["Core"])
+		if err184 != nil {
+			return err184
+		}
+		disk_sizeVal, err185 := formatInt(object["DiskSize"])
+		if err185 != nil {
+			return err185
+		}
+		flowVal, err186 := formatInt(object["Flow"])
+		if err186 != nil {
+			return err186
+		}
+
+		memoryVal, err189 := formatFloat64(object["Memory"])
+		if err189 != nil {
+			return err189
+		}
 		mapping := map[string]interface{}{
-			"bandwidth":        formatInt(object["Bandwidth"]),
-			"core":             formatInt(object["Core"]),
-			"disk_size":        formatInt(object["DiskSize"]),
-			"flow":             formatInt(object["Flow"]),
+			"bandwidth":        bandwidthVal,
+			"core":             coreVal,
+			"disk_size":        disk_sizeVal,
+			"flow":             flowVal,
 			"id":               fmt.Sprint(object["PlanId"]),
 			"plan_id":          fmt.Sprint(object["PlanId"]),
-			"memory":           formatFloat64(object["Memory"]),
+			"memory":           memoryVal,
 			"support_platform": fmt.Sprint(object["SupportPlatform"]),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))

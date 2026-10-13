@@ -205,9 +205,17 @@ func resourceAlicloudMseGatewayRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("backup_vswitch_id", object["Vswitch2"])
 	d.Set("gateway_name", object["Name"])
-	d.Set("replica", formatInt(object["Replica"]))
+	replicaVal, err208 := formatInt(object["Replica"])
+	if err208 != nil {
+		return err208
+	}
+	d.Set("replica", replicaVal)
 	d.Set("spec", object["Spec"])
-	d.Set("status", fmt.Sprint(formatInt(object["Status"])))
+	v210, err210 := formatInt(object["Status"])
+	if err210 != nil {
+		return err210
+	}
+	d.Set("status", fmt.Sprint(v210))
 	d.Set("vswitch_id", object["Vswitch"])
 	d.Set("vpc_id", object["Vpc"])
 	d.Set("resource_group_id", object["ResourceGroupId"])

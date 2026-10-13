@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -253,6 +254,49 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 						"subscription_instance_network_type": "vpc",
 					}),
 				),
+			},
+			{
+				// Cross-account owner/role, Oracle SID, the incremental
+				// checkpoint and the phone/Reserve placeholders cannot be
+				// provisioned in a single-account test environment, and the
+				// remaining endpoint parameters are only exercised as
+				// placeholder coverage here. Removing the required
+				// source_endpoint_region stops the plan before any of these
+				// values reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"checkpoint":                       "",
+					"compute_unit":                     "1",
+					"database_count":                   "1",
+					"db_list":                          "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
+					"delay_notice":                     "true",
+					"delay_phone":                      "",
+					"delay_rule_time":                  "10",
+					"destination_endpoint_engine_name": "MySQL",
+					"destination_region":               "cn-hangzhou",
+					"dts_instance_id":                  "dts-tfacc-placeholder",
+					"error_notice":                     "true",
+					"error_phone":                      "",
+					"instance_class":                   "large",
+					"reserve":                          "",
+					"source_endpoint_database_name":    "tfacc_db",
+					"source_endpoint_engine_name":      "Oracle",
+					"source_endpoint_instance_id":      "rm-tfacc-placeholder",
+					"source_endpoint_instance_type":    "ECS",
+					"source_endpoint_ip":               "172.16.0.1",
+					"source_endpoint_oracle_sid":       "orcl",
+					"source_endpoint_owner_id":         "",
+					"source_endpoint_port":             "3306",
+					"source_endpoint_region":           REMOVEKEY,
+					"source_endpoint_role":             "AliyunDTSDefaultRole",
+					"source_endpoint_user_name":        "tftestprivilege",
+					"subscription_data_type_ddl":       "true",
+					"subscription_data_type_dml":       "true",
+					"subscription_instance_vpc_id":     "vpc-tfacc-placeholder",
+					"subscription_instance_vswitch_id": "vsw-tfacc-placeholder",
+					"sync_architecture":                "oneway",
+					"synchronization_direction":        "Forward",
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:      resourceId,

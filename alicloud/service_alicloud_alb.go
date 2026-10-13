@@ -43,7 +43,11 @@ func (s *AlbService) ListAclEntries(id string) (objects []map[string]interface{}
 			return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.AclEntries", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v46, err46 := formatInt(response["TotalCount"])
+		if err46 != nil {
+			return nil, err46
+		}
+		if v46 != 0 && err != nil {
 			return objects, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntries", response)
 		}
 		result, _ := resp.([]interface{})
@@ -269,7 +273,11 @@ func (s *AlbService) DescribeAlbSecurityPolicy(id string) (object map[string]int
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.SecurityPolicies", response)
-		if formatInt(response["TotalCount"]) == 0 {
+		v272, err272 := formatInt(response["TotalCount"])
+		if err272 != nil {
+			return nil, err272
+		}
+		if v272 == 0 {
 			return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 		}
 		if err != nil {
@@ -320,7 +328,11 @@ func (s *AlbService) ListSystemSecurityPolicies(id string) (object map[string]in
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.SecurityPolicies", response)
-	if formatInt(response["TotalCount"]) == 0 {
+	v323, err323 := formatInt(response["TotalCount"])
+	if err323 != nil {
+		return nil, err323
+	}
+	if v323 == 0 {
 		return object, WrapErrorf(NotFoundErr("ALB", id), NotFoundWithResponse, response)
 	}
 	if err != nil {
@@ -391,7 +403,11 @@ func (s *AlbService) ListServerGroupServers(id string) (object []interface{}, er
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 
-		if formatInt(response["TotalCount"]) == 0 {
+		v394, err394 := formatInt(response["TotalCount"])
+		if err394 != nil {
+			return nil, err394
+		}
+		if v394 == 0 {
 			return object, nil
 		}
 
@@ -721,7 +737,11 @@ func (s *AlbService) DescribeAlbRule(id, direction string) (object map[string]in
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.Rules", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v724, err724 := formatInt(response["TotalCount"])
+		if err724 != nil {
+			return nil, err724
+		}
+		if v724 != 0 && err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rules", response)
 		}
 		if val, ok := v.([]interface{}); !ok || len(val) < 1 {
@@ -840,7 +860,11 @@ func (s *AlbService) DescribeAlbListenerAdditionalCertificateAttachment(id strin
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.Certificates", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v843, err843 := formatInt(response["TotalCount"])
+		if err843 != nil {
+			return nil, err843
+		}
+		if v843 != 0 && err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Certificates", response)
 		}
 		if val, ok := v.([]interface{}); !ok || len(val) < 1 {
@@ -985,7 +1009,11 @@ func (s *AlbService) DescribeAlbAclEntryAttachment(id string) (object map[string
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.AclEntries", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v988, err988 := formatInt(response["TotalCount"])
+		if err988 != nil {
+			return nil, err988
+		}
+		if v988 != 0 && err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntries", response)
 		}
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {

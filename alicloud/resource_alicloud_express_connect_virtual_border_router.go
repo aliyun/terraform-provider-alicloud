@@ -233,21 +233,37 @@ func resourceAliCloudExpressConnectVirtualBorderRouterRead(d *schema.ResourceDat
 		return WrapError(err)
 	}
 
-	d.Set("bandwidth", formatInt(objectRaw["Bandwidth"]))
+	bandwidthVal, err236 := formatInt(objectRaw["Bandwidth"])
+	if err236 != nil {
+		return err236
+	}
+	d.Set("bandwidth", bandwidthVal)
 	d.Set("circuit_code", objectRaw["CircuitCode"])
 	d.Set("create_time", objectRaw["CreationTime"])
 	d.Set("description", objectRaw["Description"])
 	if v, ok := objectRaw["DetectMultiplier"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("detect_multiplier", formatInt(v))
+		detect_multiplierVal, err241 := formatInt(v)
+		if err241 != nil {
+			return err241
+		}
+		d.Set("detect_multiplier", detect_multiplierVal)
 	}
 	d.Set("enable_ipv6", objectRaw["EnableIpv6"])
 	d.Set("local_gateway_ip", objectRaw["LocalGatewayIp"])
 	d.Set("local_ipv6_gateway_ip", objectRaw["LocalIpv6GatewayIp"])
 	if v, ok := objectRaw["MinRxInterval"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("min_rx_interval", formatInt(v))
+		min_rx_intervalVal, err247 := formatInt(v)
+		if err247 != nil {
+			return err247
+		}
+		d.Set("min_rx_interval", min_rx_intervalVal)
 	}
 	if v, ok := objectRaw["MinTxInterval"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("min_tx_interval", formatInt(v))
+		min_tx_intervalVal, err250 := formatInt(v)
+		if err250 != nil {
+			return err250
+		}
+		d.Set("min_tx_interval", min_tx_intervalVal)
 	}
 	d.Set("mtu", objectRaw["Mtu"])
 	d.Set("peer_gateway_ip", objectRaw["PeerGatewayIp"])
@@ -260,7 +276,11 @@ func resourceAliCloudExpressConnectVirtualBorderRouterRead(d *schema.ResourceDat
 	d.Set("sitelink_enable", objectRaw["SitelinkEnable"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("virtual_border_router_name", objectRaw["Name"])
-	d.Set("vlan_id", formatInt(objectRaw["VlanId"]))
+	vlan_idVal, err263 := formatInt(objectRaw["VlanId"])
+	if err263 != nil {
+		return err263
+	}
+	d.Set("vlan_id", vlan_idVal)
 
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tags", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))

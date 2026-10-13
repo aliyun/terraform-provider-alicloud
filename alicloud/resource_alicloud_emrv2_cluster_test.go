@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -110,9 +111,9 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -553,9 +554,9 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -701,6 +702,10 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 							"node_group_name":    "emr-master",
 						},
 					},
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "tfacc-update",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -738,7 +743,7 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 							"script_path":             "oss://emr/tf-test/ts01.sh",
 							"script_args":             "--b=a",
 							"execution_moment":        "AFTER_STARTED",
-							"execution_fail_strategy": "FAILED_CONTINUE",
+							"execution_fail_strategy": "FAILED_BLOCKED",
 							"node_selector": []map[string]interface{}{
 								{
 									"node_select_type": "NODE_GROUP",
@@ -755,6 +760,8 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 							"node_selector": []map[string]interface{}{
 								{
 									"node_select_type": "NODE_GROUP",
+									"node_group_ids":   []string{"ng-tfacc-placeholder"},
+									"node_names":       []string{"emr-core"},
 									"node_group_names": []string{"emr-core"},
 									"node_group_name":  "emr-core",
 								},
@@ -1214,6 +1221,49 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 				),
 			},
 			{
+				// KERBEROS security mode, deployment-set placement and the
+				// security-group/node-group wiring of node_groups cannot be
+				// exercised against a live ACK-backed cluster here; removing
+				// the required cluster_name stops the plan before the
+				// placeholders reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "rg-tfacc-placeholder",
+					"security_mode":     "KERBEROS",
+					"application_configs": []map[string]interface{}{
+						{
+							"node_group_id":     "ng-tfacc-placeholder",
+							"application_name":  "HDFS",
+							"config_file_name":  "hdfs-site.xml",
+							"config_item_key":   "dfs.client.block.write.retries",
+							"config_item_value": "3",
+							"config_scope":      "NODE_GROUP",
+						},
+					},
+					"node_groups": []map[string]interface{}{
+						{
+							"node_group_type":               "TASK",
+							"node_group_name":               "emr-task-tfacc",
+							"node_count":                    "1",
+							"vswitch_ids":                   []string{"vsw-tfacc-placeholder"},
+							"instance_types":                []string{"ecs.g8i.large"},
+							"with_public_ip":                "true",
+							"additional_security_group_ids": []string{"sg-tfacc-placeholder"},
+							"deployment_set_strategy":       "NODE_GROUP",
+							"graceful_shutdown":             "true",
+							"spot_instance_remedy":          "true",
+							"system_disk": []map[string]interface{}{
+								{"category": "cloud_ssd", "size": "120", "performance_level": "PL1", "count": "2"},
+							},
+							"data_disks": []map[string]interface{}{
+								{"category": "cloud_ssd", "size": "120", "performance_level": "PL1", "count": "1"},
+							},
+						},
+					},
+					"cluster_name": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -1241,9 +1291,9 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1746,9 +1796,9 @@ func TestAccAliCloudEmrV2Cluster_basic3(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

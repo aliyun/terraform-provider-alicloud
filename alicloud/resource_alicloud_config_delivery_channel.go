@@ -130,7 +130,11 @@ func resourceAlicloudConfigDeliveryChannelRead(d *schema.ResourceData, meta inte
 	d.Set("delivery_channel_target_arn", object["DeliveryChannelTargetArn"])
 	d.Set("delivery_channel_type", object["DeliveryChannelType"])
 	d.Set("description", object["Description"])
-	d.Set("status", formatInt(object["Status"]))
+	statusVal, err133 := formatInt(object["Status"])
+	if err133 != nil {
+		return err133
+	}
+	d.Set("status", statusVal)
 	return nil
 }
 func resourceAlicloudConfigDeliveryChannelUpdate(d *schema.ResourceData, meta interface{}) error {

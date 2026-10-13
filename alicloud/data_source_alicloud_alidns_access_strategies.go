@@ -328,10 +328,20 @@ func dataSourceAlicloudAlidnsAccessStrategiesRead(d *schema.ResourceData, meta i
 				defaultAddrPoolList := v.([]interface{})
 				for _, v := range defaultAddrPoolList {
 					if m1, ok := v.(map[string]interface{}); ok {
+
+						addr_countVal, err332 := formatInt(m1["AddrCount"])
+						if err332 != nil {
+							return err332
+						}
+
+						lba_weightVal, err334 := formatInt(m1["LbaWeight"])
+						if err334 != nil {
+							return err334
+						}
 						temp1 := map[string]interface{}{
-							"addr_count":   formatInt(m1["AddrCount"]),
+							"addr_count":   addr_countVal,
 							"addr_pool_id": m1["Id"],
-							"lba_weight":   formatInt(m1["LbaWeight"]),
+							"lba_weight":   lba_weightVal,
 							"name":         m1["Name"],
 						}
 						defaultAddrPool = append(defaultAddrPool, temp1)
@@ -342,15 +352,27 @@ func dataSourceAlicloudAlidnsAccessStrategiesRead(d *schema.ResourceData, meta i
 
 		mapping["default_addr_pools"] = defaultAddrPool
 		if v, ok := getResp["DefaultAvailableAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["default_available_addr_num"] = formatInt(v)
+			v345, err345 := formatInt(v)
+			if err345 != nil {
+				return err345
+			}
+			mapping["default_available_addr_num"] = v345
 		}
 		mapping["default_latency_optimization"] = getResp["DefaultLatencyOptimization"]
 		mapping["default_lba_strategy"] = getResp["DefaultLbaStrategy"]
 		if v, ok := getResp["DefaultMaxReturnAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["default_max_return_addr_num"] = formatInt(v)
+			v350, err350 := formatInt(v)
+			if err350 != nil {
+				return err350
+			}
+			mapping["default_max_return_addr_num"] = v350
 		}
 		if v, ok := getResp["DefaultMinAvailableAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["default_min_available_addr_num"] = formatInt(v)
+			v353, err353 := formatInt(v)
+			if err353 != nil {
+				return err353
+			}
+			mapping["default_min_available_addr_num"] = v353
 		}
 		mapping["failover_addr_pool_type"] = getResp["FailoverAddrPoolType"]
 		mapping["access_mode"] = getResp["AccessMode"]
@@ -362,10 +384,20 @@ func dataSourceAlicloudAlidnsAccessStrategiesRead(d *schema.ResourceData, meta i
 				failoverAddrPoolList := v.([]interface{})
 				for _, v := range failoverAddrPoolList {
 					if m1, ok := v.(map[string]interface{}); ok {
+
+						addr_countVal2, err366 := formatInt(m1["AddrCount"])
+						if err366 != nil {
+							return err366
+						}
+
+						lba_weightVal2, err368 := formatInt(m1["LbaWeight"])
+						if err368 != nil {
+							return err368
+						}
 						temp1 := map[string]interface{}{
-							"addr_count":   formatInt(m1["AddrCount"]),
+							"addr_count":   addr_countVal2,
 							"addr_pool_id": m1["Id"],
-							"lba_weight":   formatInt(m1["LbaWeight"]),
+							"lba_weight":   lba_weightVal2,
 							"name":         m1["Name"],
 						}
 						failoverAddrPool = append(failoverAddrPool, temp1)
@@ -375,15 +407,27 @@ func dataSourceAlicloudAlidnsAccessStrategiesRead(d *schema.ResourceData, meta i
 		}
 		mapping["failover_addr_pools"] = failoverAddrPool
 		if v, ok := getResp["FailoverAvailableAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["failover_available_addr_num"] = formatInt(v)
+			v378, err378 := formatInt(v)
+			if err378 != nil {
+				return err378
+			}
+			mapping["failover_available_addr_num"] = v378
 		}
 		mapping["failover_latency_optimization"] = getResp["FailoverLatencyOptimization"]
 		mapping["failover_lba_strategy"] = getResp["FailoverLbaStrategy"]
 		if v, ok := getResp["FailoverMaxReturnAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["failover_max_return_addr_num"] = formatInt(v)
+			v383, err383 := formatInt(v)
+			if err383 != nil {
+				return err383
+			}
+			mapping["failover_max_return_addr_num"] = v383
 		}
 		if v, ok := getResp["FailoverMinAvailableAddrNum"]; ok && fmt.Sprint(v) != "0" {
-			mapping["failover_min_available_addr_num"] = formatInt(v)
+			v386, err386 := formatInt(v)
+			if err386 != nil {
+				return err386
+			}
+			mapping["failover_min_available_addr_num"] = v386
 		}
 		mapping["instance_id"] = getResp["InstanceId"]
 

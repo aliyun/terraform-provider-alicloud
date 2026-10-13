@@ -92,7 +92,7 @@ func testSweepOnsInstance(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOnsInstance_basic(t *testing.T) {
+func TestAccAliCloudOnsInstance_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ons_instance.default"
 	ra := resourceAttrInit(resourceId, OnsInstanceMap)
@@ -109,9 +109,9 @@ func TestAccAlicloudOnsInstance_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

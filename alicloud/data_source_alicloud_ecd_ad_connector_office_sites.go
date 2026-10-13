@@ -294,9 +294,14 @@ func dataSourceAlicloudEcdAdConnectorOfficeSitesRead(d *schema.ResourceData, met
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		bandwidthVal, err299 := formatInt(object["Bandwidth"])
+		if err299 != nil {
+			return err299
+		}
 		mapping := map[string]interface{}{
 			"ad_connector_office_site_name": object["Name"],
-			"bandwidth":                     formatInt(object["Bandwidth"]),
+			"bandwidth":                     bandwidthVal,
 			"cen_id":                        object["CenId"],
 			"cidr_block":                    object["CidrBlock"],
 			"create_time":                   object["CreationTime"],

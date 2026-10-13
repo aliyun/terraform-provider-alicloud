@@ -250,7 +250,11 @@ func resourceAlicloudExpressConnectVirtualPhysicalConnectionRead(d *schema.Resou
 	d.Set("status", object["Status"])
 	d.Set("virtual_physical_connection_name", object["Name"])
 	d.Set("virtual_physical_connection_status", object["VirtualPhysicalConnectionStatus"])
-	d.Set("vlan_id", formatInt(object["VlanId"]))
+	vlan_idVal, err253 := formatInt(object["VlanId"])
+	if err253 != nil {
+		return err253
+	}
+	d.Set("vlan_id", vlan_idVal)
 	d.Set("vpconn_ali_uid", object["AliUid"])
 
 	return nil

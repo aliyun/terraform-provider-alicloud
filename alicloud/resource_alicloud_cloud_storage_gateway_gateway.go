@@ -219,13 +219,21 @@ func resourceAliCloudCloudStorageGatewayGatewayRead(d *schema.ResourceData, meta
 	d.Set("gateway_name", object["Name"])
 	d.Set("gateway_class", object["GatewayClass"])
 	d.Set("vswitch_id", object["VSwitchId"])
-	d.Set("payment_type", convertCsgGatewayPaymentTypeResp(formatBool(object["IsPostPaid"])))
+	v222, err222 := formatBool(object["IsPostPaid"])
+	if err222 != nil {
+		return err222
+	}
+	d.Set("payment_type", convertCsgGatewayPaymentTypeResp(v222))
 	d.Set("description", object["Description"])
 	d.Set("release_after_expiration", object["IsReleaseAfterExpiration"])
 	d.Set("status", object["Status"])
 
 	if publicNetworkBandwidth, ok := object["PublicNetworkBandwidth"]; ok && fmt.Sprint(publicNetworkBandwidth) != "0" {
-		d.Set("public_network_bandwidth", formatInt(publicNetworkBandwidth))
+		public_network_bandwidthVal, err228 := formatInt(publicNetworkBandwidth)
+		if err228 != nil {
+			return err228
+		}
+		d.Set("public_network_bandwidth", public_network_bandwidthVal)
 	}
 
 	return nil

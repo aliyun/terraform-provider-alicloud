@@ -126,7 +126,11 @@ func dataSourceAlicloudVpcPublicIpAddressPoolCidrBlocksRead(d *schema.ResourceDa
 		}
 
 		resp, err := jsonpath.Get("$.PublicIpPoolCidrBlockList", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v129, err129 := formatInt(response["TotalCount"])
+		if err129 != nil {
+			return err129
+		}
+		if v129 != 0 && err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PublicIpPoolCidrBlockList", response)
 		}
 
@@ -152,13 +156,22 @@ func dataSourceAlicloudVpcPublicIpAddressPoolCidrBlocksRead(d *schema.ResourceDa
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		used_ip_numVal, err160 := formatInt(object["UsedIpNum"])
+		if err160 != nil {
+			return err160
+		}
+		total_ip_numVal, err161 := formatInt(object["TotalIpNum"])
+		if err161 != nil {
+			return err161
+		}
 		mapping := map[string]interface{}{
 			"id":                        fmt.Sprintf("%v:%v", object["PublicIpAddressPoolId"], object["CidrBlock"]),
 			"public_ip_address_pool_id": fmt.Sprint(object["PublicIpAddressPoolId"]),
 			"cidr_block":                fmt.Sprint(object["CidrBlock"]),
 			"status":                    object["Status"],
-			"used_ip_num":               formatInt(object["UsedIpNum"]),
-			"total_ip_num":              formatInt(object["TotalIpNum"]),
+			"used_ip_num":               used_ip_numVal,
+			"total_ip_num":              total_ip_numVal,
 			"create_time":               object["CreationTime"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))

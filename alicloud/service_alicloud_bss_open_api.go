@@ -401,7 +401,11 @@ func (s *BssOpenApiService) GetInstanceTypePrice(productCode, productType, payme
 			originalCostArg := originalCosts.(map[string]interface{})
 
 			if originalCost, ok := originalCostArg["OriginalCost"]; ok {
-				priceList = append(priceList, formatFloat64(originalCost))
+				v404, err404 := formatFloat64(originalCost)
+				if err404 != nil {
+					return nil, err404
+				}
+				priceList = append(priceList, v404)
 			}
 		}
 

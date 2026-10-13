@@ -175,9 +175,14 @@ func dataSourceAlicloudEcsStorageCapacityUnitsRead(d *schema.ResourceData, meta 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		capacityVal, err180 := formatInt(object["Capacity"])
+		if err180 != nil {
+			return err180
+		}
 		mapping := map[string]interface{}{
 			"allocation_status":          object["AllocationStatus"],
-			"capacity":                   formatInt(object["Capacity"]),
+			"capacity":                   capacityVal,
 			"create_time":                object["CreationTime"],
 			"description":                object["Description"],
 			"expired_time":               object["ExpiredTime"],

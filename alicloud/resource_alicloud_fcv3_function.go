@@ -1559,7 +1559,11 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 
 		target := d.Get("invocation_restriction.0.disable").(bool)
 		disable, _ := jsonpath.Get("$.invocationRestriction.disable", object)
-		if formatBool(disable) != target {
+		v1562, err1562 := formatBool(disable)
+		if err1562 != nil {
+			return err1562
+		}
+		if v1562 != target {
 			if target == true {
 				functionName := d.Id()
 				action := fmt.Sprintf("/2023-03-30/functions/%s/invoke/disable", functionName)

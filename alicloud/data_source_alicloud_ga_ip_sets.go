@@ -128,9 +128,14 @@ func dataSourceAlicloudGaIpSetsRead(d *schema.ResourceData, meta interface{}) er
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		bandwidthVal, err133 := formatInt(object["Bandwidth"])
+		if err133 != nil {
+			return err133
+		}
 		mapping := map[string]interface{}{
 			"accelerate_region_id": object["AccelerateRegionId"],
-			"bandwidth":            formatInt(object["Bandwidth"]),
+			"bandwidth":            bandwidthVal,
 			"ip_address_list":      object["IpAddressList"],
 			"id":                   fmt.Sprint(object["IpSetId"]),
 			"ip_set_id":            fmt.Sprint(object["IpSetId"]),

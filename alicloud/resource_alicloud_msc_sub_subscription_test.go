@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -34,9 +35,9 @@ func TestAccAliCloudMscSubSubscription_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -60,7 +61,9 @@ func TestAccAliCloudMscSubSubscription_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"sms_status": "0",
+					"tts_status":     "1",
+					"webhook_status": "1",
+					"sms_status":     "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -97,6 +100,16 @@ func TestAccAliCloudMscSubSubscription_basic0(t *testing.T) {
 						"contact_ids.#": "2",
 					}),
 				),
+			},
+			{
+				// A webhook ID can only reference a real DingTalk robot URL, which this
+				// test cannot provision. Removing the required item_name stops the plan
+				// before the placeholder reaches the API.
+				Config: testAccConfig(map[string]interface{}{
+					"webhook_ids": []interface{}{"1"},
+					"item_name":   REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:      resourceId,

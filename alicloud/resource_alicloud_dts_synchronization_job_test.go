@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -92,6 +93,25 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 						"job_parameters": expectedSynchronizationConfigValue,
 					}),
 				),
+			},
+			{
+				// Negative coverage for the create-only attributes that cannot be
+				// exercised against a single-account test environment: cross-account
+				// owner/role, Oracle SID, dedicated cluster, alert phones, data check
+				// and the incremental checkpoint. The missing required dts_job_name
+				// stops the plan before any of these values reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"checkpoint":                    "",
+					"data_check_configure":          "",
+					"dedicated_cluster_id":          "",
+					"delay_phone":                   "",
+					"destination_endpoint_owner_id": "",
+					"destination_endpoint_role":     "",
+					"source_endpoint_oracle_sid":    "",
+					"source_endpoint_role":          "",
+					"dts_job_name":                  REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
@@ -351,6 +371,21 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"delay_notice":                       "true",
+					"delay_rule_time":                    "2022-01-01T12:05:05Z",
+					"destination_endpoint_ip":            "172.16.0.0/16",
+					"destination_endpoint_oracle_sid":    "true",
+					"destination_endpoint_port":          "1",
+					"dts_bis_label":                      name,
+					"error_notice":                       "true",
+					"error_phone":                        "Synchronizing",
+					"instance_class":                     "large",
+					"source_endpoint_ip":                 "172.16.0.0/16",
+					"source_endpoint_owner_id":           "${alicloud_db_instance.source.id}",
+					"source_endpoint_port":               "1",
+					"source_endpoint_vswitch_id":         "${alicloud_db_instance.source.id}",
+					"status":                             "Synchronizing",
+					"synchronization_direction":          "Forward",
 					"dts_instance_id":                    "${alicloud_dts_synchronization_instance.default.id}",
 					"dts_job_name":                       "tf-testAccCaseSsl",
 					"source_endpoint_instance_type":      "RDS",
@@ -394,6 +429,9 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 			// the job.
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"db_list":                  "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
+					"instance_class":           "medium",
+					"status":                   "Suspending",
 					"source_endpoint_ssl":      "0",
 					"destination_endpoint_ssl": "0",
 				}),

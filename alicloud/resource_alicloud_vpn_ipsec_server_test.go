@@ -138,6 +138,7 @@ func TestAccAliCloudVPNGatewayIpsecServer_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"psk_enabled":       "false",
 					"ipsec_server_name": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(

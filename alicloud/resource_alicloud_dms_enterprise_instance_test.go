@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -160,10 +161,34 @@ func TestAccAliCloudDMSEnterprise(t *testing.T) {
 				),
 			},
 			{
+				// dba_id/safe_rule_id/ecs_instance_id/vpc_id refer to
+				// tenant-owned resources that cannot be pre-provisioned
+				// here; removing the required env_type stops the plan
+				// before the placeholders reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"data_link_name":  "dl-tfacc-placeholder",
+					"dba_id":          "1",
+					"ddl_online":      "1",
+					"ecs_instance_id": "i-tfacc-placeholder",
+					"ecs_region":      "cn-hangzhou",
+					"export_timeout":  "2001",
+					"instance_id":     "i-tfacc-alias",
+					"instance_name":   fmt.Sprintf("%s-x", name),
+					"instance_source": "PUBLIC_OWN",
+					"instance_type":   "SQLServer",
+					"safe_rule_id":    "1",
+					"sid":             "sid-tfacc-placeholder",
+					"skip_test":       "true",
+					"vpc_id":          "vpc-tfacc-placeholder",
+					"env_type":        REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"database_password", "dba_uid", "network_type", "port", "safe_rule", "tid", "database_user"},
+				ImportStateVerifyIgnore: []string{"database_password", "dba_uid", "network_type", "safe_rule", "tid", "database_user"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

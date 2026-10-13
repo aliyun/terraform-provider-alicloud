@@ -127,8 +127,13 @@ func dataSourceAlicloudSecurityCenterGroupsRead(d *schema.ResourceData, meta int
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		group_flagVal, err131 := formatInt(object["GroupFlag"])
+		if err131 != nil {
+			return err131
+		}
 		mapping := map[string]interface{}{
-			"group_flag": formatInt(object["GroupFlag"]),
+			"group_flag": group_flagVal,
 			"id":         fmt.Sprint(object["GroupId"]),
 			"group_id":   fmt.Sprint(object["GroupId"]),
 			"group_name": object["GroupName"],

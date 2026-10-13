@@ -237,7 +237,11 @@ func dataSourceAliCloudAmqpInstancesRead(d *schema.ResourceData, meta interface{
 		mapping["payment_type"] = instancesAccountDetail["SubscriptionType"]
 		mapping["renewal_status"] = instancesAccountDetail["RenewStatus"]
 		if v, ok := instancesAccountDetail["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
-			mapping["renewal_duration"] = formatInt(v)
+			v240, err240 := formatInt(v)
+			if err240 != nil {
+				return err240
+			}
+			mapping["renewal_duration"] = v240
 		}
 		mapping["renewal_duration_unit"] = convertAmqpInstanceRenewalDurationUnitResponse(instancesAccountDetail["RenewalDurationUnit"])
 

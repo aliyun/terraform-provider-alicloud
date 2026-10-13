@@ -230,7 +230,11 @@ func resourceAlicloudCloudStorageGatewayGatewayBlockVolumeRead(d *schema.Resourc
 	d.Set("chap_enabled", object["ChapEnabled"])
 	d.Set("chap_in_user", object["ChapInUser"])
 	if v, ok := object["ChunkSize"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("chunk_size", formatInt(v))
+		chunk_sizeVal, err233 := formatInt(v)
+		if err233 != nil {
+			return err233
+		}
+		d.Set("chunk_size", chunk_sizeVal)
 	}
 	d.Set("gateway_block_volume_name", object["Name"])
 	d.Set("local_path", object["LocalPath"])
@@ -238,7 +242,11 @@ func resourceAlicloudCloudStorageGatewayGatewayBlockVolumeRead(d *schema.Resourc
 	d.Set("oss_bucket_ssl", object["OssBucketSsl"])
 	d.Set("oss_endpoint", object["OssEndpoint"])
 	d.Set("protocol", object["Protocol"])
-	d.Set("status", fmt.Sprint(formatInt(object["VolumeState"])))
+	v241, err241 := formatInt(object["VolumeState"])
+	if err241 != nil {
+		return err241
+	}
+	d.Set("status", fmt.Sprint(v241))
 	return nil
 }
 func resourceAlicloudCloudStorageGatewayGatewayBlockVolumeUpdate(d *schema.ResourceData, meta interface{}) error {

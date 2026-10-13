@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudEhpcJobTemplate_basic0(t *testing.T) {
+func TestAccAliCloudEhpcJobTemplate_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_job_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudEhpcJobTemplateMap0)
@@ -34,9 +34,9 @@ func TestAccAlicloudEhpcJobTemplate_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

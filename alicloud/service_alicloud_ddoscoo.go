@@ -89,7 +89,11 @@ func (s *DdoscooService) DdosStateRefreshFunc(id string, failStates []string) re
 			return nil, "", WrapError(err)
 		}
 		status := ""
-		if formatInt(object["Status"]) == 1 {
+		v92, err92 := formatInt(object["Status"])
+		if err92 != nil {
+			return nil, "", err92
+		}
+		if v92 == 1 {
 			status = string(Available)
 		} else {
 			status = string(Unavailable)

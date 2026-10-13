@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
+func TestAccAliCloudECDPolicyGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_policy_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)
@@ -26,13 +26,15 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"policy_group_name": "tf-testaccPolicyGroupName",
+					"html_access":        "off",
+					"html_file_transfer": "all",
+					"policy_group_name":  "tf-testaccPolicyGroupName",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -42,7 +44,9 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"local_drive": "read",
+					"html_access":        "on",
+					"html_file_transfer": "download",
+					"local_drive":        "read",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -356,7 +360,7 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECDPolicyGroup_basic1(t *testing.T) {
+func TestAccAliCloudECDPolicyGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_policy_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)
@@ -373,9 +377,9 @@ func TestAccAlicloudECDPolicyGroup_basic1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -455,7 +459,7 @@ func TestAccAlicloudECDPolicyGroup_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECDPolicyGroup_basic2(t *testing.T) {
+func TestAccAliCloudECDPolicyGroup_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_policy_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)
@@ -472,9 +476,9 @@ func TestAccAlicloudECDPolicyGroup_basic2(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

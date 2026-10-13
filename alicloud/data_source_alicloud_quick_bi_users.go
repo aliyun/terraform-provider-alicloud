@@ -147,6 +147,11 @@ func dataSourceAlicloudQuickBiUsersRead(d *schema.ResourceData, meta interface{}
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		v158, err158 := formatInt(object["UserType"])
+		if err158 != nil {
+			return err158
+		}
 		mapping := map[string]interface{}{
 			"account_id":      object["AccountId"],
 			"account_name":    object["AccountName"],
@@ -155,7 +160,7 @@ func dataSourceAlicloudQuickBiUsersRead(d *schema.ResourceData, meta interface{}
 			"nick_name":       object["NickName"],
 			"id":              fmt.Sprint(object["UserId"]),
 			"user_id":         fmt.Sprint(object["UserId"]),
-			"user_type":       convertQuickBiUserUserTypeResponse(formatInt(object["UserType"])),
+			"user_type":       convertQuickBiUserUserTypeResponse(v158),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {

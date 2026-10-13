@@ -91,9 +91,14 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServiceUsersRead(d *schema.Resource
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		v96, err96 := formatInt(object["UserId"])
+		if err96 != nil {
+			return err96
+		}
 		mapping := map[string]interface{}{
 			"id":      fmt.Sprint(request["ServiceId"], ":", object["UserId"]),
-			"user_id": fmt.Sprint(formatInt(object["UserId"])),
+			"user_id": fmt.Sprint(v96),
 		}
 		ids = append(ids, fmt.Sprint(request["ServiceId"], ":", object["UserId"]))
 		s = append(s, mapping)

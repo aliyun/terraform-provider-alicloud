@@ -174,15 +174,25 @@ func dataSourceAlicloudDfsAccessGroupsRead(d *schema.ResourceData, meta interfac
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		mount_point_countVal, err183 := formatInt(object["MountPointCount"])
+		if err183 != nil {
+			return err183
+		}
+
+		rule_countVal, err185 := formatInt(object["RuleCount"])
+		if err185 != nil {
+			return err185
+		}
 		mapping := map[string]interface{}{
 			"id":                fmt.Sprint(object["AccessGroupId"]),
 			"access_group_id":   fmt.Sprint(object["AccessGroupId"]),
 			"access_group_name": object["AccessGroupName"],
 			"create_time":       object["CreateTime"],
 			"description":       object["Description"],
-			"mount_point_count": formatInt(object["MountPointCount"]),
+			"mount_point_count": mount_point_countVal,
 			"network_type":      object["NetworkType"],
-			"rule_count":        formatInt(object["RuleCount"]),
+			"rule_count":        rule_countVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["AccessGroupName"])

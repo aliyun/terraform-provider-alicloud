@@ -272,9 +272,17 @@ func resourceAliCloudCdnDomainRead(d *schema.ResourceData, meta interface{}) err
 			sourceModelChild1Raw := sourceModelChild1Raw.(map[string]interface{})
 			sourcesMap["content"] = sourceModelChild1Raw["Content"]
 			sourcesMap["port"] = sourceModelChild1Raw["Port"]
-			sourcesMap["priority"] = formatInt(sourceModelChild1Raw["Priority"])
+			v275, err275 := formatInt(sourceModelChild1Raw["Priority"])
+			if err275 != nil {
+				return err275
+			}
+			sourcesMap["priority"] = v275
 			sourcesMap["type"] = sourceModelChild1Raw["Type"]
-			sourcesMap["weight"] = formatInt(sourceModelChild1Raw["Weight"])
+			v277, err277 := formatInt(sourceModelChild1Raw["Weight"])
+			if err277 != nil {
+				return err277
+			}
+			sourcesMap["weight"] = v277
 
 			sourcesMaps = append(sourcesMaps, sourcesMap)
 		}

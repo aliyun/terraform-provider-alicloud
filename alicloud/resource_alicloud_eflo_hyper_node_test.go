@@ -3,6 +3,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -29,9 +30,9 @@ func TestAccAliCloudEfloHyperNode_basic11893(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -102,6 +103,32 @@ func TestAccAliCloudEfloHyperNode_basic11893(t *testing.T) {
 						"tags.For":     REMOVEKEY,
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hostname":          "tfacc-host",
+					"cluster_id":        "ehc-tfacc-placeholder",
+					"node_group_id":     "ng-tfacc-placeholder",
+					"login_password":    "YourPassword_123",
+					"renewal_duration":  "1",
+					"renewal_status":    "AutoRenewal",
+					"resource_group_id": "rg-tfacc-placeholder",
+					"user_data":         "I3RmYWNjCg==",
+					"vswitch_id":        "vsw-tfacc-placeholder",
+					"vpc_id":            "vpc-tfacc-placeholder",
+					"data_disk": []map[string]interface{}{
+						{
+							"bursting_enabled":  "true",
+							"delete_with_node":  "true",
+							"category":          "cloud_essd",
+							"size":              "2000",
+							"performance_level": "PL1",
+							"provisioned_iops":  "50000",
+						},
+					},
+					"payment_type": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,

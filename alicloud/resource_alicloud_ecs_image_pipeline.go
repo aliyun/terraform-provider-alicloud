@@ -211,11 +211,19 @@ func resourceAlicloudEcsImagePipelineRead(d *schema.ResourceData, meta interface
 	d.Set("image_name", object["ImageName"])
 	d.Set("instance_type", object["InstanceType"])
 	if v, ok := object["InternetMaxBandwidthOut"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("internet_max_bandwidth_out", formatInt(v))
+		internet_max_bandwidth_outVal, err214 := formatInt(v)
+		if err214 != nil {
+			return err214
+		}
+		d.Set("internet_max_bandwidth_out", internet_max_bandwidth_outVal)
 	}
 	d.Set("name", object["Name"])
 	if v, ok := object["SystemDiskSize"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("system_disk_size", formatInt(v))
+		system_disk_sizeVal, err218 := formatInt(v)
+		if err218 != nil {
+			return err218
+		}
+		d.Set("system_disk_size", system_disk_sizeVal)
 	}
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("resource_group_id", object["ResourceGroupId"])

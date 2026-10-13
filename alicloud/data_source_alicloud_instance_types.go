@@ -399,18 +399,40 @@ func dataSourceAliCloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 			}
 		}
 
-		if cpu > 0 && formatInt(object["CpuCoreCount"]) != cpu {
-			continue
+		if cpu > 0 {
+			cpuCoreCountVal, cpuCoreCountErr := formatInt(object["CpuCoreCount"])
+			if cpuCoreCountErr != nil {
+				return cpuCoreCountErr
+			}
+			if cpuCoreCountVal != cpu {
+				continue
+			}
 		}
 
-		if mem > 0 && formatFloat64(object["MemorySize"]) != mem {
+		if mem > 0 {
+			memorySizeVal, memorySizeErr := formatFloat64(object["MemorySize"])
+			if memorySizeErr != nil {
+				return memorySizeErr
+			}
+			if memorySizeVal != mem {
+				continue
+			}
+		}
+		v409, err409 := formatInt(object["EniQuantity"])
+		if err409 != nil {
+			return err409
+		}
+		if eniAmount > v409 {
 			continue
 		}
-		if eniAmount > formatInt(object["EniQuantity"]) {
-			continue
-		}
-		if gpuAmount > 0 && formatInt(object["GPUAmount"]) != gpuAmount {
-			continue
+		if gpuAmount > 0 {
+			gpuCntVal, gpuCntErr := formatInt(object["GPUAmount"])
+			if gpuCntErr != nil {
+				return gpuCntErr
+			}
+			if gpuCntVal != gpuAmount {
+				continue
+			}
 		}
 		// Kubernetes node does not support instance types which family is "ecs.t5" and spec less that c2g4
 		// Kubernetes master node does not support gpu instance types which family prefixes with "ecs.gn"
@@ -418,7 +440,18 @@ func dataSourceAliCloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 			if object["InstanceTypeFamily"].(string) == "ecs.t5" {
 				continue
 			}
-			if formatInt(object["CpuCoreCount"]) < 2 || formatFloat64(object["MemorySize"]) < 4 {
+			v421, err421 := formatInt(object["CpuCoreCount"])
+			if err421 != nil {
+				return err421
+			}
+			if v421 < 2 {
+				continue
+			}
+			memorySizeVal, memorySizeErr := formatFloat64(object["MemorySize"])
+			if memorySizeErr != nil {
+				return memorySizeErr
+			}
+			if memorySizeVal < 4 {
 				continue
 			}
 			if k8sNode == string(KubernetesNodeMaster) && strings.HasPrefix(object["InstanceTypeFamily"].(string), "ecs.gn") {
@@ -476,26 +509,65 @@ func dataSourceAliCloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []instanceTypeWithOriginalPrice, mapTypes map[string][]string) error {
 	sortedBy := d.Get("sorted_by").(string)
 	if sortedBy != "" {
-		sort.SliceStable(types, func(i, j int) bool {
+		cpuKeys := make([]int, len(types))
+		memKeys := make([]float64, len(types))
+		switch sortedBy {
+		case "CPU":
+			for i, t := range types {
+				v, err := formatInt(t.InstanceType["CpuCoreCount"])
+				if err != nil {
+					return err
+				}
+				cpuKeys[i] = v
+			}
+		case "Memory":
+			for i, t := range types {
+				v, err := formatFloat64(t.InstanceType["MemorySize"])
+				if err != nil {
+					return err
+				}
+				memKeys[i] = v
+			}
+		}
+		order := make([]int, len(types))
+		for i := range order {
+			order[i] = i
+		}
+		sort.SliceStable(order, func(a, b int) bool {
+			i, j := order[a], order[b]
 			switch sortedBy {
 			case "Price":
 				return types[i].OriginalPrice < types[j].OriginalPrice
 			case "CPU":
-				return formatInt(types[i].InstanceType["CpuCoreCount"]) < formatInt(types[j].InstanceType["CpuCoreCount"])
+				return cpuKeys[i] < cpuKeys[j]
 			case "Memory":
-				return formatFloat64(types[i].InstanceType["MemorySize"]) < formatFloat64(types[j].InstanceType["MemorySize"])
+				return memKeys[i] < memKeys[j]
 			}
 			return false
 		})
+		sortedTypes := make([]instanceTypeWithOriginalPrice, len(types))
+		for r, i := range order {
+			sortedTypes[r] = types[i]
+		}
+		copy(types, sortedTypes)
 	}
 
 	var ids []string
 	var s []map[string]interface{}
 	for _, t := range types {
+
+		cpu_core_countVal, err497 := formatInt(t.InstanceType["CpuCoreCount"])
+		if err497 != nil {
+			return err497
+		}
+		memory_sizeVal, err498 := formatFloat64(t.InstanceType["MemorySize"])
+		if err498 != nil {
+			return err498
+		}
 		mapping := map[string]interface{}{
 			"id":                              t.InstanceType["InstanceTypeId"],
-			"cpu_core_count":                  formatInt(t.InstanceType["CpuCoreCount"]),
-			"memory_size":                     formatFloat64(t.InstanceType["MemorySize"]),
+			"cpu_core_count":                  cpu_core_countVal,
+			"memory_size":                     memory_sizeVal,
 			"family":                          t.InstanceType["InstanceTypeFamily"],
 			"eni_amount":                      t.InstanceType["EniQuantity"],
 			"nvme_support":                    t.InstanceType["NvmeSupport"],
@@ -513,18 +585,37 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []instance
 		zoneIds := mapTypes[t.InstanceType["InstanceTypeId"].(string)]
 		sort.Strings(zoneIds)
 		mapping["availability_zones"] = zoneIds
+
+		v517, err517 := formatInt(t.InstanceType["GPUAmount"])
+		if err517 != nil {
+			return err517
+		}
 		gpu := map[string]interface{}{
-			"amount":   strconv.Itoa(formatInt(t.InstanceType["GPUAmount"])),
+			"amount":   strconv.Itoa(v517),
 			"category": t.InstanceType["GPUSpec"],
 		}
 		mapping["gpu"] = []interface{}{gpu}
+
+		v522, err522 := formatInt(t.InstanceType["InitialCredit"])
+		if err522 != nil {
+			return err522
+		}
+		v523, err523 := formatInt(t.InstanceType["BaselineCredit"])
+		if err523 != nil {
+			return err523
+		}
 		brust := map[string]interface{}{
-			"initial_credit":  strconv.Itoa(formatInt(t.InstanceType["InitialCredit"])),
-			"baseline_credit": strconv.Itoa(formatInt(t.InstanceType["BaselineCredit"])),
+			"initial_credit":  strconv.Itoa(v522),
+			"baseline_credit": strconv.Itoa(v523),
 		}
 		mapping["burstable_instance"] = []interface{}{brust}
+
+		v527, err527 := formatInt(t.InstanceType["LocalStorageAmount"])
+		if err527 != nil {
+			return err527
+		}
 		local := map[string]interface{}{
-			"amount":   strconv.Itoa(formatInt(t.InstanceType["LocalStorageAmount"])),
+			"amount":   strconv.Itoa(v527),
 			"category": t.InstanceType["LocalStorageCategory"],
 		}
 		if v, ok := t.InstanceType["LocalStorageCapacity"]; ok {

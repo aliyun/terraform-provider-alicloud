@@ -727,7 +727,11 @@ func resourceAliCloudEsaSiteUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "VersionManagement", objectRaw)
 		}
-		if formatBool(currentStatus) != target {
+		v730, err730 := formatBool(currentStatus)
+		if err730 != nil {
+			return err730
+		}
+		if v730 != target {
 			if target == true {
 				action := "ActivateVersionManagement"
 				request = make(map[string]interface{})

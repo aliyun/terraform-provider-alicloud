@@ -263,7 +263,11 @@ func (s *SasService) DescribeThreatDetectionAntiBruteForceRule(id string) (objec
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageInfo.Count]", response)
 	}
-	if formatInt(count) == 0 {
+	v266, err266 := formatInt(count)
+	if err266 != nil {
+		return nil, err266
+	}
+	if v266 == 0 {
 		return object, WrapErrorf(NotFoundErr("ThreatDetection.AntiBruteForceRule", id), NotFoundWithResponse, response)
 	}
 	v, err := jsonpath.Get("$.Rules[0]", response)
@@ -321,7 +325,11 @@ func (s *SasService) DescribeThreatDetectionHoneyPot(id string) (object map[stri
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageInfo.Count", response)
 	}
-	if formatInt(count) == 0 {
+	v324, err324 := formatInt(count)
+	if err324 != nil {
+		return nil, err324
+	}
+	if v324 == 0 {
 		return object, WrapErrorf(NotFoundErr("ThreatDetection", id), NotFoundWithResponse, response)
 	}
 	v, err := jsonpath.Get("$.List[0]", response)

@@ -165,6 +165,11 @@ func dataSourceAlicloudDirectMailReceiversesRead(d *schema.ResourceData, meta in
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		statusVal, err175 := formatInt(object["ReceiversStatus"])
+		if err175 != nil {
+			return err175
+		}
 		mapping := map[string]interface{}{
 			"create_time":     object["CreateTime"],
 			"description":     object["Desc"],
@@ -172,7 +177,7 @@ func dataSourceAlicloudDirectMailReceiversesRead(d *schema.ResourceData, meta in
 			"id":              fmt.Sprint(object["ReceiverId"]),
 			"receivers_id":    fmt.Sprint(object["ReceiverId"]),
 			"receivers_name":  object["ReceiversName"],
-			"status":          formatInt(object["ReceiversStatus"]),
+			"status":          statusVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["ReceiversName"])

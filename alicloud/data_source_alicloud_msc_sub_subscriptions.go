@@ -128,19 +128,42 @@ func dataSourceAlicloudMscSubSubscriptionsRead(d *schema.ResourceData, meta inte
 	}
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		email_statusVal, err135 := formatInt(object["EmailStatus"])
+		if err135 != nil {
+			return err135
+		}
+
+		pmsg_statusVal, err139 := formatInt(object["PmsgStatus"])
+		if err139 != nil {
+			return err139
+		}
+		sms_statusVal, err140 := formatInt(object["SmsStatus"])
+		if err140 != nil {
+			return err140
+		}
+		tts_statusVal, err141 := formatInt(object["TtsStatus"])
+		if err141 != nil {
+			return err141
+		}
+
+		webhook_statusVal, err143 := formatInt(object["WebhookStatus"])
+		if err143 != nil {
+			return err143
+		}
 		mapping := map[string]interface{}{
 			"channel":        object["Channel"],
 			"contact_ids":    object["ContactIds"],
 			"description":    object["Description"],
-			"email_status":   formatInt(object["EmailStatus"]),
+			"email_status":   email_statusVal,
 			"id":             fmt.Sprint(object["ItemId"]),
 			"item_id":        fmt.Sprint(object["ItemId"]),
 			"item_name":      object["ItemName"],
-			"pmsg_status":    formatInt(object["PmsgStatus"]),
-			"sms_status":     formatInt(object["SmsStatus"]),
-			"tts_status":     formatInt(object["TtsStatus"]),
+			"pmsg_status":    pmsg_statusVal,
+			"sms_status":     sms_statusVal,
+			"tts_status":     tts_statusVal,
 			"webhook_ids":    object["WebhookIds"],
-			"webhook_status": formatInt(object["WebhookStatus"]),
+			"webhook_status": webhook_statusVal,
 		}
 		s = append(s, mapping)
 	}

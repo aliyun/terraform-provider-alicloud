@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudNASDataFlow_basic0(t *testing.T) {
+func TestAccAliCloudNASDataFlow_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_data_flow.default"
 	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)
@@ -106,7 +106,7 @@ func TestAccAlicloudNASDataFlow_basic0(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudNASDataFlow_basic1(t *testing.T) {
+func TestAccAliCloudNASDataFlow_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_data_flow.default"
 	checkoutSupportedRegions(t, true, connectivity.NASCPFSSupportRegions)

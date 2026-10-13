@@ -65,7 +65,11 @@ func resourceAliyunEssServerGroupAttachmentCreate(d *schema.ResourceData, meta i
 	scalingGroupId := d.Get("scaling_group_id").(string)
 	serverGroupId := d.Get("server_group_id").(string)
 	typeAttribute := d.Get("type").(string)
-	port := strconv.Itoa(formatInt(d.Get("port")))
+	v68, err68 := formatInt(d.Get("port"))
+	if err68 != nil {
+		return err68
+	}
+	port := strconv.Itoa(v68)
 
 	if typeAttribute == "GWLB" {
 		if _, ok := d.GetOkExists("weight"); ok {
@@ -88,10 +92,15 @@ func resourceAliyunEssServerGroupAttachmentCreate(d *schema.ResourceData, meta i
 			Type:          typeAttribute,
 		})
 	} else {
+
+		v94, err94 := formatInt(d.Get("weight"))
+		if err94 != nil {
+			return err94
+		}
 		attachScalingGroupServerGroups = append(attachScalingGroupServerGroups, ess.AttachServerGroupsServerGroup{
 			ServerGroupId: serverGroupId,
 			Port:          port,
-			Weight:        strconv.Itoa(formatInt(d.Get("weight"))),
+			Weight:        strconv.Itoa(v94),
 			Type:          typeAttribute,
 		})
 	}
@@ -158,13 +167,19 @@ func resourceAliyunEssServerGroupAttachmentRead(d *schema.ResourceData, meta int
 				return nil
 			}
 		} else {
-			if v.ServerGroupId == serverGroupId && v.Port == formatInt(port) && v.Type == typeAttribute {
-				d.Set("scaling_group_id", object.ScalingGroupId)
-				d.Set("type", v.Type)
-				d.Set("server_group_id", v.ServerGroupId)
-				d.Set("weight", v.Weight)
-				d.Set("port", v.Port)
-				return nil
+			if v.ServerGroupId == serverGroupId {
+				portVal, portErr := formatInt(port)
+				if portErr != nil {
+					return portErr
+				}
+				if v.Port == portVal && v.Type == typeAttribute {
+					d.Set("scaling_group_id", object.ScalingGroupId)
+					d.Set("type", v.Type)
+					d.Set("server_group_id", v.ServerGroupId)
+					d.Set("weight", v.Weight)
+					d.Set("port", v.Port)
+					return nil
+				}
 			}
 		}
 

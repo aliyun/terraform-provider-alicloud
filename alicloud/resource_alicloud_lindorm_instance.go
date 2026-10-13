@@ -495,7 +495,11 @@ func resourceAliCloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	if v, ok := object["ColdStorage"]; ok {
-		d.Set("cold_storage", formatInt(v))
+		cold_storageVal, err498 := formatInt(v)
+		if err498 != nil {
+			return err498
+		}
+		d.Set("cold_storage", cold_storageVal)
 	}
 
 	d.Set("deletion_proection", object["DeletionProtection"])
@@ -531,7 +535,10 @@ func resourceAliCloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("instance_storage", object["InstanceStorage"])
 	//}
 
-	engineType := formatInt(object["EngineType"])
+	engineType, engineTypeErr := formatInt(object["EngineType"])
+	if engineTypeErr != nil {
+		return engineTypeErr
+	}
 	d.Set("enabled_file_engine", engineType&0x08 == 8)
 	d.Set("enabled_time_serires_engine", engineType&0x02 == 2)
 	d.Set("enabled_table_engine", engineType&0x04 == 4)
@@ -549,30 +556,54 @@ func resourceAliCloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	if v, ok := getLindormInstanceEngineInfoObject["FileEngineNodeCount"]; ok {
-		d.Set("file_engine_node_count", formatInt(v))
+		file_engine_node_countVal, err552 := formatInt(v)
+		if err552 != nil {
+			return err552
+		}
+		d.Set("file_engine_node_count", file_engine_node_countVal)
 	}
 	d.Set("file_engine_specification", getLindormInstanceEngineInfoObject["FileEngineSpecification"])
 	if v, ok := getLindormInstanceEngineInfoObject["LtsNodeCount"]; ok {
-		d.Set("lts_node_count", formatInt(v))
+		lts_node_countVal, err556 := formatInt(v)
+		if err556 != nil {
+			return err556
+		}
+		d.Set("lts_node_count", lts_node_countVal)
 	}
 	d.Set("lts_node_specification", getLindormInstanceEngineInfoObject["LtsNodeSpecification"])
 
 	if v, ok := getLindormInstanceEngineInfoObject["SearchEngineNodeCount"]; ok {
-		d.Set("search_engine_node_count", formatInt(v))
+		search_engine_node_countVal, err561 := formatInt(v)
+		if err561 != nil {
+			return err561
+		}
+		d.Set("search_engine_node_count", search_engine_node_countVal)
 	}
 	d.Set("search_engine_specification", getLindormInstanceEngineInfoObject["SearchEngineSpecification"])
 	if v, ok := getLindormInstanceEngineInfoObject["TableEngineNodeCount"]; ok {
-		d.Set("table_engine_node_count", formatInt(v))
+		table_engine_node_countVal, err565 := formatInt(v)
+		if err565 != nil {
+			return err565
+		}
+		d.Set("table_engine_node_count", table_engine_node_countVal)
 	}
 	d.Set("table_engine_specification", getLindormInstanceEngineInfoObject["TableEngineSpecification"])
 	if v, ok := getLindormInstanceEngineInfoObject["TimeSeriesNodeCount"]; ok {
-		d.Set("time_series_engine_node_count", formatInt(v))
+		time_series_engine_node_countVal, err569 := formatInt(v)
+		if err569 != nil {
+			return err569
+		}
+		d.Set("time_series_engine_node_count", time_series_engine_node_countVal)
 	}
 	d.Set("time_serires_engine_specification", getLindormInstanceEngineInfoObject["TimeSeriesSpecification"])
 	d.Set("time_series_engine_specification", getLindormInstanceEngineInfoObject["TimeSeriesSpecification"])
 
 	if v, ok := getLindormInstanceEngineInfoObject["StreamNodeCount"]; ok {
-		d.Set("stream_engine_node_count", formatInt(v))
+		stream_engine_node_countVal, err575 := formatInt(v)
+		if err575 != nil {
+			return err575
+		}
+		d.Set("stream_engine_node_count", stream_engine_node_countVal)
 	}
 	d.Set("stream_engine_specification", getLindormInstanceEngineInfoObject["StreamSpecification"])
 
@@ -751,7 +782,10 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		newSolrSpec := d.Get("search_engine_specification")
 		newSolrNum := d.Get("search_engine_node_count")
 		enabled := d.Get("enabled_search_engine").(bool)
-		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+		currentInstanceStorage, currentInstanceStorageErr := formatInt(d.Get("instance_storage"))
+		if currentInstanceStorageErr != nil {
+			return currentInstanceStorageErr
+		}
 		if !enabled {
 			upgradeLindormInstanceSearchReq := map[string]interface{}{}
 			upgradeLindormInstanceSearchReq["UpgradeType"] = "open-search-engine"
@@ -792,7 +826,10 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		newLindormSpec := d.Get("table_engine_specification")
 		newLindormNum := d.Get("table_engine_node_count")
 		enabled := d.Get("enabled_table_engine").(bool)
-		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+		currentInstanceStorage, currentInstanceStorageErr2 := formatInt(d.Get("instance_storage"))
+		if currentInstanceStorageErr2 != nil {
+			return currentInstanceStorageErr2
+		}
 		if !enabled {
 			upgradeLindormInstanceTableReq := map[string]interface{}{}
 			upgradeLindormInstanceTableReq["UpgradeType"] = "open-lindorm-engine"
@@ -853,7 +890,10 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		newTsdbNum := d.Get("time_series_engine_node_count")
 		enabled := d.Get("enabled_time_serires_engine").(bool)
-		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+		currentInstanceStorage, currentInstanceStorageErr3 := formatInt(d.Get("instance_storage"))
+		if currentInstanceStorageErr3 != nil {
+			return currentInstanceStorageErr3
+		}
 		if !enabled {
 			upgradeLindormInstanceSearchReq := map[string]interface{}{}
 			upgradeLindormInstanceSearchReq["UpgradeType"] = "open-tsdb-engine"
@@ -894,7 +934,10 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		newLtsCoreSpec := d.Get("lts_node_specification")
 		newLtsCoreNum := d.Get("lts_node_count")
 		enabled := d.Get("enabled_lts_engine").(bool)
-		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+		currentInstanceStorage, currentInstanceStorageErr4 := formatInt(d.Get("instance_storage"))
+		if currentInstanceStorageErr4 != nil {
+			return currentInstanceStorageErr4
+		}
 		if !enabled {
 			upgradeLindormInstanceLtsReq := map[string]interface{}{}
 			upgradeLindormInstanceLtsReq["UpgradeType"] = "open-bds-transfer-only"
@@ -935,7 +978,10 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		newStreamCoreNum := d.Get("stream_engine_node_count")
 		newStreamCoreSpec := d.Get("stream_engine_specification")
 		enabled := d.Get("enabled_stream_engine").(bool)
-		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+		currentInstanceStorage, currentInstanceStorageErr5 := formatInt(d.Get("instance_storage"))
+		if currentInstanceStorageErr5 != nil {
+			return currentInstanceStorageErr5
+		}
 
 		if !enabled {
 			openStreamEngineReq := map[string]interface{}{}

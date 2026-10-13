@@ -206,9 +206,14 @@ func dataSourceAlicloudSlbTlsCipherPoliciesRead(d *schema.ResourceData, meta int
 		if relateListenersList, ok := object["RelateListeners"].([]interface{}); ok {
 			for _, v := range relateListenersList {
 				if m1, ok := v.(map[string]interface{}); ok {
+
+					portVal, err211 := formatInt(m1["Port"])
+					if err211 != nil {
+						return err211
+					}
 					temp1 := map[string]interface{}{
 						"load_balancer_id": m1["LoadBalancerId"],
-						"port":             formatInt(m1["Port"]),
+						"port":             portVal,
 						"protocol":         m1["Protocol"],
 					}
 					relateListeners = append(relateListeners, temp1)

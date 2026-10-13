@@ -184,11 +184,21 @@ func dataSourceAlicloudEcsPrefixListsRead(d *schema.ResourceData, meta interface
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		association_countVal, err189 := formatInt(object["AssociationCount"])
+		if err189 != nil {
+			return err189
+		}
+
+		max_entriesVal, err191 := formatInt(object["MaxEntries"])
+		if err191 != nil {
+			return err191
+		}
 		mapping := map[string]interface{}{
 			"address_family":    object["AddressFamily"],
-			"association_count": formatInt(object["AssociationCount"]),
+			"association_count": association_countVal,
 			"create_time":       object["CreationTime"],
-			"max_entries":       formatInt(object["MaxEntries"]),
+			"max_entries":       max_entriesVal,
 			"id":                fmt.Sprint(object["PrefixListId"]),
 			"prefix_list_id":    fmt.Sprint(object["PrefixListId"]),
 			"prefix_list_name":  object["PrefixListName"],

@@ -174,8 +174,14 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 				continue
 			}
 		}
-		if statusOk && status.(int) != formatInt(item["InstanceStatus"]) {
-			continue
+		if statusOk {
+			instanceStatusVal, instanceStatusErr := formatInt(item["InstanceStatus"])
+			if instanceStatusErr != nil {
+				return instanceStatusErr
+			}
+			if status.(int) != instanceStatusVal {
+				continue
+			}
 		}
 		objects = append(objects, item)
 	}
@@ -183,15 +189,32 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		instance_typeVal, err191 := formatInt(object["InstanceType"])
+		if err191 != nil {
+			return err191
+		}
+		v192, err192 := formatInt(object["ReleaseTime"])
+		if err192 != nil {
+			return err192
+		}
+		statusVal, err193 := formatInt(object["InstanceStatus"])
+		if err193 != nil {
+			return err193
+		}
+		instance_statusVal, err194 := formatInt(object["InstanceStatus"])
+		if err194 != nil {
+			return err194
+		}
 		mapping := map[string]interface{}{
 			"independent_naming": object["IndependentNaming"],
 			"id":                 fmt.Sprint(object["InstanceId"]),
 			"instance_id":        fmt.Sprint(object["InstanceId"]),
 			"instance_name":      object["InstanceName"],
-			"instance_type":      formatInt(object["InstanceType"]),
-			"release_time":       fmt.Sprint(formatInt(object["ReleaseTime"])),
-			"status":             formatInt(object["InstanceStatus"]),
-			"instance_status":    formatInt(object["InstanceStatus"]),
+			"instance_type":      instance_typeVal,
+			"release_time":       fmt.Sprint(v192),
+			"status":             statusVal,
+			"instance_status":    instance_statusVal,
 		}
 
 		tags := make(map[string]interface{})

@@ -3,6 +3,7 @@ package alicloud
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -239,6 +240,12 @@ func TestAccAliCloudEdgeKubernetes_basic(t *testing.T) {
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"rds_instances":                  []string{"${alicloud_db_instance.default.id}"},
 					"skip_set_certificate_authority": "false",
+					"log_config": []map[string]interface{}{
+						{
+							"type":    "SLS",
+							"project": "tfacc-log-project",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -265,6 +272,49 @@ func TestAccAliCloudEdgeKubernetes_basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"addons": []map[string]interface{}{
+						{
+							"name":     "tfacc-addon",
+							"config":   "{\"enable\":\"true\"}",
+							"version":  "1.0.0",
+							"disabled": "true",
+						},
+					},
+					"availability_zone": "cn-hangzhou-g",
+					"proxy_mode":        "iptables",
+					"retain_resources":  []string{"tfacc-retain"},
+					"user_data":         "I2RhdGE6IHRmYWNjCg==",
+					"security_group_id": "sg-tfacc-placeholder",
+					"resource_group_id": "rg-tfacc-placeholder",
+					"cluster_spec":      "ack.standard",
+					"runtime": []map[string]string{
+						{
+							"name":    "containerd",
+							"version": "1.6.20",
+						},
+					},
+					"version":     "1.28.3-aliyun-1",
+					"password":    REMOVEKEY,
+					"key_name":    "tfacc-key-pair",
+					"name":        REMOVEKEY,
+					"name_prefix": "tfacc-cluster-",
+					"worker_data_disks": []map[string]string{
+						{
+							"device":                  "/dev/vdc",
+							"kms_key_id":              "key-tfacc-placeholder",
+							"name":                    "tfacc-disk",
+							"snapshot_id":             "s-tfacc-placeholder",
+							"auto_snapshot_policy_id": "sp-tfacc-placeholder",
+							"category":                "cloud_ssd",
+							"encrypted":               "false",
+						},
+					},
+					"worker_number": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -273,6 +323,12 @@ func TestAccAliCloudEdgeKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name": name + "_update",
+					"log_config": []map[string]interface{}{
+						{
+							"type":    "SLS",
+							"project": "tfacc-log-project-updated",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -568,6 +624,19 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_config": []map[string]interface{}{
+						{
+							"type":    "SLS",
+							"project": "tfacc-log-project-pro",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -589,7 +658,7 @@ func edgeKubernetesProConfigDependence(name string) string {
 	return fmt.Sprintf(EdgeKubernetesCommonConfigTpl+EdgeKubernetesProConfigTpl, name)
 }
 
-func TestCSEdgeKubernetesStateUpgradeV0(t *testing.T) {
+func TestUnitCSEdgeKubernetesStateUpgradeV0(t *testing.T) {
 	fields := []string{"runtime", "certificate_authority", "connections"}
 	cases := []struct {
 		name     string
@@ -709,7 +778,7 @@ func TestCSEdgeKubernetesStateUpgradeV0(t *testing.T) {
 	}
 }
 
-func TestCSEdgeKubernetesSchemaVersionV0ToV1(t *testing.T) {
+func TestUnitCSEdgeKubernetesSchemaVersionV0ToV1(t *testing.T) {
 	r := resourceAlicloudCSEdgeKubernetes()
 	if r.SchemaVersion != 1 {
 		t.Errorf("expected SchemaVersion 1, got %d", r.SchemaVersion)

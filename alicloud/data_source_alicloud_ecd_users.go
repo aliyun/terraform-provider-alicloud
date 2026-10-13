@@ -115,8 +115,14 @@ func dataSourceAlicloudEcdUsersRead(d *schema.ResourceData, meta interface{}) er
 					continue
 				}
 			}
-			if statusOk && status != "" && status != strconv.Itoa(formatInt(item["Status"])) {
-				continue
+			if statusOk && status != "" {
+				userStatusVal, userStatusErr := formatInt(item["Status"])
+				if userStatusErr != nil {
+					return userStatusErr
+				}
+				if status != strconv.Itoa(userStatusVal) {
+					continue
+				}
 			}
 			objects = append(objects, item)
 		}
@@ -129,12 +135,17 @@ func dataSourceAlicloudEcdUsersRead(d *schema.ResourceData, meta interface{}) er
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		v137, err137 := formatInt(object["Status"])
+		if err137 != nil {
+			return err137
+		}
 		mapping := map[string]interface{}{
 			"email":       object["Email"],
 			"id":          fmt.Sprint(object["Id"]),
 			"end_user_id": fmt.Sprint(object["EndUserId"]),
 			"phone":       object["Phone"],
-			"status":      convertEcdUserStatusResponse(strconv.Itoa(formatInt(object["Status"]))),
+			"status":      convertEcdUserStatusResponse(strconv.Itoa(v137)),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

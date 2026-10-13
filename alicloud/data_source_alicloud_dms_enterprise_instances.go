@@ -253,33 +253,66 @@ func dataSourceAlicloudDmsEnterpriseInstancesRead(d *schema.ResourceData, meta i
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		v257, err257 := formatInt(object["Port"])
+		if err257 != nil {
+			return err257
+		}
+
+		ddl_onlineVal, err263 := formatInt(object["DdlOnline"])
+		if err263 != nil {
+			return err263
+		}
+
+		export_timeoutVal, err267 := formatInt(object["ExportTimeout"])
+		if err267 != nil {
+			return err267
+		}
+
+		portVal, err274 := formatInt(object["Port"])
+		if err274 != nil {
+			return err274
+		}
+		query_timeoutVal, err275 := formatInt(object["QueryTimeout"])
+		if err275 != nil {
+			return err275
+		}
+
+		use_dsqlVal, err279 := formatInt(object["UseDsql"])
+		if err279 != nil {
+			return err279
+		}
 		mapping := map[string]interface{}{
-			"id":                fmt.Sprint(object["Host"], ":", formatInt(object["Port"])),
+			"id":                fmt.Sprint(object["Host"], ":", v257),
 			"data_link_name":    object["DataLinkName"],
 			"database_password": object["DatabasePassword"],
 			"database_user":     object["DatabaseUser"],
 			"dba_id":            object["DbaId"],
 			"dba_nick_name":     object["DbaNickName"],
-			"ddl_online":        formatInt(object["DdlOnline"]),
+			"ddl_online":        ddl_onlineVal,
 			"ecs_instance_id":   object["EcsInstanceId"],
 			"ecs_region":        object["EcsRegion"],
 			"env_type":          object["EnvType"],
-			"export_timeout":    formatInt(object["ExportTimeout"]),
+			"export_timeout":    export_timeoutVal,
 			"host":              object["Host"],
 			"instance_id":       object["InstanceId"],
 			"instance_name":     object["InstanceAlias"],
 			"instance_alias":    object["InstanceAlias"],
 			"instance_source":   object["InstanceSource"],
 			"instance_type":     object["InstanceType"],
-			"port":              formatInt(object["Port"]),
-			"query_timeout":     formatInt(object["QueryTimeout"]),
+			"port":              portVal,
+			"query_timeout":     query_timeoutVal,
 			"safe_rule_id":      object["SafeRuleId"],
 			"sid":               object["Sid"],
 			"status":            object["State"],
-			"use_dsql":          formatInt(object["UseDsql"]),
+			"use_dsql":          use_dsqlVal,
 			"vpc_id":            object["VpcId"],
 		}
-		ids = append(ids, fmt.Sprint(object["Host"], ":", formatInt(object["Port"])))
+		v282, err282 := formatInt(object["Port"])
+		if err282 != nil {
+			return err282
+		}
+		ids = append(ids, fmt.Sprint(object["Host"], ":", v282))
 		names = append(names, object["InstanceAlias"])
 		s = append(s, mapping)
 	}

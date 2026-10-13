@@ -163,8 +163,11 @@ func TestAccAliCloudGraphDatabaseDbInstance_basic0(t *testing.T) {
 							"security_ips":              "127.0.0.2",
 						},
 						{
-							"db_instance_ip_array_name": "tftest",
-							"security_ips":              "192.168.0.1",
+							// Empty attribute keeps the group a normal (non-hidden)
+							// whitelist group per the RDS-family attribute semantics.
+							"db_instance_ip_array_attribute": "",
+							"db_instance_ip_array_name":      "tftest",
+							"security_ips":                   "192.168.0.1",
 						},
 					},
 				}),

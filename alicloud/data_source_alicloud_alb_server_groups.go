@@ -289,7 +289,11 @@ func dataSourceAlicloudAlbServerGroupsRead(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alb_server_groups", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.ServerGroups", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v292, err292 := formatInt(response["TotalCount"])
+		if err292 != nil {
+			return err292
+		}
+		if v292 != 0 && err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ServerGroups", response)
 		}
 		result, _ := resp.([]interface{})
@@ -336,17 +340,37 @@ func dataSourceAlicloudAlbServerGroupsRead(d *schema.ResourceData, meta interfac
 			healthCheckConfig := object["HealthCheckConfig"]
 			healthCheckConfigMap := make(map[string]interface{})
 			healthCheckConfigMap["health_check_codes"] = healthCheckConfig.(map[string]interface{})["HealthCheckCodes"]
-			healthCheckConfigMap["health_check_connect_port"] = formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckConnectPort"])
+			v339, err339 := formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckConnectPort"])
+			if err339 != nil {
+				return err339
+			}
+			healthCheckConfigMap["health_check_connect_port"] = v339
 			healthCheckConfigMap["health_check_enabled"] = healthCheckConfig.(map[string]interface{})["HealthCheckEnabled"]
 			healthCheckConfigMap["health_check_host"] = healthCheckConfig.(map[string]interface{})["HealthCheckHost"]
 			healthCheckConfigMap["health_check_http_version"] = healthCheckConfig.(map[string]interface{})["HealthCheckHttpVersion"]
-			healthCheckConfigMap["health_check_interval"] = formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckInterval"])
+			v343, err343 := formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckInterval"])
+			if err343 != nil {
+				return err343
+			}
+			healthCheckConfigMap["health_check_interval"] = v343
 			healthCheckConfigMap["health_check_method"] = healthCheckConfig.(map[string]interface{})["HealthCheckMethod"]
 			healthCheckConfigMap["health_check_path"] = healthCheckConfig.(map[string]interface{})["HealthCheckPath"]
 			healthCheckConfigMap["health_check_protocol"] = healthCheckConfig.(map[string]interface{})["HealthCheckProtocol"]
-			healthCheckConfigMap["health_check_timeout"] = formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckTimeout"])
-			healthCheckConfigMap["healthy_threshold"] = formatInt(healthCheckConfig.(map[string]interface{})["HealthyThreshold"])
-			healthCheckConfigMap["unhealthy_threshold"] = formatInt(healthCheckConfig.(map[string]interface{})["UnhealthyThreshold"])
+			v347, err347 := formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckTimeout"])
+			if err347 != nil {
+				return err347
+			}
+			healthCheckConfigMap["health_check_timeout"] = v347
+			v348, err348 := formatInt(healthCheckConfig.(map[string]interface{})["HealthyThreshold"])
+			if err348 != nil {
+				return err348
+			}
+			healthCheckConfigMap["healthy_threshold"] = v348
+			v349, err349 := formatInt(healthCheckConfig.(map[string]interface{})["UnhealthyThreshold"])
+			if err349 != nil {
+				return err349
+			}
+			healthCheckConfigMap["unhealthy_threshold"] = v349
 			healthCheckConfigSli = append(healthCheckConfigSli, healthCheckConfigMap)
 		}
 		mapping["health_check_config"] = healthCheckConfigSli
@@ -379,14 +403,24 @@ func dataSourceAlicloudAlbServerGroupsRead(d *schema.ResourceData, meta interfac
 		servers := make([]map[string]interface{}, 0)
 		for _, v := range serversList {
 			if m1, ok := v.(map[string]interface{}); ok {
+
+				portVal, err384 := formatInt(m1["Port"])
+				if err384 != nil {
+					return err384
+				}
+
+				weightVal, err389 := formatInt(m1["Weight"])
+				if err389 != nil {
+					return err389
+				}
 				temp1 := map[string]interface{}{
 					"description": m1["Description"],
-					"port":        formatInt(m1["Port"]),
+					"port":        portVal,
 					"server_id":   m1["ServerId"],
 					"server_ip":   m1["ServerIp"],
 					"server_type": m1["ServerType"],
 					"status":      m1["Status"],
-					"weight":      formatInt(m1["Weight"]),
+					"weight":      weightVal,
 				}
 				servers = append(servers, temp1)
 			}

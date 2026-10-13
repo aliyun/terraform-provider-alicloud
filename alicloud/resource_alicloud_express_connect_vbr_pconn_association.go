@@ -181,7 +181,11 @@ func resourceAliCloudExpressConnectVbrPconnAssociationRead(d *schema.ResourceDat
 	d.Set("peering_ipv6_subnet_mask", objectRaw["PeeringIpv6SubnetMask"])
 	d.Set("peering_subnet_mask", objectRaw["PeeringSubnetMask"])
 	d.Set("status", objectRaw["Status"])
-	d.Set("vlan_id", formatInt(objectRaw["VlanId"]))
+	vlan_idVal, err184 := formatInt(objectRaw["VlanId"])
+	if err184 != nil {
+		return err184
+	}
+	d.Set("vlan_id", vlan_idVal)
 	d.Set("physical_connection_id", objectRaw["PhysicalConnectionId"])
 
 	parts := strings.Split(d.Id(), ":")

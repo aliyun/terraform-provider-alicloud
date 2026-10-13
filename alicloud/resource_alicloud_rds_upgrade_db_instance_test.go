@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -68,7 +69,7 @@ resource "alicloud_db_instance" "default" {
 
 var upgradeInstanceBasicMap = map[string]string{}
 
-func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
+func TestAccAliCloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 	resourceId := "alicloud_rds_upgrade_db_instance.default"
@@ -86,9 +87,9 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -277,7 +278,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 }
 
 // SSL function and pg_hba_conf function incompatible, so add this test case for pg_hba_conf without ssl function.
-func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
+func TestAccAliCloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 	resourceId := "alicloud_rds_upgrade_db_instance.default"
@@ -294,9 +295,9 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -415,6 +416,58 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_minor_version": "Manual",
+					"certificate":                "tfacc-cert",
+					"db_instance_storage":        30,
+					"db_instance_storage_type":   "cloud_essd2",
+					"db_name":                    "tfaccdb",
+					"dedicated_host_group_id":    "dhg-tfacc-placeholder",
+					"direction":                  "Up",
+					"effective_time":             "2022-01-01T12:05:05Z",
+					"encryption_key":             "key-tfacc-placeholder",
+					"engine":                     "PostgreSQL",
+					"engine_version":             "14.0",
+					"force_restart":              "true",
+					"ha_mode":                    "RPO",
+					"maintain_time":              "2022-01-01T12:05:05Z",
+					"parameters": []map[string]interface{}{
+						{
+							"name":  "tfacc_param",
+							"value": "1",
+						},
+					},
+					"password": "YourPassword_123",
+					"pg_hba_conf": []map[string]interface{}{
+						{
+							"type":        "host",
+							"user":        "all",
+							"address":     "0.0.0.0/0",
+							"database":    "all",
+							"method":      "md5",
+							"priority_id": "1",
+							"mask":        "255.255.255.255",
+							"option":      "sameuser",
+						},
+					},
+					"payment_type":          "Subscription",
+					"private_ip_address":    "172.16.0.10",
+					"private_key":           "tfacc-private-key",
+					"released_keep_policy":  "Delete",
+					"role_arn":              "acs:ram::1234567890123456:role/tfacc-placeholder",
+					"server_cert":           "tfacc-server-cert",
+					"server_key":            "tfacc-server-key",
+					"source_biz":            "1",
+					"switch_time":           "2022-01-01T12:05:05Z",
+					"sync_mode":             "Sync",
+					"tde_status":            "Enabled",
+					"vpc_id":                "${alicloud_db_instance.default.vpc_id}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"source_db_instance_id": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -424,7 +477,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
+func TestAccAliCloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 	resourceId := "alicloud_rds_upgrade_db_instance.default"
@@ -442,9 +495,9 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

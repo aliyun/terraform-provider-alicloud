@@ -69,7 +69,11 @@ func testSweepDTSMigrationJob(region string) error {
 		}
 
 		resp, err := jsonpath.Get("$.DtsJobList", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v72, err72 := formatInt(response["TotalCount"])
+		if err72 != nil {
+			return err72
+		}
+		if v72 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.DtsJobList", action, err)
 			return nil
 		}
@@ -318,6 +322,18 @@ func TestAccAliCloudDTSMigrationJob_ssl(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"checkpoint":                         "checkpoint",
+					"destination_endpoint_database_name": "destination_endpoint_database_name",
+					"destination_endpoint_ip":            "destination_endpoint_ip",
+					"destination_endpoint_oracle_sid":    "destination_endpoint_oracle_sid",
+					"destination_endpoint_port":          "destination_endpoint_port",
+					"instance_class":                     "large",
+					"source_endpoint_database_name":      "source_endpoint_database_name",
+					"source_endpoint_ip":                 "source_endpoint_ip",
+					"source_endpoint_oracle_sid":         "source_endpoint_oracle_sid",
+					"source_endpoint_owner_id":           "source_endpoint_owner_id",
+					"source_endpoint_port":               "source_endpoint_port",
+					"source_endpoint_role":               "source_endpoint_role",
 					"dts_instance_id":                    "${alicloud_dts_migration_instance.default.id}",
 					"dts_job_name":                       name,
 					"source_endpoint_instance_type":      "RDS",
@@ -352,6 +368,7 @@ func TestAccAliCloudDTSMigrationJob_ssl(t *testing.T) {
 			// the job.
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_class":           "medium",
 					"source_endpoint_ssl":      "0",
 					"destination_endpoint_ssl": "0",
 				}),

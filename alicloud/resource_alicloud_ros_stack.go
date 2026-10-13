@@ -274,7 +274,11 @@ func resourceAlicloudRosStackRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("ram_role_name", object["RamRoleName"])
 	d.Set("stack_name", object["StackName"])
 	d.Set("status", object["Status"])
-	d.Set("timeout_in_minutes", formatInt(object["TimeoutInMinutes"]))
+	timeout_in_minutesVal, err277 := formatInt(object["TimeoutInMinutes"])
+	if err277 != nil {
+		return err277
+	}
+	d.Set("timeout_in_minutes", timeout_in_minutesVal)
 
 	template, err := rosService.DescribeRosTemplateByStackId(stackId)
 	if err != nil {

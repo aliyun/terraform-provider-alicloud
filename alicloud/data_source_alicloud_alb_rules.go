@@ -464,7 +464,11 @@ func dataSourceAliCloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 		}
 
 		resp, err := jsonpath.Get("$.Rules", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v467, err467 := formatInt(response["TotalCount"])
+		if err467 != nil {
+			return err467
+		}
+		if v467 != 0 && err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Rules", response)
 		}
 
@@ -499,13 +503,18 @@ func dataSourceAliCloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		priorityVal, err508 := formatInt(object["Priority"])
+		if err508 != nil {
+			return err508
+		}
 		mapping := map[string]interface{}{
 			"id":               fmt.Sprint(object["RuleId"]),
 			"rule_id":          fmt.Sprint(object["RuleId"]),
 			"load_balancer_id": object["LoadBalancerId"],
 			"listener_id":      object["ListenerId"],
 			"rule_name":        object["RuleName"],
-			"priority":         formatInt(object["Priority"]),
+			"priority":         priorityVal,
 			"status":           object["RuleStatus"],
 		}
 
@@ -515,7 +524,11 @@ func dataSourceAliCloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 				ruleActionsArg := ruleActions.(map[string]interface{})
 				ruleActionsMap := map[string]interface{}{}
 				ruleActionsMap["type"] = ruleActionsArg["Type"]
-				ruleActionsMap["order"] = formatInt(ruleActionsArg["Order"])
+				v518, err518 := formatInt(ruleActionsArg["Order"])
+				if err518 != nil {
+					return err518
+				}
+				ruleActionsMap["order"] = v518
 
 				if fixedResponseConfig, ok := ruleActionsArg["FixedResponseConfig"]; ok {
 					fixedResponseConfigArg := fixedResponseConfig.(map[string]interface{})
@@ -540,7 +553,11 @@ func dataSourceAliCloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 								serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 								serverGroupTuplesMap := map[string]interface{}{}
 								serverGroupTuplesMap["server_group_id"] = serverGroupTuplesArg["ServerGroupId"]
-								serverGroupTuplesMap["weight"] = formatInt(serverGroupTuplesArg["Weight"])
+								v543, err543 := formatInt(serverGroupTuplesArg["Weight"])
+								if err543 != nil {
+									return err543
+								}
+								serverGroupTuplesMap["weight"] = v543
 								serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 							}
 						}

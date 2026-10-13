@@ -165,11 +165,23 @@ func resourceAlicloudMseEngineNamespaceRead(d *schema.ResourceData, meta interfa
 	d.Set("instance_id", parts[0])
 	d.Set("namespace_show_name", object["NamespaceShowName"])
 	d.Set("namespace_desc", object["NamespaceDesc"])
-	d.Set("quota", formatInt(object["Quota"]))
-	d.Set("config_count", formatInt(object["ConfigCount"]))
+	quotaVal, err168 := formatInt(object["Quota"])
+	if err168 != nil {
+		return err168
+	}
+	d.Set("quota", quotaVal)
+	config_countVal, err169 := formatInt(object["ConfigCount"])
+	if err169 != nil {
+		return err169
+	}
+	d.Set("config_count", config_countVal)
 	d.Set("service_count", object["ServiceCount"])
 	d.Set("source_type", object["SourceType"])
-	d.Set("type", formatInt(object["Type"]))
+	typeVal, err172 := formatInt(object["Type"])
+	if err172 != nil {
+		return err172
+	}
+	d.Set("type", typeVal)
 	return nil
 }
 func resourceAlicloudMseEngineNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
