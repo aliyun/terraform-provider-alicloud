@@ -451,6 +451,325 @@ func TestAccAliCloudMessageServiceTopic_basic9032_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudMessageServiceTopic_sse(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_topic.default"
+	ra := resourceAttrInit(resourceId, AliCloudMessageServiceTopicMap9031)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceTopic")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceTopic-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceTopicSSEDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			// SSE runs in cn-shanghai: it is the only probed region where the
+			// SSE create/read round trip works without an account whitelist.
+			// Other regions either hide the SSE fields in the response
+			// (cn-hangzhou, cn-beijing, cn-shenzhen, cn-hongkong,
+			// cn-zhangjiakou) or reject SSE with FeatureNotEnabled behind an
+			// account whitelist (cn-qingdao).
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"topic_name":    name,
+					"enable_sse":    "true",
+					"sse_type":      "SMQ",
+					"sse_algorithm": "AES-256-GCM",
+					"tags": map[string]string{
+						"Created": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"topic_name":         name,
+						"enable_sse":         "true",
+						"sse_type":           "SMQ",
+						"sse_algorithm":      "AES-256-GCM",
+						"encryption_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "false",
+					"sse_type":      REMOVEKEY,
+					"sse_algorithm": REMOVEKEY,
+					"tags":          REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						// EncryptionEnabled stays true after SSE is disabled: it
+						// reports the residual encryption state, not the switch. The
+						// check map accumulates across steps, so sse_type and
+						// sse_algorithm are REMOVEKEYed here: the response no longer
+						// reports them once SSE is off.
+						"enable_sse":         "false",
+						"encryption_enabled": "true",
+						"sse_type":           REMOVEKEY,
+						"sse_algorithm":      REMOVEKEY,
+					}),
+				),
+			},
+			{
+				// SSE-SMQ does not use a KMS key: kms_key_id is explicitly set to
+				// empty here, which also keeps the attribute covered in tests.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "true",
+					"sse_type":      "SMQ",
+					"sse_algorithm": "AES-256-GCM",
+					"kms_key_id":    "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_sse":         "true",
+						"sse_type":           "SMQ",
+						"sse_algorithm":      "AES-256-GCM",
+						"encryption_enabled": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMessageServiceTopic_sse_update(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_topic.default"
+	ra := resourceAttrInit(resourceId, AliCloudMessageServiceTopicMap9031)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceTopic")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceTopic-sse%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceTopicSSEDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"topic_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"topic_name": name,
+					}),
+				),
+			},
+			{
+				// SSE is enabled in place via SetTopicAttributes: the topic is
+				// not recreated, so topic_name and the resource id stay the same.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "true",
+					"sse_type":      "SMQ",
+					"sse_algorithm": "AES-256-GCM",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"topic_name":         name,
+						"enable_sse":         "true",
+						"sse_type":           "SMQ",
+						"sse_algorithm":      "AES-256-GCM",
+						"encryption_enabled": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// Case SSE-KMS with a real KMS key
+func TestAccAliCloudMessageServiceTopic_sse_kms(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_topic.default"
+	ra := resourceAttrInit(resourceId, AliCloudMessageServiceTopicMap9031)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceTopic")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceTopic-sse-kms%d", rand)
+	// The key id must be resolved before the configs below are built, and
+	// the test skips when no usable key is available in the environment.
+	kmsKeyId := testAccPreCheckMessageServiceTopicKMSKeyId(t)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMessageServiceTopicSSEDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			// SSE runs in cn-shanghai: it is the only probed region where the
+			// SSE create/read round trip works without an account whitelist.
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"topic_name":    name,
+					"enable_sse":    "true",
+					"sse_type":      "KMS",
+					"sse_algorithm": "AES-256-GCM",
+					"kms_key_id":    kmsKeyId,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"topic_name":         name,
+						"enable_sse":         "true",
+						"sse_type":           "KMS",
+						"sse_algorithm":      "AES-256-GCM",
+						"kms_key_id":         kmsKeyId,
+						"encryption_enabled": "true",
+					}),
+				),
+			},
+			{
+				// Disabling SSE clears the whole SSE family in the API
+				// response, so the accumulated expectation map drops
+				// sse_type, sse_algorithm and kms_key_id here. The disable
+				// must send enable_sse=false and remove the SSE family from
+				// the configuration at the same time.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "false",
+					"sse_type":      REMOVEKEY,
+					"sse_algorithm": REMOVEKEY,
+					"kms_key_id":    REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_sse":         "false",
+						"encryption_enabled": "true",
+						"sse_type":           REMOVEKEY,
+						"sse_algorithm":      REMOVEKEY,
+						"kms_key_id":         REMOVEKEY,
+					}),
+				),
+			},
+			{
+				// Re-enabling SSE with the KMS type exercises the update
+				// path: SetTopicAttributes carries KmsKeyId together with
+				// the rest of the SSE family and Read backfills all of them.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "true",
+					"sse_type":      "KMS",
+					"sse_algorithm": "AES-256-GCM",
+					"kms_key_id":    kmsKeyId,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"topic_name":         name,
+						"enable_sse":         "true",
+						"sse_type":           "KMS",
+						"sse_algorithm":      "AES-256-GCM",
+						"kms_key_id":         kmsKeyId,
+						"encryption_enabled": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// testAccPreCheckMessageServiceTopicKMSKeyId returns a usable KMS key id for
+// SSE-KMS testing. It prefers the ALICLOUD_KMS_KEY_ID environment variable
+// and otherwise discovers an Enabled Aliyun_AES_256 ENCRYPT/DECRYPT key in
+// the current region. The test skips when no usable key is available.
+func testAccPreCheckMessageServiceTopicKMSKeyId(t *testing.T) string {
+	keyId := os.Getenv("ALICLOUD_KMS_KEY_ID")
+	if keyId != "" {
+		return keyId
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	kmsService := KmsService{client}
+	action := "ListKeys"
+	request := map[string]interface{}{
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+	resp, err := jsonpath.Get("$.Keys.Key", response)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+	for _, v := range resp.([]interface{}) {
+		item := v.(map[string]interface{})
+		id := fmt.Sprint(item["KeyId"])
+		metadata, err := kmsService.DescribeKmsKey(id)
+		if err != nil {
+			continue
+		}
+		if fmt.Sprint(metadata["KeyState"]) != "Enabled" ||
+			fmt.Sprint(metadata["KeySpec"]) != "Aliyun_AES_256" ||
+			fmt.Sprint(metadata["KeyUsage"]) != "ENCRYPT/DECRYPT" {
+			continue
+		}
+		return id
+	}
+	t.Skipf("Skipping the test case: no Enabled Aliyun_AES_256 ENCRYPT/DECRYPT KMS key found in region %s, set ALICLOUD_KMS_KEY_ID to use a specific key", region)
+	return ""
+}
+
+func AliCloudMessageServiceTopicSSEDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+`, name)
+}
+
 var AliCloudMessageServiceTopicMap9031 = map[string]string{
 	"create_time":      CHECKSET,
 	"topic_type":       CHECKSET,
@@ -475,6 +794,10 @@ func TestUnitAliCloudMessageServiceTopic(t *testing.T) {
 		"topic_name":       "CreateMessageServiceTopicValue",
 		"max_message_size": 12357,
 		"logging_enabled":  false,
+		"enable_sse":       false,
+		"kms_key_id":       "",
+		"sse_algorithm":    "",
+		"sse_type":         "",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -499,6 +822,10 @@ func TestUnitAliCloudMessageServiceTopic(t *testing.T) {
 			"TopicName":      "CreateMessageServiceTopicValue",
 			"MaxMessageSize": 12357,
 			"LoggingEnabled": false,
+			"EnableSSE":      false,
+			"KmsKeyId":       "",
+			"SseAlgorithm":   "",
+			"SseType":        "",
 		},
 	}
 	CreateMockResponse := map[string]interface{}{}
@@ -585,6 +912,10 @@ func TestUnitAliCloudMessageServiceTopic(t *testing.T) {
 		"topic_name":       "CreateMessageServiceTopicValue",
 		"max_message_size": 65536,
 		"logging_enabled":  true,
+		"enable_sse":       true,
+		"kms_key_id":       "kms-test-key-id",
+		"sse_algorithm":    "AES-256-GCM",
+		"sse_type":         "SMQ",
 	}
 	diff, err := newInstanceDiff("alicloud_message_service_topic", attributes, attributesDiff, dInit.State())
 	if err != nil {
@@ -597,6 +928,10 @@ func TestUnitAliCloudMessageServiceTopic(t *testing.T) {
 			"TopicName":      "CreateMessageServiceTopicValue",
 			"MaxMessageSize": 65536,
 			"LoggingEnabled": true,
+			"EnableSSE":      true,
+			"KmsKeyId":       "kms-test-key-id",
+			"SseAlgorithm":   "AES-256-GCM",
+			"SseType":        "SMQ",
 		},
 	}
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
