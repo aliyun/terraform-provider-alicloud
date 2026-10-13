@@ -4930,7 +4930,7 @@ func TestAccAliCloudElasticsearchInstance_resourceGroup(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
+	name := fmt.Sprintf("tfes%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceResourceGroup)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -5022,7 +5022,7 @@ variable "name" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_resource_manager_resource_group" "target" {
-  name = "tf-esrg-%s"
+  display_name = "%s"
 }
 
 resource "alicloud_vpc" "defaultLPXHTQ" {
