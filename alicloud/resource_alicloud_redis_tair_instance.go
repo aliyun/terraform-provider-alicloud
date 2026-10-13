@@ -204,6 +204,12 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"replica_count": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(1, 4),
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -260,6 +266,11 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"slave_read_only_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
+			},
+			"slave_replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"src_db_instance_id": {
 				Type:     schema.TypeString,
@@ -413,6 +424,12 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("recover_config_mode"); ok {
 		request["RecoverConfigMode"] = v
 	}
+	if v, ok := d.GetOk("replica_count"); ok {
+		request["ReplicaCount"] = v
+	}
+	if v, ok := d.GetOk("slave_replica_count"); ok {
+		request["SlaveReplicaCount"] = v
+	}
 	if v, ok := d.GetOk("connection_string_prefix"); ok {
 		request["ConnectionStringPrefix"] = v
 	}
@@ -511,6 +528,9 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	if objectRaw["RegionId"] != nil {
 		d.Set("region_id", objectRaw["RegionId"])
 	}
+	if objectRaw["ReplicaCount"] != nil {
+		d.Set("replica_count", objectRaw["ReplicaCount"])
+	}
 	if objectRaw["ResourceGroupId"] != nil {
 		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	}
@@ -519,6 +539,9 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	}
 	if objectRaw["ShardCount"] != nil && objectRaw["ShardCount"] != 0 {
 		d.Set("shard_count", objectRaw["ShardCount"])
+	}
+	if objectRaw["SlaveReplicaCount"] != nil {
+		d.Set("slave_replica_count", objectRaw["SlaveReplicaCount"])
 	}
 	if objectRaw["InstanceStatus"] != nil {
 		d.Set("status", objectRaw["InstanceStatus"])
@@ -737,6 +760,14 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	if !d.IsNewResource() && d.HasChange("node_type") {
 		update = true
 		request["NodeType"] = d.Get("node_type")
+	}
+	if !d.IsNewResource() && d.HasChange("replica_count") {
+		update = true
+		request["ReplicaCount"] = d.Get("replica_count")
+	}
+	if !d.IsNewResource() && d.HasChange("slave_replica_count") {
+		update = true
+		request["SlaveReplicaCount"] = d.Get("slave_replica_count")
 	}
 
 	if update {
