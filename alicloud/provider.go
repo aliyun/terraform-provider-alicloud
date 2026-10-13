@@ -1822,6 +1822,7 @@ func Provider() *schema.Provider {
 			"alicloud_scdn_domain":                                           resourceAlicloudScdnDomain(),
 			"alicloud_alb_server_group":                                      resourceAliCloudAlbServerGroup(),
 			"alicloud_data_works_folder":                                     resourceAlicloudDataWorksFolder(),
+			"alicloud_data_works_component":                                  resourceAlicloudDataWorksComponent(),
 			"alicloud_arms_alert_contact_group":                              resourceAlicloudArmsAlertContactGroup(),
 			"alicloud_dcdn_domain_config":                                    resourceAliCloudDcdnDomainConfig(),
 			"alicloud_scdn_domain_config":                                    resourceAlicloudScdnDomainConfig(),
