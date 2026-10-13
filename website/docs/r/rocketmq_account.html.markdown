@@ -91,6 +91,7 @@ resource "alicloud_rocketmq_account" "default" {
   instance_id    = alicloud_rocketmq_instance.default9hAb83.id
   username       = "tfexample"
   password       = "1741835136"
+  remark         = "tfexample"
 }
 ```
 
@@ -102,6 +103,7 @@ The following arguments are supported:
 * `account_status` - (Optional) The status of the account. Valid values: `DISABLE`, `ENABLE`.
 * `instance_id` - (Required, ForceNew) The instance ID.
 * `password` - (Required) The password of the account.
+* `remark` - (Optional) The remark of the account.
 * `username` - (Required, ForceNew) The username of the account.
 
 ## Attributes Reference
