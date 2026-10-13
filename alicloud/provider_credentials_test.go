@@ -11,8 +11,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/mitchellh/go-homedir"
 )
@@ -110,17 +112,13 @@ EOF
 		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
 		// 读取配置文件验证
-		providerConfig = nil // 重置全局变量
-		_, err := getConfigFromProfile(resourceData, "mode")
-		if err != nil {
-			t.Fatalf("Failed to get config from profile: %v", err)
-		}
+		profileConfig := loadProfileConfig(resourceData)
 
-		if providerConfig == nil {
+		if profileConfig == nil {
 			t.Fatal("Provider config is nil")
 		}
 
-		mode, ok := providerConfig["mode"]
+		mode, ok := profileConfig["mode"]
 		if !ok {
 			t.Fatal("Mode not found in provider config")
 		}
@@ -205,17 +203,13 @@ func TestProviderCredentials_OAuthMode(t *testing.T) {
 		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
 		// 读取配置文件验证
-		providerConfig = nil // 重置全局变量
-		_, err := getConfigFromProfile(resourceData, "mode")
-		if err != nil {
-			t.Fatalf("Failed to get config from profile: %v", err)
-		}
+		profileConfig := loadProfileConfig(resourceData)
 
-		if providerConfig == nil {
+		if profileConfig == nil {
 			t.Fatal("Provider config is nil")
 		}
 
-		mode, ok := providerConfig["mode"]
+		mode, ok := profileConfig["mode"]
 		if !ok {
 			t.Fatal("Mode not found in provider config")
 		}
@@ -317,19 +311,14 @@ EOF
 
 			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
-			// 重置全局变量
-			providerConfig = nil
+			// 每个 provider 实例独立解析自身的 profile
+			profileConfig := loadProfileConfig(resourceData)
 
-			_, err := getConfigFromProfile(resourceData, "mode")
-			if err != nil {
-				t.Fatalf("Failed to get config from profile: %v", err)
-			}
-
-			if providerConfig == nil {
+			if profileConfig == nil {
 				t.Fatal("Provider config is nil")
 			}
 
-			mode, ok := providerConfig["mode"]
+			mode, ok := profileConfig["mode"]
 			if !ok {
 				t.Fatal("Mode not found in provider config")
 			}
@@ -407,11 +396,7 @@ func TestProviderCredentials_GetConfigFromProfile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			providerConfig = nil // 重置
-			val, err := getConfigFromProfile(resourceData, tt.profileKey)
-			if err != nil {
-				t.Fatalf("Failed to get config: %v", err)
-			}
+			val := getConfigFromProfile(loadProfileConfig(resourceData), tt.profileKey)
 
 			if tt.shouldBeNil {
 				if val != nil {
@@ -467,12 +452,8 @@ func TestProviderCredentials_AdvancedModesReturnNil(t *testing.T) {
 
 			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
-			providerConfig = nil
 			// 对于高级模式，access_key_id 应该返回 nil
-			val, err := getConfigFromProfile(resourceData, "access_key_id")
-			if err != nil {
-				t.Fatalf("Failed to get config: %v", err)
-			}
+			val := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id")
 
 			// 高级模式应该返回 nil（凭证通过 CLIProfileCredentialsProvider 动态获取）
 			if val != nil {
@@ -531,8 +512,7 @@ func TestProviderCredentials_PriorityOrder(t *testing.T) {
 		if v, ok := resourceData.GetOk("access_key"); ok && v != nil && v.(string) != "" {
 			accessKey = v.(string)
 		} else {
-			providerConfig = nil
-			if v, err := getConfigFromProfile(resourceData, "access_key_id"); err == nil && v != nil {
+			if v := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id"); v != nil {
 				accessKey = v.(string)
 			}
 		}
@@ -551,11 +531,7 @@ func TestProviderCredentials_PriorityOrder(t *testing.T) {
 
 		resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
-		providerConfig = nil
-		val, err := getConfigFromProfile(resourceData, "access_key_id")
-		if err != nil {
-			t.Fatalf("Failed to get config: %v", err)
-		}
+		val := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id")
 
 		if val != "PROFILE_AK" {
 			t.Errorf("Expected profile config 'PROFILE_AK', got '%v'", val)
@@ -572,16 +548,196 @@ func TestProviderCredentials_ConfigFileNotFound(t *testing.T) {
 
 	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
-	providerConfig = nil
-	val, err := getConfigFromProfile(resourceData, "access_key_id")
+	val := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id")
 
 	// 文件不存在时应该返回 nil（不报错）
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
 	if val != nil {
 		t.Errorf("Expected nil when config file doesn't exist, got %v", val)
+	}
+}
+
+// writeTestProfileFile 写入仅包含一个 profile 的 aliyun CLI 配置文件
+func writeTestProfileFile(t *testing.T, path string, profile map[string]interface{}) {
+	t.Helper()
+	config := map[string]interface{}{
+		"profiles": []map[string]interface{}{profile},
+		"current":  profile["name"],
+	}
+	data, err := json.Marshal(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestProviderCredentials_MultiAliasIsolation 守护多 alias 串配置缺陷：
+// 同一进程内先后配置两个使用不同 profile 的 provider 实例（模拟两个 alias），
+// 各自必须使用自身 profile 的凭证/region/mode，第二个实例不得复用第一个实例的配置。
+func TestProviderCredentials_MultiAliasIsolation(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "alicloud-test-multi-alias-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	pathA := filepath.Join(tmpDir, "config_alias_a.json")
+	writeTestProfileFile(t, pathA, map[string]interface{}{
+		"name":              "alias-a",
+		"mode":              "AK",
+		"access_key_id":     "ALIAS_A_AK",
+		"access_key_secret": "ALIAS_A_SK",
+		"region_id":         "cn-hangzhou",
+	})
+	pathB := filepath.Join(tmpDir, "config_alias_b.json")
+	writeTestProfileFile(t, pathB, map[string]interface{}{
+		"name":              "alias-b",
+		"mode":              "StsToken",
+		"access_key_id":     "ALIAS_B_AK",
+		"access_key_secret": "ALIAS_B_SK",
+		"sts_token":         "ALIAS_B_STS",
+		"region_id":         "cn-beijing",
+	})
+
+	provider := Provider()
+	resourceDataA := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+		"profile":                 "alias-a",
+		"shared_credentials_file": pathA,
+		"region":                  "cn-hangzhou",
+		"account_type":            "Domestic",
+	})
+	resourceDataB := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+		"profile":                 "alias-b",
+		"shared_credentials_file": pathB,
+		"region":                  "cn-beijing",
+		"account_type":            "Domestic",
+	})
+
+	// 先配置 alias A，再配置 alias B；B 不得复用 A 的 profile 解析结果
+	clientA, diagsA := providerConfigure(context.Background(), resourceDataA, provider)
+	if diagsA.HasError() {
+		t.Fatalf("providerConfigure failed for alias A: %v", diagsA)
+	}
+	clientB, diagsB := providerConfigure(context.Background(), resourceDataB, provider)
+	if diagsB.HasError() {
+		t.Fatalf("providerConfigure failed for alias B: %v", diagsB)
+	}
+
+	aliyunClientA := clientA.(*connectivity.AliyunClient)
+	aliyunClientB := clientB.(*connectivity.AliyunClient)
+
+	if aliyunClientA.AccessKey != "ALIAS_A_AK" || aliyunClientA.SecretKey != "ALIAS_A_SK" {
+		t.Errorf("alias A should use its own profile credentials, got AccessKey=%q SecretKey=%q",
+			aliyunClientA.AccessKey, aliyunClientA.SecretKey)
+	}
+	if aliyunClientA.RegionId != "cn-hangzhou" {
+		t.Errorf("alias A should use its own region, got %q", aliyunClientA.RegionId)
+	}
+	if aliyunClientB.AccessKey != "ALIAS_B_AK" || aliyunClientB.SecretKey != "ALIAS_B_SK" {
+		t.Errorf("alias B credentials contaminated by another alias: got AccessKey=%q SecretKey=%q",
+			aliyunClientB.AccessKey, aliyunClientB.SecretKey)
+	}
+	if aliyunClientB.SecurityToken != "ALIAS_B_STS" {
+		t.Errorf("alias B should use its own profile sts_token, got %q", aliyunClientB.SecurityToken)
+	}
+	if aliyunClientB.RegionId != "cn-beijing" {
+		t.Errorf("alias B should use its own region, got %q", aliyunClientB.RegionId)
+	}
+
+	// profile 解析层复核：先加载 A 再加载 B，两次结果互不污染
+	profileConfigA := loadProfileConfig(resourceDataA)
+	profileConfigB := loadProfileConfig(resourceDataB)
+	if got := getConfigFromProfile(profileConfigA, "access_key_id"); got != "ALIAS_A_AK" {
+		t.Errorf("profile A access_key_id = %v, want ALIAS_A_AK", got)
+	}
+	if got := getConfigFromProfile(profileConfigB, "access_key_id"); got != "ALIAS_B_AK" {
+		t.Errorf("profile B access_key_id = %v, want ALIAS_B_AK", got)
+	}
+	if got := getConfigFromProfile(profileConfigB, "sts_token"); got != "ALIAS_B_STS" {
+		t.Errorf("profile B sts_token = %v, want ALIAS_B_STS", got)
+	}
+	if got := getConfigFromProfile(profileConfigA, "region_id"); got != "cn-hangzhou" {
+		t.Errorf("profile A region_id = %v, want cn-hangzhou", got)
+	}
+	if got := getConfigFromProfile(profileConfigB, "region_id"); got != "cn-beijing" {
+		t.Errorf("profile B region_id = %v, want cn-beijing", got)
+	}
+}
+
+// TestProviderCredentials_ConcurrentAliasesNoRace 守护被消除的包级全局
+// providerConfig：并发执行多 alias 的 profile 解析（原全局变量的读写路径），
+// 各实例必须得到自身 profile 的结果，且 go test -race 下无竞态报告。
+func TestProviderCredentials_ConcurrentAliasesNoRace(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "alicloud-test-concurrent-alias-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	const aliasCount = 8
+
+	type aliasProfile struct {
+		resourceData *schema.ResourceData
+		accessKey    string
+		secretKey    string
+		regionId     string
+	}
+
+	provider := Provider()
+	aliasProfiles := make([]aliasProfile, 0, aliasCount)
+	for i := 0; i < aliasCount; i++ {
+		accessKey := fmt.Sprintf("CONCURRENT_ALIAS_%d_AK", i)
+		secretKey := fmt.Sprintf("CONCURRENT_ALIAS_%d_SK", i)
+		regionId := []string{"cn-hangzhou", "cn-beijing", "cn-shanghai", "cn-shenzhen"}[i%4]
+
+		profilePath := filepath.Join(tmpDir, fmt.Sprintf("config_%d.json", i))
+		writeTestProfileFile(t, profilePath, map[string]interface{}{
+			"name":              fmt.Sprintf("concurrent-alias-%d", i),
+			"mode":              "AK",
+			"access_key_id":     accessKey,
+			"access_key_secret": secretKey,
+			"region_id":         regionId,
+		})
+		raw := map[string]interface{}{
+			"profile":                 fmt.Sprintf("concurrent-alias-%d", i),
+			"shared_credentials_file": profilePath,
+			"region":                  regionId,
+		}
+		aliasProfiles = append(aliasProfiles, aliasProfile{
+			resourceData: schema.TestResourceDataRaw(t, provider.Schema, raw),
+			accessKey:    accessKey,
+			secretKey:    secretKey,
+			regionId:     regionId,
+		})
+	}
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, aliasCount)
+	for i := range aliasProfiles {
+		wg.Add(1)
+		go func(ap aliasProfile) {
+			defer wg.Done()
+			profileConfig := loadProfileConfig(ap.resourceData)
+			if got := getConfigFromProfile(profileConfig, "access_key_id"); got != ap.accessKey {
+				errCh <- fmt.Errorf("access_key_id contaminated: want %q, got %v", ap.accessKey, got)
+				return
+			}
+			if got := getConfigFromProfile(profileConfig, "access_key_secret"); got != ap.secretKey {
+				errCh <- fmt.Errorf("access_key_secret contaminated: want %q, got %v", ap.secretKey, got)
+				return
+			}
+			if got := getConfigFromProfile(profileConfig, "region_id"); got != ap.regionId {
+				errCh <- fmt.Errorf("region_id contaminated: want %q, got %v", ap.regionId, got)
+				return
+			}
+		}(aliasProfiles[i])
+	}
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		t.Error(err)
 	}
 }
 
@@ -917,9 +1073,6 @@ func TestProviderConfigure_ProfileWithStaticAK(t *testing.T) {
 	provider := Provider()
 	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
 
-	// 重置全局变量
-	providerConfig = nil
-
 	client, diags := providerConfigure(context.Background(), resourceData, provider)
 	if diags.HasError() {
 		t.Fatalf("providerConfigure failed with profile AK mode: %v", diags)
@@ -971,8 +1124,6 @@ func TestProviderConfigure_ProfileWithSTS(t *testing.T) {
 
 	provider := Provider()
 	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	providerConfig = nil
 
 	client, diags := providerConfigure(context.Background(), resourceData, provider)
 	if diags.HasError() {
@@ -1047,8 +1198,6 @@ EOF
 
 	provider := Provider()
 	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	providerConfig = nil
 
 	client, diags := providerConfigure(context.Background(), resourceData, provider)
 	if diags.HasError() {
@@ -1407,8 +1556,6 @@ func TestProviderConfigure_StaticOverridesProfile(t *testing.T) {
 	provider := Provider()
 	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
 
-	providerConfig = nil
-
 	client, diags := providerConfigure(context.Background(), resourceData, provider)
 	if diags.HasError() {
 		t.Fatalf("providerConfigure failed: %v", diags)
@@ -1479,8 +1626,6 @@ func TestProviderConfigure_ProfileNotFound(t *testing.T) {
 
 	provider := Provider()
 	resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-	providerConfig = nil
 
 	_, diags := providerConfigure(context.Background(), resourceData, provider)
 	// Profile 不存在时，应该返回缺少凭证的错误
@@ -1684,9 +1829,6 @@ func TestProviderConfigure_AdvancedProfileModes(t *testing.T) {
 			provider := Provider()
 			resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
 
-			// 重置全局变量
-			providerConfig = nil
-
 			// 测试配置过程
 			client, diags := providerConfigure(context.Background(), resourceData, provider)
 			if diags.HasError() {
@@ -1749,38 +1891,30 @@ func TestProviderConfigure_GetConfigFromProfile_AdvancedModes(t *testing.T) {
 			provider := Provider()
 			resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
 
-			// 重置全局变量
-			providerConfig = nil
+			// 每个 provider 实例独立加载自身的 profile
+			profileConfig := loadProfileConfig(resourceData)
 
 			// 测试获取 region_id（应该正常返回，因为 region_id 是特例）
-			region, err := getConfigFromProfile(resourceData, "region_id")
-			if err != nil {
-				t.Errorf("Failed to get region_id for mode %s: %v", mode, err)
-			} else if region != "cn-hangzhou" {
+			region := getConfigFromProfile(profileConfig, "region_id")
+			if region != "cn-hangzhou" {
 				t.Errorf("Expected region_id 'cn-hangzhou', got '%v' for mode %s", region, mode)
 			}
 
 			// 测试获取 mode（对于高级模式应该返回 nil，除了 region_id 之外的所有字段都返回 nil）
-			modeValue, err := getConfigFromProfile(resourceData, "mode")
-			if err != nil {
-				t.Errorf("Unexpected error when getting mode for mode %s: %v", mode, err)
-			} else if modeValue != nil {
+			modeValue := getConfigFromProfile(profileConfig, "mode")
+			if modeValue != nil {
 				t.Errorf("Expected nil for mode in advanced mode %s, got %v", mode, modeValue)
 			}
 
 			// 测试获取 access_key_id（对于高级模式应该返回 nil）
-			accessKey, err := getConfigFromProfile(resourceData, "access_key_id")
-			if err != nil {
-				t.Errorf("Failed to get access_key_id for mode %s: %v", mode, err)
-			} else if accessKey != nil {
+			accessKey := getConfigFromProfile(profileConfig, "access_key_id")
+			if accessKey != nil {
 				t.Errorf("Expected nil for access_key_id in mode %s, got %v", mode, accessKey)
 			}
 
 			// 测试获取 ram_role_name（对于高级模式应该返回 nil）
-			ramRoleName, err := getConfigFromProfile(resourceData, "ram_role_name")
-			if err != nil {
-				t.Errorf("Failed to get ram_role_name for mode %s: %v", mode, err)
-			} else if ramRoleName != nil {
+			ramRoleName := getConfigFromProfile(profileConfig, "ram_role_name")
+			if ramRoleName != nil {
 				t.Errorf("Expected nil for ram_role_name in mode %s, got %v", mode, ramRoleName)
 			}
 		})
@@ -1890,9 +2024,6 @@ func TestAdvancedProfileModes_CredentialRetrieval(t *testing.T) {
 
 			provider := Provider()
 			resourceData := schema.TestResourceDataRaw(t, provider.Schema, raw)
-
-			// 重置全局变量
-			providerConfig = nil
 
 			// 测试 providerConfigure 函数对高级模式的处理
 			// 注意：由于我们没有真实的凭证提供程序，这里会返回错误，但我们主要验证流程
@@ -2032,13 +2163,9 @@ func TestGetConfigFromProfile_EmptySharedCredentialsFile(t *testing.T) {
 	}
 	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
 
-	providerConfig = nil
-	val, err := getConfigFromProfile(resourceData, "access_key_id")
+	val := getConfigFromProfile(loadProfileConfig(resourceData), "access_key_id")
 
 	// Default config absent under temp home: profile not loaded -> graceful.
-	if err != nil {
-		t.Fatalf("getConfigFromProfile with empty shared_credentials_file returned unexpected error: %v", err)
-	}
 	if val != nil {
 		t.Errorf("Expected nil value when default config file is absent, got %v", val)
 	}
