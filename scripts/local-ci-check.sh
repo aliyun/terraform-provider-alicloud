@@ -210,23 +210,28 @@ if [ -f "$PROJECT_ROOT/.go-version" ]; then
   fi
 fi
 
-# Get changed files from the latest commit
+# Get changed files
 # Priority:
+# 0. CI_CHECK_BASE (if set, for PR pre-checks — compare base to HEAD)
 # 1. Uncommitted changes (if any)
 # 2. Latest commit changes
 # 3. All changes from master branch
-CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
+if [[ -n "${CI_CHECK_BASE:-}" ]]; then
+  CHANGED_FILES=$(git diff --name-only ${CI_CHECK_BASE} HEAD 2>/dev/null)
+else
+  CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
 
-if [ -z "$CHANGED_FILES" ]; then
-  # No uncommitted changes, check the latest commit
-  echo -e "${BLUE}Checking latest commit changes...${NC}"
-  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
-fi
+  if [ -z "$CHANGED_FILES" ]; then
+    # No uncommitted changes, check the latest commit
+    echo -e "${BLUE}Checking latest commit changes...${NC}"
+    CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
+  fi
 
-if [ -z "$CHANGED_FILES" ]; then
-  # No changes in latest commit, fall back to comparing with master
-  echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
-  CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
+  if [ -z "$CHANGED_FILES" ]; then
+    # No changes in latest commit, fall back to comparing with master
+    echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
+    CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
+  fi
 fi
 
 if [ -z "$CHANGED_FILES" ]; then
@@ -317,8 +322,10 @@ if [ -n "$RESOURCE_CHANGES" ]; then
   # Create a temporary diff file
   TEMP_DIFF=$(mktemp)
   
-  # Generate diff: prioritize uncommitted changes, then latest commit, then compare with master
-  if git diff --name-only HEAD 2>/dev/null | grep -q .; then
+  # Generate diff: prioritize CI_CHECK_BASE, then uncommitted changes, then latest commit, then compare with master
+  if [[ -n "${CI_CHECK_BASE:-}" ]]; then
+    git diff ${CI_CHECK_BASE} HEAD > "$TEMP_DIFF"
+  elif git diff --name-only HEAD 2>/dev/null | grep -q .; then
     # There are uncommitted changes
     git diff HEAD > "$TEMP_DIFF"
   else
@@ -548,9 +555,15 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
   # Create a temporary diff file
   TEMP_DIFF=$(mktemp)
   
-  # Always check only the latest commit (not all changes from master)
-  git diff HEAD~1 HEAD > "$TEMP_DIFF"
-  echo -e "${BLUE}  Checking only latest commit${NC}"
+  # Use CI_CHECK_BASE if set, otherwise check only the latest commit
+  if [[ -n "${CI_CHECK_BASE:-}" ]]; then
+    git diff ${CI_CHECK_BASE} HEAD > "$TEMP_DIFF"
+    echo -e "${BLUE}  Checking changes from CI_CHECK_BASE${NC}"
+  else
+    # Always check only the latest commit (not all changes from master)
+    git diff HEAD~1 HEAD > "$TEMP_DIFF"
+    echo -e "${BLUE}  Checking only latest commit${NC}"
+  fi
   
   if [ -s "$TEMP_DIFF" ]; then
     if go run "$SCRIPT_DIR/consistency/consistency_check.go" -fileNames="$TEMP_DIFF"; then

@@ -8,9 +8,12 @@ echo "==> Checking for suspicious constructs with go vet..."
 # Only check files that were changed relative to the main branch
 base_branch="origin/master"
 
-# HACK: If we seem to be running inside a GitHub Actions pull request check
-# then we'll use the PR's target branch from this variable instead.
-if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+# HACK: If CI_CHECK_BASE is set, use it as the comparison base for PR pre-checks
+if [[ -n "${CI_CHECK_BASE:-}" ]]; then
+  base_branch="${CI_CHECK_BASE}"
+elif [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+  # HACK: If we seem to be running inside a GitHub Actions pull request check
+  # then we'll use the PR's target branch from this variable instead.
   base_branch="origin/$GITHUB_BASE_REF"
 fi
 
