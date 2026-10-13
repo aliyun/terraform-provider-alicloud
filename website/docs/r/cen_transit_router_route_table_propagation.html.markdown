@@ -71,7 +71,7 @@ resource "alicloud_cen_transit_router_vpc_attachment" "example" {
     zone_id    = local.slave_zone
     vswitch_id = alicloud_vswitch.example_slave.id
   }
-  transit_router_attachment_name        = var.name
+  transit_router_vpc_attachment_name    = var.name
   transit_router_attachment_description = var.name
 }
 resource "alicloud_cen_transit_router_route_table" "example" {
@@ -101,7 +101,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_attachment_id>`.
+* `id` - ID of the resource, It is formatted to `<transit_router_attachment_id>:<transit_router_route_table_id>`.
 * `status` - The associating status of the network.
 
 ## Timeouts
@@ -116,5 +116,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 CEN transit router route table propagation can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cen_transit_router_route_table_propagation.default tr-********:tr-attach-********
+$ terraform import alicloud_cen_transit_router_route_table_propagation.default tr-attach-********:vtb-********
 ```
