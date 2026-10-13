@@ -979,6 +979,7 @@ func Provider() *schema.Provider {
 			"alicloud_das_sql_log_configs":                              dataSourceAliCloudDasSqlLogConfigs(),
 			"alicloud_apig_plugin_classes":                              dataSourceAliCloudApigPluginClasses(),
 			"alicloud_sls_metric_stores":                                dataSourceAliCloudSlsMetricStores(),
+			"alicloud_iac_service_modules":                              dataSourceAliCloudIacServiceModules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_realtime_compute_variable":                            resourceAliCloudRealtimeComputeVariable(),
@@ -2194,6 +2195,7 @@ func Provider() *schema.Provider {
 			"alicloud_polardb_zonal_endpoint":                                resourceAlicloudPolarDBZonalEndpoint(),
 			"alicloud_polardb_zonal_account":                                 resourceAlicloudPolarDBZonalAccount(),
 			"alicloud_sls_metric_store":                                      resourceAliCloudSlsMetricStore(),
+			"alicloud_iac_service_module":                                    resourceAliCloudIacServiceModule(),
 		},
 	}
 	provider.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
