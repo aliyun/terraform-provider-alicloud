@@ -104,9 +104,9 @@ The following arguments are supported:
 
 * `network_interface_id` - (Required, ForceNew)  The ID of the network interface.
 * `instance_id` - (Required, ForceNew) The ID of the ECS instance.
-* `trunk_network_instance_id` - (Optional, ForceNew) The ID of the trunk network instance.
-* `network_card_index` - (Optional, ForceNew, Int, Available since v1.223.1) The index of the network card.
-* `wait_for_network_configuration_ready` - (Optional, Bool) The wait for network configuration ready.
+* `trunk_network_instance_id` - (Optional, ForceNew) The ID of the trunk network instance. This parameter is not currently available and is not supported.
+* `network_card_index` - (Optional, ForceNew, Int, Available since v1.223.1) The index of the physical network card. The value of NetworkCardIndex is related to the instance type family. This parameter cannot be specified if the instance type does not support NetworkCard. If supported, see [instance type family](https://www.alibabacloud.com/help/en/doc-detail/25378.htm).
+* `wait_for_network_configuration_ready` - (Optional, Bool) This parameter is obsolete.
 
 ## Attributes Reference
 
