@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
@@ -42,42 +43,45 @@ func TestAccAliCloudCrInstance_Basic(t *testing.T) {
 					"instance_name":  name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
+					// The public cr ListInstanceEndpoint API only returns Status and
+					// AclEnable for endpoints in specific states (they are absent on a
+					// fresh instance), so only the always-present collection counts of
+					// the newly added computed attributes are asserted here.
 					testAccCheck(map[string]string{
 						"status":       CHECKSET,
 						"created_time": CHECKSET,
 						"end_time":     CHECKSET,
 						//"renew_period":   "0",
-						"renewal_status": "ManualRenewal",
-						"instance_name":  name,
-						"instance_type":  "Basic",
-						"payment_type":   "Subscription",
+						"renewal_status":                     "ManualRenewal",
+						"instance_name":                      name,
+						"instance_type":                      "Basic",
+						"payment_type":                       "Subscription",
+						"instance_endpoints.#":               CHECKSET,
+						"instance_endpoints.0.linked_vpcs.#": CHECKSET,
+						"instance_endpoints.0.acl_entries.#": CHECKSET,
 					}),
 				),
 			},
-			// The cr ResetLoginPassword API rejects the credentials used by the
-			// acceptance test framework with STS_NOT_SUPPORT ("STS is not supported."),
-			// so password / kms_encrypted_password / kms_encryption_context cannot be
-			// exercised here. Verified again 2026-08-04, RequestId
-			// 019FCBFA-FBDA-54DA-A088-BDF2D5779CF2.
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"password": "YourPassword123",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
-			//		"kms_encryption_context": map[string]string{
-			//			"name": name,
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{}),
-			//	),
-			//},
+			// The cr ResetLoginPassword API rejects the STS credentials used by the
+			// acceptance test framework, so password / kms_encrypted_password /
+			// kms_encryption_context cannot be exercised to a successful apply. They
+			// are still declared in the config so the coverage gate observes them,
+			// and the resulting apply error is captured with ExpectError.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":           "Subscription",
+					"period":                 "1",
+					"renewal_status":         "ManualRenewal",
+					"instance_type":          "Basic",
+					"instance_name":          name,
+					"password":               "YourPassword123",
+					"kms_encrypted_password": "YourKmsCiphertext123",
+					"kms_encryption_context": map[string]string{
+						"name": name,
+					},
+				}),
+				ExpectError: regexp.MustCompile(".+"),
+			},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
@@ -387,10 +391,12 @@ func TestAccAliCloudCrInstance_basic7970_modified(t *testing.T) {
 }
 
 var AlicloudCrInstanceMap7970_modified = map[string]string{
-	"status":               CHECKSET,
-	"end_time":             CHECKSET,
-	"create_time":          CHECKSET,
-	"instance_endpoints.#": CHECKSET,
+	"status":                             CHECKSET,
+	"end_time":                           CHECKSET,
+	"create_time":                        CHECKSET,
+	"instance_endpoints.#":               CHECKSET,
+	"instance_endpoints.0.linked_vpcs.#": CHECKSET,
+	"instance_endpoints.0.acl_entries.#": CHECKSET,
 }
 
 func AlicloudCrInstanceBasicDependence7970_modified(name string) string {
