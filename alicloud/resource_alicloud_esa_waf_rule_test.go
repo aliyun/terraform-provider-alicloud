@@ -86,6 +86,7 @@ func TestAccAliCloudESAWafRuleresource_wafrule_custom_test(t *testing.T) {
 						},
 					},
 					"site_version": "0",
+					"position":     "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
