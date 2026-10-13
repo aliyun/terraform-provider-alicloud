@@ -102,6 +102,20 @@ The following arguments are supported:
 * `user_assign_mode` - (Optional) The user assign mode of the Desktop. Valid values: `ALL`, `PER_USER`. Default to `ALL`.
 * `user_disk_size_gib` - (Optional) The user disk size gib of the Desktop.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `app_rule_id` - (Optional, ForceNew) The application control policy ID.
+* `desktop_member_ip` - (Optional, ForceNew) The private IP address of the cloud desktop.
+* `desktop_name_suffix` - (Optional, ForceNew) Specifies whether to automatically append a suffix to the cloud desktop name when you create multiple cloud desktops in a batch. values: `true`, `false`.
+* `group_id` - (Optional, ForceNew) The cloud desktop pool ID.
+* `ou_path` - (Optional, ForceNew) The OU path. If specified, the cloud desktop is added to the corresponding organizational unit (OU) in Active Directory (AD).
+* `promotion_id` - (Optional, ForceNew) The promotion ID.
+* `qos_rule_id` - (Optional, ForceNew) The public network rate limiting rule ID.
+* `reseller_owner_uid` - (Optional, ForceNew) The user ID for resource ownership in reseller pattern. It is not required in non-reseller pattern.
+* `resource_group_id` - (Optional, ForceNew) The WUYING resource group ID.
+* `snapshot_policy_id` - (Optional, ForceNew) The WUYING automatic snapshot policy ID.
+* `subnet_id` - (Optional, ForceNew) The subnet ID.
+* `timer_group_id` - (Optional, ForceNew) The scheduled task group ID.
+* `volume_encryption_enabled` - (Optional, ForceNew) Specifies whether to enable cloud disk encryption. values: `true`, `false`.
+* `volume_encryption_key` - (Optional, ForceNew) The ID of the Key Management Service (KMS) key used for cloud disk encryption.
 
 ## Attributes Reference
 
