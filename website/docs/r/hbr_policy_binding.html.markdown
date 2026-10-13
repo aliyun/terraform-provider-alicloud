@@ -154,17 +154,17 @@ resource "alicloud_hbr_policy_binding" "default" {
 The following arguments are supported:
 * `advanced_options` - (Optional, ForceNew, Computed, Set) Backup Advanced Options See [`advanced_options`](#advanced_options) below.
 * `cross_account_role_name` - (Optional, ForceNew, Available since v1.230.0) Valid only when CrossAccountType = CROSS_ACCOUNT, indicating the name of the cross-account authorization role of the data source, and the management account uses this role to access the data source.
-* `cross_account_type` - (Optional, ForceNew, Computed, Available since v1.230.0) Cross-account type, supported
+* `cross_account_type` - (Optional, ForceNew, Computed, Available since v1.230.0) Cross-account type of the data source. Valid values: `SELF_ACCOUNT` (the data source belongs to the current management account) and `CROSS_ACCOUNT` (the data source belongs to another account authorized through a cross-account role).
 * `cross_account_user_id` - (Optional, ForceNew, Int, Available since v1.230.0) Valid only when CrossAccountType = CROSS_ACCOUNT, indicating the ID of the actual account to which the data source belongs.
 * `data_source_id` - (Optional, ForceNew, Computed) The data source ID.
-* `disabled` - (Optional) Whether the policy is effective for the data source.
-  - true: Pause
-  - false: not paused
+* `disabled` - (Optional) Whether the policy is paused for the data source.
+  - `true`: pause backup for the data source.
+  - `false`: resume backup for the data source.
 * `exclude` - (Optional) This parameter is required only when the value of SourceType is ECS_FILE or File. Indicates a file type that does not need to be backed up. All files of this type are not backed up. A maximum of 255 characters is supported.
 * `include` - (Optional) This parameter is required only when the value of SourceType is ECS_FILE or File. Indicates the file types to be backed up, and all files of these types are backed up. A maximum of 255 characters is supported.
 * `policy_binding_description` - (Optional) Resource Description
 * `policy_id` - (Optional, ForceNew, Computed) The policy ID.
-* `source` - (Optional) When SourceType is OSS, a prefix is specified to be backed up. If it is not specified, the entire root directory of the Bucket is backed up.
+* `source` - (Optional) When SourceType is OSS, a prefix is specified to be backed up. The value is an object key prefix (not a full path); only objects whose keys start with the prefix are backed up. If it is not specified, the entire root directory of the Bucket is backed up.
 * `source_type` - (Optional, ForceNew, Computed, Available since v1.260.1) Data source type, value range:
   - `UDM_ECS`: indicates the ECS instance backup.
   - `OSS`: indicates an OSS backup.
