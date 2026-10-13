@@ -66,6 +66,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Instance purchase time.
+* `order_id` - The order ID of the cache reserve instance. It is generated when the instance is purchased or its spec is updated, and is not retrievable by the read API.
 * `status` - The status of the cache reserve instance. , it is unavailable.
 
 ## Timeouts
