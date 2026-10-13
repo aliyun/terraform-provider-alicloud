@@ -1072,6 +1072,99 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudECSInstanceMultiSecurityGroups(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"image_id":          CHECKSET,
+		"instance_type":     CHECKSET,
+		"vswitch_id":        CHECKSET,
+		"status":            "Running",
+		"security_groups.#": "2",
+	})
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceConfigMultiSg%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceECSInstanceVpcDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
+					"instance_type":        "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":    "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category": "cloud_efficiency",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":     name,
+						"security_groups.#": "2",
+					}),
+					testAccCheckECSInstanceSecurityGroupMembers(resourceId, "alicloud_security_group.default", []int{0, 1}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_groups": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}", "${alicloud_security_group.default.2.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_groups.#": "3",
+					}),
+					testAccCheckECSInstanceSecurityGroupMembers(resourceId, "alicloud_security_group.default", []int{0, 1, 2}),
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckECSInstanceSecurityGroupMembers(instanceResource, sgResource string, indexes []int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		instance, ok := s.RootModule().Resources[instanceResource]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", instanceResource)
+		}
+		expected := make(map[string]bool, len(indexes))
+		for _, index := range indexes {
+			sg, ok := s.RootModule().Resources[fmt.Sprintf("%s.%d", sgResource, index)]
+			if !ok {
+				return fmt.Errorf("can't find resource by id: %s.%d", sgResource, index)
+			}
+			expected[sg.Primary.ID] = true
+		}
+		members := make(map[string]bool)
+		for attr, value := range instance.Primary.Attributes {
+			if strings.HasPrefix(attr, "security_groups.") && attr != "security_groups.#" && attr != "security_groups.%" {
+				members[value] = true
+			}
+		}
+		if len(members) != len(expected) {
+			return fmt.Errorf("%s security_groups has %d member(s) %v, expected %d", instanceResource, len(members), members, len(expected))
+		}
+		for id := range expected {
+			if !members[id] {
+				return fmt.Errorf("%s security_groups does not contain %s, got %v", instanceResource, id, members)
+			}
+		}
+		return nil
+	}
+}
+
 func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
@@ -4727,6 +4820,10 @@ func TestAccAliCloudECSInstanceNetworkInterface1(t *testing.T) {
 	})
 }
 
+// collection-order: bypass cpu_options.accelerators -- stock attribute not touched by this change; the ECS API accepts only the single member value vqat (any other value is rejected with InvalidParameter.CpuOptionsAccelerators), so no apply of at least two distinct valid members can be constructed
+// collection-order: bypass network_interfaces -- stock attribute not touched by this change; remote ACC (ACube task 12555) verified ECS DescribeInstances does not echo secondary ENIs in request order (the post-apply plan wanted to swap both member indexes), so no two-apply reorder can converge without Read-side state normalization, an implementation change outside this tests-only change
+// collection-order: bypass network_interfaces.security_group_ids -- stock attribute not touched by this change; remote ACC (ACube task 12555) verified the ECS API returns a NIC security group list in a fixed order independent of the request order (the reordered apply was echoed back in the original order with a non-empty plan), so no two-apply reorder can converge
+
 func TestAccAliCloudECSInstanceCpuOptionsAccelerators(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
@@ -4784,6 +4881,124 @@ func TestAccAliCloudECSInstanceCpuOptionsAccelerators(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run", "cpu_options.0.accelerators"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSInstanceDataDisksReorder(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"data_disks.#": "3",
+	})
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceDataDiskReorder%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceVpcConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":    "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category": "cloud_efficiency",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"security_groups":      []string{"${alicloud_security_group.default.0.id}"},
+					"data_disks": []map[string]string{
+						{
+							"name":     "${var.name}-1",
+							"size":     "20",
+							"category": "cloud_efficiency",
+						},
+						{
+							"name":     "${var.name}-2",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+						{
+							"name":        "${var.name}-3",
+							"size":        "20",
+							"description": "${var.name} data disk 3",
+						},
+					},
+					"force_delete": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":     name,
+						"data_disks.#":      "3",
+						"data_disks.0.name": name + "-1",
+						"data_disks.1.name": name + "-2",
+						"data_disks.2.name": name + "-3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disks": []map[string]string{
+						{
+							"name":        "${var.name}-3",
+							"size":        "20",
+							"description": "${var.name} data disk 3",
+						},
+						{
+							"name":     "${var.name}-2",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+						{
+							"name":     "${var.name}-1",
+							"size":     "20",
+							"category": "cloud_efficiency",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disks": []map[string]string{
+						{
+							"name":        "${var.name}-3",
+							"size":        "20",
+							"description": "${var.name} data disk 3",
+						},
+						{
+							"name":     "${var.name}-2",
+							"size":     "20",
+							"category": "cloud_ssd",
+						},
+						{
+							"name":     "${var.name}-1",
+							"size":     "20",
+							"category": "cloud_efficiency",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disks.#":      "3",
+						"data_disks.0.name": name + "-3",
+						"data_disks.1.name": name + "-2",
+						"data_disks.2.name": name + "-1",
+					}),
+				),
 			},
 		},
 	})
