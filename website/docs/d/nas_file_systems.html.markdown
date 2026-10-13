@@ -75,4 +75,14 @@ The following attributes are exported in addition to the arguments listed above:
   * `encrypt_type` - (Optional, Available in v1.121.2+) Whether the file system is encrypted. Valid values: `0` (The file system is not encrypted), `1` (The file system is encrypted with a managed secret key), `2` (User management key).
   * `kms_key_id` - (Optional, Available in v1.140.0+) The id of the KMS key.
   * `zone_id` - (Optional, Available in v1.140.0+) The id of the zone. Each region consists of multiple isolated locations known as zones. Each zone has an independent power supply and network.
- 
+  * `status` - Status of the file system.
+  * `vpc_id` - The ID of the VPC where the file system is deployed.
+  * `resource_group_id` - The ID of the resource group to which the file system belongs.
+  * `tags` - Tags of the file system.
+  * `redundancy_type` - The redundancy type of the file system.
+  * `bandwidth` - The bandwidth of the file system (only valid when `file_system_type` is `extreme`).
+  * `charge_type` - The billing type of the file system.
+  * `expired_time` - The expiration time of the file system.
+  * `version` - The version of the file system.
+  * `quorum_vsw_id` - The ID of the quorum vSwitch associated with the file system.
+
