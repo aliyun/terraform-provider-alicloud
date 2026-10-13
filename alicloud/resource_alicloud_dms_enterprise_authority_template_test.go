@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test DMSEnterprise AuthorityTemplate. >>> Resource test cases, automatically generated.
 // Case 4696
 func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_authority_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudDMSEnterpriseAuthorityTemplateMap4696)
@@ -27,9 +28,9 @@ func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -142,6 +143,7 @@ data "alicloud_dms_user_tenants" "default" {
 
 // Case 4696  twin
 func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696_twin(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_authority_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudDMSEnterpriseAuthorityTemplateMap4696)
@@ -157,9 +159,9 @@ func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696_twin(t *testing.T) 
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

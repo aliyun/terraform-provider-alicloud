@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudEipAssociation_basic0(t *testing.T) {
@@ -26,7 +26,7 @@ func TestAccAliCloudEipAssociation_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -68,7 +68,7 @@ func TestAccAliCloudEipAssociation_basic0_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -113,7 +113,7 @@ func TestAccAliCloudEipAssociation_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -157,7 +157,7 @@ func TestAccAliCloudEipAssociation_basic1_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -216,11 +216,12 @@ func TestAccAliCloudEipAssociation_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"depends_on":    []string{"alicloud_vpc_gateway_route_table_attachment.default"},
 					"allocation_id": "${alicloud_eip_address.default.id}",
 					"instance_id":   "192.168.0.1",
 					"instance_type": "IpAddress",
@@ -262,11 +263,12 @@ func TestAccAliCloudEipAssociation_basic2_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"depends_on":    []string{"alicloud_vpc_gateway_route_table_attachment.default"},
 					"allocation_id": "${alicloud_eip_address.default.id}",
 					"instance_id":   "192.168.0.1",
 					"instance_type": "IpAddress",
@@ -310,7 +312,6 @@ func AliCloudEipAssociationBasicDependence0(name string) string {
 
 	data "alicloud_instance_types" "default" {
   		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
 	}
 
 	data "alicloud_images" "default" {
@@ -414,6 +415,17 @@ func AliCloudEipAssociationBasicDependence2(name string) string {
   		ipv4_gateway_name        = var.name
   		ipv4_gateway_description = var.name
         enabled                  = true
+	}
+
+	resource "alicloud_route_table" "default" {
+		vpc_id           = alicloud_vpc.default.id
+		route_table_name = var.name
+		associate_type   = "Gateway"
+	}
+
+	resource "alicloud_vpc_gateway_route_table_attachment" "default" {
+		ipv4_gateway_id = alicloud_vpc_ipv4_gateway.default.id
+		route_table_id  = alicloud_route_table.default.id
 	}
 `, name)
 }

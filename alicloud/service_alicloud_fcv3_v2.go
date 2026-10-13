@@ -7,8 +7,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type Fcv3ServiceV2 struct {
@@ -31,15 +31,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]inter
 	action := fmt.Sprintf("/2023-03-30/functions/%s", functionName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -54,11 +54,11 @@ func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]inter
 	return response, nil
 }
 
-func (s *Fcv3ServiceV2) Fcv3FunctionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3FunctionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.Fcv3FunctionStateRefreshFuncWithApi(id, field, failStates, s.DescribeFcv3Function)
 }
 
-func (s *Fcv3ServiceV2) Fcv3FunctionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3FunctionStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -104,15 +104,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3CustomDomain(id string) (object map[string]i
 	action := fmt.Sprintf("/2023-03-30/custom-domains/%s", domainName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, header, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -127,11 +127,11 @@ func (s *Fcv3ServiceV2) DescribeFcv3CustomDomain(id string) (object map[string]i
 	return response, nil
 }
 
-func (s *Fcv3ServiceV2) Fcv3CustomDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3CustomDomainStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.Fcv3CustomDomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeFcv3CustomDomain)
 }
 
-func (s *Fcv3ServiceV2) Fcv3CustomDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3CustomDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -179,15 +179,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3FunctionVersion(id string) (object map[strin
 	query["qualifier"] = StringPointer(parts[1])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -202,7 +202,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3FunctionVersion(id string) (object map[strin
 	return response, nil
 }
 
-func (s *Fcv3ServiceV2) Fcv3FunctionVersionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3FunctionVersionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeFcv3FunctionVersion(id)
 		if err != nil {
@@ -244,15 +244,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3Alias(id string) (object map[string]interfac
 	query = make(map[string]*string)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -267,7 +267,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3Alias(id string) (object map[string]interfac
 	return response, nil
 }
 
-func (s *Fcv3ServiceV2) Fcv3AliasStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3AliasStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeFcv3Alias(id)
 		if err != nil {
@@ -305,15 +305,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3AsyncInvokeConfig(id string) (object map[str
 	request["functionName"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -328,11 +328,11 @@ func (s *Fcv3ServiceV2) DescribeFcv3AsyncInvokeConfig(id string) (object map[str
 	return response, nil
 }
 
-func (s *Fcv3ServiceV2) Fcv3AsyncInvokeConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3AsyncInvokeConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.Fcv3AsyncInvokeConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeFcv3AsyncInvokeConfig)
 }
 
-func (s *Fcv3ServiceV2) Fcv3AsyncInvokeConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3AsyncInvokeConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -376,15 +376,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3ConcurrencyConfig(id string) (object map[str
 	request["functionName"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -399,7 +399,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3ConcurrencyConfig(id string) (object map[str
 	return response, nil
 }
 
-func (s *Fcv3ServiceV2) Fcv3ConcurrencyConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3ConcurrencyConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeFcv3ConcurrencyConfig(id)
 		if err != nil {
@@ -442,15 +442,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3Trigger(id string) (object map[string]interf
 	action := fmt.Sprintf("/2023-03-30/functions/%s/triggers/%s", functionName, triggerName)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -465,7 +465,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3Trigger(id string) (object map[string]interf
 	return response, nil
 }
 
-func (s *Fcv3ServiceV2) Fcv3TriggerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3TriggerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeFcv3Trigger(id)
 		if err != nil {
@@ -510,15 +510,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3ProvisionConfig(id string) (object map[strin
 	request["functionName"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -538,7 +538,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3ProvisionConfig(id string) (object map[strin
 	return response, nil
 }
 
-func (s *Fcv3ServiceV2) Fcv3ProvisionConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3ProvisionConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeFcv3ProvisionConfig(id)
 		if err != nil {
@@ -580,15 +580,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3LayerVersion(id string) (object map[string]i
 	query = make(map[string]*string)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -603,7 +603,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3LayerVersion(id string) (object map[string]i
 	return response, nil
 }
 
-func (s *Fcv3ServiceV2) Fcv3LayerVersionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3LayerVersionStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeFcv3LayerVersion(id)
 		if err != nil {
@@ -643,15 +643,15 @@ func (s *Fcv3ServiceV2) DescribeFcv3VpcBinding(id string) (object map[string]int
 	query = make(map[string]*string)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -677,7 +677,7 @@ func (s *Fcv3ServiceV2) DescribeFcv3VpcBinding(id string) (object map[string]int
 	return object, WrapErrorf(NotFoundErr("VpcBinding", id), NotFoundMsg, response)
 }
 
-func (s *Fcv3ServiceV2) Fcv3VpcBindingStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3VpcBindingStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeFcv3VpcBinding(id)
 		if err != nil {
@@ -742,14 +742,14 @@ func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			query["ResourceType"] = StringPointer(resourceType)
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaDelete("FC", "2023-03-30", action, query, header, nil, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -790,14 +790,14 @@ func (s *Fcv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request["ResourceType"] = resourceType
 			body = request
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaPost("FC", "2023-03-30", action, query, header, body, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})

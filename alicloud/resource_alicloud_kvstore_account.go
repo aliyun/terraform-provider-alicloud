@@ -9,8 +9,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudRedisAccount() *schema.Resource {
@@ -27,6 +29,10 @@ func resourceAliCloudRedisAccount() *schema.Resource {
 			Update: schema.DefaultTimeout(7 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("account_password"), cty.GetAttrPath("account_password_wo")),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"account_name": {
 				Type:     schema.TypeString,
@@ -34,9 +40,23 @@ func resourceAliCloudRedisAccount() *schema.Resource {
 				ForceNew: true,
 			},
 			"account_password": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"account_password_wo"},
+			},
+			"account_password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				WriteOnly:     true,
+				ConflictsWith: []string{"account_password", "kms_encrypted_password"},
+				RequiredWith:  []string{"account_password_wo_version"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				RequiredWith: []string{"account_password_wo"},
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"account_privilege": {
 				Type:     schema.TypeString,
@@ -66,6 +86,7 @@ func resourceAliCloudRedisAccount() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: kmsDiffSuppressFunc,
+				ConflictsWith:    []string{"account_password_wo"},
 			},
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
@@ -105,6 +126,11 @@ func resourceAliCloudRedisAccountCreate(d *schema.ResourceData, meta interface{}
 		request["AccountDescription"] = v
 	}
 	request["AccountPassword"] = d.Get("account_password")
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["AccountPassword"] = woValue.AsString()
+	}
 	if v, ok := d.GetOk("account_type"); ok {
 		request["AccountType"] = v
 	}
@@ -119,14 +145,14 @@ func resourceAliCloudRedisAccountCreate(d *schema.ResourceData, meta interface{}
 		}
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDeniedDBStatus"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -202,14 +228,14 @@ func resourceAliCloudRedisAccountUpdate(d *schema.ResourceData, meta interface{}
 	request["AccountPrivilege"] = d.Get("account_privilege")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -237,14 +263,14 @@ func resourceAliCloudRedisAccountUpdate(d *schema.ResourceData, meta interface{}
 	request["AccountDescription"] = d.Get("description")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -264,7 +290,15 @@ func resourceAliCloudRedisAccountUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && d.HasChanges("account_password", "kms_encrypted_password") {
 		update = true
 	}
+	if !d.IsNewResource() && d.HasChange("account_password_wo_version") {
+		update = true
+	}
 	request["AccountPassword"] = d.Get("account_password")
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["AccountPassword"] = woValue.AsString()
+	}
 	if request["AccountPassword"] == "" {
 		if v := d.Get("kms_encrypted_password").(string); v != "" {
 			kmsService := KmsService{client}
@@ -277,14 +311,14 @@ func resourceAliCloudRedisAccountUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -318,15 +352,15 @@ func resourceAliCloudRedisAccountDelete(d *schema.ResourceData, meta interface{}
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

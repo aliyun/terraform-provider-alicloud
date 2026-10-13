@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudDMSEnterpriseProxyAccessDataSource(t *testing.T) {
+func TestAccAliCloudDMSEnterpriseProxyAccessDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseProxyAccessSupportRegions)
 

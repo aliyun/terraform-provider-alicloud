@@ -12,10 +12,10 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,9 +40,9 @@ func TestAccAliCloudCREndpointAclPolicy_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -196,9 +196,9 @@ func TestAccAliCloudCrInternetEndpoint_loopbackAclPolicy(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckCrLoopbackAclPolicyDestroy,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      testAccCheckCrLoopbackAclPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCrLoopbackAclPolicyConfig(name),
@@ -328,7 +328,7 @@ func testAccCheckCrLoopbackAclEntryCount(t *testing.T, resourceId string) resour
 
 // lintignore: R001
 func TestUnitAlicloudCREndpointAclPolicy(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cr_endpoint_acl_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cr_endpoint_acl_policy"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
@@ -577,7 +577,7 @@ func TestUnitAlicloudCrEndpointTypeConvert(t *testing.T) {
 // fail fast with an actionable message naming the ID format instead of
 // forwarding the segment to the API and surfacing a raw InvalidEndpointType.
 func TestUnitAlicloudCREndpointAclPolicyReadInvalidId(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cr_endpoint_acl_policy"].Schema).Data(nil, nil)
 	d.SetId("cri-abc123:10.0.0.0/8:internet")
 	err := resourceAlicloudCrEndpointAclPolicyRead(d, nil)

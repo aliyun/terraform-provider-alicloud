@@ -6,8 +6,8 @@ import (
 	roaCS "github.com/alibabacloud-go/cs-20151215/v8/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudCSClusterCredential() *schema.Resource {
@@ -39,7 +39,7 @@ func dataSourceAlicloudCSClusterCredential() *schema.Resource {
 				Sensitive: true,
 			},
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -104,14 +104,14 @@ func csClusterAuthDescriptionAttributes(d *schema.ResourceData, meta interface{}
 	clusterId := tea.StringValue(cluster.ClusterId)
 	var credential *roaCS.DescribeClusterUserKubeconfigResponseBody
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		credential, err = csClient.DescribeClusterKubeConfigWithExpiration(clusterId, expiration)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -124,7 +124,7 @@ func csClusterAuthDescriptionAttributes(d *schema.ResourceData, meta interface{}
 	d.Set("cluster_name", tea.StringValue(cluster.Name))
 	d.Set("kube_config", tea.StringValue(credential.Config))
 	d.Set("expiration", tea.StringValue(credential.Expiration))
-	d.Set("certificate_authority", flattenAlicloudCSCertificate(credential))
+	d.Set("certificate_authority", []interface{}{flattenAlicloudCSCertificate(credential)})
 	d.SetId(dataResourceIdHash([]string{clusterId}))
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

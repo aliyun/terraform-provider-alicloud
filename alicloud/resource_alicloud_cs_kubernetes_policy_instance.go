@@ -2,16 +2,19 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
 	cs "github.com/alibabacloud-go/cs-20151215/v8/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudCSKubernetesPolicyInstance() *schema.Resource {
@@ -104,14 +107,14 @@ func resourceAliCloudCSKubernetesPolicyInstanceCreate(d *schema.ResourceData, me
 	var response *cs.DeployPolicyInstanceResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.DeployPolicyInstance(tea.String(cluster_id), tea.String(policy_name), createReq)
 		if err != nil {
 			if NeedRetry(err) || strings.Contains(err.Error(), "the object has been modified") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -185,13 +188,84 @@ func resourceAliCloudCSKubernetesPolicyInstanceRead(d *schema.ResourceData, meta
 		if err == nil {
 			// Apply type conversion to the parameters
 			convertedParams := NormalizeMap(paramsMap)
-			d.Set("parameters", convertedParams)
+			stateParams, err := policyParametersForState(convertedParams)
+			if err != nil {
+				return WrapError(err)
+			}
+			if err := d.Set("parameters", stateParams); err != nil {
+				return WrapError(err)
+			}
 		} else {
 			log.Printf("[WARN] Failed to parse policy_parameters as YAML: %v", err)
 		}
 	}
 
 	return nil
+}
+
+// policyParametersForState converts the heterogeneous values returned by the
+// policy API to the map-of-strings representation declared by the Terraform
+// schema. Composite values are JSON encoded so their state representation is
+// deterministic. NormalizeMap restores the policy's supported bool, integer,
+// map, and list values when the state is sent on create/update.
+func policyParametersForState(parameters map[string]interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{}, len(parameters))
+	for key, value := range parameters {
+		stringValue, err := policyParameterValueForState(value)
+		if err != nil {
+			return nil, fmt.Errorf("converting policy parameter %q for state: %w", key, err)
+		}
+		result[key] = stringValue
+	}
+	return result, nil
+}
+
+func policyParameterValueForState(value interface{}) (string, error) {
+	switch typed := value.(type) {
+	case nil:
+		return "null", nil
+	case string:
+		return typed, nil
+	case bool:
+		return strconv.FormatBool(typed), nil
+	case int:
+		return strconv.Itoa(typed), nil
+	case int8:
+		return strconv.FormatInt(int64(typed), 10), nil
+	case int16:
+		return strconv.FormatInt(int64(typed), 10), nil
+	case int32:
+		return strconv.FormatInt(int64(typed), 10), nil
+	case int64:
+		return strconv.FormatInt(typed, 10), nil
+	case uint:
+		return strconv.FormatUint(uint64(typed), 10), nil
+	case uint8:
+		return strconv.FormatUint(uint64(typed), 10), nil
+	case uint16:
+		return strconv.FormatUint(uint64(typed), 10), nil
+	case uint32:
+		return strconv.FormatUint(uint64(typed), 10), nil
+	case uint64:
+		return strconv.FormatUint(typed, 10), nil
+	case float32:
+		return strconv.FormatFloat(float64(typed), 'g', -1, 32), nil
+	case float64:
+		return strconv.FormatFloat(typed, 'g', -1, 64), nil
+	case json.Number:
+		return typed.String(), nil
+	}
+
+	valueKind := reflect.ValueOf(value).Kind()
+	if valueKind == reflect.Map || valueKind == reflect.Slice || valueKind == reflect.Array {
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		return string(encoded), nil
+	}
+
+	return "", fmt.Errorf("unsupported value type %T", value)
 }
 
 func resourceAliCloudCSKubernetesPolicyInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -241,14 +315,14 @@ func resourceAliCloudCSKubernetesPolicyInstanceUpdate(d *schema.ResourceData, me
 	var response *cs.ModifyPolicyInstanceResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.ModifyPolicyInstance(tea.String(cluster_id), tea.String(policy_name), updateReq)
 		if err != nil {
 			if NeedRetry(err) || strings.Contains(err.Error(), "the object has been modified") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -288,14 +362,14 @@ func resourceAliCloudCSKubernetesPolicyInstanceDelete(d *schema.ResourceData, me
 	var response *cs.DeletePolicyInstanceResponse
 	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.DeletePolicyInstance(tea.String(cluster_id), tea.String(policy_name), deleteReq)
 		if err != nil {
 			if NeedRetry(err) || strings.Contains(err.Error(), "the object has been modified") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

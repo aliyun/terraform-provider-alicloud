@@ -15,9 +15,10 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,14 +51,14 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 	var response map[string]interface{}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -109,7 +110,7 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 	return nil
 }
 
-func TestAccAlicloudGraphDatabaseDbInstance_basic0(t *testing.T) {
+func TestAccAliCloudGraphDatabaseDbInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_graph_database_db_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudGraphDatabaseDbInstanceMap0)
@@ -126,9 +127,9 @@ func TestAccAlicloudGraphDatabaseDbInstance_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.GraphDatabaseSupportRegions)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -243,7 +244,7 @@ func TestAccAlicloudGraphDatabaseDbInstance_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGraphDatabaseDbInstance_basic1(t *testing.T) {
+func TestAccAliCloudGraphDatabaseDbInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_graph_database_db_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.GraphDatabaseDbInstanceSupportRegions)
@@ -260,9 +261,9 @@ func TestAccAlicloudGraphDatabaseDbInstance_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -303,7 +304,7 @@ func TestAccAlicloudGraphDatabaseDbInstance_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGraphDatabaseDbInstance_single(t *testing.T) {
+func TestAccAliCloudGraphDatabaseDbInstance_single(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_graph_database_db_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.GraphDatabaseDbInstanceSupportRegions)
@@ -320,9 +321,9 @@ func TestAccAlicloudGraphDatabaseDbInstance_single(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -395,7 +396,7 @@ data "alicloud_vswitches" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

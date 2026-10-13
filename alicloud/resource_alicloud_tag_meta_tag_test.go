@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudTagMetaTag_basic(t *testing.T) {
+func TestAccAliCloudTagMetaTag_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_tag_meta_tag.default"
 	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
@@ -28,7 +28,7 @@ func TestAccAlicloudTagMetaTag_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

@@ -5,12 +5,14 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+// NOTE: Test depends on data source or hardcoded are not stable and may fail at any time
+
 // Case 1
-func TestAccAlicloudThreatDetectionHoneyPot_basic1994(t *testing.T) {
+func TestAccAliCloudThreatDetectionHoneyPot_basic1994(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_honey_pot.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionHoneyPotMap1994)
@@ -26,9 +28,9 @@ func TestAccAlicloudThreatDetectionHoneyPot_basic1994(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -81,7 +83,5 @@ resource "alicloud_threat_detection_honeypot_node" "default" {
   node_name           = var.name
   available_probe_num = 20
   security_group_probe_ip_list = ["0.0.0.0/0"]
-}
-
-`, name)
+}`, name)
 }

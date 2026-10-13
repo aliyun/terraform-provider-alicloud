@@ -7,8 +7,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type RdsServiceV2 struct {
@@ -37,7 +38,7 @@ func (s *RdsServiceV2) DescribeRdsCustom(id string) (object map[string]interface
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -72,7 +73,7 @@ func (s *RdsServiceV2) DescribeCustomListTagResources(id string) (object map[str
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -104,7 +105,7 @@ func (s *RdsServiceV2) DescribeCustomDescribeRCDisks(id string) (object map[stri
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -198,7 +199,7 @@ func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 						wait()
 						return resource.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -231,7 +232,7 @@ func (s *RdsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 						wait()
 						return resource.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -270,7 +271,7 @@ func (s *RdsServiceV2) DescribeRdsCustomDeploymentSet(id string) (object map[str
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -349,7 +350,7 @@ func (s *RdsServiceV2) DescribeRdsCustomDisk(id string) (object map[string]inter
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -433,13 +434,13 @@ func (s *RdsServiceV2) DescribeRdsDatabase(id string) (object map[string]interfa
 				return resource.RetryableError(err)
 			}
 			if rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidDBName.NotFound") {
-				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+				return retry.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
 			if rdsErrorHasCode(err, dbInstanceStatusErrorCodes...) {
 				rdsService := RdsService{s.client}
-				return resource.NonRetryableError(rdsService.confirmRdsChildError(parts[0], err))
+				return retry.NonRetryableError(rdsService.confirmRdsChildError(parts[0], err))
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -521,7 +522,7 @@ func (s *RdsServiceV2) DescribeRdsAccount(id string) (object map[string]interfac
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -606,7 +607,7 @@ func (s *RdsServiceV2) DescribeRdsBackup(id string) (object map[string]interface
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -689,7 +690,7 @@ func (s *RdsServiceV2) DescribeRdsCustomDiskAttachment(id string) (object map[st
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

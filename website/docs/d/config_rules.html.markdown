@@ -33,12 +33,9 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew) A list of Config Rule IDs.
 * `status` - (Optional, ForceNew, Available since v1.124.1) The status of the config rule, valid values: `ACTIVE`, `DELETING`, `EVALUATING` and `INACTIVE`. 
 * `rule_name` - (Optional, ForceNew, Available since v1.124.1) The name of config rule.
-* `multi_account` - (Optional, ForceNew, Removed) Field `multi_account` has been removed from provider version 1.146.0. Please Use the Resource `alicloud_config_aggregate_config_rule`.
-* `member_id` - (Optional, ForceNew, Removed) Field `multi_account` has been removed from provider version 1.146.0. Please Use the Resource `alicloud_config_aggregate_config_rule`.
 * `risk_level` - (Optional, ForceNew) The risk level of Config Rule. Valid values: `1`: Critical ,`2`: Warning , `3`: Info.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by rule name.
-* `message_type` - (Optional, ForceNew, Available since v1.104.0, Remove) Field `message_type` has been removed from provider version 1.124.1.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `config_rule_state` - (Optional, ForceNew, Deprecated) Field `config_rule_state` has been deprecated from provider version 1.124.1. New field `status` instead.
 

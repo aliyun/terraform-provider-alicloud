@@ -10,8 +10,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func init() {
@@ -120,7 +120,7 @@ func TestAccAlicloudSAEIngress_basic0(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEIngressBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -272,7 +272,7 @@ func TestAccAlicloudSAEIngress_basic1(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEIngressBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -500,6 +500,12 @@ func AlicloudSAEIngressBasicDependence1(name string) string {
   		zone_mappings {
     		vswitch_id = data.alicloud_vswitches.default_2.ids[0]
     		zone_id    = data.alicloud_alb_zones.default.zones.1.id
+  		}
+  		// SAE Ingress attaches via the k8s ALB ingress controller, which adds
+  		// "ack.aliyun.com" and "ingress.k8s.alibaba/*" tags at runtime.
+  		// Ignore tag drift so subsequent plans stay empty.
+  		lifecycle {
+  			ignore_changes = [tags]
   		}
 	}
 

@@ -15,10 +15,10 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -90,7 +90,7 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 
 // lintignore: R001
 func TestUnitAliCloudECSAutoSnapshotPolicy(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
@@ -269,22 +269,22 @@ func TestUnitAliCloudECSAutoSnapshotPolicy(t *testing.T) {
 		for _, key := range []string{"copied_snapshots_retention_days", "enable_cross_region_copy", "name", "repeat_weekdays", "retention_days", "target_copy_regions", "time_points"} {
 			switch p["alicloud_ecs_auto_snapshot_policy"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
 			case schema.TypeSet:
-				diff.SetAttribute("repeat_weekdays.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("repeat_weekdays.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("target_copy_regions.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("target_copy_regions.0", &terraform.ResourceAttrDiff{Old: "", New: "cn-beijing"})
-				diff.SetAttribute("time_points.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("time_points.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				diff.Attributes["repeat_weekdays.#"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
+				diff.Attributes["repeat_weekdays.0"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
+				diff.Attributes["target_copy_regions.#"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
+				diff.Attributes["target_copy_regions.0"] = &terraform.ResourceAttrDiff{Old: "", New: "cn-beijing"}
+				diff.Attributes["time_points.#"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
+				diff.Attributes["time_points.0"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, diff)
@@ -311,22 +311,22 @@ func TestUnitAliCloudECSAutoSnapshotPolicy(t *testing.T) {
 		for _, key := range []string{"copied_snapshots_retention_days", "enable_cross_region_copy", "name", "repeat_weekdays", "retention_days", "target_copy_regions", "time_points", "tags"} {
 			switch p["alicloud_ecs_auto_snapshot_policy"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
 			case schema.TypeSet:
-				diff.SetAttribute("repeat_weekdays.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("repeat_weekdays.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("target_copy_regions.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("target_copy_regions.0", &terraform.ResourceAttrDiff{Old: "", New: "cn-beijing"})
-				diff.SetAttribute("time_points.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("time_points.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				diff.Attributes["repeat_weekdays.#"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
+				diff.Attributes["repeat_weekdays.0"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
+				diff.Attributes["target_copy_regions.#"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
+				diff.Attributes["target_copy_regions.0"] = &terraform.ResourceAttrDiff{Old: "", New: "cn-beijing"}
+				diff.Attributes["time_points.#"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
+				diff.Attributes["time_points.0"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, diff)
@@ -451,7 +451,7 @@ func TestAccAliCloudECSAutoSnapshotPolicy_basic7893(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -624,7 +624,7 @@ func TestAccAliCloudECSAutoSnapshotPolicy_basic7893_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -717,7 +717,7 @@ func TestAccAliCloudECSAutoSnapshotPolicy_basic8035(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -890,7 +890,7 @@ func TestAccAliCloudECSAutoSnapshotPolicy_basic8035_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

@@ -12,16 +12,15 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudDcdnWafDomain_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_domain.default"
-	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudDCDNWafDomainMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DcdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -29,15 +28,15 @@ func TestAccAliCloudDcdnWafDomain_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%s%d.pfytlm.xyz", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDCDNWafDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -84,7 +83,6 @@ resource "alicloud_dcdn_domain" "default" {
 func TestAccAliCloudDcdnWafDomain_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_domain.default"
-	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudDCDNWafDomainMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DcdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -92,15 +90,15 @@ func TestAccAliCloudDcdnWafDomain_basic1(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%s%d.pfytlm.xyz", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDCDNWafDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -143,7 +141,7 @@ func TestAccAliCloudDcdnWafDomain_basic1(t *testing.T) {
 
 // lintignore: R001
 func TestUnitAccAlicloudDcdnWafDomain(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dcdn_waf_domain"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dcdn_waf_domain"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

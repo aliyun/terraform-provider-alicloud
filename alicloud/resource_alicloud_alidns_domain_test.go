@@ -11,8 +11,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func init() {
@@ -80,7 +80,7 @@ func testSweepAlidnsDomain(region string) error {
 	return nil
 }
 
-func TestAccAlicloudAlinsDomain_basic(t *testing.T) {
+func TestAccAliCloudAlidnsDomain_basic(t *testing.T) {
 	resourceId := "alicloud_alidns_domain.default"
 	randInt := acctest.RandIntRange(10000, 99999)
 	var v alidns.DescribeDomainInfoResponse
@@ -99,9 +99,9 @@ func TestAccAlicloudAlinsDomain_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

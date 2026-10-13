@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test ESA RedirectRule. >>> Resource test cases, automatically generated.
@@ -30,7 +30,7 @@ func TestAccAliCloudESARedirectRuleredirectrule_test(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -151,7 +151,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_RedirectRule_test" {
 }
 
 resource "alicloud_esa_site" "resource_Site_RedirectRule_test" {
-  site_name   = "gositecdn1.cn"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_RedirectRule_test.id
   coverage    = "overseas"
   access_type = "NS"

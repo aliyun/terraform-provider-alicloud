@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -22,10 +23,10 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -126,7 +127,7 @@ func TestAccAliCloudECSSnapshot_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -218,7 +219,7 @@ func TestAccAliCloudECSSnapshot_basic0_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -279,7 +280,7 @@ func TestAccAliCloudECSSnapshot_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -376,7 +377,7 @@ func TestAccAliCloudECSSnapshot_basic1_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -512,7 +513,7 @@ func AliCloudEcsSnapshotBasicDependence1(name string) string {
 
 // lintignore: R001
 func TestUnitAliCloudEcsSnapshot(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
@@ -708,13 +709,13 @@ func TestUnitAliCloudEcsSnapshot(t *testing.T) {
 		for _, key := range []string{"description", "snapshot_name", "name"} {
 			switch p["alicloud_ecs_snapshot"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, diff)
@@ -741,13 +742,13 @@ func TestUnitAliCloudEcsSnapshot(t *testing.T) {
 		for _, key := range []string{"description", "snapshot_name", "name", "tags"} {
 			switch p["alicloud_ecs_snapshot"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, diff)
@@ -774,13 +775,13 @@ func TestUnitAliCloudEcsSnapshot(t *testing.T) {
 		for _, key := range []string{"description", "snapshot_name", "name"} {
 			switch p["alicloud_ecs_snapshot"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, diff)
@@ -1348,11 +1349,11 @@ func TestUnitEcsSnapshotWaitUntilSchema(t *testing.T) {
 	if available == nil || available.Type != schema.TypeBool || !available.Computed || available.Optional || available.Required || available.ForceNew {
 		t.Fatalf("available must be a computed-only boolean, got %#v", available)
 	}
-	if _, errs := r.Validate(terraform.NewResourceConfigRaw(map[string]interface{}{"disk_id": "disk-test"})); len(errs) != 0 {
+	if errs := r.Validate(terraform.NewResourceConfigRaw(map[string]interface{}{"disk_id": "disk-test"})); len(errs) != 0 {
 		t.Fatalf("omitted wait_until must be valid: %v", errs)
 	}
 	for _, value := range []string{"accomplished", "available", "progressing", "AVAILABLE", ""} {
-		_, errs := r.Validate(terraform.NewResourceConfigRaw(map[string]interface{}{"disk_id": "disk-test", "wait_until": value}))
+		errs := r.Validate(terraform.NewResourceConfigRaw(map[string]interface{}{"disk_id": "disk-test", "wait_until": value}))
 		valid := value == "accomplished" || value == "available"
 		if valid != (len(errs) == 0) {
 			t.Errorf("wait_until %q validation errors: %v", value, errs)
@@ -1405,19 +1406,19 @@ func TestUnitEcsSnapshotCreateWaitUntil(t *testing.T) {
 			if tc.policy != "" {
 				config["wait_until"] = tc.policy
 			}
-			diff, err := r.Diff(nil, terraform.NewResourceConfigRaw(config), client)
+			diff, err := r.Diff(context.Background(), nil, terraform.NewResourceConfigRaw(config), client)
 			if err != nil {
 				t.Fatal(err)
 			}
-			state, err := r.Apply(nil, diff, client)
+			state, diags := r.Apply(context.Background(), nil, diff, client)
 			if tc.wantError {
-				if err == nil || !strings.Contains(err.Error(), "timeout while waiting") {
-					t.Fatalf("must keep waiting while Available=true and Status=progressing, got %v", err)
+				if !diags.HasError() || !strings.Contains(fmt.Sprintf("%v", diags), "timeout while waiting") {
+					t.Fatalf("must keep waiting while Available=true and Status=progressing, got %v", diags)
 				}
 				return
 			}
-			if err != nil {
-				t.Fatal(err)
+			if diags.HasError() {
+				t.Fatalf("%v", diags)
 			}
 			wantPolicy, wantStatus, wantQueries := tc.policy, "accomplished", int32(3)
 			if tc.policy == "available" {
@@ -1495,13 +1496,13 @@ func TestUnitEcsSnapshotUpdateWaitUntil(t *testing.T) {
 			if tc.policy != "" {
 				config["wait_until"] = tc.policy
 			}
-			diff, err := r.Diff(state, terraform.NewResourceConfigRaw(config), client)
+			diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), client)
 			if err != nil {
 				t.Fatal(err)
 			}
-			updated, err := r.Apply(state, diff, client)
-			if err != nil {
-				t.Fatal(err)
+			updated, diags := r.Apply(context.Background(), state, diff, client)
+			if diags.HasError() {
+				t.Fatalf("%v", diags)
 			}
 			if got := atomic.LoadInt32(&describes); got != 1 || atomic.LoadInt32(&modifies) != 1 {
 				t.Fatalf("expected one modify and only the final Read, got modify=%d query=%d", modifies, got)
@@ -1559,12 +1560,12 @@ func TestUnitEcsSnapshotRetentionWaitUntil(t *testing.T) {
 				if mixed {
 					config["description"] = "after"
 				}
-				diff, err := r.Diff(state, terraform.NewResourceConfigRaw(config), client)
+				diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), client)
 				if err != nil {
 					t.Fatal(err)
 				}
-				if _, err := r.Apply(state, diff, client); err != nil {
-					t.Fatal(err)
+				if _, diags := r.Apply(context.Background(), state, diff, client); diags.HasError() {
+					t.Fatalf("%v", diags)
 				}
 				if atomic.LoadInt32(&modifies) != 1 || atomic.LoadInt32(&describes) != 3 {
 					t.Fatalf("expected progressing/accomplished pre-wait, one modify and final Read, got modify=%d queries=%d", modifies, describes)
@@ -1605,9 +1606,9 @@ func TestUnitEcsSnapshotWaitUntilOnly(t *testing.T) {
 			if tc.before != "" {
 				state.Attributes["wait_until"] = tc.before
 			}
-			state, err := r.Refresh(state, client)
-			if err != nil {
-				t.Fatal(err)
+			state, diags := r.RefreshWithoutUpgrade(context.Background(), state, client)
+			if diags.HasError() {
+				t.Fatalf("%v", diags)
 			}
 			if state.Attributes["wait_until"] != tc.before {
 				t.Fatalf("Refresh must preserve the local policy, got %q", state.Attributes["wait_until"])
@@ -1617,7 +1618,7 @@ func TestUnitEcsSnapshotWaitUntilOnly(t *testing.T) {
 			if tc.after != "" {
 				config["wait_until"] = tc.after
 			}
-			diff, err := r.Diff(state, terraform.NewResourceConfigRaw(config), client)
+			diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), client)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1630,9 +1631,9 @@ func TestUnitEcsSnapshotWaitUntilOnly(t *testing.T) {
 			if diff == nil || diff.RequiresNew() || len(diff.Attributes) != 1 || diff.Attributes["wait_until"] == nil {
 				t.Fatalf("expected only a non-replacement wait_until diff, got %#v", diff)
 			}
-			updated, err := r.Apply(state, diff, client)
-			if err != nil {
-				t.Fatal(err)
+			updated, diags := r.Apply(context.Background(), state, diff, client)
+			if diags.HasError() {
+				t.Fatalf("%v", diags)
 			}
 			if updated.ID != state.ID || updated.Attributes["wait_until"] != tc.after || updated.Attributes["status"] != "progressing" || updated.Attributes["available"] != "false" {
 				t.Fatalf("Read must preserve the local policy and actual status without recreation: %#v", updated)
@@ -1640,7 +1641,7 @@ func TestUnitEcsSnapshotWaitUntilOnly(t *testing.T) {
 			if got := atomic.LoadInt32(&describes); got != 1 {
 				t.Fatalf("policy-only changes must perform only the final Read, not a waiter, got %d queries", got)
 			}
-			diff, err = r.Diff(updated, terraform.NewResourceConfigRaw(config), client)
+			diff, err = r.Diff(context.Background(), updated, terraform.NewResourceConfigRaw(config), client)
 			if err != nil || diff != nil && !diff.Empty() {
 				t.Fatalf("applied local policy must have no remaining diff: %#v, %v", diff, err)
 			}
@@ -1677,10 +1678,11 @@ func TestUnitEcsSnapshotReadAvailable(t *testing.T) {
 	}
 	state := imported[0].State()
 	for _, value := range values {
-		state, err = r.Refresh(state, client)
-		if err != nil {
-			t.Fatal(err)
+		newState, diags := r.RefreshWithoutUpgrade(context.Background(), state, client)
+		if diags.HasError() {
+			t.Fatalf("%v", diags)
 		}
+		state = newState
 		if state.Attributes["available"] != strconv.FormatBool(value == true) || state.Attributes["status"] != "progressing" {
 			t.Fatalf("Read must replace availability with the reported boolean or false when absent, response=%v state=%#v", value, state.Attributes)
 		}

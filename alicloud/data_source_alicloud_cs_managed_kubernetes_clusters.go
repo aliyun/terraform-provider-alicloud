@@ -12,9 +12,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
@@ -75,11 +75,6 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"slb_internet_enabled": {
-							Type:     schema.TypeBool,
-							Computed: true,
-							Removed:  "Field 'slb_internet_enabled' has been removed from provider version 1.53.0.",
-						},
 						"security_group_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -91,117 +86,6 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 						"vpc_id": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
-						"vswitch_ids": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-							Removed: "Field 'vswitch_ids' has been removed from provider version 1.53.0.",
-						},
-						"worker_instance_types": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-							Removed: "Field 'worker_instance_types' has been removed from provider version 1.53.0.",
-						},
-						"worker_numbers": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeInt,
-							},
-							Removed: "Field 'worker_numbers' has been removed from provider version 1.53.0.",
-						},
-						"key_name": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'key_name' has been removed from provider version 1.53.0.",
-						},
-						"pod_cidr": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'pod_cidr' has been removed from provider version 1.53.0.",
-						},
-						"service_cidr": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'service_cidr' has been removed from provider version 1.53.0.",
-						},
-						"cluster_network_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'cluster_network_type' has been removed from provider version 1.53.0.",
-						},
-						"log_config": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"project": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-							Removed: "Field 'log_config' has been removed from provider version 1.53.0.",
-						},
-						"image_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'image_id' has been removed from provider version 1.53.0.",
-						},
-						"worker_disk_size": {
-							Type:     schema.TypeInt,
-							Computed: true,
-							Removed:  "Field 'worker_disk_size' has been removed from provider version 1.53.0.",
-						},
-						"worker_disk_category": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'worker_disk_category' has been removed from provider version 1.53.0.",
-						},
-						"worker_data_disk_size": {
-							Type:     schema.TypeInt,
-							Computed: true,
-							Removed:  "Field 'worker_data_disk_size' has been removed from provider version 1.53.0.",
-						},
-						"worker_data_disk_category": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'worker_data_disk_category' has been removed from provider version 1.53.0.",
-						},
-						"worker_instance_charge_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'worker_instance_charge_type' has been removed from provider version 1.53.0.",
-						},
-						"worker_period_unit": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'worker_period_unit' has been removed from provider version 1.53.0.",
-						},
-						"worker_period": {
-							Type:     schema.TypeInt,
-							Computed: true,
-							Removed:  "Field 'worker_period' has been removed from provider version 1.53.0.",
-						},
-						"worker_auto_renew": {
-							Type:     schema.TypeBool,
-							Computed: true,
-							Removed:  "Field 'worker_auto_renew' has been removed from provider version 1.53.0.",
-						},
-						"worker_auto_renew_period": {
-							Type:     schema.TypeInt,
-							Computed: true,
-							Removed:  "Field 'worker_auto_renew_period' has been removed from provider version 1.53.0.",
 						},
 						"worker_nodes": {
 							Type:     schema.TypeList,
@@ -224,7 +108,7 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 							},
 						},
 						"connections": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -433,7 +317,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 			pagination, _ = response.([]interface{})[1].(*cs.PaginationResult)
 
 			if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
-				err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 					if err := invoker.Run(func() error {
 						raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 							requestInfo = csClient
@@ -443,7 +327,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 						response = raw
 						return err
 					}); err != nil {
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					if debugOn() {
 						requestMap := make(map[string]interface{})
@@ -462,7 +346,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 						}
 					}
 					time.Sleep(5 * time.Second)
-					return resource.RetryableError(Error("there is no any nodes in kubernetes cluster %s", d.Id()))
+					return retry.RetryableError(Error("there is no any nodes in kubernetes cluster %s", d.Id()))
 				})
 				if err != nil {
 					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
@@ -494,7 +378,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 			} else {
 				logConfig["project"] = ct.Parameters.SLSProjectName
 			}
-			mapping["log_config"] = []map[string]interface{}{logConfig}
+			//mapping["log_config"] = []map[string]interface{}{logConfig} // log_config has been removed
 		}
 
 		var response interface{}
@@ -518,7 +402,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		}
 		connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", ct.ClusterID, ct.RegionID)
 
-		mapping["connections"] = connection
+		mapping["connections"] = []interface{}{connection}
 
 		mapping["state"] = ct.State
 		object, err := csClient.DescribeClusterDetail(ct.ClusterID)

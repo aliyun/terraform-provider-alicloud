@@ -37,7 +37,6 @@ The following arguments are supported:
 * `description` - (Optional, ForceNew) The description of the access control policy.
 * `lang` - (Optional, ForceNew) The language of the content within the response. Valid values: `en`, `zh`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `source_ip` - (Removed since v1.213.0) The source IP address of the request. **NOTE:** Field `upgrade_type` has been removed from provider version 1.213.0.
 
 ## Attributes Reference
 

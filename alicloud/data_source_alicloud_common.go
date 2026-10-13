@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // Generates a hash for the set hash function used by the ID

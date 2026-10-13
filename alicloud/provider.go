@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -19,14 +20,14 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/mitchellh/go-homedir"
 )
 
 // Provider returns a schema.Provider for alicloud
-func Provider() terraform.ResourceProvider {
+func Provider() *schema.Provider {
 	provider := &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"access_key": {
@@ -2195,20 +2196,69 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sls_metric_store":                                      resourceAliCloudSlsMetricStore(),
 		},
 	}
-	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
-		return providerConfigure(d, provider)
+	provider.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+		return providerConfigure(ctx, d, provider)
 	}
+
+	if diags := assembleProvider(provider); diags.HasError() {
+		// Registration duplicates are a startup hard error: no configuration
+		// can make them work, and the provider is still being built, so there
+		// is nowhere to return diagnostics to.
+		panic("provider registration error: " + formatRegistrationDiags(diags))
+	}
+
 	return provider
 }
 
 var providerConfig map[string]interface{}
 
-func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{}, error) {
+// hcl2shimUnknownValue mirrors terraform-plugin-sdk's internal
+// hcl2shim.UnknownVariableValue. Under SDK v2 the shim hands this sentinel string
+// to d.Get/d.GetOk for any provider-config attribute whose value is unknown until
+// apply (for example a role_arn that interpolates an attribute of a resource
+// created in the same apply). The package is internal and cannot be imported, so
+// the constant is mirrored here. Under SDK v1 such attributes read back as empty
+// and eager credential resolution was deferred to apply; forwarding the sentinel
+// into the AssumeRole call instead fails with "Invalid role arn format:74D93920-...".
+// Treating it as unset restores the SDK v1 deferred behavior.
+const hcl2shimUnknownValue = "74D93920-ED26-11E3-AC10-0800200C9A66"
+
+// cfgString reads a string provider-config attribute, treating the SDK v2
+// plan-unknown sentinel (hcl2shimUnknownValue) as "not set". Route any config
+// value that drives an eager configure-time side effect (HTTP/file/credential
+// call) through this so an unknown-until-apply value is deferred to apply rather
+// than fed as a garbage literal. Returns ("", false) when unset or unknown.
+func cfgString(d *schema.ResourceData, key string) (string, bool) {
+	v, ok := d.GetOk(key)
+	if !ok {
+		return "", false
+	}
+	s, _ := v.(string)
+	if s == "" || s == hcl2shimUnknownValue {
+		return "", false
+	}
+	return s, true
+}
+
+// mapString is the map-read counterpart of cfgString for values read out of a
+// schema block/set element (e.g. an assume_role or assume_role_with_oidc map),
+// applying the identical unknown-sentinel handling. Returns ("", false) when the
+// key is absent, empty, or the plan-unknown sentinel. Route every credential
+// string read from such a map through this so no field is left unguarded.
+func mapString(m map[string]interface{}, key string) (string, bool) {
+	s, ok := m[key].(string)
+	if !ok || s == "" || s == hcl2shimUnknownValue {
+		return "", false
+	}
+	return s, true
+}
+
+func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Provider) (interface{}, diag.Diagnostics) {
 	log.Println("using terraform version:", p.TerraformVersion)
 	var getProviderConfig = func(schemaKey string, profileKey string) string {
 		if schemaKey != "" {
-			if v, ok := d.GetOk(schemaKey); ok && v != nil && v.(string) != "" {
-				return v.(string)
+			if v, ok := cfgString(d, schemaKey); ok {
+				return v
 			}
 		}
 		if v, err := getConfigFromProfile(d, profileKey); err == nil && v != nil {
@@ -2228,8 +2278,8 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	ecsRoleName := getProviderConfig("ecs_role_name", "ram_role_name")
 	var profileName string
 	var credential credentials.Credential
-	if v, ok := d.GetOk("profile"); ok && v != nil {
-		profileName = v.(string)
+	if v, ok := cfgString(d, "profile"); ok {
+		profileName = v
 	}
 
 	// TODO: supports all of profile modes after credentials supporting setting timeout
@@ -2239,26 +2289,26 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		(profileMode == "ChainableRamRoleArn" || profileMode == "CloudSSO" ||
 			profileMode == "External" || profileMode == "OAuth") {
 		var profileFile string
-		if v, ok := d.GetOk("shared_credentials_file"); ok && v.(string) != "" {
-			profileFile = absPath(v.(string))
+		if v, ok := cfgString(d, "shared_credentials_file"); ok {
+			profileFile = absPath(v)
 		}
 		provider, err := providers.NewCLIProfileCredentialsProviderBuilder().WithProfileName(profileName).WithProfileFile(profileFile).Build()
 		if err != nil {
-			return nil, fmt.Errorf("failed to create profile credentials provider: %v", err)
+			return nil, diag.FromErr(fmt.Errorf("failed to create profile credentials provider: %v", err))
 		}
 		credential = credentials.FromCredentialsProvider("cli_profile", provider)
 		creds, err := credential.GetCredential()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get credential from profile: %v", err)
+			return nil, diag.FromErr(fmt.Errorf("failed to get credential from profile: %v", err))
 		}
 		accessKey, secretKey, securityToken = *creds.AccessKeyId, *creds.AccessKeySecret, *creds.SecurityToken
 	}
 
 	if accessKey == "" || secretKey == "" {
-		if v, ok := d.GetOk("credentials_uri"); ok && v.(string) != "" {
-			credentialsURIResp, err := getClientByCredentialsURI(v.(string))
+		if v, ok := cfgString(d, "credentials_uri"); ok {
+			credentialsURIResp, err := getClientByCredentialsURI(v)
 			if err != nil {
-				return nil, err
+				return nil, diag.FromErr(err)
 			}
 			accessKey = credentialsURIResp.AccessKeyId
 			secretKey = credentialsURIResp.AccessKeySecret
@@ -2306,7 +2356,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		}
 		credential, err := credentials.NewCredential(credentialConfig)
 		if err != nil {
-			return nil, err
+			return nil, diag.FromErr(err)
 		}
 		config.Credential = credential
 	}
@@ -2330,16 +2380,18 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	assumeRoleList := d.Get("assume_role").(*schema.Set).List()
 	if len(assumeRoleList) == 1 {
 		assumeRole := assumeRoleList[0].(map[string]interface{})
-		if assumeRole["role_arn"].(string) != "" {
-			config.RamRoleArn = assumeRole["role_arn"].(string)
+		if v, ok := mapString(assumeRole, "role_arn"); ok {
+			config.RamRoleArn = v
 		}
-		if assumeRole["session_name"].(string) != "" {
-			config.RamRoleSessionName = assumeRole["session_name"].(string)
+		if v, ok := mapString(assumeRole, "session_name"); ok {
+			config.RamRoleSessionName = v
 		}
 		if config.RamRoleSessionName == "" {
 			config.RamRoleSessionName = "terraform"
 		}
-		config.RamRolePolicy = assumeRole["policy"].(string)
+		if v, ok := mapString(assumeRole, "policy"); ok {
+			config.RamRolePolicy = v
+		}
 		if assumeRole["session_expiration"].(int) == 0 {
 			if v := os.Getenv("ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION"); v != "" {
 				if expiredSeconds, err := strconv.Atoi(v); err == nil {
@@ -2352,7 +2404,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		} else {
 			config.RamRoleSessionExpiration = assumeRole["session_expiration"].(int)
 		}
-		if v := assumeRole["external_id"].(string); v != "" {
+		if v, ok := mapString(assumeRole, "external_id"); ok {
 			config.RamRoleExternalId = v
 		}
 
@@ -2363,7 +2415,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	if v, ok := d.GetOk("assume_role_with_oidc"); ok && len(v.([]interface{})) == 1 {
 		config.AssumeRoleWithOidc, err = getAssumeRoleWithOIDCConfig(v.([]interface{})[0].(map[string]interface{}))
 		if err != nil {
-			return nil, err
+			return nil, diag.FromErr(err)
 		}
 		log.Printf("[INFO] assume_role_with_oidc configuration set: (RoleArn: %q, SessionName: %q, SessionExpiration: %d, OIDCProviderArn: %s)",
 			config.AssumeRoleWithOidc.RoleARN, config.AssumeRoleWithOidc.RoleSessionName, config.AssumeRoleWithOidc.DurationSeconds, config.AssumeRoleWithOidc.OIDCProviderArn)
@@ -2575,18 +2627,18 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	}
 
 	if err := config.RefreshAuthCredential(); err != nil {
-		return nil, err
+		return nil, diag.FromErr(err)
 	}
 
 	if config.AccessKey == "" || config.SecretKey == "" {
-		return nil, fmt.Errorf("configuring Terraform Alibaba Cloud Provider: no valid credential sources for Terraform Alibaba Cloud Provider found.\n\n%s",
+		return nil, diag.FromErr(fmt.Errorf("configuring Terraform Alibaba Cloud Provider: no valid credential sources for Terraform Alibaba Cloud Provider found.\n\n%s",
 			"Please see https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#authentication\n"+
-				"for more information about providing credentials.")
+				"for more information about providing credentials."))
 	}
 
 	client, err := config.Client()
 	if err != nil {
-		return nil, err
+		return nil, diag.FromErr(err)
 	}
 
 	return client, nil
@@ -4380,32 +4432,32 @@ func getAssumeRoleWithOIDCConfig(tfMap map[string]interface{}) (*connectivity.As
 		assumeRole.DurationSeconds = v
 	}
 
-	if v, ok := tfMap["policy"].(string); ok && v != "" {
+	if v, ok := mapString(tfMap, "policy"); ok {
 		assumeRole.Policy = v
 	}
 
-	if v, ok := tfMap["role_arn"].(string); ok && v != "" {
+	if v, ok := mapString(tfMap, "role_arn"); ok {
 		assumeRole.RoleARN = v
 	}
 
-	if v, ok := tfMap["role_session_name"].(string); ok && v != "" {
+	if v, ok := mapString(tfMap, "role_session_name"); ok {
 		assumeRole.RoleSessionName = v
 	}
 	if assumeRole.RoleSessionName == "" {
 		assumeRole.RoleSessionName = "terraform"
 	}
 
-	if v, ok := tfMap["oidc_provider_arn"].(string); ok && v != "" {
+	if v, ok := mapString(tfMap, "oidc_provider_arn"); ok {
 		assumeRole.OIDCProviderArn = v
 	}
 
 	missingOidcToken := true
-	if v, ok := tfMap["oidc_token"]; ok && v.(string) != "" {
-		assumeRole.OIDCToken = v.(string)
+	if v, ok := mapString(tfMap, "oidc_token"); ok {
+		assumeRole.OIDCToken = v
 		missingOidcToken = false
 	}
 
-	if v, ok := tfMap["oidc_token_file"].(string); ok && v != "" {
+	if v, ok := mapString(tfMap, "oidc_token_file"); ok {
 		assumeRole.OIDCTokenFile = v
 		if assumeRole.OIDCToken == "" {
 			token, err := os.ReadFile(v)

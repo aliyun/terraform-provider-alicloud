@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -316,19 +316,19 @@ func resourceAliCloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 	request["Parameter"] = parameterMapList
 	request["ClientToken"] = buildClientToken("CreateInstance")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "bastionhost_std_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -370,14 +370,14 @@ func resourceAliCloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 		startInstanceReq["SlaveVswitchId"] = v
 	}
 
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", startInstanceAction, nil, startInstanceReq, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -457,7 +457,6 @@ func resourceAliCloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		"port":           formatInt(adAuthServer["Port"]),
 		"server":         adAuthServer["Server"],
 		"standby_server": adAuthServer["StandbyServer"],
-		"has_password":   adAuthServer["HasPassword"],
 	}
 	d.Set("ad_auth_server", []map[string]interface{}{adAuthServerMap})
 
@@ -477,7 +476,6 @@ func resourceAliCloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		"port":               ldapAuthServer["Port"],
 		"server":             ldapAuthServer["Server"],
 		"standby_server":     ldapAuthServer["StandbyServer"],
-		"has_password":       adAuthServer["HasPassword"],
 	}
 	d.Set("ldap_auth_server", []map[string]interface{}{ldapAuthServerMap})
 
@@ -508,21 +506,18 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		if err := bastionhostService.setInstanceTags(d, "INSTANCE"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 
 	if d.HasChange("description") {
 		if err := bastionhostService.UpdateBastionhostInstanceDescription(d.Id(), d.Get("description").(string)); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("description")
 	}
 
 	if d.HasChange("resource_group_id") {
 		if err := bastionhostService.UpdateResourceGroup(d.Id(), "INSTANCE", d.Get("resource_group_id").(string)); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("resource_group_id")
 	}
 
 	if !d.IsNewResource() && d.HasChange("license_code") {
@@ -536,7 +531,6 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("license_code")
 	}
 
 	if !d.IsNewResource() && d.HasChange("storage") {
@@ -550,7 +544,6 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("storage")
 	}
 
 	if !d.IsNewResource() && d.HasChange("bandwidth") {
@@ -564,7 +557,6 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("bandwidth")
 	}
 
 	if !d.IsNewResource() && d.HasChange("security_group_ids") {
@@ -580,7 +572,6 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("security_group_ids")
 	}
 
 	_, ok := d.GetOkExists("enable_public_access")
@@ -611,7 +602,6 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("enable_public_access")
 	}
 
 	if d.HasChange("ad_auth_server") {
@@ -637,14 +627,14 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 
 			action := "ModifyInstanceADAuthServer"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, modifyAdRequest, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -652,7 +642,6 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("ad_auth_server")
 		}
 	}
 
@@ -680,14 +669,14 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 
 			action := "ModifyInstanceLDAPAuthServer"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, modifyLdapRequest, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -695,7 +684,6 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("ldap_auth_server")
 		}
 	}
 
@@ -738,19 +726,19 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 	if update {
 		action := "SetRenewal"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			setRenewalResponse, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, setRenewalReq, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 					setRenewalReq["ProductType"] = "bastionhost_std_public_intl"
 					endpoint = connectivity.BssOpenAPIEndpointInternational
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -760,9 +748,6 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("renewal_status")
-		d.SetPartial("renew_period")
-		d.SetPartial("renewal_period_unit")
 	}
 
 	update = false
@@ -782,15 +767,15 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		action := "ConfigInstanceWhiteList"
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			resp, err := client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, configInstanceWhiteListReq, false)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, resp, configInstanceWhiteListReq)
 			return nil
@@ -805,7 +790,6 @@ func resourceAliCloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("public_white_list")
 	}
 
 	d.Partial(false)

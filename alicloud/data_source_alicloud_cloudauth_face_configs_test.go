@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudCloudAuthFaceConfigDataSource(t *testing.T) {
+func TestAccAliCloudCloudAuthFaceConfigDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudAuthFaceConfigDataSourceName(rand, map[string]string{

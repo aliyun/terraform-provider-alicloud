@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Esa HttpIncomingResponseHeaderModificationRule. >>> Resource test cases, automatically generated.
@@ -30,7 +30,7 @@ func TestAccAliCloudEsaHttpIncomingResponseHeaderModificationRule_basic11932(t *
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -157,7 +157,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_HttpIncomingResponseHeaderM
 }
 
 resource "alicloud_esa_site" "resource_Site_HttpIncomingResponseHeaderModificationRule_test" {
-  site_name   = "${var.name}.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_HttpIncomingResponseHeaderModificationRule_test.id
   coverage    = "overseas"
   access_type = "NS"

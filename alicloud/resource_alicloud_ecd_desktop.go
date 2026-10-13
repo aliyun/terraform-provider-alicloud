@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudEcdDesktop() *schema.Resource {
@@ -215,14 +215,14 @@ func resourceAlicloudEcdDesktopCreate(d *schema.ResourceData, meta interface{}) 
 		request["HostName"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"INTERNAL_ERROR"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -272,7 +272,6 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := ecdService.SetResourceTags(d, "ALIYUN::GWS::INSTANCE"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	request := map[string]interface{}{
 		"DesktopId": d.Id(),
@@ -284,14 +283,14 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		request["RegionId"] = client.RegionId
 		action := "ModifyDesktopName"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -299,7 +298,6 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("desktop_name")
 	}
 
 	if !d.IsNewResource() && d.HasChange("policy_group_id") {
@@ -311,14 +309,14 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 
 		action := "ModifyDesktopsPolicyGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -326,7 +324,6 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("policy_group_id")
 	}
 
 	if !d.IsNewResource() && d.HasChange("end_user_ids") {
@@ -341,14 +338,14 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		action := "ModifyEntitlement"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -356,7 +353,6 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("end_user_ids")
 	}
 
 	if d.HasChange("status") {
@@ -373,14 +369,14 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 				request["RegionId"] = client.RegionId
 				action := "StartDesktops"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -399,14 +395,14 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				action := "StopDesktops"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -419,7 +415,6 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
-			d.SetPartial("status")
 		}
 	}
 	if d.HasChange("desktop_type") || d.HasChange("root_disk_size_gib") || d.HasChange("user_disk_size_gib") {
@@ -441,14 +436,14 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		action := "ModifyDesktopSpec"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -460,7 +455,6 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("desktop_type")
 	}
 
 	if !d.IsNewResource() && d.HasChange("payment_type") {
@@ -488,14 +482,14 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				action := "ModifyDesktopChargeType"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -509,7 +503,6 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 			}
 		}
-		d.SetPartial("payment_type")
 	}
 	d.Partial(false)
 	return resourceAlicloudEcdDesktopRead(d, meta)
@@ -525,14 +518,14 @@ func resourceAlicloudEcdDesktopDelete(d *schema.ResourceData, meta interface{}) 
 	}
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

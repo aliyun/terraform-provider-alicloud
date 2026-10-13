@@ -47,7 +47,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `cluster_id` - The id of target cluster.
 * `cluster_name` - The name of target cluster.
 * `kube_config` - (Sensitive) The kube config to use to authenticate with the cluster.
-* `certificate_authority` - (Available in 1.105.0+) Nested attribute containing certificate authority data for your cluster.
+* `certificate_authority` - (Available in 1.105.0+) A list of nested attribute contains the certificate authority data for your cluster.
   * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kube config file for your cluster.
   * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kube config file for your cluster.
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kube config file for your cluster.

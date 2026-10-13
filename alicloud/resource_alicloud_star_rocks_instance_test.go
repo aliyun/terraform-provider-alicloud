@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test StarRocks Instance. >>> Resource test cases, automatically generated.
@@ -30,7 +30,7 @@ func TestAccAliCloudStarRocksInstance_basic11073(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -58,7 +58,7 @@ func TestAccAliCloudStarRocksInstance_basic11073(t *testing.T) {
 					"backend_node_groups": []map[string]interface{}{
 						{
 							"cu":                          "8",
-							"storage_size":                "100",
+							"storage_size":                "200",
 							"resident_node_number":        "3",
 							"disk_number":                 "1",
 							"storage_performance_level":   "pl1",
@@ -257,7 +257,7 @@ func TestAccAliCloudStarRocksInstance_basic11101(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -285,7 +285,7 @@ func TestAccAliCloudStarRocksInstance_basic11101(t *testing.T) {
 					"backend_node_groups": []map[string]interface{}{
 						{
 							"cu":                          "8",
-							"storage_size":                "100",
+							"storage_size":                "200",
 							"resident_node_number":        "3",
 							"disk_number":                 "1",
 							"storage_performance_level":   "pl1",
@@ -484,7 +484,7 @@ func TestAccAliCloudStarRocksInstance_basic11093(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -512,7 +512,7 @@ func TestAccAliCloudStarRocksInstance_basic11093(t *testing.T) {
 					"backend_node_groups": []map[string]interface{}{
 						{
 							"cu":                          "8",
-							"storage_size":                "100",
+							"storage_size":                "200",
 							"resident_node_number":        "3",
 							"disk_number":                 "1",
 							"storage_performance_level":   "pl1",

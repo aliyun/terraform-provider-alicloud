@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudHbrHanaBackupPlan() *schema.Resource {
@@ -96,14 +96,14 @@ func resourceAlicloudHbrHanaBackupPlanCreate(d *schema.ResourceData, meta interf
 	request["Schedule"] = d.Get("schedule")
 	request["VaultId"] = d.Get("vault_id")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -180,14 +180,14 @@ func resourceAlicloudHbrHanaBackupPlanUpdate(d *schema.ResourceData, meta interf
 	if update {
 		action := "UpdateHanaBackupPlan"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -198,9 +198,6 @@ func resourceAlicloudHbrHanaBackupPlanUpdate(d *schema.ResourceData, meta interf
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("backup_prefix")
-		d.SetPartial("plan_name")
-		d.SetPartial("schedule")
 	}
 	if d.HasChange("status") {
 		object, err := hbrService.DescribeHbrHanaBackupPlan(d.Id())
@@ -218,14 +215,14 @@ func resourceAlicloudHbrHanaBackupPlanUpdate(d *schema.ResourceData, meta interf
 				}
 				action := "EnableHanaBackupPlan"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -245,14 +242,14 @@ func resourceAlicloudHbrHanaBackupPlanUpdate(d *schema.ResourceData, meta interf
 				}
 				action := "DisableHanaBackupPlan"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -264,7 +261,6 @@ func resourceAlicloudHbrHanaBackupPlanUpdate(d *schema.ResourceData, meta interf
 					return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 				}
 			}
-			d.SetPartial("status")
 		}
 	}
 	d.Partial(false)
@@ -288,14 +284,14 @@ func resourceAlicloudHbrHanaBackupPlanDelete(d *schema.ResourceData, meta interf
 		request["ResourceGroupId"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -8,10 +9,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 // Case 检查项扫描策略配置20251209005 12031
@@ -34,8 +35,8 @@ func TestAccAliCloudThreatDetectionCheckConfig_basic12031(t *testing.T) {
 			testAccPreCheck(t)
 			testAccThreatDetectionCheckConfigBackup(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -420,7 +421,7 @@ func TestUnitThreatDetectionCheckConfigSelectedChecksDiff(t *testing.T) {
 			r := resourceAliCloudThreatDetectionCheckConfig()
 			d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{"selected_checks": tc.old})
 			d.SetId("check-config")
-			diff, err := r.Diff(d.State(), terraform.NewResourceConfigRaw(map[string]interface{}{"selected_checks": tc.new}), nil)
+			diff, err := r.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(map[string]interface{}{"selected_checks": tc.new}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}

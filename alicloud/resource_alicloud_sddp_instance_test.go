@@ -12,13 +12,13 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudSDDPInstance_basic0(t *testing.T) {
+func TestAccAliCloudSDDPInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_sddp_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudSDDPInstanceMap0)
@@ -35,9 +35,9 @@ func TestAccAlicloudSDDPInstance_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{30})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -117,7 +117,7 @@ variable "name" {
 
 // lintignore: R001
 func TestUnitAlicloudSDDPInstance(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_sddp_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_sddp_instance"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

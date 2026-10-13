@@ -7,9 +7,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudAdbBackupPolicy() *schema.Resource {
@@ -70,7 +70,7 @@ func resourceAlicloudAdbBackupPolicyRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("db_cluster_id", d.Id())
-	d.Set("backup_retention_period", object.BackupRetentionPeriod)
+	d.Set("backup_retention_period", fmt.Sprint(object.BackupRetentionPeriod))
 	d.Set("preferred_backup_period", strings.Split(object.PreferredBackupPeriod, ","))
 	d.Set("preferred_backup_time", object.PreferredBackupTime)
 
@@ -91,12 +91,12 @@ func resourceAlicloudAdbBackupPolicyUpdate(d *schema.ResourceData, meta interfac
 		if err := adbService.WaitForCluster(d.Id(), Running, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
-		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			if err := adbService.ModifyAdbBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod); err != nil {
 				if IsExpectedErrors(err, OperationDeniedDBStatus) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		}); err != nil {

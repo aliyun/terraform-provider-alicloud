@@ -12,9 +12,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,7 +37,7 @@ func TestAccAlicloudClickHouseBackupPolicy_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
@@ -120,21 +120,24 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_click_house_regions" "default" {	
+data "alicloud_click_house_regions" "default" {
   current = true
 }
 
-data "alicloud_vpcs" "default"	{
-  name_regex = "default-NODELETING"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
 }
 
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "20.3.10.75"
+  db_cluster_version      = "23.8"
   status                  = "Running"
   category                = "Basic"
   db_cluster_class        = "S8"
@@ -144,14 +147,14 @@ resource "alicloud_click_house_db_cluster" "default" {
   payment_type            = "PayAsYouGo"
   db_node_storage         = "500"
   storage_type            = "cloud_essd"
-  vswitch_id              = data.alicloud_vswitches.default.vswitches.0.id
+  vswitch_id              = alicloud_vswitch.default.id
 }
 `, name)
 }
 
 // lintignore: R001
 func TestUnitAlicloudClickHouseBackupPolicy(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_click_house_backup_policy"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_click_house_backup_policy"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

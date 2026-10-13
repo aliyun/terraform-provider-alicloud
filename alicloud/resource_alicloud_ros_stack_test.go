@@ -15,10 +15,10 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -99,7 +99,7 @@ func testSweepRosStack(region string) error {
 	return nil
 }
 
-func TestAccAlicloudROSStack_basic(t *testing.T) {
+func TestAccAliCloudROSStack_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_stack.default"
 	ra := resourceAttrInit(resourceId, AlicloudRosStackMap)
@@ -116,8 +116,8 @@ func TestAccAlicloudROSStack_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: func(state *terraform.State) error {
 			rosServiceClient := RosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 			for _, rs := range state.RootModule().Resources {
@@ -285,7 +285,7 @@ func AlicloudRosStackBasicDependence(name string) string {
 
 // lintignore: R001
 func TestUnitAlicloudROSStack(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ros_stack"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ros_stack"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

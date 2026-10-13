@@ -5,8 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudSlbMasterSlaveServerGroups() *schema.Resource {
@@ -73,11 +73,6 @@ func dataSourceAlicloudSlbMasterSlaveServerGroups() *schema.Resource {
 									"server_type": {
 										Type:     schema.TypeString,
 										Computed: true,
-									},
-									"is_backup": {
-										Type:     schema.TypeInt,
-										Computed: true,
-										Removed:  "Field 'is_backup' has been removed from provider version 1.63.0.",
 									},
 								},
 							},

@@ -14,8 +14,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type RdsService struct {
@@ -50,7 +51,7 @@ type rdsRetryableQueryError struct {
 func (e *rdsRetryableQueryError) Error() string { return e.cause.Error() }
 func (e *rdsRetryableQueryError) Unwrap() error { return e.cause }
 
-func rdsSingleQueryError(result *resource.RetryError) error {
+func rdsSingleQueryError(result *retry.RetryError) error {
 	if result.Retryable && !NotFoundError(result.Err) {
 		return &rdsRetryableQueryError{cause: result.Err}
 	}
@@ -118,19 +119,19 @@ func (s *RdsService) queryDBInstance(id string, retryTimeout time.Duration, pare
 	}
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	attempt := func() *resource.RetryError {
+	attempt := func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if parentCheck && NotFoundError(err) && !rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound", "InvalidDBInstanceId.NotFoundError", "Forbidden.InstanceNotFound") {
-				return resource.NonRetryableError(&rdsParentQueryError{cause: err})
+				return retry.NonRetryableError(&rdsParentQueryError{cause: err})
 			}
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidParameter"}) {
 				if retryTimeout > 0 {
 					wait()
 				}
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -215,17 +216,17 @@ func (s *RdsService) DescribeDBAccountPrivilege(id string) (object map[string]in
 	}
 	client := s.client
 	var response map[string]interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			// Check the parent before retrying a child state error.
 			if rdsErrorHasCode(err, dbInstanceStatusErrorCodes...) {
-				return resource.NonRetryableError(s.confirmRdsChildError(parts[0], err))
+				return retry.NonRetryableError(s.confirmRdsChildError(parts[0], err))
 			}
 			if NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -263,27 +264,27 @@ func (s *RdsService) describeDBDatabase(id string, retryTimeout time.Duration) (
 		"SourceIp":     s.client.SourceIp,
 	}
 	client := s.client
-	attempt := func() *resource.RetryError {
+	attempt := func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if rdsErrorHasCode(err, dbInstanceStatusErrorCodes...) {
-				return resource.NonRetryableError(s.confirmRdsChildError(parts[0], err))
+				return retry.NonRetryableError(s.confirmRdsChildError(parts[0], err))
 			}
 			if IsExpectedErrors(err, []string{"InternalError"}) {
-				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
+				return retry.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
 			}
 			if NotFoundError(err) || rdsErrorHasCode(err, "InvalidDBName.NotFound", "InvalidDBInstanceId.NotFound", "InvalidDBInstanceId.NotFoundError") {
-				return resource.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
+				return retry.NonRetryableError(WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR))
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
+			return retry.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
 		}
 		addDebug(action, response, request)
 		v, err := jsonpath.Get("$.Databases.Database", response)
 		if err != nil {
-			return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.Databases.Database", response))
+			return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.Databases.Database", response))
 		}
 		if len(v.([]interface{})) < 1 {
-			return resource.NonRetryableError(WrapErrorf(NotFoundErr("DBDatabase", dbName), NotFoundMsg, ProviderERROR))
+			return retry.NonRetryableError(WrapErrorf(NotFoundErr("DBDatabase", dbName), NotFoundMsg, ProviderERROR))
 		}
 		ds = v.([]interface{})[0].(map[string]interface{})
 		return nil
@@ -538,13 +539,13 @@ func (s *RdsService) ModifyPgHbaConfig(d *schema.ResourceData, attribute string)
 		count = count + 1
 	}
 	var response map[string]interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -563,7 +564,6 @@ func (s *RdsService) ModifyPgHbaConfig(d *schema.ResourceData, attribute string)
 	if desResponse["LastModifyStatus"] == "failed" {
 		return WrapError(Error("%v", desResponse["ModifyStatusReason"].(string)))
 	}
-	d.SetPartial(attribute)
 	return nil
 }
 
@@ -578,13 +578,13 @@ func (s *RdsService) ModifyDBInstanceDeletionProtection(d *schema.ResourceData, 
 	}
 	request["DeletionProtection"] = d.Get("deletion_protection")
 	var response map[string]interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -595,7 +595,6 @@ func (s *RdsService) ModifyDBInstanceDeletionProtection(d *schema.ResourceData, 
 	if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 		return WrapError(err)
 	}
-	d.SetPartial(attribute)
 	return nil
 }
 
@@ -610,13 +609,13 @@ func (s *RdsService) ModifyHADiagnoseConfig(d *schema.ResourceData, attribute st
 	request["TcpConnectionType"] = d.Get("tcp_connection_type")
 	var response map[string]interface{}
 	var err error
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -627,7 +626,6 @@ func (s *RdsService) ModifyHADiagnoseConfig(d *schema.ResourceData, attribute st
 	if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 		return WrapError(err)
 	}
-	d.SetPartial(attribute)
 	return nil
 }
 
@@ -712,7 +710,6 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 			return WrapError(err)
 		}
 	}
-	d.SetPartial(attribute)
 	return nil
 }
 
@@ -727,13 +724,13 @@ func (s *RdsService) DescribeDBInstanceRwNetInfoByMssql(id string) ([]interface{
 	client := s.client
 	var response map[string]interface{}
 	var err error
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -759,13 +756,13 @@ func (s *RdsService) DescribeDBInstanceNetInfo(id string) ([]interface{}, error)
 	client := s.client
 	var response map[string]interface{}
 	var err error
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -849,13 +846,13 @@ func (s *RdsService) GrantAccountPrivilege(id, dbName string) error {
 	}
 	var response map[string]interface{}
 	client := s.client
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"InvalidDB.NotFound"}) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -890,7 +887,7 @@ func (s *RdsService) revokeAccountPrivilege(id, dbName string, retryTimeout time
 	}
 	client := s.client
 	gone := false
-	err = resource.Retry(retryTimeout, func() *resource.RetryError {
+	err = resource.Retry(retryTimeout, func() *retry.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidDB.NotFound", "InvalidAccountName.NotFound") {
@@ -904,17 +901,17 @@ func (s *RdsService) revokeAccountPrivilege(id, dbName string, retryTimeout time
 					return nil
 				}
 				if isRdsRetryableQueryError(confirmed) {
-					return resource.RetryableError(confirmed)
+					return retry.RetryableError(confirmed)
 				}
 				if confirmed != err {
-					return resource.NonRetryableError(confirmed)
+					return retry.NonRetryableError(confirmed)
 				}
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1199,14 +1196,14 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, er
 	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1276,14 +1273,14 @@ func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, er
 	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1310,14 +1307,14 @@ func (s *RdsService) DescribeDBInstanceSSL(id string) (object map[string]interfa
 	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1354,14 +1351,14 @@ func (s *RdsService) DescribeHASwitchConfig(id string) (object map[string]interf
 	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1386,14 +1383,14 @@ func (s *RdsService) DescribeRdsTDEInfo(id string) (object map[string]interface{
 	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1420,14 +1417,14 @@ func (s *RdsService) ModifySecurityGroupConfiguration(id string, groupid string)
 	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"ServiceUnavailable"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1493,14 +1490,14 @@ func (s *RdsService) DescribeDbInstanceMonitor(id string) (monitoringPeriod int,
 	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1522,14 +1519,14 @@ func (s *RdsService) DescribeSQLCollectorPolicy(id string) (object map[string]in
 	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1553,14 +1550,14 @@ func (s *RdsService) DescribeSQLCollectorRetention(id string) (object map[string
 	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 
 		}
 		addDebug(action, response, request)
@@ -1972,14 +1969,14 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 			wait := incrementalWait(1*time.Second, 2*time.Second)
-			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err = resource.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -2004,14 +2001,14 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 			}
 
 			wait := incrementalWait(1*time.Second, 2*time.Second)
-			err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			err = resource.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
@@ -2023,7 +2020,6 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 		if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
@@ -2039,14 +2035,14 @@ func (s *RdsService) describeTags(d *schema.ResourceData) (tags []Tag, err error
 	client := s.client
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -2322,14 +2318,14 @@ func (s *RdsService) DescribeRdsBackup(id string) (object map[string]interface{}
 		"DBInstanceId": parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2358,14 +2354,14 @@ func (s *RdsService) DescribeBackupTasks(id string, backupJobId string) (object 
 		"BackupJobId":  backupJobId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2417,14 +2413,14 @@ func (s *RdsService) DescribeDBInstanceHAConfig(id string) (object map[string]in
 		"DBInstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2449,14 +2445,14 @@ func (s *RdsService) DescribeRdsCloneDbInstance(id string) (object map[string]in
 		"DBInstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2487,14 +2483,14 @@ func (s *RdsService) DescribePGHbaConfig(id string) (object map[string]interface
 		"DBInstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2520,14 +2516,14 @@ func (s *RdsService) DescribeHADiagnoseConfig(id string) (object map[string]inte
 		"DBInstanceId": id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2553,14 +2549,14 @@ func (s *RdsService) DescribeUpgradeMajorVersionPrecheckTask(id string, taskId i
 		"TaskId":       taskId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2608,16 +2604,16 @@ func (s *RdsService) DescribeRdsServiceLinkedRole(id string) (*ram.GetRoleRespon
 	request := ram.CreateGetRoleRequest()
 	request.RegionId = s.client.RegionId
 	request.RoleName = id
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetRole(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser}) {
 				time.Sleep(2 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*ram.GetRoleResponse)
@@ -2707,14 +2703,14 @@ func (s *RdsService) FindKmsRoleArnDdr(k string) (string, error) {
 	request := make(map[string]interface{})
 	request["KeyId"] = k
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2743,14 +2739,14 @@ func (s *RdsService) DescribeRdsNode(id string) (object map[string]interface{}, 
 	}
 	var response map[string]interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -2807,14 +2803,14 @@ func (s *RdsService) DescribeDBInstanceEndpoints(id string) (object map[string]i
 		"RegionId":             s.client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2887,14 +2883,14 @@ func (s *RdsService) DescribeDBInstanceEndpointPublicAddress(id string) (object 
 		"RegionId":             s.client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

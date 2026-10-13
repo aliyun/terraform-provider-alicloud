@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // Check requires convergent reorder coverage for every candidate TypeList: an
@@ -61,7 +61,7 @@ func Check(filename string, src []byte, resourceName string, r *schema.Resource,
 	}
 	covered := map[string]bool{}
 	suppressedCovered := map[string]bool{}
-	sdk := importName(f, "github.com/hashicorp/terraform-plugin-sdk/helper/resource")
+	sdk := importName(f, "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource")
 	testing := importName(f, "testing")
 	if sdk != "" && testing != "" {
 		for _, decl := range f.Decls {
@@ -123,7 +123,7 @@ func Candidates(r *schema.Resource) map[string]bool {
 
 func collect(fields map[string]*schema.Schema, prefix string, out map[string]bool) {
 	for name, s := range fields {
-		if s == nil || s.Removed != "" || (!s.Optional && !s.Required) {
+		if s == nil || (!s.Optional && !s.Required) {
 			continue
 		}
 		path := prefix + name
@@ -574,7 +574,7 @@ func Suppressed(r *schema.Resource) map[string]string {
 
 func suppressedAt(fields map[string]*schema.Schema, prefix string, out map[string]string) {
 	for name, s := range fields {
-		if s == nil || s.Removed != "" || (!s.Optional && !s.Required) {
+		if s == nil || (!s.Optional && !s.Required) {
 			continue
 		}
 		path := prefix + name

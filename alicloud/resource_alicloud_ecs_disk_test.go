@@ -14,9 +14,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -92,7 +92,7 @@ func testAliCloudEcsDisk(region string) error {
 
 // lintignore: R001
 func TestUnitECSDisk(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ecs_disk"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -110,13 +110,12 @@ func TestUnitECSDisk(t *testing.T) {
 			"TagResourcesValue_1": "CreateDiskValue",
 			"TagResourcesValue_2": "CreateDiskValue",
 		},
-		"encrypt_algorithm":                  "CreateDiskValue",
-		"instance_id":                        "CreateDiskValue",
-		"kms_key_id":                         "CreateDiskValue",
-		"performance_level":                  "CreateDiskValue",
-		"storage_set_id":                     "CreateDiskValue",
-		"storage_set_partition_number":       1,
-		"dedicated_block_storage_cluster_id": "CreateDiskValue",
+		"encrypt_algorithm":            "CreateDiskValue",
+		"instance_id":                  "CreateDiskValue",
+		"kms_key_id":                   "CreateDiskValue",
+		"performance_level":            "CreateDiskValue",
+		"storage_set_id":               "CreateDiskValue",
+		"storage_set_partition_number": 1,
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -795,7 +794,7 @@ func TestAccAliCloudECSDisk_basic8017(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -975,12 +974,12 @@ func TestAccAliCloudECSDisk_basic8017_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":             "cloud_efficiency",
+					"category":             "cloud_essd",
 					"delete_auto_snapshot": "true",
 					"delete_with_instance": "true",
 					"description":          name,
@@ -998,7 +997,7 @@ func TestAccAliCloudECSDisk_basic8017_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":             "cloud_efficiency",
+						"category":             "cloud_essd",
 						"delete_auto_snapshot": "true",
 						"delete_with_instance": "true",
 						"description":          name,
@@ -1053,6 +1052,7 @@ func AliCloudEcsDiskBasicDependence8017(name string) string {
 	data "alicloud_instance_types" "default" {
 		availability_zone    = data.alicloud_zones.default.zones.0.id
 		instance_type_family = "ecs.g6"
+		system_disk_category = "cloud_essd"
 	}
 
 	resource "alicloud_vpc" "default" {
@@ -1132,7 +1132,7 @@ func TestAccAliCloudECSDisk_basic8018(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1298,7 +1298,7 @@ func TestAccAliCloudECSDisk_basic8018_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1370,7 +1370,7 @@ func TestAccAliCloudECSDisk_basic8019(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1546,7 +1546,7 @@ func TestAccAliCloudECSDisk_basic8019_twin_excluding_kms_key_id(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1618,7 +1618,7 @@ func TestAccAliCloudECSDisk_basic8019_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1700,9 +1700,9 @@ func TestAccAliCloudECSDisk_basic8019_essd_to_autopl_burst(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1819,7 +1819,7 @@ func TestAccAliCloudECSDisk_basic8020(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1995,7 +1995,7 @@ func TestAccAliCloudECSDisk_basic8020_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -2062,6 +2062,7 @@ func AliCloudEcsDiskBasicDependence8020(name string) string {
 		availability_zone    = data.alicloud_zones.default.zones.0.id
 		instance_type_family = "ecs.g6"
 		instance_charge_type = "PrePaid"
+		system_disk_category = "cloud_essd"
 	}
 
 	data "alicloud_images" "default" {

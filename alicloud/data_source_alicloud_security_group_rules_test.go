@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudECSSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
@@ -12,7 +12,7 @@ func TestAccAlicloudECSSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigDirection,
@@ -45,7 +45,7 @@ func TestAccAlicloudECSSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigGroup_id,
@@ -78,7 +78,7 @@ func TestAccAlicloudECSSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNicType,
@@ -111,7 +111,7 @@ func TestAccAlicloudECSSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigPolicy,
@@ -145,7 +145,7 @@ func TestAccAlicloudECSSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T)
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIp_Protocol,
@@ -178,7 +178,7 @@ func TestAccAlicloudECSSecurityGroupRulesDataSourceEmpty(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEmpty,

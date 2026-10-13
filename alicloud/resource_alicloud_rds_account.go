@@ -9,9 +9,10 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudRdsAccount() *schema.Resource {
@@ -28,6 +29,12 @@ func resourceAliCloudRdsAccount() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(6 * time.Minute),
 		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("account_password"), cty.GetAttrPath("account_password_wo")),
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("password"), cty.GetAttrPath("account_password_wo")),
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("kms_encrypted_password"), cty.GetAttrPath("account_password_wo")),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"account_description": {
 				Type:          schema.TypeString,
@@ -63,16 +70,30 @@ func resourceAliCloudRdsAccount() *schema.Resource {
 				Type:          schema.TypeString,
 				Sensitive:     true,
 				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"password"},
+				ConflictsWith: []string{"password", "kms_encrypted_password", "account_password_wo"},
+				AtLeastOneOf:  []string{"account_password", "password", "kms_encrypted_password", "account_password_wo"},
+			},
+			"account_password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				WriteOnly:     true,
+				ConflictsWith: []string{"account_password", "password", "kms_encrypted_password"},
+				AtLeastOneOf:  []string{"account_password", "password", "kms_encrypted_password", "account_password_wo"},
+				RequiredWith:  []string{"account_password_wo_version"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntAtLeast(1),
+				RequiredWith: []string{"account_password_wo"},
 			},
 			"password": {
 				Type:          schema.TypeString,
 				Sensitive:     true,
 				Optional:      true,
-				Computed:      true,
 				Deprecated:    "Field 'password' has been deprecated from provider version 1.120.0. New field 'account_password' instead.",
-				ConflictsWith: []string{"account_password"},
+				ConflictsWith: []string{"account_password", "kms_encrypted_password", "account_password_wo"},
+				AtLeastOneOf:  []string{"account_password", "password", "kms_encrypted_password", "account_password_wo"},
 			},
 			"account_type": {
 				Type:          schema.TypeString,
@@ -118,6 +139,8 @@ func resourceAliCloudRdsAccount() *schema.Resource {
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				ConflictsWith:    []string{"account_password", "password", "account_password_wo"},
+				AtLeastOneOf:     []string{"account_password", "password", "kms_encrypted_password", "account_password_wo"},
 				DiffSuppressFunc: kmsDiffSuppressFunc,
 			},
 			"kms_encryption_context": {
@@ -172,8 +195,12 @@ func resourceAliCloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		request["AccountPassword"] = decryptResp
+	} else if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["AccountPassword"] = woValue.AsString()
 	} else {
-		return WrapError(Error("One of the 'account_password' and 'password' and 'kms_encrypted_password' should be set."))
+		return WrapError(Error("One of the 'account_password' and 'password' and 'kms_encrypted_password' and 'account_password_wo' should be set."))
 	}
 	if v, ok := d.GetOk("account_type"); ok {
 		request["AccountType"] = v
@@ -195,14 +222,14 @@ func resourceAliCloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBClusterStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBStatus", "OperationDenied.OutofUsage"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -286,14 +313,14 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 			if target == "Lock" {
 				action := "LockAccount"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -306,14 +333,14 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 			if target == "Available" {
 				action := "UnlockAccount"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -336,14 +363,14 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		action := "ModifyAccountDescription"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -355,8 +382,6 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("description")
-		d.SetPartial("account_description")
 	}
 	update = false
 	resetAccountPasswordReq := map[string]interface{}{
@@ -380,17 +405,25 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		resetAccountPasswordReq["AccountPassword"] = decryptResp
 	}
+	if d.HasChange("account_password_wo_version") {
+		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+			return WrapError(err)
+		} else if !woValue.IsNull() {
+			update = true
+			resetAccountPasswordReq["AccountPassword"] = woValue.AsString()
+		}
+	}
 	if update {
 		action := "ResetAccountPassword"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, resetAccountPasswordReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, resetAccountPasswordReq)
 			return nil
@@ -402,10 +435,6 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("password")
-		d.SetPartial("kms_encrypted_password")
-		d.SetPartial("kms_encryption_context")
-		d.SetPartial("account_password")
 	}
 
 	resetPermission := false
@@ -431,14 +460,14 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "ModifyAccountCheckPolicy"
 		request["CheckPolicy"] = d.Get("check_policy")
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -454,17 +483,22 @@ func resourceAliCloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("password"); ok {
 			resetAccountReq["AccountPassword"] = v.(string)
 		}
+		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+			return WrapError(err)
+		} else if !woValue.IsNull() {
+			resetAccountReq["AccountPassword"] = woValue.AsString()
+		}
 		// ResetAccount interface can also reset the database account password
 		action := "ResetAccount"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, resetAccountReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, resetAccountReq)
 			return nil
@@ -504,7 +538,7 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	accountGone := false
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
 			if rdsErrorHasCode(err, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound", "InvalidAccountName.NotFound") {
@@ -518,19 +552,19 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 					return nil
 				}
 				if isRdsRetryableQueryError(confirmed) {
-					return resource.RetryableError(confirmed)
+					return retry.RetryableError(confirmed)
 				}
 				if confirmed != err {
-					return resource.NonRetryableError(confirmed)
+					return retry.NonRetryableError(confirmed)
 				}
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "AccountActionForbidden", "IncorrectDBInstanceState"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		object, err := rdsService.DescribeRdsAccount(d.Id())
@@ -539,28 +573,28 @@ func resourceAliCloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 				accountGone = true
 				return nil
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		if fmt.Sprint(object["AccountStatus"]) == "Lock" {
 			action = "UnlockAccount"
 			wait = incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 				response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			action = "DeleteAccount"
-			return resource.RetryableError(fmt.Errorf("there need to delete account %s again after unlock it", d.Id()))
+			return retry.RetryableError(fmt.Errorf("there need to delete account %s again after unlock it", d.Id()))
 		}
 		return nil
 	})

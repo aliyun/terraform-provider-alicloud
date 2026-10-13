@@ -7,9 +7,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudSlbDomainExtension() *schema.Resource {
@@ -62,15 +62,15 @@ func resourceAliyunSlbDomainExtensionCreate(d *schema.ResourceData, meta interfa
 	request.ServerCertificateId = d.Get("server_certificate_id").(string)
 
 	var response *slb.CreateDomainExtensionResponse
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.CreateDomainExtension(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DomainExtensionProcessing"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response = raw.(*slb.CreateDomainExtensionResponse)
@@ -97,7 +97,6 @@ func resourceAliyunSlbDomainExtensionRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	d.Set("id", domainExtension.DomainExtensionId)
 	d.Set("load_balancer_id", domainExtension.LoadBalancerId)
 	d.Set("domain", domainExtension.Domain)
 	d.Set("server_certificate_id", domainExtension.ServerCertificateId)
@@ -112,15 +111,15 @@ func resourceAliyunSlbDomainExtensionUpdate(d *schema.ResourceData, meta interfa
 		request.DomainExtensionId = d.Id()
 		request.ServerCertificateId = d.Get("server_certificate_id").(string)
 		client := meta.(*connectivity.AliyunClient)
-		err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.SetDomainExtensionAttribute(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"BackendServer.configuring", "DomainExtensionProcessing"}) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -128,7 +127,6 @@ func resourceAliyunSlbDomainExtensionUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_domain_extension", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("server_certificate_id")
 	}
 	return resourceAliyunSlbDomainExtensionRead(d, meta)
 }
@@ -154,15 +152,15 @@ func resourceAliyunSlbDomainExtensionDelete(d *schema.ResourceData, meta interfa
 	request := slb.CreateDeleteDomainExtensionRequest()
 	request.DomainExtensionId = d.Id()
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteDomainExtension(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DomainExtensionProcessing", "InternalError"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil

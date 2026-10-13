@@ -8,9 +8,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudEssAlarm() *schema.Resource {
@@ -167,15 +167,15 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	request.RegionId = client.RegionId
 	var raw interface{}
-	if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.CreateAlarm(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -190,15 +190,15 @@ func resourceAliyunEssAlarmCreate(d *schema.ResourceData, meta interface{}) erro
 		disableAlarmRequest := ess.CreateDisableAlarmRequest()
 		disableAlarmRequest.RegionId = client.RegionId
 		disableAlarmRequest.AlarmTaskId = response.AlarmTaskId
-		if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		if err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 				return essClient.DisableAlarm(disableAlarmRequest)
 			})
 			if err != nil {
 				if NeedRetry(err) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		}); err != nil {
@@ -363,30 +363,20 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	var raw interface{}
 	var err error
-	if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.ModifyAlarm(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	d.SetPartial("name")
-	d.SetPartial("description")
-	d.SetPartial("alarm_actions")
-	d.SetPartial("metric_name")
-	d.SetPartial("statistics")
-	d.SetPartial("threshold")
-	d.SetPartial("comparison_operator")
-	d.SetPartial("evaluation_count")
-	d.SetPartial("cloud_monitor_group_id")
-	d.SetPartial("dimensions")
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if d.HasChange("enable") {
@@ -394,15 +384,15 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 		if enable.(bool) {
 			enableAlarmRequest := ess.CreateEnableAlarmRequest()
 			enableAlarmRequest.AlarmTaskId = d.Id()
-			if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			if err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 					return essClient.EnableAlarm(enableAlarmRequest)
 				})
 				if err != nil {
 					if NeedRetry(err) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			}); err != nil {
@@ -412,15 +402,15 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 		} else {
 			disableAlarmRequest := ess.CreateDisableAlarmRequest()
 			disableAlarmRequest.AlarmTaskId = d.Id()
-			if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			if err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 					return essClient.DisableAlarm(disableAlarmRequest)
 				})
 				if err != nil {
 					if NeedRetry(err) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			}); err != nil {
@@ -428,7 +418,6 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 			}
 			addDebug(disableAlarmRequest.GetActionName(), raw)
 		}
-		d.SetPartial("enable")
 	}
 	d.Partial(false)
 	return resourceAliyunEssAlarmRead(d, meta)
@@ -442,15 +431,15 @@ func resourceAliyunEssAlarmDelete(d *schema.ResourceData, meta interface{}) erro
 	request.RegionId = client.RegionId
 	var raw interface{}
 	var err error
-	if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.DeleteAlarm(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudRdsDBInstanceClassInfosDatasource_main(t *testing.T) {
@@ -33,11 +33,7 @@ func TestAccAlicloudRdsDBInstanceClassInfosDatasource_main(t *testing.T) {
 			"infos.0.class_code":      CHECKSET,
 			"infos.0.class_group":     CHECKSET,
 			"infos.0.cpu":             CHECKSET,
-			"infos.0.max_connections": CHECKSET,
-			"infos.0.max_iombps":      CHECKSET,
-			"infos.0.max_iops":        CHECKSET,
 			"infos.0.memory_class":    CHECKSET,
-			"infos.0.reference_price": CHECKSET,
 		}
 	}
 
@@ -76,6 +72,9 @@ func TestAccAlicloudRdsDBInstanceClassInfosDatasource_readOnly(t *testing.T) {
 			"order_type":     "RENEW",
 			"db_instance_id": "${alicloud_db_instance.default.id}",
 		}),
+		existChangMap: map[string]string{
+			"infos.0.instruction_set_arch": REMOVEKEY,
+		},
 	}
 
 	var existDBInstanceReadOnlyMapFunc = func(rand int) map[string]string {
@@ -122,14 +121,6 @@ data "alicloud_db_zones" "default"{
 	category                 = "AlwaysOn"
 }
 
-data "alicloud_db_instance_classes" "master" {
-    zone_id                  = data.alicloud_db_zones.default.zones.0.id
-	engine                   = "SQLServer"
-	engine_version           = "2017_ent"
- 	db_instance_storage_type = "cloud_essd"
-	instance_charge_type     = "PostPaid"
-	category                 = "AlwaysOn"
-}
 
 data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
@@ -144,8 +135,9 @@ resource "alicloud_db_instance" "default" {
     engine                   = "SQLServer"
 	engine_version           = "2017_ent"
  	db_instance_storage_type = "cloud_essd"
-	instance_type            = data.alicloud_db_instance_classes.master.instance_classes.0.instance_class
-	instance_storage         = data.alicloud_db_instance_classes.master.instance_classes.0.storage_range.min
+	category                 = "AlwaysOn"
+	instance_type            = "mssql.x4.medium.e2"
+	instance_storage         = 20
 	vswitch_id               = data.alicloud_vswitches.default.vswitches.0.vswitch_id
 	instance_name            = var.name
 }

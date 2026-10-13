@@ -11,9 +11,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ func TestAccAliCloudAmqpQueue_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -79,7 +79,7 @@ func TestAccAliCloudAmqpQueue_basic0_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -136,7 +136,7 @@ var AliCloudAmqpQueueMap0 = map[string]string{}
 
 // lintignore: R001
 func TestUnitAliCloudAmqpQueue(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_queue"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_amqp_queue"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
@@ -147,7 +147,6 @@ func TestUnitAliCloudAmqpQueue(t *testing.T) {
 		"auto_expire_state":       "10000",
 		"dead_letter_exchange":    "dead_letter_exchange",
 		"dead_letter_routing_key": "dead_letter_routing_key",
-		"exclusive_state":         false,
 		"max_length":              "100",
 		"maximum_priority":        10,
 		"message_ttl":             "100",

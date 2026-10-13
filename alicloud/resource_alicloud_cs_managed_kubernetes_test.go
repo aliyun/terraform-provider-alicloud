@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -8,8 +9,8 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
@@ -44,9 +45,9 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -243,9 +244,9 @@ func TestAccAliCloudCSManagedKubernetes_encryption(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -325,9 +326,9 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -457,9 +458,9 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -588,7 +589,7 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
+func TestAccAliCloudCSManagedKubernetes_auto(t *testing.T) {
 	var v *cs.KubernetesClusterDetail
 
 	resourceId := "alicloud_cs_managed_kubernetes.default"
@@ -611,9 +612,9 @@ func TestAccAliCloudCSManagedKubernetesAuto(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1030,9 +1031,9 @@ func TestAccAliCloudCSManagedKubernetesForProfile(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1047,7 +1048,7 @@ func TestAccAliCloudCSManagedKubernetesForProfile(t *testing.T) {
 					"service_cidr":                   "172.23.0.0/16",
 					"ip_stack":                       "ipv4",
 					"timezone":                       "Asia/Shanghai",
-					"skip_set_certificate_authority": "true",
+					"skip_set_certificate_authority": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1063,7 +1064,7 @@ func TestAccAliCloudCSManagedKubernetesForProfile(t *testing.T) {
 						"ip_stack":                       "ipv4",
 						"timezone":                       "Asia/Shanghai",
 						"resource_group_id":              CHECKSET,
-						"skip_set_certificate_authority": "true",
+						"skip_set_certificate_authority": "false",
 					}),
 				),
 			},
@@ -1140,7 +1141,7 @@ resource "alicloud_log_project" "log" {
 }
 
 locals {
-  vswitch_id = alicloud_vswitch.vswitches.0.id
+  vswitch_id   = alicloud_vswitch.vswitches.0.id
   vswitch_id_1 = alicloud_vswitch.vswitches.1.id
 }
 `, name)
@@ -1152,15 +1153,13 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+data "alicloud_enhanced_nat_available_zones" "enhanced" {}
 
 data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
   cluster_type = "ManagedKubernetes"
   profile      = "Default"
 }
-	
+
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc" "vpc" {
@@ -1173,7 +1172,7 @@ resource "alicloud_vswitch" "vswitches" {
   count        = 1
   vpc_id       = alicloud_vpc.vpc.0.id
   cidr_block   = format("192.168.%%d.0/24", count.index + 1)
-  zone_id      = data.alicloud_zones.default.zones[count.index].id
+  zone_id      = data.alicloud_enhanced_nat_available_zones.enhanced.zones[count.index].zone_id
   vswitch_name = var.name
 }
 
@@ -1212,7 +1211,7 @@ data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
   cluster_type = "ManagedKubernetes"
   profile      = "Default"
 }
-	
+
 data "alicloud_resource_manager_resource_groups" "default" {
 }
 
@@ -1260,7 +1259,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 func resourceCSManagedKubernetesConfigDependenceAuto(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "%s"
+  default = "%s"
 }
 
 data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
@@ -1369,30 +1368,30 @@ resource "alicloud_nlb_load_balancer" "public" {
 }
 
 var csManagedKubernetesBasicMap = map[string]string{
-	"new_nat_gateway":                    "true",
-	"slb_internet_enabled":               "true",
-	"name":                               CHECKSET,
-	"security_group_id":                  CHECKSET,
-	"version":                            CHECKSET,
-	"certificate_authority.cluster_cert": CHECKSET,
-	"certificate_authority.client_cert":  CHECKSET,
-	"certificate_authority.client_key":   CHECKSET,
-	"connections.api_server_internet":    CHECKSET,
-	"connections.api_server_intranet":    CHECKSET,
-	"connections.master_public_ip":       CHECKSET,
-	"connections.service_domain":         CHECKSET,
-	"worker_ram_role_name":               CHECKSET,
-	"vpc_id":                             CHECKSET,
-	"resource_group_id":                  CHECKSET,
-	"slb_internet":                       CHECKSET,
-	"slb_intranet":                       CHECKSET,
-	"cluster_spec":                       CHECKSET,
-	"slb_id":                             CHECKSET,
+	"new_nat_gateway":                      "true",
+	"slb_internet_enabled":                 "true",
+	"name":                                 CHECKSET,
+	"security_group_id":                    CHECKSET,
+	"version":                              CHECKSET,
+	"certificate_authority.0.cluster_cert": CHECKSET,
+	"certificate_authority.0.client_cert":  CHECKSET,
+	"certificate_authority.0.client_key":   CHECKSET,
+	"connections.0.api_server_internet":    CHECKSET,
+	"connections.0.api_server_intranet":    CHECKSET,
+	"connections.0.master_public_ip":       CHECKSET,
+	"connections.0.service_domain":         CHECKSET,
+	"worker_ram_role_name":                 CHECKSET,
+	"vpc_id":                               CHECKSET,
+	"resource_group_id":                    CHECKSET,
+	"slb_internet":                         CHECKSET,
+	"slb_intranet":                         CHECKSET,
+	"cluster_spec":                         CHECKSET,
+	"slb_id":                               CHECKSET,
 }
 
 // Test Ack Cluster. >>> Resource test cases, automatically generated.
 // Case 集群测试-升级 12341
-func TestAccAliCloudAckCluster_basic12341(t *testing.T) {
+func TestAccAliCloudCSManagedKubernetes_basic12341(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cs_managed_kubernetes.default"
 	ra := resourceAttrInit(resourceId, map[string]string{})
@@ -1410,9 +1409,9 @@ func TestAccAliCloudAckCluster_basic12341(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1425,7 +1424,7 @@ func TestAccAliCloudAckCluster_basic12341(t *testing.T) {
 					},
 					"is_enterprise_security_group": "true",
 					"zone_ids": []string{
-						"${var.zone_id}"},
+						"${data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id}"},
 					"cluster_spec":        "ack.pro.small",
 					"deletion_protection": "false",
 					"version":             "1.32.7-aliyun.1",
@@ -1523,7 +1522,7 @@ func TestAccAliCloudAckCluster_basic12341(t *testing.T) {
 func AlicloudAckClusterBasicDependence12341(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 variable "service_cidr" {
@@ -1534,8 +1533,7 @@ variable "cluster_name" {
   default = "test-create-cluster"
 }
 
-variable "zone_id" {
-  default = "cn-hangzhou-g"
+data "alicloud_enhanced_nat_available_zones" "enhanced" {
 }
 
 variable "cluster_name_update" {
@@ -1552,10 +1550,7 @@ variable "container_cidr" {
 
 variable "cluster_type" {
   default = "ManagedKubernetes"
-}
-
-
-`, name)
+}`, name)
 }
 
 func Test_versionCompare(t *testing.T) {
@@ -1625,6 +1620,235 @@ func Test_versionCompare(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCSManagedKubernetesStateUpgradeV0(t *testing.T) {
+	fields := []string{"certificate_authority", "connections"}
+	cases := []struct {
+		name     string
+		input    map[string]interface{}
+		expected map[string][]interface{}
+	}{
+		{
+			name: "map with data",
+			input: map[string]interface{}{
+				"id": "c-managed-123",
+				"certificate_authority": map[string]interface{}{
+					"cluster_cert": "cert",
+					"client_cert":  "client",
+					"client_key":   "key",
+				},
+				"connections": map[string]interface{}{
+					"api_server_internet": "https://3.4.5.6:6443",
+					"api_server_intranet": "https://10.0.0.2:6443",
+					"master_public_ip":    "3.4.5.6",
+					"service_domain":      "*.c-managed-123.cs.local",
+				},
+			},
+			expected: map[string][]interface{}{
+				"certificate_authority": {
+					map[string]interface{}{
+						"cluster_cert": "cert",
+						"client_cert":  "client",
+						"client_key":   "key",
+					},
+				},
+				"connections": {
+					map[string]interface{}{
+						"api_server_internet": "https://3.4.5.6:6443",
+						"api_server_intranet": "https://10.0.0.2:6443",
+						"master_public_ip":    "3.4.5.6",
+						"service_domain":      "*.c-managed-123.cs.local",
+					},
+				},
+			},
+		},
+		{
+			name: "empty map",
+			input: map[string]interface{}{
+				"id":                    "c-managed-456",
+				"certificate_authority": map[string]interface{}{},
+				"connections":           map[string]interface{}{},
+			},
+			expected: map[string][]interface{}{
+				"certificate_authority": {},
+				"connections":           {},
+			},
+		},
+		{
+			name: "nil value",
+			input: map[string]interface{}{
+				"id":                    "c-managed-789",
+				"certificate_authority": nil,
+				"connections":           nil,
+			},
+			expected: nil,
+		},
+		{
+			name: "field not present",
+			input: map[string]interface{}{
+				"id": "c-managed-000",
+			},
+			expected: nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := resourceAlicloudCSManagedKubernetesStateUpgradeV0(context.Background(), tc.input, nil)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			for _, field := range fields {
+				got := result[field]
+				if tc.expected == nil {
+					if got != nil {
+						t.Errorf("%s: expected nil, got %v", field, got)
+					}
+					continue
+				}
+				exp := tc.expected[field]
+				gotList, ok := got.([]interface{})
+				if !ok {
+					t.Fatalf("%s: expected []interface{}, got %T", field, got)
+				}
+				if len(gotList) != len(exp) {
+					t.Fatalf("%s: expected length %d, got %d", field, len(exp), len(gotList))
+				}
+				for i, item := range gotList {
+					gotMap := item.(map[string]interface{})
+					expMap := exp[i].(map[string]interface{})
+					for k, v := range expMap {
+						if gotMap[k] != v {
+							t.Errorf("%s[%d].%s: expected %v, got %v", field, i, k, v, gotMap[k])
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestCSManagedKubernetesSchemaVersionV0ToV1(t *testing.T) {
+	r := resourceAlicloudCSManagedKubernetes()
+	if r.SchemaVersion != 1 {
+		t.Errorf("expected SchemaVersion 1, got %d", r.SchemaVersion)
+	}
+	if len(r.StateUpgraders) != 1 {
+		t.Fatalf("expected 1 StateUpgrader, got %d", len(r.StateUpgraders))
+	}
+	if r.StateUpgraders[0].Version != 0 {
+		t.Errorf("expected StateUpgrader version 0, got %d", r.StateUpgraders[0].Version)
+	}
+}
+
+func TestAccAliCloudCSManagedKubernetes_StateMigrationV0ToV1(t *testing.T) {
+	if os.Getenv("ALICLOUD_STATE_MIGRATION_V0_V1") == "" {
+		t.Skip("ALICLOUD_STATE_MIGRATION_V0_V1 not set. Test for V0 -> V1 state migration")
+	}
+	var v map[string]interface{}
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCsManagedKubernetes")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-statemig-%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"alicloud": {
+						Source:            "aliyun/alicloud",
+						VersionConstraint: "1.282.0",
+					},
+				},
+				Config: testAccCSManagedKubernetesStateMigrationConfigV0(name),
+			},
+			{
+				ProviderFactories: testAccProviderFactory,
+				Config:            testAccCSManagedKubernetesStateMigrationConfigV1(name),
+			},
+		},
+	})
+}
+
+func testAccCSManagedKubernetesStateMigrationDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+  available_disk_category     = "cloud_essd"
+  available_instance_type     = "ecs.c6.xlarge"
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}`, name)
+}
+
+func testAccCSManagedKubernetesStateMigrationConfigV0(name string) string {
+	return testAccCSManagedKubernetesStateMigrationDependence(name) + `
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name                           = var.name
+  cluster_spec                   = "ack.pro.small"
+  vswitch_ids                    = [alicloud_vswitch.default.id]
+  new_nat_gateway                = true
+  pod_cidr                       = "10.77.0.0/16"
+  service_cidr                   = "172.27.0.0/16"
+  slb_internet_enabled           = true
+  skip_set_certificate_authority = false
+}
+
+output "alicloud_cs_managed_kubernetes" {
+  value = alicloud_cs_managed_kubernetes.default.certificate_authority["cluster_cert"]
+}
+
+output "connections" {
+  value = alicloud_cs_managed_kubernetes.default.connections["api_server_internet"]
+}
+`
+}
+
+func testAccCSManagedKubernetesStateMigrationConfigV1(name string) string {
+	return testAccCSManagedKubernetesStateMigrationDependence(name) + `
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name                           = var.name
+  cluster_spec                   = "ack.pro.small"
+  vswitch_ids                    = [alicloud_vswitch.default.id]
+  new_nat_gateway                = true
+  pod_cidr                       = "10.77.0.0/16"
+  service_cidr                   = "172.27.0.0/16"
+  slb_internet_enabled           = true
+  skip_set_certificate_authority = false
+}
+
+output "alicloud_cs_managed_kubernetes" {
+  value = alicloud_cs_managed_kubernetes.default.certificate_authority.0.cluster_cert
+}
+
+output "connections" {
+  value = alicloud_cs_managed_kubernetes.default.connections.0.api_server_internet
+}
+`
 }
 
 // Test Ack Cluster. <<< Resource test cases, automatically generated.

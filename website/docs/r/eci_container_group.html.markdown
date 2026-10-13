@@ -152,7 +152,6 @@ The following arguments are supported:
 * `init_containers` - (Optional, Set) The list of initContainers. See [`init_containers`](#init_containers) below.
 * `dns_policy` - (Optional, ForceNew, Available since v1.232.0) The policy of DNS. Default value: `Default`. Valid values: `Default` and `None`.
 * `dns_config` - (Optional, Set) The structure of dnsConfig. See [`dns_config`](#dns_config) below.
-* `eci_security_context` - (Deprecated since 1.215.0, Optional, ForceNew, Set) The security context of the container group. See [`eci_security_context`](#eci_security_context) below.
 * `security_context` - (Optional, ForceNew, Set, Available since v1.215.0) The security context of the container group. See [`security_context`](#security_context) below.
 * `host_aliases` - (Optional, ForceNew, Set) HostAliases. See [`host_aliases`](#host_aliases) below.
 * `volumes` - (Optional, Set) The list of volumes. See [`volumes`](#volumes) below.
@@ -212,19 +211,6 @@ The host_aliases supports the following:
 
 * `ip` - (Optional, ForceNew) The IP address of the host.
 * `hostnames` - (Optional, ForceNew, List) The information about the host.
-
-### `eci_security_context`
-
-The eci_security_context supports the following:
-
-* `sysctls` - (Optional, ForceNew, Set) Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. See [`sysctls`](#eci_security_context-sysctls) below.
-
-### `eci_security_context-sysctls`
-
-The sysctls supports the following:
-
-* `name` - (Optional, ForceNew) The name of the security context that the container group runs.
-* `value` - (Optional, ForceNew) The variable value of the security context that the container group runs.
 
 ### `security_context`
 

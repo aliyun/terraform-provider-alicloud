@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Case 1
-func TestAccAlicloudCenChildInstanceRouteEntryToAttachment_basic1977(t *testing.T) {
+func TestAccAliCloudCenChildInstanceRouteEntryToAttachment_basic1977(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_child_instance_route_entry_to_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenChildInstanceRouteEntryToAttachmentMap1977)
@@ -28,7 +28,7 @@ func TestAccAlicloudCenChildInstanceRouteEntryToAttachment_basic1977(t *testing.
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

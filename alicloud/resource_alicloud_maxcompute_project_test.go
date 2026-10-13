@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Case 1
@@ -28,7 +28,7 @@ func TestAccAliCloudMaxComputeProject_basic1968(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -145,7 +145,7 @@ func TestAccAliCloudMaxComputeProject_basic1968_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -247,7 +247,7 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -309,8 +309,9 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 				),
 			},
 			{
+				// service denies SetProperty once the project is READONLY/FROZEN, so
+				// meta changes are applied while AVAILABLE and the status flips alone
 				Config: testAccConfig(map[string]interface{}{
-					"status": "READONLY",
 					"ip_white_list": []map[string]interface{}{
 						{
 							"ip_list":     "0.0.0.0/0",
@@ -336,6 +337,16 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"status": "AVAILABLE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "READONLY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
 						"status": "READONLY",
 					}),
 				),
@@ -343,6 +354,28 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"status": "FROZEN",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						// the service stores user-initiated freeze as FROZEN_BY_USER while the
+						// schema only accepts FROZEN as input, so the post-apply plan is not empty
+						"status": "FROZEN_BY_USER",
+					}),
+				),
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "AVAILABLE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "AVAILABLE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"security_properties": []map[string]interface{}{
 						{
 							"project_protection": []map[string]interface{}{
@@ -352,16 +385,6 @@ func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 							},
 						},
 					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "FROZEN",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "AVAILABLE",
 					"properties": []map[string]interface{}{
 						{
 							"enable_decimal2":  "false",

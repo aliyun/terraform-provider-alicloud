@@ -11,7 +11,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	mapset "github.com/deckarep/golang-set"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -83,9 +83,9 @@ func GetSchemaAttributes(resName string, isResource bool) (mapset.Set, mapset.Se
 	var ok bool
 
 	if isResource {
-		resource, ok = alicloud.Provider().(*schema.Provider).ResourcesMap["alicloud_"+resName]
+		resource, ok = alicloud.Provider().ResourcesMap["alicloud_"+resName]
 	} else {
-		resource, ok = alicloud.Provider().(*schema.Provider).DataSourcesMap["alicloud_"+resName]
+		resource, ok = alicloud.Provider().DataSourcesMap["alicloud_"+resName]
 	}
 
 	if !ok || resource == nil {
@@ -117,10 +117,6 @@ func GetSchemaAttributes(resName string, isResource bool) (mapset.Set, mapset.Se
 func getSchemaAttributesRecursive(rootName string, schemaAttributes map[string]SchemaAttribute,
 	resourceSchema map[string]*schema.Schema) {
 	for key, value := range resourceSchema {
-		if len(value.Removed) != 0 {
-			continue
-		}
-
 		if rootName != "" {
 			key = rootName + "." + key
 		}

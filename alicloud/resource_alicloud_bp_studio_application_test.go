@@ -9,8 +9,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func init() {
@@ -39,14 +40,14 @@ func testSweepBpStudioApplication(region string) error {
 	BpStudioApplicationIds := make([]string, 0)
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("BPStudio", "2021-09-31", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -99,14 +100,14 @@ func testSweepBpStudioApplication(region string) error {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 
 		if fmt.Sprint(object["Status"]) == "Deployed_Failure" || fmt.Sprint(object["Status"]) == "PartiallyDeployedSuccess" || fmt.Sprint(object["Status"]) == "Deployed_Success" || fmt.Sprint(object["Status"]) == "Destroyed_Failure" || fmt.Sprint(object["Status"]) == "PartiallyDestroyedSuccess" {
-			err = resource.Retry(120*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(120*time.Minute, func() *retry.RetryError {
 				_, err = client.RpcPost("BPStudio", "2021-09-31", releaseAction, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -116,14 +117,14 @@ func testSweepBpStudioApplication(region string) error {
 			}
 		}
 
-		err = resource.Retry(120*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(120*time.Minute, func() *retry.RetryError {
 			_, err = client.RpcPost("BPStudio", "2021-09-31", deleteAction, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -151,9 +152,9 @@ func TestAccAlicloudBpStudioApplication_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -163,8 +164,8 @@ func TestAccAlicloudBpStudioApplication_basic0(t *testing.T) {
 					"area_id":           defaultRegionToTest,
 					"instances": []map[string]string{
 						{
-							"id":        "${data.alicloud_instances.default.instances.0.id}",
-							"node_name": "${data.alicloud_instances.default.instances.0.name}",
+							"id":        "${alicloud_instance.default.id}",
+							"node_name": "${alicloud_instance.default.instance_name}",
 							"node_type": "ecs",
 						},
 					},
@@ -206,8 +207,46 @@ func resourceAlicloudBpStudioApplicationBasicDependence(name string) string {
 	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 
-	data "alicloud_instances" "default" {
-		status = "Running"
+	data "alicloud_zones" "default" {
+		available_disk_category     = "cloud_efficiency"
+		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_images" "default" {
+		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+		most_recent   = true
+		owners        = "system"
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+	}
+
+	data "alicloud_instance_types" "default" {
+		availability_zone    = data.alicloud_zones.default.zones.0.id
+		instance_type_family = "ecs.sn1ne"
+	}
+
+	data "alicloud_vpcs" "default" {
+		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+		vpc_id  = data.alicloud_vpcs.default.ids.0
+		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+		name   = var.name
+		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_instance" "default" {
+		image_id             = data.alicloud_images.default.images.0.id
+		instance_type        = data.alicloud_instance_types.default.instance_types.0.id
+		instance_name        = var.name
+		security_groups      = alicloud_security_group.default.*.id
+		availability_zone    = data.alicloud_zones.default.zones.0.id
+		instance_charge_type = "PostPaid"
+		system_disk_category = "cloud_efficiency"
+		vswitch_id           = data.alicloud_vswitches.default.ids.0
 	}
 `, name)
 }

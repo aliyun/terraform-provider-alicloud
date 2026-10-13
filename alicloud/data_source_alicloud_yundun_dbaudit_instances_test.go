@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
+func TestAccAliCloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_yundun_dbaudit_instance.default"
 

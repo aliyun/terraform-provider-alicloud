@@ -6,8 +6,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudKmsCiphertext() *schema.Resource {
@@ -20,12 +22,30 @@ func resourceAlicloudKmsCiphertext() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("plaintext"), cty.GetAttrPath("plaintext_wo")),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"plaintext": {
-				Type:      schema.TypeString,
-				Required:  true,
-				ForceNew:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Sensitive:    true,
+				ExactlyOneOf: []string{"plaintext", "plaintext_wo"},
+			},
+			"plaintext_wo": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				WriteOnly:    true,
+				ExactlyOneOf: []string{"plaintext", "plaintext_wo"},
+				RequiredWith: []string{"plaintext_wo_version"},
+			},
+			"plaintext_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				RequiredWith: []string{"plaintext_wo"},
 			},
 			"key_id": {
 				Type:     schema.TypeString,
@@ -58,6 +78,11 @@ func resourceAlicloudKmsCiphertextCreate(d *schema.ResourceData, meta interface{
 	action := "Encrypt"
 	request := make(map[string]interface{})
 	request["Plaintext"] = d.Get("plaintext")
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("plaintext_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["Plaintext"] = woValue.AsString()
+	}
 	request["KeyId"] = d.Get("key_id")
 	request["RegionId"] = client.RegionId
 
@@ -73,14 +98,14 @@ func resourceAlicloudKmsCiphertextCreate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

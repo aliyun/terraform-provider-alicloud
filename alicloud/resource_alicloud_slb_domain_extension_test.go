@@ -6,11 +6,11 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudSLBDomainExtensionBasic(t *testing.T) {
+func TestAccAliCloudSLBDomainExtensionBasic(t *testing.T) {
 	var v *slb.DescribeDomainExtensionAttributeResponse
 	resourceId := "alicloud_slb_domain_extension.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -28,7 +28,7 @@ func TestAccAlicloudSLBDomainExtensionBasic(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		// module name
 		Steps: []resource.TestStep{

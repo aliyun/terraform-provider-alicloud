@@ -11,17 +11,16 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudSDDPDataLimit_basic0(t *testing.T) {
+func TestAccAliCloudSDDPDataLimit_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_sddp_data_limit.default"
-	checkoutSupportedRegions(t, true, connectivity.SddpSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudSDDPDataLimitMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -34,10 +33,11 @@ func TestAccAlicloudSDDPDataLimit_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, []connectivity.Region{sddpDataLimitsDataSourceTestRegion})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -116,43 +116,46 @@ variable "database_name" {
 }
 
 data "alicloud_db_zones" "default" {
-	engine = "MySQL"
-	engine_version = "8.0"
-	instance_charge_type = "PostPaid"
-	category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-    category = "HighAvailability"
- 	db_instance_storage_type = "cloud_essd"
-	instance_charge_type = "PostPaid"
+  zone_id                  = data.alicloud_db_zones.default.zones.1.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
-  zone_id = data.alicloud_db_zones.default.zones[0].id
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  zone_id      = data.alicloud_db_zones.default.zones.1.id
+  vswitch_name = var.name
 }
 
 resource "alicloud_db_instance" "default" {
-	engine = "MySQL"
-	engine_version = "8.0"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  vswitch_id       = data.alicloud_vswitches.default.ids[0]
+  engine           = "MySQL"
+  engine_version   = "8.0"
+  instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
+  vswitch_id       = alicloud_vswitch.default.id
   instance_name    = var.name
 }
 
 
 locals {
-  parent_id = join(".",[alicloud_db_instance.default.id, var.database_name])
+  parent_id = join(".", [alicloud_db_instance.default.id, var.database_name])
 }
 
 resource "alicloud_rds_account" "default" {
@@ -172,12 +175,12 @@ resource "alicloud_db_account_privilege" "default" {
   privilege    = "ReadWrite"
   db_names     = [alicloud_db_database.default.name]
 }
-`, name, defaultRegionToTest)
+`, name, sddpDataLimitsDataSourceTestRegion)
 }
 
 // lintignore: R001
 func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
@@ -349,8 +352,8 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 
 	t.Run("UpdateModifySDDPDataLimitAttributeAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("audit_status", &terraform.ResourceAttrDiff{Old: "0", New: "1"})
-		diff.SetAttribute("log_store_day", &terraform.ResourceAttrDiff{Old: "30", New: "365"})
+		diff.Attributes["audit_status"] = &terraform.ResourceAttrDiff{Old: "0", New: "1"}
+		diff.Attributes["log_store_day"] = &terraform.ResourceAttrDiff{Old: "30", New: "365"}
 		resourceData1, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
@@ -371,8 +374,8 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 	})
 	t.Run("UpdateModifySDDPDataLimitAttributeNoRetryErrorAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("audit_status", &terraform.ResourceAttrDiff{Old: "0", New: "1"})
-		diff.SetAttribute("log_store_day", &terraform.ResourceAttrDiff{Old: "30", New: "365"})
+		diff.Attributes["audit_status"] = &terraform.ResourceAttrDiff{Old: "0", New: "1"}
+		diff.Attributes["log_store_day"] = &terraform.ResourceAttrDiff{Old: "30", New: "365"}
 		resourceData, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, diff)
 		resourceData.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -388,9 +391,9 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 	})
 	t.Run("UpdateModifySDDPDataLimitAttributeNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("audit_status", &terraform.ResourceAttrDiff{Old: "0", New: "1"})
-		diff.SetAttribute("log_store_day", &terraform.ResourceAttrDiff{Old: "30", New: "365"})
-		diff.SetAttribute("lang", &terraform.ResourceAttrDiff{Old: "zh", New: "us"})
+		diff.Attributes["audit_status"] = &terraform.ResourceAttrDiff{Old: "0", New: "1"}
+		diff.Attributes["log_store_day"] = &terraform.ResourceAttrDiff{Old: "30", New: "365"}
+		diff.Attributes["lang"] = &terraform.ResourceAttrDiff{Old: "zh", New: "us"}
 		resourceData1, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {

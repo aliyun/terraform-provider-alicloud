@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudCloudFirewallTlsInspectCaCertificateDataSource(t *testing.T) {
@@ -26,7 +26,7 @@ func TestAccAlicloudCloudFirewallTlsInspectCaCertificateDataSource(t *testing.T)
 
 var existCloudFirewallTlsInspectCaCertificateMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"certificates.#":            "2",
+		"certificates.#":            "5",
 		"certificates.0.ca_cert_id": CHECKSET,
 	}
 }

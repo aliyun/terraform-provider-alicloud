@@ -3,10 +3,10 @@ package alicloud
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudKVStoreInstanceEngines(t *testing.T) {
+func TestAccAliCloudKvstoreInstanceEngines(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_kvstore_instance_engines.default"
 

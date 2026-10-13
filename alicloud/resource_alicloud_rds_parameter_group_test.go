@@ -12,13 +12,13 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudRdsParameterGroup_basic(t *testing.T) {
+func TestAccAliCloudRdsParameterGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_parameter_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsParameterGroupMap0)
@@ -35,9 +35,9 @@ func TestAccAlicloudRdsParameterGroup_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -135,7 +135,7 @@ func TestAccAlicloudRdsParameterGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsParameterGroup_basic1(t *testing.T) {
+func TestAccAliCloudRdsParameterGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_parameter_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsParameterGroupMap0)
@@ -152,9 +152,9 @@ func TestAccAlicloudRdsParameterGroup_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -204,7 +204,7 @@ variable "name" {
 
 // lintignore: R001
 func TestUnitAlicloudRdsParameterGroup(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_rds_parameter_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_rds_parameter_group"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -491,7 +491,7 @@ func TestUnitAlicloudRdsParameterGroup(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsParameterGroupPostgreSQL(t *testing.T) {
+func TestAccAliCloudRdsParameterGroupPostgreSQL(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_parameter_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsParameterGroupMap0)
@@ -508,9 +508,9 @@ func TestAccAlicloudRdsParameterGroupPostgreSQL(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

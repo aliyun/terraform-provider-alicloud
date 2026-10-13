@@ -9,9 +9,9 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cdn"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCdnDomain() *schema.Resource {
@@ -364,17 +364,14 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	if !d.IsNewResource() {
 		attributeUpdate := false
 		if d.HasChange("source_type") {
-			d.SetPartial("source_type")
 			attributeUpdate = true
 		}
 		if d.HasChange("sources") {
-			d.SetPartial("sources")
 			sources := expandStringList(d.Get("sources").(*schema.Set).List())
 			args.Sources = strings.Join(sources, ",")
 			attributeUpdate = true
 		}
 		if d.HasChange("source_port") {
-			d.SetPartial("source_port")
 			args.SourcePort = d.Get("source_port").(int)
 			attributeUpdate = true
 		}
@@ -394,7 +391,6 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if d.HasChange("block_ips") {
-		d.SetPartial("block_ips")
 		blockIps := expandStringList(d.Get("block_ips").(*schema.Set).List())
 		args := cdn.IpBlackRequest{DomainName: d.Id(), BlockIps: strings.Join(blockIps, ",")}
 		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
@@ -596,15 +592,15 @@ func resourceAlicloudCdnDomainDelete(d *schema.ResourceData, meta interface{}) e
 	args := cdn.DescribeDomainRequest{
 		DomainName: d.Id(),
 	}
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
 			return cdnClient.DeleteCdnDomain(args)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceBusy"}) {
-				return resource.RetryableError(fmt.Errorf("The specified Domain is configuring, please retry later."))
+				return retry.RetryableError(fmt.Errorf("The specified Domain is configuring, please retry later."))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting cdn domain %s: %#v.", d.Id(), err))
+			return retry.NonRetryableError(fmt.Errorf("Error deleting cdn domain %s: %#v.", d.Id(), err))
 		}
 		return nil
 	})
@@ -625,7 +621,6 @@ func enableConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceDat
 
 	for key, fn := range relation {
 		if d.HasChange(key) {
-			d.SetPartial(key)
 			args := cdn.ConfigRequest{
 				DomainName: d.Id(),
 				Enable:     d.Get(key).(string),
@@ -654,7 +649,6 @@ func queryStringConfigUpdate(client *connectivity.AliyunClient, d *schema.Resour
 	}
 
 	val := valSet.List()[0].(map[string]interface{})
-	d.SetPartial("parameter_filter_config")
 	args.Enable = val["enable"].(string)
 	if v, ok := val["hash_key_args"]; ok && len(v.([]interface{})) > 0 {
 		hashKeyArgs := expandStringList(v.([]interface{}))
@@ -685,7 +679,6 @@ func page404ConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceDa
 	}
 
 	val := valSet.List()[0].(map[string]interface{})
-	d.SetPartial("page_404_config")
 	args.PageType = val["page_type"].(string)
 	customPageUrl, ok := val["custom_page_url"]
 	if ok {
@@ -728,7 +721,6 @@ func referConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData
 	}
 
 	val := valSet.List()[0].(map[string]interface{})
-	d.SetPartial("refer_config")
 	args.ReferType = val["refer_type"].(string)
 	args.AllowEmpty = val["allow_empty"].(string)
 	if v, ok := val["refer_list"]; ok && len(v.([]interface{})) > 0 {
@@ -761,7 +753,6 @@ func authConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData)
 	}
 
 	val := newConfig.List()[0].(map[string]interface{})
-	d.SetPartial("auth_config")
 	args.AuthType = val["auth_type"].(string)
 	args.Timeout = strconv.Itoa(val["timeout"].(int))
 
@@ -815,7 +806,6 @@ func certificateConfigUpdate(client *connectivity.AliyunClient, d *schema.Resour
 		if err != nil {
 			return err
 		}
-		d.SetPartial("certificate_config")
 		return nil
 	}
 
@@ -849,7 +839,6 @@ func certificateConfigUpdate(client *connectivity.AliyunClient, d *schema.Resour
 	if err != nil {
 		return err
 	}
-	d.SetPartial("certificate_config")
 	if okServerCertificate && args.ServerCertificateStatus != "off" {
 		err := WaitForServerCertificate(client, d.Id(), args.ServerCertificate, 360)
 		if err != nil {

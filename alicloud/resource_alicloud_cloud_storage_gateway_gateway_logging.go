@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCloudStorageGatewayGatewayLogging() *schema.Resource {
@@ -56,14 +56,14 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingCreate(d *schema.ResourceD
 	request["SlsLogstore"] = d.Get("sls_logstore")
 	request["SlsProject"] = d.Get("sls_project")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -117,7 +117,7 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceD
 				}
 				action := "DisableGatewayLogging"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 
 					response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, false)
 					if err != nil {
@@ -125,9 +125,9 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceD
 						if NeedRetry(err) {
 
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -145,7 +145,7 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceD
 				}
 				action := "EnableGatewayLogging"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 
 					response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, false)
 					if err != nil {
@@ -153,9 +153,9 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceD
 						if NeedRetry(err) {
 
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -167,7 +167,6 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingUpdate(d *schema.ResourceD
 					return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 				}
 			}
-			d.SetPartial("status")
 		}
 	}
 	d.Partial(false)
@@ -183,7 +182,7 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingDelete(d *schema.ResourceD
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 
 		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, false)
 		if err != nil {
@@ -191,9 +190,9 @@ func resourceAlicloudCloudStorageGatewayGatewayLoggingDelete(d *schema.ResourceD
 			if NeedRetry(err) {
 
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

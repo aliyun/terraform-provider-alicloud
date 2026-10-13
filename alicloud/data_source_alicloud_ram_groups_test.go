@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRAMGroupsDataSource(t *testing.T) {
+func TestAccAliCloudRamGroupsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{

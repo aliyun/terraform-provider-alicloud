@@ -60,7 +60,6 @@ The following arguments are supported:
 **NOTE:** `renewal_status` takes effect only if `payment_type` is set to `Subscription`.
 * `logistics` - (Optional) The logistics address of this order. The parameter is immutable after resource creation.
 * `modify_type` - (Optional) The type of modification. Valid values: `Upgrade`, `Downgrade`. **NOTE:** The `modify_type` is required when you execute an update operation.
-* `cfw_service` - (Removed since v1.209.1) Attribute `cfw_service` does not support longer, and it has been removed since v1.209.1.
 * `spec` - (Optional) Current version. Valid values: `premium_version`, `enterprise_version`,`ultimate_version`.
 * `cfw_log` - (Optional) Whether to use log audit. Valid values: `true`, `false`. **NOTE:** From version 1.232.0, When `payment_type` is set to `PayAsYouGo`, `cfw_log` can only be set to `true`, `cfw_log` cannot be modified to `false`.
 * `cfw_log_storage` - (Optional) The log storage capacity. **NOTE:** From version 1.232.0, When `payment_type` is set to `PayAsYouGo`, or `cfw_log` is set to `false`, `cfw_log_storage` will be ignored.

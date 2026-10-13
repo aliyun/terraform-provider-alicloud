@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccAliCloudSLBListener_http_basic(t *testing.T) {
@@ -31,7 +31,7 @@ func TestAccAliCloudSLBListener_http_basic(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -309,7 +309,7 @@ func TestAccAliCloudSLBListener_Forward(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -376,7 +376,7 @@ func TestAccAliCloudSLBListener_same_port(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -419,7 +419,7 @@ func TestAccAliCloudSLBListener_https_update(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -701,7 +701,7 @@ func TestAccAliCloudSLBListener_tcp_basic(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -894,7 +894,7 @@ func TestAccAliCloudSLBListener_tcp_server_group(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -980,7 +980,7 @@ func TestAccAliCloudSLBListener_udp_basic(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1134,7 +1134,7 @@ func TestAccAliCloudSLBListener_http_healcheckmethod(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1245,7 +1245,7 @@ func TestAccAliCloudSLBListener_https_healcheckmethod(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1384,7 +1384,7 @@ func TestAccAliCloudSLBListener_tcp_ProxyProtocolV2Enabled(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1478,7 +1478,7 @@ func TestAccAliCloudSLBListener_udp_ProxyProtocolV2Enabled(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{

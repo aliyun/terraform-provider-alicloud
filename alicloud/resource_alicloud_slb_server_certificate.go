@@ -6,8 +6,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudSlbServerCertificate() *schema.Resource {
@@ -183,7 +183,6 @@ func resourceAlicloudSlbServerCertificateUpdate(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 	if d.IsNewResource() {
-		d.Partial(false)
 		return resourceAlicloudSlbServerCertificateRead(d, meta)
 	}
 	if !d.IsNewResource() && d.HasChange("name") {
@@ -209,15 +208,15 @@ func resourceAlicloudSlbServerCertificateDelete(d *schema.ResourceData, meta int
 	request := slb.CreateDeleteServerCertificateRequest()
 	request.RegionId = client.RegionId
 	request.ServerCertificateId = d.Id()
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteServerCertificate(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"CertificateAndPrivateKeyIsRefered"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)

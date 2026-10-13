@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cloud Architect Design Tools Applications to the user.
 ---
 
-# alicloud\_bp\_studio\_applications
+# alicloud_bp_studio_applications
 
 This data source provides the Cloud Architect Design Tools (BPStudio) Applications of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.192.0+.
+-> **NOTE:** Available since v1.192.0.
 
 ## Example Usage
 
@@ -59,7 +59,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `application_id` - The ID of the Application.
   * `application_name` - The name of the Application.
   * `resource_group_id` - The ID of the resource group.
-  * `topo_url` - The topo url of the Application.
+  * `topo_url` - (Deprecated) The topo url of the Application.
   * `image_url` - The image url of the Application.
   * `create_time` - The creation time of the Application.
   * `status` - The status of the Application.

@@ -8,8 +8,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func init() {
@@ -69,7 +69,7 @@ func testSweepSlbServerCertificate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSLBServerCertificate_basic(t *testing.T) {
+func TestAccAliCloudSLBServerCertificate_basic(t *testing.T) {
 	var v *slb.ServerCertificate
 	resourceId := "alicloud_slb_server_certificate.default"
 	ra := resourceAttrInit(resourceId, serverCertificateMap)
@@ -87,7 +87,7 @@ func TestAccAlicloudSLBServerCertificate_basic(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -189,7 +189,7 @@ func SkipTestAccAlicloudSLBServerCertificate_aliCloud_server_certificate(t *test
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

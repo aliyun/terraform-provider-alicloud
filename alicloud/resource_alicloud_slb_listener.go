@@ -10,9 +10,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudSlbListener() *schema.Resource {
@@ -41,29 +41,11 @@ func resourceAliCloudSlbListener() *schema.Resource {
 				Required:     true,
 				ForceNew:     true,
 			},
-			"lb_port": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Removed:  "Field 'lb_port' has been removed since 1.211.0.",
-			},
-
 			"backend_port": {
 				Type:         schema.TypeInt,
 				ValidateFunc: IntBetween(1, 65535),
 				Optional:     true,
 				ForceNew:     true,
-			},
-
-			"instance_port": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Removed:  "Field 'instance_port' has been removed since 1.211.0",
-			},
-
-			"lb_protocol": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'lb_protocol' has been removed since 1.211.0.",
 			},
 
 			"protocol": {
@@ -442,15 +424,15 @@ func resourceAliCloudSlbListenerCreate(d *schema.ResourceData, meta interface{})
 	startLoadBalancerListenerRequest.ListenerPort = requests.NewInteger(frontend)
 	startLoadBalancerListenerRequest.ListenerProtocol = protocol
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.StartLoadBalancerListener(startLoadBalancerListenerRequest)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceIsConfiguring"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(startLoadBalancerListenerRequest.GetActionName(), raw, startLoadBalancerListenerRequest.RpcRequest, startLoadBalancerListenerRequest)
 		return nil
@@ -486,7 +468,7 @@ func resourceAliCloudSlbListenerRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("load_balancer_id", lb_id)
 	d.Set("frontend_port", port)
 	d.SetId(lb_id + ":" + protocol + ":" + strconv.Itoa(port))
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return retry.Retry(5*time.Minute, func() *retry.RetryError {
 		object, err := slbService.DescribeSlbListener(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
@@ -494,9 +476,9 @@ func resourceAliCloudSlbListenerRead(d *schema.ResourceData, meta interface{}) e
 				return nil
 			}
 			if IsExpectedErrors(err, SlbIsBusy) {
-				return resource.RetryableError(WrapError(err))
+				return retry.RetryableError(WrapError(err))
 			}
-			return resource.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(WrapError(err))
 		}
 
 		if port, ok := object["ListenerPort"]; ok && port.(float64) > 0 {
@@ -604,14 +586,12 @@ func resourceAliCloudSlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 
-	d.SetPartial("gzip")
 	if d.Get("gzip").(bool) {
 		httpArgs.QueryParams["Gzip"] = string(OnFlag)
 	} else {
 		httpArgs.QueryParams["Gzip"] = string(OffFlag)
 	}
 
-	d.SetPartial("x_forwarded_for")
 	if len(d.Get("x_forwarded_for").([]interface{})) > 0 && (d.Get("protocol").(string) == "http" || d.Get("protocol").(string) == "https") {
 		xff := d.Get("x_forwarded_for").([]interface{})[0].(map[string]interface{})
 		if xff["retrive_slb_ip"].(bool) {
@@ -771,15 +751,15 @@ func resourceAliCloudSlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		default:
 			request = httpArgs
 		}
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.ProcessCommonRequest(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationFailed.ListenerStatusNotSupport"}) {
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.QueryParams, request)
 			return nil
@@ -792,8 +772,6 @@ func resourceAliCloudSlbListenerUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
-
-	d.Partial(false)
 
 	return resourceAliCloudSlbListenerRead(d, meta)
 }
@@ -827,16 +805,16 @@ func resourceAliCloudSlbListenerDelete(d *schema.ResourceData, meta interface{})
 	request.LoadBalancerId = lbId
 	request.ListenerPort = requests.NewInteger(port)
 	request.ListenerProtocol = protocol
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteLoadBalancerListener(request)
 		})
 
 		if err != nil {
 			if IsExpectedErrors(err, SlbIsBusy) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil

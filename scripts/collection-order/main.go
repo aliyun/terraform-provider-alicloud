@@ -11,7 +11,6 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/collection-order/internal/coverage"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func main() {
@@ -102,7 +101,7 @@ func run(base, head, resourceName string) error {
 		fmt.Println("TypeList Order Coverage: no directly changed resource implementations, tests or registrations.")
 		return nil
 	}
-	provider := alicloud.Provider().(*schema.Provider)
+	provider := alicloud.Provider()
 	failed := false
 	checked := map[string]bool{}
 	for _, name := range coverage.Names(selected) {

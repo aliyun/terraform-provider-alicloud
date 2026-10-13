@@ -15,9 +15,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -116,13 +116,14 @@ func TestAccAliCloudROSStackGroup_basic(t *testing.T) {
 		},
 
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"stack_group_name": name,
 					"template_body":    `{\"ROSTemplateFormatVersion\": \"2015-09-01\", \"Parameters\": {\"Product\": {\"Default\": \"ack-k8s-audit\", \"Type\": \"String\"}, \"VpcName\": {\"Default\": \"DefaultVpc\", \"Type\": \"String\"}, \"InstanceType\": {\"Default\": \"ecs.g6.large\", \"Type\": \"String\"}}}`,
+
 					"parameters": []map[string]interface{}{
 						{
 							"parameter_key":   "VpcName",
@@ -211,7 +212,7 @@ func AlicloudRosStackGroupBasicDependence(name string) string {
 
 // lintignore: R001
 func TestUnitAlicloudRosStackGroup(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ros_stack_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ros_stack_group"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -513,7 +514,7 @@ func TestAccAliCloudRosStackGroup_basic11039(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -621,7 +622,7 @@ func TestAccAliCloudRosStackGroup_basic11035(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -722,7 +723,7 @@ func TestAccAliCloudRosStackGroup_basic11028(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -822,7 +823,7 @@ func TestAccAliCloudRosStackGroup_basic11026(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -959,7 +960,7 @@ func TestAccAliCloudRosStackGroup_basic823(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1062,7 +1063,7 @@ func TestAccAliCloudRosStackGroup_basic1206(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1179,7 +1180,7 @@ func TestAccAliCloudRosStackGroup_basic1558(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

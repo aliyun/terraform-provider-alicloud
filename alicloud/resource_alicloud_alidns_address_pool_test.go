@@ -12,10 +12,10 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,7 +39,7 @@ func TestAccAliCloudAlidnsAddressPool_basic0(t *testing.T) {
 			testAccPreCheckWithEnvVariable(t, "ALICLOUD_ICP_DOMAIN_NAME")
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -123,7 +123,7 @@ func TestAccAliCloudAlidnsAddressPool_basic1(t *testing.T) {
 			testAccPreCheckWithEnvVariable(t, "ALICLOUD_ICP_DOMAIN_NAME")
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -211,7 +211,7 @@ locals {
 
 // lintignore: R001
 func TestUnitAlicloudAlidnsAddressPool(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alidns_address_pool"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_alidns_address_pool"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
@@ -357,17 +357,17 @@ func TestUnitAlicloudAlidnsAddressPool(t *testing.T) {
 		for _, key := range []string{"lba_strategy", "address_pool_name", "address"} {
 			switch p["alicloud_alidns_address_pool"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeSet:
-				diff.SetAttribute("address.0.attribute_info", &terraform.ResourceAttrDiff{Old: "", New: `{\"lineCodeRectifyType\":\"RECTIFIED\",\"lineCodes\":[\"os_namerica_us\"]}`})
-				diff.SetAttribute("address.0.mode", &terraform.ResourceAttrDiff{Old: "", New: "SMART"})
-				diff.SetAttribute("address.0.remark", &terraform.ResourceAttrDiff{Old: "", New: "address_remark"})
-				diff.SetAttribute("address.0.address", &terraform.ResourceAttrDiff{Old: "", New: "1.1.1.2"})
-				diff.SetAttribute("address.0.lba_weight", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				diff.Attributes["address.0.attribute_info"] = &terraform.ResourceAttrDiff{Old: "", New: `{\"lineCodeRectifyType\":\"RECTIFIED\",\"lineCodes\":[\"os_namerica_us\"]}`}
+				diff.Attributes["address.0.mode"] = &terraform.ResourceAttrDiff{Old: "", New: "SMART"}
+				diff.Attributes["address.0.remark"] = &terraform.ResourceAttrDiff{Old: "", New: "address_remark"}
+				diff.Attributes["address.0.address"] = &terraform.ResourceAttrDiff{Old: "", New: "1.1.1.2"}
+				diff.Attributes["address.0.lba_weight"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_alidns_address_pool"].Schema).Data(nil, diff)
@@ -394,17 +394,17 @@ func TestUnitAlicloudAlidnsAddressPool(t *testing.T) {
 		for _, key := range []string{"lba_strategy", "address_pool_name", "address"} {
 			switch p["alicloud_alidns_address_pool"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeSet:
-				diff.SetAttribute("address.0.attribute_info", &terraform.ResourceAttrDiff{Old: "", New: `{\"lineCodeRectifyType\":\"RECTIFIED\",\"lineCodes\":[\"os_namerica_us\"]}`})
-				diff.SetAttribute("address.0.mode", &terraform.ResourceAttrDiff{Old: "", New: "SMART"})
-				diff.SetAttribute("address.0.remark", &terraform.ResourceAttrDiff{Old: "", New: "address_remark"})
-				diff.SetAttribute("address.0.address", &terraform.ResourceAttrDiff{Old: "", New: "1.1.1.2"})
-				diff.SetAttribute("address.0.lba_weight", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				diff.Attributes["address.0.attribute_info"] = &terraform.ResourceAttrDiff{Old: "", New: `{\"lineCodeRectifyType\":\"RECTIFIED\",\"lineCodes\":[\"os_namerica_us\"]}`}
+				diff.Attributes["address.0.mode"] = &terraform.ResourceAttrDiff{Old: "", New: "SMART"}
+				diff.Attributes["address.0.remark"] = &terraform.ResourceAttrDiff{Old: "", New: "address_remark"}
+				diff.Attributes["address.0.address"] = &terraform.ResourceAttrDiff{Old: "", New: "1.1.1.2"}
+				diff.Attributes["address.0.lba_weight"] = &terraform.ResourceAttrDiff{Old: "", New: "1"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_alidns_address_pool"].Schema).Data(nil, diff)

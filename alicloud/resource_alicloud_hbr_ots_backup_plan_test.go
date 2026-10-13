@@ -14,9 +14,10 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -49,14 +50,14 @@ func testSweepHBROtsBackupPlan(region string) error {
 	var response map[string]interface{}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -107,7 +108,7 @@ func testSweepHBROtsBackupPlan(region string) error {
 	return nil
 }
 
-func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudHbrOtsBackupPlan_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_ots_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBROtsBackupPlanMap0)
@@ -123,9 +124,9 @@ func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -235,7 +236,7 @@ func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudHBROtsBackupPlan_basic1(t *testing.T) {
+func TestAccAliCloudHbrOtsBackupPlan_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_ots_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBROtsBackupPlanMap0)
@@ -251,9 +252,9 @@ func TestAccAlicloudHBROtsBackupPlan_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -391,7 +392,7 @@ func AlicloudHBROtsBackupPlanBasicDependence0(name string) string {
 
 // lintignore: R001
 func TestUnitAlicloudHBROtsBackupPlan(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_ots_backup_plan"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_hbr_ots_backup_plan"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

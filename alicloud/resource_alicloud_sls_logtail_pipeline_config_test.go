@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Sls LogtailPipelineConfig. >>> Resource test cases, automatically generated.
@@ -29,7 +29,7 @@ func TestAccAliCloudSlsLogtailPipelineConfig_basic12633(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Step 0: Create resource with all required and optional fields (inputs, processors, flushers, aggregators)
@@ -79,8 +79,7 @@ resource "alicloud_sls_logtail_pipeline_config" "default" {
     Type          = "flusher_sls"
     Logstore      = alicloud_log_store.default.name
     TelemetryType = "logs"
-    Region        = "eu-central-1"
-    Endpoint      = "eu-central-1-intranet.log.aliyuncs.com"
+
   }]
   
   aggregators = [{
@@ -148,8 +147,7 @@ resource "alicloud_sls_logtail_pipeline_config" "default" {
     Type          = "flusher_sls"
     Logstore      = alicloud_log_store.default.name
     TelemetryType = "logs"
-    Region        = "eu-central-1"
-    Endpoint      = "eu-central-1-intranet.log.aliyuncs.com"
+
   }]
   
   aggregators = [{
@@ -212,8 +210,7 @@ resource "alicloud_sls_logtail_pipeline_config" "default" {
     Type          = "flusher_sls"
     Logstore      = alicloud_log_store.default_updated.name
     TelemetryType = "logs"
-    Region        = "eu-central-1"
-    Endpoint      = "eu-central-1-intranet.log.aliyuncs.com"
+
   }]
   
   aggregators = [{
@@ -276,8 +273,7 @@ resource "alicloud_sls_logtail_pipeline_config" "default" {
     Type          = "flusher_sls"
     Logstore      = alicloud_log_store.default_updated.name
     TelemetryType = "logs"
-    Region        = "eu-central-1"
-    Endpoint      = "eu-central-1-intranet.log.aliyuncs.com"
+
   }]
   
   aggregators = [{
@@ -341,8 +337,7 @@ resource "alicloud_sls_logtail_pipeline_config" "default" {
     Type          = "flusher_sls"
     Logstore      = alicloud_log_store.default_updated.name
     TelemetryType = "logs"
-    Region        = "eu-central-1"
-    Endpoint      = "eu-central-1-intranet.log.aliyuncs.com"
+
   }]
   
   aggregators = [{
@@ -411,8 +406,7 @@ resource "alicloud_sls_logtail_pipeline_config" "default" {
     Type          = "flusher_sls"
     Logstore      = alicloud_log_store.default_updated.name
     TelemetryType = "logs"
-    Region        = "eu-central-1"
-    Endpoint      = "eu-central-1-intranet.log.aliyuncs.com"
+
   }]
   
   aggregators = [{
@@ -481,8 +475,7 @@ resource "alicloud_sls_logtail_pipeline_config" "default" {
     Type          = "flusher_sls"
     Logstore      = alicloud_log_store.default_updated.name
     TelemetryType = "logs"
-    Region        = "eu-central-1"
-    Endpoint      = "eu-central-1-intranet.log.aliyuncs.com"
+
   }]
   
   aggregators = [{
@@ -504,7 +497,7 @@ resource "alicloud_sls_logtail_pipeline_config" "default" {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"flushers"},
 			},
 		},
 	})

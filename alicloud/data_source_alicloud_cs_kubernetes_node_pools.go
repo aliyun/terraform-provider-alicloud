@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAliCloudAckNodepools() *schema.Resource {
@@ -726,15 +726,15 @@ func dataSourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{})
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RoaGet("CS", "2015-12-15", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -1150,7 +1150,8 @@ func dataSourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("ids", ids)
-	d.Set("names", names)
+	// "names" is not declared in the schema; setting it panics under terraform-plugin-sdk v2
+	_ = names
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("nodepools", s); err != nil {
 		return WrapError(err)

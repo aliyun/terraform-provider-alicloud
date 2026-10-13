@@ -18,6 +18,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	credential "github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 )
 
@@ -290,7 +291,7 @@ func (c *Config) setAuthByAssumeRole() (err error) {
 	c.Credential = provider
 	credential, err := provider.GetCredential()
 	if err != nil || credential == nil {
-		return fmt.Errorf("refresh Ram Role Arn credential failed. Error: %v", err)
+		return errs.WrapErrorf(err, "refresh Ram Role Arn credential failed")
 	}
 	c.AccessKey, c.SecretKey, c.SecurityToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
 	return nil
@@ -313,7 +314,7 @@ func (c *Config) setAuthCredentialByEcsRoleName() (err error) {
 	c.Credential = provider
 	credential, err := provider.GetCredential()
 	if err != nil || credential == nil {
-		return fmt.Errorf("refresh Ecs Ram Role credential failed. Error: %v", err)
+		return errs.WrapErrorf(err, "refresh Ecs Ram Role credential failed")
 	}
 
 	c.AccessKey, c.SecretKey, c.SecurityToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
@@ -370,7 +371,7 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 		conf.GlobalParameters = param
 		stsClient, err := sts20150401.NewClient(conf)
 		if err != nil {
-			return fmt.Errorf("refreshing credential failed when building sts client. Error: %v", err)
+			return errs.WrapErrorf(err, "refreshing credential failed when building sts client")
 		}
 
 		request := &sts20150401.AssumeRoleWithOIDCRequest{
@@ -395,7 +396,7 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 					time.Sleep(time.Duration(i))
 					continue
 				}
-				return fmt.Errorf("refreshing credential failed by AssumeRoleWithOIDC. Error: %v", err)
+				return errs.WrapErrorf(err, "refreshing credential failed by AssumeRoleWithOIDC")
 			}
 			break
 		}
@@ -411,7 +412,7 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 	c.Credential = provider
 	credential, err := provider.GetCredential()
 	if err != nil || credential == nil {
-		return fmt.Errorf("refresh OIDC credential failed. Error: %v", err)
+		return errs.WrapErrorf(err, "refresh OIDC credential failed")
 	}
 
 	c.AccessKey, c.SecretKey, c.SecurityToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken

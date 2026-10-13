@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Schedulerx Job. >>> Resource test cases, automatically generated.
@@ -27,9 +27,9 @@ func TestAccAliCloudSchedulerxJob_basic9597(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -162,9 +162,9 @@ func TestAccAliCloudSchedulerxJob_basic9548(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -452,24 +452,24 @@ func TestAccAliCloudSchedulerxJob_contactInfoEmpty(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status":                                     "Enable",
-						"max_attempt":                                "0",
-						"description":                                "test contact_info nil guard",
-						"success_notice_enable":                      "false",
-						"job_name":                                   name,
-						"max_concurrency":                            "1",
-						"namespace":                                  CHECKSET,
-						"group_id":                                   CHECKSET,
-						"job_type":                                   "shell",
-						"content":                                    "echo 'hello'",
-						"namespace_source":                           "schedulerx",
-						"attempt_interval":                           "30",
-						"execute_mode":                               "standalone",
-						"job_monitor_info.#":                         "1",
-						"job_monitor_info.0.contact_info.#":          "1",
-						"job_monitor_info.0.contact_info.0.user_name": "test-user",
-						"job_monitor_info.0.monitor_config.#":        "1",
-						"job_monitor_info.0.monitor_config.0.timeout": "7200",
+						"status":                            "Enable",
+						"max_attempt":                       "0",
+						"description":                       "test contact_info nil guard",
+						"success_notice_enable":             "false",
+						"job_name":                          name,
+						"max_concurrency":                   "1",
+						"namespace":                         CHECKSET,
+						"group_id":                          CHECKSET,
+						"job_type":                          "shell",
+						"content":                           "echo 'hello'",
+						"namespace_source":                  "schedulerx",
+						"attempt_interval":                  "30",
+						"execute_mode":                      "standalone",
+						"job_monitor_info.#":                "1",
+						"job_monitor_info.0.contact_info.#": "1",
+						"job_monitor_info.0.contact_info.0.user_name":      "test-user",
+						"job_monitor_info.0.monitor_config.#":              "1",
+						"job_monitor_info.0.monitor_config.0.timeout":      "7200",
 						"job_monitor_info.0.monitor_config.0.send_channel": "webhook",
 					}),
 				),

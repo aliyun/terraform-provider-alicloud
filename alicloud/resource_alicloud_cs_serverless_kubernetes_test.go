@@ -8,9 +8,9 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func getTimezone(region string) string {
@@ -57,9 +57,9 @@ func TestAccAliCloudCSServerlessKubernetes_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -118,6 +118,7 @@ func TestAccAliCloudCSServerlessKubernetes_basic(t *testing.T) {
 						"resource_group_id":                         CHECKSET,
 						"security_group_id":                         CHECKSET,
 						"vswitch_ids.#":                             "1",
+						"time_zone":                                 getTimezone(os.Getenv("ALICLOUD_REGION")),
 						"cluster_spec":                              "ack.standard",
 						"custom_san":                                "www.terraform.io,1.1.1.1",
 						"maintenance_window.#":                      "1",
@@ -395,9 +396,9 @@ func TestAccAliCloudCSServerlessKubernetesAuto(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -429,6 +430,7 @@ func TestAccAliCloudCSServerlessKubernetesAuto(t *testing.T) {
 						"service_discovery_types.#":      "1",
 						"resource_group_id":              CHECKSET,
 						"vswitch_ids.#":                  "1",
+						"time_zone":                      getTimezone(os.Getenv("ALICLOUD_REGION")),
 					}),
 				),
 			},
@@ -436,7 +438,17 @@ func TestAccAliCloudCSServerlessKubernetesAuto(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"load_balancer_spec", "new_nat_gateway", "private_zone", "sls_project_name", "service_discovery_types", "logging_type", "time_zone", "addons", "zone_id", "name_prefix"},
+				ImportStateVerifyIgnore: []string{"load_balancer_spec", "new_nat_gateway", "private_zone", "sls_project_name", "service_discovery_types", "logging_type", "addons", "zone_id", "name_prefix"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_zone": "Asia/Tokyo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_zone": "Asia/Tokyo",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -6,9 +6,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -91,19 +91,19 @@ func resourceAlicloudDbauditInstanceCreate(d *schema.ResourceData, meta interfac
 	})
 	request["Parameter"] = parameterMapList
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		request["ClientToken"] = buildClientToken(action)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -151,7 +151,6 @@ func resourceAlicloudDbauditInstanceRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("description", instance["Description"])
 	d.Set("plan_code", instance["LicenseCode"])
-	d.Set("region_id", client.RegionId)
 	d.Set("vswitch_id", instance["VswitchId"])
 
 	tags, err := dbauditService.DescribeTags(d.Id(), "INSTANCE")
@@ -166,31 +165,25 @@ func resourceAlicloudDbauditInstanceUpdate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	dbauditService := DbauditService{client}
 
-	d.Partial(true)
-
 	if d.HasChange("tags") {
 		if err := dbauditService.setInstanceTags(d, "INSTANCE"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 
 	if d.HasChange("description") {
 		if err := dbauditService.UpdateDbauditInstanceDescription(d.Id(), d.Get("description").(string)); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("description")
 	}
 
 	if d.HasChange("resource_group_id") {
 		if err := dbauditService.UpdateResourceGroup(d.Id(), d.Get("resource_group_id").(string)); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("resource_group_id")
 	}
 
 	if d.IsNewResource() {
-		d.Partial(false)
 		return resourceAlicloudDbauditInstanceRead(d, meta)
 	}
 
@@ -202,10 +195,8 @@ func resourceAlicloudDbauditInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("plan_code")
 	}
 
-	d.Partial(false)
 	// wait for order complete
 	return resourceAlicloudDbauditInstanceRead(d, meta)
 }

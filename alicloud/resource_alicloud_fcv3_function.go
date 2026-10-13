@@ -8,8 +8,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudFcv3Function() *schema.Resource {
@@ -1082,14 +1082,14 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	}
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1576,14 +1576,14 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 				}
 				body = request
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("FC", "2023-03-30", action, query, header, body, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -1603,14 +1603,14 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 
 				body = request
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("FC", "2023-03-30", action, query, header, body, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -1636,16 +1636,26 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 		gpuConfig := make(map[string]interface{})
 
 		if v := d.Get("gpu_config"); v != nil {
-			gpuMemorySize1, _ := jsonpath.Get("$[0].gpu_memory_size", v)
-			if gpuMemorySize1 != nil && gpuMemorySize1 != "" {
-				gpuConfig["gpuMemorySize"] = gpuMemorySize1
-			}
-			gpuType1, _ := jsonpath.Get("$[0].gpu_type", v)
-			if gpuType1 != nil && gpuType1 != "" {
-				gpuConfig["gpuType"] = gpuType1
-			}
+			// When the user removes gpu_config entirely the TypeList becomes
+			// an empty slice. Sending an empty object keeps the server-side
+			// gpuConfig alive (FC treats it as "no change"), so we must send
+			// an explicit nil to clear it. Otherwise subsequent cpu/memory
+			// changes get validated against the orphaned GPU constraints
+			// (e.g. "cpu should be an integer for gpu function").
+			if list, ok := v.([]interface{}); ok && len(list) == 0 {
+				request["gpuConfig"] = nil
+			} else {
+				gpuMemorySize1, _ := jsonpath.Get("$[0].gpu_memory_size", v)
+				if gpuMemorySize1 != nil && gpuMemorySize1 != "" {
+					gpuConfig["gpuMemorySize"] = gpuMemorySize1
+				}
+				gpuType1, _ := jsonpath.Get("$[0].gpu_type", v)
+				if gpuType1 != nil && gpuType1 != "" {
+					gpuConfig["gpuType"] = gpuType1
+				}
 
-			request["gpuConfig"] = gpuConfig
+				request["gpuConfig"] = gpuConfig
+			}
 		}
 	}
 
@@ -2116,14 +2126,14 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC", "2023-03-30", action, query, header, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2148,14 +2158,14 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC", "2023-03-30", action, query, header, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2187,14 +2197,14 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	request = make(map[string]interface{})
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"429", "ProvisionConfigExist"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2215,16 +2225,16 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	// afterwards fails with DependencyViolation on the still-attached ENI.
 	fcv3ServiceV2 := Fcv3ServiceV2{client}
 	waitFunc := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, e := fcv3ServiceV2.DescribeFcv3Function(functionName)
 		if e == nil {
 			waitFunc()
-			return resource.RetryableError(fmt.Errorf("fcv3 function [%s] is still being deleted", functionName))
+			return retry.RetryableError(fmt.Errorf("fcv3 function [%s] is still being deleted", functionName))
 		}
 		if NotFoundError(e) {
 			return nil
 		}
-		return resource.NonRetryableError(e)
+		return retry.NonRetryableError(e)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -2244,7 +2254,7 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	if sgId != "" || vswId != "" {
 		eniAction := "DescribeNetworkInterfaces"
 		eniWait := incrementalWait(5*time.Second, 10*time.Second)
-		eniErr := resource.Retry(10*time.Minute, func() *resource.RetryError {
+		eniErr := retry.Retry(10*time.Minute, func() *retry.RetryError {
 			eniReq := make(map[string]interface{})
 			eniReq["RegionId"] = client.RegionId
 			if sgId != "" {
@@ -2259,9 +2269,9 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 			if e != nil {
 				if NeedRetry(e) {
 					eniWait()
-					return resource.RetryableError(e)
+					return retry.RetryableError(e)
 				}
-				return resource.NonRetryableError(e)
+				return retry.NonRetryableError(e)
 			}
 			addDebug(eniAction, eniResp, eniReq)
 			eniSet, _ := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", eniResp)
@@ -2271,7 +2281,7 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 			}
 			if count > 0 {
 				eniWait()
-				return resource.RetryableError(fmt.Errorf("fcv3 function [%s] still has %d ENI(s) being released", functionName, count))
+				return retry.RetryableError(fmt.Errorf("fcv3 function [%s] still has %d ENI(s) being released", functionName, count))
 			}
 			return nil
 		})

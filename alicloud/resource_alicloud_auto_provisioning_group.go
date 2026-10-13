@@ -8,9 +8,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudAutoProvisioningGroup() *schema.Resource {
@@ -174,12 +174,12 @@ func resourceAlicloudAutoProvisioningGroupCreate(d *schema.ResourceData, meta in
 
 	client := meta.(*connectivity.AliyunClient)
 
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.CreateAutoProvisioningGroup(request)
 		})
 		if NeedRetry(err) {
-			return resource.RetryableError(err)
+			return retry.RetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*ecs.CreateAutoProvisioningGroupResponse)
@@ -210,16 +210,12 @@ func resourceAlicloudAutoProvisioningGroupRead(d *schema.ResourceData, meta inte
 	d.Set("auto_provisioning_group_name", object.AutoProvisioningGroupName)
 	d.Set("launch_template_id", object.LaunchTemplateId)
 	d.Set("auto_provisioning_group_type", object.AutoProvisioningGroupType)
-	d.Set("auto_provisioning_group_id", object.AutoProvisioningGroupId)
-	d.Set("create_time", object.CreationTime)
 	d.Set("excess_capacity_termination_policy", object.ExcessCapacityTerminationPolicy)
 	d.Set("terminate_instances_with_expiration", object.TerminateInstancesWithExpiration)
 	d.Set("max_spot_price", object.MaxSpotPrice)
 	d.Set("terminate_instances", object.TerminateInstances)
 	d.Set("valid_from", object.ValidFrom)
 	d.Set("valid_until", object.ValidUntil)
-	d.Set("status", object.Status)
-	d.Set("state", object.State)
 	d.Set("pay_as_you_go_target_capacity", fmt.Sprintf("%v", object.TargetCapacitySpecification.PayAsYouGoTargetCapacity))
 	d.Set("pay_as_you_go_allocation_strategy", object.PayAsYouGoOptions.AllocationStrategy)
 	d.Set("spot_target_capacity", fmt.Sprintf("%v", object.TargetCapacitySpecification.SpotTargetCapacity))

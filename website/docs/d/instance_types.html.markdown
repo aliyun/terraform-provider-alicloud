@@ -117,10 +117,10 @@ The following attributes are exported in addition to the arguments listed above:
   * `family` - The instance type family.
   * `availability_zones` - List of availability zones that support the instance type.
   * `nvme_support` - Indicates whether the cloud disk can be attached by using the nonvolatile memory express (NVMe) protocol.
-  * `gpu` - The GPU attribution of an instance type:
+  * `gpu` - A list of GPU attributes of an instance type:
     * `amount` - The amount of GPU of an instance type.
     * `category` - The category of GPU of an instance type.
-  * `burstable_instance` - The burstable instance attribution.
+  * `burstable_instance` - A list of the burstable instance attribution.
     * `initial_credit` - The initial CPU credit of a burstable instance.
     * `baseline_credit` - The compute performance benchmark CPU credit of a burstable instance.
   * `eni_amount` - (Deprecated since v1.239.0) The maximum number of ENIs per instance. It sames as `eni_quantity`.
@@ -131,7 +131,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `maximum_queue_number_per_eni` - (Available since v1.239.0) The maximum number of queues per ENI, including primary and secondary ENIs.
   * `total_eni_queue_quantity` - (Available since v1.239.0) The maximum number of queues on ENIs that the instance type supports. 
   * `eni_private_ip_address_quantity` - (Available since v1.239.0) The maximum number of IPv4 addresses per ENI.
-  * `local_storage` - Local storage of an instance type.
+  * `local_storage` - A list of local storage of an instance type.
     * `capacity` - The capacity of a local storage in GB.
     * `amount` - The number of local storage devices that an instance has been attached to.
     * `category` - The category of local storage that an instance has been attached to.

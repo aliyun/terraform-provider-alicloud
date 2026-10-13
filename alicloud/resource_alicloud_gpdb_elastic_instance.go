@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudGpdbElasticInstance() *schema.Resource {
@@ -206,14 +206,14 @@ func resourceAlicloudGpdbElasticInstanceCreate(d *schema.ResourceData, meta inte
 	}
 	request["ClientToken"] = buildClientToken("CreateECSDBInstance")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -282,7 +282,6 @@ func resourceAlicloudGpdbElasticInstanceUpdate(d *schema.ResourceData, meta inte
 		if err := gpdbService.SetResourceTags(d, "ALIYUN::GPDB::INSTANCE"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	if d.HasChange("db_instance_description") {
 		action := "ModifyDBInstanceDescription"
@@ -293,14 +292,14 @@ func resourceAlicloudGpdbElasticInstanceUpdate(d *schema.ResourceData, meta inte
 			"SourceIp":              client.SourceIp,
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err := client.RpcPost("gpdb", "2016-05-03", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -308,7 +307,6 @@ func resourceAlicloudGpdbElasticInstanceUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("db_instance_description")
 	}
 	if d.HasChange("security_ip_list") {
 		ipList := expandStringList(d.Get("security_ip_list").([]interface{}))
@@ -319,7 +317,6 @@ func resourceAlicloudGpdbElasticInstanceUpdate(d *schema.ResourceData, meta inte
 		if err := gpdbService.ModifyGpdbSecurityIps(d.Id(), ipStr); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("security_ip_list")
 	}
 
 	d.Partial(false)
@@ -336,14 +333,14 @@ func resourceAlicloudGpdbElasticInstanceDelete(d *schema.ResourceData, meta inte
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("gpdb", "2016-05-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBState"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

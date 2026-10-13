@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"
 )
@@ -52,7 +53,7 @@ var DBInstanceTDEErrors = []string{"InvaildEngineInRegion.ValueNotSupported", "I
 var OtsTableIsTemporarilyUnavailable = []string{"no such host", "OTSServerBusy", "OTSPartitionUnavailable", "OTSInternalServerError",
 	"OTSTimeout", "OTSServerUnavailable", "OTSRowOperationConflict", "OTSTableNotReady", "OTSNotEnoughCapacityUnit", "Too frequent table operations."}
 
-var OtsTunnelIsTemporarilyUnavailable = []string{"no such host", "OTSTunnelServerUnavailable"}
+var OtsTunnelIsTemporarilyUnavailable = []string{"no such host", "OTSTunnelServerUnavailable", "OTSPermissionDenied"}
 var OtsSecondaryIndexIsTemporarilyUnavailable = []string{"no such host", "OTSServerUnavailable"}
 var OtsSearchIndexIsTemporarilyUnavailable = []string{"no such host", "OTSServerUnavailable"}
 
@@ -109,6 +110,18 @@ func NotFoundError(err error) bool {
 
 	if e, ok := err.(oss.ServiceError); ok {
 		return e.StatusCode == 404 || strings.HasPrefix(e.Code, "NoSuch") || strings.HasPrefix(e.Message, "No Row found")
+	}
+
+	if e, ok := err.(*otsTunnel.TunnelError); ok {
+		if e.Code == otsTunnel.ErrCodeParamInvalid && strings.Contains(strings.ToLower(e.Message), "tunnel not exist") {
+			return true
+		}
+		if e.Code == otsTunnel.ErrCodePermissionDenied {
+			lowerMsg := strings.ToLower(e.Message)
+			if strings.Contains(lowerMsg, "is not found") || strings.Contains(lowerMsg, "instance is not running") {
+				return true
+			}
+		}
 	}
 
 	return false

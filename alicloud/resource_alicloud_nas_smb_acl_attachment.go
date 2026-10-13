@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudNasSmbAclAttachment() *schema.Resource {
@@ -77,14 +77,14 @@ func resourceAlicloudNasSmbAclAttachmentCreate(d *schema.ResourceData, meta inte
 	request["KeytabMd5"] = d.Get("keytab_md5")
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -151,14 +151,14 @@ func resourceAlicloudNasSmbAclAttachmentUpdate(d *schema.ResourceData, meta inte
 	if update {
 		action := "ModifySmbAcl"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -185,9 +185,17 @@ func resourceAlicloudNasSmbAclAttachmentRead(d *schema.ResourceData, meta interf
 	}
 	d.Set("file_system_id", d.Id())
 	d.Set("auth_method", fmt.Sprint(object["AuthMethod"]))
-	d.Set("enable_anonymous_access", fmt.Sprint(object["EnableAnonymousAccess"]))
-	d.Set("encrypt_data", fmt.Sprint(object["EncryptData"]))
-	d.Set("reject_unencrypted_access", fmt.Sprint(object["RejectUnencryptedAccess"]))
+
+	if v, ok := object["EnableAnonymousAccess"]; ok {
+		d.Set("enable_anonymous_access", v.(bool))
+	}
+	if v, ok := object["EncryptData"]; ok {
+		d.Set("encrypt_data", v.(bool))
+	}
+	if v, ok := object["RejectUnencryptedAccess"]; ok {
+		d.Set("reject_unencrypted_access", v.(bool))
+	}
+
 	d.Set("super_admin_sid", fmt.Sprint(object["SuperAdminSid"]))
 	d.Set("home_dir_path", fmt.Sprint(object["HomeDirPath"]))
 	d.Set("enabled", fmt.Sprint(object["Enabled"]))
@@ -205,14 +213,14 @@ func resourceAlicloudNasSmbAclAttachmentDelete(d *schema.ResourceData, meta inte
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

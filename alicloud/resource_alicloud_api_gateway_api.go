@@ -11,9 +11,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliyunApigatewayApi() *schema.Resource {
@@ -580,18 +580,6 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-		d.SetPartial("name")
-		d.SetPartial("description")
-		d.SetPartial("auth_type")
-		d.SetPartial("service_type")
-		d.SetPartial("http_service_config")
-		d.SetPartial("http_vpc_service_config")
-		d.SetPartial("fc_service_config")
-		d.SetPartial("mock_service_config")
-		d.SetPartial("request_parameters")
-		d.SetPartial("constant_parameters")
-		d.SetPartial("system_parameters")
-
 	}
 
 	if update || d.HasChange("stage_names") {
@@ -600,7 +588,6 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("stage_names")
 	}
 
 	d.Partial(false)
@@ -622,14 +609,14 @@ func resourceAliyunApigatewayApiDelete(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("stage_names"); ok {
 		for _, sn := range v.(*schema.Set).List() {
 			stageName := sn.(string)
-			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 				err := cloudApiService.AbolishApi(d.Id(), stageName)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"ConcurrencyLockTimeout"}) {
 						time.Sleep(3 * time.Second)
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})

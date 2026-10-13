@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudEnsInstance_basic3529(t *testing.T) {
@@ -26,7 +26,7 @@ func TestAccAliCloudEnsInstance_basic3529(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -163,7 +163,7 @@ func TestAccAliCloudEnsInstance_basic3497(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -292,7 +292,7 @@ func TestAccAliCloudEnsInstance_basic3529_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -389,7 +389,7 @@ func TestAccAliCloudEnsInstance_basic3497_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -478,7 +478,7 @@ func TestAccAliCloudEnsInstance_basic5654(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -501,7 +501,7 @@ func TestAccAliCloudEnsInstance_basic5654(t *testing.T) {
 					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 					"payment_type":               "PayAsYouGo",
 					"instance_type":              "ens.sn1.stiny",
-					"host_name":                  "InstanceHostName_autotest",
+					"host_name":                  "testHost80",
 					"ip_type":                    "ipv4",
 					"auto_renew":                 "false",
 					"password_inherit":           "true",
@@ -525,11 +525,11 @@ func TestAccAliCloudEnsInstance_basic5654(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"host_name": "InstanceHostName_autotest",
+					"host_name": "testHost80",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"host_name": "InstanceHostName_autotest",
+						"host_name": "testHost80",
 					}),
 				),
 			},
@@ -563,7 +563,7 @@ func TestAccAliCloudEnsInstance_basic5654(t *testing.T) {
 					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 					"payment_type":               "PayAsYouGo",
 					"instance_type":              "ens.sn1.stiny",
-					"host_name":                  "InstanceHostName_autotest",
+					"host_name":                  "testHost80",
 					"ip_type":                    "ipv4",
 					"auto_renew":                 "false",
 					"password_inherit":           "true",
@@ -589,7 +589,7 @@ func TestAccAliCloudEnsInstance_basic5654(t *testing.T) {
 						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 						"payment_type":               "PayAsYouGo",
 						"instance_type":              "ens.sn1.stiny",
-						"host_name":                  "InstanceHostName_autotest",
+						"host_name":                  "testHost80",
 						"ip_type":                    "ipv4",
 						"auto_renew":                 "false",
 						"password_inherit":           "true",
@@ -646,7 +646,7 @@ func TestAccAliCloudEnsInstance_basic5654_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -669,7 +669,7 @@ func TestAccAliCloudEnsInstance_basic5654_twin(t *testing.T) {
 					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 					"payment_type":               "PayAsYouGo",
 					"instance_type":              "ens.sn1.stiny",
-					"host_name":                  "InstanceHostName_autotest",
+					"host_name":                  "testHost80",
 					"ip_type":                    "ipv4",
 					"auto_renew":                 "false",
 					"password_inherit":           "true",
@@ -696,7 +696,7 @@ func TestAccAliCloudEnsInstance_basic5654_twin(t *testing.T) {
 						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 						"payment_type":               "PayAsYouGo",
 						"instance_type":              "ens.sn1.stiny",
-						"host_name":                  "InstanceHostName_autotest",
+						"host_name":                  "testHost80",
 						"ip_type":                    "ipv4",
 						"auto_renew":                 "false",
 						"password_inherit":           "true",
@@ -738,7 +738,7 @@ func TestAccAliCloudEnsInstance_basic5657(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -768,13 +768,13 @@ func TestAccAliCloudEnsInstance_basic5657(t *testing.T) {
 					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 					"payment_type":               "Subscription",
 					"instance_type":              "ens.sn1.stiny",
-					"host_name":                  "InstanceHostName_autotest",
+					"host_name":                  "testHost80",
 					"period_unit":                "Month",
 					"ip_type":                    "ipv4",
 					"auto_renew":                 "false",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "true",
 					"private_ip_address":         "192.168.2.4",
 					"net_work_id":                "${alicloud_ens_network.创建网络.id}",
@@ -797,13 +797,13 @@ func TestAccAliCloudEnsInstance_basic5657(t *testing.T) {
 						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 						"payment_type":               "Subscription",
 						"instance_type":              "ens.sn1.stiny",
-						"host_name":                  "InstanceHostName_autotest",
+						"host_name":                  "testHost80",
 						"period_unit":                "Month",
 						"ip_type":                    "ipv4",
 						"auto_renew":                 "false",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "true",
 						"private_ip_address":         "192.168.2.4",
 						"net_work_id":                CHECKSET,
@@ -814,11 +814,11 @@ func TestAccAliCloudEnsInstance_basic5657(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"host_name": "InstanceHostName_autotest",
+					"host_name": "testHost80",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"host_name": "InstanceHostName_autotest",
+						"host_name": "testHost80",
 					}),
 				),
 			},
@@ -869,7 +869,7 @@ resource "alicloud_ens_network" "创建网络" {
 
   description   = "NetworkDescription_autotest"
   cidr_block    = "192.168.2.0/24"
-  ens_region_id = "cn-nanjing-cmcc"
+  ens_region_id = "cn-wuxi-telecom_unicom_cmcc-2"
 }
 
 resource "alicloud_ens_vswitch" "创建交换机" {
@@ -877,7 +877,7 @@ resource "alicloud_ens_vswitch" "创建交换机" {
   cidr_block   = "192.168.2.0/24"
   vswitch_name = var.name
 
-  ens_region_id = "cn-nanjing-cmcc"
+  ens_region_id = "cn-wuxi-telecom_unicom_cmcc-2"
   network_id    = alicloud_ens_network.创建网络.id
 }
 
@@ -909,7 +909,7 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -939,14 +939,14 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 					"payment_type":               "Subscription",
 					"instance_type":              "ens.sn1.stiny",
-					"host_name":                  "InstanceHostName_autotest",
+					"host_name":                  "testHost80",
 					"password":                   "12345678abcABC",
 					"period_unit":                "Month",
 					"ip_type":                    "ipv4",
 					"auto_renew":                 "true",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "false",
 					"status":                     "Stopped",
 					"force_stop":                 "true",
@@ -968,14 +968,14 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 						"payment_type":               "Subscription",
 						"instance_type":              "ens.sn1.stiny",
-						"host_name":                  "InstanceHostName_autotest",
+						"host_name":                  "testHost80",
 						"password":                   "12345678abcABC",
 						"period_unit":                "Month",
 						"ip_type":                    "ipv4",
 						"auto_renew":                 "true",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "false",
 						"status":                     "Stopped",
 						"force_stop":                 "true",
@@ -985,11 +985,11 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"host_name": "InstanceHostName_autotest",
+					"host_name": "testHost80",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"host_name": "InstanceHostName_autotest",
+						"host_name": "testHost80",
 					}),
 				),
 			},
@@ -1050,14 +1050,14 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 					"payment_type":               "Subscription",
 					"instance_type":              "ens.sn1.stiny",
-					"host_name":                  "InstanceHostName_autotest",
+					"host_name":                  "testHost80",
 					"password":                   "12345678abcABC",
 					"period_unit":                "Month",
 					"ip_type":                    "ipv4",
 					"auto_renew":                 "false",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1076,14 +1076,14 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 						"payment_type":               "Subscription",
 						"instance_type":              "ens.sn1.stiny",
-						"host_name":                  "InstanceHostName_autotest",
+						"host_name":                  "testHost80",
 						"password":                   "12345678abcABC",
 						"period_unit":                "Month",
 						"ip_type":                    "ipv4",
 						"auto_renew":                 "false",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "false",
 					}),
 				),
@@ -1142,7 +1142,7 @@ func TestAccAliCloudEnsInstance_basic5657_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1172,13 +1172,13 @@ func TestAccAliCloudEnsInstance_basic5657_twin(t *testing.T) {
 					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 					"payment_type":               "Subscription",
 					"instance_type":              "ens.sn1.stiny",
-					"host_name":                  "InstanceHostName_autotest",
+					"host_name":                  "testHost80",
 					"period_unit":                "Month",
 					"ip_type":                    "ipv4",
 					"auto_renew":                 "false",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "true",
 					"private_ip_address":         "192.168.2.4",
 					"net_work_id":                "${alicloud_ens_network.创建网络.id}",
@@ -1201,13 +1201,13 @@ func TestAccAliCloudEnsInstance_basic5657_twin(t *testing.T) {
 						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 						"payment_type":               "Subscription",
 						"instance_type":              "ens.sn1.stiny",
-						"host_name":                  "InstanceHostName_autotest",
+						"host_name":                  "testHost80",
 						"period_unit":                "Month",
 						"ip_type":                    "ipv4",
 						"auto_renew":                 "false",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "true",
 						"private_ip_address":         "192.168.2.4",
 						"net_work_id":                CHECKSET,
@@ -1244,7 +1244,7 @@ func TestAccAliCloudEnsInstance_basic5608_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1274,14 +1274,14 @@ func TestAccAliCloudEnsInstance_basic5608_twin(t *testing.T) {
 					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 					"payment_type":               "Subscription",
 					"instance_type":              "ens.sn1.stiny",
-					"host_name":                  "InstanceHostName_autotest",
+					"host_name":                  "testHost80",
 					"password":                   "12345678abcABC",
 					"period_unit":                "Month",
 					"ip_type":                    "ipv4",
 					"auto_renew":                 "true",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "false",
 					"status":                     "Stopped",
 					"force_stop":                 "true",
@@ -1303,14 +1303,14 @@ func TestAccAliCloudEnsInstance_basic5608_twin(t *testing.T) {
 						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 						"payment_type":               "Subscription",
 						"instance_type":              "ens.sn1.stiny",
-						"host_name":                  "InstanceHostName_autotest",
+						"host_name":                  "testHost80",
 						"password":                   "12345678abcABC",
 						"period_unit":                "Month",
 						"ip_type":                    "ipv4",
 						"auto_renew":                 "true",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "false",
 						"status":                     "Stopped",
 						"force_stop":                 "true",
@@ -1347,7 +1347,7 @@ func TestAccAliCloudEnsInstance_basic7639(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-zhangjiakou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1491,7 +1491,7 @@ func TestAccAliCloudEnsInstance_basic7627(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1511,7 +1511,7 @@ func TestAccAliCloudEnsInstance_basic7627(t *testing.T) {
 					"amount":                     "1",
 					"internet_charge_type":       "95BandwidthByMonth",
 					"ens_region_id":              "sg-singapore-9",
-					"auto_release_time":          "2024-09-10T18:00:00Z",
+					"auto_release_time":          "2027-09-10T18:00:00Z",
 					"internet_max_bandwidth_out": "0",
 					"period_unit":                "Month",
 					"billing_cycle":              "Day",
@@ -1530,7 +1530,7 @@ func TestAccAliCloudEnsInstance_basic7627(t *testing.T) {
 						"amount":                     "1",
 						"internet_charge_type":       "95BandwidthByMonth",
 						"ens_region_id":              "sg-singapore-9",
-						"auto_release_time":          "2024-09-10T18:00:00Z",
+						"auto_release_time":          "2027-09-10T18:00:00Z",
 						"internet_max_bandwidth_out": "0",
 						"period_unit":                "Month",
 						"billing_cycle":              "Day",
@@ -1584,7 +1584,7 @@ func TestAccAliCloudEnsInstance_basic5608_raw(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1614,14 +1614,14 @@ func TestAccAliCloudEnsInstance_basic5608_raw(t *testing.T) {
 					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 					"payment_type":               "Subscription",
 					"instance_type":              "ens.sn1.stiny",
-					"host_name":                  "InstanceHostName_autotest",
+					"host_name":                  "testHost80",
 					"password":                   "12345678abcABC",
 					"period_unit":                "Month",
 					"ip_type":                    "ipv4",
 					"auto_renew":                 "false",
 					"unique_suffix":              "false",
 					"auto_use_coupon":            "true",
-					"ens_region_id":              "cn-nanjing-cmcc",
+					"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 					"password_inherit":           "false",
 					"status":                     "Running",
 				}),
@@ -1641,14 +1641,14 @@ func TestAccAliCloudEnsInstance_basic5608_raw(t *testing.T) {
 						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
 						"payment_type":               "Subscription",
 						"instance_type":              "ens.sn1.stiny",
-						"host_name":                  "InstanceHostName_autotest",
+						"host_name":                  "testHost80",
 						"password":                   "12345678abcABC",
 						"period_unit":                "Month",
 						"ip_type":                    "ipv4",
 						"auto_renew":                 "false",
 						"unique_suffix":              "false",
 						"auto_use_coupon":            "true",
-						"ens_region_id":              "cn-nanjing-cmcc",
+						"ens_region_id":              "cn-wuxi-telecom_unicom_cmcc-2",
 						"password_inherit":           "false",
 						"status":                     "Running",
 					}),

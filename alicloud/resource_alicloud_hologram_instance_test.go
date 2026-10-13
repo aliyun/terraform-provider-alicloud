@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Hologram Instance. >>> Resource test cases, automatically generated.
@@ -29,7 +29,7 @@ func TestAccAliCloudHologramInstance_basic3920(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -298,7 +298,7 @@ func TestAccAliCloudHologramInstance_basic4132(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -536,7 +536,7 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSharedSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -573,16 +573,6 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cold_storage_size": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cpu": "32",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cpu": "32",
 					}),
 				),
 			},
@@ -668,7 +658,6 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 					"cold_storage_size": "0",
 					"zone_id":           "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle":     "Hour",
-					"cpu":               "32",
 					"storage_size":      "0",
 					"duration":          "1",
 					"auto_pay":          "true",
@@ -693,7 +682,6 @@ func TestAccAliCloudHologramInstance_basic4785(t *testing.T) {
 						"cold_storage_size": "0",
 						"zone_id":           CHECKSET,
 						"pricing_cycle":     "Hour",
-						"cpu":               "32",
 						"storage_size":      "0",
 						"duration":          "1",
 						"auto_pay":          "true",
@@ -814,7 +802,7 @@ func TestAccAliCloudHologramInstance_basic3916(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1028,7 +1016,7 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1337,7 +1325,7 @@ func SkipTestAccAliCloudHologramInstance_basic4783(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1640,7 +1628,7 @@ func TestAccAliCloudHologramInstance_basic3920_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1720,7 +1708,7 @@ func TestAccAliCloudHologramInstance_basic4132_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1741,9 +1729,6 @@ func TestAccAliCloudHologramInstance_basic4132_twin(t *testing.T) {
 							"vswitch_id": "${alicloud_vswitch.defaultVSwitch.id}",
 							"vpc_id":     "${alicloud_vswitch.defaultVSwitch.vpc_id}",
 						},
-						{
-							"type": "Internet",
-						},
 					},
 					"scale_type": "UPGRADE",
 					"status":     "Running",
@@ -1761,7 +1746,7 @@ func TestAccAliCloudHologramInstance_basic4132_twin(t *testing.T) {
 						"cpu":           "32",
 						"instance_name": name,
 						"payment_type":  "PayAsYouGo",
-						"endpoints.#":   "3",
+						"endpoints.#":   "2",
 						"scale_type":    "UPGRADE",
 						"status":        "Running",
 						"tags.%":        "2",
@@ -1799,7 +1784,7 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSharedSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1807,7 +1792,6 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 					"cold_storage_size": "0",
 					"zone_id":           "${alicloud_vswitch.defaultVSwitch.zone_id}",
 					"pricing_cycle":     "Hour",
-					"cpu":               "32",
 					"storage_size":      "0",
 					"duration":          "1",
 					"auto_pay":          "true",
@@ -1826,7 +1810,6 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 					},
 					"status":            "Running",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"scale_type":        "UPGRADE",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -1837,7 +1820,6 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 						"cold_storage_size": "0",
 						"zone_id":           CHECKSET,
 						"pricing_cycle":     "Hour",
-						"cpu":               "32",
 						"storage_size":      "0",
 						"duration":          "1",
 						"auto_pay":          "true",
@@ -1847,7 +1829,6 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 						"endpoints.#":       "2",
 						"status":            "Running",
 						"resource_group_id": CHECKSET,
-						"scale_type":        "UPGRADE",
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.For":          "Test",
@@ -1883,7 +1864,7 @@ func SkipTestAccAliCloudHologramInstance_basic3916_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1965,7 +1946,7 @@ func TestAccAliCloudHologramInstance_basic4858_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -2051,7 +2032,7 @@ func SkipTestAccAliCloudHologramInstance_basic4783_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

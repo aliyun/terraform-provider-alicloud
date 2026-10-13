@@ -9,8 +9,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudCSServerlessKubernetesClusters() *schema.Resource {
@@ -91,7 +91,7 @@ func dataSourceAlicloudCSServerlessKubernetesClusters() *schema.Resource {
 							Computed: true,
 						},
 						"connections": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -264,7 +264,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 			connection["api_server_intranet"] = endpoints.IntranetApiServerEndpoint
 		}
 
-		mapping["connections"] = connection
+		mapping["connections"] = []interface{}{connection}
 
 		request := vpc.CreateDescribeNatGatewaysRequest()
 		request.VpcId = ct.VpcId

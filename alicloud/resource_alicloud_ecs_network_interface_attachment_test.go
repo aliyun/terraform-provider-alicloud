@@ -11,9 +11,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ func TestAccAliCloudECSNetworkInterfaceAttachment_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -76,7 +76,7 @@ func TestAccAliCloudECSNetworkInterfaceAttachment_basic0_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -122,7 +122,7 @@ func TestAccAliCloudECSNetworkInterfaceAttachment_basic1_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -166,7 +166,7 @@ func TestAccAliCloudECSNetworkInterfaceAttachmentMulti(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -190,13 +190,10 @@ func AliCloudAliCloudEcsNetworkInterfaceAttachmentBasicDependence0(name string) 
   		default = "%s"
 	}
 
-	data "alicloud_zones" "default" {
-  		available_resource_creation = "Instance"
-	}
-
 	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.g7nex"
+  		instance_type_family = "ecs.g7"
+		system_disk_category = "cloud_essd"
+		eni_amount           = 3
 	}
 
 	data "alicloud_images" "default" {
@@ -214,7 +211,7 @@ func AliCloudAliCloudEcsNetworkInterfaceAttachmentBasicDependence0(name string) 
   		vswitch_name = var.name
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = "192.168.192.0/24"
-  		zone_id      = data.alicloud_zones.default.zones.0.id
+  		zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 	}
 
 	resource "alicloud_security_group" "default" {
@@ -261,6 +258,12 @@ func AliCloudAliCloudEcsNetworkInterfaceAttachmentBasicDependence1(name string) 
   		default = "%s"
 	}
 
+	data "alicloud_zones" "default" {
+  		available_instance_type     = "ecs.g7nex.32xlarge"
+  		available_disk_category     = "cloud_essd"
+  		available_resource_creation = "VSwitch"
+	}
+
 	data "alicloud_images" "default" {
   		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
@@ -276,7 +279,7 @@ func AliCloudAliCloudEcsNetworkInterfaceAttachmentBasicDependence1(name string) 
   		vswitch_name = var.name
   		vpc_id       = alicloud_vpc.default.id
   		cidr_block   = "192.168.192.0/24"
-  		zone_id      = "cn-hangzhou-k"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
 	}
 
 	resource "alicloud_security_group" "default" {
@@ -291,7 +294,7 @@ func AliCloudAliCloudEcsNetworkInterfaceAttachmentBasicDependence1(name string) 
   		security_groups            = alicloud_security_group.default.*.id
   		internet_charge_type       = "PayByTraffic"
   		internet_max_bandwidth_out = "10"
-  		availability_zone          = "cn-hangzhou-k"
+  		availability_zone          = data.alicloud_zones.default.zones.0.id
   		instance_charge_type       = "PostPaid"
   		system_disk_category       = "cloud_essd"
   		vswitch_id                 = alicloud_vswitch.default.id
@@ -374,7 +377,7 @@ func AliCloudEcsNetworkInterfaceAttachmentBasicDependenceMulti(name string) stri
 
 // lintignore: R001
 func TestUnitAliCloudECSNetworkInterfaceAttachment(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_network_interface_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_network_interface_attachment"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()

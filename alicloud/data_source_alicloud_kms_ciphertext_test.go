@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestAccAlicloudKMSCiphertextDataSource(t *testing.T) {
+func TestAccAliCloudKmsCiphertextDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kms_ciphertext.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceKmsCiphertextDependence)

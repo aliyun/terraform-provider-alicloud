@@ -6,8 +6,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudPolarDBEndpointAddressConfigUpdate(t *testing.T) {
@@ -36,8 +36,8 @@ func TestAccAliCloudPolarDBEndpointAddressConfigUpdate(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -86,12 +86,12 @@ func resourcePolarDBEndpointAddressConfigDependence(name string) string {
 	}
 
 	resource "alicloud_polardb_cluster" "default" {
-		db_type = "MySQL"
-		db_version = "8.0"
-		pay_type = "PostPaid"
-	    db_node_class = "polar.mysql.x4.large"
-		vswitch_id = local.vswitch_id
-		description = "${var.name}"
+		db_type       = "MySQL"
+		db_version    = "8.0"
+		pay_type      = "PostPaid"
+		db_node_class = "polar.mysql.x4.large"
+		vswitch_id    = local.vswitch_id
+		description   = "${var.name}"
 		lifecycle {
 			ignore_changes = [encrypt_new_tables]
 		}

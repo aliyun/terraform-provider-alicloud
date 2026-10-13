@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test ESA SiteDeliveryTask. >>> Resource test cases, automatically generated.
@@ -30,7 +30,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_test(t *testing
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -127,7 +127,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "resource_Site_task_test" {
-  site_name   = "chenxin0116.site"
+  site_name   = "${lower(var.name)}.com"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"
@@ -156,7 +156,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_http_test(t *te
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -235,7 +235,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "resource_Site_http_test" {
-  site_name   = "chenxin0116.site"
+  site_name   = "${lower(var.name)}.com"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"
@@ -264,7 +264,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_oss_test_test(t
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -331,7 +331,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "resource_Site_http_test" {
-  site_name   = "chenxin0116.site"
+  site_name   = "${lower(var.name)}.com"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"
@@ -360,7 +360,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_kafka_test_test
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -433,7 +433,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "resource_Site_http_test" {
-  site_name   = "chenxin0116.site"
+  site_name   = "${lower(var.name)}.com"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"
@@ -462,7 +462,7 @@ func TestAccAliCloudESASiteDeliveryTaskresource_SiteDeliveryTask_aws3_test_test(
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -533,7 +533,7 @@ data "alicloud_esa_sites" "default" {
 }
 
 resource "alicloud_esa_site" "resource_Site_http_test" {
-  site_name   = "chenxin0116.site"
+  site_name   = "${lower(var.name)}.com"
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"

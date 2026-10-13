@@ -3,10 +3,10 @@ package alicloud
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRdsDBZonesDataSource(t *testing.T) {
+func TestAccAliCloudRdsDBZonesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_db_zones.default"
 

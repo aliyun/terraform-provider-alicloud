@@ -10,9 +10,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func init() {
@@ -113,7 +113,7 @@ func TestAccAliCloudEssScheduledTask_basic(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -244,7 +244,7 @@ func TestAccAliCloudEssScheduledTask_basic_2(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -346,7 +346,7 @@ func TestAccAliCloudEssScheduledTask_basic_3(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -444,7 +444,7 @@ func TestAccAliCloudEssScheduledTask_basic4(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -509,7 +509,7 @@ func TestAccAliCloudEssScheduledTask_multi(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -554,7 +554,7 @@ func TestAccAliCloudEssScheduledTask_max_min_supportZero(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -624,6 +624,7 @@ func testAccEssScheduleConfig(common string) string {
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
+		system_disk_category = "cloud_essd"
 	}
 	
 	resource "alicloud_ess_scaling_rule" "default" {
@@ -633,7 +634,7 @@ func testAccEssScheduleConfig(common string) string {
 		cooldown = 60
 	}
 
-	`, EcsInstanceCommonTestCase, common)
+	`, EssInstanceCommonTestCase, common)
 }
 
 func testAccEssScheduleConfig1(common string) string {
@@ -658,6 +659,7 @@ func testAccEssScheduleConfig1(common string) string {
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
+		system_disk_category = "cloud_essd"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default1" {
@@ -675,6 +677,7 @@ func testAccEssScheduleConfig1(common string) string {
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
+		system_disk_category = "cloud_essd"
 	}
 	resource "alicloud_ess_scaling_rule" "default" {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
@@ -690,5 +693,5 @@ func testAccEssScheduleConfig1(common string) string {
 		cooldown = 60
 	}
 
-	`, EcsInstanceCommonTestCase, common)
+	`, EssInstanceCommonTestCase, common)
 }

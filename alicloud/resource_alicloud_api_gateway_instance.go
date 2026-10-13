@@ -1,7 +1,7 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudApiGatewayInstance() *schema.Resource {
@@ -26,6 +26,14 @@ func resourceAliCloudApiGatewayInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(25 * time.Minute),
 			Update: schema.DefaultTimeout(25 * time.Minute),
 			Delete: schema.DefaultTimeout(25 * time.Minute),
+		},
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Version: 0,
+				Type:    resourceAliCloudApiGatewayInstanceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceAliCloudApiGatewayInstanceStateUpgradeV0,
+			},
 		},
 		Schema: map[string]*schema.Schema{
 			"create_time": {
@@ -136,7 +144,7 @@ func resourceAliCloudApiGatewayInstance() *schema.Resource {
 				Computed: true,
 			},
 			"to_connect_vpc_ip_block": {
-				Type:          schema.TypeMap,
+				Type:          schema.TypeList,
 				Optional:      true,
 				ConflictsWith: []string{"delete_vpc_ip_block"},
 				Elem: &schema.Resource{
@@ -235,16 +243,16 @@ func resourceAliCloudApiGatewayInstanceCreate(d *schema.ResourceData, meta inter
 		request["Duration"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 		request["Token"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -339,8 +347,8 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 		request["IPV6Enabled"] = v
 	}
 	if d.HasChange("to_connect_vpc_ip_block") {
-		if v, ok := d.GetOk("to_connect_vpc_ip_block"); ok {
-			originalVpcIpBlock := v.(map[string]interface{})
+		if v, ok := d.GetOk("to_connect_vpc_ip_block"); ok && len(v.([]interface{})) > 0 {
+			originalVpcIpBlock := v.([]interface{})[0].(map[string]interface{})
 			newVpcIpBlock := make(map[string]interface{})
 			if cidrBlock, ok := originalVpcIpBlock["cidr_block"]; ok {
 				newVpcIpBlock["CidrBlock"] = cidrBlock
@@ -369,15 +377,15 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -407,16 +415,16 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 			request["Token"] = buildClientToken(action)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -448,16 +456,16 @@ func resourceAliCloudApiGatewayInstanceUpdate(d *schema.ResourceData, meta inter
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 			request["Token"] = buildClientToken(action)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -487,15 +495,15 @@ func resourceAliCloudApiGatewayInstanceDelete(d *schema.ResourceData, meta inter
 	query["InstanceId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -556,4 +564,171 @@ func convertApiGatewayInstanceChargeTypeRequest(source interface{}) interface{} 
 		return "PREPAY"
 	}
 	return source
+}
+
+func resourceAliCloudApiGatewayInstanceV0() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"egress_ipv6_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"ipv6_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"https_policy": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"instance_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"instance_spec": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"payment_type": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"pricing_cycle": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"support_ipv6": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"user_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vpc_slb_intranet_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"instance_cidr": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"zone_vswitch_security_group": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"zone_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"cidr_block": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"security_group": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"connect_cidr_blocks": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			// lintignore: S022
+			"to_connect_vpc_ip_block": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cidr_block": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"customized": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"delete_vpc_ip_block": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"skip_wait_switch": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"ingress_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ingress_vpc_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ingress_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudApiGatewayInstanceStateUpgradeV0(_ context.Context, rawState map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+	if v, ok := rawState["to_connect_vpc_ip_block"]; ok && v != nil {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			if len(val) > 0 {
+				rawState["to_connect_vpc_ip_block"] = []interface{}{val}
+			} else {
+				rawState["to_connect_vpc_ip_block"] = []interface{}{}
+			}
+		}
+	}
+	return rawState, nil
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudClickHouseDbClusterDataSource(t *testing.T) {
@@ -95,7 +95,7 @@ func TestAccAlicloudClickHouseDbClusterDataSource(t *testing.T) {
 			"clusters.0.scale_out_status.#":       "0",
 			"clusters.0.storage_type":             "CloudESSD",
 			"clusters.0.support_backup":           "1",
-			"clusters.0.support_https_port":       "true",
+			"clusters.0.support_https_port":       "false",
 			"clusters.0.support_mysql_port":       "true",
 			"clusters.0.vswitch_id":               CHECKSET,
 			"clusters.0.vpc_cloud_instance_id":    CHECKSET,
@@ -143,7 +143,7 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
 }
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "20.3.10.75"
+  db_cluster_version      = "23.8"
   status                  = "Running"
   category                = "Basic"
   db_cluster_class        = "S8"

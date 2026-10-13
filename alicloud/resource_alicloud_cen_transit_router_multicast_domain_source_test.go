@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Case 1
-func TestAccAlicloudCenTransitRouterMulticastDomainSource_basic1903(t *testing.T) {
+func TestAccAliCloudCenTransitRouterMulticastDomainSource_basic1903(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_multicast_domain_source.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMulticastDomainSourceMap1903)
@@ -28,7 +28,7 @@ func TestAccAlicloudCenTransitRouterMulticastDomainSource_basic1903(t *testing.T
 			testAccPreCheckWithRegions(t, true, connectivity.CenSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -157,7 +157,7 @@ resource "alicloud_cen_transit_router_multicast_domain_association" "default" {
 }
 
 // Case 2
-func TestAccAlicloudCenTransitRouterMulticastDomainSource_basic0(t *testing.T) {
+func TestAccAliCloudCenTransitRouterMulticastDomainSource_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_multicast_domain_source.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMulticastDomainSourceMap0)
@@ -175,7 +175,7 @@ func TestAccAlicloudCenTransitRouterMulticastDomainSource_basic0(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

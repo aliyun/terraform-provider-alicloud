@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudHbrUdmSnapshotDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+func TestAccAliCloudHbrUdmSnapshotDataSource(t *testing.T) {
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	allConf := dataSourceTestAccConfig{
@@ -19,7 +19,7 @@ func TestAccAlicloudHbrUdmSnapshotDataSource(t *testing.T) {
 			"source_type": `"UDM_ECS"`,
 			"start_time":  `"1642057551"`,
 			"end_time":    `"1750927687"`,
-			"instance_id": `"i-gw862uxmqlzyoudv57sb"`,
+			"instance_id": `"i-bp1bo1iozgsxrzfbktkp"`, // should be a valid instance id and not hard coded
 		}),
 		fakeConfig: testAccCheckAlicloudHbrUdmSnapshotSourceConfig(rand, map[string]string{
 			"source_type": `"UDM_ECS"`,

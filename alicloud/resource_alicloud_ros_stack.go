@@ -1,15 +1,16 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudRosStack() *schema.Resource {
@@ -213,14 +214,14 @@ func resourceAlicloudRosStackCreate(d *schema.ResourceData, meta interface{}) er
 
 	request["ClientToken"] = buildClientToken("CreateStack")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -291,7 +292,16 @@ func resourceAlicloudRosStackRead(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("stack_policy_body", getStackPolicyObject["StackPolicyBody"])
+	if policyBody := getStackPolicyObject["StackPolicyBody"]; policyBody != nil {
+		switch v := policyBody.(type) {
+		case string:
+			d.Set("stack_policy_body", v)
+		default:
+			if marshaled, err := json.Marshal(v); err == nil {
+				d.Set("stack_policy_body", string(marshaled))
+			}
+		}
+	}
 	return nil
 }
 
@@ -306,7 +316,6 @@ func resourceAlicloudRosStackUpdate(d *schema.ResourceData, meta interface{}) er
 		if err := rosService.SetResourceTags(d, "stack"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	update := false
 	request := map[string]interface{}{
@@ -367,14 +376,14 @@ func resourceAlicloudRosStackUpdate(d *schema.ResourceData, meta interface{}) er
 		action := "UpdateStack"
 		request["ClientToken"] = buildClientToken("UpdateStack")
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -386,11 +395,6 @@ func resourceAlicloudRosStackUpdate(d *schema.ResourceData, meta interface{}) er
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("disable_rollback")
-		d.SetPartial("parameters")
-		d.SetPartial("ram_role_name")
-		d.SetPartial("stack_policy_body")
-		d.SetPartial("timeout_in_minutes")
 	}
 	d.Partial(false)
 	return resourceAlicloudRosStackRead(d, meta)
@@ -416,14 +420,14 @@ func resourceAlicloudRosStackDelete(d *schema.ResourceData, meta interface{}) er
 		request["RetainResources"] = v.(*schema.Set).List()
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

@@ -7,8 +7,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudImageImport() *schema.Resource {
@@ -205,16 +205,16 @@ func resourceAliCloudImageImportCreate(d *schema.ResourceData, meta interface{})
 	var raw interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ImportImage(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -289,22 +289,22 @@ func resourceAliCloudImageImportUpdate(d *schema.ResourceData, meta interface{})
 	// verification.
 	if d.HasChange("image_name") || d.HasChange("description") || d.HasChange("features") {
 		wait := incrementalWait(1*time.Second, 2*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			object, err := ecsService.DescribeImageById(d.Id())
 			if err != nil {
-				return resource.NonRetryableError(WrapError(err))
+				return retry.NonRetryableError(WrapError(err))
 			}
 			if v, ok := d.GetOk("image_name"); ok && object.ImageName != v.(string) {
 				wait()
-				return resource.RetryableError(fmt.Errorf("expected image name %q is not visible yet, got %q", v.(string), object.ImageName))
+				return retry.RetryableError(fmt.Errorf("expected image name %q is not visible yet, got %q", v.(string), object.ImageName))
 			}
 			if v, ok := d.GetOk("description"); ok && object.Description != v.(string) {
 				wait()
-				return resource.RetryableError(fmt.Errorf("expected image description %q is not visible yet, got %q", v.(string), object.Description))
+				return retry.RetryableError(fmt.Errorf("expected image description %q is not visible yet, got %q", v.(string), object.Description))
 			}
 			if v, ok := d.GetOk("features.0.nvme_support"); ok && object.Features.NvmeSupport != v.(string) {
 				wait()
-				return resource.RetryableError(fmt.Errorf("expected nvme_support %q is not visible yet, got %q", v.(string), object.Features.NvmeSupport))
+				return retry.RetryableError(fmt.Errorf("expected nvme_support %q is not visible yet, got %q", v.(string), object.Features.NvmeSupport))
 			}
 			return nil
 		})
@@ -313,7 +313,7 @@ func resourceAliCloudImageImportUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	return resourceAliCloudImageRead(d, meta)
+	return resourceAliCloudImageImportRead(d, meta)
 }
 
 func resourceAliCloudImageImportDelete(d *schema.ResourceData, meta interface{}) error {

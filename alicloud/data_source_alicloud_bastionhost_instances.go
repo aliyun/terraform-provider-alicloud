@@ -9,9 +9,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudBastionhostInstances() *schema.Resource {
@@ -150,14 +150,14 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 	var err error
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -217,10 +217,10 @@ func dataSourceAlicloudBastionhostInstancesRead(d *schema.ResourceData, meta int
 		if v, err := strconv.ParseInt(getResp["Storage"].(json.Number).String(), 10, 64); err != nil {
 			return WrapError(err)
 		} else {
-			d.Set("storage", fmt.Sprint(bytesToTB(v)-1))
+			mapping["storage"] = fmt.Sprint(bytesToTB(v) - 1)
 		}
 
-		d.Set("bandwidth", getResp["BandwidthPackage"])
+		mapping["bandwidth"] = getResp["BandwidthPackage"]
 
 		getResp2, err := bastionhostService.ListTagResources(id, "INSTANCE")
 		if err != nil {

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudMongodbShardingNetworkPublicAddressesDataSource(t *testing.T) {
@@ -48,6 +48,7 @@ func TestAccAlicloudMongodbShardingNetworkPublicAddressesDataSource(t *testing.T
 
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 	alicloudMongodbShardingNetworkPublicAddressesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
 }

@@ -8,8 +8,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type ThreatDetectionServiceV2 struct {
@@ -31,18 +31,18 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (o
 
 	request["CommodityCode"] = "sas"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Sas", "2018-12-03", action, query, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NODATA"}) {
 				endpoint = connectivity.SaSOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -88,13 +88,13 @@ func (s *ThreatDetectionServiceV2) DescribeInstanceQueryAvailableInstances(d *sc
 	action := "QueryAvailableInstances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = "sas"
@@ -104,9 +104,9 @@ func (s *ThreatDetectionServiceV2) DescribeInstanceQueryAvailableInstances(d *sc
 					request["ProductType"] = "sas_postpaid_public_intl"
 				}
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -132,7 +132,7 @@ func (s *ThreatDetectionServiceV2) DescribeInstanceQueryAvailableInstances(d *sc
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionInstance(id)
 		if err != nil {
@@ -178,15 +178,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientUserDefineRule(i
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -209,7 +209,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientUserDefineRule(i
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionClientUserDefineRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionClientUserDefineRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionClientUserDefineRule(id)
 		if err != nil {
@@ -246,15 +246,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionLogMeta(id string) (ob
 	action := "GetLogMeta"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -276,7 +276,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionLogMeta(id string) (ob
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionLogMetaStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionLogMetaStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionLogMeta(id)
 		if err != nil {
@@ -322,15 +322,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientFileProtect(id s
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -348,7 +348,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionClientFileProtect(id s
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionClientFileProtectStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionClientFileProtectStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionClientFileProtect(id)
 		if err != nil {
@@ -389,15 +389,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionFileUploadLimit(id str
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -420,7 +420,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionFileUploadLimit(id str
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionFileUploadLimitStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionFileUploadLimitStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionFileUploadLimit(id)
 		if err != nil {
@@ -455,14 +455,14 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionRdDefaultSyncList(id s
 	action := "ListRdDefaultSyncList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -502,15 +502,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMaliciousFileWhitelist
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -528,7 +528,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMaliciousFileWhitelist
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionMaliciousFileWhitelistConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionMaliciousFileWhitelistConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionMaliciousFileWhitelistConfig(id)
 		if err != nil {
@@ -565,15 +565,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionImageEventOperation(id
 	action := "GetImageEventOperation"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -593,7 +593,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionImageEventOperation(id
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionImageEventOperationStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionImageEventOperationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionImageEventOperation(id)
 		if err != nil {
@@ -643,15 +643,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionSasTrail(id string) (o
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -674,7 +674,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionSasTrail(id string) (o
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionSasTrailStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionSasTrailStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionSasTrail(id)
 		if err != nil {
@@ -711,15 +711,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionOssScanConfig(id strin
 	action := "GetOssScanConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -741,11 +741,11 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionOssScanConfig(id strin
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionOssScanConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionOssScanConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ThreatDetectionOssScanConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeThreatDetectionOssScanConfig)
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionOssScanConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionOssScanConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -789,15 +789,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAntiBruteForceRule(id 
 	action := "DescribeAntiBruteForceRules"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -823,7 +823,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAntiBruteForceRule(id 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionAntiBruteForceRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionAntiBruteForceRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionAntiBruteForceRule(id)
 		if err != nil {
@@ -868,15 +868,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAssetSelectionConfig(i
 	action := "GetAssetSelectionConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -898,7 +898,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAssetSelectionConfig(i
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionAssetSelectionConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionAssetSelectionConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionAssetSelectionConfig(id)
 		if err != nil {
@@ -942,15 +942,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAssetBind(id string) (
 	action := "DescribeAssetDetailByUuid"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -967,7 +967,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAssetBind(id string) (
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionAssetBindStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionAssetBindStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionAssetBind(id)
 		if err != nil {
@@ -1011,15 +1011,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionCycleTask(id string) (
 	action := "DescribeCycleTaskList"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1040,7 +1040,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionCycleTask(id string) (
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionCycleTaskStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionCycleTaskStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionCycleTask(id)
 		if err != nil {
@@ -1086,15 +1086,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAttackPathSensitiveAss
 	action := "GetAttackPathSensitiveAssetConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1116,7 +1116,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAttackPathSensitiveAss
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionAttackPathSensitiveAssetConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionAttackPathSensitiveAssetConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeThreatDetectionAttackPathSensitiveAssetConfig(id)
 		if err != nil {
@@ -1159,15 +1159,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionCheckItemConfig(id str
 	action := "ListCheckItem"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1188,11 +1188,11 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionCheckItemConfig(id str
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionCheckItemConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionCheckItemConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ThreatDetectionCheckItemConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeThreatDetectionCheckItemConfig)
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionCheckItemConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionCheckItemConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1234,15 +1234,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionCheckStructure(id stri
 	action := "GetCheckStructure"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1268,11 +1268,11 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionCheckStructure(id stri
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionCheckStructureStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionCheckStructureStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ThreatDetectionCheckStructureStateRefreshFuncWithApi(id, field, failStates, s.DescribeThreatDetectionCheckStructure)
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionCheckStructureStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionCheckStructureStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1314,15 +1314,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionCheckConfig(id string)
 	action := "GetCheckConfig"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1334,11 +1334,11 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionCheckConfig(id string)
 	return response, nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionCheckConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionCheckConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ThreatDetectionCheckConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeThreatDetectionCheckConfig)
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionCheckConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionCheckConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1381,15 +1381,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionServiceLinkedRole(id s
 	action := "DescribeServiceLinkedRoleStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1411,11 +1411,11 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionServiceLinkedRole(id s
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionServiceLinkedRoleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionServiceLinkedRoleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ThreatDetectionServiceLinkedRoleStateRefreshFuncWithApi(id, field, failStates, s.DescribeThreatDetectionServiceLinkedRole)
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionServiceLinkedRoleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionServiceLinkedRoleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1443,7 +1443,7 @@ func (s *ThreatDetectionServiceV2) ThreatDetectionServiceLinkedRoleStateRefreshF
 	}
 }
 
-func (s *ThreatDetectionServiceV2) DescribeAsyncThreatDetectionServiceLinkedRoleStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) DescribeAsyncThreatDetectionServiceLinkedRoleStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncDescribeServiceLinkedRoleStatus(d, res)
 		if err != nil {
@@ -1488,15 +1488,15 @@ func (s *ThreatDetectionServiceV2) DescribeAsyncDescribeServiceLinkedRoleStatus(
 	action := "DescribeServiceLinkedRoleStatus"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1522,15 +1522,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMonitorAccount(id stri
 	action := "DescribeMonitorAccounts"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1547,11 +1547,11 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionMonitorAccount(id stri
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionMonitorAccountStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionMonitorAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ThreatDetectionMonitorAccountStateRefreshFuncWithApi(id, field, failStates, s.DescribeThreatDetectionMonitorAccount)
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionMonitorAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionMonitorAccountStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
@@ -1595,15 +1595,15 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAttackPathWhitelist(id
 	action := "GetAttackPathWhitelist"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1623,11 +1623,11 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionAttackPathWhitelist(id
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionAttackPathWhitelistStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionAttackPathWhitelistStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ThreatDetectionAttackPathWhitelistStateRefreshFuncWithApi(id, field, failStates, s.DescribeThreatDetectionAttackPathWhitelist)
 }
 
-func (s *ThreatDetectionServiceV2) ThreatDetectionAttackPathWhitelistStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ThreatDetectionServiceV2) ThreatDetectionAttackPathWhitelistStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

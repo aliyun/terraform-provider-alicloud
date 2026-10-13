@@ -4,14 +4,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func fixture(steps string) string {
 	return `package alicloud
 import (
  "testing"
- "github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+ "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 func TestAccExample(t *testing.T) {
  resourceId := "alicloud_example.default"
@@ -87,10 +87,10 @@ func TestCandidatesAndNestedList(t *testing.T) {
 		"outer": {Type: schema.TypeSet, Optional: true, Elem: &schema.Resource{Schema: map[string]*schema.Schema{
 			"ids": {Type: schema.TypeList, Required: true},
 		}}},
-		"plain_set":       {Type: schema.TypeSet, Optional: true},
-		"single":          {Type: schema.TypeList, Optional: true, MaxItems: 1},
-		"output":          {Type: schema.TypeList, Computed: true},
-		"removed":         {Type: schema.TypeList, Optional: true, Removed: "gone"},
+		"plain_set": {Type: schema.TypeSet, Optional: true},
+		"single":    {Type: schema.TypeList, Optional: true, MaxItems: 1},
+		"output":    {Type: schema.TypeList, Computed: true},
+		//"removed":         {Type: schema.TypeList, Optional: true, Removed: "gone"},
 		"computed_parent": {Type: schema.TypeList, Computed: true, Elem: &schema.Resource{Schema: map[string]*schema.Schema{"child": {Type: schema.TypeList, Optional: true}}}},
 	}}
 	apply := `{Config:testAccConfig(map[string]interface{}{"outer":[]map[string]interface{}{{"ids":[]int{1,2},"name":"same"}}})},`
@@ -156,7 +156,7 @@ func suppressedFixture(steps, unit string) string {
 	return `package alicloud
 import (
  "testing"
- "github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+ "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 ` + unit + `
 func TestAccExample(t *testing.T) {

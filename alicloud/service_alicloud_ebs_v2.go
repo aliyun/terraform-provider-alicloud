@@ -1,14 +1,15 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type EbsServiceV2 struct {
@@ -34,15 +35,15 @@ func (s *EbsServiceV2) DescribeEbsReplicaPairDrill(id string) (object map[string
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -65,7 +66,7 @@ func (s *EbsServiceV2) DescribeEbsReplicaPairDrill(id string) (object map[string
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EbsServiceV2) EbsReplicaPairDrillStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EbsServiceV2) EbsReplicaPairDrillStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsReplicaPairDrill(id)
 		if err != nil {
@@ -108,15 +109,15 @@ func (s *EbsServiceV2) DescribeEbsReplicaGroupDrill(id string) (object map[strin
 	query["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -139,7 +140,7 @@ func (s *EbsServiceV2) DescribeEbsReplicaGroupDrill(id string) (object map[strin
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EbsServiceV2) EbsReplicaGroupDrillStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EbsServiceV2) EbsReplicaGroupDrillStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsReplicaGroupDrill(id)
 		if err != nil {
@@ -178,16 +179,16 @@ func (s *EbsServiceV2) DescribeEbsEnterpriseSnapshotPolicy(id string) (object ma
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -215,7 +216,7 @@ func (s *EbsServiceV2) DescribeEbsEnterpriseSnapshotPolicy(id string) (object ma
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsEnterpriseSnapshotPolicy(id)
 		if err != nil {
@@ -238,6 +239,55 @@ func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyStateRefreshFunc(id string, fi
 }
 
 // DescribeEbsEnterpriseSnapshotPolicy >>> Encapsulated.
+
+// TagResources <<< Encapsulated TagResources call for Ebs.
+func (s *EbsServiceV2) TagResources(d *schema.ResourceData, resourceType string, tags map[string]interface{}) error {
+	if len(tags) == 0 {
+		return nil
+	}
+	client := s.client
+	action := "TagResources"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"ClientToken":  buildClientToken(action),
+		"ResourceType": resourceType,
+		"ResourceId.1": d.Id(),
+	}
+	count := 1
+	for key, value := range tags {
+		if ignoredTags(key, fmt.Sprint(value)) {
+			continue
+		}
+		request[fmt.Sprintf("Tag.%d.Key", count)] = key
+		request[fmt.Sprintf("Tag.%d.Value", count)] = value
+		count++
+	}
+	if count == 1 {
+		return nil
+	}
+
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		var err error
+		response, err = client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+// TagResources >>> Encapsulated TagResources call for Ebs.
 
 // SetResourceTags <<< Encapsulated tag function for Ebs.
 func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
@@ -269,14 +319,14 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -303,14 +353,14 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 			request["ResourceType"] = resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -346,16 +396,16 @@ func (s *EbsServiceV2) DescribeEbsEnterpriseSnapshotPolicyAttachment(id string) 
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -378,7 +428,7 @@ func (s *EbsServiceV2) DescribeEbsEnterpriseSnapshotPolicyAttachment(id string) 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsEnterpriseSnapshotPolicyAttachment(id)
 		if err != nil {
@@ -416,16 +466,16 @@ func (s *EbsServiceV2) DescribeEbsSolutionInstance(id string) (object map[string
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -453,7 +503,7 @@ func (s *EbsServiceV2) DescribeEbsSolutionInstance(id string) (object map[string
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EbsServiceV2) EbsSolutionInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EbsServiceV2) EbsSolutionInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsSolutionInstance(id)
 		if err != nil {
@@ -491,15 +541,15 @@ func (s *EbsServiceV2) DescribeEbsDiskReplicaPair(id string) (object map[string]
 	action := "DescribeDiskReplicaPairs"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -520,7 +570,7 @@ func (s *EbsServiceV2) DescribeEbsDiskReplicaPair(id string) (object map[string]
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EbsServiceV2) EbsDiskReplicaPairStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EbsServiceV2) EbsDiskReplicaPairStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsDiskReplicaPair(id)
 		if err != nil {
@@ -564,15 +614,15 @@ func (s *EbsServiceV2) DescribeEbsDiskReplicaGroup(id string) (object map[string
 	action := "DescribeDiskReplicaGroups"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -606,16 +656,16 @@ func (s *EbsServiceV2) DescribeDiskReplicaGroupListTagResources(id string) (obje
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -627,7 +677,7 @@ func (s *EbsServiceV2) DescribeDiskReplicaGroupListTagResources(id string) (obje
 	return response, nil
 }
 
-func (s *EbsServiceV2) EbsDiskReplicaGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *EbsServiceV2) EbsDiskReplicaGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsDiskReplicaGroup(id)
 		if err != nil {

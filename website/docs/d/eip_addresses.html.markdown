@@ -7,7 +7,7 @@ description: |-
   Provides a list of Eip Addresses to the user.
 ---
 
-# alicloud\_eip\_addresses
+# alicloud_eip_addresses
 
 This data source provides the Eip Addresses of the current Alibaba Cloud user.
 

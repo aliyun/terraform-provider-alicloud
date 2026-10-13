@@ -6,9 +6,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudClickHouseDbClusters() *schema.Resource {
@@ -68,11 +68,6 @@ func dataSourceAlicloudClickHouseDbClusters() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"db_cluster_ip_array_attribute": {
-										Type:     schema.TypeString,
-										Computed: true,
-										Removed:  "Field 'db_cluster_ip_array_attribute' has been removed from provider",
-									},
 									"db_cluster_ip_array_name": {
 										Type:     schema.TypeString,
 										Computed: true,
@@ -265,14 +260,14 @@ func dataSourceAlicloudClickHouseDbClustersRead(d *schema.ResourceData, meta int
 	var err error
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -353,9 +348,8 @@ func dataSourceAlicloudClickHouseDbClustersRead(d *schema.ResourceData, meta int
 						continue
 					}
 					temp1 := map[string]interface{}{
-						"db_cluster_ip_array_attribute": m1["DBClusterIPArrayAttribute"],
-						"db_cluster_ip_array_name":      m1["DBClusterIPArrayName"],
-						"security_ip_list":              m1["SecurityIPList"],
+						"db_cluster_ip_array_name": m1["DBClusterIPArrayName"],
+						"security_ip_list":         m1["SecurityIPList"],
 					}
 					iPArray = append(iPArray, temp1)
 				}

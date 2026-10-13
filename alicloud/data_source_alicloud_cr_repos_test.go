@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudCRReposDataSource(t *testing.T) {
@@ -85,21 +85,21 @@ func TestAccAlicloudCRReposDataSource(t *testing.T) {
 func dataSourceCRReposConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 resource "alicloud_cr_namespace" "default" {
-    name = "${var.name}"
-    auto_create	= false
-    default_visibility = "PUBLIC"
+  name               = "${var.name}"
+  auto_create        = false
+  default_visibility = "PUBLIC"
 }
 
 resource "alicloud_cr_repo" "default" {
-    namespace = "${alicloud_cr_namespace.default.name}"
-    name = "${var.name}"
-    summary = "OLD"
-    repo_type = "PUBLIC"
-    detail  = "OLD"
+  namespace = "${alicloud_cr_namespace.default.name}"
+  name      = "${var.name}"
+  summary   = "OLD"
+  repo_type = "PUBLIC"
+  detail    = "OLD"
 }
 `, name)
 }

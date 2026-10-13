@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudLindormInstance() *schema.Resource {
@@ -49,11 +49,6 @@ func resourceAliCloudLindormInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.Any(IntInSlice([]int{0}), IntBetween(800, 1000000)),
 			},
-			"core_num": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Removed:  "Field `core_num` has been deprecated from provider version 1.188.0, and it has been removed from provider version 1.207.0.",
-			},
 			"core_spec": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -84,11 +79,6 @@ func resourceAliCloudLindormInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"lindorm.c.xlarge"}, false),
 			},
-			"group_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field `group_name` has been removed from provider version 1.211.0.",
-			},
 			"instance_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -113,16 +103,6 @@ func resourceAliCloudLindormInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"lindorm.g.xlarge", "lindorm.g.2xlarge"}, false),
-			},
-			"phoenix_node_count": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Removed:  "Field `phoenix_node_count` has been removed from provider version 1.211.0.",
-			},
-			"phoenix_node_specification": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field `phoenix_node_specification` has been removed from provider version 1.211.0.",
 			},
 			"pricing_cycle": {
 				Type:         schema.TypeString,
@@ -183,11 +163,6 @@ func resourceAliCloudLindormInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-			},
-			"upgrade_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field `upgrade_type` has been deprecated from provider version 1.163.0, and it has been removed from provider version 1.207.0.",
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -481,14 +456,14 @@ func resourceAliCloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -622,7 +597,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err := hitsdbService.SetResourceTags(d, "INSTANCE"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	update := false
 	request := map[string]interface{}{
@@ -637,14 +611,14 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		action := "UpdateInstanceIpWhiteList"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Instance.IsNotValid"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -652,7 +626,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("ip_white_list")
 	}
 	update = false
 	updateLindormInstanceAttributeReq := map[string]interface{}{
@@ -674,14 +647,14 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		action := "UpdateLindormInstanceAttribute"
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, updateLindormInstanceAttributeReq, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Instance.IsNotValid"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -689,8 +662,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("instance_name")
-		d.SetPartial("deletion_proection")
 	}
 
 	update = false
@@ -717,9 +688,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("log_single_storage")
-		d.SetPartial("core_single_storage")
-		d.SetPartial("log_spec")
 	}
 
 	update = false
@@ -731,7 +699,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if v, ok := d.GetOk("cold_storage"); ok {
 			upgradeLindormInstanceColdStorageReq["ColdStorage"] = v
 		}
-		d.SetPartial("cold_storage")
 	}
 	if update {
 		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceColdStorageReq)
@@ -758,7 +725,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("file_engine_node_count")
 	}
 
 	update = false
@@ -779,7 +745,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("file_engine_specification")
 	}
 
 	if (d.HasChange("search_engine_node_count") || d.HasChange("search_engine_specification")) && !d.IsNewResource() {
@@ -821,8 +786,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		d.SetPartial("search_engine_specification")
-		d.SetPartial("search_engine_node_count")
 	}
 
 	if (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification")) && !d.IsNewResource() {
@@ -875,8 +838,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		d.SetPartial("table_engine_specification")
-		d.SetPartial("table_engine_node_count")
 	}
 
 	if (d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification") || d.HasChange("time_series_engine_specification")) && !d.IsNewResource() {
@@ -927,9 +888,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		d.SetPartial("time_serires_engine_specification")
-		d.SetPartial("time_series_engine_specification")
-		d.SetPartial("time_series_engine_node_count")
 	}
 
 	if d.HasChange("lts_node_count") || d.HasChange("lts_node_specification") {
@@ -971,8 +929,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		d.SetPartial("lts_node_specification")
-		d.SetPartial("lts_node_count")
 	}
 
 	if (d.HasChange("stream_engine_node_count") || d.HasChange("stream_engine_specification")) && !d.IsNewResource() {
@@ -1017,8 +973,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		d.SetPartial("stream_engine_node_count")
-		d.SetPartial("stream_engine_specification")
 	}
 
 	update = false
@@ -1044,7 +998,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("instance_storage")
 	}
 
 	d.Partial(false)
@@ -1077,14 +1030,14 @@ func resourceAliCloudLindormInstanceDelete(d *schema.ResourceData, meta interfac
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1130,14 +1083,14 @@ func UpgradeLindormInstance(d *schema.ResourceData, meta interface{}, request ma
 
 	action := "UpgradeLindormInstance"
 	wait := incrementalWait(3*time.Second, 30*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Instance.NotActive", "OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

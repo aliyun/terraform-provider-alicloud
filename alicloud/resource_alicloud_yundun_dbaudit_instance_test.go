@@ -10,8 +10,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func init() {
@@ -112,7 +112,7 @@ func testSweepDbauditInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
+func TestAccAliCloudYundunDbauditInstance_basic(t *testing.T) {
 	var v yundun_dbaudit.Instance
 	resourceId := "alicloud_yundun_dbaudit_instance.default"
 	ra := resourceAttrInit(resourceId, dbauditInstanceBasicMap)
@@ -134,9 +134,9 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudAlidnsGtmInstance() *schema.Resource {
@@ -200,19 +200,19 @@ func resourceAlicloudAlidnsGtmInstanceCreate(d *schema.ResourceData, meta interf
 	request["Parameter"] = parameters
 	request["ClientToken"] = buildClientToken("CreateInstance")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "dns_gtm_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -304,14 +304,14 @@ func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interf
 		}
 		action := "MoveGtmResourceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -319,7 +319,6 @@ func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
 	}
 	update = false
 	switchDnsGtmInstanceStrategyModeRequest := map[string]interface{}{
@@ -337,14 +336,14 @@ func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interf
 		}
 		action := "SwitchDnsGtmInstanceStrategyMode"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, switchDnsGtmInstanceStrategyModeRequest, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -352,7 +351,6 @@ func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("strategy_mode")
 	}
 	update = false
 	updateDnsGtmInstanceGlobalConfigReq := map[string]interface{}{
@@ -432,14 +430,14 @@ func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interf
 		}
 		action := "UpdateDnsGtmInstanceGlobalConfig"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, updateDnsGtmInstanceGlobalConfigReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -447,15 +445,6 @@ func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("alert_config")
-		d.SetPartial("alert_group")
-		d.SetPartial("cname_type")
-		d.SetPartial("instance_name")
-		d.SetPartial("public_cname_mode")
-		d.SetPartial("public_rr")
-		d.SetPartial("public_user_domain_name")
-		d.SetPartial("public_zone_name")
-		d.SetPartial("ttl")
 	}
 	d.Partial(false)
 	return resourceAlicloudAlidnsGtmInstanceRead(d, meta)

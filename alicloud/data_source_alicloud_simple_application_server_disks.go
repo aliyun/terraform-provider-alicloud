@@ -3,13 +3,14 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudSimpleApplicationServerDisks() *schema.Resource {
@@ -142,14 +143,14 @@ func dataSourceAlicloudSimpleApplicationServerDisksRead(d *schema.ResourceData, 
 	var err error
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -178,7 +179,7 @@ func dataSourceAlicloudSimpleApplicationServerDisksRead(d *schema.ResourceData, 
 			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
 				continue
 			}
-			if diskTypeOk && diskType.(string) != "" && diskType.(string) != item["DiskType"].(string) {
+			if diskTypeOk && diskType.(string) != "" && !strings.EqualFold(diskType.(string), fmt.Sprint(item["DiskType"])) {
 				continue
 			}
 			objects = append(objects, item)

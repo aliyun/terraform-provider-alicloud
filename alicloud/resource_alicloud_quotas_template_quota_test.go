@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Quotas TemplateQuota. >>> Resource test cases, automatically generated.
 // Case 3099
-func TestAccAlicloudQuotasTemplateQuota_basic3099(t *testing.T) {
+func TestAccAliCloudQuotasTemplateQuota_basic3099(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_quota.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateQuotaMap3099)
@@ -28,7 +28,7 @@ func TestAccAlicloudQuotasTemplateQuota_basic3099(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -157,7 +157,7 @@ variable "name" {
 }
 
 // Case 3298
-func TestAccAlicloudQuotasTemplateQuota_basic3298(t *testing.T) {
+func TestAccAliCloudQuotasTemplateQuota_basic3298(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_quota.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateQuotaMap3298)
@@ -174,7 +174,7 @@ func TestAccAlicloudQuotasTemplateQuota_basic3298(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -303,7 +303,7 @@ variable "name" {
 }
 
 // Case 3099  twin
-func TestAccAlicloudQuotasTemplateQuota_basic3099_twin(t *testing.T) {
+func TestAccAliCloudQuotasTemplateQuota_basic3099_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_quota.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateQuotaMap3099)
@@ -320,7 +320,7 @@ func TestAccAlicloudQuotasTemplateQuota_basic3099_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -361,7 +361,7 @@ func TestAccAlicloudQuotasTemplateQuota_basic3099_twin(t *testing.T) {
 }
 
 // Case 3298  twin
-func TestAccAlicloudQuotasTemplateQuota_basic3298_twin(t *testing.T) {
+func TestAccAliCloudQuotasTemplateQuota_basic3298_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_quota.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateQuotaMap3298)
@@ -378,7 +378,7 @@ func TestAccAlicloudQuotasTemplateQuota_basic3298_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

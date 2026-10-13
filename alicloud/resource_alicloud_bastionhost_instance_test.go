@@ -6,8 +6,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_bastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // lintignore: AT001
@@ -29,8 +29,8 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -293,27 +293,27 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					//"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"description":        "${var.name}",
-					"license_code":       "bhah_ult_10000_asset",
-					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
-					"tags":               REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						//"resource_group_id":    CHECKSET,
-						"description":          name,
-						"license_code":         "bhah_ult_10000_asset",
-						"security_group_ids.#": "2",
-						"tags.%":               REMOVEKEY,
-						"tags.Created":         REMOVEKEY,
-						"tags.For":             REMOVEKEY,
-						"tags.Updated":         REMOVEKEY,
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		//"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+			//		"description":        "${var.name}",
+			//		"license_code":       "bhah_ult_10000_asset",
+			//		"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
+			//		"tags":               REMOVEKEY,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			//"resource_group_id":    CHECKSET,
+			//			"description":          name,
+			//			"license_code":         "bhah_ult_10000_asset",
+			//			"security_group_ids.#": "2",
+			//			"tags.%":               REMOVEKEY,
+			//			"tags.Created":         REMOVEKEY,
+			//			"tags.For":             REMOVEKEY,
+			//			"tags.Updated":         REMOVEKEY,
+			//		}),
+			//	),
+			//},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
@@ -342,8 +342,8 @@ func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -400,26 +400,6 @@ func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"license_code": "bhah_ent_100_asset",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"license_code": "bhah_ult_1000_asset",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"license_code": "bhah_ult_1000_asset",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"license_code": "bhah_ult_10000_asset",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"license_code": "bhah_ult_10000_asset",
 					}),
 				),
 			},

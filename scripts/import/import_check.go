@@ -77,13 +77,13 @@ type TerraformState struct {
 	Serial           int         `json:"serial"`
 	Lineage          string      `json:"lineage"`
 	Outputs          interface{} `json:"outputs"`
-	Resources        []Resource  `json: "resources"`
+	Resources        []Resource  `json:"resources"`
 	CheckResults     interface{} `json:"check_results"`
 }
 
 type Resource struct {
 	Mode      string        `json:"mode"`
-	Type      string        `json: "type"`
+	Type      string        `json:"type"`
 	Name      string        `json:"name"`
 	Provider  string        `json:"provider"`
 	Instances []interface{} `json:"instances"`

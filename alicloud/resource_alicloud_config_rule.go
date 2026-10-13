@@ -7,8 +7,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudConfigRule() *schema.Resource {
@@ -237,16 +237,16 @@ func resourceAlicloudConfigRuleCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -338,7 +338,7 @@ func resourceAlicloudConfigRuleRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("source_detail_message_type", d.Get("config_rule_trigger_types"))
 	d.Set("source_maximum_execution_frequency", d.Get("maximum_execution_frequency"))
-	d.Set("scope_compliance_resource_types", d.Get("resource_types_scope"))
+	d.Set("scope_compliance_resource_types", convertListToCommaSeparate(d.Get("resource_types_scope").([]interface{})))
 	return nil
 }
 
@@ -436,16 +436,16 @@ func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -460,17 +460,6 @@ func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
-		d.SetPartial("description")
-		d.SetPartial("maximum_execution_frequency")
-		d.SetPartial("tag_key_scope")
-		d.SetPartial("tag_value_scope")
-		d.SetPartial("region_ids_scope")
-		d.SetPartial("resource_group_ids_scope")
-		d.SetPartial("exclude_resource_ids_scope")
-		d.SetPartial("risk_level")
-		d.SetPartial("config_rule_trigger_types")
-		d.SetPartial("input_parameters")
-		d.SetPartial("resource_types_scope")
 	}
 
 	if d.HasChange("status") {
@@ -490,15 +479,15 @@ func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				request["ConfigRuleIds"] = d.Id()
 
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Config", "2019-01-08", action, nil, request, false)
 
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(action, response, request)
 					return nil
@@ -515,15 +504,15 @@ func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				request["ConfigRuleIds"] = d.Id()
 
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Config", "2019-01-08", action, nil, request, false)
 
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					addDebug(action, response, request)
 					return nil
@@ -553,15 +542,15 @@ func resourceAlicloudConfigRuleDelete(d *schema.ResourceData, meta interface{}) 
 	request["ConfigRuleIds"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Config", "2019-01-08", action, nil, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil

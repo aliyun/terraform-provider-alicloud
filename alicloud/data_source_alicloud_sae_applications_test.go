@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudSAEApplicationDataSource(t *testing.T) {
@@ -116,7 +116,7 @@ func TestAccAlicloudSAEApplicationDataSource(t *testing.T) {
 			"applications.0.post_start":                       "",
 			"applications.0.pre_stop":                         "",
 			"applications.0.readiness":                        "",
-			"applications.0.security_group_id":                "",
+			"applications.0.security_group_id":                CHECKSET,
 			"applications.0.sls_configs":                      "",
 			"applications.0.status":                           CHECKSET,
 			"applications.0.termination_grace_period_seconds": CHECKSET,

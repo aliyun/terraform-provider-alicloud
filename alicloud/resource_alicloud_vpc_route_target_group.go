@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVpcRouteTargetGroup() *schema.Resource {
@@ -134,7 +134,7 @@ func resourceAliCloudVpcRouteTargetGroupCreate(d *schema.ResourceData, meta inte
 	request["VpcId"] = d.Get("vpc_id")
 	request["ConfigMode"] = d.Get("config_mode")
 	wait := incrementalWait(5*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			// ResourceNotFound.GatewayLoadBalancerEndpoint is retryable: the
@@ -144,9 +144,9 @@ func resourceAliCloudVpcRouteTargetGroupCreate(d *schema.ResourceData, meta inte
 			// give the backend time to register the freshly-created endpoint.
 			if IsExpectedErrors(err, []string{"TaskConflict", "ResourceNotFound.GatewayLoadBalancerEndpoint"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -286,7 +286,7 @@ func resourceAliCloudVpcRouteTargetGroupUpdate(d *schema.ResourceData, meta inte
 
 	if update {
 		wait := incrementalWait(5*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				// ResourceNotFound.GatewayLoadBalancerEndpoint is retryable on
@@ -296,9 +296,9 @@ func resourceAliCloudVpcRouteTargetGroupUpdate(d *schema.ResourceData, meta inte
 				// backend. Retry to let the backend catch up.
 				if IsExpectedErrors(err, []string{"TaskConflict", "ResourceNotFound.GatewayLoadBalancerEndpoint"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -325,14 +325,14 @@ func resourceAliCloudVpcRouteTargetGroupUpdate(d *schema.ResourceData, meta inte
 	request["ResourceType"] = "ROUTETARGETGROUP"
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -370,14 +370,14 @@ func resourceAliCloudVpcRouteTargetGroupDelete(d *schema.ResourceData, meta inte
 	}
 
 	wait := incrementalWait(5*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

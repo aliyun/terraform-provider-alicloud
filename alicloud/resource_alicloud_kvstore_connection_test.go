@@ -6,11 +6,11 @@ import (
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAliCloudKVStoreConnection_basic(t *testing.T) {
+func TestAccAliCloudKvstoreConnection_basic(t *testing.T) {
 	var v r_kvstore.InstanceNetInfo
 	resourceId := "alicloud_kvstore_connection.default"
 	ra := resourceAttrInit(resourceId, RedisConnectionMap)
@@ -27,7 +27,7 @@ func TestAccAliCloudKVStoreConnection_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

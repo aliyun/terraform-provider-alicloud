@@ -10,8 +10,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func init() {
@@ -110,7 +111,7 @@ func testSweepCenRouteService(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCenRouteService_basic(t *testing.T) {
+func TestAccAliCloudCenRouteService_basic(t *testing.T) {
 	var v cbn.RouteServiceEntry
 	resourceId := "alicloud_cen_route_service.default"
 	ra := resourceAttrInit(resourceId, CenRouteServiceMap)
@@ -127,9 +128,9 @@ func TestAccAlicloudCenRouteService_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -158,7 +159,7 @@ func TestAccAlicloudCenRouteService_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenRouteService_basic1(t *testing.T) {
+func TestAccAliCloudCenRouteService_basic1(t *testing.T) {
 	var v cbn.RouteServiceEntry
 	resourceId := "alicloud_cen_route_service.default"
 	ra := resourceAttrInit(resourceId, CenRouteServiceMap)
@@ -175,9 +176,9 @@ func TestAccAlicloudCenRouteService_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -244,16 +245,16 @@ func deleteCenRouteService(id string, client *connectivity.AliyunClient) error {
 	request.HostRegionId = parts[1]
 	request.HostVpcId = parts[4]
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		_, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DeleteRouteServiceInCen(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "InvalidOperation.CenInstanceStatus", "InvalidOperation.CloudRouteStatusNotAllow"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

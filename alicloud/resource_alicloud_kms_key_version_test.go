@@ -11,12 +11,15 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudKMSKeyVersion_basic(t *testing.T) {
+func TestAccAliCloudKmsKeyVersion_basic(t *testing.T) {
+	if os.Getenv("ALICLOUD_KMS_KEY_ID") == "" {
+		t.Skip("Skipping as ALICLOUD_KMS_KEY_ID not set")
+	}
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_key_version.default"
 	ra := resourceAttrInit(resourceId, KmsKeyVersionMap)
@@ -33,9 +36,9 @@ func TestAccAlicloudKMSKeyVersion_basic(t *testing.T) {
 			testAccPreCheckKMSForKeyIdImport(t)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -102,7 +105,7 @@ func resourceKMSKeyVersionConfigDependence(name string) string {
 
 // lintignore: R001
 func TestUnitAlicloudKMSKeyVersion(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_kms_key_version"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_kms_key_version"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

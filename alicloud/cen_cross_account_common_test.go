@@ -10,8 +10,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // cenCrossAccountCreds holds AK/SK pairs loaded from the aliyun CLI profiles
@@ -108,12 +107,12 @@ func testAccPreCheckCENCrossAccount(t *testing.T) {
 // pointer-to-slice the factory populates with each created *schema.Provider.
 // Callers can iterate the slice from a describe closure to pick the
 // provider configured with the AK that owns the resource under test.
-func cenCrossAccountProviderFactories() (map[string]terraform.ResourceProviderFactory, *[]*schema.Provider) {
+func cenCrossAccountProviderFactories() (map[string]func() (*schema.Provider, error), *[]*schema.Provider) {
 	var providers []*schema.Provider
-	factories := map[string]terraform.ResourceProviderFactory{
-		"alicloud": func() (terraform.ResourceProvider, error) {
+	factories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
 			p := Provider()
-			providers = append(providers, p.(*schema.Provider))
+			providers = append(providers, p)
 			return p, nil
 		},
 	}

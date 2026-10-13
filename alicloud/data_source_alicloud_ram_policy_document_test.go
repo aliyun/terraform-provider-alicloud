@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudRamPolicyDocumentDataSource0(t *testing.T) {
@@ -14,7 +14,7 @@ func TestAccAliCloudRamPolicyDocumentDataSource0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig0(),
@@ -35,7 +35,7 @@ func TestAccAliCloudRamPolicyDocumentDataSource1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig1(),
@@ -56,7 +56,7 @@ func TestAccAliCloudRamPolicyDocumentDataSource2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig2(),
@@ -77,7 +77,7 @@ func TestAccAliCloudRamPolicyDocumentDataSource3(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig3(),
@@ -98,7 +98,7 @@ func TestAccAliCloudRamPolicyDocumentDataSource4(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAliCloudRamPolicyDocumentDataSourceConfig4(),

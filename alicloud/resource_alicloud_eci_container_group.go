@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudEciContainerGroup() *schema.Resource {
@@ -666,37 +666,6 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 				},
 			},
 			// lintignore: S018
-			"eci_security_context": {
-				Type:     schema.TypeSet,
-				Removed:  "Field 'eci_security_context' has been removed from provider version ?",
-				Optional: true,
-				ForceNew: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"sysctls": {
-							Type:     schema.TypeList,
-							Optional: true,
-							ForceNew: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"name": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-									"value": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			// lintignore: S018
 			"security_context": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -1081,26 +1050,6 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			request["DnsConfig"] = dnsConfigMap
 		}
 	}
-	if v, ok := d.GetOk("eci_security_context"); ok {
-		if v != nil {
-			eciSecurityContextMap := make(map[string]interface{})
-			for _, eciSecurityContext := range v.(*schema.Set).List() {
-				eciSecurityContextArg := eciSecurityContext.(map[string]interface{})
-				if eciSecurityContextArg["sysctls"] != nil {
-					sysctlsMaps := make([]map[string]interface{}, 0)
-					for _, sysctls := range eciSecurityContextArg["sysctls"].([]interface{}) {
-						sysctlsMap := make(map[string]interface{})
-						sysctlsArg := sysctls.(map[string]interface{})
-						sysctlsMap["Name"] = sysctlsArg["name"]
-						sysctlsMap["Value"] = sysctlsArg["value"]
-						sysctlsMaps = append(sysctlsMaps, sysctlsMap)
-					}
-					eciSecurityContextMap["Sysctls"] = sysctlsMaps
-				}
-			}
-			request["EciSecurityContext"] = eciSecurityContextMap
-		}
-	}
 	if v, ok := d.GetOk("security_context"); ok {
 		if v != nil {
 			eciSecurityContextMap := make(map[string]interface{})
@@ -1311,14 +1260,14 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 	request["ClientToken"] = buildClientToken("CreateContainerGroup")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -2108,14 +2057,14 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 
 		action := "UpdateContainerGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2145,14 +2094,14 @@ func resourceAliCloudEciContainerGroupDelete(d *schema.ResourceData, meta interf
 
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

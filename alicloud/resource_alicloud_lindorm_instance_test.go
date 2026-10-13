@@ -9,8 +9,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func init() {
@@ -38,14 +39,14 @@ func testSweepLindormInstances(region string) error {
 	lindormInstanceIds := make([]string, 0)
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -88,14 +89,14 @@ func testSweepLindormInstances(region string) error {
 			"InstanceId": id,
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			_, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -108,6 +109,7 @@ func testSweepLindormInstances(region string) error {
 
 func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"eu-central-1"})
 	resourceId := "alicloud_lindorm_instance.default_0"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -122,9 +124,9 @@ func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -446,6 +448,7 @@ func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 
 func TestAccAliCloudLindormInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"eu-central-1"})
 	resourceId := "alicloud_lindorm_instance.default_1"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -460,9 +463,9 @@ func TestAccAliCloudLindormInstance_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -549,9 +552,9 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -564,7 +567,7 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 					"primary_vswitch_id":         "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":              name,
 					"table_engine_node_count":    "4",
-					"table_engine_specification": "lindorm.g.4xlarge",
+					"table_engine_specification": "lindorm.g.2xlarge",
 					//"core_spec":               "lindorm.i2.xlarge",
 					"log_num":                "4",
 					"log_single_storage":     "400",
@@ -656,6 +659,7 @@ func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 
 func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"eu-central-1"})
 	resourceId := "alicloud_lindorm_instance.default_0"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -670,9 +674,9 @@ func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -758,6 +762,7 @@ func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 
 func TestAccAliCloudLindormInstance_twin(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, []connectivity.Region{"eu-central-1"})
 	resourceId := "alicloud_lindorm_instance.default_1"
 	ra := resourceAttrInit(resourceId, AliCloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -772,9 +777,9 @@ func TestAccAliCloudLindormInstance_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

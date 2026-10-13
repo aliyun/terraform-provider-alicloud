@@ -11,9 +11,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,7 +40,7 @@ func TestAccAliCloudAmqpExchange_DIRECT(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -98,7 +98,7 @@ func TestAccAliCloudAmqpExchange_FANOUT(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -156,7 +156,7 @@ func TestAccAliCloudAmqpExchange_HEADERS(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -214,7 +214,7 @@ func TestAccAliCloudAmqpExchange_TOPIC(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -251,20 +251,33 @@ func TestAccAliCloudAmqpExchange_TOPIC(t *testing.T) {
 }
 
 func resourceAmqpExchangeConfigDependence(name string) string {
-	return fmt.Sprintf(`
+		return fmt.Sprintf(`
 		variable "name" {
  			default = "%v"
 		}
+		data "alicloud_vpcs" "default" {
+			name_regex = "^default-NODELETING$"
+		}
+		data "alicloud_vswitches" "default" {
+			vpc_id = data.alicloud_vpcs.default.ids.0
+		}
+		data "alicloud_security_groups" "default" {
+			vpc_id     = data.alicloud_vpcs.default.ids.0
+			name_regex = "^default-NODELETING$"
+		}
 		resource "alicloud_amqp_instance" "default" {
-		  instance_name  = var.name
-		  instance_type  = "enterprise"
-		  max_tps        = "3000"
-		  queue_capacity = "200"
-		  period_cycle   = "Year"
-		  support_eip    = "false"
-		  period         = "1"
-		  auto_renew     = "true"
-		  payment_type   = "Subscription"
+		  instance_name     = var.name
+		  instance_type     = "enterprise"
+		  max_tps           = "3000"
+		  queue_capacity    = "200"
+		  period_cycle      = "Year"
+		  support_eip       = "false"
+		  period            = "1"
+		  auto_renew        = "true"
+		  payment_type      = "Subscription"
+		  vpc_id            = data.alicloud_vpcs.default.ids.0
+		  vswitch_ids       = [data.alicloud_vswitches.default.ids.0, data.alicloud_vswitches.default.ids.1]
+		  security_group_id = data.alicloud_security_groups.default.ids.0
 		}
 		resource "alicloud_amqp_virtual_host" "default" {
 		  instance_id       = alicloud_amqp_instance.default.id
@@ -277,7 +290,7 @@ var AmqpExchangeBasicMap = map[string]string{}
 
 // lintignore: R001
 func TestUnitAlicloudAmqpExchange(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_exchange"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_amqp_exchange"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
@@ -519,7 +532,7 @@ func TestAccAliCloudAmqpExchange_basic7251(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -610,7 +623,7 @@ func TestAccAliCloudAmqpExchange_basic7237(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -703,7 +716,7 @@ func TestAccAliCloudAmqpExchange_basic7249(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -794,7 +807,7 @@ func TestAccAliCloudAmqpExchange_basic7250(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -885,7 +898,7 @@ func TestAccAliCloudAmqpExchange_basic7261(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -976,7 +989,7 @@ func TestAccAliCloudAmqpExchange_basic10181(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1069,7 +1082,7 @@ func TestAccAliCloudAmqpExchange_basic10140(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1162,7 +1175,7 @@ func TestAccAliCloudAmqpExchange_basic10179(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1255,7 +1268,7 @@ func TestAccAliCloudAmqpExchange_basic10180(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1348,7 +1361,7 @@ func TestAccAliCloudAmqpExchange_basic10182(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1441,7 +1454,7 @@ func TestAccAliCloudAmqpExchange_basic10183(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

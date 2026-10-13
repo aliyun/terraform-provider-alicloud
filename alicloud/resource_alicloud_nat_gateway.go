@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudNatGateway() *schema.Resource {
@@ -94,47 +94,6 @@ func resourceAliCloudNatGateway() *schema.Resource {
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36})),
-			},
-			"bandwidth_packages": {
-				Type: schema.TypeList,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"ip_count": {
-							Type:     schema.TypeInt,
-							Optional: true,
-							Removed:  "Field `ip_count` has been removed from provider version 1.121.0.",
-						},
-						"bandwidth": {
-							Type:     schema.TypeInt,
-							Optional: true,
-							Removed:  "Field `bandwidth` has been removed from provider version 1.121.0.",
-						},
-						"zone": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
-							Removed:  "Field `zone` has been removed from provider version 1.121.0.",
-						},
-						"public_ip_addresses": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field `public_ip_addresses` has been removed from provider version 1.121.0.",
-						},
-					},
-				},
-				MaxItems: 4,
-				Optional: true,
-				Removed:  "Field `bandwidth_packages` has been removed from provider version 1.121.0.",
-			},
-			"bandwidth_package_ids": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Removed:  "Field `bandwidth_package_ids` has been removed from provider version 1.121.0.",
-			},
-			"spec": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field `spec` has been removed from provider version 1.121.0. New field `specification` instead.",
 			},
 			"snat_table_ids": {
 				Type:     schema.TypeString,
@@ -316,15 +275,15 @@ func resourceAliCloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		request["ClientToken"] = buildClientToken("CreateNatGateway")
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict", "VswitchStatusError", "IncorrectStatus.VSWITCH", "OperationConflict"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -437,7 +396,6 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := vpcServiceV2.SetResourceTags(d, "NATGATEWAY"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 
 	if d.HasChange("deletion_protection") {
@@ -451,15 +409,15 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			request["ClientToken"] = buildClientToken(action)
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -469,7 +427,6 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("deletion_protection")
 	}
 
 	update := false
@@ -505,14 +462,14 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		action := "ModifyNatGatewayAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectStatus.NATGW"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -527,9 +484,6 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("description")
-		d.SetPartial("name")
-		d.SetPartial("nat_gateway_name")
 	}
 
 	if !d.IsNewResource() && d.HasChange("specification") {
@@ -540,14 +494,14 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		request["Spec"] = d.Get("specification")
 		action := "ModifyNatGatewaySpec"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectStatus.NatGateway"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -562,7 +516,6 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("specification")
 	}
 	update = false
 	updateNatGatewayNatTypeReq := map[string]interface{}{
@@ -584,14 +537,14 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		action := "UpdateNatGatewayNatType"
 		updateNatGatewayNatTypeReq["ClientToken"] = buildClientToken("UpdateNatGatewayNatType")
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, updateNatGatewayNatTypeReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationFailed.NatGwRouteInMiddleStatus", "TaskConflict", "UnknownError"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -606,9 +559,6 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("nat_type")
-		d.SetPartial("vswitch_id")
-		d.SetPartial("dry_run")
 	}
 
 	d.Partial(false)
@@ -636,14 +586,14 @@ func resourceAliCloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) 
 	}
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages", "DependencyViolation.EIPS", "OperationConflict"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

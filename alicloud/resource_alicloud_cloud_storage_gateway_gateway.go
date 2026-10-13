@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudCloudStorageGatewayGateway() *schema.Resource {
@@ -132,14 +132,14 @@ func resourceAliCloudCloudStorageGatewayGatewayCreate(d *schema.ResourceData, me
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"BadRequest"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -169,14 +169,14 @@ func resourceAliCloudCloudStorageGatewayGatewayCreate(d *schema.ResourceData, me
 			request["GatewayClass"] = v
 		}
 
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"BadRequest"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -258,14 +258,14 @@ func resourceAliCloudCloudStorageGatewayGatewayUpdate(d *schema.ResourceData, me
 	if update {
 		action := "ModifyGateway"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -279,8 +279,6 @@ func resourceAliCloudCloudStorageGatewayGatewayUpdate(d *schema.ResourceData, me
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
-		d.SetPartial("gateway_name")
-		d.SetPartial("description")
 	}
 
 	update = false
@@ -298,14 +296,14 @@ func resourceAliCloudCloudStorageGatewayGatewayUpdate(d *schema.ResourceData, me
 	if update {
 		action := "ModifyGatewayClass"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("sgw", "2018-05-11", action, nil, modifyGatewayClassReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -324,7 +322,6 @@ func resourceAliCloudCloudStorageGatewayGatewayUpdate(d *schema.ResourceData, me
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("gateway_class")
 	}
 
 	update = false
@@ -342,14 +339,14 @@ func resourceAliCloudCloudStorageGatewayGatewayUpdate(d *schema.ResourceData, me
 	if update {
 		action := "ExpandGatewayNetworkBandwidth"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("sgw", "2018-05-11", action, nil, expandGatewayNetworkBandwidthReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -368,7 +365,6 @@ func resourceAliCloudCloudStorageGatewayGatewayUpdate(d *schema.ResourceData, me
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("public_network_bandwidth")
 	}
 
 	d.Partial(false)
@@ -402,14 +398,14 @@ func resourceAliCloudCloudStorageGatewayGatewayDelete(d *schema.ResourceData, me
 
 	isCloud := d.Get("location") == "Cloud"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

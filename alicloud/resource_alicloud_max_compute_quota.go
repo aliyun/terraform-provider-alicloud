@@ -3,12 +3,13 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudMaxComputeQuota() *schema.Resource {
@@ -134,21 +135,68 @@ func resourceAliCloudMaxComputeQuotaCreate(d *schema.ResourceData, meta interfac
 
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("MaxCompute", "2022-01-04", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
 	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_max_compute_quota", action, AlibabaCloudSdkGoERROR)
+		// the pay-as-you-go quota is a per-region singleton without a delete API,
+		// so adopt the existing quota instead of failing when it already exists
+		if fmt.Sprint(d.Get("payment_type")) == "PayAsYouGo" && strings.Contains(err.Error(), "quota has already exists") {
+			listQuery := make(map[string]*string)
+			listQuery["region"] = StringPointer(client.RegionId)
+			listResponse, listErr := client.RoaGet("MaxCompute", "2022-01-04", action, listQuery, nil, nil)
+			addDebug("ListQuotas", listResponse, nil)
+			if listErr == nil {
+				quotaList, jsonErr := jsonpath.Get("$.data.quotaInfoList", listResponse)
+				if jsonErr != nil || quotaList == nil {
+					quotaList, _ = jsonpath.Get("$.quotaInfoList", listResponse)
+				}
+				if quotaList != nil {
+					for _, item := range quotaList.([]interface{}) {
+						itemMap, ok := item.(map[string]interface{})
+						if !ok {
+							continue
+						}
+						billingMethod, _ := jsonpath.Get("$.billingPolicy.billingMethod", itemMap)
+						if fmt.Sprint(billingMethod) == "payasyougo" {
+							response = map[string]interface{}{"data": map[string]interface{}{"nickName": itemMap["nickName"]}}
+							err = nil
+							break
+						}
+					}
+				}
+			}
+			if err != nil {
+				// fall back to the documented default nickname of the
+				// pay-as-you-go quota when it is not visible in ListQuotas
+				defaultNickname := "os_PayAsYouGoQuota_p"
+				getResponse, getErr := client.RoaGet("MaxCompute", "2022-01-04", fmt.Sprintf("/api/v1/quotas/%s", defaultNickname), make(map[string]*string), nil, nil)
+				addDebug("GetDefaultPayAsYouGoQuota", getResponse, nil)
+				if getErr == nil {
+					nickName, _ := jsonpath.Get("$.data.nickName", getResponse)
+					if nickName == nil {
+						nickName, _ = jsonpath.Get("$.nickName", getResponse)
+					}
+					if nickName != nil {
+						response = map[string]interface{}{"data": map[string]interface{}{"nickName": nickName}}
+						err = nil
+					}
+				}
+			}
+		}
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_max_compute_quota", action, AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	id, _ := jsonpath.Get("$.data.nickName", response)
@@ -293,14 +341,14 @@ func resourceAliCloudMaxComputeQuotaUpdate(d *schema.ResourceData, meta interfac
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, header, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

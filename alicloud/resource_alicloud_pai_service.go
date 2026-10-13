@@ -7,9 +7,9 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudPaiService() *schema.Resource {
@@ -93,14 +93,14 @@ func resourceAliCloudPaiServiceCreate(d *schema.ResourceData, meta interface{}) 
 
 	body = request["body"].(map[string]interface{})
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("EAS", "2021-07-01", action, query, nil, body, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -137,13 +137,12 @@ func resourceAliCloudPaiServiceRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("region_id", objectRaw["Region"])
-	d.Set("service_uid", objectRaw["ServiceUid"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("workspace_id", objectRaw["WorkspaceId"])
 
 	e := jsonata.MustCompile("$merge($map($.Labels, function($v, $k) {{$lookup($v, \"LabelKey\"): $lookup($v, \"LabelValue\")}}))")
 	evaluation, _ := e.Eval(objectRaw)
-	d.Set("tags", evaluation)
+	d.Set("tags", tagsToMap(evaluation))
 	e = jsonata.MustCompile("$.ServiceConfig")
 	evaluation, _ = e.Eval(objectRaw)
 	d.Set("service_config", evaluation)
@@ -179,14 +178,14 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 				query["ClusterId"] = StringPointer(client.RegionId)
 				body = request
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPut("EAS", "2021-07-01", action, query, nil, body, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -212,14 +211,14 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 				query["ClusterId"] = StringPointer(client.RegionId)
 				body = request
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPut("EAS", "2021-07-01", action, query, nil, body, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -253,14 +252,14 @@ func resourceAliCloudPaiServiceUpdate(d *schema.ResourceData, meta interface{}) 
 	body = request["body"].(map[string]interface{})
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("EAS", "2021-07-01", action, query, nil, body, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -299,15 +298,15 @@ func resourceAliCloudPaiServiceDelete(d *schema.ResourceData, meta interface{}) 
 	query["ClusterId"] = StringPointer(client.RegionId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("EAS", "2021-07-01", action, query, nil, nil, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

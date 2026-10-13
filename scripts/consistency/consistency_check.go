@@ -12,8 +12,9 @@ import (
 	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	providerregistry "github.com/aliyun/terraform-provider-alicloud/alicloud/provider/registry"
 	set "github.com/deckarep/golang-set"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	log "github.com/sirupsen/logrus"
 	"github.com/waigani/diffparser"
 )
@@ -78,6 +79,7 @@ func main() {
 	fileRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*.go")
 	fileTestRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
 	fileDocsRegex := regexp.MustCompile("website/docs/(r|d)/[0-9a-zA-Z_]*.html.markdown")
+	frameworkNames := frameworkRegisteredNames()
 	resourceNameMap := make(map[string]struct{})
 	for _, file := range diff.Files {
 		resourceName := ""
@@ -99,11 +101,16 @@ func main() {
 			resourceNameMap[resourceName] = struct{}{}
 		}
 
+		if _, ok := frameworkNames[resourceName]; ok {
+			log.Infof("==> %s is registered framework-native, skipping the SDKv2 schema consistency check\n\n", resourceName)
+			continue
+		}
+
 		log.Infof("==> Checking resource or data-source %s attributes consistency...", resourceName)
-		resource, ok := alicloud.Provider().(*schema.Provider).ResourcesMap[resourceName]
+		resource, ok := alicloud.Provider().ResourcesMap[resourceName]
 		if !ok || resource == nil {
 			resourceName = strings.TrimPrefix(resourceName, "data_source_")
-			resource, ok = alicloud.Provider().(*schema.Provider).DataSourcesMap[resourceName]
+			resource, ok = alicloud.Provider().DataSourcesMap[resourceName]
 			if !ok || resource == nil {
 				log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resourceName)
 				exitCode = 1
@@ -130,6 +137,19 @@ func main() {
 		os.Exit(exitCode)
 	}
 	return
+}
+
+func frameworkRegisteredNames() map[string]struct{} {
+	names := make(map[string]struct{})
+	for _, sp := range providerregistry.ServicePackages() {
+		for _, d := range sp.Resources {
+			names[d.TypeName] = struct{}{}
+		}
+		for _, d := range sp.DataSources {
+			names[d.TypeName] = struct{}{}
+		}
+	}
+	return names
 }
 
 func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceAttributes map[string]ResourceAttribute) error {
@@ -360,7 +380,7 @@ func getResourceAttributes(rootName string, resourceAttributeMap map[string]Reso
 			key = rootName + "." + key
 		}
 
-		var thisRemoved = value.Removed
+		var thisRemoved = ""
 		if len(thisRemoved) == 0 && len(rootRemoved) != 0 {
 			thisRemoved = rootRemoved
 		}

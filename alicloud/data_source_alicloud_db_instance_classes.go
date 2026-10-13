@@ -7,8 +7,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAliCloudDBInstanceClasses() *schema.Resource {
@@ -114,7 +114,7 @@ func dataSourceAliCloudDBInstanceClasses() *schema.Resource {
 							Computed: true,
 						},
 						"storage_range": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -183,14 +183,14 @@ func dataSourceAliCloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 		}
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -231,10 +231,12 @@ func dataSourceAliCloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 			mapping := map[string]interface{}{
 				"instance_class": fmt.Sprint(instanceClassItem["DBInstanceClass"]),
 				"zone_ids":       zoneIds,
-				"storage_range": map[string]interface{}{
-					"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
-					"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
-					"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+				"storage_range": []map[string]interface{}{
+					{
+						"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
+						"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
+						"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+					},
 				},
 			}
 			s = append(s, mapping)
@@ -287,14 +289,14 @@ func dataSourceAliCloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 		for _, engine := range engines {
 			request["Engine"] = engine
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 				response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -381,14 +383,14 @@ func dataSourceAliCloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 							}
 							var response map[string]interface{}
 							wait := incrementalWait(3*time.Second, 3*time.Second)
-							err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+							err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 								response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 								if err != nil {
 									if NeedRetry(err) {
 										wait()
-										return resource.RetryableError(err)
+										return retry.RetryableError(err)
 									}
-									return resource.NonRetryableError(err)
+									return retry.NonRetryableError(err)
 								}
 								return nil
 							})
@@ -424,10 +426,12 @@ func dataSourceAliCloudDBInstanceClassesRead(d *schema.ResourceData, meta interf
 								mapping := map[string]interface{}{
 									"instance_class": fmt.Sprint(instanceClassItem["DBInstanceClass"]),
 									"zone_ids":       zoneIds,
-									"storage_range": map[string]interface{}{
-										"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
-										"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
-										"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+									"storage_range": []map[string]interface{}{
+										{
+											"min":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MinValue"]),
+											"max":  fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["MaxValue"]),
+											"step": fmt.Sprint(instanceClassItem["DBInstanceStorageRange"].(map[string]interface{})["Step"]),
+										},
 									},
 								}
 								s = append(s, mapping)

@@ -7,9 +7,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudEipAddresses() *schema.Resource {
@@ -22,11 +22,6 @@ func dataSourceAlicloudEipAddresses() *schema.Resource {
 				Elem:       &schema.Schema{Type: schema.TypeString},
 				MinItems:   1,
 				Deprecated: "Field 'ip_addresses' has been deprecated from provider version 1.126.0 and it will be removed in the future version. Please use the new attribute 'ip_address' instead.",
-			},
-			"in_use": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Removed:  "Field 'in_use' has been removed from provider version 1.126.0.",
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -369,14 +364,14 @@ func dataSourceAlicloudEipAddressesRead(d *schema.ResourceData, meta interface{}
 	var err error
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})

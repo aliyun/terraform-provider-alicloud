@@ -85,7 +85,6 @@ The following arguments are supported:
 * `nat_ip_cidr` - (Required, ForceNew) The CIDR block to which the NAT IP address belongs.
 * `nat_ip_description` - (Optional) The description of the NAT IP address. The description must be `2` to `256` characters in length and start with a letter. The description cannot start with `http://` or `https://`.
 * `nat_ip_name` - (Optional) The name of the NAT IP address. The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). It must start with a letter. The name must start with a letter and cannot start with `http://` or `https://`.
-* `nat_ip_cidr_id` - (Removed since v1.274.0) Field `nat_ip_cidr_id` has been removed from provider version 1.274.0.
 
 ## Attributes Reference
 

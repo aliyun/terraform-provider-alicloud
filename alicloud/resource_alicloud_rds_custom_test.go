@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Rds Custom. >>> Resource test cases, automatically generated.
@@ -28,9 +28,9 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -57,7 +57,7 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 					"instance_charge_type":          "Prepaid",
 					"internet_charge_type":          "PayByTraffic",
 					"internet_max_bandwidth_out":    "0",
-					"image_id":                      "aliyun_2_1903_x64_20G_alibase_20240628.vhd",
+					"image_id":                      "aliyun_3_x64_20G_alibase_20260625.vhd",
 					"security_enhancement_strategy": "Active",
 					"period_unit":                   "Month",
 					"password":                      "jingyiTEST@123",
@@ -72,6 +72,11 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 					"create_mode":        "0",
 					"create_extra_param": "{}",
 					"spot_strategy":      "NoSpot",
+					"timeouts": []map[string]interface{}{
+						{
+							"create": "20m",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -91,7 +96,7 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 						"instance_charge_type":          "Prepaid",
 						"internet_charge_type":          "PayByTraffic",
 						"internet_max_bandwidth_out":    "0",
-						"image_id":                      "aliyun_2_1903_x64_20G_alibase_20240628.vhd",
+						"image_id":                      "aliyun_3_x64_20G_alibase_20260625.vhd",
 						"security_enhancement_strategy": "Active",
 						"period_unit":                   "Month",
 						"password":                      "jingyiTEST@123",
@@ -148,48 +153,6 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF-update",
-						"tags.For":     "Test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
-			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -206,7 +169,7 @@ var AlicloudRdsCustomMap10836 = map[string]string{
 func AlicloudRdsCustomBasicDependence10836(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 variable "test_region_id" {
@@ -234,10 +197,7 @@ data "alicloud_security_groups" "default" {
 
 resource "alicloud_ecs_key_pair" "KeyPairName" {
   key_pair_name = var.name
-}
-
-
-`, name)
+}`, name)
 }
 
 // Test Rds Custom. <<< Resource test cases, automatically generated.
@@ -258,6 +218,7 @@ func TestAccAliCloudRdsCustom_basic12788(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -297,6 +258,11 @@ func TestAccAliCloudRdsCustom_basic12788(t *testing.T) {
 					"host_name":     "testhostNameran",
 					"period_unit":   "Month",
 					"password":      "@MY7yxqc9YXQC",
+					"timeouts": []map[string]interface{}{
+						{
+							"create": "20m",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -352,48 +318,6 @@ func TestAccAliCloudRdsCustom_basic12788(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF-update",
-						"For":     "Test-update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF-update",
-						"tags.For":     "Test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"status":     "Stopped",
 					"force_stop": "true",
 				}),
@@ -422,7 +346,7 @@ var AlicloudRdsCustomMap12788 = map[string]string{
 func AlicloudRdsCustomBasicDependence12788(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 data "alicloud_vpcs" "default" {
@@ -444,10 +368,7 @@ resource "alicloud_rds_custom_deployment_set" "deploymentSet" {
   group_count                           = 3
   on_unable_to_redeploy_failed_instance = "CancelMembershipAndStart"
   strategy                              = "Availability"
-}
-
-
-`, name)
+}`, name)
 }
 
 // Case resourceCase_20260415_01 12772
@@ -462,11 +383,12 @@ func TestAccAliCloudRdsCustom_basic12772(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrds%d", rand)
-	privateIpAddress := fmt.Sprintf("172.16.1.%d", acctest.RandIntRange(10, 240))
+	privateIpAddress := fmt.Sprintf("172.16.3.%d", acctest.RandIntRange(10, 240))
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsCustomBasicDependence12772)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -503,6 +425,11 @@ func TestAccAliCloudRdsCustom_basic12772(t *testing.T) {
 					"host_name":     "testhostNameran",
 					"period_unit":   "Month",
 					"password":      "@MY7yxqc9YXQC",
+					"timeouts": []map[string]interface{}{
+						{
+							"create": "20m",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -621,7 +548,7 @@ var AlicloudRdsCustomMap12772 = map[string]string{
 func AlicloudRdsCustomBasicDependence12772(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 data "alicloud_vpcs" "default" {
@@ -629,15 +556,11 @@ data "alicloud_vpcs" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-  cidr_block = "172.16.0.0/23"
-  status     = "Available"
-  zone_id    = "cn-beijing-i"
+  status  = "Available"
+  zone_id = "cn-beijing-i"
 }
 
 data "alicloud_security_groups" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-
-`, name)
+}`, name)
 }

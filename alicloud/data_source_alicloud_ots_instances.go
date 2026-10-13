@@ -4,8 +4,8 @@ import (
 	"regexp"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudOtsInstances() *schema.Resource {
@@ -70,11 +70,6 @@ func dataSourceAlicloudOtsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"network": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'network' has been removed from provider version v1.221.0. Please Use the 'network_type_acl' and 'network_source_acl'",
-						},
 						"network_type_acl": {
 							Type:     schema.TypeSet,
 							Computed: true,
@@ -96,11 +91,6 @@ func dataSourceAlicloudOtsInstances() *schema.Resource {
 						"description": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
-						"entity_quota": {
-							Type:     schema.TypeInt,
-							Computed: true,
-							Removed:  "Field 'entity_quota' has been removed from provider version v1.221.0. Please Use the 'table_quota'",
 						},
 						"table_quota": {
 							Type:     schema.TypeInt,

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudOssBucketCname_basic8544(t *testing.T) {
@@ -30,9 +30,9 @@ func TestAccAliCloudOssBucketCname_basic8544(t *testing.T) {
 			// this case in a region where the ICP requirement does not apply.
 			checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -146,9 +146,9 @@ func TestAccAliCloudOssBucketCname_basic8542(t *testing.T) {
 			// this case in a region where the ICP requirement does not apply.
 			checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -259,9 +259,9 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 			// this case in a region where the ICP requirement does not apply.
 			checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

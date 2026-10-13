@@ -34,10 +34,11 @@ import (
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
 	yamlV3 "gopkg.in/yaml.v3"
@@ -730,6 +731,20 @@ func buildClientToken(action string) string {
 	return token
 }
 
+func getWriteOnlyValue(d *schema.ResourceData, path cty.Path, typ cty.Type) (cty.Value, error) {
+	if d.GetRawConfig().IsNull() {
+		return cty.NullVal(typ), nil
+	}
+	value, diags := d.GetRawConfigAt(path)
+	if diags.HasError() {
+		return cty.NilVal, WrapError(fmt.Errorf("error retrieving write-only argument: %s", diags[0].Summary))
+	}
+	if !value.Type().Equals(typ) {
+		return cty.NilVal, WrapError(fmt.Errorf("error retrieving write-only argument %s: unexpected type %s, want %s", path, value.Type().FriendlyName(), typ.FriendlyName()))
+	}
+	return value, nil
+}
+
 func getNextpageNumber(number requests.Integer) (requests.Integer, error) {
 	page, err := strconv.Atoi(string(number))
 	if err != nil {
@@ -771,6 +786,28 @@ func compareJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
 			canonicalJson1, canonicalJson2)
 	}
 	return equal, nil
+}
+
+// compareJsonHasSubset reports whether every key in sub exists in sup with an
+// equal value. Used for ForceNew JSON fields the server enriches with extra
+// keys after create: the user config is a subset of the server-returned state,
+// so the diff should be suppressed instead of forcing replacement.
+func compareJsonHasSubset(sup, sub string) (bool, error) {
+	supObj := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(sup), &supObj); err != nil {
+		return false, err
+	}
+	subObj := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(sub), &subObj); err != nil {
+		return false, err
+	}
+	for k, v := range subObj {
+		sv, ok := supObj[k]
+		if !ok || !reflect.DeepEqual(sv, v) {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 func compareArrayJsonTemplateAreEquivalent(tem1, tem2 string) (bool, error) {
@@ -1028,8 +1065,8 @@ func GetCenChildInstanceType(id string) (c string, e error) {
 	}
 }
 
-func BuildStateConf(pending, target []string, timeout, delay time.Duration, f resource.StateRefreshFunc) *resource.StateChangeConf {
-	return &resource.StateChangeConf{
+func BuildStateConf(pending, target []string, timeout, delay time.Duration, f retry.StateRefreshFunc) *retry.StateChangeConf {
+	return &retry.StateChangeConf{
 		Pending:    pending,
 		Target:     target,
 		Refresh:    f,
@@ -1369,7 +1406,7 @@ func mapSort(target map[string]string) []string {
 
 // lintignore: R001
 func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
 	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
 	for key, value := range attributes {
@@ -1415,7 +1452,7 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 				}
 			}
 		}
-		diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: oldValue, New: newValue})
+		diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: oldValue, New: newValue}
 
 		if objectKey != "" {
 			for removeKey, removeValue := range dOld.State().Attributes {
@@ -1423,9 +1460,9 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 					if _, ok := dNew.State().Attributes[removeKey]; !ok {
 						// If the attribue has complex elements, there should remove the key, not setting it to empty
 						if len(strings.Split(removeKey, ".")) > 2 {
-							diff.DelAttribute(removeKey)
+							delete(diff.Attributes, removeKey)
 						} else {
-							diff.SetAttribute(removeKey, &terraform.ResourceAttrDiff{Old: removeValue, New: ""})
+							diff.Attributes[removeKey] = &terraform.ResourceAttrDiff{Old: removeValue, New: ""}
 						}
 					}
 				}
@@ -1591,7 +1628,7 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	var P1 Products
 	err := yaml.Unmarshal([]byte(tem1), &P1)
 	if err != nil {
-		_ = fmt.Sprintln(false)
+		return false, err
 	}
 
 	y1 := make([]string, 0)
@@ -1603,7 +1640,7 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	var P2 Products
 	err = yaml.Unmarshal([]byte(tem2), &P2)
 	if err != nil {
-		_ = fmt.Sprintln(false)
+		return false, err
 	}
 
 	y2 := make([]string, 0)

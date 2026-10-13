@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366(t *testing.T) {
@@ -24,9 +24,10 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -153,6 +154,10 @@ var AlicloudCenTransitRouterEcrAttachmentMap5366 = map[string]string{
 }
 
 func AlicloudCenTransitRouterEcrAttachmentBasicDependence5366(name string) string {
+	region := defaultRegionToTest
+	if region == "" {
+		region = "cn-hangzhou"
+	}
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -192,7 +197,7 @@ resource "alicloud_express_connect_router_tr_association" "defaultedPu6c" {
 }
 
 
-`, name, defaultRegionToTest)
+`, name, region)
 }
 
 // Case ECR Attachment 5366  twin
@@ -211,9 +216,10 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -269,9 +275,10 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366_raw(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

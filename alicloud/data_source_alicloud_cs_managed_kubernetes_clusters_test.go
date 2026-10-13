@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAliCloudCSManagedKubernetesClustersDataSource(t *testing.T) {
@@ -62,9 +62,8 @@ func TestAccAliCloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 			"clusters.0.name":                  REGEXMATCH + fmt.Sprintf("tf-testaccmanagedk8s-%d", rand),
 			"clusters.0.availability_zone":     CHECKSET,
 			"clusters.0.security_group_id":     CHECKSET,
-			"clusters.0.nat_gateway_id":        CHECKSET,
 			"clusters.0.vpc_id":                CHECKSET,
-			"clusters.0.connections.%":         CHECKSET,
+			"clusters.0.connections.#":         CHECKSET,
 			"clusters.0.state":                 CHECKSET,
 			"clusters.0.rrsa_config.0.enabled": "true",
 			"clusters.0.rrsa_config.0.rrsa_oidc_issuer_url":   CHECKSET,
@@ -95,41 +94,36 @@ func TestAccAliCloudCSManagedKubernetesClustersDataSource(t *testing.T) {
 func dataSourceCSManagedKubernetesClustersConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "%s"
+  default = "%s"
 }
 
 data "alicloud_zones" default {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitch.id
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
   name                 = var.name
   cluster_spec         = "ack.pro.small"
   worker_vswitch_ids   = [local.vswitch_id]
-  new_nat_gateway      = true
+  new_nat_gateway      = false
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
-  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+  service_cidr         = cidrsubnet("172.17.0.0/16", 4, 7)
   slb_internet_enabled = true
   enable_rrsa          = true
 }

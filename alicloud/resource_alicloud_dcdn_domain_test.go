@@ -10,8 +10,9 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func init() {
@@ -70,14 +71,14 @@ func testSweepDcdnDomain(region string) error {
 		query["DomainName"] = domain
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -108,9 +109,9 @@ func TestAccAliCloudDcdnDomain_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -252,9 +253,9 @@ func TestAccAliCloudDcdnDomain_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -541,16 +542,16 @@ func TestAccAliCloudDcdnDomain_basic7246_raw(t *testing.T) {
 	}, "DescribeDcdnDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "test02.pfytlm.xyz"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDcdnDomainBasicDependence7246)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -565,16 +566,15 @@ func TestAccAliCloudDcdnDomain_basic7246_raw(t *testing.T) {
 							"weight":   "20",
 						},
 					},
-					"scope":     "domestic",
-					"check_url": "http://test02.pfytlm.xyz/test.html",
+					"scope":     "overseas",
+					"check_url": "http://" + name + "/test.html",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ssl_protocol": "off",
 						"domain_name":  name,
 						"sources.#":    "1",
-						"scope":        "domestic",
-						"check_url":    "http://test02.pfytlm.xyz/test.html",
+						"scope":        "overseas",
 					}),
 				),
 			},
@@ -627,23 +627,21 @@ func TestAccAliCloudDcdnDomain_basic7246_change(t *testing.T) {
 	}, "DescribeDcdnDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "test02.pfytlm.xyz"
 	rand := acctest.RandIntRange(1000000, 9999999)
-	certName := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDcdnDomainBasicDependence7246)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"domain_name":  name,
-					"scope":        "domestic",
+					"scope":        "overseas",
 					"ssl_protocol": "on",
 					"sources": []map[string]interface{}{
 						{
@@ -655,7 +653,7 @@ func TestAccAliCloudDcdnDomain_basic7246_change(t *testing.T) {
 						},
 					},
 					"cert_type":     "upload",
-					"cert_name":     certName,
+					"cert_name":     name,
 					"ssl_pub":       "${var.cert}",
 					"ssl_pri":       "${var.private_key}",
 					"scene":         "apiscene",
@@ -686,8 +684,8 @@ func TestAccAliCloudDcdnDomain_basic7246_change(t *testing.T) {
 							"weight":   "20",
 						},
 					},
-					"scope":       "domestic",
-					"check_url":   "http://test02.pfytlm.xyz/test.html",
+					"scope":       "overseas",
+					"check_url":   "http://" + name + "/test.html",
 					"cert_region": "",
 					"cert_id":     "",
 					"cert_name":   "",
@@ -699,8 +697,7 @@ func TestAccAliCloudDcdnDomain_basic7246_change(t *testing.T) {
 						"ssl_protocol": "off",
 						"domain_name":  name,
 						"sources.#":    "1",
-						"scope":        "domestic",
-						"check_url":    "http://test02.pfytlm.xyz/test.html",
+						"scope":        "overseas",
 						"cert_region":  "",
 						"cert_id":      "",
 						"cert_name":    "",
@@ -732,7 +729,7 @@ func TestAccAliCloudDcdnDomain_basic7246_change(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cert_id":   "${alicloud_ssl_certificates_service_certificate.change.id}",
-					"cert_name": certName + "_update",
+					"cert_name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

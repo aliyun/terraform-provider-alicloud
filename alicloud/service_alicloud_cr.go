@@ -9,7 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type CrService struct {
@@ -259,7 +259,7 @@ func (c *CrService) WaitForCrRepo(id string, status Status, timeout int) error {
 	}
 }
 
-func (c *CrService) InstanceStatusRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (c *CrService) InstanceStatusRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		resp, err := c.DescribeCrEEInstance(id)
 		if err != nil {
@@ -294,14 +294,14 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 	}
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		// ACL entry propagation after CreateInstanceEndpointAclPolicy is awaited
 		// in the Create path (WaitCrEndpointRunning then
@@ -356,24 +356,24 @@ func (s *CrService) WaitCrEndpointAclEntryPropagate(instanceId, endpointType, en
 		"InstanceId":   instanceId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	return resource.Retry(timeout, func() *resource.RetryError {
+	return retry.Retry(timeout, func() *retry.RetryError {
 		response, err := client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		rawEntries, jerr := jsonpath.Get("$.AclEntries", response)
 		if jerr != nil {
-			return resource.NonRetryableError(WrapErrorf(jerr, FailedGetAttributeMsg, fmt.Sprint(instanceId, ":", endpointType), "$.AclEntries", response))
+			return retry.NonRetryableError(WrapErrorf(jerr, FailedGetAttributeMsg, fmt.Sprint(instanceId, ":", endpointType), "$.AclEntries", response))
 		}
 		entries, ok := rawEntries.([]interface{})
 		if !ok || len(entries) < 1 {
 			wait()
-			return resource.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entry %q to propagate", entry))
+			return retry.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entry %q to propagate", entry))
 		}
 		for _, e := range entries {
 			if em, ok := e.(map[string]interface{}); ok && fmt.Sprint(em["Entry"]) == entry {
@@ -381,7 +381,7 @@ func (s *CrService) WaitCrEndpointAclEntryPropagate(instanceId, endpointType, en
 			}
 		}
 		wait()
-		return resource.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entry %q to propagate", entry))
+		return retry.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entry %q to propagate", entry))
 	})
 }
 
@@ -405,14 +405,14 @@ func (s *CrService) WaitCrEndpointRunning(instanceId, endpointType string, timeo
 		"InstanceId":   instanceId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	return resource.Retry(timeout, func() *resource.RetryError {
+	return retry.Retry(timeout, func() *retry.RetryError {
 		response, err := client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		status := fmt.Sprint(response["Status"])
@@ -420,7 +420,7 @@ func (s *CrService) WaitCrEndpointRunning(instanceId, endpointType string, timeo
 			return nil
 		}
 		wait()
-		return resource.RetryableError(fmt.Errorf("waiting for CR internet endpoint to reach RUNNING (current: %s)", status))
+		return retry.RetryableError(fmt.Errorf("waiting for CR internet endpoint to reach RUNNING (current: %s)", status))
 	})
 }
 
@@ -438,14 +438,14 @@ func (s *CrService) DescribeCrEndpointAclService(id string) (object map[string]i
 		"InstanceId":   parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -466,7 +466,7 @@ func (s *CrService) DescribeCrEndpointAclService(id string) (object map[string]i
 	return object, nil
 }
 
-func (s *CrService) CrEndpointAclServiceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CrService) CrEndpointAclServiceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCrEndpointAclService(id)
 		if err != nil {
@@ -497,14 +497,14 @@ func (s *CrService) DescribeCrInternetEndpoint(id string) (object map[string]int
 		"EndpointType": "Internet",
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -542,7 +542,7 @@ func (s *CrService) DescribeCrInternetEndpoint(id string) (object map[string]int
 	return object, nil
 }
 
-func (s *CrService) CrInternetEndpointStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CrService) CrInternetEndpointStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCrInternetEndpoint(id)
 		if err != nil {
@@ -591,14 +591,14 @@ func (s *CrService) DescribeCrChartNamespace(id string) (object map[string]inter
 		"NamespaceName": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -632,14 +632,14 @@ func (s *CrService) DescribeCrChartRepository(id string) (object map[string]inte
 		"InstanceId":        parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -672,14 +672,14 @@ func (s *CrService) DescribeCrChain(id string) (object map[string]interface{}, e
 		"InstanceId": parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -713,14 +713,14 @@ func (s *CrService) GetChain(id string) (object map[string]interface{}, err erro
 		"InstanceId": parts[0],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -752,14 +752,14 @@ func (s *CrService) DescribeCrVpcEndpointLinkedVpc(id string) (object map[string
 
 	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -792,7 +792,7 @@ func (s *CrService) DescribeCrVpcEndpointLinkedVpc(id string) (object map[string
 	return object, nil
 }
 
-func (s *CrService) CrVpcEndpointLinkedVpcStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CrService) CrVpcEndpointLinkedVpcStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCrVpcEndpointLinkedVpc(id)
 		if err != nil {

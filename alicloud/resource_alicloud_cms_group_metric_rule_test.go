@@ -14,9 +14,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -106,7 +106,7 @@ func TestAccAliCloudCmsGroupMetricRule_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -172,7 +172,7 @@ func TestAccAliCloudCmsGroupMetricRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"contact_groups": "${alicloud_cms_monitor_group.default.id}",
+					"contact_groups": "${alicloud_cms_alarm_contact_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -358,7 +358,7 @@ func TestAccAliCloudCmsGroupMetricRule_basic0_twin(t *testing.T) {
 		},
 
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -369,7 +369,7 @@ func TestAccAliCloudCmsGroupMetricRule_basic0_twin(t *testing.T) {
 					"metric_name":            "disk_writebytes",
 					"namespace":              "acs_ecs_dashboard",
 					"category":               "ecs",
-					"contact_groups":         "${alicloud_cms_monitor_group.default.id}",
+					"contact_groups":         "${alicloud_cms_alarm_contact_group.default.id}",
 					"dimensions":             `{\"device\":\"C:\"}`,
 					"email_subject":          "tf-testacc-rule-name-warning",
 					"effective_interval":     "00:00-22:59",
@@ -486,7 +486,7 @@ func resourceAliCloudCmsGroupMetricRuleBasicDependence(name string) string {
 
 // lintignore: R001
 func TestUnitAliCloudCmsGroupMetricRule(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_group_metric_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cms_group_metric_rule"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

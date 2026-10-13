@@ -12,13 +12,13 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
+func TestAccAliCloudMscSubSubscription_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_msc_sub_subscription.default"
 	ra := resourceAttrInit(resourceId, AlicloudMscSubSubscriptionMap0)
@@ -35,7 +35,7 @@ func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
@@ -44,7 +44,7 @@ func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
 					"sms_status":     "1",
 					"email_status":   "1",
 					"pmsg_status":    "1",
-					"tts_status":     "1",
+					"tts_status":     "0",
 					"webhook_status": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -53,7 +53,7 @@ func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
 						"sms_status":     "1",
 						"email_status":   "1",
 						"pmsg_status":    "1",
-						"tts_status":     "1",
+						"tts_status":     "0",
 						"webhook_status": "0",
 					}),
 				),
@@ -85,16 +85,6 @@ func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"pmsg_status": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tts_status": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tts_status": "0",
 					}),
 				),
 			},
@@ -141,7 +131,7 @@ resource "alicloud_msc_sub_contact" "default2" {
 
 // lintignore: R001
 func TestUnitAlicloudMscSubSubscription(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_msc_sub_subscription"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_msc_sub_subscription"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

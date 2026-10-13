@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudPolarDBAccountPrivilege() *schema.Resource {
@@ -67,12 +68,12 @@ func resourceAlicloudPolarDBAccountPrivilegeCreate(d *schema.ResourceData, meta 
 
 	if len(dbList) > 0 {
 		for _, db := range dbList {
-			if err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+			if err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				if err := polarDBService.GrantPolarDBAccountPrivilege(d.Id(), db.(string)); err != nil {
 					if IsExpectedErrors(err, OperationDeniedDBStatus) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			}); err != nil {
@@ -109,6 +110,8 @@ func resourceAlicloudPolarDBAccountPrivilegeRead(d *schema.ResourceData, meta in
 			names = append(names, pri.DBName)
 		}
 	}
+	// Sort the db_names to ensure consistent ordering and avoid plan drift
+	sort.Strings(names)
 	d.Set("db_names", names)
 
 	return nil
@@ -151,7 +154,6 @@ func resourceAlicloudPolarDBAccountPrivilegeUpdate(d *schema.ResourceData, meta 
 				}
 			}
 		}
-		d.SetPartial("db_names")
 	}
 
 	d.Partial(false)

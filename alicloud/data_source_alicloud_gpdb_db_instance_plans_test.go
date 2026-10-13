@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudGpdbDbInstancePlansDataSource(t *testing.T) {
+func TestAccAliCloudGpdbDbInstancePlansDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 	idsConf := dataSourceTestAccConfig{

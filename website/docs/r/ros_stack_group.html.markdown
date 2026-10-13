@@ -72,12 +72,7 @@ The auto_deployment supports the following:
   - `true`: Keep the resource stack.
   - `false`: delete the resource stack.
 
--> **NOTE:** When Enabled is true, `retain_stacks_on_account_removal` is required.
-
-* `account_ids` - (Removed since v1.257.0). Field 'account_ids' has been deprecated from provider version 1.257.0.
-* `region_ids` - (Removed since v1.257.0). Field 'region_ids' has been deprecated from provider version 1.257.0.
-* `operation_description` - (Removed since v1.257.0). Field 'operation_description' has been deprecated from provider version 1.257.0. You should use resource alicloud_ros_stack_instance's field 'operation_description'.
-* `operation_preferences` - (Removed since v1.257.0). Field 'operation_preferences' has been deprecated from provider version 1.257.0. You should use resource alicloud_ros_stack_instance's field 'operation_preferences'.
+  -> **NOTE:** When Enabled is true, `retain_stacks_on_account_removal` is required.
 
 ### `parameters`
 

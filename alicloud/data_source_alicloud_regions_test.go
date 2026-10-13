@@ -3,13 +3,13 @@ package alicloud
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudRegionsDataSource_regions(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudRegionsDataSourceRegionsConfig,
@@ -30,8 +30,8 @@ func TestAccAlicloudRegionsDataSource_regions(t *testing.T) {
 
 func TestAccAlicloudRegionsDataSource_name(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudRegionsDataSourceNameConfig,
@@ -47,8 +47,8 @@ func TestAccAlicloudRegionsDataSource_name(t *testing.T) {
 
 func TestAccAlicloudRegionsDataSource_current(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudRegionsDataSourceCurrentConfig,
@@ -64,8 +64,8 @@ func TestAccAlicloudRegionsDataSource_current(t *testing.T) {
 
 func TestAccAlicloudRegionsDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudRegionsDataSourceEmptyConfig,

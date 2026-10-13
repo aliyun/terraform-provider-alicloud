@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // lintignore: AT001
@@ -29,11 +29,11 @@ func TestAccAliCloudGovernanceAccount_basic0(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_id":          "1493822914031335",
+					"account_id":          "${data.alicloud_resource_manager_accounts.default.ids.0}",
 					"baseline_id":         "${data.alicloud_governance_baselines.default.ids.0}",
 					"payer_account_id":    "${data.alicloud_account.default.id}",
 					"display_name":        name,
@@ -99,7 +99,7 @@ func TestAccAliCloudGovernanceAccount_basic7372(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -188,6 +188,10 @@ data "alicloud_governance_baselines" "default" {
 }
 
 data "alicloud_resource_manager_folders" "default" {
+}
+
+data "alicloud_resource_manager_accounts" "default" {
+  status = "CreateSuccess"
 }
 
 

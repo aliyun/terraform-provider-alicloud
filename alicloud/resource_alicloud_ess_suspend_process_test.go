@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccAliCloudEssAlbServerGroupSuspendProcess(t *testing.T) {
@@ -28,7 +28,7 @@ func TestAccAliCloudEssAlbServerGroupSuspendProcess(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssSuspendProcessDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -79,6 +79,8 @@ func testAccEssScalingGroupSuspendProcess(name string) string {
 	}
 	data "alicloud_instance_types" "default1" {
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	  cpu_core_count    = 2
+	  memory_size       = 4
 	}
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "0"
@@ -97,7 +99,8 @@ func testAccEssScalingGroupSuspendProcess(name string) string {
 		force_delete = true
 		active = true
 		enable = true
+		system_disk_category = "cloud_essd"
 	}
 
-	`, EcsInstanceCommonTestCase, name)
+	`, EssInstanceCommonTestCase, name)
 }

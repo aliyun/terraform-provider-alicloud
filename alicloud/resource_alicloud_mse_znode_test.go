@@ -12,9 +12,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +36,7 @@ func TestAccAlicloudMSEZnode_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -101,7 +101,6 @@ resource "alicloud_mse_cluster" "default" {
   net_type = "privatenet"
   vswitch_id = data.alicloud_vswitches.default.ids.0
   pub_network_flow = "1"
-  acl_entry_list= ["127.0.0.1/32"]
   cluster_alias_name= "tf-testaccmseznode"
   mse_version = "mse_dev"
 }
@@ -110,7 +109,7 @@ resource "alicloud_mse_cluster" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudMSEZnode(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mse_znode"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_mse_znode"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

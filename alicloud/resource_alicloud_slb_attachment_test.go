@@ -6,10 +6,10 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudSLBAttachment_basic(t *testing.T) {
+func TestAccAliCloudSLBAttachment_basic(t *testing.T) {
 
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb_attachment.default"
@@ -28,7 +28,7 @@ func TestAccAlicloudSLBAttachment_basic(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -100,7 +100,7 @@ func TestAccAlicloudSLBAttachment_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBAttachment_multi(t *testing.T) {
+func TestAccAliCloudSLBAttachment_multi(t *testing.T) {
 
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb_attachment.default.9"
@@ -120,7 +120,7 @@ func TestAccAlicloudSLBAttachment_multi(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -137,7 +137,7 @@ func TestAccAlicloudSLBAttachment_multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBAttachment_classic_basic(t *testing.T) {
+func TestAccAliCloudSLBAttachment_classic_basic(t *testing.T) {
 
 	var v *slb.DescribeLoadBalancerAttributeResponse
 	resourceId := "alicloud_slb_attachment.default"
@@ -156,7 +156,7 @@ func TestAccAlicloudSLBAttachment_classic_basic(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

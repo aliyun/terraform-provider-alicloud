@@ -1144,8 +1144,8 @@ func modifyResourceFile(filePath, namespace, resource string) error {
 		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace)
 		line = strings.ReplaceAll(line, "import (", imports)
 		line = strings.ReplaceAll(line, "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity", "gitlab.alibaba-inc.com/opensource-tools/alibabacloud-go-rdk-repository/core/connectivity")
-		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/resource", "")
-		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/schema", headers)
+		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource", "")
+		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema", headers)
 
 		line = resourceFuncRe.ReplaceAllString(line, "func Resource$1() *schema.Resource {")
 		line = dataSourceFuncRe.ReplaceAllString(line, "func DataSource$1() *schema.Resource {")
@@ -1358,8 +1358,8 @@ func modifyServiceFile(filePath, namespace, version string) error {
 		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace)
 		line = strings.ReplaceAll(line, "import (", imports)
 		line = strings.ReplaceAll(line, "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity", "gitlab.alibaba-inc.com/opensource-tools/alibabacloud-go-rdk-repository/core/connectivity")
-		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/resource", headers)
-		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/schema", "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema")
+		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource", headers)
+		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema", "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema")
 		line = modifyServiceFunctionLine(line, version)
 
 		if strings.Contains(line, "type ServiceV2 struct {") {
@@ -1590,8 +1590,8 @@ func modifyResourceTestFile(filePath, namespace, resource string) error {
 		})
 
 		line = strings.ReplaceAll(line, "package alicloud", "package "+namespace+"_test")
-		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/acctest", headers)
-		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/helper/resource", "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource")
+		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest", headers)
+		line = strings.ReplaceAll(line, "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource", "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource")
 		line = strings.ReplaceAll(line, "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity", "")
 		line = strings.ReplaceAll(line, "AliCloud", "")
 		line = strings.ReplaceAll(line, "Alicloud", "")

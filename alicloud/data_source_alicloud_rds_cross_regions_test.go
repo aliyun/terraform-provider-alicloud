@@ -3,10 +3,10 @@ package alicloud
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudRdsCrossRegionsDataSource(t *testing.T) {
+func TestAccAliCloudRdsCrossRegionsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_rds_cross_regions.default"
 

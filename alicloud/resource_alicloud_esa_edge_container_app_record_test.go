@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test ESA EdgeContainerAppRecord. >>> Resource test cases, automatically generated.
@@ -30,7 +30,7 @@ func TestAccAliCloudESAEdgeContainerAppRecordresource_EdgeContainerAppRecord_tes
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -85,7 +85,7 @@ resource "alicloud_esa_edge_container_app" "default" {
   health_check_type = "l7"
   service_port = "80"
   health_check_interval = "5"
-  edge_container_app_name = "terraform-app1"
+  edge_container_app_name = "tf${replace(lower(var.name), ".", "")}"
   health_check_http_code = "http_2xx"
   health_check_uri = "/"
   health_check_timeout = "3"

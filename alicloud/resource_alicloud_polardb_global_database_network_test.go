@@ -15,9 +15,10 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -46,14 +47,14 @@ func testSweepPolarDBGlobalDatabaseNetwork(region string) error {
 	PolarDBGlobalDatabaseNetworkIds := make([]string, 0)
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -97,14 +98,14 @@ func testSweepPolarDBGlobalDatabaseNetwork(region string) error {
 			"GDNId": id,
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 			_, err = client.RpcPost("polardb", "2017-08-01", deleteAction, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -131,9 +132,9 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -188,28 +189,23 @@ data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
 }
 
+data "alicloud_polardb_zones" "default" {}
+
 resource "alicloud_vpc" "default" {
 	vpc_name = var.name
 }
-	
+
 resource "alicloud_vswitch" "default" {
-	zone_id = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+	zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 	vpc_id = alicloud_vpc.default.id
 	cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
-}
-
-data "alicloud_polardb_node_classes" "default" {
-	pay_type   = "PostPaid"
-	db_type    = "MySQL"
-	db_version = "8.0"
-	category   = "Normal"
 }
 
 resource "alicloud_polardb_cluster" "default" {
 	db_type       = "MySQL"
 	db_version    = "8.0"
 	pay_type      = "PostPaid"
-	db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.2.db_node_class
+	db_node_class = "polar.mysql.x4.medium"
 	vswitch_id    = alicloud_vswitch.default.id
 	description   = "${var.name}"
 }
@@ -219,7 +215,7 @@ resource "alicloud_polardb_cluster" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudPolarDBGlobalDatabaseNetwork(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_polardb_global_database_network"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_polardb_global_database_network"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

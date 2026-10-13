@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudThreatDetectionVulWhitelist_basic0(t *testing.T) {
+func TestAccAliCloudThreatDetectionVulWhitelist_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_vul_whitelist.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudThreatDetectionVulWhitelistMap)
@@ -25,9 +25,9 @@ func TestAccAlicloudThreatDetectionVulWhitelist_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

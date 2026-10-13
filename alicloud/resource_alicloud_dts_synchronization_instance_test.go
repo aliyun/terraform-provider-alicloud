@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"reflect"
 	"testing"
 
@@ -12,13 +11,13 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
+func TestAccAliCloudDTSSynchronizationInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_synchronization_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationInstanceMap0)
@@ -34,9 +33,9 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -44,17 +43,17 @@ func TestAccAlicloudDTSSynchronizationInstance_basic0(t *testing.T) {
 					"auto_start":                       "false",
 					"payment_type":                     "PayAsYouGo",
 					"source_endpoint_engine_name":      "MySQL",
-					"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
+					"source_endpoint_region":           "${data.alicloud_regions.default.regions.0.id}",
 					"destination_endpoint_engine_name": "MySQL",
-					"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
+					"destination_endpoint_region":      "${data.alicloud_regions.default.regions.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":                     "PayAsYouGo",
 						"source_endpoint_engine_name":      "MySQL",
-						"source_endpoint_region":           os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":           CHECKSET,
 						"destination_endpoint_engine_name": "MySQL",
-						"destination_endpoint_region":      os.Getenv("ALICLOUD_REGION"),
+						"destination_endpoint_region":      CHECKSET,
 					}),
 				),
 			},
@@ -84,12 +83,16 @@ func AlicloudDTSSynchronizationInstanceBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
+
+data "alicloud_regions" "default" {
+  current = true
+}
 `, name)
 }
 
 // lintignore: R001
 func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dts_synchronization_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dts_synchronization_instance"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -118,7 +121,7 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 			log.Printf("[ERROR] the field %s setting error", key)
 		}
 	}
-	region := os.Getenv("ALICLOUD_REGION")
+	region := "cn-beijing"
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)

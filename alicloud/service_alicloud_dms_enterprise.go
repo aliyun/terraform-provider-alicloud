@@ -6,8 +6,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type DmsEnterpriseService struct {
@@ -65,6 +65,9 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseUser(id string) (object map[
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.User", response)
 	}
 	object = v.(map[string]interface{})
+	if fmt.Sprint(object["State"]) == "DELETE" {
+		return object, GetNotFoundErrorFromString(GetNotFoundMessage("DMS Enterprise User", id))
+	}
 	return object, nil
 }
 
@@ -77,14 +80,14 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseProxy(id string) (object map
 		"ProxyId":  id,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -114,14 +117,14 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseProxyAccess(id string) (obje
 	var response map[string]interface{}
 	action := "GetProxyAccess"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -140,7 +143,7 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseProxyAccess(id string) (obje
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DmsEnterpriseService) DmsEnterpriseProxyAccessStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *DmsEnterpriseService) DmsEnterpriseProxyAccessStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDmsEnterpriseProxyAccess(d.Id())
 		if err != nil {
@@ -169,14 +172,14 @@ func (s *DmsEnterpriseService) InspectProxyAccessSecret(id string) (object map[s
 	var response map[string]interface{}
 	action := "InspectProxyAccessSecret"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -206,14 +209,14 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseLogicDatabase(id string) (ob
 	var response map[string]interface{}
 	action := "GetLogicDatabase"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 		addDebug(action, response, request)
@@ -230,7 +233,7 @@ func (s *DmsEnterpriseService) DescribeDmsEnterpriseLogicDatabase(id string) (ob
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DmsEnterpriseService) DmsEnterpriseLogicDatabaseStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+func (s *DmsEnterpriseService) DmsEnterpriseLogicDatabaseStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDmsEnterpriseLogicDatabase(d.Id())
 		if err != nil {

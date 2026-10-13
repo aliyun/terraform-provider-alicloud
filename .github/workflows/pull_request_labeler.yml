@@ -4,6 +4,7 @@ on:
   pull_request_target:
     branches:
       - master
+      - release/v2
 
 permissions: {}
 
@@ -24,6 +25,88 @@ jobs:
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           configuration-path: .github/labeler-pull-request-triage.yml
+
+      - name: Apply Service Labels
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pullNumber = context.payload.pull_request?.number;
+            if (!Number.isSafeInteger(pullNumber) || pullNumber <= 0) {
+              throw new Error("Invalid pull request number.");
+            }
+
+            const changedFiles = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              }
+            );
+            const services = new Set();
+            for (const { filename } of changedFiles) {
+              const match = /^alicloud\/service\/([^/]+)\//.exec(filename);
+              if (match) {
+                services.add(match[1]);
+              }
+            }
+            if (services.size === 0) {
+              core.info("No service package files changed.");
+              return;
+            }
+
+            const repoLabels = await github.paginate(
+              github.rest.issues.listLabelsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+              }
+            );
+            const labelByName = new Map(
+              repoLabels.map(({ name }) => [name.toLowerCase(), name])
+            );
+            const serviceLabels = [];
+            for (const service of services) {
+              const label = labelByName.get(service.toLowerCase());
+              if (label) {
+                serviceLabels.push(label);
+              } else {
+                core.warning(
+                  `No repository label matches service ${service}; label skipped.`
+                );
+              }
+            }
+            if (serviceLabels.length === 0) {
+              return;
+            }
+
+            const currentLabels = await github.paginate(
+              github.rest.issues.listLabelsOnIssue,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                per_page: 100,
+              }
+            );
+            const labels = new Set(
+              currentLabels.map(({ name }) => name).filter(
+                (name) => typeof name === "string"
+              )
+            );
+            for (const label of serviceLabels) {
+              labels.add(label);
+            }
+
+            await github.rest.issues.setLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullNumber,
+              labels: [...labels],
+            });
+            core.info(`Applied service labels: ${serviceLabels.join(", ")}.`);
 
       - name: Apply Pull Request Size Labels
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0

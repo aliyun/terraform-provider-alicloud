@@ -7,7 +7,7 @@ description: |-
   Provides a list of Click House DBCluster to the user.
 ---
 
-# alicloud\_click\_house\_db\_clusters
+# alicloud_click_house_db_clusters
 
 This data source provides the Click House DBCluster of the current Alibaba Cloud user.
 
@@ -95,6 +95,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `control_version` - The control version of the DBCluster.
     * `status` - The status of the DBCluster. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`.
     * `db_cluster_access_white_list` - The db cluster access white list.
-        * `db_cluster_ip_array_attribute` - Field `db_cluster_ip_array_attribute` has been removed from provider.
         * `db_cluster_ip_array_name` - Whitelist group name.
         * `security_ip_list` - The IP address list under the whitelist group.

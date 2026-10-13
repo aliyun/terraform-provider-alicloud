@@ -7,8 +7,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudExpressConnectVirtualBorderRouter() *schema.Resource {
@@ -133,11 +133,6 @@ func resourceAliCloudExpressConnectVirtualBorderRouter() *schema.Resource {
 				Optional:   true,
 				Deprecated: "Field `associated_physical_connections` has been deprecated from provider version 1.263.0. Please use the resource `alicloud_express_connect_vbr_pconn_association` instead.",
 			},
-			"include_cross_account_vbr": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Removed:  "Field `include_cross_account_vbr` has been removed from provider version 1.263.0.",
-			},
 		},
 	}
 }
@@ -196,14 +191,14 @@ func resourceAliCloudExpressConnectVirtualBorderRouterCreate(d *schema.ResourceD
 	request["PhysicalConnectionId"] = d.Get("physical_connection_id")
 	request["PeerGatewayIp"] = d.Get("peer_gateway_ip")
 	wait := incrementalWait(5*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -301,14 +296,14 @@ func resourceAliCloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -331,14 +326,14 @@ func resourceAliCloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -468,14 +463,14 @@ func resourceAliCloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 			request["AssociatedPhysicalConnections"] = v
 		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -502,14 +497,14 @@ func resourceAliCloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 	request["ResourceType"] = "VIRTUALBORDERROUTER"
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -543,14 +538,14 @@ func resourceAliCloudExpressConnectVirtualBorderRouterDelete(d *schema.ResourceD
 	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(5*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DependencyViolation.BgpGroup"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

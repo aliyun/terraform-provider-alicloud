@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudSimpleApplicationServerSnapshotsDataSource(t *testing.T) {
@@ -83,7 +83,7 @@ func TestAccAlicloudSimpleApplicationServerSnapshotsDataSource(t *testing.T) {
 			"ids.0":                        CHECKSET,
 			"snapshots.#":                  "1",
 			"snapshots.0.snapshot_name":    fmt.Sprintf("tf-testacc-swas_snapshots-%d", rand),
-			"snapshots.0.status":           "Accomplished",
+			"snapshots.0.status":           "accomplished",
 			"snapshots.0.create_time":      CHECKSET,
 			"snapshots.0.disk_id":          CHECKSET,
 			"snapshots.0.progress":         CHECKSET,

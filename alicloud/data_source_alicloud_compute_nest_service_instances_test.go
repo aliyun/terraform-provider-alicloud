@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudComputeNestServiceInstancesDataSource(t *testing.T) {
@@ -171,7 +171,7 @@ func dataSourceComputeNestServiceInstancesConfig(name string) string {
 
 	data "alicloud_instance_types" "default" {
   		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
+  		instance_type_family = "ecs.g6"
 	}
 
 	data "alicloud_images" "default" {

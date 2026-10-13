@@ -6,9 +6,9 @@ import (
 	cs "github.com/alibabacloud-go/cs-20151215/v8/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 const ResourceName = "resource_alicloud_cs_kubernetes_permissions"
@@ -105,17 +105,22 @@ func resourceAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta in
 	uid := d.Id()
 
 	var perms []*cs.DescribeUserPermissionResponseBody
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		perms, err = describeUserPermissions(client, uid)
+		// returning NonRetryableError(nil) on success worked under SDK v1 but
+		// yields "empty non-retryable error received" under terraform-plugin-sdk v2
+		if err == nil {
+			return nil
+		}
 		if isRetryforThrottling(err) {
 			time.Sleep(1 * time.Minute)
 		} else if tea.BoolValue(tea.Retryable(err)) {
 			time.Sleep(5 * time.Second)
 		} else {
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
-		return resource.RetryableError(Error("[ERROR] Describe user permission failed %s error %v", uid, err.Error()))
+		return retry.RetryableError(Error("[ERROR] Describe user permission failed %s error %v", uid, err.Error()))
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DescribeUserPermission", err)
@@ -193,33 +198,43 @@ func manageUserPermissions(mode, uid string, meta interface{}, permissions []int
 	addDebug("UpdateUserPermissions", updateUserPermissionsRequest)
 
 	// call sdk update cluster permissions for user
-	err = resource.Retry(60*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(60*time.Minute, func() *retry.RetryError {
 		_, err := client.UpdateUserPermissions(&uid, updateUserPermissionsRequest)
+		// returning NonRetryableError(nil) on success worked under SDK v1 but
+		// yields "empty non-retryable error received" under terraform-plugin-sdk v2
+		if err == nil {
+			return nil
+		}
 		if isRetryforThrottling(err) {
 			time.Sleep(1 * time.Minute)
 		} else if isRetryforConflict(err) || tea.BoolValue(tea.Retryable(err)) {
 			time.Sleep(5 * time.Second)
 		} else {
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
-		return resource.RetryableError(Error("[ERROR] Update user permission failed %s error %v", uid, err.Error()))
+		return retry.RetryableError(Error("[ERROR] Update user permission failed %s error %v", uid, err.Error()))
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "UpdatePermissions", AliyunTablestoreGoSdk)
 	}
 
-	_ = resource.Retry(2*time.Minute, func() *resource.RetryError {
+	_ = retry.Retry(2*time.Minute, func() *retry.RetryError {
 		_, err := client.DescribeUserPermission(&uid)
+		// returning NonRetryableError(nil) on success worked under SDK v1 but
+		// yields "empty non-retryable error received" under terraform-plugin-sdk v2
+		if err == nil {
+			return nil
+		}
 		if isRetryforThrottling(err) {
 			time.Sleep(1 * time.Minute)
 		} else if tea.BoolValue(tea.Retryable(err)) {
 			time.Sleep(5 * time.Second)
 		} else {
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
-		return resource.RetryableError(Error("[ERROR] Describe user permission failed %s error %v", uid, err.Error()))
+		return retry.RetryableError(Error("[ERROR] Describe user permission failed %s error %v", uid, err.Error()))
 	})
 
 	return nil

@@ -8,9 +8,9 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudReservedInstance() *schema.Resource {
@@ -220,14 +220,14 @@ func resourceAliCloudReservedInstanceCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "PurchaseReservedInstancesOffering"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		resp, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		response = resp
 
@@ -258,7 +258,6 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err := ecsService.SetResourceTags(d, "reservedinstance"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 
 	update := false
@@ -293,9 +292,6 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-		d.SetPartial("name")
-		d.SetPartial("reserved_instance_name")
-		d.SetPartial("description")
 	}
 
 	if d.HasChanges("auto_renew_period", "renewal_status") {
@@ -318,14 +314,14 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 
 		action := "ModifyReservedInstanceAutoRenewAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			resp, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, resp, request)
 			return nil
@@ -333,14 +329,13 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("auto_renew_period")
-		d.SetPartial("renewal_status")
 	}
 
 	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.EcsReservedInstanceStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+	d.Partial(false)
 
 	return resourceAliCloudReservedInstanceRead(d, meta)
 }

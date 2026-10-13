@@ -6,10 +6,58 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+// EssInstanceCommonTestCase is an ESS-local copy of EcsInstanceCommonTestCase
+// with stricter alicloud_instance_types filters (cpu_core_count + memory_size)
+// and alicloud_images bound to the chosen instance_type. Used by the ESS test
+// suites instead of the shared EcsInstanceCommonTestCase so that we don't have
+// to mutate the cross-product helper. Reused by ess_scaling_rule,
+// ess_scheduled_task, ess_suspend_process, ess_notification tests.
+const EssInstanceCommonTestCase = `
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count    = 2
+  memory_size       = 4
+}
+data "alicloud_images" "default" {
+  name_regex    = "^ubuntu"
+  most_recent   = true
+  owners        = "system"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+}
+resource "alicloud_vpc" "default" {
+  vpc_name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_name              = "${var.name}"
+}
+resource "alicloud_security_group" "default" {
+  name   = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+}
+resource "alicloud_security_group_rule" "default" {
+  	type = "ingress"
+  	ip_protocol = "tcp"
+  	nic_type = "intranet"
+  	policy = "accept"
+  	port_range = "22/22"
+  	priority = 1
+  	security_group_id = "${alicloud_security_group.default.id}"
+  	cidr_ip = "172.16.0.0/24"
+}
+`
 
 func TestAccAliCloudEssScalingRule_basic(t *testing.T) {
 	var v ess.ScalingRule
@@ -38,7 +86,7 @@ func TestAccAliCloudEssScalingRule_basic(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -153,7 +201,7 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_basic(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -278,7 +326,7 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_cloudMonitor(t *testing.
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -353,7 +401,7 @@ func TestAccAliCloudEssScalingRule_predictive_rule_basic(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -460,7 +508,7 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_dimension(t *testi
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -530,7 +578,7 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_hybrid_metrics_upd
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -680,7 +728,7 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_hybrid_metrics_cre
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -748,7 +796,7 @@ func TestAccAliCloudEssScalingRule_step_rule_basic(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -838,7 +886,7 @@ func TestAccAliCloudEssScalingRuleMulti(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -883,7 +931,7 @@ func TestAccAliCloudEssScalingSimpleRule_minAdjustmentMagnitude(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -957,7 +1005,7 @@ func TestAccAliCloudEssScalingStepRule_minAdjustmentMagnitude(t *testing.T) {
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1046,7 +1094,7 @@ func TestAccAliCloudEssScalingTargetRule_scaleInEvaluationCountAndScaleOutEvalua
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -1149,6 +1197,7 @@ func testAccEssScalingRuleConfig(name string) string {
 		name_regex  = "^centos.*_64"
   		most_recent = true
   		owners      = "system"
+  		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	}
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
@@ -1165,8 +1214,9 @@ func testAccEssScalingRuleConfig(name string) string {
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
+		system_disk_category = "cloud_essd"
 	}
-	`, EcsInstanceCommonTestCase, name)
+	`, EssInstanceCommonTestCase, name)
 }
 
 func testAccEssScalingRuleConfigMulti(name string) string {
@@ -1179,6 +1229,7 @@ func testAccEssScalingRuleConfigMulti(name string) string {
 		name_regex  = "^centos.*_64"
   		most_recent = true
   		owners      = "system"
+  		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 	}
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
@@ -1195,9 +1246,10 @@ func testAccEssScalingRuleConfigMulti(name string) string {
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
+		system_disk_category = "cloud_essd"
 	}
 
-	`, EcsInstanceCommonTestCase, name)
+	`, EssInstanceCommonTestCase, name)
 }
 
 func testAccEssTargetTrackingScalingRuleConfig(name string) string {
@@ -1213,7 +1265,7 @@ func testAccEssTargetTrackingScalingRuleConfig(name string) string {
 		scaling_group_name = "${var.name}"
 		vswitch_ids = ["${alicloud_vswitch.default.id}"]
 	}
-	`, EcsInstanceCommonTestCase, name)
+	`, EssInstanceCommonTestCase, name)
 }
 
 func testAccEssTargetTrackingScalingRuleWithAlarmDimension(name string) string {
@@ -1271,7 +1323,7 @@ func testAccEssTargetTrackingScalingRuleWithAlarmDimension(name string) string {
 		  sticky_session_type    = "Server"
 	  }
 	}
-	`, EcsInstanceCommonTestCase, name)
+	`, EssInstanceCommonTestCase, name)
 }
 
 func testAccEssTargetTrackingScalingRuleWithHybridMetrics(name string) string {
@@ -1324,7 +1376,7 @@ products:
 EOF
   target_user_id = data.alicloud_account.default.id
 }
-	`, EcsInstanceCommonTestCase, name)
+	`, EssInstanceCommonTestCase, name)
 }
 
 func testAccEssStepScalingRuleUpdate_step(name string) string {
@@ -1341,5 +1393,5 @@ func testAccEssStepScalingRuleUpdate_step(name string) string {
 		vswitch_ids = ["${alicloud_vswitch.default.id}"]
 	}
 
-	`, EcsInstanceCommonTestCase, name)
+	`, EssInstanceCommonTestCase, name)
 }

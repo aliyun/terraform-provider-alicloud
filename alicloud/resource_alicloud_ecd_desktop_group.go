@@ -9,8 +9,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudEcdDesktopGroup() *schema.Resource {
@@ -220,14 +220,14 @@ func resourceAliCloudEcdDesktopGroupCreate(d *schema.ResourceData, meta interfac
 	}
 	request["PolicyGroupId"] = d.Get("policy_group_id")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -362,14 +362,14 @@ func resourceAliCloudEcdDesktopGroupUpdate(d *schema.ResourceData, meta interfac
 	request["PolicyGroupId"] = d.Get("policy_group_id")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ecd", "2020-09-30", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -413,14 +413,14 @@ func resourceAliCloudEcdDesktopGroupUpdate(d *schema.ResourceData, meta interfac
 			request["EndUserIds"] = endUserIdsMapsArray
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ecd", "2020-09-30", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -442,14 +442,14 @@ func resourceAliCloudEcdDesktopGroupUpdate(d *schema.ResourceData, meta interfac
 			request["EndUserIds"] = endUserIdsMapsArray
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ecd", "2020-09-30", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -488,14 +488,14 @@ func resourceAliCloudEcdDesktopGroupDelete(d *schema.ResourceData, meta interfac
 		request["EndUserIds"] = endUserIds
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPost("ecd", "2020-09-30", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) || strings.Contains(err.Error(), "NotAllowOperation") {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -512,16 +512,16 @@ func resourceAliCloudEcdDesktopGroupDelete(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, query, request, true)
 		if err != nil {
 			// The desktop group cannot be deleted while it is in a transient
 			// state (e.g. desktops are being created or released in the group).
 			if NeedRetry(err) || strings.Contains(err.Error(), "NotAllowOperation") {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -541,7 +541,7 @@ func resourceAliCloudEcdDesktopGroupDelete(d *schema.ResourceData, meta interfac
 	// no longer lists any desktop (releasing desktops are listed with status
 	// Deleted until they are purged).
 	groupId := d.Id()
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		listAction := "DescribeDesktopsInGroup"
 		nextToken := ""
 		remaining := 0
@@ -560,9 +560,9 @@ func resourceAliCloudEcdDesktopGroupDelete(d *schema.ResourceData, meta interfac
 					return nil
 				}
 				if NeedRetry(listErr) {
-					return resource.RetryableError(listErr)
+					return retry.RetryableError(listErr)
 				}
-				return resource.NonRetryableError(listErr)
+				return retry.NonRetryableError(listErr)
 			}
 			// Desktops that are being released stay listed with status Deleted
 			// for a long time, but they no longer block the deletion of the
@@ -586,7 +586,7 @@ func resourceAliCloudEcdDesktopGroupDelete(d *schema.ResourceData, meta interfac
 			}
 		}
 		if remaining > 0 {
-			return resource.RetryableError(fmt.Errorf("there are still %d desktops being released in the desktop group %s", remaining, groupId))
+			return retry.RetryableError(fmt.Errorf("there are still %d desktops being released in the desktop group %s", remaining, groupId))
 		}
 		return nil
 	})

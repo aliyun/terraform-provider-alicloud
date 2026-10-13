@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudAlbSecurityPolicy() *schema.Resource {
@@ -72,14 +72,14 @@ func resourceAlicloudAlbSecurityPolicyCreate(d *schema.ResourceData, meta interf
 	request["Ciphers"] = d.Get("ciphers")
 	request["ClientToken"] = buildClientToken("CreateSecurityPolicy")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -126,7 +126,6 @@ func resourceAlicloudAlbSecurityPolicyUpdate(d *schema.ResourceData, meta interf
 		if err := albService.SetResourceTags(d, "securitypolicy"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	update := false
 	request := map[string]interface{}{
@@ -142,14 +141,14 @@ func resourceAlicloudAlbSecurityPolicyUpdate(d *schema.ResourceData, meta interf
 	if update {
 		action := "MoveResourceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -157,7 +156,6 @@ func resourceAlicloudAlbSecurityPolicyUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
 	}
 	update = false
 	updateSecurityPolicyAttributeReq := map[string]interface{}{
@@ -188,14 +186,14 @@ func resourceAlicloudAlbSecurityPolicyUpdate(d *schema.ResourceData, meta interf
 		action := "UpdateSecurityPolicyAttribute"
 		request["ClientToken"] = buildClientToken("UpdateSecurityPolicyAttribute")
 		wait := incrementalWait(3*time.Second, 30*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, updateSecurityPolicyAttributeReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"IncorrectStatus.SecurityPolicy"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -207,9 +205,6 @@ func resourceAlicloudAlbSecurityPolicyUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("ciphers")
-		d.SetPartial("security_policy_name")
-		d.SetPartial("tls_versions")
 	}
 	d.Partial(false)
 	return resourceAlicloudAlbSecurityPolicyRead(d, meta)
@@ -228,14 +223,14 @@ func resourceAlicloudAlbSecurityPolicyDelete(d *schema.ResourceData, meta interf
 	}
 	request["ClientToken"] = buildClientToken("DeleteSecurityPolicy")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

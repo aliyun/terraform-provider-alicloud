@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test SimpleApplicationServer Disk. >>> Resource test cases, automatically generated.
@@ -31,7 +31,7 @@ func TestAccAliCloudSimpleApplicationServerDisk_basic5761(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -79,11 +79,19 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_simple_application_server_images" "default" {
+  platform = "Linux"
+}
+
+data "alicloud_simple_application_server_plans" "default" {
+  platform = "Linux"
+}
+
 resource "alicloud_simple_application_server_instance" "defaultV70JQf" {
   instance_name     = "testwujie"
   status            = "Running"
-  plan_id           = "swas.s1.c2m2s50b3"
-  image_id          = "21e9617bd4754f77a090d2fbc94916a4"
+  plan_id           = data.alicloud_simple_application_server_plans.default.plans.0.id
+  image_id          = data.alicloud_simple_application_server_images.default.images.0.id
   period            = "1"
   data_disk_size    = "0"
   password          = "@3612568Wj"

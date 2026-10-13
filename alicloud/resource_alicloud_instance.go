@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -12,9 +13,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudInstance() *schema.Resource {
@@ -369,13 +370,7 @@ func resourceAliCloudInstance() *schema.Resource {
 					},
 				},
 			},
-			//subnet_id and vswitch_id both exists, cause compatible old version, and aws habit.
-			"subnet_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true, //add this schema cause subnet_id not used enter parameter, will different, so will be ForceNew
-				Removed:  "Field 'subnet_id' has been removed from version 1.210.0",
-			},
+
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -801,12 +796,6 @@ func resourceAliCloudInstance() *schema.Resource {
 				Computed:   true,
 				Deprecated: "Field `role_name` has been deprecated from provider version 1.275.0. New resource `alicloud_ecs_ram_role_attachment` instead.",
 			},
-			"io_optimized": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				Removed:  "Field `io_optimized` has been removed from provider version 1.213.1.",
-			},
 		},
 	}
 }
@@ -942,9 +931,6 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	vswitchValue := d.Get("vswitch_id")
-	if vswitchValue == "" {
-		vswitchValue = d.Get("subnet_id")
-	}
 
 	if v, ok := d.GetOk("instance_charge_type"); ok {
 		request["InstanceChargeType"] = v
@@ -1302,14 +1288,14 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	wait := incrementalWait(1*time.Second, 1*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectVSwitchStatus"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1408,7 +1394,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("tags", ecsService.tagsToMap(instance.Tags.Tag))
 	d.Set("hpc_cluster_id", instance.HpcClusterId)
 	d.Set("deployment_set_id", instance.DeploymentSetId)
-	d.Set("deployment_set_group_no", instance.DeploymentSetGroupNo)
+	d.Set("deployment_set_group_no", fmt.Sprintf("%v", instance.DeploymentSetGroupNo))
 	d.Set("stopped_mode", instance.StoppedMode)
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
@@ -1416,7 +1402,6 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("public_ip", "")
 	}
 
-	d.Set("subnet_id", instance.VpcAttributes.VSwitchId)
 	d.Set("vpc_id", instance.VpcAttributes.VpcId)
 	d.Set("vswitch_id", instance.VpcAttributes.VSwitchId)
 	d.Set("spot_duration", instance.SpotDuration)
@@ -1656,16 +1641,16 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		var raw interface{}
 		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.DescribeInstanceAutoRenewAttribute(request)
 			})
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidParameter"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -1771,8 +1756,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	if !d.IsNewResource() {
 		if err := setTags(client, TagResourceInstance, d); err != nil {
 			return WrapError(err)
-		} else {
-			d.SetPartial("tags")
 		}
 	}
 
@@ -1789,13 +1772,10 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
-		d.SetPartial("resource_group_id")
 	}
 
 	if err := setVolumeTags(client, TagResourceDisk, d); err != nil {
 		return WrapError(err)
-	} else {
-		d.SetPartial("volume_tags")
 	}
 
 	if !d.IsNewResource() && !d.HasChange("vpc_id") && d.HasChange("security_groups") {
@@ -1821,7 +1801,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				}
 			}
 
-			d.SetPartial("security_groups")
 		}
 	}
 
@@ -1849,14 +1828,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				}
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"ServiceUnavailable", "Throttling.ConcurrentLimitExceeded"}) || NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1892,7 +1871,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			d.SetPartial("system_disk_size")
 		}
 
 		if d.HasChange("system_disk_auto_snapshot_policy_id") {
@@ -1904,14 +1882,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			request["autoSnapshotPolicyId"] = d.Get("system_disk_auto_snapshot_policy_id")
 			request["diskIds"] = convertListToJsonString([]interface{}{disk["DiskId"]})
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -1919,7 +1897,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("system_disk_auto_snapshot_policy_id")
 		}
 
 		if d.HasChange("system_disk_name") || d.HasChange("system_disk_description") || d.HasChange("system_disk_bursting_enabled") {
@@ -1936,14 +1913,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 			action := "ModifyDiskAttribute"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, modifyDiskAttributeReq, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(action, response, modifyDiskAttributeReq)
 				return nil
@@ -1951,9 +1928,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("system_disk_name")
-			d.SetPartial("system_disk_description")
-			d.SetPartial("system_disk_bursting_enabled")
 		}
 	}
 
@@ -1984,7 +1958,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("auto_release_time")
 	}
 
 	typeUpdate, err := modifyInstanceType(d, meta, run)
@@ -2020,16 +1993,16 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			if v, ok := d.GetOk("stopped_mode"); ok {
 				stopRequest.StoppedMode = v.(string)
 			}
-			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.StopInstance(stopRequest)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
 						time.Sleep(time.Second)
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(stopRequest.GetActionName(), raw)
 				return nil
@@ -2063,16 +2036,16 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			startRequest := ecs.CreateStartInstanceRequest()
 			startRequest.InstanceId = d.Id()
 
-			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.StartInstance(startRequest)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "InvalidOperation.Conflict"}) || NeedRetry(err) {
 						time.Sleep(time.Second)
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(startRequest.GetActionName(), raw)
 				return nil
@@ -2082,7 +2055,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), startRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 			// Start instance sometimes costs more than 8 minutes when os type is centos.
-			stateConf := &resource.StateChangeConf{
+			stateConf := &retry.StateChangeConf{
 				Pending:    []string{"Pending", "Starting", "Stopped"},
 				Target:     []string{"Running"},
 				Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{}),
@@ -2095,17 +2068,10 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
-		if d.HasChange("status") {
-			d.SetPartial("status")
-		}
 	}
 
 	if err := modifyInstanceNetworkSpec(d, meta); err != nil {
 		return WrapError(err)
-	}
-
-	if d.HasChange("force_delete") {
-		d.SetPartial("force_delete")
 	}
 
 	// Only PrePaid instance can support modifying renewal attribute
@@ -2125,16 +2091,16 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		// subsystem right after ModifyInstanceChargeType returns, so the auto renew call
 		// can transiently fail; retry until the change is accepted.
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ModifyInstanceAutoRenewAttribute(request)
 			})
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"ChargeTypeViolation", "IncorrectInstanceStatus"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -2142,8 +2108,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("renewal_status")
-		d.SetPartial("auto_renew_period")
 	}
 
 	if d.HasChange("secondary_private_ips") {
@@ -2175,14 +2139,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict", "Operation.Conflict"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -2191,7 +2155,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 			addDebug(action, response, request)
-			d.SetPartial("secondary_private_ips")
 		}
 		if len(create) > 0 {
 			action := "AssignPrivateIpAddresses"
@@ -2204,14 +2167,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				request[fmt.Sprintf("PrivateIpAddress.%d", index+1)] = val
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict", "Operation.Conflict"}) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -2219,7 +2182,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("secondary_private_ips")
 		}
 
 	}
@@ -2251,14 +2213,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 					"SecondaryPrivateIpAddressCount": diff,
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -2266,7 +2228,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				d.SetPartial("secondary_private_ip_address_count")
 			}
 			if diff < 0 {
 				diff *= -1
@@ -2280,14 +2241,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 					request[fmt.Sprintf("PrivateIpAddress.%d", index+1)] = val
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 							wait()
-							return resource.RetryableError(err)
+							return retry.RetryableError(err)
 						}
-						return resource.NonRetryableError(err)
+						return retry.NonRetryableError(err)
 					}
 					return nil
 				})
@@ -2296,7 +2257,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 				addDebug(action, response, request)
-				d.SetPartial("secondary_private_ip_address_count")
 			}
 		}
 	}
@@ -2318,14 +2278,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			request["RemoveFromDeploymentSet"] = true
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2333,7 +2293,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("deployment_set_id")
 	}
 
 	if d.HasChange("maintenance_time") || d.HasChange("maintenance_action") || d.HasChange("maintenance_notify") {
@@ -2368,14 +2327,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2384,9 +2343,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("maintenance_time")
-		d.SetPartial("maintenance_action")
-		d.SetPartial("maintenance_notify")
 	}
 
 	if d.HasChange("http_endpoint") || d.HasChange("http_tokens") || d.HasChange("instance_metadata_tags") {
@@ -2410,14 +2366,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2426,8 +2382,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("http_endpoint")
-		d.SetPartial("http_tokens")
 	}
 
 	if !d.IsNewResource() && d.HasChange("ipv6_addresses") {
@@ -2460,14 +2414,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, unassignIpv6AddressesReq, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -2489,14 +2443,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, assignIpv6AddressesReq, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -2507,7 +2461,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 		}
 
-		d.SetPartial("ipv6_addresses")
 	}
 
 	if !d.IsNewResource() && d.HasChange("key_name") {
@@ -2531,14 +2484,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, detachKeyPairReq, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -2559,14 +2512,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, attachKeyPairReq, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -2596,7 +2549,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("key_name")
 	}
 
 	update := false
@@ -2623,14 +2575,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	if update {
 		action := "ModifyInstanceAttachmentAttributes"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, modifyInstanceAttachmentAttributesReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -2640,8 +2592,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("private_pool_options_match_criteria")
-		d.SetPartial("private_pool_options_id")
 	}
 
 	if !d.IsNewResource() && d.HasChange("role_name") {
@@ -2661,14 +2611,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, detachInstanceRamRoleReq, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -2689,14 +2639,14 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, attachInstanceRamRoleReq, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				return nil
 			})
@@ -2712,7 +2662,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("role_name")
 	}
 
 	d.Partial(false)
@@ -2741,19 +2690,19 @@ func resourceAliCloudInstanceDelete(d *schema.ResourceData, meta interface{}) er
 	deleteRequest.Force = requests.NewBoolean(true)
 
 	wait := incrementalWait(1*time.Second, 1*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.DeleteInstance(deleteRequest)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{Throttling, "LastTokenProcessing"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(deleteRequest.GetActionName(), raw)
 		return nil
@@ -2776,7 +2725,7 @@ func resourceAliCloudInstanceDelete(d *schema.ResourceData, meta interface{}) er
 // resourceAliCloudInstanceCustomizeDiff turns an image_id change into a replacement when the
 // provider is configured with features.ecs_instance.replace_on_image_update. Without it, such a
 // change is applied in place by modifyInstanceImage, which the plan can only describe as an update.
-func resourceAliCloudInstanceCustomizeDiff(diff *schema.ResourceDiff, meta interface{}) error {
+func resourceAliCloudInstanceCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
 	client, ok := meta.(*connectivity.AliyunClient)
 	if !ok || client == nil || !client.Features.EcsInstance.ReplaceOnImageUpdate {
 		return nil
@@ -2829,16 +2778,16 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 			request.PeriodUnit = d.Get("period_unit").(string)
 		}
 		request.InstanceChargeType = chargeType
-		if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ModifyInstanceChargeType(request)
 			})
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
 					time.Sleep(3 * time.Second)
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -2846,18 +2795,17 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		// Wait for instance charge type has been changed
-		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			if instance, err := ecsService.DescribeInstance(d.Id()); err != nil {
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			} else if instance.InstanceChargeType == chargeType {
 				return nil
 			}
-			return resource.RetryableError(Error("Waitting for instance %s to be %s timeout.", d.Id(), chargeType))
+			return retry.RetryableError(Error("Waitting for instance %s to be %s timeout.", d.Id(), chargeType))
 		}); err != nil {
 			return WrapError(err)
 		}
 
-		d.SetPartial("instance_charge_type")
 		return nil
 	}
 
@@ -2967,19 +2915,16 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	request["InstanceId"] = d.Id()
 
 	if d.HasChange("instance_name") {
-		d.SetPartial("instance_name")
 		request["InstanceName"] = d.Get("instance_name").(string)
 		update = true
 	}
 
 	if d.HasChange("description") {
-		d.SetPartial("description")
 		request["Description"] = d.Get("description").(string)
 		update = true
 	}
 
 	if d.HasChange("user_data") {
-		d.SetPartial("user_data")
 		v := d.Get("user_data")
 		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
 		if base64DecodeError == nil {
@@ -2993,7 +2938,6 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	}
 
 	if d.HasChange("host_name") {
-		d.SetPartial("host_name")
 		request["HostName"] = d.Get("host_name").(string)
 		update = true
 		reboot = true
@@ -3001,7 +2945,6 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 
 	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
 		if v := d.Get("password").(string); v != "" {
-			d.SetPartial("password")
 			request["Password"] = v
 			update = true
 			reboot = true
@@ -3013,15 +2956,12 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 				return reboot, WrapError(err)
 			}
 			request["Password"] = decryptResp
-			d.SetPartial("kms_encrypted_password")
-			d.SetPartial("kms_encryption_context")
 			update = true
 			reboot = true
 		}
 	}
 
 	if d.HasChange("deletion_protection") {
-		d.SetPartial("deletion_protection")
 
 		if v, ok := d.GetOkExists("deletion_protection"); ok {
 			request["DeletionProtection"] = v
@@ -3030,13 +2970,11 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	}
 
 	if d.HasChange("credit_specification") {
-		d.SetPartial("credit_specification")
 		request["CreditSpecification"] = d.Get("credit_specification").(string)
 		update = true
 	}
 
 	if d.HasChange("enable_jumbo_frame") {
-		d.SetPartial("enable_jumbo_frame")
 
 		if v, ok := d.GetOkExists("enable_jumbo_frame"); ok {
 			request["EnableJumboFrame"] = v
@@ -3046,7 +2984,6 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	}
 
 	if d.HasChange("enable_network_encryption") {
-		d.SetPartial("enable_network_encryption")
 
 		if v, ok := d.GetOkExists("enable_network_encryption"); ok {
 			request["EnableNetworkEncryption"] = v
@@ -3057,14 +2994,14 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 
 	if update {
 		wait := incrementalWait(1*time.Minute, 1*time.Minute)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidChargeType.ValueNotSupported"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -3096,14 +3033,6 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 		}
 	}
 
-	if d.HasChange("subnet_id") {
-		update = true
-		if d.Get("subnet_id").(string) == "" {
-			return update, WrapError(Error("Field 'subnet_id' is required when modifying the instance VPC attribute."))
-		}
-		request.VSwitchId = d.Get("subnet_id").(string)
-	}
-
 	if request.VSwitchId != "" && d.HasChange("private_ip") {
 		request.PrivateIpAddress = d.Get("private_ip").(string)
 		update = true
@@ -3130,16 +3059,16 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 
 	if update {
 		client := meta.(*connectivity.AliyunClient)
-		err := resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ModifyInstanceVpcAttribute(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationConflict"}) {
 					time.Sleep(1 * time.Second)
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -3153,11 +3082,6 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 			return update, WrapError(err)
 		}
 
-		d.SetPartial("vswitch_id")
-		d.SetPartial("subnet_id")
-		d.SetPartial("private_ip")
-		d.SetPartial("vpc_id")
-		d.SetPartial("security_groups")
 	}
 
 	return update, nil
@@ -3195,16 +3119,16 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 				request.OperatorType = v.(string)
 			}
 
-			err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(6*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.ModifyPrepayInstanceSpec(request)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{Throttling}) {
 						time.Sleep(5 * time.Second)
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
@@ -3219,7 +3143,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			request.InstanceType = d.Get("instance_type").(string)
 			request.ClientToken = buildClientToken(request.GetActionName())
 
-			err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(6*time.Minute, func() *retry.RetryError {
 				args := *request
 				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.ModifyInstanceSpec(&args)
@@ -3227,9 +3151,9 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 				if err != nil {
 					if IsExpectedErrors(err, []string{Throttling}) {
 						time.Sleep(10 * time.Second)
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil
@@ -3259,7 +3183,6 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 
 			time.Sleep(DefaultIntervalShort * time.Second)
 		}
-		d.SetPartial("instance_type")
 	}
 	return update, nil
 }
@@ -3284,7 +3207,6 @@ func modifyInstanceAttributeNeedStopped(d *schema.ResourceData, meta interface{}
 	request["InstanceId"] = d.Id()
 
 	if d.HasChange("cpu_options") {
-		d.SetPartial("cpu_options")
 
 		if coreCount, ok := d.GetOkExists("cpu_options.0.core_count"); ok {
 			request["CpuOptions.Core"] = coreCount
@@ -3312,14 +3234,14 @@ func modifyInstanceAttributeNeedStopped(d *schema.ResourceData, meta interface{}
 
 	if update {
 		wait := incrementalWait(1*time.Minute, 1*time.Minute)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidChargeType.ValueNotSupported"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -3348,7 +3270,6 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("internet_charge_type") {
 		request.NetworkChargeType = d.Get("internet_charge_type").(string)
 		update = true
-		d.SetPartial("internet_charge_type")
 	}
 
 	if d.HasChange("internet_max_bandwidth_out") {
@@ -3358,33 +3279,31 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 		}
 		request.InternetMaxBandwidthOut = requests.NewInteger(n.(int))
 		update = true
-		d.SetPartial("internet_max_bandwidth_out")
 	}
 
 	if d.HasChange("internet_max_bandwidth_in") {
 		request.InternetMaxBandwidthIn = requests.NewInteger(d.Get("internet_max_bandwidth_in").(int))
 		update = true
-		d.SetPartial("internet_max_bandwidth_in")
 	}
 
 	//An instance that was successfully modified once cannot be modified again within 5 minutes.
 	wait := incrementalWait(2*time.Second, 2*time.Second)
 	client := meta.(*connectivity.AliyunClient)
 	if update {
-		if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ModifyInstanceNetworkSpec(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{Throttling, "LastOrderProcessing", "LastRequestProcessing", "LastTokenProcessing"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
 				if IsExpectedErrors(err, []string{"InternalError", "UnknownError"}) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil

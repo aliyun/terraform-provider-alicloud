@@ -7,8 +7,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudAlidnsDomain() *schema.Resource {
@@ -143,7 +143,6 @@ func resourceAlicloudAlidnsDomainUpdate(d *schema.ResourceData, meta interface{}
 		if err := alidnsService.SetResourceTags(d, "DOMAIN"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	update := false
 	request := alidns.CreateUpdateDomainRemarkRequest()
@@ -164,8 +163,6 @@ func resourceAlicloudAlidnsDomainUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("lang")
-		d.SetPartial("remark")
 	}
 	update = false
 	changeDomainGroupReq := alidns.CreateChangeDomainGroupRequest()
@@ -186,8 +183,6 @@ func resourceAlicloudAlidnsDomainUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), changeDomainGroupReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("group_id")
-		d.SetPartial("lang")
 	}
 	d.Partial(false)
 	return resourceAlicloudAlidnsDomainRead(d, meta)
@@ -200,16 +195,16 @@ func resourceAlicloudAlidnsDomainDelete(d *schema.ResourceData, meta interface{}
 		request.Lang = v.(string)
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
 			return alidnsClient.DeleteDomain(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"RecordForbidden.DNSChange", "DnsSystemBusyness", "InternalError"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw)
 		return nil

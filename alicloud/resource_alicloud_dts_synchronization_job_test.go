@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
@@ -29,9 +29,9 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -187,9 +187,9 @@ func TestAccAliCloudDTSSynchronizationJob_basic1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -255,9 +255,9 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -766,7 +766,7 @@ func AliCloudDTSSynchronizationJobBasicDependence0(name string) string {
   		engine           = "MySQL"
   		engine_version   = "8.0"
   		instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   		vswitch_id       = data.alicloud_vswitches.default.ids.0
   		instance_name    = "rds-mysql-source"
 	}
@@ -794,7 +794,7 @@ func AliCloudDTSSynchronizationJobBasicDependence0(name string) string {
   		engine           = "MySQL"
   		engine_version   = "8.0"
   		instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   		vswitch_id       = data.alicloud_vswitches.default.ids.0
   		instance_name    = "rds-mysql-target"
 	}
@@ -872,8 +872,6 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		db_node_class = "polar.mysql.x4.medium.c"
   		vswitch_id    = data.alicloud_vswitches.default.ids.0
   		description   = "polardb_cluster_description"
-		storage_space = 20
-		storage_type  = "ESSDPL0" 
 	}
 
 	resource "alicloud_polardb_database" "source_db" {
@@ -900,7 +898,7 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		engine           = "MySQL"
   		engine_version   = "8.0"
   		instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  		instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   		vswitch_id       = data.alicloud_vswitches.default.ids.0
   		instance_name    = "rds-mysql-target"
 	}

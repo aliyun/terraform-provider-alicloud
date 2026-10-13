@@ -6,11 +6,11 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
+func TestAccAliCloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 	var cenBwp cbn.CenBandwidthPackage
 
 	resourceId := "alicloud_cen_bandwidth_package_attachment.default"
@@ -36,7 +36,7 @@ func TestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 		},
 		// module name
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

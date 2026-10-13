@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Case 3
-func TestAccAlicloudService_catalogProvisionedProduct_basic1956(t *testing.T) {
+func TestAccAliCloudServiceCatalogProvisionedProduct_basic1956(t *testing.T) {
 	// This resource depends on other unconnected resources, so skip the tests temporarily.
 	t.Skip()
 	var v map[string]interface{}
@@ -30,7 +30,7 @@ func TestAccAlicloudService_catalogProvisionedProduct_basic1956(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

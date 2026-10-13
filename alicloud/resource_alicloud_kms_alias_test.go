@@ -15,9 +15,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -99,7 +99,7 @@ func testSweepKmsAlias(region string) error {
 	return nil
 }
 
-func TestAccAlicloudKMSAlias_basic(t *testing.T) {
+func TestAccAliCloudKmsAlias_basic(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_kms_alias.default"
@@ -121,9 +121,9 @@ func TestAccAlicloudKMSAlias_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -175,7 +175,7 @@ var kmsAliasBasicMap = map[string]string{
 
 // lintignore: R001
 func TestUnitAlicloudKMSAlias(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_kms_alias"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_kms_alias"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

@@ -1,3 +1,7 @@
+IMS:
+  - changed-files:
+      - any-glob-to-any-file:
+          - alicloud/service/ims/**
 dependencies:
   - changed-files:
       - any-glob-to-any-file:

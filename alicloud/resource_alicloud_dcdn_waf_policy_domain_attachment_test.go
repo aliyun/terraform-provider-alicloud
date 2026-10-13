@@ -12,16 +12,15 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudDcdnWafPolicyDomainAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dcdn_waf_policy_domain_attachment.default"
-	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudDCDNWafPolicyDomainAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DcdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -35,9 +34,9 @@ func TestAccAliCloudDcdnWafPolicyDomainAttachment_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -98,7 +97,7 @@ resource "alicloud_dcdn_waf_policy" "default" {
 
 // lintignore: R001
 func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dcdn_waf_policy_domain_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dcdn_waf_policy_domain_attachment"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

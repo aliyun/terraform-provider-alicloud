@@ -15,9 +15,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -93,7 +93,7 @@ func testSweepRosTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudROSTemplate_basic(t *testing.T) {
+func TestAccAliCloudROSTemplate_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template.default"
 	ra := resourceAttrInit(resourceId, AlicloudRosTemplateMap)
@@ -111,7 +111,7 @@ func TestAccAlicloudROSTemplate_basic(t *testing.T) {
 		},
 
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -217,7 +217,7 @@ func AlicloudRosTemplateBasicDependence(name string) string {
 
 // lintignore: R001
 func TestUnitAlicloudROSTemplate(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ros_template"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ros_template"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

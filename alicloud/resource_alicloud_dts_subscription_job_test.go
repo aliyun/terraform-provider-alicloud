@@ -3,15 +3,15 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func init() {
@@ -45,14 +45,14 @@ func testSweepDtsSubscriptionJob(region string) error {
 	var response map[string]interface{}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -118,9 +118,10 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
 		// TODO: there is an api bug that the API DescribeDtsJobDetail can get resource even if it has been deleted.
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -129,7 +130,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 					"dts_job_name":                       "${var.name}",
 					"payment_type":                       "PayAsYouGo",
 					"source_endpoint_engine_name":        "MySQL",
-					"source_endpoint_region":             "${var.region_id}",
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_instance_type":      "RDS",
 					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_database_name":      "${alicloud_rds_account.source_account.account_password}",
@@ -145,7 +146,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 						"dts_job_name":                       CHECKSET,
 						"payment_type":                       "PayAsYouGo",
 						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":             CHECKSET,
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "N1cetest",
 						"source_endpoint_user_name":          "test_mysql",
@@ -278,9 +279,10 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
 		// TODO: there is an api bug that the API DescribeDtsJobDetail can get resource even if it has been deleted.
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -289,7 +291,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 					"dts_job_name":                       "tf-testAccCase",
 					"payment_type":                       "PayAsYouGo",
 					"source_endpoint_engine_name":        "MySQL",
-					"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_instance_type":      "RDS",
 					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
@@ -307,7 +309,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 						"dts_job_name":                       "tf-testAccCase",
 						"payment_type":                       "PayAsYouGo",
 						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":             CHECKSET,
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "tfaccountpri_0",
 						"source_endpoint_user_name":          "tftestprivilege",
@@ -452,10 +454,11 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -464,7 +467,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 					"payment_duration_unit":              "Month",
 					"payment_duration":                   "1",
 					"source_endpoint_engine_name":        "MySQL",
-					"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_instance_type":      "RDS",
 					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
@@ -482,7 +485,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 						"dts_job_name":                       "tf-testAccCase",
 						"payment_type":                       "Subscription",
 						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
+						"source_endpoint_region":             CHECKSET,
 						"source_endpoint_instance_type":      "RDS",
 						"source_endpoint_database_name":      "tfaccountpri_0",
 						"source_endpoint_user_name":          "tftestprivilege",
@@ -534,8 +537,8 @@ variable "name" {
   default = "tf-testaccdts%s"
 }
 
-variable "region_id" {
-  default = "%s"
+data "alicloud_regions" "default" {
+  current = true
 }
 
 data "alicloud_db_zones" "default" {
@@ -543,11 +546,11 @@ data "alicloud_db_zones" "default" {
   engine_version           = "8.0"
   instance_charge_type     = "PostPaid"
   category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
+  db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+  name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -560,7 +563,7 @@ data "alicloud_db_instance_classes" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   category                 = "HighAvailability"
-  db_instance_storage_type = "local_ssd"
+  db_instance_storage_type = "cloud_essd"
   instance_charge_type     = "PostPaid"
 }
 
@@ -569,7 +572,7 @@ resource "alicloud_db_instance" "source" {
   engine           = "MySQL"
   engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-source"
 }
@@ -597,7 +600,7 @@ resource "alicloud_db_instance" "target" {
   engine           = "MySQL"
   engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-target"
 }
@@ -607,6 +610,5 @@ resource "alicloud_rds_account" "target_account" {
   account_name     = "test_mysql"
   account_password = "N1cetest"
 }
-
-`, name, os.Getenv("ALICLOUD_REGION"))
+`, name)
 }

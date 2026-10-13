@@ -12,13 +12,13 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic0(t *testing.T) {
+func TestAccAliCloudCloudMonitorServiceHybridMonitorFcTask_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_hybrid_monitor_fc_task.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudMonitorServiceSupportRegions)
@@ -36,7 +36,7 @@ func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic0(t *testing.T) 
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -75,13 +75,13 @@ variable "name" {
 data "alicloud_account" "this" {}
 resource "alicloud_cms_namespace" "default" {
 	description = var.name
-	namespace = "tf-testacc-cloudmonitorservicenamespace"
+	namespace = replace(var.name, "_", "-")
 	specification = "cms.s1.large"
 }
 `, name)
 }
 
-func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic1(t *testing.T) {
+func TestAccAliCloudCloudMonitorServiceHybridMonitorFcTask_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_hybrid_monitor_fc_task.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudMonitorServiceSupportRegions)
@@ -92,14 +92,14 @@ func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic1(t *testing.T) 
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scloudmonitorservicehybridmonitorfctask%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacccmshybridmonitorfctask%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudMonitorServiceHybridMonitorFcTaskBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -136,7 +136,7 @@ func TestAccAlicloudCloudMonitorServiceHybridMonitorFcTask_basic1(t *testing.T) 
 
 // lintignore: R001
 func TestUnitAccAlicloudCmsHybridMonitorFcTask(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_hybrid_monitor_fc_task"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cms_hybrid_monitor_fc_task"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudMseEngineNamespace() *schema.Resource {
@@ -58,6 +58,26 @@ func resourceAlicloudMseEngineNamespace() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"quota": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"config_count": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"service_count": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"source_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"type": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -91,14 +111,14 @@ func resourceAlicloudMseEngineNamespaceCreate(d *schema.ResourceData, meta inter
 	request["InstanceId"] = instanceId
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -145,11 +165,11 @@ func resourceAlicloudMseEngineNamespaceRead(d *schema.ResourceData, meta interfa
 	d.Set("instance_id", parts[0])
 	d.Set("namespace_show_name", object["NamespaceShowName"])
 	d.Set("namespace_desc", object["NamespaceDesc"])
-	d.Set("quota", object["Quota"])
-	d.Set("config_count", object["ConfigCount"])
+	d.Set("quota", formatInt(object["Quota"]))
+	d.Set("config_count", formatInt(object["ConfigCount"]))
 	d.Set("service_count", object["ServiceCount"])
 	d.Set("source_type", object["SourceType"])
-	d.Set("type", object["Type"])
+	d.Set("type", formatInt(object["Type"]))
 	return nil
 }
 func resourceAlicloudMseEngineNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -182,14 +202,14 @@ func resourceAlicloudMseEngineNamespaceUpdate(d *schema.ResourceData, meta inter
 		}
 		action := "UpdateEngineNamespace"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -218,14 +238,14 @@ func resourceAlicloudMseEngineNamespaceDelete(d *schema.ResourceData, meta inter
 		request["AcceptLanguage"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

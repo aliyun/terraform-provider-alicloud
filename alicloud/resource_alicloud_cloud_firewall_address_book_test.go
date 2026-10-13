@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,10 +13,10 @@ import (
 
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccAliCloudCloudFirewallAddressBook_basic0(t *testing.T) {
@@ -35,9 +36,9 @@ func TestAccAliCloudCloudFirewallAddressBook_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -122,9 +123,9 @@ func TestAccAliCloudCloudFirewallAddressBook_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -209,9 +210,9 @@ func TestAccAliCloudCloudFirewallAddressBook_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -296,9 +297,9 @@ func TestAccAliCloudCloudFirewallAddressBook_basic3(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -383,9 +384,9 @@ func TestAccAliCloudCloudFirewallAddressBook_basic4(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -504,9 +505,9 @@ func TestAccAliCloudCloudFirewallAddressBook_basic5(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -639,9 +640,9 @@ func TestAccAliCloudCloudFirewallAddressBook_basic6(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -791,9 +792,9 @@ func TestAccAliCloudCloudFirewallAddressBook_basic7(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -928,11 +929,11 @@ func TestUnitCloudFirewallAddressBookRefreshDiff(t *testing.T) {
 			d := schema.TestResourceDataRaw(t, r.Schema, config)
 			d.SetId("address-book")
 			client := cloudFirewallAddressBookTestClient(t, tc.remote)
-			refreshed, err := r.Refresh(d.State(), client)
-			if err != nil {
-				t.Fatal(err)
+			refreshed, diags := r.RefreshWithoutUpgrade(context.Background(), d.State(), client)
+			if diags.HasError() {
+				t.Fatalf("%v", diags)
 			}
-			diff, err := r.Diff(refreshed, terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), refreshed, terraform.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -996,7 +997,7 @@ func TestUnitCloudFirewallAddressBookConfiguredDiff(t *testing.T) {
 			if !tc.omitted {
 				config["address_list"] = tc.addresses
 			}
-			diff, err := r.Diff(d.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1019,22 +1020,22 @@ func TestUnitCloudFirewallAddressBookApplyOrder(t *testing.T) {
 	client := cloudFirewallAddressBookTestClient(t, []interface{}{a, b})
 	for _, addresses := range [][]interface{}{{b, a}, {a, b}} {
 		config["address_list"] = addresses
-		diff, err := r.Diff(d.State(), terraform.NewResourceConfigRaw(config), nil)
+		diff, err := r.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(config), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if diff == nil || diff.Empty() {
 			t.Fatal("configured order change must have a plan")
 		}
-		applied, err := r.Apply(d.State(), diff, client)
-		if err != nil {
-			t.Fatal(err)
+		applied, diags := r.Apply(context.Background(), d.State(), diff, client)
+		if diags.HasError() {
+			t.Fatalf("%v", diags)
 		}
-		refreshed, err := r.Refresh(applied, client)
-		if err != nil {
-			t.Fatal(err)
+		refreshed, diags := r.RefreshWithoutUpgrade(context.Background(), applied, client)
+		if diags.HasError() {
+			t.Fatalf("%v", diags)
 		}
-		diff, err = r.Diff(refreshed, terraform.NewResourceConfigRaw(config), nil)
+		diff, err = r.Diff(context.Background(), refreshed, terraform.NewResourceConfigRaw(config), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1054,9 +1055,9 @@ func TestAccAliCloudCloudFirewallAddressBook_addressListOrder(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallAddressBookBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.CloudFirewallSupportRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.CloudFirewallSupportRegions) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{Config: testAccConfig(map[string]interface{}{"group_name": name, "group_type": "ip", "description": name, "address_list": []string{"192.0.2.1/32", "198.51.100.1/32", "203.0.113.1/32"}})},
 			{Config: testAccConfig(map[string]interface{}{"address_list": []string{"203.0.113.1/32", "192.0.2.1/32", "198.51.100.1/32"}}), PlanOnly: true, ExpectNonEmptyPlan: true},
@@ -1106,9 +1107,9 @@ func TestAccAliCloudCloudFirewallAddressBook_assetMemberUidsOrder(t *testing.T) 
 	}, "DescribeCloudFirewallInstanceMember")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, cloudFirewallAddressBookMemberOrderDependence)
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.CloudFirewallSupportRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: resource.ComposeTestCheckFunc(rac.checkResourceDestroy(), memberCheck.checkResourceDestroy()),
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.CloudFirewallSupportRegions) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      resource.ComposeTestCheckFunc(rac.checkResourceDestroy(), memberCheck.checkResourceDestroy()),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1177,9 +1178,9 @@ resource "alicloud_cloud_firewall_instance_member" "order" {
 func TestUnitCloudFirewallAddressBookImportOrder(t *testing.T) {
 	r := resourceAliCloudCloudFirewallAddressBook()
 	client := cloudFirewallAddressBookTestClient(t, []interface{}{"198.51.100.1/32", "192.0.2.1/32", "192.0.2.1/32"})
-	refreshed, err := r.Refresh(&terraform.InstanceState{ID: "address-book", Attributes: map[string]string{}}, client)
-	if err != nil {
-		t.Fatal(err)
+	refreshed, diags := r.RefreshWithoutUpgrade(context.Background(), &terraform.InstanceState{ID: "address-book", Attributes: map[string]string{}}, client)
+	if diags.HasError() {
+		t.Fatalf("%v", diags)
 	}
 	for key, want := range map[string]string{"address_list.#": "3", "address_list.0": "198.51.100.1/32", "address_list.1": "192.0.2.1/32", "address_list.2": "192.0.2.1/32"} {
 		if got := refreshed.Attributes[key]; got != want {
@@ -1193,9 +1194,9 @@ func TestUnitCloudFirewallAddressBookNewOccurrencesOrder(t *testing.T) {
 	d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{"group_name": "test", "group_type": "ip", "description": "test", "address_list": []interface{}{"192.0.2.1/32"}})
 	d.SetId("address-book")
 	client := cloudFirewallAddressBookTestClient(t, []interface{}{"192.0.2.1/32", "198.51.100.1/32", "192.0.2.1/32"})
-	refreshed, err := r.Refresh(d.State(), client)
-	if err != nil {
-		t.Fatal(err)
+	refreshed, diags := r.RefreshWithoutUpgrade(context.Background(), d.State(), client)
+	if diags.HasError() {
+		t.Fatalf("%v", diags)
 	}
 	for key, want := range map[string]string{"address_list.#": "3", "address_list.0": "192.0.2.1/32", "address_list.1": "198.51.100.1/32", "address_list.2": "192.0.2.1/32"} {
 		if got := refreshed.Attributes[key]; got != want {
@@ -1219,9 +1220,9 @@ func TestAccAliCloudCloudFirewallAddressBook_addressListRemoteOrder(t *testing.T
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallAddressBookBasicDependence0)
 	observedDifferentOrder := false
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.CloudFirewallSupportRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.CloudFirewallSupportRegions) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

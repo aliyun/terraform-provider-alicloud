@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Case 1
-func TestAccAlicloudThreatDetectionWebLockConfig_basic1875(t *testing.T) {
+func TestAccAliCloudThreatDetectionWebLockConfig_basic1875(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_web_lock_config.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionWebLockConfigMap1875)
@@ -26,14 +26,14 @@ func TestAccAlicloudThreatDetectionWebLockConfig_basic1875(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"inclusive_file_type": "php;jsp;asp;aspx;js;cgi;html;htm;xml;shtml;shtm;jpg",
-					"uuid":                "${data.alicloud_threat_detection_assets.default.ids.0}",
+					"uuid":                "${data.alicloud_threat_detection_assets.default.ids.15}",
 					"mode":                "whitelist",
 					"local_backup_dir":    "/usr/local/aegis/bak",
 					"dir":                 "/tmp/",

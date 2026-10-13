@@ -70,10 +70,8 @@ The following arguments are supported:
 * `policy_name` - (Required, ForceNew) The name of the policy. Name must be 1 to 128 characters in length and can contain letters, digits, and hyphens (-).
 * `policy_document` - (Required, ForceNew) The content of the policy. The content must be 1 to 2,048 characters in length.
 * `is_default_version` - (Optional, Deprecated from version 1.90.0) Specifies whether to set the policy version as the default version. Default to `false`. 
-* `version_id` - (Removed from version 1.100.0) The ID of the policy version.
-* `create_date` - (Removed from version 1.100.0) The time when the policy version was created.
 
--> **NOTE:** If set to default version, the resource cannot be deleted. You need to set the other version as the default version in policy before you delete this resource.
+    -> **NOTE:** If set to default version, the resource cannot be deleted. You need to set the other version as the default version in policy before you delete this resource.
 
 ## Attributes Reference
 

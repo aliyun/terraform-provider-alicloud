@@ -12,13 +12,13 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudHBRHanaBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudHbrHanaBackupPlan_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_hana_backup_plan.default"
 	checkoutSupportedRegions(t, true, connectivity.HBRSupportRegions)
@@ -36,7 +36,7 @@ func TestAccAlicloudHBRHanaBackupPlan_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -107,7 +107,7 @@ resource "alicloud_hbr_hana_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudHBRHanaBackupPlan_basic1(t *testing.T) {
+func TestAccAliCloudHbrHanaBackupPlan_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_hana_backup_plan.default"
 	checkoutSupportedRegions(t, true, connectivity.HBRSupportRegions)
@@ -125,7 +125,7 @@ func TestAccAlicloudHBRHanaBackupPlan_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -216,7 +216,7 @@ func TestAccAlicloudHBRHanaBackupPlan_basic1(t *testing.T) {
 
 // lintignore: R001
 func TestUnitAccAlicloudHbrHanaBackupPlan(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_hana_backup_plan"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_hbr_hana_backup_plan"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

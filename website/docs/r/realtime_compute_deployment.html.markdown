@@ -71,7 +71,7 @@ resource "alicloud_realtime_compute_vvp_instance" "default" {
 
 resource "alicloud_realtime_compute_deployment" "create_Deployment9" {
   deployment_name = "tf-example-deployment-sql-56"
-  engine_version  = "vvr-8.0.10-flink-1.17"
+  engine_version  = "vvr-8.0.11-flink-1.17"
   resource_id     = alicloud_realtime_compute_vvp_instance.default.resource_id
   execution_mode  = "STREAMING"
   deployment_target {

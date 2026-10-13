@@ -7,9 +7,9 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,9 +37,9 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -231,9 +231,9 @@ func TestAccAliCloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -362,9 +362,9 @@ func TestAccAliCloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -376,7 +376,7 @@ func TestAccAliCloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 					"system_disk_categories": []string{"cloud_efficiency", "cloud_essd"},
 					"system_disk_size":       "40",
 					"install_cloud_monitor":  "false",
-					"platform":               "AliyunLinux",
+					"image_type":             "AliyunLinux3ContainerOptimized",
 					"scaling_policy":         "release",
 					"scaling_config":         []map[string]string{{"enable": "true", "min_size": "1", "max_size": "10", "type": "cpu", "is_bond_eip": "true", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
 					"cpu_policy":             "none",
@@ -392,7 +392,7 @@ func TestAccAliCloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 						"system_disk_categories.#":                  "2",
 						"system_disk_size":                          "40",
 						"install_cloud_monitor":                     "false",
-						"platform":                                  "AliyunLinux",
+						"image_type":                                "AliyunLinux3ContainerOptimized",
 						"scaling_policy":                            "release",
 						"scaling_config.#":                          "1",
 						"scaling_config.0.enable":                   "true",
@@ -421,13 +421,11 @@ func TestAccAliCloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_type": "AliyunLinux3",
-					"platform":   "AliyunLinux",
+					"image_type": "AliyunLinux3ContainerOptimized",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_type": "AliyunLinux3",
-						"platform":   "AliyunLinux",
+						"image_type": "AliyunLinux3ContainerOptimized",
 					}),
 				),
 			},
@@ -521,9 +519,9 @@ func TestAccAliCloudCSKubernetesNodePool_PrePaid(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -610,9 +608,9 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -620,7 +618,7 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 					"cluster_id":                 "${local.cluster_id}",
 					"vswitch_ids":                []string{"${local.vswitch_id}"},
 					"instance_types":             []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"image_id":                   "aliyun_2_1903_x64_20G_alibase_20231008.vhd",
+					"image_id":                   "aliyun_3_x64_20G_container_optimized_alibase_20251215.vhd",
 					"system_disk_category":       "cloud_efficiency",
 					"system_disk_size":           "120",
 					"resource_group_id":          "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
@@ -644,7 +642,7 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 						"cluster_id":                       CHECKSET,
 						"vswitch_ids.#":                    "1",
 						"instance_types.#":                 "1",
-						"image_id":                         "aliyun_2_1903_x64_20G_alibase_20231008.vhd",
+						"image_id":                         "aliyun_3_x64_20G_container_optimized_alibase_20251215.vhd",
 						"system_disk_category":             "cloud_efficiency",
 						"system_disk_size":                 "120",
 						"resource_group_id":                CHECKSET,
@@ -669,11 +667,11 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id": "aliyun_3_x64_20G_alibase_20230110.vhd",
+					"image_id": "aliyun_3_x64_20G_container_optimized_alibase_20251215.vhd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_id": "aliyun_3_x64_20G_alibase_20230110.vhd",
+						"image_id": "aliyun_3_x64_20G_container_optimized_alibase_20251215.vhd",
 					}),
 				),
 			},
@@ -727,9 +725,9 @@ func TestAccAliCloudCSKubernetesNodePool_KMS(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -750,7 +748,7 @@ func TestAccAliCloudCSKubernetesNodePool_KMS(t *testing.T) {
 						},
 					},
 					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
-					"image_type":            "AliyunLinux3",
+					"image_type":            "AliyunLinux3ContainerOptimized",
 					"system_disk_encrypted": "true",
 					"system_disk_kms_key":   "${data.alicloud_kms_keys.default.ids.0}",
 					"cpu_policy":            "none",
@@ -773,7 +771,7 @@ func TestAccAliCloudCSKubernetesNodePool_KMS(t *testing.T) {
 						"tags.Created":          "TF",
 						"tags.Foo":              "Bar",
 						"security_group_ids.#":  "1",
-						"image_type":            "AliyunLinux3",
+						"image_type":            "AliyunLinux3ContainerOptimized",
 						"system_disk_encrypted": "true",
 						"system_disk_kms_key":   CHECKSET,
 						"cpu_policy":            "none",
@@ -814,7 +812,7 @@ func TestAccAliCloudCSKubernetesNodePool_KMS(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password"},
+				ImportStateVerifyIgnore: []string{"password", "kubelet_configuration", "management", "desired_size"},
 			},
 		},
 	})
@@ -844,9 +842,9 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -863,17 +861,17 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 							"kms_key_id": "${data.alicloud_kms_keys.default.ids.0}",
 							"encrypted":  "true",
 							"size":       "100",
-							"category":   "cloud_ssd",
+							"category":   "cloud_essd",
 						},
 						{
 							"size":        "100",
-							"category":    "cloud_ssd",
+							"category":    "cloud_essd",
 							"device":      "/dev/xvdb",
 							"snapshot_id": "${alicloud_ecs_snapshot.default.0.id}",
 						},
 					},
 					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
-					"image_type":            "AliyunLinux3",
+					"image_type":            "AliyunLinux3ContainerOptimized",
 					"system_disk_encrypted": "true",
 					"system_disk_kms_key":   "${data.alicloud_kms_keys.default.ids.0}",
 					"cpu_policy":            "none",
@@ -892,12 +890,12 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 						"system_disk_size":      "40",
 						"data_disks.#":          "2",
 						"data_disks.0.size":     "100",
-						"data_disks.0.category": "cloud_ssd",
+						"data_disks.0.category": "cloud_essd",
 						"tags.%":                "2",
 						"tags.Created":          "TF",
 						"tags.Foo":              "Bar",
 						"security_group_ids.#":  "1",
-						"image_type":            "AliyunLinux3",
+						"image_type":            "AliyunLinux3ContainerOptimized",
 						"system_disk_encrypted": "true",
 						"system_disk_kms_key":   CHECKSET,
 						"cpu_policy":            "none",
@@ -912,7 +910,7 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 					"data_disks": []map[string]string{
 						{
 							"size":        "100",
-							"category":    "cloud_ssd",
+							"category":    "cloud_essd",
 							"device":      "/dev/xvdc",
 							"snapshot_id": "${alicloud_ecs_snapshot.default.1.id}",
 						},
@@ -939,7 +937,7 @@ func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password"},
+				ImportStateVerifyIgnore: []string{"password", "kubelet_configuration", "management", "desired_size"},
 			},
 		},
 	})
@@ -969,9 +967,9 @@ func TestAccAliCloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1002,7 +1000,7 @@ func TestAccAliCloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 					},
 					"tags":              map[string]interface{}{"Created": "TF", "Foo": "Bar"},
 					"management":        []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
-					"image_type":        "AliyunLinux3",
+					"image_type":        "AliyunLinux3ContainerOptimized",
 					"deployment_set_id": "${alicloud_ecs_deployment_set.default.id}",
 					"cpu_policy":        "none",
 					"spot_strategy":     "NoSpot",
@@ -1027,7 +1025,7 @@ func TestAccAliCloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 						"management.0.auto_upgrade":    "true",
 						"management.0.surge":           "0",
 						"management.0.max_unavailable": "0",
-						"image_type":                   "AliyunLinux3",
+						"image_type":                   "AliyunLinux3ContainerOptimized",
 						"deployment_set_id":            CHECKSET,
 						"cpu_policy":                   "none",
 						"spot_strategy":                "NoSpot",
@@ -1113,9 +1111,9 @@ func TestAccAliCloudCSKubernetesNodePool_AttachInstances(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1126,7 +1124,7 @@ func TestAccAliCloudCSKubernetesNodePool_AttachInstances(t *testing.T) {
 					"key_name":             "${alicloud_key_pair.default.key_name}",
 					"system_disk_category": "cloud_efficiency",
 					"system_disk_size":     "40",
-					"image_type":           "AliyunLinux3",
+					"image_type":           "AliyunLinux3ContainerOptimized",
 					"instances":            []string{"${alicloud_instance.default.0.id}"},
 					"format_disk":          false,
 					"keep_instance_name":   true,
@@ -1209,9 +1207,9 @@ func SkipTestAccAliCloudCSKubernetesNodePool_ScalingConflict(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1280,21 +1278,17 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role       = "Worker"
     system_disk_category       = "cloud_efficiency"
     eni_amount           = 2
+    sorted_by            = "Price"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
   zone_id           = data.alicloud_zones.default.zones.0.id
   vswitch_name      = var.name
 }
@@ -1320,7 +1314,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitch.id
   cluster_id =  length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
 }
 `, name)
@@ -1361,48 +1355,31 @@ data "alicloud_instance_types" "cloud_auto" {
   system_disk_category = "cloud_auto"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "vsw1" {
-  vpc_id     = data.alicloud_vpcs.default.ids.0
-  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-}
-
-data "alicloud_vswitches" "vsw2" {
-  vpc_id     = data.alicloud_vpcs.default.ids.0
-  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 10)
-}
-
-data "alicloud_vswitches" "vsw3" {
-  vpc_id     = data.alicloud_vpcs.default.ids.0
-  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 11)
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "vsw1" {
-  count      = length(data.alicloud_vswitches.vsw1.ids) > 0 ? 0 : 1
-  vpc_id     = data.alicloud_vpcs.default.ids.0
-  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
   zone_id    = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vsw2" {
-  count      = length(data.alicloud_vswitches.vsw2.ids) > 0 ? 0 : 1
-  vpc_id     = data.alicloud_vpcs.default.ids.0
-  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 10)
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 10)
   zone_id    = data.alicloud_zones.default.zones.1.id
 }
 
 resource "alicloud_vswitch" "vsw3" {
-  count      = length(data.alicloud_vswitches.vsw3.ids) > 0 ? 0 : 1
-  vpc_id     = data.alicloud_vpcs.default.ids.0
-  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 11)
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 11)
   zone_id    = data.alicloud_zones.default.zones.2.id
 }
 
 locals {
-  vsw1_zone = length(data.alicloud_vswitches.vsw1.ids) > 0 ? data.alicloud_vswitches.vsw1.vswitches.0.zone_id : data.alicloud_zones.default.zones.0.id
+  vsw1_zone = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_key_pair" "default" {
@@ -1420,7 +1397,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_vswitch_ids   = [local.vsw1]
   new_nat_gateway      = false
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
-  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+  service_cidr         = cidrsubnet("192.168.0.0/16", 4, 7)
   slb_internet_enabled = true
   is_enterprise_security_group = true
 }
@@ -1459,9 +1436,9 @@ data "alicloud_cs_kubernetes_version" "default" {
 
 locals {
   cluster_id           = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
-  vsw1                 = length(data.alicloud_vswitches.vsw1.ids) > 0 ? data.alicloud_vswitches.vsw1.ids[0] : concat(alicloud_vswitch.vsw1.*.id, [""])[0]
-  vsw2                 = length(data.alicloud_vswitches.vsw2.ids) > 0 ? data.alicloud_vswitches.vsw2.ids[0] : concat(alicloud_vswitch.vsw2.*.id, [""])[0]
-  vsw3                 = length(data.alicloud_vswitches.vsw3.ids) > 0 ? data.alicloud_vswitches.vsw3.ids[0] : concat(alicloud_vswitch.vsw3.*.id, [""])[0]
+  vsw1                 = alicloud_vswitch.vsw1.id
+  vsw2                 = alicloud_vswitch.vsw2.id
+  vsw3                 = alicloud_vswitch.vsw3.id
   capacity_reservations = alicloud_ecs_capacity_reservation.default.*.id
 }
 `, name)
@@ -1488,19 +1465,14 @@ data "alicloud_instance_types" "default" {
 	memory_size                = 8
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "vsw1" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "vsw1" {
-  count      = length(data.alicloud_vswitches.vsw1.ids) > 0 ? 0 : 1
-  vpc_id     = data.alicloud_vpcs.default.ids.0
-  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
   zone_id    = data.alicloud_zones.default.zones.0.id
 }
 
@@ -1526,7 +1498,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 
 locals {
   cluster_id =  length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
-  vsw1 = length(data.alicloud_vswitches.vsw1.ids) > 0 ? data.alicloud_vswitches.vsw1.ids[0] : concat(alicloud_vswitch.vsw1.*.id, [""])[0]
+  vsw1 = alicloud_vswitch.vsw1.id
 }
 `, name)
 }
@@ -1555,6 +1527,7 @@ data "alicloud_instance_types" "default" {
   memory_size          = 8
   kubernetes_node_role = "Worker"
   system_disk_category = "cloud_essd"
+  sorted_by            = "Price"
 }
 
 data "alicloud_instance_types" "for_snapshot" {
@@ -1564,29 +1537,24 @@ data "alicloud_instance_types" "for_snapshot" {
   instance_charge_type = "PostPaid"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_security_group" "group" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
   security_group_type = "enterprise"
 }
 
 resource "alicloud_security_group" "group1" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
   security_group_type = "enterprise"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
   zone_id      = data.alicloud_zones.default.zones.0.id
   vswitch_name = var.name
 }
@@ -1606,13 +1574,13 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_vswitch_ids   = [local.vswitch_id]
   new_nat_gateway      = false
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
-  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+  service_cidr         = cidrsubnet("192.168.0.0/16", 4, 7)
   slb_internet_enabled = true
   is_enterprise_security_group = true
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitch.id
   cluster_id = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
 }
 
@@ -1704,21 +1672,17 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role       = "Worker"
     system_disk_category       = "cloud_efficiency"
     eni_amount           = 2
+    sorted_by            = "Price"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
   zone_id           = data.alicloud_zones.default.zones.0.id
   vswitch_name      = var.name
 }
@@ -1761,7 +1725,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitch.id
   cluster_id =  length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
 }
 
@@ -1786,21 +1750,17 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role       = "Worker"
     system_disk_category       = "cloud_efficiency"
     eni_amount           = 2
+    sorted_by            = "Price"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
   zone_id           = data.alicloud_zones.default.zones.0.id
   vswitch_name      = var.name
 }
@@ -1827,13 +1787,13 @@ resource "alicloud_cs_managed_kubernetes" "default" {
  worker_vswitch_ids   = [local.vswitch_id]
  new_nat_gateway      = false
  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
- service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+ service_cidr         = cidrsubnet("192.168.0.0/16", 4, 7)
  slb_internet_enabled = true
  is_enterprise_security_group = true
 }
 
 locals {
- vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+ vswitch_id = alicloud_vswitch.vswitch.id
  cluster_id =  length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
 }
 `, name)
@@ -1856,19 +1816,14 @@ data "alicloud_instance_types" "default" {
   kubernetes_node_role       = "Worker"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
   zone_id           = data.alicloud_zones.default.zones.0.id
   vswitch_name      = var.name
 }
@@ -1895,13 +1850,13 @@ resource "alicloud_cs_managed_kubernetes" "default" {
  worker_vswitch_ids   = [local.vswitch_id]
  new_nat_gateway      = false
  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
- service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+ service_cidr         = cidrsubnet("192.168.0.0/16", 4, 7)
  slb_internet_enabled = true
  is_enterprise_security_group = true
 }
 
 locals {
- vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+ vswitch_id = alicloud_vswitch.vswitch.id
  cluster_id =  length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
  cluster_sg_id = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.security_group_id : alicloud_cs_managed_kubernetes.default.0.security_group_id
 }
@@ -1941,19 +1896,14 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role       = "Worker"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING-ACK$"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
   zone_id           = data.alicloud_zones.default.zones.0.id
   vswitch_name      = var.name
 }
@@ -1998,7 +1948,7 @@ resource "alicloud_cs_kubernetes_node_pool" "spot_auto_scaling" {
 }
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = alicloud_vswitch.vswitch.id
   cluster_id = alicloud_cs_managed_kubernetes.default.id
 }
 `, name)
@@ -2022,9 +1972,9 @@ func TestAccAliCloudAckNodepool_basic5288(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2483,7 +2433,7 @@ func TestAccAliCloudAckNodepool_basic5288(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -2574,9 +2524,9 @@ func TestAccAliCloudAckNodepool_basic5291_old(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3096,7 +3046,7 @@ func TestAccAliCloudAckNodepool_basic5291_old(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -3142,9 +3092,9 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3484,7 +3434,7 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -3558,9 +3508,9 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4183,7 +4133,7 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -4287,9 +4237,9 @@ func TestAccAliCloudAckNodepool_basic5401(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4455,7 +4405,7 @@ func TestAccAliCloudAckNodepool_basic5401(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -4528,9 +4478,9 @@ func SkipTestAccAliCloudAckNodepool_basic5628(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4679,7 +4629,7 @@ func SkipTestAccAliCloudAckNodepool_basic5628(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -4753,9 +4703,9 @@ func TestAccAliCloudAckNodepool_basic5288_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4857,7 +4807,7 @@ func TestAccAliCloudAckNodepool_basic5288_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -4881,9 +4831,9 @@ func TestAccAliCloudAckNodepool_basic5291_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -5016,7 +4966,7 @@ func TestAccAliCloudAckNodepool_basic5291_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -5040,9 +4990,9 @@ func TestAccAliCloudAckNodepool_basic5266_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -5139,7 +5089,7 @@ func TestAccAliCloudAckNodepool_basic5266_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -5163,9 +5113,9 @@ func TestAccAliCloudAckNodepool_basic5172_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -5312,7 +5262,7 @@ func TestAccAliCloudAckNodepool_basic5172_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -5336,9 +5286,9 @@ func TestAccAliCloudAckNodepool_basic5401_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -5387,7 +5337,7 @@ func TestAccAliCloudAckNodepool_basic5401_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -5410,9 +5360,9 @@ func SkipTestAccAliCloudAckNodepool_basic5628_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -5460,7 +5410,7 @@ func SkipTestAccAliCloudAckNodepool_basic5628_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -5484,9 +5434,9 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -5794,7 +5744,7 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -5818,9 +5768,9 @@ func TestAccAliCloudAckNodepool_basic11802(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -6145,7 +6095,7 @@ func TestAccAliCloudAckNodepool_basic11802(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -6312,9 +6262,9 @@ func TestAccAliCloudAckNodepool_basic10193(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -6685,7 +6635,7 @@ func TestAccAliCloudAckNodepool_basic10193(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -6852,9 +6802,9 @@ func TestAccAliCloudAckNodepool_basic11829(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: AlicloudAckNodepoolBasicDependence11829(name) + fmt.Sprintf(`
@@ -7259,9 +7209,9 @@ func TestAccAliCloudAckNodepool_basic11832(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -7631,7 +7581,7 @@ func TestAccAliCloudAckNodepool_basic11832(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes"},
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "desired_size", "kubelet_configuration", "management", "on_demand_base_capacity", "on_demand_percentage_above_base_capacity"},
 			},
 		},
 	})
@@ -7799,9 +7749,9 @@ func TestAccAliCloudAckNodepool_basic12069(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

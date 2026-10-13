@@ -15,10 +15,11 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,14 +51,14 @@ func testSweepDTSMigrationJob(region string) error {
 	var response map[string]interface{}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -125,9 +126,9 @@ func TestAccAliCloudDTSMigrationJob_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -136,13 +137,13 @@ func TestAccAliCloudDTSMigrationJob_basic0(t *testing.T) {
 					"source_endpoint_instance_type":      "RDS",
 					"source_endpoint_instance_id":        "${alicloud_db_instance.default.0.id}",
 					"source_endpoint_engine_name":        "MySQL",
-					"source_endpoint_region":             "${var.region}",
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_user_name":          "${alicloud_rds_account.default.0.name}",
 					"source_endpoint_password":           "${var.password}",
 					"destination_endpoint_instance_type": "RDS",
 					"destination_endpoint_instance_id":   "${alicloud_db_instance.default.1.id}",
 					"destination_endpoint_engine_name":   "MySQL",
-					"destination_endpoint_region":        "${var.region}",
+					"destination_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
 					"destination_endpoint_user_name":     "${alicloud_rds_account.default.1.name}",
 					"destination_endpoint_password":      "${var.password}",
 					"db_list":                            `{\"tftestdatabase\":{\"name\":\"tftestdatabase\",\"all\":true}}`,
@@ -241,12 +242,12 @@ data "alicloud_db_instance_classes" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+  name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
-  zone_id = data.alicloud_db_zones.default.zones[0].id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 resource "alicloud_db_instance" "default" {
@@ -284,9 +285,9 @@ resource "alicloud_db_account_privilege" "default" {
 resource "alicloud_dts_migration_instance" "default" {
   payment_type                     = "PayAsYouGo"
   source_endpoint_engine_name      = "MySQL"
-  source_endpoint_region           = var.region
+  source_endpoint_region           = data.alicloud_regions.default.regions.0.id
   destination_endpoint_engine_name = "MySQL"
-  destination_endpoint_region      = var.region
+  destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
   instance_class                   = "small"
   sync_architecture                = "oneway"
 }
@@ -659,7 +660,7 @@ resource "alicloud_dts_migration_instance" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
@@ -924,7 +925,7 @@ func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
 
 	t.Run("UpdateModifyDtsMigrationJobSuspendingStatusAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Migrating", New: "Suspending"})
+		diff.Attributes["status"] = &terraform.ResourceAttrDiff{Old: "Migrating", New: "Suspending"}
 		resourceData1, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
@@ -949,7 +950,7 @@ func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
 	})
 	t.Run("UpdateModifyDTSMigrationJobSuspendingStatusNoRetryErrorAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Migrating", New: "Suspending"})
+		diff.Attributes["status"] = &terraform.ResourceAttrDiff{Old: "Migrating", New: "Suspending"}
 		resourceData, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
 		resourceData.SetId(d.Id())
 		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
@@ -965,7 +966,7 @@ func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
 	})
 	t.Run("UpdateModifyDTSMigrationJobSuspendingStatusNoRetryErrorNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Migrating", New: "Suspending"})
+		diff.Attributes["status"] = &terraform.ResourceAttrDiff{Old: "Migrating", New: "Suspending"}
 		resourceData, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
 		resourceData.SetId(d.Id())
 		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
@@ -981,7 +982,7 @@ func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
 	})
 	t.Run("UpdateModifyDtsMigrationJobMigratingStatusAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"})
+		diff.Attributes["status"] = &terraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"}
 		resourceData1, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
@@ -1006,7 +1007,7 @@ func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
 	})
 	t.Run("UpdateModifyDTSMigrationJobMigratingStatusNoRetryErrorAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"})
+		diff.Attributes["status"] = &terraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"}
 		resourceData, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
 		resourceData.SetId(d.Id())
 		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {
@@ -1022,7 +1023,7 @@ func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
 	})
 	t.Run("UpdateModifyDTSMigrationJobMigratingStatusNoRetryErrorNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"})
+		diff.Attributes["status"] = &terraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"}
 		resourceData, _ := schema.InternalMap(p["alicloud_dts_migration_job"].Schema).Data(nil, diff)
 		resourceData.SetId(d.Id())
 		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DtsService{}), "DescribeDtsMigrationJob", func(*DtsService, string) (map[string]interface{}, error) {

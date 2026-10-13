@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test ESA Record. >>> Resource test cases, automatically generated.
@@ -30,12 +30,12 @@ func TestAccAliCloudESARecordresource_Record_srv_test(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"record_name": "_udp._sip.idltestrecord.com",
+					"record_name": "_udp._sip.${lower(var.name)}.com",
 					"comment":     "This is a remark",
 					"site_id":     "${alicloud_esa_site.resource_Site_srv_test.id}",
 					"record_type": "SRV",
@@ -108,7 +108,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_RatePlanInstance_srv_test" 
 }
 
 resource "alicloud_esa_site" "resource_Site_srv_test" {
-  site_name   = "idltestrecord.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_RatePlanInstance_srv_test.id
   coverage    = "overseas"
   access_type = "NS"
@@ -137,12 +137,12 @@ func TestAccAliCloudESARecordresource_Record_smimea_test(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"record_name": "www.idltestrecord.com",
+					"record_name": "www.${lower(var.name)}.com",
 					"comment":     "This is a remark",
 					"site_id":     "${alicloud_esa_site.resource_Site_smimea_test.id}",
 					"record_type": "SMIMEA",
@@ -215,7 +215,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_RatePlanInstance_smimea_tes
 }
 
 resource "alicloud_esa_site" "resource_Site_smimea_test" {
-  site_name   = "idltestrecord.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_RatePlanInstance_smimea_test.id
   coverage    = "overseas"
   access_type = "NS"
@@ -244,12 +244,12 @@ func TestAccAliCloudESARecordresource_Record_test_cname(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"record_name": "www.idltestrecord.com",
+					"record_name": "www.${lower(var.name)}.com",
 					"comment":     "This is a remark",
 					"proxied":     "true",
 					"site_id":     "${alicloud_esa_site.resource_Site_test.id}",
@@ -403,7 +403,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_RatePlanInstance_test" {
 }
 
 resource "alicloud_esa_site" "resource_Site_test" {
-  site_name   = "idltestrecord.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_RatePlanInstance_test.id
   coverage    = "overseas"
   access_type = "NS"
@@ -432,12 +432,12 @@ func TestAccAliCloudESARecordresource_Record_cert_test(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"record_name": "www.idltestrecord.com",
+					"record_name": "www.${lower(var.name)}.com",
 					"comment":     "This is a remark",
 					"site_id":     "${alicloud_esa_site.resource_Site_cert_test.id}",
 					"record_type": "CERT",
@@ -510,7 +510,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_RatePlanInstance_cert_test"
 }
 
 resource "alicloud_esa_site" "resource_Site_cert_test" {
-  site_name   = "idltestrecord.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_RatePlanInstance_cert_test.id
   coverage    = "overseas"
   access_type = "NS"
@@ -539,12 +539,12 @@ func TestAccAliCloudESARecordresource_Record_sshfp_test(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"record_name": "www.idltestrecord.com",
+					"record_name": "www.${lower(var.name)}.com",
 					"comment":     "This is a remark",
 					"site_id":     "${alicloud_esa_site.resource_Site_sshfp_test.id}",
 					"record_type": "SSHFP",
@@ -615,7 +615,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_RatePlanInstance_sshfp_test
 }
 
 resource "alicloud_esa_site" "resource_Site_sshfp_test" {
-  site_name   = "idltestrecord.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_RatePlanInstance_sshfp_test.id
   coverage    = "overseas"
   access_type = "NS"
@@ -644,12 +644,12 @@ func TestAccAliCloudESARecordresource_Record_caa_test(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"record_name": "www.idltestrecord.com",
+					"record_name": "www.${lower(var.name)}.com",
 					"comment":     "This is a remark",
 					"site_id":     "${alicloud_esa_site.resource_Site_caa_test.id}",
 					"record_type": "CAA",
@@ -720,7 +720,7 @@ resource "alicloud_esa_rate_plan_instance" "resource_RatePlanInstance_caa_test" 
 }
 
 resource "alicloud_esa_site" "resource_Site_caa_test" {
-  site_name   = "idltestrecord.com"
+  site_name   = "${lower(var.name)}.com"
   instance_id = alicloud_esa_rate_plan_instance.resource_RatePlanInstance_caa_test.id
   coverage    = "overseas"
   access_type = "NS"

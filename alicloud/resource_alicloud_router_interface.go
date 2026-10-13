@@ -7,9 +7,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudRouterInterface() *schema.Resource {
@@ -171,7 +171,6 @@ func resourceAlicloudRouterInterfaceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("specification") && !d.IsNewResource() {
-		d.SetPartial("specification")
 		request := vpc.CreateModifyRouterInterfaceSpecRequest()
 		request.RegionId = string(client.Region)
 		request.RouterInterfaceId = d.Id()
@@ -248,7 +247,7 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 	request.RegionId = string(client.Region)
 	request.RouterInterfaceId = d.Id()
 	request.ClientToken = buildClientToken(request.GetActionName())
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		args := *request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DeleteRouterInterface(&args)
@@ -256,9 +255,9 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectStatus", "DependencyViolation.RouterInterfaceReferedByRouteEntry", "OperationConflict"}) {
 				time.Sleep(5 * time.Second)
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
@@ -348,27 +347,23 @@ func buildAlicloudRouterInterfaceModifyAttrArgs(d *schema.ResourceData, meta int
 	attributeUpdate := false
 
 	if d.HasChange("health_check_source_ip") {
-		d.SetPartial("health_check_source_ip")
 		request.HealthCheckSourceIp = sourceIp.(string)
 		request.HealthCheckTargetIp = targetIp.(string)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("health_check_target_ip") {
-		d.SetPartial("health_check_target_ip")
 		request.HealthCheckTargetIp = targetIp.(string)
 		request.HealthCheckSourceIp = sourceIp.(string)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("name") {
-		d.SetPartial("name")
 		request.Name = d.Get("name").(string)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("description") {
-		d.SetPartial("description")
 		request.Description = d.Get("description").(string)
 		attributeUpdate = true
 	}

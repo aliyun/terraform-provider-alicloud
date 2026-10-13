@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudRdsDBProxy_Public_MySQL(t *testing.T) {
@@ -45,7 +45,7 @@ func TestAccAliCloudRdsDBProxy_Public_MySQL(t *testing.T) {
 
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: nil,
 
 		Steps: []resource.TestStep{
@@ -115,7 +115,7 @@ func TestAccAliCloudRdsDBProxy_Public_MySQL_Update(t *testing.T) {
 
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: nil,
 
 		Steps: []resource.TestStep{
@@ -205,7 +205,7 @@ resource "alicloud_db_instance" "default" {
 	engine_version = "8.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = "mysql.x2.large.2c"
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
 	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = var.name
 }

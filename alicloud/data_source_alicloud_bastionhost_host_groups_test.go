@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudBastionhostHostGroupsDataSource(t *testing.T) {
+func TestAccAliCloudBastionhostHostGroupsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_bastionhost_host_groups.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccBastionhostHostGroupsTest%d", rand)

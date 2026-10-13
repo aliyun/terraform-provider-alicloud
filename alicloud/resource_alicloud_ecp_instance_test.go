@@ -12,9 +12,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +36,7 @@ func TestAccAliCloudEcpInstance_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -44,7 +44,7 @@ func TestAccAliCloudEcpInstance_basic0(t *testing.T) {
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -159,7 +159,7 @@ func TestAccAliCloudEcpInstance_basic0_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -167,7 +167,7 @@ func TestAccAliCloudEcpInstance_basic0_twin(t *testing.T) {
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
 					"eip_bandwidth":     "20",
 					"resolution":        "1280*720",
 					"key_pair_name":     "${data.alicloud_ecp_key_pairs.default.pairs.0.key_pair_name}",
@@ -222,7 +222,7 @@ func TestAccAliCloudEcpInstance_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
@@ -230,7 +230,7 @@ func TestAccAliCloudEcpInstance_basic1(t *testing.T) {
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
 					"payment_type":      "Subscription",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -339,7 +339,7 @@ func TestAccAliCloudEcpInstance_basic1_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
@@ -347,7 +347,7 @@ func TestAccAliCloudEcpInstance_basic1_twin(t *testing.T) {
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
 					"eip_bandwidth":     "20",
 					"resolution":        "1280*720",
 					"key_pair_name":     "${data.alicloud_ecp_key_pairs.default.pairs.0.key_pair_name}",
@@ -419,19 +419,19 @@ func AliCloudEcpInstanceBasicDependence0(name string) string {
   		zone_id = data.alicloud_ecp_zones.default.zones.0.zone_id
 	}
 
-	//data "alicloud_security_groups" "default" {
-  	//	vpc_id = data.alicloud_vpcs.default.ids.0
-	//}
-    resource "alicloud_security_group" "default" {
-		security_group_name = var.name
-		vpc_id = data.alicloud_vpcs.default.ids.0
+	data "alicloud_security_groups" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
+    // resource "alicloud_security_group" "default" {
+	// 	security_group_name = var.name
+	// 	vpc_id = data.alicloud_vpcs.default.ids.0
+	// }
 `, name)
 }
 
 // lintignore: R001
 func TestUnitAliCloudEcpInstance(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecp_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ecp_instance"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

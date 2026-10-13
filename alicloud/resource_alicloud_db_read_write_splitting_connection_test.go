@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudRdsDBReadWriteSplittingConnectionMssql_create(t *testing.T) {
@@ -33,7 +33,7 @@ func TestAccAlicloudRdsDBReadWriteSplittingConnectionMssql_create(t *testing.T) 
 		// module name
 		IDRefreshName: resourceId,
 
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -49,11 +49,11 @@ func TestAccAlicloudRdsDBReadWriteSplittingConnectionMssql_create(t *testing.T) 
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":       "${alicloud_db_readonly_instance.default.master_db_instance_id}",
 					"distribution_type": "Custom",
-					"weight": `${map(
-						"${alicloud_db_readonly_instance.default.id}", "200",
-						"master", "200",
-						"slave", "400"
-					)}`,
+					"weight": map[string]interface{}{
+											`"${alicloud_db_readonly_instance.default.id}"`: "200",
+											"master": "200",
+											"slave":  "400",
+										},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					rc.checkResourceExists(),
@@ -81,17 +81,8 @@ data "alicloud_db_zones" "default"{
 	category                 = "AlwaysOn"
 }
 
-data "alicloud_db_instance_classes" "master" {
-    zone_id                  = data.alicloud_db_zones.default.zones.0.id
-	engine                   = "SQLServer"
-	engine_version           = "2017_ent"
- 	db_instance_storage_type = "cloud_essd"
-	instance_charge_type     = "PostPaid"
-	category                 = "AlwaysOn"
-}
-
 data "alicloud_vswitches" "default" {
-  zone_id = data.alicloud_db_zones.default.zones.0.id
+  zone_id = data.alicloud_db_zones.default.zones[0].id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -100,16 +91,17 @@ data "alicloud_resource_manager_resource_groups" "default" {
 
 resource "alicloud_security_group" "default" {
 	name   = var.name
-	vpc_id = data.alicloud_vswitches.default.vswitches.0.vpc_id
+	vpc_id = data.alicloud_vswitches.default.vswitches[0].vpc_id
 }
 
 resource "alicloud_db_instance" "default" {
     engine                   = "SQLServer"
 	engine_version           = "2017_ent"
  	db_instance_storage_type = "cloud_essd"
-	instance_type            = data.alicloud_db_instance_classes.master.instance_classes.0.instance_class
-	instance_storage         = data.alicloud_db_instance_classes.master.instance_classes.0.storage_range.min
-	vswitch_id               = data.alicloud_vswitches.default.vswitches.0.vswitch_id
+	instance_type            = "mssql.x4.medium.e2"
+	instance_storage         = 20
+	category                 = "AlwaysOn"
+	vswitch_id               = data.alicloud_vswitches.default.vswitches[0].vswitch_id
 	instance_name            = var.name
 }
 
@@ -120,7 +112,7 @@ resource "alicloud_db_readonly_instance" "default" {
 	instance_storage      = alicloud_db_instance.default.instance_storage
 	instance_type         = "rds.mssql.s2.large"
 	instance_name         = "${var.name}_ro"
-	vswitch_id            = data.alicloud_vswitches.default.vswitches.0.vswitch_id
+	vswitch_id            = data.alicloud_vswitches.default.vswitches[0].vswitch_id
 }
 
 `, name)

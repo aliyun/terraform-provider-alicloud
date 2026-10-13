@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAliCloudArmsGrafanaWorkspace_basic0(t *testing.T) {
@@ -26,7 +26,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -34,12 +34,14 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic0(t *testing.T) {
 					"grafana_workspace_name":    name,
 					"grafana_version":           "9.0.x",
 					"grafana_workspace_edition": "standard",
+					"password":                  "Arms@123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"grafana_workspace_name":    name,
 						"grafana_version":           "9.0.x",
 						"grafana_workspace_edition": "standard",
+						"password":                  "Arms@123",
 					}),
 				),
 			},
@@ -177,7 +179,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},
 	})
@@ -218,7 +220,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic0_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -228,6 +230,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic0_twin(t *testing.T) {
 					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"grafana_workspace_edition": "standard",
 					"grafana_workspace_name":    name,
+					"password":                  "Arms@123",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -240,6 +243,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic0_twin(t *testing.T) {
 						"resource_group_id":         CHECKSET,
 						"grafana_workspace_edition": "standard",
 						"grafana_workspace_name":    name,
+						"password":                  "Arms@123",
 						"tags.%":                    "2",
 						"tags.Created":              "TF",
 						"tags.For":                  "Test",
@@ -250,7 +254,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic0_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},
 	})
@@ -276,7 +280,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic9473(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -452,7 +456,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic5667(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -462,6 +466,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic5667(t *testing.T) {
 					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"grafana_workspace_edition": "standard",
 					"grafana_workspace_name":    name,
+					"password":                  "Arms@123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -470,6 +475,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic5667(t *testing.T) {
 						"resource_group_id":         CHECKSET,
 						"grafana_workspace_edition": "standard",
 						"grafana_workspace_name":    name,
+						"password":                  "Arms@123",
 					}),
 				),
 			},
@@ -612,7 +618,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic5591(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -621,6 +627,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic5591(t *testing.T) {
 					"description":               "grafana-rg-create-test",
 					"grafana_workspace_edition": "standard",
 					"grafana_workspace_name":    name,
+					"password":                  "Arms@123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -628,6 +635,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic5591(t *testing.T) {
 						"description":               "grafana-rg-create-test",
 						"grafana_workspace_edition": "standard",
 						"grafana_workspace_name":    name,
+						"password":                  "Arms@123",
 					}),
 				),
 			},
@@ -764,7 +772,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic5241(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -774,6 +782,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic5241(t *testing.T) {
 					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"grafana_workspace_edition": "standard",
 					"grafana_workspace_name":    name,
+					"password":                  "Arms@123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -782,6 +791,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic5241(t *testing.T) {
 						"resource_group_id":         CHECKSET,
 						"grafana_workspace_edition": "standard",
 						"grafana_workspace_name":    name,
+						"password":                  "Arms@123",
 					}),
 				),
 			},
@@ -924,7 +934,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic4414(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -934,6 +944,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic4414(t *testing.T) {
 					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"grafana_workspace_edition": "standard",
 					"grafana_workspace_name":    name,
+					"password":                  "Arms@123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -942,6 +953,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic4414(t *testing.T) {
 						"resource_group_id":         CHECKSET,
 						"grafana_workspace_edition": "standard",
 						"grafana_workspace_name":    name,
+						"password":                  "Arms@123",
 					}),
 				),
 			},
@@ -1084,7 +1096,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic4029(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1094,6 +1106,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic4029(t *testing.T) {
 					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"grafana_workspace_edition": "standard",
 					"grafana_workspace_name":    name,
+					"password":                  "Arms@123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1102,6 +1115,7 @@ func TestAccAliCloudArmsGrafanaWorkspace_basic4029(t *testing.T) {
 						"resource_group_id":         CHECKSET,
 						"grafana_workspace_edition": "standard",
 						"grafana_workspace_name":    name,
+						"password":                  "Arms@123",
 					}),
 				),
 			},

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudComputeNestServiceInstance_basic0(t *testing.T) {
@@ -27,7 +27,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -115,7 +115,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -203,7 +203,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -293,7 +293,7 @@ func AlicloudComputeNestServiceInstanceBasicDependence0(name string) string {
 
 	data "alicloud_instance_types" "default" {
   		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
+  		instance_type_family = "ecs.g6"
 	}
 
 	data "alicloud_vpcs" "default" {
@@ -328,7 +328,7 @@ func AlicloudComputeNestServiceInstanceBasicDependence1(name string) string {
 
 	data "alicloud_instance_types" "default" {
   		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
+  		instance_type_family = "ecs.g6"
 	}
 
 	data "alicloud_images" "default" {
@@ -382,7 +382,7 @@ func AlicloudComputeNestServiceInstanceBasicDependence2(name string) string {
 
 	data "alicloud_instance_types" "default" {
   		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
+  		instance_type_family = "ecs.g6"
 	}
 
 	data "alicloud_vpcs" "default" {

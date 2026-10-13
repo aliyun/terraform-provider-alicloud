@@ -9,8 +9,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func init() {
@@ -47,14 +48,14 @@ func testSweepRosTemplateScratch(region string) error {
 	var response map[string]interface{}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -102,7 +103,7 @@ func testSweepRosTemplateScratch(region string) error {
 	return nil
 }
 
-func TestAccAlicloudROSTemplateScratch_basic0(t *testing.T) {
+func TestAccAliCloudROSTemplateScratch_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template_scratch.default"
 	checkoutSupportedRegions(t, true, connectivity.ROSSupportRegions)
@@ -119,9 +120,9 @@ func TestAccAlicloudROSTemplateScratch_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -198,7 +199,7 @@ func TestAccAlicloudROSTemplateScratch_basic0(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudROSTemplateScratch_basic1(t *testing.T) {
+func TestAccAliCloudROSTemplateScratch_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template_scratch.default"
 	checkoutSupportedRegions(t, true, connectivity.ROSSupportRegions)
@@ -215,9 +216,9 @@ func TestAccAlicloudROSTemplateScratch_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -294,7 +295,7 @@ func TestAccAlicloudROSTemplateScratch_basic1(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudROSTemplateScratch_basic2(t *testing.T) {
+func TestAccAliCloudROSTemplateScratch_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template_scratch.default"
 	checkoutSupportedRegions(t, true, connectivity.ROSSupportRegions)
@@ -313,9 +314,9 @@ func TestAccAlicloudROSTemplateScratch_basic2(t *testing.T) {
 			// This test needs to ensure that there is at least one VPC and VSwitch labeled {"Created":"No-Deleting"} in the region.
 			testAccPreCheckWithEnvVariable(t, "VPC_WITH_NO-DELETING_TAG")
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -415,7 +416,7 @@ func TestAccAlicloudROSTemplateScratch_basic2(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudROSTemplateScratch_basic3(t *testing.T) {
+func TestAccAliCloudROSTemplateScratch_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_template_scratch.default"
 	checkoutSupportedRegions(t, true, connectivity.ROSSupportRegions)
@@ -432,9 +433,9 @@ func TestAccAlicloudROSTemplateScratch_basic3(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

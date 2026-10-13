@@ -8,8 +8,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func init() {
@@ -102,7 +102,7 @@ func TestAccAliCloudClickHouseDBCluster_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -200,7 +200,7 @@ func TestAccAliCloudClickHouseDBCluster_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -298,7 +298,7 @@ func TestAccAliCloudClickHouseDBCluster_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -381,7 +381,7 @@ func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
@@ -396,7 +396,7 @@ func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 					"used_time":               "1",
 					"db_node_storage":         "100",
 					"storage_type":            "cloud_essd",
-					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":              "${local.vswitch_ids[0]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -456,7 +456,7 @@ func TestAccAliCloudClickHouseDBCluster_VpcId(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -514,7 +514,7 @@ func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -597,7 +597,7 @@ func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
 //			testAccPreCheck(t)
 //		},
 //		IDRefreshName: resourceId,
-//		Providers:     testAccProviders,
+//		ProviderFactories: testAccProviderFactory,
 //		CheckDestroy:  rac.checkResourceDestroy(),
 //		Steps: []resource.TestStep{
 //			{
@@ -685,7 +685,7 @@ func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
@@ -700,7 +700,7 @@ func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
 					"used_time":               "1",
 					"db_node_storage":         "100",
 					"storage_type":            "cloud_essd",
-					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":              "${local.vswitch_ids[0]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -766,7 +766,7 @@ func TestAccAliCloudClickHouseDBCluster_multiZone(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -833,7 +833,7 @@ func TestAccAliCloudClickHouseDBCluster_ResourceGroup(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -903,7 +903,7 @@ func TestAccAliCloudClickHouseDBCluster_ResourceGroup1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -973,7 +973,7 @@ func TestAccAliCloudClickHouseDBCluster_OpenPublicConnection(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1051,7 +1051,7 @@ func TestAccAliCloudClickHouseDBCluster_ColdStorage(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -1153,8 +1153,12 @@ func AliCloudClickHouseDBClusterBasicDependence1(name string) string {
 	}
 
 	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	locals {
+  		ch_zone_ids = [for z in data.alicloud_click_house_regions.default.regions.0.zone_ids : z.zone_id]
+  		vswitch_ids = [for v in data.alicloud_vswitches.default.vswitches : v.id if contains(local.ch_zone_ids, v.zone_id)]
 	}
 `, name)
 }

@@ -112,7 +112,6 @@ corresponding vswitch IDs and zone IDs of multi-zone setup. if set, a multi-zone
 
 The db_cluster_access_white_list supports the following:
 
-* `db_cluster_ip_array_attribute` - (Optional, Removed) Field `db_cluster_ip_array_attribute` has been removed from provider.
 * `db_cluster_ip_array_name` - (Optional) Whitelist group name.
 * `security_ip_list` - (Optional) The IP address list under the whitelist group.
 
@@ -138,6 +137,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 * `create` - (Defaults to 60 mins) Used when creating the Click House DBCluster (until it reaches the initial `Running` status).
 * `update` - (Defaults to 60 mins) Used when update the Click House DBCluster.
+* `delete` - (Defaults to 60 mins) Used when delete the Click House DBCluster.
 
 ## Import
 

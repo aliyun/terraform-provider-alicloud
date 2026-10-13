@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudSlsLogtailPipelineConfig() *schema.Resource {
@@ -139,14 +139,14 @@ func resourceAliCloudSlsLogtailPipelineConfigCreate(d *schema.ResourceData, meta
 
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("POST", "2020-12-30", "CreateLogtailPipelineConfig", action), query, body, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -207,19 +207,19 @@ func resourceAliCloudSlsLogtailPipelineConfigRead(d *schema.ResourceData, meta i
 	}
 	flushersRaw := objectRaw["flushers"]
 	if flushersRaw != nil {
-		if err := d.Set("flushers", convertSlsMapTypesToStrings(flushersRaw)); err != nil {
+		if err := d.Set("flushers", filterSlsApiExtraFields(d, "flushers", convertSlsMapTypesToStrings(flushersRaw))); err != nil {
 			return err
 		}
 	}
 	inputsRaw := objectRaw["inputs"]
 	if inputsRaw != nil {
-		if err := d.Set("inputs", convertSlsMapTypesToStrings(inputsRaw)); err != nil {
+		if err := d.Set("inputs", filterSlsApiExtraFields(d, "inputs", convertSlsMapTypesToStrings(inputsRaw))); err != nil {
 			return err
 		}
 	}
 	processorsRaw := objectRaw["processors"]
 	if processorsRaw != nil {
-		if err := d.Set("processors", convertSlsMapTypesToStrings(processorsRaw)); err != nil {
+		if err := d.Set("processors", filterSlsApiExtraFields(d, "processors", convertSlsMapTypesToStrings(processorsRaw))); err != nil {
 			return err
 		}
 	}
@@ -319,14 +319,14 @@ func resourceAliCloudSlsLogtailPipelineConfigUpdate(d *schema.ResourceData, meta
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Sls", roaParam("PUT", "2020-12-30", "UpdateLogtailPipelineConfig", action), query, body, nil, hostMap, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -354,14 +354,14 @@ func resourceAliCloudSlsLogtailPipelineConfigDelete(d *schema.ResourceData, meta
 	hostMap["project"] = StringPointer(parts[0])
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Sls", roaParam("DELETE", "2020-12-30", "DeleteLogtailPipelineConfig", action), query, nil, nil, hostMap, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -469,4 +469,30 @@ func convertToString(v interface{}) string {
 	default:
 		return fmt.Sprintf("%v", val)
 	}
+}
+
+// filterSlsApiExtraFields removes keys from API response maps that don't exist
+// in the current state/config. SLS API auto-populates fields like Region and
+// Endpoint in flusher configs, which causes unexpected plan diffs in SDKv2.
+func filterSlsApiExtraFields(d *schema.ResourceData, attr string, apiMaps []map[string]interface{}) []map[string]interface{} {
+	oldVal, _ := d.GetOk(attr)
+	oldList, ok := oldVal.([]interface{})
+	if !ok || len(oldList) == 0 {
+		return apiMaps
+	}
+	for i, apiMap := range apiMaps {
+		if i >= len(oldList) {
+			break
+		}
+		oldMap, ok := oldList[i].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for key := range apiMap {
+			if _, exists := oldMap[key]; !exists {
+				delete(apiMap, key)
+			}
+		}
+	}
+	return apiMaps
 }

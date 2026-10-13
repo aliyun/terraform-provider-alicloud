@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudOosParameter() *schema.Resource {
@@ -21,6 +22,10 @@ func resourceAlicloudOosParameter() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("value"), cty.GetAttrPath("value_wo")),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"constraints": {
 				Type:         schema.TypeString,
@@ -58,8 +63,24 @@ func resourceAlicloudOosParameter() *schema.Resource {
 			},
 			"value": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringLenBetween(1, 4096),
+				ExactlyOneOf: []string{"value", "value_wo"},
+			},
+			"value_wo": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				WriteOnly:    true,
+				ValidateFunc: validation.StringLenBetween(1, 4096),
+				ExactlyOneOf: []string{"value", "value_wo"},
+				RequiredWith: []string{"value_wo_version"},
+			},
+			"value_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntAtLeast(1),
+				RequiredWith: []string{"value_wo"},
 			},
 		},
 	}
@@ -89,17 +110,23 @@ func resourceAlicloudOosParameterCreate(d *schema.ResourceData, meta interface{}
 	}
 	request["Name"] = d.Get("parameter_name")
 	request["Type"] = d.Get("type")
-	request["Value"] = d.Get("value")
+	value := d.Get("value").(string)
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("value_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		value = woValue.AsString()
+	}
+	request["Value"] = value
 	request["ClientToken"] = buildClientToken("CreateParameter")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -132,6 +159,9 @@ func resourceAlicloudOosParameterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("tags", tagsToMap(object["Tags"]))
 	d.Set("type", object["Type"])
 	d.Set("value", object["Value"])
+	if _, ok := d.GetOk("value_wo_version"); ok {
+		d.Set("value", nil)
+	}
 	return nil
 }
 func resourceAlicloudOosParameterUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -142,10 +172,19 @@ func resourceAlicloudOosParameterUpdate(d *schema.ResourceData, meta interface{}
 	request := map[string]interface{}{
 		"Name": d.Id(),
 	}
+	value := d.Get("value").(string)
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("value_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		value = woValue.AsString()
+	}
 	if d.HasChange("value") {
 		update = true
 	}
-	request["Value"] = d.Get("value")
+	if d.HasChange("value_wo_version") {
+		update = true
+	}
+	request["Value"] = value
 	if d.HasChange("description") {
 		update = true
 	}
@@ -171,14 +210,14 @@ func resourceAlicloudOosParameterUpdate(d *schema.ResourceData, meta interface{}
 	if update {
 		action := "UpdateParameter"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -198,14 +237,14 @@ func resourceAlicloudOosParameterDelete(d *schema.ResourceData, meta interface{}
 		"Name": d.Id(),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

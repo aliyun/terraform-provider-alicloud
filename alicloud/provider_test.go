@@ -21,32 +21,99 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-var testAccProviders map[string]terraform.ResourceProvider
+var testAccProviders map[string]*schema.Provider
+var testAccProviderFactory map[string]func() (*schema.Provider, error)
 var testAccProvider *schema.Provider
-var defaultRegionToTest = os.Getenv("ALICLOUD_REGION")
+var defaultRegionToTest = func() string {
+	if v := os.Getenv("ALICLOUD_REGION"); v != "" {
+		return v
+	}
+	// Fallback to cn-beijing when ALICLOUD_REGION is unset so test fixtures
+	// that read defaultRegionToTest at test-function-entry time (before
+	// testAccPreCheck runs) don't produce malformed strings like
+	// "oss--internal.aliyuncs.com" or "...fcv3.<acct>..fc.devsapp.net".
+	return "cn-beijing"
+}()
+
+const (
+	ProviderNameAlicloudAlt  = "alicloudalt"
+	ProviderNameAlicloudAlt2 = "alicloudalt2"
+	ProviderNameAlicloudAlt3 = "alicloudalt3"
+)
+
+func testAccProviderFactoriesAlternate() map[string]func() (*schema.Provider, error) {
+	altProvider := Provider()
+	return map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return testAccProvider, nil
+		},
+		ProviderNameAlicloudAlt: func() (*schema.Provider, error) {
+			return altProvider, nil
+		},
+	}
+}
+
+func testAccProviderFactoriesMultiRegion(n int) map[string]func() (*schema.Provider, error) {
+	factories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return testAccProvider, nil
+		},
+	}
+	altNames := []string{ProviderNameAlicloudAlt, ProviderNameAlicloudAlt2, ProviderNameAlicloudAlt3}
+	for i := 0; i < n-1 && i < len(altNames); i++ {
+		p := Provider()
+		factories[altNames[i]] = func() (*schema.Provider, error) {
+			return p, nil
+		}
+	}
+	return factories
+}
+
+func configAlternateRegionProvider(region string) string {
+	return fmt.Sprintf(`
+provider "alicloudalt" {
+  region = "%s"
+}
+`, region)
+}
+
+func configNamedRegionalProvider(providerName string, region string) string {
+	return fmt.Sprintf(`
+provider "%s" {
+  region = "%s"
+}
+`, providerName, region)
+}
 
 func init() {
-	testAccProvider = Provider().(*schema.Provider)
-	testAccProviders = map[string]terraform.ResourceProvider{
+	testAccProvider = Provider()
+	testAccProviders = map[string]*schema.Provider{
 		"alicloud": testAccProvider,
 	}
-	setStsCredential()
+
+	testAccProviderFactory = map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return testAccProvider, nil
+		},
+	}
+	// TODO disable setting STS from oss
+	//setStsCredential()
 }
 
 func TestProvider(t *testing.T) {
-	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
+	if err := Provider().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
 
 func TestProvider_impl(t *testing.T) {
-	var _ terraform.ResourceProvider = Provider()
+	var _ *schema.Provider = Provider()
 }
 
 func TestProviderSkipRegionValidation(t *testing.T) {
@@ -69,7 +136,7 @@ func TestProviderSkipRegionValidation(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			os.Setenv("ALICLOUD_SKIP_REGION_VALIDATION", testCase.env)
 
-			d := schema.TestResourceDataRaw(t, Provider().(*schema.Provider).Schema, testCase.raw)
+			d := schema.TestResourceDataRaw(t, Provider().Schema, testCase.raw)
 			if got := d.Get("skip_region_validation").(bool); got != testCase.expected {
 				t.Fatalf("skip_region_validation: expected %v, got %v", testCase.expected, got)
 			}
@@ -737,9 +804,9 @@ func TestAccAlicloudProviderEcs(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -797,9 +864,9 @@ func TestAccAlicloudProviderFC(t *testing.T) {
 	})
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -844,9 +911,9 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -882,9 +949,9 @@ func TestAccAlicloudProviderLog(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -926,9 +993,9 @@ func TestAccAlicloudProviderDatahub(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

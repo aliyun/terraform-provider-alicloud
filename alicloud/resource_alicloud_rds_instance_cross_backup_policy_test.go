@@ -9,8 +9,8 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,14 +31,14 @@ func TestAccAliCloudRdsInstanceCrossBackupPolicyMySql(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.RDSInstanceClassesSupportRegions)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":         "${alicloud_db_instance.default.id}",
-					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids.0}",
+					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids[0]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -54,7 +54,7 @@ func TestAccAliCloudRdsInstanceCrossBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids.1}",
+					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids[1]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -85,7 +85,7 @@ func TestAccAliCloudRdsInstanceCrossBackupPolicyMySql(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":         "${alicloud_db_instance.default.id}",
-					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids.2}",
+					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids[2]}",
 					"log_backup_enabled":  "Enable",
 					"retention":           "30",
 				}),
@@ -115,7 +115,7 @@ data "alicloud_db_zones" "default" {
 }
 
 data "alicloud_db_instance_classes" "default" {
-  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  zone_id                  = data.alicloud_db_zones.default.zones[0].id
   engine                   = "MySQL"
   engine_version           = "8.0"
   category                 = "HighAvailability"
@@ -130,8 +130,8 @@ data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.ids.0
+  vpc_id  = data.alicloud_vpcs.default.ids[0]
+  zone_id = data.alicloud_db_zones.default.ids[0]
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -142,9 +142,9 @@ resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   db_instance_storage_type = "local_ssd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
+  vswitch_id               = data.alicloud_vswitches.default.ids[0]
   instance_name            = var.name
 }
 `, name)
@@ -167,14 +167,14 @@ func TestAccAliCloudRdsInstanceCrossBackupPolicyPostgreSQL(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.RDSInstanceClassesSupportRegions)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":         "${alicloud_db_instance.default.id}",
-					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids.0}",
+					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids[0]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -190,7 +190,7 @@ func TestAccAliCloudRdsInstanceCrossBackupPolicyPostgreSQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids.1}",
+					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids[1]}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -221,7 +221,7 @@ func TestAccAliCloudRdsInstanceCrossBackupPolicyPostgreSQL(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":         "${alicloud_db_instance.default.id}",
-					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids.2}",
+					"cross_backup_region": "${data.alicloud_rds_cross_regions.regions.ids[2]}",
 					"log_backup_enabled":  "Enable",
 					"retention":           "30",
 				}),
@@ -251,7 +251,7 @@ data "alicloud_db_zones" "default" {
 }
 
 data "alicloud_db_instance_classes" "default" {
-  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  zone_id                  = data.alicloud_db_zones.default.zones[0].id
   engine                   = "PostgreSQL"
   engine_version           = "18.0"
   category                 = "HighAvailability"
@@ -266,8 +266,8 @@ data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids[0]
+  zone_id = data.alicloud_db_zones.default.zones[0].id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -278,9 +278,9 @@ resource "alicloud_db_instance" "default" {
   engine                   = "PostgreSQL"
   engine_version           = "18.0"
   db_instance_storage_type = "cloud_essd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range[0].min
+  vswitch_id               = data.alicloud_vswitches.default.ids[0]
   instance_name            = var.name
 }
 `, name)
@@ -289,7 +289,7 @@ resource "alicloud_db_instance" "default" {
 // TestUnitAlicloudRdsInstanceCrossBackupPolicy tests the cross backup policy resource
 // with focus on the delete behavior that waits for DB instance to return to Running status
 func TestUnitAlicloudRdsInstanceCrossBackupPolicy(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dCreate, _ := schema.InternalMap(p["alicloud_rds_instance_cross_backup_policy"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	dDelete, _ := schema.InternalMap(p["alicloud_rds_instance_cross_backup_policy"].Schema).Data(nil, nil)

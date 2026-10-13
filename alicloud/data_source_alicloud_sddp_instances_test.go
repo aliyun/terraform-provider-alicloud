@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudSddpInstancesDataSource(t *testing.T) {
+func TestAccAliCloudSddpInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSddpInstanceDataSourceConfig(rand, map[string]string{}),
@@ -22,7 +22,7 @@ func TestAccAlicloudSddpInstancesDataSource(t *testing.T) {
 			"instances.0.id":           CHECKSET,
 			"instances.0.instance_id":  CHECKSET,
 			"instances.0.status":       CHECKSET,
-			"instances.0.payment_type": "Subscription",
+			"instances.0.payment_type": "POSTPAY",
 		}
 	}
 
@@ -40,7 +40,7 @@ func TestAccAlicloudSddpInstancesDataSource(t *testing.T) {
 	}
 
 	var preCheck = func() {
-		testAccPreCheckWithRegions(t, true, connectivity.SddpSupportRegions)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-zhangjiakou"})
 	}
 
 	sddpInstancesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)

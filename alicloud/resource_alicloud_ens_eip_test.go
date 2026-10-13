@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Ens Eip. >>> Resource test cases, automatically generated.
@@ -28,19 +28,19 @@ func TestAccAliCloudEnsEip_basic5131(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":         "PayAsYouGo",
-					"ens_region_id":        "cn-chenzhou-telecom_unicom_cmcc",
+					"ens_region_id":        "cn-wuxi-telecom_unicom_cmcc-2",
 					"internet_charge_type": "95BandwidthByMonth",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":         "PayAsYouGo",
-						"ens_region_id":        "cn-chenzhou-telecom_unicom_cmcc",
+						"ens_region_id":        "cn-wuxi-telecom_unicom_cmcc-2",
 						"internet_charge_type": "95BandwidthByMonth",
 					}),
 				),
@@ -120,7 +120,7 @@ func TestAccAliCloudEnsEip_basic5131_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -129,7 +129,7 @@ func TestAccAliCloudEnsEip_basic5131_twin(t *testing.T) {
 					"bandwidth":            "6",
 					"isp":                  "cmcc",
 					"payment_type":         "PayAsYouGo",
-					"ens_region_id":        "cn-chenzhou-telecom_unicom_cmcc",
+					"ens_region_id":        "cn-wuxi-telecom_unicom_cmcc-2",
 					"eip_name":             name,
 					"internet_charge_type": "95BandwidthByMonth",
 				}),
@@ -139,7 +139,7 @@ func TestAccAliCloudEnsEip_basic5131_twin(t *testing.T) {
 						"bandwidth":            "6",
 						"isp":                  "cmcc",
 						"payment_type":         "PayAsYouGo",
-						"ens_region_id":        "cn-chenzhou-telecom_unicom_cmcc",
+						"ens_region_id":        "cn-wuxi-telecom_unicom_cmcc-2",
 						"eip_name":             name,
 						"internet_charge_type": "95BandwidthByMonth",
 					}),

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudSelectDBDbClustersDataSource(t *testing.T) {
@@ -51,7 +51,7 @@ func TestAccAlicloudSelectDBDbClustersDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAlicloudSelectDBDbClustersDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.SelectDBSupportRegions)
+		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 
 	alicloudSelectDBDbClustersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, dbClusterIdsConf)
@@ -81,7 +81,7 @@ resource "alicloud_selectdb_db_instance" "default" {
   db_instance_class       = "selectdb.2xlarge"
   db_instance_description = var.name
   cache_size              = "400"
-  engine_minor_version    = "3.0.12"
+  engine_minor_version    = "4.0.3"
   payment_type            = "PayAsYouGo"
   vpc_id                  = "${data.alicloud_vpcs.default.ids.0}"
   zone_id                 = "${data.alicloud_zones.default.ids.0}"

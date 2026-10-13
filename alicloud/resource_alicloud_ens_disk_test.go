@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Ens Disk. >>> Resource test cases, automatically generated.
@@ -28,21 +28,21 @@ func TestAccAliCloudEnsDisk_basic5178(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":      "cloud_ssd",
+					"category":      "cloud_efficiency",
 					"payment_type":  "PayAsYouGo",
-					"ens_region_id": "cn-chongqing-11",
+					"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 					"size":          "20",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":      "cloud_ssd",
+						"category":      "cloud_efficiency",
 						"payment_type":  "PayAsYouGo",
-						"ens_region_id": "cn-chongqing-11",
+						"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 						"size":          "20",
 					}),
 				),
@@ -152,7 +152,7 @@ func TestAccAliCloudEnsDisk_basic5179(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -160,16 +160,14 @@ func TestAccAliCloudEnsDisk_basic5179(t *testing.T) {
 					"size":          "20",
 					"category":      "cloud_efficiency",
 					"payment_type":  "PayAsYouGo",
-					"ens_region_id": "ch-zurich-1",
-					"encrypted":     "true",
+					"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"size":          "20",
 						"category":      "cloud_efficiency",
 						"payment_type":  "PayAsYouGo",
-						"ens_region_id": "ch-zurich-1",
-						"encrypted":     "true",
+						"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 					}),
 				),
 			},
@@ -248,7 +246,6 @@ func TestAccAliCloudEnsDisk_basic5179(t *testing.T) {
 var AliCloudEnsDiskMap5179 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
-	"kms_key_id":  CHECKSET,
 }
 
 func AliCloudEnsDiskBasicDependence5179(name string) string {
@@ -260,14 +257,13 @@ variable "name" {
 resource "alicloud_ens_disk" "createdisk" {
   category      = "cloud_efficiency"
   size          = "20"
-  encrypted     = true
   payment_type  = "PayAsYouGo"
-  ens_region_id = "ch-zurich-1"
+  ens_region_id = "cn-chenzhou-telecom_unicom_cmcc"
 }
 
 resource "alicloud_ens_snapshot" "createsnapshot" {
   description   = "DiskDescription_autotest"
-  ens_region_id = "ch-zurich-1"
+  ens_region_id = "cn-chenzhou-telecom_unicom_cmcc"
   snapshot_name = var.name
 
   disk_id = alicloud_ens_disk.createdisk.id
@@ -295,15 +291,15 @@ func TestAccAliCloudEnsDisk_basic5178_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":      "cloud_ssd",
+					"category":      "cloud_efficiency",
 					"size":          "20",
 					"payment_type":  "PayAsYouGo",
-					"ens_region_id": "cn-chongqing-18",
+					"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 					"disk_name":     name,
 					"tags": map[string]string{
 						"Created": "TF",
@@ -312,10 +308,10 @@ func TestAccAliCloudEnsDisk_basic5178_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":      "cloud_ssd",
+						"category":      "cloud_efficiency",
 						"size":          "20",
 						"payment_type":  "PayAsYouGo",
-						"ens_region_id": "cn-chongqing-18",
+						"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 						"disk_name":     name,
 						"tags.%":        "2",
 						"tags.Created":  "TF",
@@ -351,18 +347,16 @@ func TestAccAliCloudEnsDisk_basic5179_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"snapshot_id":   "${alicloud_ens_snapshot.createsnapshot.id}",
 					"category":      "cloud_efficiency",
-					"kms_key_id":    "${alicloud_ens_disk.createdisk.kms_key_id}",
 					"size":          "30",
-					"encrypted":     "true",
 					"payment_type":  "PayAsYouGo",
-					"ens_region_id": "ch-zurich-1",
+					"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 					"disk_name":     name,
 					"tags": map[string]string{
 						"Created": "TF",
@@ -373,11 +367,9 @@ func TestAccAliCloudEnsDisk_basic5179_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"snapshot_id":   CHECKSET,
 						"category":      "cloud_efficiency",
-						"kms_key_id":    CHECKSET,
 						"size":          "30",
-						"encrypted":     "true",
 						"payment_type":  "PayAsYouGo",
-						"ens_region_id": "ch-zurich-1",
+						"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
 						"disk_name":     name,
 						"tags.%":        "2",
 						"tags.Created":  "TF",

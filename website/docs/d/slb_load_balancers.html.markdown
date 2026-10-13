@@ -7,7 +7,7 @@ description: |-
     Provides a list of server load balancers to the user.
 ---
 
-# alicloud\_slb\_load\_balancers
+# alicloud_slb_load_balancers
 
 This data source provides the server load balancers of the current Alibaba Cloud user.
 

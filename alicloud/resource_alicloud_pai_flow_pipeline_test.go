@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test PaiFlow Pipeline. >>> Resource test cases, automatically generated.
@@ -30,7 +30,7 @@ func TestAccAliCloudPaiFlowPipeline_basic10139(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -84,7 +84,7 @@ func TestAccAliCloudPaiFlowPipeline_basic10139_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -126,7 +126,7 @@ resource "alicloud_pai_workspace_workspace" "defaultWjQD1e" {
   description    = "paiflow resource record test"
   display_name   = var.name
   workspace_name = var.name
-  env_types      = ["dev"]
+  env_types      = ["prod"]
 }
 `, name)
 }

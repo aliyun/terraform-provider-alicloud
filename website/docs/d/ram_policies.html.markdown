@@ -89,5 +89,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `document` - The document of the policy. **Note:** `document` takes effect only if `enable_details` is set to `true`.
   * `version_id` - (Available since v1.114.0) The ID of the default policy version. **Note:** `version_id` takes effect only if `enable_details` is set to `true`.
   * `create_date` - The time when the policy was created.
-  * `update_date` - The time when the policy was modified.
-  * `user_name` - (Removed since v1.262.1) Field `user_name` has been removed from provider version 1.262.1.
+  * `update_date` - The time when the policy was updated.

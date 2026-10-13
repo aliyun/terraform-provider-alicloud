@@ -12,9 +12,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,20 +36,20 @@ func TestAccAlicloudSimpleApplicationServerFirewallRule_basic0(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":   "${alicloud_simple_application_server_instance.default.id}",
-					"rule_protocol": "TcpAndUdp",
+					"rule_protocol": "Tcp",
 					"port":          "1024/1055",
 					"remark":        "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id":   CHECKSET,
-						"rule_protocol": "TcpAndUdp",
+						"rule_protocol": "Tcp",
 						"port":          "1024/1055",
 						"remark":        name,
 					}),
@@ -97,7 +97,7 @@ resource "alicloud_simple_application_server_instance" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudSimpleApplicationServerFirewallRule(t *testing.T) {
-	p := Provider().(*schema.Provider).ResourcesMap
+	p := Provider().ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_simple_application_server_firewall_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_simple_application_server_firewall_rule"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()

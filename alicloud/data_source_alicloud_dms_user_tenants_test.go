@@ -2,25 +2,28 @@ package alicloud
 
 import (
 	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudDMSUserTenantsDataSource(t *testing.T) {
+func TestAccAliCloudDMSUserTenantsDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.DMSEnterpriseSupportRegions)
 	resourceId := "data.alicloud_dms_user_tenants.default"
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceDmsUserTenantsConfigDependence)
 
-	statusConf := dataSourceTestAccConfig{
+	existConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"status": "ACTIVE",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"status": "IN_ACTIVE",
+			"ids": []string{"999999999"},
 		}),
 	}
 	var existDmsUserTenantsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                 "1",
+			"ids.#":                 CHECKSET,
 			"ids.0":                 CHECKSET,
-			"tenants.#":             "1",
+			"tenants.#":             CHECKSET,
 			"tenants.0.tenant_name": CHECKSET,
 			"tenants.0.status":      "ACTIVE",
 			"tenants.0.id":          CHECKSET,
@@ -31,7 +34,6 @@ func TestAccAlicloudDMSUserTenantsDataSource(t *testing.T) {
 	var fakeDmsUserTenantsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":     "0",
-			"names.#":   "0",
 			"tenants.#": "0",
 		}
 	}
@@ -42,7 +44,7 @@ func TestAccAlicloudDMSUserTenantsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDmsUserTenantsMapFunc,
 	}
 
-	userTenantsCheckInfo.dataSourceTestCheck(t, 0, statusConf)
+	userTenantsCheckInfo.dataSourceTestCheck(t, 0, existConf)
 }
 
 func dataSourceDmsUserTenantsConfigDependence(name string) string {

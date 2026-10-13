@@ -9,8 +9,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
@@ -1479,7 +1479,6 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 				}
 			}
 		}
-		d.SetPartial("active")
 	}
 	//d.Get("override")
 	request := map[string]interface{}{

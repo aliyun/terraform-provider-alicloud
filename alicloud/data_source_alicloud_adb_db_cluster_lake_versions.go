@@ -6,9 +6,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudAdbDbClusterLakeVersions() *schema.Resource {
@@ -186,14 +186,14 @@ func dataSourceAlicloudAdbDbClusterLakeVersionsRead(d *schema.ResourceData, meta
 	for {
 		action := "DescribeDBClusters"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
 			return nil
@@ -240,7 +240,7 @@ func dataSourceAlicloudAdbDbClusterLakeVersionsRead(d *schema.ResourceData, meta
 			"db_cluster_version": object["DBVersion"],
 			"engine":             object["Engine"],
 			"expire_time":        object["ExpireTime"],
-			"expired":            object["Expired"],
+			"expired":            fmt.Sprint(object["Expired"]),
 			"lock_mode":          object["LockMode"],
 			"lock_reason":        object["LockReason"],
 			"port":               object["Port"],

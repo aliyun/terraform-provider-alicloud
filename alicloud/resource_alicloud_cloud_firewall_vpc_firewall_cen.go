@@ -7,8 +7,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudCloudFirewallVpcFirewallCen() *schema.Resource {
@@ -213,23 +213,23 @@ func resourceAliCloudCloudFirewallVpcFirewallCenCreate(d *schema.ResourceData, m
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"ErrorVpcFirewallNotFound"}) {
 				if err := cloudfwService.CreateVpcFirewallTask(); err != nil {
 					log.Println("[ERROR] syncing cen configure failed by api CreateVpcFirewallTask. Error:", err)
 				}
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"not buy user"}) {
 				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(fmt.Errorf("%s", response))
+				return retry.RetryableError(fmt.Errorf("%s", response))
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil
@@ -286,7 +286,6 @@ func resourceAliCloudCloudFirewallVpcFirewallCenRead(d *schema.ResourceData, met
 	}
 	d.Set("vpc_region", vpcRegion)
 	d.Set("connect_type", object["ConnectType"])
-	d.Set("id", object["VpcFirewallId"])
 	localVpcMaps := make([]map[string]interface{}, 0)
 	localVpcMap := make(map[string]interface{})
 	localVpcRaw := object["LocalVpc"].(map[string]interface{})
@@ -371,17 +370,17 @@ func resourceAliCloudCloudFirewallVpcFirewallCenUpdate(d *schema.ResourceData, m
 		var err error
 		var endpoint string
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				} else if IsExpectedErrors(err, []string{"not buy user"}) {
 					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 
 			return nil
@@ -392,9 +391,6 @@ func resourceAliCloudCloudFirewallVpcFirewallCenUpdate(d *schema.ResourceData, m
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("vpc_firewall_name")
-		d.SetPartial("member_uid")
-		d.SetPartial("lang")
 	}
 
 	update = false
@@ -420,17 +416,17 @@ func resourceAliCloudCloudFirewallVpcFirewallCenUpdate(d *schema.ResourceData, m
 		var err error
 		var endpoint string
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				} else if IsExpectedErrors(err, []string{"not buy user"}) {
 					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 
 			return nil
@@ -446,9 +442,6 @@ func resourceAliCloudCloudFirewallVpcFirewallCenUpdate(d *schema.ResourceData, m
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("status")
-		d.SetPartial("member_uid")
-		d.SetPartial("lang")
 	}
 
 	d.Partial(false)
@@ -476,17 +469,17 @@ func resourceAliCloudCloudFirewallVpcFirewallCenDelete(d *schema.ResourceData, m
 		request["Lang"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"not buy user"}) {
 				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 
 		return nil

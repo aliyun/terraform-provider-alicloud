@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Ens EipInstanceAttachment. >>> Resource test cases, automatically generated.
@@ -28,7 +28,7 @@ func TestAccAliCloudEnsEipInstanceAttachment_basic6608(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -69,7 +69,7 @@ variable "name" {
 }
 
 variable "ens_region_id" {
-  default = "cn-chenzhou-telecom_unicom_cmcc"
+  default = "cn-wuxi-telecom_unicom_cmcc-2"
 }
 
 resource "alicloud_ens_network" "defaultmIE0nO" {
@@ -123,7 +123,7 @@ func TestAccAliCloudEnsEipInstanceAttachment_basic6589(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -164,7 +164,7 @@ variable "name" {
 }
 
 variable "ens_region_id" {
-  default = "cn-chenzhou-telecom_unicom_cmcc"
+  default = "cn-wuxi-telecom_unicom_cmcc-2"
 }
 
 resource "alicloud_ens_instance" "defaultXKjq1W" {
@@ -218,7 +218,7 @@ func TestAccAliCloudEnsEipInstanceAttachment_basic6608_raw(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -265,7 +265,7 @@ func TestAccAliCloudEnsEipInstanceAttachment_basic6589_raw(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

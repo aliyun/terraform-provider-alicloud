@@ -13,9 +13,9 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func init() {
@@ -127,7 +127,7 @@ func TestAccAlicloudFCFunction_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -291,7 +291,7 @@ func TestAccAlicloudFCFunctionMulti(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -335,7 +335,7 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 	// REQUIREMENT: the image must be in the repo already.
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -346,14 +346,14 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 					"runtime": "custom-container",
 					"custom_container_config": []map[string]string{
 						{
-							"image": fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", os.Getenv("ALICLOUD_REGION")),
+							"image": "registry.${data.alicloud_regions.current.ids.0}.aliyuncs.com/eci_open/nginx:alpine",
 						},
 					},
 					"ca_port": "9527",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"custom_container_config.0.image": fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", os.Getenv("ALICLOUD_REGION")),
+						"custom_container_config.0.image": CHECKSET,
 						"ca_port":                         "9527",
 					}),
 				),
@@ -366,7 +366,7 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 					"runtime": "custom-container",
 					"custom_container_config": []map[string]string{
 						{
-							"image":   fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", os.Getenv("ALICLOUD_REGION")),
+							"image":   "registry.${data.alicloud_regions.current.ids.0}.aliyuncs.com/eci_open/nginx:alpine",
 							"command": "${local.container_command}",
 							"args":    "${local.container_args}",
 						},
@@ -375,7 +375,7 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"custom_container_config.0.image":   fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", os.Getenv("ALICLOUD_REGION")),
+						"custom_container_config.0.image":   CHECKSET,
 						"custom_container_config.0.command": `["python", "server.py"]`,
 						"custom_container_config.0.args":    `["a1", "a2"]`,
 						"ca_port":                           "9900",
@@ -424,6 +424,13 @@ func resourceFCFunctionConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%v"
+}
+
+// Custom-container images must be in the same region as the FC function (FC v1).
+// Use a data source so the image URL tracks the credentials' region rather than
+// being hard-coded.
+data "alicloud_regions" "current" {
+  current = true
 }
 
 // After serveral hours of investigation, finally figure out how to escape the double quotes.
@@ -615,7 +622,7 @@ php server.php`)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -732,7 +739,7 @@ func TestAccAlicloudFCFunction_code_checksum(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		Providers:    testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

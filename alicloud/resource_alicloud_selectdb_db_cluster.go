@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudSelectDBDbCluster() *schema.Resource {
@@ -202,10 +202,6 @@ func resourceAliCloudSelectDBDbClusterUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("db_cluster_class")
-		if d.HasChange("cache_size") {
-			d.SetPartial("cache_size")
-		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("cache_size") && !cacheSizeModified {
@@ -223,10 +219,6 @@ func resourceAliCloudSelectDBDbClusterUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("cache_size")
-		if d.HasChange("db_cluster_class") {
-			d.SetPartial("db_cluster_class")
-		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("db_cluster_description") {
@@ -235,7 +227,6 @@ func resourceAliCloudSelectDBDbClusterUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyBEClusterAttribute", AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("db_cluster_description")
 	}
 
 	if !d.IsNewResource() && d.HasChange("desired_status") {
@@ -254,7 +245,6 @@ func resourceAliCloudSelectDBDbClusterUpdate(d *schema.ResourceData, meta interf
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
-			d.SetPartial("desired_status")
 		}
 	}
 
@@ -283,7 +273,6 @@ func resourceAliCloudSelectDBDbClusterUpdate(d *schema.ResourceData, meta interf
 		if _, err := selectDBService.UpdateSelectDBDbClusterConfig(d.Id(), diffConfig); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("desired_params")
 
 		stateConf := BuildStateConf([]string{"RESTARTING", "MODIFY_PARAM"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, selectDBService.SelectDBDbClusterStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {

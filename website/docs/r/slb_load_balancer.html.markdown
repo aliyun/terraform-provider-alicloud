@@ -100,7 +100,6 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `name` - (Optional, Deprecated from v1.123.1) Field `name` has been deprecated from provider version 1.123.1 New field `load_balancer_name` instead.
 * `instance_charge_type` - (Optional, V1.193.0+) Support `PayBySpec` (default) and `PayByCLCU`, This parameter takes effect when the value of **payment_type** (instance payment mode) is **PayAsYouGo** (pay-as-you-go).
 * `specification` - (Optional, Deprecated from v1.123.1) Field `specification` has been deprecated from provider version 1.123.1 New field `load_balancer_spec` instead.
-* `internet` - (Optional, Deprecated from v1.124.0) Field `internet` has been deprecated from provider version 1.124.0 New field `address_type` instead.
 
 -> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
 

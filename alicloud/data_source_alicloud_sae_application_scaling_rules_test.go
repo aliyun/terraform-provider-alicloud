@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudSAEApplicationScalingRulesDataSource(t *testing.T) {
@@ -102,6 +102,12 @@ resource "alicloud_sae_application" "default" {
   replicas        = "5"
   cpu             = "500"
   memory          = "2048"
+  // Once alicloud_sae_application_scaling_rule is attached, replicas is owned
+  // by the rule at runtime (it auto-scales between min_replicas and max_replicas).
+  // Ignore drift so subsequent plans stay empty during this test.
+  lifecycle {
+    ignore_changes = [replicas]
+  }
 }
 
 resource "alicloud_sae_application_scaling_rule" "default" {

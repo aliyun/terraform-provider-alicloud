@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudClickHouseAccountDataSource(t *testing.T) {
@@ -109,7 +109,7 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "20.3.10.75"
+  db_cluster_version      = "23.8"
   category                = "Basic"
   db_cluster_class        = "S8"
   db_cluster_network_type = "vpc"

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudChatbotPublishTask_basic2099(t *testing.T) {
@@ -27,7 +27,7 @@ func TestAccAlicloudChatbotPublishTask_basic2099(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
@@ -45,7 +45,12 @@ func TestAccAlicloudChatbotPublishTask_basic2099(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"agent_key", "data_id_list"},
+				// Chatbot PublishTask is asynchronous on the server side: after Create
+				// the task moves through FE_RUNNING -> FE_SUCCESS and modify_time
+				// updates accordingly. ImportStateVerify reads twice with a small
+				// gap, so the snapshot can land on different state/time values.
+				// Skip those two attributes for the equality compare.
+				ImportStateVerifyIgnore: []string{"agent_key", "data_id_list", "status", "modify_time"},
 			},
 		},
 	})

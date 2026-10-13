@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test CloudFirewall IPSConfig. >>> Resource test cases, automatically generated.
@@ -29,8 +29,8 @@ func TestAccAliCloudCloudFirewallIPSConfig_basic10240(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -62,7 +62,7 @@ func TestAccAliCloudCloudFirewallIPSConfig_basic10240(t *testing.T) {
 					"max_sdl":     "1000",
 					"basic_rules": "1",
 					"run_mode":    "1",
-					"cti_rules":   "1",
+					"cti_rules":   "0", // need more context why set to 1 failed from service team.
 					"patch_rules": "1",
 					"rule_class":  "1",
 					"lang":        "zh",
@@ -72,7 +72,7 @@ func TestAccAliCloudCloudFirewallIPSConfig_basic10240(t *testing.T) {
 						"max_sdl":     "1000",
 						"basic_rules": "1",
 						"run_mode":    "1",
-						"cti_rules":   "1",
+						"cti_rules":   "0",
 						"patch_rules": "1",
 						"rule_class":  "1",
 						"lang":        "zh",

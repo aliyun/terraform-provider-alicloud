@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
@@ -25,6 +27,10 @@ func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("key"), cty.GetAttrPath("key_wo")),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"cert": {
 				Type:     schema.TypeString,
@@ -49,10 +55,24 @@ func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 				Sensitive: true,
 			},
 			"key": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				ForceNew:  true,
-				Sensitive: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"key_wo"},
+			},
+			"key_wo": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				WriteOnly:    true,
+				RequiredWith: []string{"key_wo_version"},
+			},
+			"key_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntAtLeast(1),
+				ForceNew:     true,
+				RequiredWith: []string{"key_wo"},
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -108,6 +128,11 @@ func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceD
 	if v, ok := d.GetOk("key"); ok {
 		request["Key"] = v
 	}
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("key_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["Key"] = woValue.AsString()
+	}
 	if v, ok := d.GetOk("encrypt_cert"); ok {
 		request["EncryptCert"] = v
 	}
@@ -129,14 +154,14 @@ func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceD
 		request["Cert"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -170,6 +195,9 @@ func resourceAliCloudSslCertificatesServiceCertificateRead(d *schema.ResourceDat
 	d.Set("encrypt_cert", objectRaw["EncryptCert"])
 	d.Set("encrypt_private_key", objectRaw["EncryptPrivateKey"])
 	d.Set("key", objectRaw["Key"])
+	if _, ok := d.GetOk("key_wo_version"); ok {
+		d.Set("key", nil)
+	}
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("sign_cert", objectRaw["SignCert"])
 	d.Set("sign_private_key", objectRaw["SignPrivateKey"])
@@ -222,14 +250,14 @@ func resourceAliCloudSslCertificatesServiceCertificateUpdate(d *schema.ResourceD
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("cas", "2018-08-13", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -254,15 +282,15 @@ func resourceAliCloudSslCertificatesServiceCertificateDelete(d *schema.ResourceD
 	request["CertId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("cas", "2020-04-07", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})

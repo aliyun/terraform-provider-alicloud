@@ -6,9 +6,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliyunSlbBackendServer() *schema.Resource {
@@ -74,15 +74,15 @@ func resourceAliyunSlbBackendServersCreate(d *schema.ResourceData, meta interfac
 		request.BackendServers = expandBackendServersInfoToString(v.(*schema.Set).List())
 	}
 	var response *slb.AddBackendServersResponse
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.AddBackendServers(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ServiceIsConfiguring"}) {
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*slb.AddBackendServersResponse)
@@ -184,7 +184,6 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-				d.SetPartial("backend_servers")
 			}
 
 		}
@@ -224,7 +223,6 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-				d.SetPartial("backend_servers")
 			}
 		}
 
@@ -265,7 +263,6 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-				d.SetPartial("backend_servers")
 			}
 		}
 	}
@@ -318,15 +315,15 @@ func resourceAliyunSlbBackendServersDelete(d *schema.ResourceData, meta interfac
 			}
 
 			request.BackendServers = expandBackendServersWithTypeToString(servers[start:end])
-			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 					return slbClient.RemoveBackendServers(request)
 				})
 				if err != nil {
 					if IsExpectedErrors(err, []string{"RspoolVipExist", "ObtainIpFail", "ServiceIsStopping"}) {
-						return resource.RetryableError(err)
+						return retry.RetryableError(err)
 					}
-					return resource.NonRetryableError(err)
+					return retry.NonRetryableError(err)
 				}
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return nil

@@ -9,8 +9,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func init() {
@@ -39,14 +40,14 @@ func testSweepSslCertificatesServiceCertificate(region string) error {
 	var response map[string]interface{}
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cas", "2018-07-13", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -88,14 +89,14 @@ func testSweepSslCertificatesServiceCertificate(region string) error {
 			"CertId": sslId,
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cas", "2018-07-13", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -122,9 +123,9 @@ func TestAccAliCloudSslCertificatesServiceCertificate_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -227,9 +228,9 @@ func TestAccAliCloudSslCertificatesServiceCertificate_basic0_twin(t *testing.T) 
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -279,9 +280,9 @@ func TestAccAliCloudSslCertificatesServiceCertificate_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -384,9 +385,9 @@ func TestAccAliCloudSslCertificatesServiceCertificate_basic1_twin(t *testing.T) 
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -494,6 +495,62 @@ xDn0dJVMvNyRR83ZpjTQhxoq5l56TN5xk1vdJ9nZdwJMmXiz2TrA
 -----END PRIVATE KEY-----
 EOF
 	}
+
+	variable "cert2" {
+  		default = <<EOF
+-----BEGIN CERTIFICATE-----
+MIIC1TCCAb2gAwIBAgIJALlQrZ+xRM5/MA0GCSqGSIb3DQEBCwUAMBoxGDAWBgNV
+BAMMD3dvMi5leGFtcGxlLmNvbTAeFw0yNjA5MTcwNzEzMDJaFw0zNjA5MTQwNzEz
+MDJaMBoxGDAWBgNVBAMMD3dvMi5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEB
+BQADggEPADCCAQoCggEBAMgnNMtWdGsE0PGSIZPAKdNETllbh61BA9nBXBS3xrhQ
+jP/gESmyNJ0acROKB7xTH/uvrm0zQtO4Hh86zowhY4VArmFkMsU0/Gev30klWm0Q
+QrCu8bkvM2YO46mb/Jv8VkAWQwDfiZ61W7YSUsod4pr7Who3E/2Fi0yiG3MIZHOL
+hXYHpspuxM1dIINIFJ3L0XTjD5CBkaMczZpHqOlWXOYBfuzDJeVQOnvynmfGFB95
+VbwSUko0wdVCq70HcR15hM+6UiT4i2K9LG2gvG4Hjh77Zt9r2Zeuk0nopXCznZVf
+TOsnxrFfbXh1Wk/kdGy/zU6QqVZfUUamiutqstIoOjkCAwEAAaMeMBwwGgYDVR0R
+BBMwEYIPd28yLmV4YW1wbGUuY29tMA0GCSqGSIb3DQEBCwUAA4IBAQB4YxefozgB
+lNtiDGR4BGviXVGLPWXesRgJ8dG5oUnQ2T0vCiy847YLKUY1aKSgC/lftGtNX62M
+Xg5Hw8TuYYILJyfgBy0hr70RwZK8gpM0CnlkcVfsuIA8no0D4r5oFmAMQsG0QcWl
+cUyuULlkOQ1XZ9uoQkq/c9XljyUjO9kBa+OFS5MDLl94bwrmZV6vuUQJaUyQn5OT
+QN+qcvE642vecqtDkJ0jFC2GPQTZjA0pwWcg5ijzQydBIr5bcIkQnPGQ2C8pflqK
+KgapaB2rHwkFuUZs+rUmq+31C6z17Fep0hbGanjYpSdNz4rNKzMnHmqayvhnlwyR
++ZSbN9AmkVBd
+-----END CERTIFICATE-----
+EOF
+	}
+
+	variable "key2" {
+  		default = <<EOF
+-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDIJzTLVnRrBNDx
+kiGTwCnTRE5ZW4etQQPZwVwUt8a4UIz/4BEpsjSdGnETige8Ux/7r65tM0LTuB4f
+Os6MIWOFQK5hZDLFNPxnr99JJVptEEKwrvG5LzNmDuOpm/yb/FZAFkMA34metVu2
+ElLKHeKa+1oaNxP9hYtMohtzCGRzi4V2B6bKbsTNXSCDSBSdy9F04w+QgZGjHM2a
+R6jpVlzmAX7swyXlUDp78p5nxhQfeVW8ElJKNMHVQqu9B3EdeYTPulIk+ItivSxt
+oLxuB44e+2bfa9mXrpNJ6KVws52VX0zrJ8axX214dVpP5HRsv81OkKlWX1FGporr
+arLSKDo5AgMBAAECggEAZptawEbw5ZARgVXVqsXfazPgKoT2uAXVcINkriZMVF7O
++bmncsWtnUBZ6ZdgQdYnVkKI2+hkgN8paf8etc3EFCLFgp34PQrdvlX11Ky2f6TP
+W35D4xhkdBR7945E4L5qhO4kqUTvaxI0EtGv6XeKnMLwPPIxaE1WzRFpmv4ZaPWc
+bYVLQVzt3ZJf6/ZARvGJP8l9EUfLGTgGzBkHAqj09yG/cRS50vKVzpjAK55NqP1t
+ElOqy6OygBci8zu90cfqJfFAAcxqybwtOYAVozW8BMhwoVO1pl9vE6p/QTPksAg4
+RtZSN1RwFWNXFgX+rBhIK9kOIDEjE+OI7tY8lfabpQKBgQDnyUOZBZGZjgxcchQs
+Dynv8WTgBdUkGSQyFhskjpyFnU5ogzVj4mYhsD9IuAdbzheEInyUkqhm2si71xeu
+zWN6Ms3jPfSCJPqGVz19Bc5xF11SAexdqzop3JD3iGkKRAzoq73FXnOtyxz+KPAT
+u76m2Qjj5APAJguOziZ8vKgVxwKBgQDdD/gdDJZH5rv8qAa+lhIUdtyE4HUe+r39
+IbaOIBHMXzH3hfOBOx8/D4MI9+CaURl6AWP14TGmKfUl1d5wYaypQb4smk/2U/MC
+8aSb0SLkfMhWXb43rFGf1MqKKmBG+9ogh9+GGa8jZdiUxYc0XeV/B6MM05Fzmcju
+4jZXE20v/wKBgBydmW3b5STbB6WmI91opdnMqJKLxcumGvTgC8vQm3xXdmWqxT2m
+pstD8hwtNCNeZ0LV6yGAla/VFPEz1eWrz7s3aHnEnVov7IoHXT0BKYKGyuuj9yV9
+TTn71B3rRmSREDLteQlT5t4u9E5giXs2M4xvwQw5i0j+qXCg/NlrhSjjAoGAaTr5
+0/Iy84UthYcCtuS/NIikToh+mEGqAP50ZVF0x4GlSnu0P5dCN4WNzc4ZV7w1UXOp
+/ti1BrFAZkNZgMuuImAORDMsz0iFDKi0wAuc/YE86If1TZE0xc3IoF6tt/yZiBTF
+3ZMKYOJRZ/hjdRUhcwfSoP9xZMMW+Egsr+SqfEcCgYAcr0u6Jx3lYVWlu18Xp67l
+PkqHk8u5dG5tRse63yuofm/Ab4MyH1Qpvsjb+nS6VAmQDZo/DZrmtyFjvwyMMhza
+mtWyYjxLCN4kqMYPfvLWacI10BH7oPI8GhYu4ODMG/jNfn7Znx/iOWu1ZZeKa5mK
+5yBbAEwZ8BcG7vL6Ji4qrQ==
+-----END PRIVATE KEY-----
+EOF
+	}
 `, name)
 }
 
@@ -516,9 +573,9 @@ func TestAccAliCloudSslCertificatesServiceCertificate_basic10998(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -626,9 +683,9 @@ func TestAccAliCloudSslCertificatesServiceCertificate_basic10998_twin(t *testing
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -744,3 +801,75 @@ EOF
 }
 
 // Test SslCertificatesService Certificate. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudSslCertificatesServiceCertificate_keyWo(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ssl_certificates_service_certificate.default"
+	ra := resourceAttrInit(resourceId, AliCloudSslCertificatesServiceCertificateMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SslCertificatesServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSslCertificatesServiceCertificate")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%ssslcertificatesservicecertificate%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSslCertificatesServiceCertificateBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cert":             "${var.cert}",
+					"key_wo":           "${var.key}",
+					"key_wo_version":   1,
+					"certificate_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cert":             CHECKSET,
+						"key":              "",
+						"key_wo_version":   "1",
+						"certificate_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cert":           "${var.cert2}",
+					"key_wo":         "${var.key2}",
+					"key_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key":            "",
+						"key_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key":            "${var.key2}",
+					"key_wo":         REMOVEKEY,
+					"key_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key":            CHECKSET,
+						"key_wo_version": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"key_wo_version"},
+			},
+		},
+	})
+}

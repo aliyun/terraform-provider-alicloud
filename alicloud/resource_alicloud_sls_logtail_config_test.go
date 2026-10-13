@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 // Test Sls LogtailConfig. >>> Resource test cases, automatically generated.
@@ -30,7 +30,7 @@ func TestAccAliCloudSlsLogtailConfig_basic10828(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -40,8 +40,6 @@ func TestAccAliCloudSlsLogtailConfig_basic10828(t *testing.T) {
 					"project_name":        "${alicloud_log_project.defaultuA28zS.project_name}",
 					"output_detail": []map[string]interface{}{
 						{
-							"endpoint":      "cn-hangzhou-intranet.log.aliyuncs.com",
-							"region":        "cn-hangzhou",
 							"logstore_name": "test",
 						},
 					},
@@ -95,7 +93,7 @@ variable "project_name" {
 
 resource "alicloud_log_project" "defaultuA28zS" {
   description = "project for terrafrom test"
-  name        = var.project_name
+  name        = var.name
 }
 
 

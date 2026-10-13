@@ -6,8 +6,8 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudKmsKeyVersions() *schema.Resource {
@@ -49,11 +49,6 @@ func dataSourceAlicloudKmsKeyVersions() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"creation_date": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Attribute 'creation_date' has been removed and using 'create_time' instead.",
-						},
 					},
 				},
 			},
@@ -84,14 +79,14 @@ func dataSourceAlicloudKmsKeyVersionsRead(d *schema.ResourceData, meta interface
 	var err error
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -126,7 +121,6 @@ func dataSourceAlicloudKmsKeyVersionsRead(d *schema.ResourceData, meta interface
 			"key_id":         object["KeyId"],
 			"id":             fmt.Sprint(object["KeyVersionId"]),
 			"key_version_id": fmt.Sprint(object["KeyVersionId"]),
-			"creation_date":  object["CreateTime"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
