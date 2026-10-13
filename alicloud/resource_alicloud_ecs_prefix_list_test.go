@@ -224,9 +224,97 @@ func TestAccAliCloudECSPrefixList_basic0(t *testing.T) {
 var AlicloudECSPrefixListMap0 = map[string]string{}
 
 func AlicloudECSPrefixListBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
+}
+`, name)
+}
+
+func TestAccAliCloudECSPrefixList_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_prefix_list.default"
+	ra := resourceAttrInit(resourceId, AlicloudECSPrefixListMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsPrefixList")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testaccrecsprefixlist1")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECSPrefixListBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_entries":       "3",
+					"address_family":    "IPv4",
+					"prefix_list_name":  name,
+					"description":       name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"entry": []map[string]interface{}{
+						{
+							"description": name,
+							"cidr":        "192.168.0.0/24",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_entries":       "3",
+						"address_family":    "IPv4",
+						"prefix_list_name":  name,
+						"description":       name,
+						"entry.#":           "1",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudECSPrefixListMap1 = map[string]string{}
+
+func AlicloudECSPrefixListBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 `, name)
 }
@@ -273,6 +361,15 @@ func TestUnitAlicloudECSPrefixList(t *testing.T) {
 				"Entry": map[string]interface{}{
 					"Cidr":        "192.168.0.0/24",
 					"Description": "description",
+				},
+			},
+		},
+		// DescribePrefixLists (used to fetch ResourceGroupId)
+		"PrefixLists": map[string]interface{}{
+			"PrefixList": []interface{}{
+				map[string]interface{}{
+					"PrefixListId":    "PrefixListId",
+					"ResourceGroupId": "rg-test",
 				},
 			},
 		},

@@ -2550,7 +2550,58 @@ func (s *EcsService) DescribeEcsPrefixList(id string) (object map[string]interfa
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
+	// ResourceGroupId is not returned by DescribePrefixListAttributes.
+	// Fetch it via DescribePrefixLists, which returns ResourceGroupId for each prefix list.
+	if resourceGroupId, err := s.describeEcsPrefixListResourceGroupId(id); err == nil && resourceGroupId != "" {
+		object["ResourceGroupId"] = resourceGroupId
+	} else if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribePrefixLists", AlibabaCloudSdkGoERROR)
+	}
 	return object, nil
+}
+
+func (s *EcsService) describeEcsPrefixListResourceGroupId(id string) (string, error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "DescribePrefixLists"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"PrefixListId": id,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		var err error
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidPrefixListId.NotFound"}) {
+			return "", WrapErrorf(NotFoundErr("ECS:PrefixList", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return "", WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	list, err := jsonpath.Get("$.PrefixLists.PrefixList", response)
+	if err != nil {
+		return "", WrapErrorf(err, FailedGetAttributeMsg, id, "$.PrefixLists.PrefixList", response)
+	}
+	items, ok := list.([]interface{})
+	if !ok || len(items) == 0 {
+		return "", nil
+	}
+	if item, ok := items[0].(map[string]interface{}); ok {
+		if rg, ok := item["ResourceGroupId"]; ok {
+			return fmt.Sprint(rg), nil
+		}
+	}
+	return "", nil
 }
 
 func (s *EcsService) DescribeEcsStorageCapacityUnit(id string) (object map[string]interface{}, err error) {
