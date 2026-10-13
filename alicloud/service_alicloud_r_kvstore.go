@@ -952,3 +952,48 @@ func (s *R_kvstoreService) DescribeKvStoreEngineVersion(id string) (object map[s
 
 	return object, nil
 }
+
+func (s *R_kvstoreService) DescribeKvStoreGlobalSecurityGroupIds(id string) (globalSecurityGroupIds []string, err error) {
+	var response map[string]interface{}
+	action := "DescribeGlobalSecurityIPGroupRelation"
+
+	client := s.client
+
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"DBClusterId": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcGet("R-kvstore", "2015-01-01", action, request, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return globalSecurityGroupIds, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.GlobalSecurityIPGroupRel", response)
+	if err != nil {
+		return globalSecurityGroupIds, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GlobalSecurityIPGroupRel", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return globalSecurityGroupIds, nil
+	}
+
+	for _, v := range resp.([]interface{}) {
+		globalSecurityGroupIds = append(globalSecurityGroupIds, fmt.Sprint(v.(map[string]interface{})["GlobalSecurityGroupId"]))
+	}
+
+	return globalSecurityGroupIds, nil
+}

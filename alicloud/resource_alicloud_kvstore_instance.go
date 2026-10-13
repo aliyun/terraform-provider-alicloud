@@ -435,6 +435,11 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"global_security_group_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -805,6 +810,13 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("is_auto_upgrade_open", engineVersionObject["IsAutoUpgradeOpen"])
+
+	globalSecurityGroupIds, err := r_kvstoreService.DescribeKvStoreGlobalSecurityGroupIds(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("global_security_group_list", globalSecurityGroupIds)
 
 	return nil
 }
@@ -1792,6 +1804,42 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
+	}
+
+	update = false
+	modifyGlobalSecurityIPGroupRelationReq := map[string]interface{}{
+		"RegionId":    client.RegionId,
+		"DBClusterId": d.Id(),
+	}
+
+	if d.HasChange("global_security_group_list") {
+		update = true
+	}
+	if v, ok := d.GetOk("global_security_group_list"); ok {
+		globalSecurityGroupList := v.(*schema.Set).List()
+
+		modifyGlobalSecurityIPGroupRelationReq["GlobalSecurityGroupId"] = convertListToCommaSeparate(globalSecurityGroupList)
+	}
+
+	if update {
+		action := "ModifyGlobalSecurityIPGroupRelation"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, modifyGlobalSecurityIPGroupRelationReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyGlobalSecurityIPGroupRelationReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	d.Partial(false)
