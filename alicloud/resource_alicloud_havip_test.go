@@ -29,9 +29,10 @@ func init() {
 		Name: "alicloud_havip",
 		F:    testSweepHaVip,
 		// When implemented, these should be removed firstly
-		Dependencies: []string{
-			"alicloud_havip_attachment",
-		},
+		// alicloud_havip_attachment sweeper is not registered; remove to avoid sweeper chain failure
+		//Dependencies: []string{
+		//	"alicloud_havip_attachment",
+		//},
 	})
 }
 

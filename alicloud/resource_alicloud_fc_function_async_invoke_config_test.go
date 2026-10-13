@@ -24,7 +24,7 @@ func init() {
 		F:    testSweepFCFunctionAsyncInvokeConfig,
 		Dependencies: []string{
 			"alicloud_fc_service",
-			"alicloud_fc_function",
+			// alicloud_fc_function sweeper is not registered; remove to avoid sweeper chain failure
 		},
 	})
 }

@@ -18,9 +18,10 @@ func init() {
 	resource.AddTestSweepers("alicloud_fc_service", &resource.Sweeper{
 		Name: "alicloud_fc_service",
 		F:    testSweepFCServices,
-		Dependencies: []string{
-			"alicloud_fc_function",
-		},
+		// alicloud_fc_function sweeper is not registered; remove to avoid sweeper chain failure
+		//Dependencies: []string{
+		//	"alicloud_fc_function",
+		//},
 	})
 }
 

@@ -21,7 +21,7 @@ func init() {
 		Dependencies: []string{
 			"alicloud_instance",
 			"alicloud_ecs_network_interface",
-			"alicloud_bastionhost_instance",
+			// alicloud_bastionhost_instance sweeper is not registered; remove to avoid sweeper chain failure
 			"alicloud_cs_kubernetes",
 		},
 	})
