@@ -74,10 +74,12 @@ The following arguments are supported:
 * `domain_password` - (Optional) The password of the domain administrator. The password can be up to 64 characters in length.
 * `domain_user_name` - (Optional) The username of the domain administrator. The username can be up to 64 characters in length.
 * `enable_admin_access` - (Optional, ForceNew, Computed) Specifies whether to grant the permissions of the local administrator to the desktop users. Default value: true.
+* `enable_cross_desktop_access` - (Optional, Computed) Specifies whether to enable cross-desktop access.
 * `enable_internet_access` - (Optional, ForceNew, Computed) Specifies whether to enable Internet access.
 * `mfa_enabled` - (Optional) Specifies whether to enable multi-factor authentication (MFA).
 * `protocol_type` - (Optional) The protocol type. Valid values: `ASP`, `HDX`.
 * `specification` - (Optional) The AD Connector specifications. Valid values: `1`, `2`.
+* `sso_enabled` - (Optional, Computed) Specifies whether to enable single sign-on (SSO) for user-based SSO.
 * `sub_domain_dns_address` - (Optional) The DNS address N of the enterprise AD subdomain. If you specify a value for the `sub_domain_name` parameter but you do not specify a value for this parameter, the DNS address of the subdomain is the same as the DNS address of the parent domain.
 * `sub_domain_name` - (Optional) The domain name of the enterprise AD subdomain.
 * `verify_code` - (Optional) The verification code. If the CEN instance that you specify for the CenId parameter belongs to another Alibaba Cloud account, you must call the SendVerifyCode operation to obtain the verification code.
