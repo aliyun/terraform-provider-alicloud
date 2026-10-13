@@ -210,23 +210,30 @@ if [ -f "$PROJECT_ROOT/.go-version" ]; then
   fi
 fi
 
-# Get changed files from the latest commit
-# Priority:
+# Get changed files
+# When a verified comparison base is provided (e.g. by the v2 PR pre-check
+# worker via CI_CHECK_BASE), scope changes to its merge-base with HEAD.
+# Otherwise priority:
 # 1. Uncommitted changes (if any)
 # 2. Latest commit changes
 # 3. All changes from master branch
-CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
+if [[ -n "${CI_CHECK_BASE:-}" ]]; then
+  ci_base="$(git merge-base "${CI_CHECK_BASE}" HEAD 2>/dev/null || echo "${CI_CHECK_BASE}")"
+  CHANGED_FILES=$(git diff --name-only ${ci_base}...HEAD 2>/dev/null)
+else
+  CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
 
-if [ -z "$CHANGED_FILES" ]; then
-  # No uncommitted changes, check the latest commit
-  echo -e "${BLUE}Checking latest commit changes...${NC}"
-  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
-fi
+  if [ -z "$CHANGED_FILES" ]; then
+    # No uncommitted changes, check the latest commit
+    echo -e "${BLUE}Checking latest commit changes...${NC}"
+    CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
+  fi
 
-if [ -z "$CHANGED_FILES" ]; then
-  # No changes in latest commit, fall back to comparing with master
-  echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
-  CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
+  if [ -z "$CHANGED_FILES" ]; then
+    # No changes in latest commit, fall back to comparing with master
+    echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
+    CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
+  fi
 fi
 
 if [ -z "$CHANGED_FILES" ]; then
@@ -317,15 +324,19 @@ if [ -n "$RESOURCE_CHANGES" ]; then
   # Create a temporary diff file
   TEMP_DIFF=$(mktemp)
   
-  # Generate diff: prioritize uncommitted changes, then latest commit, then compare with master
-  if git diff --name-only HEAD 2>/dev/null | grep -q .; then
+  # Generate diff: honor CI_CHECK_BASE when set, otherwise prioritize
+  # uncommitted changes, then latest commit, then compare with master
+  if [[ -n "${CI_CHECK_BASE:-}" ]]; then
+    ci_base="$(git merge-base "${CI_CHECK_BASE}" HEAD 2>/dev/null || echo "${CI_CHECK_BASE}")"
+    git diff ${ci_base}...HEAD > "$TEMP_DIFF" 2>/dev/null || true
+  elif git diff --name-only HEAD 2>/dev/null | grep -q .; then
     # There are uncommitted changes
     git diff HEAD > "$TEMP_DIFF"
   else
     # No uncommitted changes, check the latest commit
     git diff HEAD~1 HEAD > "$TEMP_DIFF"
   fi
-  
+
   # If diff is empty, try comparing with master
   if [ ! -s "$TEMP_DIFF" ]; then
     git diff origin/master...HEAD > "$TEMP_DIFF" 2>/dev/null || git diff master...HEAD > "$TEMP_DIFF" 2>/dev/null || true
@@ -547,10 +558,16 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
   echo -e "${BLUE}▶ Running consistency check...${NC}"
   # Create a temporary diff file
   TEMP_DIFF=$(mktemp)
-  
-  # Always check only the latest commit (not all changes from master)
-  git diff HEAD~1 HEAD > "$TEMP_DIFF"
-  echo -e "${BLUE}  Checking only latest commit${NC}"
+
+  # Honor CI_CHECK_BASE when set, otherwise check only the latest commit
+  if [[ -n "${CI_CHECK_BASE:-}" ]]; then
+    ci_base="$(git merge-base "${CI_CHECK_BASE}" HEAD 2>/dev/null || echo "${CI_CHECK_BASE}")"
+    git diff ${ci_base}...HEAD > "$TEMP_DIFF" 2>/dev/null || true
+    echo -e "${BLUE}  Checking changes relative to CI_CHECK_BASE${NC}"
+  else
+    git diff HEAD~1 HEAD > "$TEMP_DIFF"
+    echo -e "${BLUE}  Checking only latest commit${NC}"
+  fi
   
   if [ -s "$TEMP_DIFF" ]; then
     if go run "$SCRIPT_DIR/consistency/consistency_check.go" -fileNames="$TEMP_DIFF"; then
