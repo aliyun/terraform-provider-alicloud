@@ -2436,6 +2436,12 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 			}
 			endpointInit.Store(key, val.(string))
 		}
+		// Honour the documented `endpoints.kvstore` field for R-KVStore:
+		// WithRKvstoreClient reads the "r_kvstore" key via loadApiEndpoint,
+		// so mirror the documented "kvstore" override into "r_kvstore" when
+		// it has not been populated directly or via the deprecated redisa
+		// fallback above.
+		connectivity.MirrorKvstoreEndpoint(&endpointInit)
 		config.EcsEndpoint = strings.TrimSpace(endpoints["ecs"].(string))
 		config.RdsEndpoint = strings.TrimSpace(endpoints["rds"].(string))
 		config.SlbEndpoint = strings.TrimSpace(endpoints["slb"].(string))
