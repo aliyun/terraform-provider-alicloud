@@ -44,6 +44,11 @@ func TestAccAliCloudApiGatewayBackend_basic0(t *testing.T) {
 					"description":  "tf-testAcc-desc",
 					"backend_type": "HTTP",
 					"create_event_bridge_service_linked_role": "true",
+					"create_slr": "true",
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "Backend",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -51,6 +56,33 @@ func TestAccAliCloudApiGatewayBackend_basic0(t *testing.T) {
 						"description":  "tf-testAcc-desc",
 						"backend_type": "HTTP",
 						"create_event_bridge_service_linked_role": "true",
+						"create_slr":   "true",
+						"tags.Created": "TF",
+						"tags.For":     "Backend",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backend_name": name,
+					"description":  "tf-testAcc-desc",
+					"backend_type": "HTTP",
+					"create_event_bridge_service_linked_role": "true",
+					"create_slr": "true",
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "Backend-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backend_name": name,
+						"description":  "tf-testAcc-desc",
+						"backend_type": "HTTP",
+						"create_event_bridge_service_linked_role": "true",
+						"create_slr":   "true",
+						"tags.Created": "TF",
+						"tags.For":     "Backend-update",
 					}),
 				),
 			},
@@ -58,7 +90,7 @@ func TestAccAliCloudApiGatewayBackend_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"create_event_bridge_service_linked_role"},
+				ImportStateVerifyIgnore: []string{"create_event_bridge_service_linked_role", "create_slr"},
 			},
 		},
 	})
@@ -139,7 +171,7 @@ func TestAccAliCloudApiGatewayBackend_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"create_event_bridge_service_linked_role"},
+				ImportStateVerifyIgnore: []string{"create_event_bridge_service_linked_role", "create_slr"},
 			},
 		},
 	})
@@ -181,7 +213,7 @@ func TestAccAliCloudApiGatewayBackend_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"create_event_bridge_service_linked_role"},
+				ImportStateVerifyIgnore: []string{"create_event_bridge_service_linked_role", "create_slr"},
 			},
 		},
 	})
@@ -207,7 +239,12 @@ func TestUnitAlicloudApiGatewayBackend(t *testing.T) {
 		"backend_name": "CreateBackendValue",
 		"backend_type": "HTTP",
 		"create_event_bridge_service_linked_role": true,
+		"create_slr":  true,
 		"description": "CreateBackendValue",
+		"tags": map[string]interface{}{
+			"Created": "TF",
+			"For":     "Backend",
+		},
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)

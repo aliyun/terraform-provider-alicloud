@@ -46,13 +46,16 @@ The following arguments are supported:
 * `backend_type` - (Required, ForceNew) The type of the Backend. Valid values: `HTTP`, `VPC`, `FC_EVENT`, `FC_EVENT_V3`, `FC_HTTP`, `FC_HTTP_V3`, `OSS`, `MOCK`.
 * `backend_name` - (Required) The name of the Backend.
 * `create_event_bridge_service_linked_role` - (Optional, ForceNew) Whether to create an Event bus service association role.
+* `create_slr` - (Optional, ForceNew) Whether to create a service linked role for the Backend.
 * `description` - (Optional) The description of the Backend.
+* `tags` - (Optional) A mapping of tags to assign to the Backend.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Backend.
+* `tags` - A mapping of tags assigned to the Backend.
 
 ## Import
 
