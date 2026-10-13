@@ -38,6 +38,7 @@ data "alicloud_db_instances" "default" {
 resource "alicloud_das_sql_log_config" "default" {
   instance_id    = data.alicloud_db_instances.default.instances.0.id
   enable         = true
+  enable_audit   = true
   request_enable = true
   retention      = 30
   hot_retention  = 7
@@ -57,9 +58,12 @@ Terraform cannot destroy resource `alicloud_das_sql_log_config`. Terraform will 
 The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The ID of the database instance.
 * `enable` - (Optional, Computed) Specifies whether SQL Explorer is enabled.
+* `enable_audit` - (Optional) Specifies whether to enable security audit.
 * `request_enable` - (Optional, Computed) The requested state of SQL Explorer.
 * `retention` - (Optional, Computed, Int) The retention period of SQL audit logs. Unit: days.
 * `hot_retention` - (Optional, Computed, Int) The retention period of hot SQL audit logs. Unit: days.
+
+-> **NOTE:** `enable_audit` is a write-only parameter. The `DescribeSqlLogConfig` API does not return this field, so Terraform cannot read it back during refresh; the value set in the configuration is preserved in state, and the field is ignored during import verification.
 
 ## Attributes Reference
 
