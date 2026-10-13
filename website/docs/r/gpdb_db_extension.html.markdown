@@ -84,7 +84,7 @@ resource "alicloud_gpdb_db_extension" "default" {
   extension_name       = "uuid-ossp"
   db_instance_id       = alicloud_gpdb_instance.defaultqsmpIy.id
   database_name        = alicloud_gpdb_database.defaultPPmRVa.database_name
-  is_laexample_version = true
+  is_latest_version = true
 }
 ```
 
