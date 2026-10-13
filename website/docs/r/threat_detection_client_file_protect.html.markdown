@@ -37,6 +37,7 @@ provider "alicloud" {
 resource "alicloud_threat_detection_client_file_protect" "default" {
   status      = "0"
   file_paths  = ["/usr/local"]
+  platform    = "linux"
   file_ops    = ["CREATE"]
   rule_action = "pass"
   proc_paths  = ["/usr/local"]
@@ -54,6 +55,7 @@ The following arguments are supported:
 * `alert_level` - (Optional) 0 no alert 1 info 2 suspicious 3 critical.
 * `file_ops` - (Required) file operation.
 * `file_paths` - (Required) file path.
+* `platform` - (Optional, ForceNew) The platform type. Valid values: `windows`, `linux`.
 * `proc_paths` - (Required) process path.
 * `rule_action` - (Required) rule action, pass or alert.
 * `rule_name` - (Required) ruleName.

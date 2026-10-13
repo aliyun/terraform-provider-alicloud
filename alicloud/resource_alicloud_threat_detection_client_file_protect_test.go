@@ -44,6 +44,7 @@ func TestAccAliCloudThreatDetectionClientFileProtect_basic4514(t *testing.T) {
 					"rule_name": "ruleTest2_843",
 					"status":    "0",
 					"switch_id": "FILE_PROTECT_RULE_SWITCH_TYPE_1693474122929",
+					"platform":  "linux",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -55,6 +56,7 @@ func TestAccAliCloudThreatDetectionClientFileProtect_basic4514(t *testing.T) {
 						"rule_name":    CHECKSET,
 						"status":       "0",
 						"switch_id":    "FILE_PROTECT_RULE_SWITCH_TYPE_1693474122929",
+						"platform":     "linux",
 					}),
 				),
 			},
@@ -343,6 +345,7 @@ func TestAccAliCloudThreatDetectionClientFileProtect_basic4514_twin(t *testing.T
 					"alert_level": "1",
 					"switch_id":   "FILE_PROTECT_RULE_SWITCH_TYPE_1693474122929",
 					"rule_name":   "ruleTest_772",
+					"platform":    "windows",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -354,6 +357,7 @@ func TestAccAliCloudThreatDetectionClientFileProtect_basic4514_twin(t *testing.T
 						"alert_level":  "1",
 						"switch_id":    "FILE_PROTECT_RULE_SWITCH_TYPE_1693474122929",
 						"rule_name":    CHECKSET,
+						"platform":     "windows",
 					}),
 				),
 			},
