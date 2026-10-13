@@ -65,6 +65,7 @@ resource "alicloud_esa_routine" "from_file" {
 The following arguments are supported:
 * `name` - (Required, ForceNew) Routine Name, which must be unique in the same account.
 * `description` - (Optional, ForceNew) The description of the routine.
+* `has_assets` - (Optional, ForceNew) Indicates whether the package includes Assets files.
 * `code` - (Optional) The JavaScript source code of the routine. When set or changed, the code is uploaded as a new staging version and then committed into a formal code version. To manage the code from a local file, use the Terraform built-in `file()` function, e.g. `code = file("index.js")`.
 * `code_description` - (Optional) The description attached to the committed code version.
 * `deploy_env` - (Optional) The environment whose environment variables are bundled when committing the code version. Valid values: `staging`, `production`. If not set, no environment variables are bundled.
