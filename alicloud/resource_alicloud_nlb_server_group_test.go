@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -2931,8 +2933,7 @@ func TestAccAliCloudNlbServerGroup_healthCheckHttpCodeOrder(t *testing.T) {
 						},
 					},
 				}),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
+				PlanOnly: true,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2948,8 +2949,6 @@ func TestAccAliCloudNlbServerGroup_healthCheckHttpCodeOrder(t *testing.T) {
 					testAccCheck(map[string]string{
 						"health_check.#": "1",
 						"health_check.0.health_check_http_code.#": "2",
-						"health_check.0.health_check_http_code.0": "http_3xx",
-						"health_check.0.health_check_http_code.1": "http_2xx",
 					}),
 				),
 			},
@@ -3025,8 +3024,6 @@ func TestAccAliCloudNlbServerGroup_healthCheckHttpCodeOrderCreation(t *testing.T
 					testAccCheck(map[string]string{
 						"health_check.#": "1",
 						"health_check.0.health_check_http_code.#": "2",
-						"health_check.0.health_check_http_code.0": "http_3xx",
-						"health_check.0.health_check_http_code.1": "http_2xx",
 					}),
 				),
 			},
@@ -3051,26 +3048,76 @@ func TestAccAliCloudNlbServerGroup_healthCheckHttpCodeOrderCreation(t *testing.T
 	})
 }
 
-func TestUnitNlbServerGroupHealthCheckHttpCodeOrder(t *testing.T) {
-	cases := []struct {
+func TestUnitNlbServerGroupHealthCheckHttpCodeDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
 		name     string
-		remote   []interface{}
-		previous []interface{}
-		want     []interface{}
+		old      string
+		new      string
+		expected bool
 	}{
-		{"reorder keeps previous order", []interface{}{"http_2xx", "http_3xx"}, []interface{}{"http_3xx", "http_2xx"}, []interface{}{"http_3xx", "http_2xx"}},
-		{"identical order unchanged", []interface{}{"http_2xx", "http_3xx"}, []interface{}{"http_2xx", "http_3xx"}, []interface{}{"http_2xx", "http_3xx"}},
-		{"empty previous keeps api order", []interface{}{"http_2xx", "http_3xx"}, []interface{}{}, []interface{}{"http_2xx", "http_3xx"}},
-		{"new member appended in api order", []interface{}{"http_2xx", "http_3xx", "http_4xx"}, []interface{}{"http_3xx", "http_2xx"}, []interface{}{"http_3xx", "http_2xx", "http_4xx"}},
-		{"removed member is dropped", []interface{}{"http_2xx"}, []interface{}{"http_3xx", "http_2xx"}, []interface{}{"http_2xx"}},
-		{"duplicates consumed once each", []interface{}{"http_2xx", "http_3xx", "http_2xx"}, []interface{}{"http_2xx", "http_2xx", "http_3xx"}, []interface{}{"http_2xx", "http_2xx", "http_3xx"}},
-		{"empty remote returns empty", []interface{}{}, []interface{}{"http_2xx"}, []interface{}{}},
-		{"all members are new", []interface{}{"http_4xx"}, []interface{}{"http_2xx", "http_3xx"}, []interface{}{"http_4xx"}},
+		{"ReorderOnly", "http_2xx,http_3xx", "http_3xx,http_2xx", true},
+		{"ReorderDuplicates", "http_2xx,http_2xx,http_3xx", "http_3xx,http_2xx,http_2xx", true},
+		{"MemberAdded", "http_2xx,http_3xx", "http_2xx,http_3xx,http_4xx", false},
+		{"MemberRemoved", "http_2xx,http_3xx,http_4xx", "http_2xx,http_3xx", false},
+		{"MemberReplaced", "http_2xx", "http_3xx", false},
 	}
-	for _, tc := range cases {
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, nlbServerGroupHealthCheckHttpCodeOrder(tc.remote, tc.previous))
+			if got := nlbServerGroupHealthCheckHttpCodeDiffSuppressFunc("health_check.0.health_check_http_code.0", tc.old, tc.new, nil); got != tc.expected {
+				t.Fatalf("case %s: suppressor = %v, want %v", tc.name, got, tc.expected)
+			}
+			diff, err := resourceAliCloudNlbServerGroup().Diff(
+				context.Background(),
+				testNlbServerGroupHealthCheckHttpCodeState(tc.old),
+				terraform.NewResourceConfigRaw(testNlbServerGroupHealthCheckHttpCodeConfig(tc.new)),
+				nil)
+			if err != nil {
+				t.Fatalf("case %s: diff: %s", tc.name, err)
+			}
+			var elementDiffs bool
+			if diff != nil {
+				for k := range diff.Attributes {
+					if strings.HasPrefix(k, "health_check.0.health_check_http_code.") {
+						elementDiffs = true
+						break
+					}
+				}
+			}
+			if elementDiffs == tc.expected {
+				t.Fatalf("case %s: instance diff carries health_check_http_code changes = %v, want suppressed = %v", tc.name, elementDiffs, tc.expected)
+			}
 		})
+	}
+}
+
+func testNlbServerGroupHealthCheckHttpCodeState(old string) *terraform.InstanceState {
+	members := strings.Split(old, ",")
+	attributes := map[string]string{
+		"health_check.#":                          "1",
+		"health_check.0.health_check_enabled":     "true",
+		"health_check.0.health_check_type":        "HTTP",
+		"health_check.0.health_check_http_code.#": fmt.Sprintf("%d", len(members)),
+	}
+	for i, member := range members {
+		attributes[fmt.Sprintf("health_check.0.health_check_http_code.%d", i)] = member
+	}
+	return &terraform.InstanceState{ID: "ngp-unit", Attributes: attributes}
+}
+
+func testNlbServerGroupHealthCheckHttpCodeConfig(new string) map[string]interface{} {
+	members := strings.Split(new, ",")
+	values := make([]interface{}, len(members))
+	for i, member := range members {
+		values[i] = member
+	}
+	return map[string]interface{}{
+		"health_check": []interface{}{
+			map[string]interface{}{
+				"health_check_enabled":   "true",
+				"health_check_type":      "HTTP",
+				"health_check_http_code": values,
+			},
+		},
 	}
 }
 
