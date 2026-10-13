@@ -39,7 +39,6 @@ func resourceAliCloudRamGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"name": {
 				Type:       schema.TypeString,
@@ -134,6 +133,10 @@ func resourceAliCloudRamGroupUpdate(d *schema.ResourceData, meta interface{}) er
 	query = make(map[string]interface{})
 	request["GroupName"] = d.Id()
 
+	if d.HasChange("group_name") {
+		update = true
+		request["NewGroupName"] = d.Get("group_name")
+	}
 	if d.HasChange("comments") {
 		update = true
 	}
@@ -157,6 +160,9 @@ func resourceAliCloudRamGroupUpdate(d *schema.ResourceData, meta interface{}) er
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if d.HasChange("group_name") {
+			d.SetId(d.Get("group_name").(string))
 		}
 	}
 
