@@ -45,7 +45,7 @@ resource "alicloud_ecs_dedicated_host_cluster" "example" {
 
 The following arguments are supported:
 
-* `dedicated_host_cluster_name` - (Optional) The name of the dedicated host cluster. The name must be `2` to `128` characters in length and can contain letters, digits, periods (.), underscores (_), and hyphens (-). It must start with a letter. It cannot contain `http://` or `https://`.
+* `dedicated_host_cluster_name` - (Optional) The name of the dedicated host cluster. The name must be `2` to `128` characters in length and can contain letters, digits, periods (.), underscores (_), and hyphens (-). It must start with a letter.
 * `description` - (Optional) The description of the dedicated host cluster. The description must be `2` to `256` characters in length. It cannot start with `http://` or `https://`.
 * `dry_run` - (Optional) The dry run.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
@@ -56,6 +56,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Dedicated Host Cluster.
+* `resource_group_id` - The ID of the resource group to which the resource belongs.
 
 ## Import
 
