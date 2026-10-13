@@ -4667,6 +4667,9 @@ func TestAccAliCloudRdsDBInstance_CustomIPArray(t *testing.T) {
 					testAccCheckDBInstanceSecurityIpArray(resourceId, customArrayName, "10.168.1.12,100.69.7.112"),
 					testAccCheck(map[string]string{
 						"db_instance_ip_array_name": customArrayName,
+						"engine_version":            "8.0",
+						"instance_storage":          "20",
+						"instance_name":             name,
 					}),
 				),
 			},
@@ -4687,6 +4690,9 @@ func TestAccAliCloudRdsDBInstance_CustomIPArray(t *testing.T) {
 					testAccCheckDBInstanceSecurityIpArray(resourceId, customArrayName, "10.168.1.13,100.69.7.113"),
 					testAccCheck(map[string]string{
 						"db_instance_ip_array_name": customArrayName,
+						"engine_version":            "8.0",
+						"instance_storage":          "20",
+						"instance_name":             name,
 					}),
 				),
 			},
