@@ -49,6 +49,9 @@ The following arguments are supported:
 * `on_unable_to_redeploy_failed_instance` - (Optional) The emergency solution to use in the situation where instances in the deployment set cannot be evenly distributed to different zones due to resource insufficiency after the instances failover. Valid values:
   - `CancelMembershipAndStart` - Removes the instances from the deployment set and starts the instances immediately after they are failed over.
   - `KeepStopped`- Leaves the instances in the Stopped state and starts them after resources are replenished.
+* `group_count` - (Optional, ForceNew) The number of groups for the deployment set group high availability policy. Valid values: `1` to `7`. Default value: `3`. This parameter takes effect only when `strategy` is `AvailabilityGroup`.
+* `type` - (Optional, ForceNew) The deployment type. Valid values: `host`, `sw`, `rack`. Default value: `host`.
+* `affinity` - (Optional, ForceNew) The affinity level of the deployment set. Instances in the deployment set are distributed based on this affinity. Valid values: `1` to `10`. Default value: `1`.
 * `domain` - (Deprecated since v1.243.0) Field `domain` has been deprecated from provider version 1.243.0.
 * `granularity` - (Deprecated since v1.243.0) Field `granularity` has been deprecated from provider version 1.243.0.
 
