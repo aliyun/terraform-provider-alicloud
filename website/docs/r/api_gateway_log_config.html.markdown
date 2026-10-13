@@ -53,6 +53,7 @@ resource "alicloud_api_gateway_log_config" "example" {
   sls_project   = alicloud_log_project.example.project_name
   sls_log_store = alicloud_log_store.example.logstore_name
   log_type      = "PROVIDER"
+  create_slr    = true
 }
 ```
 
@@ -62,9 +63,10 @@ resource "alicloud_api_gateway_log_config" "example" {
 
 The following arguments are supported:
 
-* `sls_project` - (Required) The name of the Project.
-* `sls_log_store` - (Required) The name of the Log Store.
-* `log_type` - (Required, ForceNew) The type the of log. Valid values: `PROVIDER`.
+* `sls_project` - (Required) The name of the Log Service project.
+* `sls_log_store` - (Required) The name of the Log Service Logstore.
+* `log_type` - (Required, ForceNew) The log type. Valid values: `PROVIDER`.
+* `create_slr` - (Optional, ForceNew) Specifies whether to create a service-linked role. When set to `true`, the system creates the service-linked role `AliyunServiceRoleForApiGatewayLogPush` that allows API Gateway to push logs to Log Service.
 
 ## Attributes Reference
 

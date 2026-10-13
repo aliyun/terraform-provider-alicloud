@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudApiGatewayLogConfigsDataSource(t *testing.T) {
+func TestAccAliCloudApiGatewayLogConfigsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100, 999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudApiGatewayLogConfigsDataSourceName(rand, map[string]string{
