@@ -123,6 +123,63 @@ func TestAccAliCloudRealtimeComputeMember_basic11888_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudRealtimeComputeMember_customRole11888(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_realtime_compute_member.default"
+	ra := resourceAttrInit(resourceId, AliCloudRealtimeComputeMemberMap11888)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRealtimeComputeMember")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRealtimeComputeMemberBasicDependence11888)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"member":      "${alicloud_ram_user.default.id}",
+					"resource_id": "${alicloud_realtime_compute_vvp_instance.default.resource_id}",
+					"namespace":   "${alicloud_realtime_compute_vvp_instance.default.vvp_instance_name}-default",
+					"role":        "devops_admin",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"member":      CHECKSET,
+						"resource_id": CHECKSET,
+						"namespace":   CHECKSET,
+						"role":        "devops_admin",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role": "data_engineer",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role": "data_engineer",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
 var AliCloudRealtimeComputeMemberMap11888 = map[string]string{}
 
 func AliCloudRealtimeComputeMemberBasicDependence11888(name string) string {
