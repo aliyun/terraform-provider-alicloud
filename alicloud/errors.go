@@ -2,9 +2,7 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -12,9 +10,58 @@ import (
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+)
+
+// The helpers below moved to the leaf packages errs and logs; these
+// aliases keep the flat layout compiling unchanged.
+//
+// WrapError/WrapErrorf must stay var aliases rather than forwarding
+// functions: they read runtime.Caller(1) to attribute errors to the
+// caller, and a wrapper would insert a frame and misattribute every
+// error in the provider. The same holds for addDebug in common.go.
+//
+// ComplexError and ProviderError must be type aliases — the "=" is
+// load-bearing: the type assertions in IsExpectedErrors and
+// rdsErrorHasCode below must keep matching values wrapped by errs,
+// or 404 handling and error-code exemptions silently stop working.
+type ComplexError = errs.ComplexError
+type ProviderError = errs.ProviderError
+type ErrorSource = errs.ErrorSource
+
+var (
+	Error                      = errs.Error
+	WrapError                  = errs.WrapError
+	WrapErrorf                 = errs.WrapErrorf
+	WrapComplexError           = errs.WrapComplexError
+	NotFoundError              = errs.NotFoundError
+	NotFoundErr                = errs.NotFoundErr
+	GetNotFoundErrorFromString = errs.GetNotFoundErrorFromString
+	GetTimeErrorFromString     = errs.GetTimeErrorFromString
+	NewProviderError           = errs.NewProviderError
+	NeedRetry                  = helper.NeedRetry
+)
+
+const (
+	AlibabaCloudSdkGoERROR = errs.AlibabaCloudSdkGoERROR
+	AliyunLogGoSdkERROR    = errs.AliyunLogGoSdkERROR
+	AliyunDatahubSdkGo     = errs.AliyunDatahubSdkGo
+	AliyunOssGoSdk         = errs.AliyunOssGoSdk
+	FcGoSdk                = errs.FcGoSdk
+	DenverdinoAliyungo     = errs.DenverdinoAliyungo
+	AliyunTablestoreGoSdk  = errs.AliyunTablestoreGoSdk
+	AliMnsERROR            = errs.AliMnsERROR
+	ProviderERROR          = errs.ProviderERROR
+	DefaultErrorMsg        = errs.DefaultErrorMsg
+	DataDefaultErrorMsg    = errs.DataDefaultErrorMsg
+	NotFoundWithResponse   = errs.NotFoundWithResponse
+	FailedGetAttributeMsg  = errs.FailedGetAttributeMsg
+	DefaultDebugMsg        = logs.DefaultDebugMsg
 )
 
 const (
@@ -56,76 +103,6 @@ var OtsTableIsTemporarilyUnavailable = []string{"no such host", "OTSServerBusy",
 var OtsTunnelIsTemporarilyUnavailable = []string{"no such host", "OTSTunnelServerUnavailable", "OTSPermissionDenied"}
 var OtsSecondaryIndexIsTemporarilyUnavailable = []string{"no such host", "OTSServerUnavailable"}
 var OtsSearchIndexIsTemporarilyUnavailable = []string{"no such host", "OTSServerUnavailable"}
-
-// An Error represents a custom error for Terraform failure response
-type ProviderError struct {
-	errorCode string
-	message   string
-}
-
-func (e *ProviderError) Error() string {
-	return fmt.Sprintf("[ERROR] Terraform Alicloud Provider Error: Code: %s Message: %s", e.errorCode, e.message)
-}
-
-func (err *ProviderError) ErrorCode() string {
-	return err.errorCode
-}
-
-func (err *ProviderError) Message() string {
-	return err.message
-}
-
-func GetNotFoundErrorFromString(str string) error {
-	return &ProviderError{
-		errorCode: InstanceNotFound,
-		message:   str,
-	}
-}
-func NotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-	if e, ok := err.(*ComplexError); ok {
-		if e.Err != nil && strings.HasPrefix(e.Err.Error(), ResourceNotfound) {
-			return true
-		}
-		return NotFoundError(e.Cause)
-	}
-
-	if e, ok := err.(*tea.SDKError); ok {
-		return tea.IntValue(e.StatusCode) == 404 || regexp.MustCompile(NotFound).MatchString(tea.StringValue(e.Message))
-	}
-
-	if e, ok := err.(*errors.ServerError); ok {
-		return e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound || e.HttpStatus() == 404 || strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)
-	}
-
-	if e, ok := err.(*ProviderError); ok {
-		return e.ErrorCode() == InstanceNotFound || e.ErrorCode() == RamInstanceNotFound || e.ErrorCode() == NotFound || strings.Contains(strings.ToLower(e.Message()), MessageInstanceNotFound)
-	}
-
-	if e, ok := err.(*common.Error); ok {
-		return e.Code == InstanceNotFound || e.Code == RamInstanceNotFound || e.Code == NotFound || strings.Contains(strings.ToLower(e.Message), MessageInstanceNotFound)
-	}
-
-	if e, ok := err.(oss.ServiceError); ok {
-		return e.StatusCode == 404 || strings.HasPrefix(e.Code, "NoSuch") || strings.HasPrefix(e.Message, "No Row found")
-	}
-
-	if e, ok := err.(*otsTunnel.TunnelError); ok {
-		if e.Code == otsTunnel.ErrCodeParamInvalid && strings.Contains(strings.ToLower(e.Message), "tunnel not exist") {
-			return true
-		}
-		if e.Code == otsTunnel.ErrCodePermissionDenied {
-			lowerMsg := strings.ToLower(e.Message)
-			if strings.Contains(lowerMsg, "is not found") || strings.Contains(lowerMsg, "instance is not running") {
-				return true
-			}
-		}
-	}
-
-	return false
-}
 
 // rdsErrorHasCode matches structured RDS error codes and unwraps query retry metadata.
 func rdsErrorHasCode(err error, codes ...string) bool {
@@ -251,46 +228,6 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 	return false
 }
 
-func NeedRetry(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	postRegex := regexp.MustCompile("^Post [\"]*https://.*")
-	if postRegex.MatchString(err.Error()) {
-		return true
-	}
-
-	if e, ok := err.(*errors.ClientError); ok && e.ErrorCode() == errors.TimeoutErrorCode {
-		return true
-	}
-
-	throttlingRegex := regexp.MustCompile("Throttling")
-	codeRegex := regexp.MustCompile("^code: 5[\\d]{2}")
-
-	if e, ok := err.(*tea.SDKError); ok {
-		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
-			return false
-		}
-		if strings.Contains(*e.Message, "Client.Timeout") {
-			return true
-		}
-		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) || codeRegex.MatchString(*e.Message) {
-			return true
-		}
-	}
-
-	if e, ok := err.(*errors.ServerError); ok {
-		return e.ErrorCode() == ServiceUnavailable || e.ErrorCode() == "Rejected.Throttling" || throttlingRegex.MatchString(e.ErrorCode()) || codeRegex.MatchString(e.Message())
-	}
-
-	if e, ok := err.(*common.Error); ok {
-		return e.Code == ServiceUnavailable || e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(e.Code) || codeRegex.MatchString(e.Message)
-	}
-
-	return false
-}
-
 func NoCodeRegexRetry(err error) bool {
 	if err == nil {
 		return false
@@ -344,13 +281,6 @@ func IsExpectedErrorCodes(code string, errorCodes []string) bool {
 	return false
 }
 
-func GetTimeErrorFromString(str string) error {
-	return &ProviderError{
-		errorCode: "WaitForTimeout",
-		message:   str,
-	}
-}
-
 func GetNotFoundMessage(product, id string) string {
 	return fmt.Sprintf("The specified %s %s is not found.", product, id)
 }
@@ -363,114 +293,16 @@ func GetCreateFailedMessage(product string) string {
 	return fmt.Sprintf("The specified %s is create failed.", product)
 }
 
-type ErrorSource string
-
-const (
-	AlibabaCloudSdkGoERROR = ErrorSource("[SDK alibaba-cloud-sdk-go ERROR]")
-	AliyunLogGoSdkERROR    = ErrorSource("[SDK aliyun-log-go-sdk ERROR]")
-	AliyunDatahubSdkGo     = ErrorSource("[SDK aliyun-datahub-sdk-go ERROR]")
-	AliyunOssGoSdk         = ErrorSource("[SDK aliyun-oss-go-sdk ERROR]")
-	FcGoSdk                = ErrorSource("[SDK fc-go-sdk ERROR]")
-	DenverdinoAliyungo     = ErrorSource("[SDK denverdino/aliyungo ERROR]")
-	AliyunTablestoreGoSdk  = ErrorSource("[SDK aliyun-tablestore-go-sdk ERROR]")
-	AliMnsERROR            = ErrorSource("[SDK ali_mns ERROR]")
-	ProviderERROR          = ErrorSource("[Provider ERROR]")
-)
-
-// ComplexError is a format error which including origin error, extra error message, error occurred file and line
-// Cause: a error is a origin error that comes from SDK, some exceptions and so on
-// Err: a new error is built from extra message
-// Path: the file path of error occurred
-// Line: the file line of error occurred
-type ComplexError struct {
-	Cause error
-	Err   error
-	Path  string
-	Line  int
-}
-
-func (e ComplexError) Error() string {
-	if e.Cause == nil {
-		e.Cause = Error("<nil cause>")
-	}
-	if e.Err == nil {
-		return fmt.Sprintf("\u001B[31m[ERROR]\u001B[0m %s:%d:\n%s", e.Path, e.Line, e.Cause.Error())
-	}
-	return fmt.Sprintf("\u001B[31m[ERROR]\u001B[0m %s:%d: %s:\n%s", e.Path, e.Line, e.Err.Error(), e.Cause.Error())
-}
-
-func Error(format string, args ...interface{}) error {
-	return fmt.Errorf(format, args...)
-}
-
-func NotFoundErr(args ...interface{}) error {
-	return fmt.Errorf(notFoundFmt, args...)
-}
-
-// Return a ComplexError which including error occurred file and path
-func WrapError(cause error) error {
-	if cause == nil {
-		return nil
-	}
-	_, filepath, line, ok := runtime.Caller(1)
-	if !ok {
-		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapError.")
-		return WrapComplexError(cause, nil, "", -1)
-	}
-	parts := strings.Split(filepath, "/")
-	if len(parts) > 3 {
-		filepath = strings.Join(parts[len(parts)-3:], "/")
-	}
-	return WrapComplexError(cause, nil, filepath, line)
-}
-
-// Return a ComplexError which including extra error message, error occurred file and path
-func WrapErrorf(cause error, msg string, args ...interface{}) error {
-	if cause == nil && strings.TrimSpace(msg) == "" {
-		return nil
-	}
-	_, filepath, line, ok := runtime.Caller(1)
-	if !ok {
-		log.Printf("\u001B[31m[ERROR]\u001B[0m runtime.Caller error in WrapErrorf.")
-		return WrapComplexError(cause, Error("%s", msg), "", -1)
-	}
-	parts := strings.Split(filepath, "/")
-	if len(parts) > 3 {
-		filepath = strings.Join(parts[len(parts)-3:], "/")
-	}
-	// The second parameter of args is requestId, if the error message is NotFoundMsg the requestId need to be returned.
-	if msg == NotFoundMsg && len(args) == 2 {
-		msg += RequestIdMsg
-	}
-	return WrapComplexError(cause, fmt.Errorf(msg, args...), filepath, line)
-}
-
-func WrapComplexError(cause, err error, filepath string, fileline int) error {
-	return &ComplexError{
-		Cause: cause,
-		Err:   err,
-		Path:  filepath,
-		Line:  fileline,
-	}
-}
-
 // A default message of ComplexError's Err. It is format to Resource <resource-id> <operation> Failed!!! <error source>
-const DefaultErrorMsg = "Resource %s %s Failed!!! %s"
 const ResponseCodeMsg = "Resource %s %s Failed!!! %v"
 const RequestIdMsg = "RequestId: %s"
-const notFoundFmt = "The specified %s %s is not found."
 const NotFoundMsg = ResourceNotfound + "!!! %s"
-const NotFoundWithResponse = ResourceNotfound + "!!! Response: %v"
 const NotFoundWithError = ResourceNotfound + "!!! Error: %v"
 const DefaultTimeoutMsg = "Resource %s %s Timeout!!! %s"
 const DeleteTimeoutMsg = "Resource %s Still Exists. %s Timeout!!! %s"
 const WaitTimeoutMsg = "Resource %s %s Timeout In %d Seconds. Got: %s Expected: %s !!! %s"
-const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
 const SweepDefaultErrorMsg = "Sweep %s %s Failed!!!"
 const IdMsg = "Resource id：%s "
-const FailedGetAttributeMsg = "Getting resource %s attribute by path %s failed!!! Response: %v."
-
-const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"
 const FailedToReachTargetStatus = "Failed to reach target status. Last status: %s."
 const FailedToReachTargetStatusWithResponse = "Resource %s failed to reach target status. Last response: %s"
 const FailedToReachTargetStatusWithError = "Resource %s failed to reach target status. Last error: %s"

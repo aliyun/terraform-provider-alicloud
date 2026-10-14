@@ -8,14 +8,14 @@ import (
 	roaCS "github.com/alibabacloud-go/cs-20151215/v8/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/retry"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	sdkretry "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 const clusterCredentialEphemeralTypeName = "alicloud_cs_cluster_credential"
@@ -95,16 +95,16 @@ func (e *clusterCredentialEphemeral) Open(ctx context.Context, req ephemeral.Ope
 	}
 
 	clusterId := config.ClusterId.ValueString()
-	wait := retry.IncrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	var credential *roaCS.DescribeClusterUserKubeconfigResponseBody
-	err = sdkretry.Retry(5*time.Minute, func() *sdkretry.RetryError {
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, callErr := roaClient.DescribeClusterUserKubeconfig(tea.String(clusterId), request)
 		if callErr != nil {
-			if retry.NeedRetry(callErr) {
+			if helper.NeedRetry(callErr) {
 				wait()
-				return sdkretry.RetryableError(callErr)
+				return retry.RetryableError(callErr)
 			}
-			return sdkretry.NonRetryableError(callErr)
+			return retry.NonRetryableError(callErr)
 		}
 		credential = response.Body
 		return nil

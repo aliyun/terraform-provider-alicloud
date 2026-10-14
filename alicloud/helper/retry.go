@@ -1,8 +1,4 @@
-// Package retry is reused verbatim from alicloud/errors.go (NeedRetry) and
-// alicloud/common.go (IncrementalWait): service packages cannot import the
-// root monolith, so the retry classification and wait timing live here.
-// TODO refactor to the alicloud root package, currently is tmp workaround
-package retry
+package helper
 
 import (
 	"math"
@@ -16,9 +12,16 @@ import (
 	"github.com/denverdino/aliyungo/common"
 )
 
+// ServiceUnavailable is a retryable error code returned by several
+// Alibaba Cloud APIs.
 const ServiceUnavailable = "ServiceUnavailable"
 
-// NeedRetry is reused verbatim from the root package (alicloud/errors.go).
+// NeedRetry reports whether err is transient and the caller should retry.
+// It is reused verbatim from the root package (alicloud/errors.go).
+// NeedRetry and IncrementalWait lived in the deleted package
+// alicloud/retry, whose name collided with the SDK helper/retry and forced
+// a sdkretry alias at every call site; they live in this package so
+// service packages can import the SDK helper/retry under its natural name.
 func NeedRetry(err error) bool {
 	if err == nil {
 		return false
@@ -61,8 +64,8 @@ func NeedRetry(err error) bool {
 
 var incrementalWaitJitter = rand.Float64
 
-// IncrementalWait is reused verbatim from the root package
-// (alicloud/common.go).
+// IncrementalWait returns a wait function with incremental backoff; it is
+// reused verbatim from the root package (alicloud/common.go).
 func IncrementalWait(firstDuration time.Duration, increaseDuration time.Duration) func() {
 	retryCount := 0
 	return func() {

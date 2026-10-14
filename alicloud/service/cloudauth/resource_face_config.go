@@ -1,4 +1,4 @@
-package alicloud
+package cloudauth
 
 import (
 	"fmt"
@@ -6,16 +6,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudCloudauthFaceConfig() *schema.Resource {
+func ResourceFaceConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCloudauthFaceConfigCreate,
-		Read:   resourceAlicloudCloudauthFaceConfigRead,
-		Update: resourceAlicloudCloudauthFaceConfigUpdate,
-		Delete: resourceAlicloudCloudauthFaceConfigDelete,
+		Create: resourceFaceConfigCreate,
+		Read:   resourceFaceConfigRead,
+		Update: resourceFaceConfigUpdate,
+		Delete: resourceFaceConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -36,7 +39,7 @@ func resourceAlicloudCloudauthFaceConfig() *schema.Resource {
 	}
 }
 
-func resourceAlicloudCloudauthFaceConfigCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceFaceConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateFaceConfig"
@@ -44,12 +47,12 @@ func resourceAlicloudCloudauthFaceConfigCreate(d *schema.ResourceData, meta inte
 	var err error
 	request["BizName"] = d.Get("biz_name")
 	request["BizType"] = d.Get("biz_type")
-	request["SourceIp"] = buildClientToken(action)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["SourceIp"] = helper.BuildClientToken(action)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Cloudauth", "2019-03-07", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -57,26 +60,27 @@ func resourceAlicloudCloudauthFaceConfigCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloudauth_face_config", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cloudauth_face_config", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["BizType"]))
 
-	return resourceAlicloudCloudauthFaceConfigRead(d, meta)
+	return resourceFaceConfigRead(d, meta)
 }
-func resourceAlicloudCloudauthFaceConfigRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceFaceConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudauthService := CloudauthService{client}
-	object, err := cloudauthService.DescribeCloudauthFaceConfig(d.Id())
+	cloudauthService := NewService(client)
+	object, err := cloudauthService.DescribeFaceConfig(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cloudauth_face_config cloudauthService.DescribeCloudauthFaceConfig Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cloudauth_face_config cloudauthService.DescribeFaceConfig Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("biz_name", object["BizName"])
@@ -84,7 +88,8 @@ func resourceAlicloudCloudauthFaceConfigRead(d *schema.ResourceData, meta interf
 	d.Set("gmt_modified", object["GmtUpdated"])
 	return nil
 }
-func resourceAlicloudCloudauthFaceConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceFaceConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -98,12 +103,12 @@ func resourceAlicloudCloudauthFaceConfigUpdate(d *schema.ResourceData, meta inte
 	request["BizName"] = d.Get("biz_name")
 	if update {
 		action := "UpdateFaceConfig"
-		request["SourceIp"] = buildClientToken(action)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		request["SourceIp"] = helper.BuildClientToken(action)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Cloudauth", "2019-03-07", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -111,14 +116,15 @@ func resourceAlicloudCloudauthFaceConfigUpdate(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudCloudauthFaceConfigRead(d, meta)
+	return resourceFaceConfigRead(d, meta)
 }
-func resourceAlicloudCloudauthFaceConfigDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudCloudauthFaceConfig. Terraform will remove this resource from the state file, however resources may remain.")
+
+func resourceFaceConfigDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resourceFaceConfig. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
