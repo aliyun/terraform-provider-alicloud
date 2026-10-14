@@ -9,7 +9,7 @@
 #   ./scripts/local-ci-check.sh  # Run directly
 #   ./scripts/local-ci-check.sh --skip-build  # Skip build check
 #   ./scripts/local-ci-check.sh --skip-test   # Skip unit tests
-#   ./scripts/local-ci-check.sh --quick       # Skip build and tests
+#   ./scripts/local-ci-check.sh --quick       # Skip build; run changed-file unit tests
 #
 # Features:
 #   - Auto-installs missing tools (terrafmt, misspell, markdownlint, markdown-link-check)
@@ -22,6 +22,8 @@ set -e
 
 # Parse command line arguments
 SKIP_BUILD=false
+CHANGED_UNIT_TESTS=false
+# CI_UNIT_TESTS_V1: quick always runs the changed-unit stage.
 SKIP_TEST=true  # Default: skip tests locally (CI still runs them)
 SKIP_ERRCHECK=true  # Default: skip errcheck locally (CI still runs it)
 SKIP_MARKDOWN_LINT=true  # Default: skip markdown lint locally (CI still runs it)
@@ -65,6 +67,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --quick)
+      CHANGED_UNIT_TESTS=true
       SKIP_BUILD=true
       SKIP_TEST=true
       SKIP_ERRCHECK=true
@@ -88,7 +91,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --run-markdown-link-check Run markdown link check (default: skipped locally)"
       echo "  --skip-example-test       Skip example tests (default: enabled)"
       echo "  --skip-resource-test      Skip resource integration tests (default: enabled)"
-      echo "  --quick                   Skip build, tests, errcheck, example tests, and resource tests (faster checks)"
+      echo "  --quick                   Run changed-file unit tests; skip build, errcheck, example tests, and resource tests"
       echo "  --strict                  Check ALL docs (like CI), not just changed files"
       echo "  CI_CHECK_BASE=<commit>    Compare this local Git base to the working tree (environment variable)"
       echo "  -h, --help                Show this help message"
@@ -614,7 +617,21 @@ fi
 # 5. Unit Tests
 # ============================================================================
 
-if [ "$SKIP_TEST" = false ]; then
+if [ "$CHANGED_UNIT_TESTS" = true ]; then
+  # Resolve the same comparison base used by the quality checks. FC always sets
+  # CI_CHECK_BASE explicitly; standalone use retains the existing latest-commit scope.
+  UNIT_BASE="${CI_CHECK_BASE:-}"
+  if [ -z "$UNIT_BASE" ]; then
+    if git diff --name-only HEAD -- | grep -q .; then
+      UNIT_BASE=HEAD
+    else
+      UNIT_BASE=$(git rev-parse --verify 'HEAD^')
+    fi
+  fi
+  run_check "Changed Unit Tests" \
+    "CI_CHECK_BASE=\"$UNIT_BASE\" go run \"$SCRIPT_DIR/ci/changed-unit-tests.go\"" \
+    || true
+elif [ "$SKIP_TEST" = false ]; then
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
   echo -e "${GREEN}  Part 5: Unit Tests${NC}"
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
