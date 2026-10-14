@@ -610,3 +610,12 @@ func StringLenAtLeast(min int) schema.SchemaValidateFunc {
 		return
 	}
 }
+
+// UpperLowerCaseDiffSuppressFunc suppresses differences that only differ in
+// letter case, so enum values such as MySQL/mysql do not produce a diff.
+func UpperLowerCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if strings.ToLower(old) == strings.ToLower(new) {
+		return true
+	}
+	return false
+}

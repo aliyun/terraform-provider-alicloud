@@ -849,10 +849,3 @@ func esDataNodeDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schem
 	}
 	return false
 }
-
-func UpperLowerCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if strings.ToLower(old) == strings.ToLower(new) {
-		return true
-	}
-	return false
-}

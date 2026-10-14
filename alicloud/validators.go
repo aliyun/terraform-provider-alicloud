@@ -45,6 +45,8 @@ var (
 	FloatAtMost                = validators.FloatAtMost
 	ValidateRFC3339TimeString  = validators.ValidateRFC3339TimeString
 	StringLenAtLeast           = validators.StringLenAtLeast
+
+	UpperLowerCaseDiffSuppressFunc = validators.UpperLowerCaseDiffSuppressFunc
 )
 
 func validateOssBucketDateTimestamp(v interface{}, k string) (ws []string, errors []error) {
