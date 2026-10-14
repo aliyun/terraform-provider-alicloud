@@ -127,6 +127,7 @@ func TestAccAliCloudDTSMigrationJob_basic0(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
 		IDRefreshName:     resourceId,
+		IDRefreshIgnore:   []string{"status"},
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -221,6 +222,10 @@ variable "database_name" {
   default = "tftestdatabase"
 }
 
+data "alicloud_regions" "default" {
+  current = true
+}
+
 // Filter the zones by the engine actually used below, and pick a zone that the fixture VPC has a
 // vswitch in. An unfiltered lookup returns an arbitrary zone, which left
 // data.alicloud_vswitches.default.ids empty and failed the plan with "Invalid index".
@@ -255,7 +260,7 @@ resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes[0].storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   db_instance_storage_type = "cloud_essd"
   vswitch_id               = data.alicloud_vswitches.default.ids[0]
   instance_name    = join("", [var.name, count.index])
@@ -287,6 +292,192 @@ resource "alicloud_dts_migration_instance" "default" {
   source_endpoint_engine_name      = "MySQL"
   source_endpoint_region           = data.alicloud_regions.default.regions.0.id
   destination_endpoint_engine_name = "MySQL"
+  destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
+  instance_class                   = "small"
+  sync_architecture                = "oneway"
+}
+`, name)
+}
+
+func TestAccAliCloudDTSMigrationJob_mariadb(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_migration_job.default"
+	checkoutSupportedRegions(t, true, connectivity.DTSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudDTSMigrationJobMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsMigrationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtsmigrationjobmariadb%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSMigrationJobMariadbDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		IDRefreshName:     resourceId,
+		IDRefreshIgnore:   []string{"status"},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_migration_instance.default.id}",
+					"dts_job_name":                       name,
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.default.0.id}",
+					"source_endpoint_engine_name":        "MARIADB",
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
+					"source_endpoint_user_name":          "${alicloud_rds_account.default.0.name}",
+					"source_endpoint_password":           "${var.password}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.default.1.id}",
+					"destination_endpoint_engine_name":   "MARIADB",
+					"destination_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.default.1.name}",
+					"destination_endpoint_password":      "${var.password}",
+					"db_list":                            `{\"tftestdatabase\":{\"name\":\"tftestdatabase\",\"all\":true}}`,
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+					"depends_on":                         []string{"alicloud_db_account_privilege.default"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_instance_id":                    CHECKSET,
+						"dts_job_name":                       name,
+						"source_endpoint_instance_type":      "RDS",
+						"source_endpoint_engine_name":        CHECKSET,
+						"source_endpoint_region":             CHECKSET,
+						"source_endpoint_user_name":          CHECKSET,
+						"destination_endpoint_instance_type": "RDS",
+						"destination_endpoint_engine_name":   CHECKSET,
+						"destination_endpoint_region":        CHECKSET,
+						"destination_endpoint_user_name":     CHECKSET,
+						"db_list":                            CHECKSET,
+						"structure_initialization":           "true",
+						"data_initialization":                "true",
+						"data_synchronization":               "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Migrating",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Migrating",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"destination_endpoint_password", "source_endpoint_password"},
+			},
+		},
+	})
+}
+
+func AlicloudDTSMigrationJobMariadbDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+variable "password" {
+  default = "Test12345"
+}
+
+variable "database_name" {
+  default = "tftestdatabase"
+}
+
+data "alicloud_regions" "default" {
+  current = true
+}
+
+// Filter the zones by the engine actually used below, and pick a zone that the fixture VPC has a
+// vswitch in; fall back to creating a vswitch since MariaDB zones may have none in that VPC.
+data "alicloud_db_zones" "default" {
+  engine                   = "MariaDB"
+  engine_version           = "10.3"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones[0].id
+  engine                   = "MariaDB"
+  engine_version           = "10.3"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vswitch_name = var.name
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  zone_id      = data.alicloud_db_zones.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+}
+
+resource "alicloud_db_instance" "default" {
+  count                    = 2
+  engine                   = "MariaDB"
+  engine_version           = "10.3"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
+  db_instance_storage_type = "cloud_essd"
+  vswitch_id               = local.vswitch_id
+  instance_name            = join("", [var.name, count.index])
+}
+
+resource "alicloud_rds_account" "default" {
+  count            = 2
+  db_instance_id   = alicloud_db_instance.default[count.index].id
+  account_name     = join("", [var.database_name, count.index])
+  account_password = var.password
+}
+
+resource "alicloud_db_database" "default" {
+  count       = 2
+  instance_id = alicloud_db_instance.default[count.index].id
+  name        = var.database_name
+}
+
+resource "alicloud_db_account_privilege" "default" {
+  count        = 2
+  instance_id  = alicloud_db_instance.default[count.index].id
+  account_name = alicloud_rds_account.default[count.index].name
+  privilege    = "ReadWrite"
+  db_names     = [alicloud_db_database.default[count.index].name]
+}
+
+resource "alicloud_dts_migration_instance" "default" {
+  payment_type                     = "PayAsYouGo"
+  source_endpoint_engine_name      = "mariadb"
+  source_endpoint_region           = data.alicloud_regions.default.regions.0.id
+  destination_endpoint_engine_name = "mariadb"
   destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
   instance_class                   = "small"
   sync_architecture                = "oneway"

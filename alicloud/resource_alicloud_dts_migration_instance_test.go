@@ -96,6 +96,71 @@ func TestAccAliCloudDTSMigrationInstance_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudDTSMigrationInstance_mariadb(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_migration_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudDTSMigrationInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsMigrationInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtsmigrationinstancemariadb%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSMigrationInstanceMariadbDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":                     "PayAsYouGo",
+					"source_endpoint_engine_name":      "mariadb",
+					"source_endpoint_region":           "${data.alicloud_regions.default.regions.0.id}",
+					"destination_endpoint_engine_name": "mariadb",
+					"destination_endpoint_region":      "${data.alicloud_regions.default.regions.0.id}",
+					"instance_class":                   "small",
+					"sync_architecture":                "oneway",
+					"compute_unit":                     2,
+					"database_count":                   1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":                     "PayAsYouGo",
+						"instance_class":                   "small",
+						"source_endpoint_engine_name":      CHECKSET,
+						"source_endpoint_region":           CHECKSET,
+						"destination_endpoint_engine_name": CHECKSET,
+						"destination_endpoint_region":      CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"database_count", "sync_architecture", "compute_unit"},
+			},
+		},
+	})
+}
+
+func AlicloudDTSMigrationInstanceMariadbDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_regions" "default" {
+  current = true
+}
+`, name)
+}
+
 var AlicloudDTSMigrationInstanceMap0 = map[string]string{
 	"status": CHECKSET,
 }
