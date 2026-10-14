@@ -458,9 +458,16 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 			},
 		},
 	}
-	// Role is returned by the service but is not accepted by either attachment
-	// write API. Retain its configuration syntax for compatibility, while the
-	// hash includes every other writable field and excludes service-only values.
+	// The set hash must keep an established tunnel's identity stable across a
+	// pure refresh, so a server backfill never detaches it as a delete+add.
+	// Role is returned by the service but not accepted by either attachment
+	// write API; tunnel_ike_config.local_id is user-configurable yet the service
+	// backfills it once the tunnel is established (for example when a CEN
+	// attachment publishes the gateway address). Including either in the set
+	// hash turns that backfill into a delete+add drift on every refresh, so
+	// both are excluded from membership while remaining in the public schema.
+	// Update detection is unaffected: vpnAttachmentExpandTunnel still compares
+	// local_id, and role is never sent to a write API.
 	tunnels := r.Schema["tunnel_options_specification"]
 	fields := tunnels.Elem.(*schema.Resource).Schema
 	hashFields := make(map[string]*schema.Schema, len(fields))
@@ -471,6 +478,21 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 	role.Optional = false
 	role.Computed = true
 	hashFields["role"] = &role
+	if ike, ok := fields["tunnel_ike_config"]; ok {
+		ikeCopy := *ike
+		ikeResource := *ike.Elem.(*schema.Resource)
+		ikeSchema := make(map[string]*schema.Schema, len(ikeResource.Schema))
+		for name, field := range ikeResource.Schema {
+			ikeSchema[name] = field
+		}
+		localID := *ikeSchema["local_id"]
+		localID.Optional = false
+		localID.Computed = true
+		ikeSchema["local_id"] = &localID
+		ikeResource.Schema = ikeSchema
+		ikeCopy.Elem = &ikeResource
+		hashFields["tunnel_ike_config"] = &ikeCopy
+	}
 	tunnels.Set = schema.HashResource(&schema.Resource{Schema: hashFields})
 	return r
 }
