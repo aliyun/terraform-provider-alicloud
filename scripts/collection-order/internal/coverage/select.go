@@ -7,6 +7,8 @@ import (
 	"go/token"
 	"sort"
 	"strings"
+
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 )
 
 // Registry reads constructor identities, not an inferred resource name from a filename.
@@ -46,6 +48,51 @@ func Registry(src []byte) (map[string]string, error) {
 	return result, nil
 }
 
+// RegistryUnion merges the provider.go ResourcesMap literal with the SDKv2
+// registrations declared by the split service packages. Split constructors
+// carry a product qualifier ("cloudauth.ResourceFaceConfig") because
+// top-level names are only unique per package; the flat literal keeps bare
+// names. A declaration appearing in both sources is the same startup error
+// assembleProvider reports.
+func RegistryUnion(providerSrc []byte, registers map[string][]byte) (map[string]string, error) {
+	reg, err := Registry(providerSrc)
+	if err != nil {
+		return nil, err
+	}
+	for path, src := range registers {
+		product, ok := splitlayout.IsServiceRegister(path)
+		if !ok {
+			continue
+		}
+		for _, entry := range splitlayout.SDKRegisterEntries(src) {
+			if entry.Kind != splitlayout.KindResource {
+				continue
+			}
+			qualified := product + "." + entry.Factory
+			if previous, dup := reg[entry.TypeName]; dup {
+				return nil, fmt.Errorf("duplicate resource declaration for %s: %s and %s", entry.TypeName, previous, qualified)
+			}
+			reg[entry.TypeName] = qualified
+		}
+	}
+	return reg, nil
+}
+
+// qualify keys a file's top-level names the way the registry references
+// them: bare in the flat alicloud package, product-qualified in the split
+// service packages, where names are only unique per package.
+func qualify(path string, names map[string]bool) map[string]bool {
+	product, ok := splitlayout.ServiceProduct(path)
+	if !ok {
+		return names
+	}
+	out := make(map[string]bool, len(names))
+	for name := range names {
+		out[product+"."+name] = true
+	}
+	return out
+}
+
 // Select maps both changed implementations and tests to current registrations. A deleted
 // implementation is ignored only when its constructors are no longer registered.
 func Select(changed []string, before, after map[string]string, sources map[string][]byte, oldSource func(string) ([]byte, error)) (map[string]string, error) {
@@ -56,6 +103,7 @@ func Select(changed []string, before, after map[string]string, sources map[strin
 		if err != nil {
 			return nil, err
 		}
+		names = qualify(path, names)
 		fileFunctions[path] = names
 		for name := range names {
 			if previous, ok := functions[name]; ok {
@@ -84,7 +132,27 @@ func Select(changed []string, before, after map[string]string, sources map[strin
 			}
 			continue
 		}
-		if !strings.HasPrefix(path, "alicloud/resource_alicloud_") || !strings.HasSuffix(path, ".go") {
+		// A product register.go is a registration source the same way
+		// provider.go is: select every registration the diff touched. The
+		// union registry keeps split constructors product-qualified, so
+		// untouched products contribute nothing.
+		if _, ok := splitlayout.IsServiceRegister(path); ok {
+			for name, constructor := range after {
+				if before[name] != constructor {
+					if err := add(name); err != nil {
+						return nil, err
+					}
+				}
+			}
+			continue
+		}
+		flat := strings.HasPrefix(path, "alicloud/resource_alicloud_") && strings.HasSuffix(path, ".go")
+		_, stem, _, isSplit := splitlayout.IsSplitSource(path)
+		isSplit = isSplit && strings.HasPrefix(stem, "resource_")
+		if !flat && !isSplit {
+			// Data sources, docs and framework-only service files stay
+			// outside the managed-resource scope, as they were in the flat
+			// layout.
 			continue
 		}
 		implementation := strings.TrimSuffix(path, "_test.go")
@@ -97,10 +165,11 @@ func Select(changed []string, before, after map[string]string, sources map[strin
 			if err != nil {
 				return nil, fmt.Errorf("cannot resolve changed resource %s: %w", path, err)
 			}
-			names, err = functionNames(implementation, src)
+			base, err := functionNames(implementation, src)
 			if err != nil {
 				return nil, err
 			}
+			names = qualify(implementation, base)
 		}
 		matched := false
 		for name, constructor := range after {
@@ -111,10 +180,10 @@ func Select(changed []string, before, after map[string]string, sources map[strin
 				}
 			}
 		}
-		if !matched && exists {
+		if !matched && exists && flat {
 			return nil, fmt.Errorf("changed resource file %s has no current ResourcesMap registration", path)
 		}
-		if !matched && !exists {
+		if !matched && !exists && flat {
 			removed := false
 			for _, constructor := range before {
 				removed = removed || names[constructor]
@@ -123,6 +192,9 @@ func Select(changed []string, before, after map[string]string, sources map[strin
 				return nil, fmt.Errorf("cannot establish deletion of registered resource %s", path)
 			}
 		}
+		// A changed split file with no registration is a framework resource,
+		// data source or helper outside this checker: the product's
+		// register.go is the source of truth for the SDKv2 scope.
 	}
 	return selected, nil
 }

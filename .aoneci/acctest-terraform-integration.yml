@@ -4,9 +4,11 @@ triggers:
     types: [accepted]
     paths:
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
   push:
     paths:
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
 
 jobs:
   IntegrationTest:

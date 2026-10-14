@@ -29,7 +29,13 @@ pre-existing stock.
 The workflow uses `scripts/ci/resolve-change-range.sh` and the full PR merge-base
 to head diff, including earlier commits. It checks changed
 `alicloud/resource_alicloud_*.go` implementations and `_test.go` files, and new or
-changed `provider.go` resource registrations. Constructor identities resolve
+changed `provider.go` resource registrations. Migrated resources under
+`alicloud/service/<product>/` follow the same rule through the product's
+`register.go`: a changed split-layout implementation, test or register.go selects
+the SDKv2 resources it declares, and constructor identities carry a product
+qualifier there because top-level names are only unique per package. Framework
+service files without an SDKv2 registration stay outside the scope, as data
+sources always were. Constructor identities resolve
 aliases and renamed files. Registrations sharing one constructor share its ACC
 coverage. Deleted resources are skipped only if no longer registered; missing
 registrations, mappings and required test files fail closed.

@@ -20,6 +20,7 @@ on:
       - go.sum
       - .go-version
       - alicloud/*.go
+      - alicloud/service/**/*.go
 
 permissions: {}
 

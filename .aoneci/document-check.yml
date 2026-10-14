@@ -4,6 +4,7 @@ triggers:
     paths:
       - 'website/docs/**'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
   merge_request:
     types:
       - opened
@@ -11,6 +12,7 @@ triggers:
       - '.github/workflows/document-check.yml'
       - 'website/docs/**'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
 
 jobs:
   terrafmt:

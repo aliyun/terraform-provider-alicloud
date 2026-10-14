@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
@@ -29,24 +30,30 @@ func run(base, head, resourceName string) error {
 	if err != nil {
 		return err
 	}
-	registry, err := coverage.Registry(current)
+	registers, err := currentRegisters()
+	if err != nil {
+		return err
+	}
+	registry, err := coverage.RegistryUnion(current, registers)
 	if err != nil {
 		return err
 	}
 	sources := map[string][]byte{}
-	files, err := filepath.Glob("alicloud/resource_alicloud_*.go")
-	if err != nil {
-		return err
-	}
-	for _, path := range files {
-		if strings.HasSuffix(path, "_test.go") {
-			continue
-		}
-		src, err := os.ReadFile(path)
+	for _, pattern := range []string{"alicloud/resource_alicloud_*.go", "alicloud/service/*/resource_*.go"} {
+		files, err := filepath.Glob(pattern)
 		if err != nil {
 			return err
 		}
-		sources[path] = src
+		for _, path := range files {
+			if strings.HasSuffix(path, "_test.go") {
+				continue
+			}
+			src, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			sources[path] = src
+		}
 	}
 	var changed []string
 	before := registry
@@ -85,7 +92,17 @@ func run(base, head, resourceName string) error {
 		if err != nil {
 			return err
 		}
-		before, err = coverage.Registry(src)
+		// Products that did not exist at the base revision simply contribute
+		// no registrations there: their registrations are all new.
+		baseRegisters := map[string][]byte{}
+		for _, path := range sortedRegisterPaths(registers) {
+			registerSrc, err := git("show", base+":"+path)
+			if err != nil {
+				continue
+			}
+			baseRegisters[path] = registerSrc
+		}
+		before, err = coverage.RegistryUnion(src, baseRegisters)
 		if err != nil {
 			return err
 		}
@@ -153,4 +170,31 @@ func git(args ...string) ([]byte, error) {
 		return nil, fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, output)
 	}
 	return output, nil
+}
+
+// currentRegisters reads every product register.go in the working tree.
+func currentRegisters() (map[string][]byte, error) {
+	files, err := filepath.Glob("alicloud/service/*/register.go")
+	if err != nil {
+		return nil, err
+	}
+	registers := map[string][]byte{}
+	for _, path := range files {
+		src, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		registers[path] = src
+	}
+	return registers, nil
+}
+
+// sortedRegisterPaths gives the base-revision reads a deterministic order.
+func sortedRegisterPaths(registers map[string][]byte) []string {
+	paths := make([]string, 0, len(registers))
+	for path := range registers {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	return paths
 }

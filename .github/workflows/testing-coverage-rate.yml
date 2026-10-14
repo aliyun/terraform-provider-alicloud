@@ -16,6 +16,7 @@ on:
       - .github/workflows/testing-coverage-rate.yml
       - .go-version
       - alicloud/*.go
+      - alicloud/service/**/*.go
 
 permissions: {}
 

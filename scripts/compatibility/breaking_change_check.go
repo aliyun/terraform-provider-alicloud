@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 	log "github.com/sirupsen/logrus"
 	"github.com/waigani/diffparser"
 )
@@ -54,19 +55,73 @@ func main() {
 	}
 	byt, _ := ioutil.ReadFile(*fileNames)
 	diff, _ := diffparser.Parse(string(byt))
-	fileRegex := regexp.MustCompile("alicloud/resource[0-9a-zA-Z_]*.go")
-	fileTestRegex := regexp.MustCompile("alicloud/resource[0-9a-zA-Z_]*_test.go")
+	fileRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*.go")
+	fileTestRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
 	for _, file := range diff.Files {
 		fmt.Println()
 		if fileRegex.MatchString(file.NewName) {
 			if fileTestRegex.MatchString(file.NewName) {
 				continue
 			}
-			resName := strings.TrimPrefix(strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go"), "resource_")
-			log.Infof("==> Checking resource %s breaking change...", resName)
+			base := strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go")
+			// The pre-split flat layout also holds data sources, and both
+			// kinds carry a schema the AST parsers can compare.
+			kind, legacyStem := "resource", "resource_"
+			resName := strings.TrimPrefix(base, "resource_")
+			if strings.HasPrefix(base, "data_source_") {
+				kind, legacyStem = "data source", "data_source_"
+				resName = strings.TrimPrefix(base, "data_source_")
+			}
+			log.Infof("==> Checking %s %s breaking change...", kind, resName)
 
-			if !checkResourceBreakingChange(file.NewName, "HEAD^", "HEAD") {
+			if !checkBreakingChange(file.NewName, resName, legacyStem, "HEAD^", "HEAD") {
 				exitCode = 1
+			}
+		} else if product, stem, isTest, ok := splitlayout.IsSplitSource(file.NewName); ok {
+			if isTest {
+				continue
+			}
+			resolved, err := splitlayout.Resolve(product, stem)
+			if err != nil {
+				log.Warnf("fail to resolve split-layout file %s. Error: %s", file.NewName, err)
+				continue
+			}
+			// SDKv2 resources and data sources alike are schema-bearing and
+			// checked; the legacy stem locates a moved file's flat-layout
+			// predecessor.
+			for _, r := range resolved {
+				legacyStem := "data_source_"
+				if r.IsResource() {
+					legacyStem = "resource_"
+				}
+				log.Infof("==> Checking %s %s breaking change...", r.Kind, r.TypeName)
+				if !checkBreakingChange(r.ImplPath, r.TypeName, legacyStem, "HEAD^", "HEAD") {
+					exitCode = 1
+				}
+			}
+			// Framework-native registrations — managed resources, data
+			// sources, ephemerals, list resources and actions — are checked
+			// the same way through the framework AST parser.
+			fwResolved, err := splitlayout.FrameworkResolve(product, stem)
+			if err != nil {
+				log.Warnf("fail to resolve framework registrations of %s. Error: %s", file.NewName, err)
+				continue
+			}
+			for _, r := range fwResolved {
+				legacyStem := ""
+				switch r.Kind {
+				case splitlayout.KindResource:
+					legacyStem = "resource_"
+				case splitlayout.KindDataSource:
+					legacyStem = "data_source_"
+				}
+				log.Infof("==> Checking %s %s breaking change...", r.Kind, r.TypeName)
+				if !checkBreakingChange(r.ImplPath, r.TypeName, legacyStem, "HEAD^", "HEAD") {
+					exitCode = 1
+				}
+			}
+			if len(resolved) == 0 && len(fwResolved) == 0 {
+				log.Warnf("==> %s registers no resource, data source, ephemeral, action or list resource", file.NewName)
 			}
 		}
 	}
@@ -74,39 +129,101 @@ func main() {
 	os.Exit(exitCode)
 }
 
-// checkSingleResource checks a single resource by its full name (e.g., "alicloud_ecs_instance")
+// checkSingleResource checks a single registered entity by its full type
+// name (e.g., "alicloud_ecs_instance", "alicloud_ecs_images" or
+// "alicloud_kms_plaintext"), whatever its kind: resource, data source,
+// ephemeral, action or list resource.
 func checkSingleResource(fullName string) bool {
 	// Remove alicloud_ prefix if present
 	resName := strings.TrimPrefix(fullName, "alicloud_")
+	typeName := "alicloud_" + resName
 
-	// Construct file path
-	filePath := "alicloud/resource_alicloud_" + resName + ".go"
-
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Errorf("Resource file not found: %s", filePath)
-		return false
+	// Flat layout first: a type name can exist as a resource, a data source
+	// or both, and both are checked.
+	passed, checked := true, false
+	for _, legacyStem := range []string{"resource_", "data_source_"} {
+		filePath := "alicloud/" + legacyStem + typeName + ".go"
+		if _, err := os.Stat(filePath); err != nil {
+			continue
+		}
+		checked = true
+		kind := "resource"
+		if legacyStem == "data_source_" {
+			kind = "data source"
+		}
+		log.Infof("==> Checking %s %s breaking change...", kind, typeName)
+		passed = checkBreakingChange(filePath, typeName, legacyStem, "HEAD^", "HEAD") && passed
+	}
+	if checked {
+		return passed
 	}
 
-	log.Infof("==> Checking resource %s breaking change...", resName)
-	return checkResourceBreakingChange(filePath, "HEAD^", "HEAD")
+	// Migrated entities live under alicloud/service/<product>/; fall back to
+	// the registrations when the flat-layout files are gone.
+	if r := splitlayout.FindByTypeName(typeName); r != nil {
+		legacyStem := "data_source_"
+		if r.IsResource() {
+			legacyStem = "resource_"
+		}
+		log.Infof("==> Checking %s %s breaking change...", r.Kind, typeName)
+		return checkBreakingChange(r.ImplPath, typeName, legacyStem, "HEAD^", "HEAD")
+	}
+	// Framework-native entities are checked through the same AST parsers.
+	if r := splitlayout.FrameworkFindByTypeName(typeName); r != nil {
+		legacyStem := ""
+		switch r.Kind {
+		case splitlayout.KindResource:
+			legacyStem = "resource_"
+		case splitlayout.KindDataSource:
+			legacyStem = "data_source_"
+		}
+		log.Infof("==> Checking %s %s breaking change...", r.Kind, typeName)
+		return checkBreakingChange(r.ImplPath, typeName, legacyStem, "HEAD^", "HEAD")
+	}
+	log.Errorf("No implementation file found for %s in the flat or split layouts", typeName)
+	return false
 }
 
-// checkResourceBreakingChange checks breaking changes for a resource file between two git revisions
-func checkResourceBreakingChange(filePath, oldRevision, newRevision string) bool {
+// checkBreakingChange checks breaking changes for one implementation file
+// between two git revisions. fullTypeName (e.g. "alicloud_cloudauth_face_config")
+// together with legacyStem ("resource_" or "data_source_") locates the
+// pre-split flat-layout file: a split-layout file that is new at oldRevision
+// is usually a moved entity, not a new one, and must be compared against its
+// legacy path. An empty legacyStem means the kind has no flat-layout history
+// (ephemerals, actions and list resources were born in the split layout).
+func checkBreakingChange(filePath, fullTypeName, legacyStem, oldRevision, newRevision string) bool {
 	// Get file content from git for both versions
 	oldContent, err := getFileContentFromGit(filePath, oldRevision)
 	if err != nil {
 		// Check if this is a new file (doesn't exist in old revision)
 		if isFileNew(filePath, oldRevision) {
-			log.Infof("This is a new resource file, checking for new resource requirements...")
-			// For new resources, we need to check if any fields are required
+			// A split-layout migration leaves the old content at the
+			// flat-layout path; compare against that before treating the
+			// entity as new.
+			if fullTypeName != "" && legacyStem != "" {
+				legacyPath := "alicloud/" + legacyStem + fullTypeName + ".go"
+				if !isFileNew(legacyPath, oldRevision) {
+					legacyContent, lerr := getFileContentFromGit(legacyPath, oldRevision)
+					if lerr != nil {
+						log.Warningf("Cannot get old version of %s: %v", legacyPath, lerr)
+						return false
+					}
+					newContent, nerr := getFileContentFromGit(filePath, newRevision)
+					if nerr != nil {
+						log.Warningf("Cannot get new version of %s: %v", filePath, nerr)
+						return false
+					}
+					return compareBreakingChange(legacyContent, newContent)
+				}
+			}
+			log.Infof("This is a new file, checking for new entity requirements...")
+			// For new entities, we need to check if any fields are required
 			newContent, err := getFileContentFromGit(filePath, newRevision)
 			if err != nil {
 				log.Warningf("Cannot get new version of %s: %v", filePath, err)
 				return false
 			}
-			return checkNewResourceRequiredFields(newContent)
+			return checkNewEntityRequiredFields(newContent)
 		}
 		log.Warningf("Cannot get old version of %s: %v", filePath, err)
 		return false
@@ -117,9 +234,16 @@ func checkResourceBreakingChange(filePath, oldRevision, newRevision string) bool
 		return false
 	}
 
-	// Parse schemas using AST
-	oldAttrs := ParseSchemaFromAST(oldContent)
-	newAttrs := ParseSchemaFromAST(newContent)
+	return compareBreakingChange(oldContent, newContent)
+}
+
+// compareBreakingChange compares two resource file versions for schema and
+// retry-code breaking changes.
+func compareBreakingChange(oldContent, newContent string) bool {
+	// Parse schemas using AST; the SDKv2 and framework shapes are disjoint,
+	// so parsing both covers migrated files on either side of the split.
+	oldAttrs := parseSchemas(oldContent)
+	newAttrs := parseSchemas(newContent)
 	schemaBreaking := IsBreakingChange(oldAttrs, newAttrs)
 
 	// Check retry error codes changes - parse from full file content
@@ -237,23 +361,24 @@ func isFileNew(filePath, revision string) bool {
 	return err != nil // If error, file doesn't exist in that revision
 }
 
-// checkNewResourceRequiredFields checks if a new resource has required fields
-// For new resources, having required fields is acceptable, we just log them
-func checkNewResourceRequiredFields(content string) bool {
-	attrs := ParseSchemaFromAST(content)
+// checkNewEntityRequiredFields checks if a new resource, data source,
+// ephemeral or action has required fields
+// For new entities, having required fields is acceptable, we just log them
+func checkNewEntityRequiredFields(content string) bool {
+	attrs := parseSchemas(content)
 	hasRequiredFields := false
 
 	for fieldName, attr := range attrs {
 		if required, ok := attr["Required"]; ok && required.(bool) {
 			hasRequiredFields = true
-			log.Infof("  New resource has required field: '%s'", fieldName)
+			log.Infof("  New entity has required field: '%s'", fieldName)
 		}
 	}
 
 	if hasRequiredFields {
-		log.Infof("Note: New resources can have required fields. This is acceptable for new resources.")
+		log.Infof("Note: New entities can have required fields. This is acceptable for new entities.")
 	}
-	log.Infof("--- PASS (new resource)")
+	log.Infof("--- PASS (new entity)")
 	return true
 }
 
@@ -358,6 +483,172 @@ func extractFieldProperties(compLit *ast.CompositeLit, props map[string]interfac
 			}
 		}
 	}
+}
+
+// parseSchemas extracts schema attributes from SDKv2 and plugin-framework
+// shapes alike. The two shapes are disjoint (map[string]*schema.Schema vs
+// map[string]schema.Attribute under any import alias), so merging the two
+// parsers' output covers every registered entity kind and compares a
+// migrated file cleanly against its pre-split flat-layout content.
+func parseSchemas(source string) map[string]map[string]interface{} {
+	attributeMap := ParseSchemaFromAST(source)
+	for name, props := range ParseFrameworkSchemaFromAST(source) {
+		attributeMap[name] = props
+	}
+	return attributeMap
+}
+
+// ParseFrameworkSchemaFromAST parses the plugin-framework schema shape:
+// attribute maps declared as map[string]schema.Attribute under any import
+// alias (the resource, ephemeral and action schema packages all share the
+// Attribute type name), including the nested maps inside blocks. Attribute
+// type names normalize to their SDKv2 equivalents so a migrated entity
+// compares against its flat-layout predecessor without phantom type breaks.
+func ParseFrameworkSchemaFromAST(source string) map[string]map[string]interface{} {
+	attributeMap := make(map[string]map[string]interface{})
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", source, 0)
+	if err != nil {
+		log.Warningf("Failed to parse file: %v", err)
+		return attributeMap
+	}
+
+	ast.Inspect(file, func(n ast.Node) bool {
+		compLit, ok := n.(*ast.CompositeLit)
+		if !ok {
+			return true
+		}
+		if isFrameworkAttributeMap(compLit) {
+			extractFrameworkFields(compLit, attributeMap)
+		}
+		return true
+	})
+
+	return attributeMap
+}
+
+// isFrameworkAttributeMap checks if a composite literal is a framework
+// attribute map (map[string]schema.Attribute). The package identifier is not
+// inspected: the resource, ephemeral and action schema packages import under
+// different aliases but share the Attribute type name.
+func isFrameworkAttributeMap(compLit *ast.CompositeLit) bool {
+	mapType, ok := compLit.Type.(*ast.MapType)
+	if !ok {
+		return false
+	}
+	selExpr, ok := mapType.Value.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	return selExpr.Sel.Name == "Attribute"
+}
+
+// extractFrameworkFields extracts attribute information from a framework
+// attribute map.
+func extractFrameworkFields(compLit *ast.CompositeLit, attributeMap map[string]map[string]interface{}) {
+	for _, elt := range compLit.Elts {
+		kv, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		basicLit, ok := kv.Key.(*ast.BasicLit)
+		if !ok {
+			continue
+		}
+		fieldName := strings.Trim(basicLit.Value, `"`)
+		if fieldName == "" {
+			continue
+		}
+
+		fieldProps := make(map[string]interface{})
+		fieldProps["Name"] = fieldName
+
+		if fieldComp, ok := kv.Value.(*ast.CompositeLit); ok {
+			extractFrameworkFieldProperties(fieldComp, fieldProps)
+		}
+
+		attributeMap[fieldName] = fieldProps
+	}
+}
+
+// frameworkTypeEquivalents maps plugin-framework attribute and block type
+// names to the SDKv2 schema.TypeXxx constants they play the role of.
+var frameworkTypeEquivalents = map[string]string{
+	"StringAttribute":       "TypeString",
+	"BoolAttribute":         "TypeBool",
+	"Int64Attribute":        "TypeInt",
+	"Float64Attribute":      "TypeFloat",
+	"NumberAttribute":       "TypeFloat",
+	"ListAttribute":         "TypeList",
+	"SetAttribute":          "TypeSet",
+	"MapAttribute":          "TypeMap",
+	"SingleNestedAttribute": "TypeMap",
+	"ObjectNestedAttribute": "TypeMap",
+	"ListNestedAttribute":   "TypeList",
+	"SetNestedAttribute":    "TypeSet",
+	"ListNestedBlock":       "TypeList",
+	"SetNestedBlock":        "TypeSet",
+	"SingleNestedBlock":     "TypeMap",
+}
+
+// extractFrameworkFieldProperties extracts Type, Optional, Required,
+// Computed etc from an attribute or block definition.
+func extractFrameworkFieldProperties(compLit *ast.CompositeLit, props map[string]interface{}) {
+	if selExpr, ok := compLit.Type.(*ast.SelectorExpr); ok {
+		if equivalent, ok := frameworkTypeEquivalents[selExpr.Sel.Name]; ok {
+			props["Type"] = equivalent
+		} else {
+			props["Type"] = selExpr.Sel.Name
+		}
+	}
+	for _, elt := range compLit.Elts {
+		kv, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		ident, ok := kv.Key.(*ast.Ident)
+		if !ok {
+			continue
+		}
+		switch ident.Name {
+		case "Optional", "Required", "Computed", "Sensitive":
+			if value, ok := kv.Value.(*ast.Ident); ok {
+				props[ident.Name] = value.Name == "true"
+			}
+		case "PlanModifiers":
+			// RequiresReplace is the framework counterpart of ForceNew.
+			if requiresReplace(kv.Value) {
+				props["ForceNew"] = true
+			}
+		}
+	}
+}
+
+// requiresReplace reports whether a PlanModifiers list contains a
+// RequiresReplace plan modifier.
+func requiresReplace(expr ast.Expr) bool {
+	compLit, ok := expr.(*ast.CompositeLit)
+	if !ok {
+		return false
+	}
+	for _, elt := range compLit.Elts {
+		switch e := elt.(type) {
+		case *ast.CallExpr:
+			if selExpr, ok := e.Fun.(*ast.SelectorExpr); ok && selExpr.Sel.Name == "RequiresReplace" {
+				return true
+			}
+		case *ast.Ident:
+			if e.Name == "RequiresReplace" {
+				return true
+			}
+		case *ast.SelectorExpr:
+			if e.Sel.Name == "RequiresReplace" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // ParseRetryErrorCodesFromContent extracts retry error codes from full file content

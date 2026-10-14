@@ -763,3 +763,218 @@ if IsExpectedErrors(deleteErr, []string{"OperationDenied.DBInstanceStatus"}) { r
 		t.Fatal("real removal must remain detectable")
 	}
 }
+
+// frameworkEphemeralSrc is a plugin-framework ephemeral shaped like
+// alicloud/service/kms/ephemeral_plaintext.go: map[string]schema.Attribute
+// with StringAttribute/MapAttribute entries and a RequiresReplace modifier.
+const frameworkEphemeralSrc = `package kms
+
+import (
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func (e *plaintextEphemeralResource) Schema(ctx context.Context, req ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"ciphertext_blob": schema.StringAttribute{
+				Required: true,
+			},
+			"encryption_context": schema.MapAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+			},
+			"plaintext": schema.StringAttribute{
+				Computed:  true,
+				Sensitive: true,
+			},
+			"key_id": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"immutable_field": schema.StringAttribute{
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+		},
+	}
+}
+`
+
+func TestParseFrameworkSchemaFromAST(t *testing.T) {
+	attrs := ParseFrameworkSchemaFromAST(frameworkEphemeralSrc)
+
+	want := map[string]struct {
+		typ      string
+		required bool
+		optional bool
+		forceNew bool
+	}{
+		"ciphertext_blob":    {"TypeString", true, false, false},
+		"encryption_context": {"TypeMap", false, true, false},
+		"plaintext":          {"TypeString", false, false, false},
+		"key_id":             {"TypeString", false, false, false},
+		"immutable_field":    {"TypeString", false, true, true},
+	}
+	if len(attrs) != len(want) {
+		t.Fatalf("ParseFrameworkSchemaFromAST returned %d attributes (%v), want %d", len(attrs), attrs, len(want))
+	}
+	for name, w := range want {
+		attr, ok := attrs[name]
+		if !ok {
+			t.Errorf("attribute %s missing from parsed framework schema", name)
+			continue
+		}
+		if attr["Type"] != w.typ {
+			t.Errorf("attribute %s Type = %v, want %s", name, attr["Type"], w.typ)
+		}
+		if required, _ := attr["Required"].(bool); required != w.required {
+			t.Errorf("attribute %s Required = %v, want %v", name, attr["Required"], w.required)
+		}
+		if optional, _ := attr["Optional"].(bool); optional != w.optional {
+			t.Errorf("attribute %s Optional = %v, want %v", name, attr["Optional"], w.optional)
+		}
+		_, hasForceNew := attr["ForceNew"]
+		if hasForceNew != w.forceNew {
+			t.Errorf("attribute %s ForceNew = %v, want %v", name, hasForceNew, w.forceNew)
+		}
+	}
+}
+
+func TestParseSchemasMergesSDKv2AndFramework(t *testing.T) {
+	src := `package mixed
+
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+var sdkFields = map[string]*schema.Schema{
+	"sdk_field": {
+		Type:     schema.TypeString,
+		Optional: true,
+	},
+}
+
+func (r *resource) Schema() {
+	resp.Schema = fwschema.Schema{
+		Attributes: map[string]fwschema.Attribute{
+			"framework_field": fwschema.StringAttribute{
+				Required: true,
+			},
+		},
+	}
+}
+`
+	attrs := parseSchemas(src)
+	if _, ok := attrs["sdk_field"]; !ok {
+		t.Error("parseSchemas lost the SDKv2 map[string]*schema.Schema attribute")
+	}
+	fw, ok := attrs["framework_field"]
+	if !ok {
+		t.Fatal("parseSchemas lost the framework map[string]fwschema.Attribute attribute")
+	}
+	if fw["Type"] != "TypeString" || fw["Required"] != true {
+		t.Errorf("framework_field = %v, want TypeString Required", fw)
+	}
+}
+
+func TestFrameworkSchemaBreakingChanges(t *testing.T) {
+	oldSrc := `package kms
+
+func (e *ephemeral) Schema() {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"keep_me": schema.StringAttribute{
+				Optional: true,
+			},
+			"remove_me": schema.StringAttribute{
+				Optional: true,
+			},
+			"loosen_later": schema.StringAttribute{
+				Optional: true,
+			},
+		},
+	}
+}
+`
+	newSrc := `package kms
+
+func (e *ephemeral) Schema() {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"keep_me": schema.StringAttribute{
+				Optional: true,
+			},
+			"loosen_later": schema.StringAttribute{
+				Required: true,
+			},
+			"new_optional": schema.StringAttribute{
+				Optional: true,
+			},
+		},
+	}
+}
+`
+	if !IsBreakingChange(ParseFrameworkSchemaFromAST(oldSrc), ParseFrameworkSchemaFromAST(newSrc)) {
+		t.Error("Expected framework removal + optional-to-required to be detected as breaking")
+	}
+
+	// A purely additive optional attribute is safe.
+	safeNew := strings.ReplaceAll(oldSrc, `"remove_me": schema.StringAttribute{
+				Optional: true,
+			},`, `"remove_me": schema.StringAttribute{
+				Optional: true,
+			},
+			"added_optional": schema.StringAttribute{
+				Optional: true,
+			},`)
+	if IsBreakingChange(ParseFrameworkSchemaFromAST(oldSrc), ParseFrameworkSchemaFromAST(safeNew)) {
+		t.Error("Expected adding an optional framework attribute to be safe")
+	}
+}
+
+// TestMigratedEntityNoPhantomTypeBreak proves a migrated entity compares
+// cleanly against its pre-split flat-layout content: schema.TypeString and
+// schema.StringAttribute normalize to the same TypeString.
+func TestMigratedEntityNoPhantomTypeBreak(t *testing.T) {
+	flatSrc := `package alicloud
+
+func resourceUser() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"user_principal_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"email": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+		},
+	}
+}
+`
+	frameworkSrc := `package ims
+
+func (r *userResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"user_principal_name": schema.StringAttribute{
+				Required: true,
+			},
+			"email": schema.StringAttribute{
+				Optional: true,
+			},
+		},
+	}
+}
+`
+	if IsBreakingChange(parseSchemas(flatSrc), parseSchemas(frameworkSrc)) {
+		t.Error("A migrated SDKv2->framework entity must not report phantom breaking changes")
+	}
+}
