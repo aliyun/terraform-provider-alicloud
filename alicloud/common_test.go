@@ -4016,41 +4016,6 @@ func TestUnitCommonBuildStateConf(t *testing.T) {
 	}
 }
 
-func TestUnitCommonIncrementalWait(t *testing.T) {
-	firstDuration := 100 * time.Millisecond
-	increaseDuration := 50 * time.Millisecond
-
-	originalJitter := incrementalWaitJitter
-	incrementalWaitJitter = func() float64 { return 1.0 }
-	t.Cleanup(func() { incrementalWaitJitter = originalJitter })
-
-	waitFunc := incrementalWait(firstDuration, increaseDuration)
-
-	expected := []time.Duration{
-		firstDuration,
-		firstDuration + increaseDuration,
-		firstDuration + 3*increaseDuration,
-		firstDuration + 7*increaseDuration,
-		firstDuration + 15*increaseDuration,
-	}
-	const tolerance = 30 * time.Millisecond
-
-	elapsed := make([]time.Duration, len(expected))
-	for i := range expected {
-		start := time.Now()
-		waitFunc()
-		elapsed[i] = time.Since(start)
-		t.Logf("wait call %d: measured=%v (expected>=%v)", i+1, elapsed[i], expected[i]-tolerance)
-	}
-
-	for i := 1; i < len(expected); i++ {
-		if elapsed[i] < expected[i]-tolerance {
-			t.Errorf("wait call %d: backoff did not accumulate; expected >= %v, measured %v (observed sequence %v)",
-				i+1, expected[i]-tolerance, elapsed[i], elapsed)
-		}
-	}
-}
-
 func TestUnitCommonCheckWaitForReady(t *testing.T) {
 	type TestStruct struct {
 		Status string

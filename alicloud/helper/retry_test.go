@@ -1,8 +1,9 @@
-package retry
+package helper
 
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
 	sdkErrors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
@@ -30,6 +31,41 @@ func TestNeedRetry(t *testing.T) {
 	for _, testCase := range testCases {
 		if got := NeedRetry(testCase.err); got != testCase.want {
 			t.Errorf("case %q: NeedRetry() = %v, want %v", testCase.name, got, testCase.want)
+		}
+	}
+}
+
+func TestIncrementalWait(t *testing.T) {
+	firstDuration := 100 * time.Millisecond
+	increaseDuration := 50 * time.Millisecond
+
+	originalJitter := incrementalWaitJitter
+	incrementalWaitJitter = func() float64 { return 1.0 }
+	t.Cleanup(func() { incrementalWaitJitter = originalJitter })
+
+	waitFunc := IncrementalWait(firstDuration, increaseDuration)
+
+	expected := []time.Duration{
+		firstDuration,
+		firstDuration + increaseDuration,
+		firstDuration + 3*increaseDuration,
+		firstDuration + 7*increaseDuration,
+		firstDuration + 15*increaseDuration,
+	}
+	const tolerance = 30 * time.Millisecond
+
+	elapsed := make([]time.Duration, len(expected))
+	for i := range expected {
+		start := time.Now()
+		waitFunc()
+		elapsed[i] = time.Since(start)
+		t.Logf("wait call %d: measured=%v (expected>=%v)", i+1, elapsed[i], expected[i]-tolerance)
+	}
+
+	for i := 1; i < len(expected); i++ {
+		if elapsed[i] < expected[i]-tolerance {
+			t.Errorf("wait call %d: backoff did not accumulate; expected >= %v, measured %v (observed sequence %v)",
+				i+1, expected[i]-tolerance, elapsed[i], elapsed)
 		}
 	}
 }

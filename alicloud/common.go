@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"math/rand"
 	"net"
 	"os"
 	"os/user"
@@ -26,14 +25,7 @@ import (
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
-	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/cs"
-	"github.com/google/uuid"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -42,6 +34,22 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
 	yamlV3 "gopkg.in/yaml.v3"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+)
+
+// addDebug/debugOn moved to package logs, and buildClientToken,
+// NeedRetry (see errors.go) and incrementalWait to package helper, so
+// service packages can reach them without importing the monolith. They
+// must stay var aliases rather than forwarding functions: addDebug walks
+// runtime.Caller(1..4) relative to its own frame, and a wrapper would
+// shift the reported call sites by one.
+var (
+	addDebug         = logs.AddDebug
+	debugOn          = logs.DebugOn
+	buildClientToken = helper.BuildClientToken
+	incrementalWait  = helper.IncrementalWait
 )
 
 type PayType string
@@ -723,14 +731,6 @@ func (a *Invoker) Run(f func() error) error {
 	return err
 }
 
-func buildClientToken(action string) string {
-	token := strings.TrimSpace(fmt.Sprintf("TF-%s-%d-%s", action, time.Now().Unix(), strings.Trim(uuid.New().String(), "-")))
-	if len(token) > 64 {
-		token = token[0:64]
-	}
-	return token
-}
-
 func getWriteOnlyValue(d *schema.ResourceData, path cty.Path, typ cty.Type) (cty.Value, error) {
 	if d.GetRawConfig().IsNull() {
 		return cty.NullVal(typ), nil
@@ -874,113 +874,6 @@ func loadFileContent(v string) ([]byte, error) {
 	return fileContent, nil
 }
 
-func debugOn() bool {
-	for _, part := range strings.Split(os.Getenv("DEBUG"), ",") {
-		if strings.TrimSpace(part) == "terraform" {
-			return true
-		}
-	}
-	return false
-}
-
-func addDebug(action, content interface{}, requestInfo ...interface{}) {
-	if debugOn() {
-		trace := "[DEBUG TRACE]:\n"
-		for skip := 1; skip < 5; skip++ {
-			_, filepath, line, _ := runtime.Caller(skip)
-			trace += fmt.Sprintf("%s:%d\n", filepath, line)
-		}
-
-		if len(requestInfo) > 0 {
-			var request = struct {
-				Domain     string
-				Version    string
-				UserAgent  string
-				ActionName string
-				Method     string
-				Product    string
-				Region     string
-				AK         string
-			}{}
-			switch requestInfo[0].(type) {
-			case *requests.RpcRequest:
-				tmp := requestInfo[0].(*requests.RpcRequest)
-				request.Domain = tmp.GetDomain()
-				request.Version = tmp.GetVersion()
-				request.ActionName = tmp.GetActionName()
-				request.Method = tmp.GetMethod()
-				request.Product = tmp.GetProduct()
-				request.Region = tmp.GetRegionId()
-			case *requests.RoaRequest:
-				tmp := requestInfo[0].(*requests.RoaRequest)
-				request.Domain = tmp.GetDomain()
-				request.Version = tmp.GetVersion()
-				request.ActionName = tmp.GetActionName()
-				request.Method = tmp.GetMethod()
-				request.Product = tmp.GetProduct()
-				request.Region = tmp.GetRegionId()
-			case *requests.CommonRequest:
-				tmp := requestInfo[0].(*requests.CommonRequest)
-				request.Domain = tmp.GetDomain()
-				request.Version = tmp.GetVersion()
-				request.ActionName = tmp.GetActionName()
-				request.Method = tmp.GetMethod()
-				request.Product = tmp.GetProduct()
-				request.Region = tmp.GetRegionId()
-			case *fc.Client:
-				client := requestInfo[0].(*fc.Client)
-				request.Version = client.Config.APIVersion
-				request.Product = "FC"
-				request.ActionName = fmt.Sprintf("%s", action)
-			case *sls.Client:
-				request.Product = "LOG"
-				request.ActionName = fmt.Sprintf("%s", action)
-			case *tablestore.TableStoreClient:
-				request.Product = "OTS"
-				request.ActionName = fmt.Sprintf("%s", action)
-			case *oss.Client:
-				request.Product = "OSS"
-				request.ActionName = fmt.Sprintf("%s", action)
-			case *datahub.DataHub:
-				request.Product = "DataHub"
-				request.ActionName = fmt.Sprintf("%s", action)
-			case *cs.Client:
-				request.Product = "CS"
-				request.ActionName = fmt.Sprintf("%s", action)
-			}
-
-			requestContent := ""
-			if len(requestInfo) > 1 {
-				switch requestInfo[1].(type) {
-				case *tea.SDKError:
-					requestContent = fmt.Sprintf("%#v", requestInfo[1].(*tea.SDKError).Error())
-				default:
-					requestContent = fmt.Sprintf("%#v", requestInfo[1])
-				}
-			}
-
-			if len(requestInfo) == 1 {
-				if v, ok := requestInfo[0].(map[string]interface{}); ok {
-					if res, err := json.Marshal(&v); err == nil {
-						requestContent = string(res)
-					}
-					if res, err := json.Marshal(&content); err == nil {
-						content = string(res)
-					}
-				}
-			}
-
-			content = fmt.Sprintf("%vDomain:%v, Version:%v, ActionName:%v, Method:%v, Product:%v, Region:%v\n\n"+
-				"*************** %s Request ***************\n%#v\n",
-				content, request.Domain, request.Version, request.ActionName,
-				request.Method, request.Product, request.Region, request.ActionName, requestContent)
-		}
-
-		//fmt.Printf(DefaultDebugMsg, action, content, trace)
-		log.Printf(DefaultDebugMsg, action, content, trace)
-	}
-}
-
 // Return a ComplexError which including extra error message, error occurred file and path
 func GetFunc(level int) string {
 	pc, _, _, ok := runtime.Caller(level)
@@ -1073,21 +966,6 @@ func BuildStateConf(pending, target []string, timeout, delay time.Duration, f re
 		Timeout:    timeout,
 		Delay:      delay,
 		MinTimeout: 3 * time.Second,
-	}
-}
-
-var incrementalWaitJitter = rand.Float64
-
-func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration) func() {
-	retryCount := 0
-	return func() {
-		upper := float64(firstDuration) + (math.Pow(2, float64(retryCount))-1)*float64(increaseDuration)
-		if upper > float64(20*time.Second) {
-			upper = float64(20 * time.Second)
-		}
-		waitTime := time.Duration(upper * incrementalWaitJitter())
-		time.Sleep(waitTime)
-		retryCount++
 	}
 }
 

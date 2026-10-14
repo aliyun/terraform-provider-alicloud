@@ -1889,7 +1889,6 @@ func Provider() *schema.Provider {
 			"alicloud_rdc_organization":                                      resourceAlicloudRdcOrganization(),
 			"alicloud_eais_instance":                                         resourceAliCloudEaisInstance(),
 			"alicloud_sae_ingress":                                           resourceAlicloudSaeIngress(),
-			"alicloud_cloudauth_face_config":                                 resourceAlicloudCloudauthFaceConfig(),
 			"alicloud_imp_app_template":                                      resourceAlicloudImpAppTemplate(),
 			"alicloud_pvtz_user_vpc_authorization":                           resourceAlicloudPvtzUserVpcAuthorization(),
 			"alicloud_mhub_product":                                          resourceAlicloudMhubProduct(),

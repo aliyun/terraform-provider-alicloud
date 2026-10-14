@@ -338,10 +338,7 @@ func testAccResourceManagerHandshakeCommonRequest(client *sdk.Client, product st
 	if code == "" || code == "<nil>" {
 		code = fmt.Sprint(response.GetHttpStatus())
 	}
-	return nil, &ProviderError{
-		errorCode: code,
-		message:   fmt.Sprint(result["Message"]),
-	}
+	return nil, NewProviderError(code, fmt.Sprint(result["Message"]))
 }
 
 func TestAccAliCloudResourceManagerHandshakeAcceptance_basic(t *testing.T) {
