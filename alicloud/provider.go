@@ -295,6 +295,7 @@ func Provider() *schema.Provider {
 			"alicloud_ram_policy_document":                              dataSourceAliCloudRamPolicyDocument(),
 			"alicloud_ram_access_key_policy":                            dataSourceAlicloudRamAccessKeyPolicy(),
 			"alicloud_security_groups":                                  dataSourceAlicloudSecurityGroups(),
+			"alicloud_security_group_snapshots":                         dataSourceAlicloudSecurityGroupSnapshots(),
 			"alicloud_security_group_rules":                             dataSourceAlicloudSecurityGroupRules(),
 			"alicloud_slbs":                                             dataSourceAlicloudSlbLoadBalancers(),
 			"alicloud_slb_attachments":                                  dataSourceAlicloudSlbAttachments(),
