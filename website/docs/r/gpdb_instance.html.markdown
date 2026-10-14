@@ -81,6 +81,12 @@ The following arguments are supported:
 
   -> **NOTE:** The instance is created with the latest minor version, so this attribute does not take effect at creation time; it only triggers a minor version upgrade when it is changed after the instance is created. The current minor version of the instance is read back into state.
 
+* `effective_time` - (Optional, Available since v1.295.0) The effective time of an in-place upgrade task. It is sent with the [UpgradeDBVersion](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-upgradedbversion) and [UpgradeDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-upgradedbinstance) operations when one of the upgradable attributes (`minor_version`, `seg_node_num`, `master_node_num`, `instance_spec`, `storage_size`, `serverless_resource`, `cache_storage_size`, `seg_disk_performance_level`) is changed. Valid values:
+  - `Immediate`: The upgrade takes effect immediately. This is the API default when the attribute is not set.
+  - `MaintainTime`: The upgrade is scheduled into the maintenance window (configured via `maintain_start_time` and `maintain_end_time`) and takes effect within it.
+
+  -> **NOTE:** `effective_time` is a per-operation modifier and is not an instance attribute, so it is not read back from the API. When `MaintainTime` is used, the upgrade executes at the next maintenance window: until the upgrade task runs, the API keeps reporting the previous values of the upgraded attributes and the provider reports a plan diff for them. The provider does not wait for the value convergence in this case and returns after the upgrade request is accepted.
+
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
 * `db_instance_class` - (Optional, ForceNew) The db instance class. see [Instance specifications](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/instance-types).
 
@@ -122,6 +128,14 @@ The following arguments are supported:
 * `seg_disk_performance_level` - (Optional, Available since v1.233.1) The ESSD cloud disk performance level. Valid values: `pl0`, `pl1`, `pl2`.
 * `create_sample_data` - (Optional, Bool) Whether to load the sample dataset after the instance is created. Valid values: `true`, `false`.
 * `ssl_enabled` - (Optional, Int, Available since v1.188.0) Enable or disable SSL. Valid values: `0` and `1`.
+* `sql_collector_status` - (Optional, Available since v1.295.0) Specifies whether to enable or disable SQL explorer (SQL collector). The provider calls the [ModifySQLCollectorPolicy](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-modifysqlcollectorpolicy) operation when this attribute is set or changed. Valid values:
+  - `Enabled`: Enables SQL collector.
+  - `Disabled`: Disables SQL collector.
+
+  -> **NOTE:** The ModifySQLCollectorPolicy operation is supported only by storage-reserved instances and the Serverless auto-scheduling version. Check the product documentation for the support scope of your instance mode.
+
+  -> **NOTE:** The GPDB API does not provide an operation to query the SQL collector status, so this attribute is write-only: it is not read back into state during `terraform refresh` or import. Removing the attribute from the configuration does not disable SQL collector either: the provider does not call ModifySQLCollectorPolicy in that case, so the cloud-side status stays unchanged. Set `sql_collector_status = "Disabled"` explicitly to disable it.
+
 * `encryption_type` - (Optional, ForceNew, Available since v1.207.2) The encryption type. Valid values: `CloudDisk`.
 
   -> **NOTE:** Disk encryption cannot be disabled after it is enabled.
@@ -176,7 +190,7 @@ The ip_whitelist supports the following:
 
 * `ip_group_attribute` - (Optional) The value of this parameter is empty by default. The attribute of the whitelist group. 
   If the value contains `hidden`, this white list item will not output.
-* `ip_group_name` - (Optional) IP whitelist group name.
+* `ip_group_name` - (Optional) IP whitelist group name. Defaults to `default`, the built-in whitelist group; a group without a name is applied to the `default` group instead of creating a new one.
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
 
 ### `parameters`
