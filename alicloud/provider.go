@@ -2255,28 +2255,54 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	// profileConfig is resolved per Configure call from this instance's own
 	// profile / shared_credentials_file, so multiple provider aliases in one
 	// Terraform process never share (or contaminate) each other's profile.
-	profileConfig := loadProfileConfig(d)
-	var getProviderConfig = func(schemaKey string, profileKey string) string {
+	profileConfig, err := loadProfileConfig(d)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	var getProviderConfig = func(schemaKey string, profileKey string) (string, error) {
 		if schemaKey != "" {
 			if v, ok := cfgString(d, schemaKey); ok {
-				return v
+				return v, nil
 			}
 		}
-		if v := getConfigFromProfile(profileConfig, profileKey); v != nil {
-			return v.(string)
+		v, err := getConfigFromProfile(profileConfig, profileKey)
+		if err != nil {
+			return "", err
 		}
-		return ""
+		if v != nil {
+			s, ok := v.(string)
+			if !ok {
+				return "", WrapError(fmt.Errorf("provider attribute %q in profile %q must be a string, got %T", profileKey, d.Get("profile").(string), v))
+			}
+			return s, nil
+		}
+		return "", nil
 	}
 
-	accessKey := getProviderConfig("access_key", "access_key_id")
-	secretKey := getProviderConfig("secret_key", "access_key_secret")
-	region := getProviderConfig("region", "region_id")
+	accessKey, err := getProviderConfig("access_key", "access_key_id")
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	secretKey, err := getProviderConfig("secret_key", "access_key_secret")
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	region, err := getProviderConfig("region", "region_id")
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 	if region == "" {
 		region = DEFAULT_REGION
 	}
-	securityToken := getProviderConfig("security_token", "sts_token")
+	securityToken, err := getProviderConfig("security_token", "sts_token")
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 
-	ecsRoleName := getProviderConfig("ecs_role_name", "ram_role_name")
+	ecsRoleName, err := getProviderConfig("ecs_role_name", "ram_role_name")
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 	var profileName string
 	var credential credentials.Credential
 	if v, ok := cfgString(d, "profile"); ok {
@@ -2371,11 +2397,24 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		config.SecureTransport = v.(string)
 	}
 
-	config.RamRoleArn = getProviderConfig("", "ram_role_arn")
-	config.RamRoleSessionName = getProviderConfig("", "ram_session_name")
-	expiredSeconds := getConfigFromProfile(profileConfig, "expired_seconds")
+	config.RamRoleArn, err = getProviderConfig("", "ram_role_arn")
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	config.RamRoleSessionName, err = getProviderConfig("", "ram_session_name")
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	expiredSeconds, err := getConfigFromProfile(profileConfig, "expired_seconds")
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 	if expiredSeconds != nil {
-		config.RamRoleSessionExpiration = (int)(expiredSeconds.(float64))
+		expired, ok := expiredSeconds.(float64)
+		if !ok {
+			return nil, diag.FromErr(WrapError(fmt.Errorf("provider attribute \"expired_seconds\" in profile %q must be a number, got %T", d.Get("profile").(string), expiredSeconds)))
+		}
+		config.RamRoleSessionExpiration = int(expired)
 	}
 
 	assumeRoleList := d.Get("assume_role").(*schema.Set).List()
@@ -4348,22 +4387,24 @@ func defaultConfigPath() (string, error) {
 // instance's own "profile" / "shared_credentials_file" attributes. It reads
 // the profile file on every call and returns a fresh map, so the result is
 // scoped to the calling provider instance and can never leak into (or be
-// replaced by) another provider alias's configuration. Returns nil when no
-// profile is configured or the profile cannot be loaded.
-func loadProfileConfig(d *schema.ResourceData) map[string]interface{} {
+// replaced by) another provider alias's configuration. Returns (nil, nil)
+// when no profile is configured or the file does not exist; a malformed or
+// unreadable file surfaces as an error carrying the file path, profile name
+// and reason instead of a silent empty config.
+func loadProfileConfig(d *schema.ResourceData) (map[string]interface{}, error) {
 	if v, ok := d.GetOk("profile"); !ok || v.(string) == "" {
-		return nil
+		return nil, nil
 	}
 	current := d.Get("profile").(string)
 	// Set Credentials filename, expanding home directory
 	profilePath, err := homedir.Expand(d.Get("shared_credentials_file").(string))
 	if err != nil {
-		return nil
+		return nil, WrapError(fmt.Errorf("failed to expand shared_credentials_file for profile %q: %v", current, err))
 	}
 	if profilePath == "" {
 		configPath, err := defaultConfigPath()
 		if err != nil {
-			return nil
+			return nil, WrapError(fmt.Errorf("failed to resolve default credentials file for profile %q: %v", current, err))
 		}
 		profilePath = configPath
 	}
@@ -4372,63 +4413,80 @@ func loadProfileConfig(d *schema.ResourceData) map[string]interface{} {
 	if !os.IsNotExist(err) {
 		data, err := ioutil.ReadFile(profilePath)
 		if err != nil {
-			return nil
+			return nil, WrapError(fmt.Errorf("failed to read credentials file %s for profile %q: %v", profilePath, current, err))
 		}
 		config := map[string]interface{}{}
-		err = json.Unmarshal(data, &config)
-		if err != nil {
-			return nil
+		if err := json.Unmarshal(data, &config); err != nil {
+			return nil, WrapError(fmt.Errorf("failed to parse credentials file %s for profile %q: invalid JSON: %v", profilePath, current, err))
 		}
-		for _, v := range config["profiles"].([]interface{}) {
-			if current == v.(map[string]interface{})["name"] {
-				profileConfig = v.(map[string]interface{})
+		profiles, ok := config["profiles"].([]interface{})
+		if !ok {
+			return nil, WrapError(fmt.Errorf("invalid credentials file %s for profile %q: field \"profiles\" must be an array of profile objects", profilePath, current))
+		}
+		for _, entry := range profiles {
+			profileMap, ok := entry.(map[string]interface{})
+			if !ok {
+				return nil, WrapError(fmt.Errorf("invalid credentials file %s for profile %q: profile entries must be JSON objects", profilePath, current))
+			}
+			if current == profileMap["name"] {
+				profileConfig = profileMap
+			}
+		}
+		if modeValue, ok := profileConfig["mode"]; ok {
+			if _, ok := modeValue.(string); !ok {
+				return nil, WrapError(fmt.Errorf("invalid credentials file %s for profile %q: field \"mode\" must be a string, got %T", profilePath, current, modeValue))
 			}
 		}
 	}
-	return profileConfig
+	return profileConfig, nil
 }
 
 // getConfigFromProfile extracts ProfileKey from an already-loaded profile
 // config map (see loadProfileConfig), applying the per-mode gating rules.
-func getConfigFromProfile(profileConfig map[string]interface{}, ProfileKey string) interface{} {
-	mode := ""
-	if v, ok := profileConfig["mode"]; ok {
-		mode = v.(string)
-	} else {
-		return v
+// A nil map or an absent "mode" yields (nil, nil); loadProfileConfig already
+// guards the mode type at load time, so the defensive check here only fires
+// for a hand-assembled config map.
+func getConfigFromProfile(profileConfig map[string]interface{}, ProfileKey string) (interface{}, error) {
+	modeValue, ok := profileConfig["mode"]
+	if !ok {
+		return nil, nil
+	}
+	mode, ok := modeValue.(string)
+	if !ok {
+		return nil, WrapError(fmt.Errorf("invalid profile entry: field \"mode\" must be a string, got %T", modeValue))
 	}
 	if ProfileKey == "region_id" {
-		return profileConfig["region_id"]
+		return profileConfig["region_id"], nil
 	}
 	// For advanced profile modes, credentials are obtained dynamically via CLIProfileCredentialsProvider
 	if mode == "ChainableRamRoleArn" || mode == "CloudSSO" ||
 		mode == "External" || mode == "OAuth" {
-		return nil
+		return nil, nil
 	}
 	switch ProfileKey {
 	case "access_key_id", "access_key_secret":
 		if mode == "EcsRamRole" {
-			return ""
+			return "", nil
 		}
 	case "ram_role_name":
 		if mode != "EcsRamRole" {
-			return ""
+			return "", nil
 		}
 	case "sts_token":
 		if mode != "StsToken" {
-			return ""
+			return "", nil
 		}
 	case "ram_role_arn", "ram_session_name":
 		if mode != "RamRoleArn" {
-			return ""
+			return "", nil
 		}
 	case "expired_seconds":
 		if mode != "RamRoleArn" {
-			return float64(0)
+			return float64(0), nil
 		}
 	}
 
-	return profileConfig[ProfileKey]
+	return profileConfig[ProfileKey], nil
 }
 
 func getAssumeRoleWithOIDCConfig(tfMap map[string]interface{}) (*connectivity.AssumeRoleWithOidc, error) {
