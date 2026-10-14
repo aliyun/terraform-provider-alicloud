@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type RealtimeComputeServiceV2 struct {
@@ -571,14 +570,14 @@ func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVariable(id string) (o
 	idExist := false
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			return nil
 		})
@@ -629,11 +628,11 @@ func (s *RealtimeComputeServiceV2) DescribeRealtimeComputeVariable(id string) (o
 	return object, nil
 }
 
-func (s *RealtimeComputeServiceV2) RealtimeComputeVariableStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *RealtimeComputeServiceV2) RealtimeComputeVariableStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.RealtimeComputeVariableStateRefreshFuncWithApi(id, field, failStates, s.DescribeRealtimeComputeVariable)
 }
 
-func (s *RealtimeComputeServiceV2) RealtimeComputeVariableStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *RealtimeComputeServiceV2) RealtimeComputeVariableStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
