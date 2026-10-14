@@ -47,6 +47,14 @@ The following arguments are supported:
   - `true`: Enable.
   - `false`: Disable.
 * `max_message_size` - (Optional, Int) The maximum length of the message that is sent to the topic. Default value: `65536`. Valid values: `1024` to `65536`. Unit: bytes.
+* `enable_sse` - (Optional, Bool, Available since v2.1.0) Specifies whether to enable server-side encryption (SSE) for the messages in the topic. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `sse_type` - (Optional, Available since v2.1.0) The type of server-side encryption (SSE). Valid values:
+  - `SMQ`: The keys that are managed by Message Service are used to encrypt and decrypt messages.
+  - `KMS`: The customer master key (CMK) that is managed by Key Management Service (KMS) is used to encrypt and decrypt messages.
+* `sse_algorithm` - (Optional, Available since v2.1.0) The encryption algorithm that is used to encrypt the messages in the topic. Valid value: `AES-256-GCM`.
+* `kms_key_id` - (Optional, Available since v2.1.0) The ID of the customer master key (CMK) in Key Management Service (KMS). This parameter is required when `sse_type` is set to `KMS`.
 * `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
 * `topic_name` - (Required, ForceNew) The name of the topic.
 * `topic_type` - (Optional, ForceNew, Computed, Available since v1.283.0) The type of the topic. Default value: `normal`. Valid values:
@@ -54,6 +62,10 @@ The following arguments are supported:
   - `fifo`: FIFO queue.
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `logging_enabled` - (Deprecated since v1.241.0). Field `logging_enabled` has been deprecated from provider version 1.241.0. New field `enable_logging` instead.
+
+-> **NOTE:** Server-side encryption (SSE) is available only after the feature is enabled for your account. To enable the feature, submit a ticket. Before you set `sse_type` to `KMS`, make sure that a symmetric key of the AES-256 key spec is created in KMS in the same region and within the same account as the topic, and that the service-linked role `AliyunMNSAccessingKMSRole` is authorized.
+
+-> **NOTE:** To disable SSE, you must set `enable_sse` to `false` and remove `sse_type`, `sse_algorithm`, and `kms_key_id` from the configuration at the same time. SSE takes effect only on the messages that are sent after SSE is enabled or disabled, and existing messages are not encrypted or decrypted again.
 
 ## Attributes Reference
 
