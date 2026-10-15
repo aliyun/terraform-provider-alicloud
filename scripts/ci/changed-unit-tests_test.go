@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -123,6 +124,40 @@ func TestUnitChangedRunnerPreservesFailureSkipAndMissing(t *testing.T) {
 			want := map[string]string{"fail": "FAIL", "skip": "SKIP", "": "MISSING", "subtest-skip": "SKIP"}[action]
 			if cases[0].Result != want || (action == "fail" && err == nil) {
 				t.Fatalf("%+v %v", cases, err)
+			}
+		})
+	}
+}
+
+func TestUnitChangedSummaryAllowsSkipWithoutHidingErrors(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		results []string
+		err     error
+		want    string
+		skipped int
+	}{
+		{"pass", []string{"PASS"}, nil, "passed", 0},
+		{"mixed", []string{"PASS", "SKIP"}, nil, "passed", 1},
+		{"all skipped", []string{"SKIP", "SKIP"}, nil, "passed", 2},
+		{"failure wins", []string{"SKIP", "FAIL"}, nil, "failed", 1},
+		{"missing remains invalid", []string{"PASS", "MISSING"}, nil, "failed", 0},
+		{"execution error wins", []string{"SKIP"}, errors.New("compiler failed"), "failed", 1},
+		{"unknown outcome", []string{"unexpected"}, nil, "failed", 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := unitSummary{Status: "failed"}
+			for _, result := range tc.results {
+				s.Cases = append(s.Cases, unitCase{Package: "./p", Name: "TestUnitFixture", Result: result})
+			}
+			finishUnitSummary(&s, tc.err)
+			if s.Status != tc.want || s.Skipped != tc.skipped {
+				t.Fatalf("unexpected summary: %+v", s)
+			}
+			for i, result := range tc.results {
+				if s.Cases[i].Result != result {
+					t.Fatal("case outcome rewritten")
+				}
 			}
 		})
 	}
