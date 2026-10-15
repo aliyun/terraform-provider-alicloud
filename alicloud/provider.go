@@ -685,7 +685,6 @@ func Provider() *schema.Provider {
 			"alicloud_rdc_organizations":                                dataSourceAlicloudRdcOrganizations(),
 			"alicloud_eais_instances":                                   dataSourceAlicloudEaisInstances(),
 			"alicloud_sae_ingresses":                                    dataSourceAlicloudSaeIngresses(),
-			"alicloud_cloudauth_face_configs":                           dataSourceAlicloudCloudauthFaceConfigs(),
 			"alicloud_imp_app_templates":                                dataSourceAlicloudImpAppTemplates(),
 			"alicloud_mhub_products":                                    dataSourceAlicloudMhubProducts(),
 			"alicloud_cloud_sso_scim_server_credentials":                dataSourceAlicloudCloudSsoScimServerCredentials(),
