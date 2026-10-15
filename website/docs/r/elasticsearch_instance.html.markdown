@@ -110,7 +110,9 @@ The following arguments are supported:
   - `PayAsYouGo`: Pay-as-you-go
   - `Subscription`: Subscription
 * `private_whitelist` - (Optional, Computed, List) The list of IP addresses in the whitelist. This parameter is available when whiteIpGroup is empty and modifies the default group's whitelist.
-* `protocol` - (Optional, Computed, Available since v1.101.0) The access protocol. Supported protocols: HTTP and HTTPS.  
+* `protocol` - (Optional, Computed, Available since v1.101.0) The access protocol. Supported protocols: HTTP and HTTPS.
+
+  -> **NOTE:** For instances of version 7.10 and earlier (region-dependent for 7.10), setting `protocol` to `HTTPS` requires dedicated coordinating nodes. Without them, the creation fails with the `HttpsNeedClientNode` error, and coordinating nodes purchased on these versions cannot be disabled or removed afterwards. Set `client_node_configuration` (or the deprecated `client_node_spec` and `client_node_amount`) together with `protocol` on affected versions. Instances of version 7.16 and later do not require coordinating nodes for `HTTPS`. For more information, see [FAQ about Alibaba Cloud Elasticsearch clusters](https://www.alibabacloud.com/help/en/es/support/faq-about-alibaba-cloud-elasticsearch-clusters).
 * `public_whitelist` - (Optional, Computed, List) The IP address whitelist. This parameter is available when whiteIpGroup is empty and is used to modify the default group's whitelist.
 * `renew_status` - (Optional, Computed) The renewal status. Valid values:
   - AutoRenewal: Auto-renewal.
