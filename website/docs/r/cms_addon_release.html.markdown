@@ -75,7 +75,62 @@ The following arguments are supported:
 * `env_type` - (Optional, ForceNew) The environment type. Valid values: `CS`, `ECS`, `Cloud`.
 * `integration_policy_id` - (Required, ForceNew) The ID of the environment policy.
 * `workspace` - (Optional, ForceNew) The name of the workspace where the add-on is installed.
+* `entity_rules` - (Optional, Set, Available since v2.1.0) The entity discovery rule model. See [`entity_rules`](#entity_rules) below.
 * `dry_run` - (Optional, Bool) Specifies whether to perform a dry run. Valid values: `true`, `false`.
+
+### `entity_rules`
+
+The entity_rules supports the following:
+
+* `resource_group_id` - (Optional) The resource group ID.
+* `instance_ids` - (Optional, List) A collection of instance IDs.
+* `entity_types` - (Optional, List) A collection of entity types.
+* `region_ids` - (Optional, List) A collection of region IDs.
+* `ip_match_rule` - (Optional, Set) A collection of IP address matching rules. See [`ip_match_rule`](#entity_rules-ip_match_rule) below.
+* `tags` - (Optional, Set) The tag-based service discovery rules. See [`tags`](#entity_rules-tags) below.
+* `labels` - (Optional, Set) A collection of label matching rules. See [`labels`](#entity_rules-labels) below.
+* `annotations` - (Optional, Set) A collection of annotation matching rules. See [`annotations`](#entity_rules-annotations) below.
+* `field_rules` - (Optional, Set) The property matching rules. See [`field_rules`](#entity_rules-field_rules) below.
+
+### `entity_rules-ip_match_rule`
+
+The entity_rules-ip_match_rule supports the following:
+
+* `ip_field_key` - (Optional) The key of the IP address field.
+* `ip_cidr` - (Optional) The CIDR block to match against.
+
+### `entity_rules-tags`
+
+The entity_rules-tags supports the following:
+
+* `op` - (Optional) The operation.
+* `tag_key` - (Optional) The key of the tag.
+* `tag_values` - (Optional, List) A collection of tag values.
+
+### `entity_rules-labels`
+
+The entity_rules-labels supports the following:
+
+* `op` - (Optional) The operation.
+* `tag_key` - (Optional) The key of the label.
+* `tag_values` - (Optional, List) A collection of label values.
+
+
+### `entity_rules-annotations`
+
+The entity_rules-annotations supports the following:
+
+* `op` - (Optional) The operation.
+* `tag_key` - (Optional) The key of the annotation.
+* `tag_values` - (Optional, List) A collection of annotation values.
+
+### `entity_rules-field_rules`
+
+The entity_rules-field_rules supports the following:
+
+* `op` - (Optional) The operation.
+* `field_key` - (Optional) The key of the property.
+* `field_values` - (Optional, List) A collection of property values.
 
 ## Attributes Reference
 
