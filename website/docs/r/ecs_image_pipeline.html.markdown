@@ -13,7 +13,7 @@ Provides a ECS Image Pipeline resource.
 
 For information about ECS Image Pipeline and how to use it, see [What is Image Pipeline](https://www.alibabacloud.com/help/en/doc-detail/200427.html).
 
--> **NOTE:** Available in v1.163.0+.
+-> **NOTE:** Available since v1.163.0.
 
 ## Example Usage
 
@@ -82,10 +82,11 @@ resource "alicloud_ecs_image_pipeline" "default" {
 The following arguments are supported:
 
 * `add_account` - (Optional, ForceNew) The ID of Alibaba Cloud account to which to share the created image.
-* `base_image` - (Required, ForceNew) The source image. When you set `base_image_type` to `IMAGE`, set `base_image` to the ID of a custom image. When you set `base_image_type` to `IMAGE_FAMILY`, set `base_image` to the name of an image family.
-* `base_image_type` - (Required, ForceNew) The type of the source image. Valid values: `IMAGE`, `IMAGE_FAMILY`.
+* `base_image` - (Optional, ForceNew) The source image. When you set `base_image_type` to `IMAGE`, set `base_image` to the ID of a custom image. When you set `base_image_type` to `IMAGE_FAMILY`, set `base_image` to the name of an image family. When you set `base_image_type` to `OSS`, do not set `base_image`.
+* `base_image_type` - (Required, ForceNew) The type of the source image. Valid values: `IMAGE`, `IMAGE_FAMILY`, `OSS`.
   - IMAGE: custom image.
   - IMAGE_FAMILY: image family.
+  - OSS: OSS object.
 * `build_content` - (Optional, ForceNew) The content of the image template. The content cannot be greater than 16 KB in size, and can contain up to 127 commands.
 * `delete_instance_on_failure` - (Optional, ForceNew) Specifies whether to release the intermediate instance if the image cannot be created.
 * `description` - (Optional, ForceNew) The description of the image template. The description must be `2` to `256` characters in length and cannot start with `http://` or `https://`. **Note:** If the intermediate instance cannot be started, the instance is released by default.
@@ -98,6 +99,47 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group.
 * `to_region_id` - (Optional, ForceNew) The ID of region to which to distribute the created image.
 * `vswitch_id` - (Optional, ForceNew) The ID of the vSwitch. If you do not specify this parameter, a virtual private cloud (VPC) and a vSwitch are created by default.
+* `test_content` - (Optional, ForceNew, Computed) The content of the image test template.
+* `image_family` - (Optional, ForceNew, Computed) The image family of the target image.
+* `repair_mode` - (Optional, ForceNew, Computed) The repair options in the image template. Valid values: `Standard`, `All`, `Customized`.
+* `nvme_support` - (Optional, ForceNew, Computed) Whether the build target image supports NVMe. Valid values: `auto`, `enabled`, `disabled`.
+* `advanced_options` - (Optional, ForceNew, Computed) The advanced settings of the image pipeline. See [`advanced_options`](#advanced_options) below.
+* `import_image_options` - (Optional, ForceNew, Computed) The options used to import the image. See [`import_image_options`](#import_image_options) below.
+
+### `advanced_options`
+
+The `advanced_options` block supports:
+
+* `retain_cloud_assistant` - (Optional, ForceNew, Computed) Whether to retain Cloud Assistant in the target image.
+* `image_name_suffix` - (Optional, ForceNew, Computed) Whether to disable the automatic suffix added to the target image name.
+
+### `import_image_options`
+
+The `import_image_options` block supports:
+
+* `architecture` - (Optional, ForceNew, Computed) The system architecture. Valid values: `x86_64`, `arm64`.
+* `platform` - (Optional, ForceNew, Computed) The operating system platform.
+* `boot_mode` - (Optional, ForceNew, Computed) The boot mode of the imported image. Valid values: `BIOS`, `UEFI`.
+* `license_type` - (Optional, ForceNew, Computed) The license type used to activate the operating system. Valid values: `Auto`, `Aliyun`, `BYOL`.
+* `os_type` - (Optional, ForceNew, Computed) The operating system type. Valid values: `windows`, `linux`.
+* `retain_imported_image` - (Optional, ForceNew, Computed) Whether to retain the imported image.
+* `features` - (Optional, ForceNew, Computed) The features of the image. See [`features`](#import_image_options-features) below.
+* `disk_device_mappings` - (Optional, ForceNew, Computed) The custom image information. See [`disk_device_mappings`](#import_image_options-disk_device_mappings) below.
+
+### `import_image_options-features`
+
+The `features` block supports:
+
+* `nvme_support` - (Optional, ForceNew, Computed) Whether the imported image supports NVMe. Valid values: `supported`, `unsupported`.
+
+### `import_image_options-disk_device_mappings`
+
+The `disk_device_mappings` block supports:
+
+* `oss_bucket` - (Optional, ForceNew, Computed) The OSS bucket where the image file is located.
+* `oss_object` - (Optional, ForceNew, Computed) The name of the image file in the OSS bucket.
+* `format` - (Optional, ForceNew, Computed) The image format. Valid values: `RAW`, `VHD`, `QCOW2`.
+* `disk_image_size` - (Optional, ForceNew, Computed) The size of the custom image. Unit: GiB.
 
 ## Attributes Reference
 
