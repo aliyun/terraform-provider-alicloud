@@ -62,16 +62,16 @@ resource "alicloud_ecs_capacity_reservation" "default" {
 The following arguments are supported:
 * `capacity_reservation_name` - (Optional) Capacity reservation service name.
 * `description` - (Optional) description of the capacity reservation instance.
-* `end_time` - (Optional) end time of the capacity reservation. the capacity reservation will be  released at the end time automatically if set. otherwise it will last until manually released
+* `end_time` - (Optional) The expiration time of the capacity reservation service. The time format follows the ISO 8601 standard and must use UTC +0 time, in the format `yyyy-MM-ddTHH:mm:ssZ`. This parameter takes effect only when `end_time_type` is set to `Limited`. Example: `2021-10-30T06:32:00Z`.
 * `end_time_type` - (Optional) Release mode of capacity reservation service. Value range:Limited: release at specified time. The EndTime parameter must be specified at the same time.Unlimited: manual release. No time limit.
 * `instance_amount` - (Required) The total number of instances that need to be reserved within the capacity reservation.
-* `instance_type` - (Required,ForceNew) Instance type. Currently, you can only set the capacity reservation service for one instance type. 
-* `match_criteria` - (ForceNew,Optional) The type of private resource pool generated after the capacity reservation service takes effect. Value range:Open: Open mode.Target: dedicated mode.Default value: Open
-* `platform` - (Optional) platform of the capacity reservation, value range `windows`, `linux`.
-* `resource_group_id` - (ForceNew,Optional) The resource group id.
+* `instance_type` - (Required, ForceNew) Instance type. Currently, you can only set the capacity reservation service for one instance type.
+* `match_criteria` - (ForceNew, Optional) The type of private resource pool generated after the capacity reservation service takes effect. Value range:Open: Open mode.Target: dedicated mode.Default value: Open
+* `platform` - (ForceNew, Optional) platform of the capacity reservation, value range `windows`, `linux`.
+* `resource_group_id` - (ForceNew, Optional) The resource group id.
 * `tags` - (Optional) The tag of the resource.
 * `dry_run` - (Optional) Specifies whether to pre-check the API request. Valid values: `true` and `false`.
-* `zone_ids` - (ForceNew,Required) The ID of the zone in the region to which the capacity reservation service belongs. Currently, it is only supported to create a capacity reservation service in one zone.
+* `zone_ids` - (ForceNew, Required) The ID of the zone in the region to which the capacity reservation service belongs. Currently, it is only supported to create a capacity reservation service in one zone.
 
 ## Attributes Reference
 
