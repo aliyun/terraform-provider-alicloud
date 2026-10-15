@@ -15,6 +15,8 @@ For information about AnalyticDB for MySQL (ADB) DB Cluster Lake Version and how
 
 -> **NOTE:** Available since v1.190.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, convert the instance to `PayAsYouGo` by setting `payment_type = "PayAsYouGo"` and re-applying, or unsubscribe it in the Alibaba Cloud console. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Basic Usage

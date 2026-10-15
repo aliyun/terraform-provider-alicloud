@@ -181,6 +181,7 @@ func TestAccAliCloudOceanBaseInstance_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,

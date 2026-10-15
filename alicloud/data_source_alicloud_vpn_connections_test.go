@@ -14,6 +14,7 @@ func TestAccAlicloudVPNConnectionsDataSourceBasic(t *testing.T) {
 	name := fmt.Sprintf("tf-testAccVpnConnDataResource%d", rand)
 	preCheck := func() {
 		testAccPreCheck(t)
+		testAccPreCheckPrePaidResources(t)
 	}
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
 		name, dataSourceVpnConnectionsConfigDependence)

@@ -30,6 +30,7 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
@@ -191,6 +192,7 @@ func TestAccAliCloudReservedInstanceBasic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,

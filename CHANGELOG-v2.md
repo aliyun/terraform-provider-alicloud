@@ -7,6 +7,7 @@ FEATURES:
 BUG FIXES:
 
 - resource/alicloud_db_instance, resource/alicloud_ddoscoo_instance: return an error when destroying PrePaid instances instead of silently removing them from Terraform state.
+- resource/alicloud_adb_db_cluster_lake_version, resource/alicloud_cloud_storage_gateway_gateway, resource/alicloud_ecp_instance, resource/alicloud_ecs_dedicated_host, resource/alicloud_ga_bandwidth_package, resource/alicloud_ga_basic_accelerator, resource/alicloud_hologram_instance, resource/alicloud_mongodb_serverless_instance, resource/alicloud_mongodb_sharding_instance, resource/alicloud_nat_gateway, resource/alicloud_ocean_base_instance, resource/alicloud_realtime_compute_vvp_instance, resource/alicloud_rds_ddr_instance, resource/alicloud_reserved_instance, resource/alicloud_simple_application_server_instance, resource/alicloud_vpn_gateway, resource/alicloud_yundun_dbaudit_instance: return an error when destroying PrePaid instances instead of silently removing them from Terraform state.
 
 ## 2.0.0 (October 12, 2026)
 

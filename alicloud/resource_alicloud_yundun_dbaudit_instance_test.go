@@ -132,6 +132,7 @@ func TestAccAliCloudYundunDbauditInstance_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
 		},
 		IDRefreshName:     resourceId,

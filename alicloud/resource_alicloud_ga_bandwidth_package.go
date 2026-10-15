@@ -435,8 +435,7 @@ func resourceAliCloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 
 func resourceAliCloudGaBandwidthPackageDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("payment_type") == "Subscription" {
-		log.Printf("[WARN] Cannot destroy resourceAliCloudGaBandwidthPackage prepay type. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	client := meta.(*connectivity.AliyunClient)

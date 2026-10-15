@@ -29,6 +29,7 @@ func TestAccAliCloudSimpleApplicationServerDisk_basic5761(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 		},
 		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,

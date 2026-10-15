@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -373,8 +372,7 @@ func resourceAliCloudGaBasicAcceleratorDelete(d *schema.ResourceData, meta inter
 	}
 
 	if fmt.Sprint(object["InstanceChargeType"]) == "PREPAY" {
-		log.Printf("[WARN] Cannot destroy resourceAliCloudGaBasicAccelerator prepay type. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	request := map[string]interface{}{

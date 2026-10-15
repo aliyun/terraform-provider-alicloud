@@ -358,8 +358,7 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	return resourceAlicloudSimpleApplicationServerInstanceRead(d, meta)
 }
 func resourceAlicloudSimpleApplicationServerInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudSimpleApplicationServerInstance. Terraform will remove this resource from the state file, however resources may remain.")
-	return nil
+	return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 }
 func convertSimpleApplicationServerInstancePaymentTypeRequest(source interface{}) interface{} {
 	switch source {

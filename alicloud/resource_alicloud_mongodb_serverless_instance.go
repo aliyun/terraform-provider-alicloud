@@ -419,8 +419,7 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 	return resourceAlicloudMongodbServerlessInstanceRead(d, meta)
 }
 func resourceAlicloudMongodbServerlessInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resource Alicloud Resource Mongodb Serverless Subscription Instance. Terraform will remove this resource from the state file, however resources may remain.")
-	return nil
+	return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 }
 
 func convertMongodbServerlessInstancePayTypeResponse(source string) string {

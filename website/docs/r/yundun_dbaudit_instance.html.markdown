@@ -13,6 +13,8 @@ Cloud DBaudit instance resource ("Yundun_dbaudit" is the short term of this prod
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 -> **NOTE:** Available since v1.62.0+.
 
 -> **NOTE:** In order to destroy Cloud DBaudit instance , users are required to apply for white list first

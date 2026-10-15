@@ -798,6 +798,7 @@ func TestAccAliCloudHologramInstance_basic3916(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithTime(t, []int{22})
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
@@ -1781,6 +1782,7 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, connectivity.HologramSharedSupportRegions)
 		},
 		IDRefreshName: resourceId,
