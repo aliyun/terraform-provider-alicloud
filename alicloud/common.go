@@ -12,8 +12,6 @@ import (
 	"log"
 	"math"
 	"net"
-	"os"
-	"os/user"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -50,6 +48,8 @@ var (
 	debugOn          = logs.DebugOn
 	buildClientToken = helper.BuildClientToken
 	incrementalWait  = helper.IncrementalWait
+	writeToFile      = helper.WriteToFile
+	GetUserHomeDir   = helper.GetUserHomeDir
 )
 
 type PayType string
@@ -638,49 +638,6 @@ func ConvertIntegerToInt(value requests.Integer) (v int, err error) {
 		return v, fmt.Errorf("Converting integer %s to int got an error: %#v.", value, err)
 	}
 	return
-}
-
-func GetUserHomeDir() (string, error) {
-	usr, err := user.Current()
-	if err != nil {
-		return "", fmt.Errorf("Get current user got an error: %#v.", err)
-	}
-	return usr.HomeDir, nil
-}
-
-func writeToFile(filePath string, data interface{}) error {
-	var out string
-	switch data.(type) {
-	case string:
-		out = data.(string)
-		break
-	case nil:
-		return nil
-	default:
-		bs, err := json.MarshalIndent(data, "", "\t")
-		if err != nil {
-			return fmt.Errorf("MarshalIndent data %#v got an error: %#v", data, err)
-		}
-		out = string(bs)
-	}
-
-	if strings.HasPrefix(filePath, "~") {
-		home, err := GetUserHomeDir()
-		if err != nil {
-			return err
-		}
-		if home != "" {
-			filePath = strings.Replace(filePath, "~", home, 1)
-		}
-	}
-
-	if _, err := os.Stat(filePath); err == nil {
-		if err := os.Remove(filePath); err != nil {
-			return err
-		}
-	}
-
-	return ioutil.WriteFile(filePath, []byte(out), 422)
 }
 
 type Invoker struct {

@@ -1,23 +1,13 @@
 package alicloud
 
 import (
-	"bytes"
-	"fmt"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// Generates a hash for the set hash function used by the ID
-func dataResourceIdHash(ids []string) string {
-	var buf bytes.Buffer
-
-	for _, id := range ids {
-		buf.WriteString(fmt.Sprintf("%s-", id))
-	}
-
-	return fmt.Sprintf("%d", helper.Hashcode(buf.String()))
-}
+// dataResourceIdHash moved to package helper (DataResourceIdHash) so service
+// packages can reach it without importing the monolith.
+var dataResourceIdHash = helper.DataResourceIdHash
 
 func outputInstancesSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{

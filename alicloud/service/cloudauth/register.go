@@ -14,5 +14,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceFaceConfig,
 			},
 		},
+		SDKDataSources: []conns.SDKDataSource{
+			{
+				TypeName: "alicloud_cloudauth_face_configs",
+				Factory:  DataSourceFaceConfigs,
+			},
+		},
 	}
 }
