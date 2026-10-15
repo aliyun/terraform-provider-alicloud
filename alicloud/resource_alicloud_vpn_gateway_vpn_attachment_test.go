@@ -4003,7 +4003,14 @@ func TestUnitVpnGatewayVpnAttachmentSetHashWritableOnly(t *testing.T) {
 				default:
 					t.Fatalf("uncovered hash field type for %s", name)
 				}
-				ignored := (!field.Optional && !field.Required) || (len(path) == 0 && name == "role")
+				// local_id is user-configurable but the service backfills it once a
+				// tunnel is established, so it is excluded from set membership
+				// (like role) to keep a pure refresh from showing a tunnel as a
+				// delete+add drift. Every other writable leaf must still affect
+				// the hash, and every service-only leaf must not.
+				ignored := (!field.Optional && !field.Required) ||
+					(len(path) == 0 && name == "role") ||
+					(len(path) > 0 && path[0] == "tunnel_ike_config" && name == "local_id")
 				if (hash(old) == hash(next)) != ignored {
 					t.Fatalf("hash inclusion incorrect for %s", strings.Join(leaf, "."))
 				}
@@ -4142,6 +4149,73 @@ func vpnAttachmentStateAttrByIndex(state *terraform.InstanceState, index int, fi
 		}
 	}
 	return ""
+}
+
+// vpnAttachmentMemberCodes returns the set of TypeSet member hash codes
+// present in a flattened InstanceState. Stable codes across two states mean
+// no tunnel was detached as a delete+add during refresh.
+func vpnAttachmentMemberCodes(state *terraform.InstanceState) map[string]bool {
+	codes := map[string]bool{}
+	const prefix = "tunnel_options_specification."
+	for k := range state.Attributes {
+		if !strings.HasPrefix(k, prefix) {
+			continue
+		}
+		rest := k[len(prefix):]
+		if rest == "#" || rest == "" {
+			continue
+		}
+		if i := strings.IndexByte(rest, '.'); i >= 0 {
+			codes[rest[:i]] = true
+		} else {
+			codes[rest] = true
+		}
+	}
+	return codes
+}
+
+// A service backfill of tunnel_ike_config.local_id after the tunnel is
+// established (for example once a CEN attachment publishes the gateway
+// address) must not detach an established tunnel from its set identity. The
+// prior state records the service's placeholder ("N/A"); the next describe
+// returns the real address. Because local_id is excluded from the set hash,
+// the refresh keeps the same member instead of producing a delete+add drift.
+func TestUnitVpnGatewayVpnAttachmentSetLocalIdBackfill(t *testing.T) {
+	r := resourceAliCloudVpnGatewayVpnAttachment()
+	config := vpnAttachmentDistinctConfig()
+	stale := vpnAttachmentUnitAPI(config)
+	backfill := vpnAttachmentUnitAPI(config)
+	setLocalID := func(api map[string]interface{}, value string) {
+		tunnels := api["TunnelOptionsSpecification"].(map[string]interface{})["TunnelOptions"].([]interface{})
+		for _, raw := range tunnels {
+			tunnel := raw.(map[string]interface{})
+			if formatInt(tunnel["TunnelIndex"]) == 1 {
+				tunnel["TunnelIkeConfig"].(map[string]interface{})["LocalId"] = value
+			}
+		}
+	}
+	setLocalID(stale, "N/A")
+	setLocalID(backfill, "8.220.85.206")
+	prior := schema.TestResourceDataRaw(t, r.Schema, config)
+	prior.SetId("vco-unit-test")
+	client, _ := vpnAttachmentUnitClientResponses(t, []map[string]interface{}{stale, backfill})
+	recorded, diags := r.RefreshWithoutUpgrade(context.Background(), prior.State(), client)
+	if diags.HasError() {
+		t.Fatalf("%v", diags)
+	}
+	if got := vpnAttachmentStateAttrByIndex(recorded, 1, "tunnel_ike_config.0.local_id"); got != "N/A" {
+		t.Fatalf("stale local_id = %q, want N/A", got)
+	}
+	refreshed, diags := r.RefreshWithoutUpgrade(context.Background(), recorded, client)
+	if diags.HasError() {
+		t.Fatalf("%v", diags)
+	}
+	if got := vpnAttachmentStateAttrByIndex(refreshed, 1, "tunnel_ike_config.0.local_id"); got != "8.220.85.206" {
+		t.Fatalf("refreshed local_id = %q, want 8.220.85.206", got)
+	}
+	if !reflect.DeepEqual(vpnAttachmentMemberCodes(recorded), vpnAttachmentMemberCodes(refreshed)) {
+		t.Fatal("local_id backfill changed tunnel set membership: refresh shows delete+add drift")
+	}
 }
 
 func TestUnitVpnGatewayVpnAttachmentSetExplicitEmptyPsk(t *testing.T) {
