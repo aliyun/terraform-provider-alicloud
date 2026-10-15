@@ -86,6 +86,7 @@ The following arguments are supported:
 * `endpoint_description` - (Optional) The description of the endpoint.
 * `endpoint_type` - (Optional, ForceNew, Computed, Available since v1.212.0) The type of the endpoint. Valid values:
   - `Interface`: an interface endpoint. You can add Application Load Balancer (ALB), Classic Load Balancer (CLB), and Network Load Balancer (NLB) instances as service resources.
+  - `Reverse`: a reverse endpoint. You can add a VPC NAT gateway as a service resource. Reverse endpoints are supported only for services provided by Alibaba Cloud and ecosystem partners and cannot be self-created.
   - `GatewayLoadBalancer`: a Gateway Load Balancer endpoint. You can add a Gateway Load Balancer (GWLB) as a service resource.
 * `policy_document` - (Optional, Available since v1.223.2) RAM access policies. For more information about policy definitions, see Alibaba Cloud-access control (RAM) official guidance.
 * `protected_enabled` - (Optional, Available since v1.212.0) Specifies whether to enable user authentication. This parameter is available in Security Token Service (STS) mode. Valid values:

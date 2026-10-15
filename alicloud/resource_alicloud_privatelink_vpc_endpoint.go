@@ -69,7 +69,7 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Interface", "GatewayLoadBalancer"}, false),
+				ValidateFunc: StringInSlice([]string{"Interface", "Reverse", "GatewayLoadBalancer"}, false),
 			},
 			"policy_document": {
 				Type:     schema.TypeString,
