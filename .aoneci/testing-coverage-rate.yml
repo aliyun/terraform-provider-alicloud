@@ -4,6 +4,7 @@ triggers:
     paths:
       - '.aoneci/testing-coverage-rate.yml'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
   merge_request:
     types:
       - opened
@@ -11,6 +12,7 @@ triggers:
       - '.aoneci/testing-coverage-rate.yml'
       - '.go-version'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
 
 jobs:
   TestingCoverageRate:

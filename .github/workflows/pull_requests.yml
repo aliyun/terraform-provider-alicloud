@@ -50,7 +50,9 @@ jobs:
               .filter(({ status }) => status === "added")
               .map(({ filename }) => filename);
             const modifiedFiles = changedFiles
-              .filter(({ status }) => status === "modified")
+              .filter(
+                ({ status }) => status === "modified" || status === "renamed",
+              )
               .map(({ filename }) => filename);
 
             let failed = false;
@@ -69,6 +71,13 @@ jobs:
                 ? withoutPrefix.slice(0, -3)
                 : withoutPrefix;
             };
+            // A split-layout service path cannot yield the full resource name
+            // (alicloud_cen_* lives in service/cbn), so service sources only
+            // clear the docs-only/testcase-only states without adding title
+            // requirements; renamed files classify by their new name.
+            const isServiceSource = (filename) =>
+              filename.startsWith("alicloud/service/") &&
+              filename.endsWith(".go");
 
             if (prTitle.includes("…")) {
               reportError(
@@ -84,6 +93,11 @@ jobs:
               if (addedFile.startsWith("website/docs")) {
                 testcaseOnly = false;
                 docsChanged = true;
+                continue;
+              }
+              if (isServiceSource(addedFile)) {
+                docsOnly = false;
+                testcaseOnly = false;
                 continue;
               }
               if (addedFile.startsWith("alicloud/resource_alicloud")) {
@@ -123,6 +137,11 @@ jobs:
               if (modifiedFile.startsWith("website/docs")) {
                 testcaseOnly = false;
                 docsChanged = true;
+                continue;
+              }
+              if (isServiceSource(modifiedFile)) {
+                docsOnly = false;
+                testcaseOnly = false;
                 continue;
               }
               if (modifiedFile.startsWith("alicloud/resource_alicloud")) {

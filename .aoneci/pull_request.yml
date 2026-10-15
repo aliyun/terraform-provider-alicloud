@@ -5,12 +5,14 @@ triggers:
     paths:
       - 'website/docs/**'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
   merge_request:
     types:
       - opened
     paths:
       - 'website/docs/**'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
 
 jobs:
   title:
@@ -40,6 +42,11 @@ jobs:
             if [[ ${added_file} == "website/docs"* ]]; then
                 testcaseOnly=false
                 docsChanged=true
+                continue
+            fi
+            if [[ ${added_file} == "alicloud/service/"*".go" ]]; then
+                docsOnly=false
+                testcaseOnly=false
                 continue
             fi
             if [[ ${added_file} == "alicloud/resource_alicloud"* ]]; then
@@ -73,7 +80,9 @@ jobs:
                 continue
             fi
           done
-          modified_files=$(git diff --diff-filter=M --name-only HEAD^ HEAD)
+          # Renamed files classify by their new name, the same as the GitHub
+          # title gate; --diff-filter=MR keeps them in the modified loop.
+          modified_files=$(git diff --diff-filter=MR --name-only HEAD^ HEAD)
           for modified_file in ${modified_files[@]}; do
             if [[ ${modified_file} == *?_test.go ]]; then
                 testcaseChanged=true
@@ -82,6 +91,11 @@ jobs:
             if [[ ${modified_file} == "website/docs"* ]]; then
                 testcaseOnly=false
                 docsChanged=true
+                continue
+            fi
+            if [[ ${modified_file} == "alicloud/service/"*".go" ]]; then
+                docsOnly=false
+                testcaseOnly=false
                 continue
             fi
             if [[ ${modified_file} == "alicloud/resource_alicloud"* ]]; then

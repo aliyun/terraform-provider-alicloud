@@ -13,6 +13,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	providerregistry "github.com/aliyun/terraform-provider-alicloud/alicloud/provider/registry"
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 	set "github.com/deckarep/golang-set"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	log "github.com/sirupsen/logrus"
@@ -78,44 +79,35 @@ func main() {
 	diff, _ := diffparser.Parse(string(byt))
 	fileRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*.go")
 	fileTestRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
-	fileDocsRegex := regexp.MustCompile("website/docs/(r|d)/[0-9a-zA-Z_]*.html.markdown")
+	fileDocsRegex := regexp.MustCompile("website/docs/(r|d|ephemeral-resources|actions)/[0-9a-zA-Z_]*.html.markdown")
 	frameworkNames := frameworkRegisteredNames()
 	resourceNameMap := make(map[string]struct{})
-	for _, file := range diff.Files {
-		resourceName := ""
-		isResource := true
-		docsPath := "website/docs/r/"
-		if fileRegex.MatchString(file.NewName) {
-			if fileTestRegex.MatchString(file.NewName) {
-				continue
-			}
-			resourceName = strings.TrimPrefix(strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go"), "resource_")
-		} else if fileDocsRegex.MatchString(file.NewName) {
-			resourceName = "alicloud_" + strings.TrimSuffix(strings.Split(file.NewName, "/")[3], ".html.markdown")
-		} else {
-			continue
-		}
+	// checkName deduplicates and runs the consistency pipeline for one
+	// resource or data source touched by the diff.
+	checkName := func(resourceName string) {
 		if _, ok := resourceNameMap[resourceName]; ok {
-			continue
-		} else {
-			resourceNameMap[resourceName] = struct{}{}
+			return
 		}
+		resourceNameMap[resourceName] = struct{}{}
 
 		if _, ok := frameworkNames[resourceName]; ok {
 			log.Infof("==> %s is registered framework-native, skipping the SDKv2 schema consistency check\n\n", resourceName)
-			continue
+			return
 		}
 
 		log.Infof("==> Checking resource or data-source %s attributes consistency...", resourceName)
 		resource, ok := alicloud.Provider().ResourcesMap[resourceName]
+		isResource := true
+		docsPath := "website/docs/r/"
 		if !ok || resource == nil {
-			resourceName = strings.TrimPrefix(resourceName, "data_source_")
-			resource, ok = alicloud.Provider().DataSourcesMap[resourceName]
+			name := strings.TrimPrefix(resourceName, "data_source_")
+			resource, ok = alicloud.Provider().DataSourcesMap[name]
 			if !ok || resource == nil {
 				log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resourceName)
 				exitCode = 1
-				continue
+				return
 			}
+			resourceName = name
 			docsPath = "website/docs/d/"
 			isResource = false
 		}
@@ -123,15 +115,60 @@ func main() {
 		resourceSchemaFromDocs := make(map[string]ResourceAttribute)
 		if err := parseResourceDocs(resourceName, docsPath, isResource, resourceSchemaFromDocs); err != nil {
 			log.Errorf("parsing the resource %s docs failed. error: %s", resourceName, err)
-			continue
+			return
 		}
 
 		if consistencyCheck(resourceName, resourceSchemaFromDocs, resourceSchema) {
 			log.Infof("--- PASS!\n\n")
-			continue
+			return
 		}
 		log.Errorf("--- Failed!\n\n")
 		exitCode = 1
+	}
+	// One split stem resolves once: the implementation and its test share it.
+	splitSeen := make(map[string]bool)
+	for _, file := range diff.Files {
+		if fileRegex.MatchString(file.NewName) {
+			if fileTestRegex.MatchString(file.NewName) {
+				continue
+			}
+			checkName(strings.TrimPrefix(strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go"), "resource_"))
+		} else if fileDocsRegex.MatchString(file.NewName) {
+			checkName("alicloud_" + strings.TrimSuffix(strings.Split(file.NewName, "/")[3], ".html.markdown"))
+		} else if product, stem, _, ok := splitlayout.IsSplitSource(file.NewName); ok {
+			// The implementation and its test share the stem; the first of
+			// the pair to appear in the diff carries both paths.
+			if splitSeen[product+"/"+stem] {
+				continue
+			}
+			splitSeen[product+"/"+stem] = true
+			resolved, err := splitlayout.Resolve(product, stem)
+			if err != nil {
+				log.Warnf("fail to resolve split-layout file %s. Error: %s", file.NewName, err)
+				continue
+			}
+			// One file can register more than one resource, so check every
+			// matched registration.
+			for _, r := range resolved {
+				checkName(r.TypeName)
+			}
+			// Framework-native registrations — managed resources, data
+			// sources, ephemerals, list resources and actions — live outside
+			// the provider's SDKv2 maps, so their schema cannot be compared
+			// against the docs through this gate; said so per registration
+			// instead of passing silently.
+			fwResolved, err := splitlayout.FrameworkResolve(product, stem)
+			if err != nil {
+				log.Warnf("fail to resolve framework registrations of %s. Error: %s", file.NewName, err)
+				continue
+			}
+			for _, r := range fwResolved {
+				log.Infof("==> %s is registered framework-native (%s): the SDKv2 schema consistency check does not apply", r.TypeName, r.Kind)
+			}
+			if len(resolved) == 0 && len(fwResolved) == 0 {
+				log.Warnf("==> %s registers no resource, data source, ephemeral, action or list resource", file.NewName)
+			}
+		}
 	}
 	if exitCode > 0 {
 		os.Exit(exitCode)
@@ -146,6 +183,18 @@ func frameworkRegisteredNames() map[string]struct{} {
 			names[d.TypeName] = struct{}{}
 		}
 		for _, d := range sp.DataSources {
+			names[d.TypeName] = struct{}{}
+		}
+		// Ephemerals, list resources and actions are registered entities
+		// too: their names must be recognized, not reported as missing from
+		// the SDKv2 provider maps.
+		for _, d := range sp.EphemeralResources {
+			names[d.TypeName] = struct{}{}
+		}
+		for _, d := range sp.ListResources {
+			names[d.TypeName] = struct{}{}
+		}
+		for _, d := range sp.Actions {
 			names[d.TypeName] = struct{}{}
 		}
 	}

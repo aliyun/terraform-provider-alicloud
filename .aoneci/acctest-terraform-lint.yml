@@ -4,10 +4,12 @@ triggers:
     paths:
       - '.aoneci/acctest-terraform-lint.yml'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
   push:
     paths:
       - '.aoneci/acctest-terraform-lint.yml'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
 jobs:
   megalinter:
     name: MegaLinter
