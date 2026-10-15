@@ -220,6 +220,47 @@ func TestAccAliCloudPrivatelinkVpcEndpoint_base(t *testing.T) {
 	})
 }
 
+// Reverse endpoints are backed by services that only Alibaba Cloud and ecosystem
+// partners provide (e.g. PolarDB reverse endpoint services) and cannot be
+// self-created in a test account, so a full lifecycle ACC is not feasible here.
+// This case verifies the plan-time validation only: before the fix the
+// StringInSlice ValidateFunc rejected endpoint_type="Reverse"; after the fix
+// `terraform plan` accepts it. No resource is applied (PlanOnly).
+func TestAccAliCloudPrivatelinkVpcEndpoint_reverseEndpointType(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivatelinkService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivatelinkVpcEndpoint")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_id":         "${alicloud_privatelink_vpc_endpoint_service.default.id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"security_group_ids": []string{"${alicloud_security_group.default.id}"},
+					"vpc_endpoint_name":  name,
+					"endpoint_type":      "Reverse",
+					"depends_on":         []string{"alicloud_privatelink_vpc_endpoint_service.default"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPrivatelinkVpcEndpoint_crossRegion(t *testing.T) {
 	resourceId := "alicloud_privatelink_vpc_endpoint.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointMap)
