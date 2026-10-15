@@ -241,11 +241,16 @@ minimal-test-set:
 	go run scripts/testing/minimal_test_set_calculator.go -resource $(RESOURCE) -format $$FORMAT
 
 # Sweep test resources in a specific region
-# Usage: 
-#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc_ipam_ipam
-#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc_ipam_ipam SWEEP_ALL=1  # Delete all resources, skip prefix check
+# Usage:
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc OLDER_THAN=12h              # only delete VPCs created more than 12h ago
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc SWEEP_ALL=1                 # delete all resources, skip prefix check
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc SWEEP_ALL=1 OLDER_THAN=24h  # delete all, but protect resources newer than 24h
 # Note: For resources with dependencies (specified in Dependencies field), include them with pipe separator.
 #       Example: RESOURCE="alicloud_vpc_ipam_ipam_pool|alicloud_vpc_ipam_ipam"
+# OLDER_THAN accepts a Go duration (12h, 24h, 30m, 1h30m). When set, resources created within that
+# window are spared even if they match the name prefix — useful when several people run AccTest on
+# the same account and you only want to clean up stale leftovers.
 sweep:
 	@if [ -z "$(REGION)" ]; then \
 		echo "Error: REGION is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
@@ -256,11 +261,11 @@ sweep:
 		exit 1; \
 	fi
 	@if [ "$(SWEEP_ALL)" = "1" ]; then \
-		echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)..."; \
-		SWEEPER_SKIP_PREFIX=1 TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+		echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
+		ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	else \
-		echo "Sweeping $(RESOURCE) in region $(REGION)..."; \
-		TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+		echo "Sweeping $(RESOURCE) in region $(REGION)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
+		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	fi
 
 .PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native

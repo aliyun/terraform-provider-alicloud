@@ -101,6 +101,13 @@ func testSweepVpcs(region string) error {
 					continue
 				}
 			}
+			// Spare resources created within the ALICLOUD_SWEEP_OLDER_THAN window so
+			// concurrent AccTest runs on the same account are not cleaned up out
+			// from under each other. No-op when the env var is unset.
+			if skip, reason := sweepRecentCheck(item); skip {
+				log.Printf("[INFO] Skipping VPC %v (%v): %s", item["VpcName"], item["VpcId"], reason)
+				continue
+			}
 			vpcIds = append(vpcIds, fmt.Sprint(item["VpcId"]))
 		}
 		if len(result) < PageSizeLarge {
@@ -148,8 +155,8 @@ func listDependentResources(client *connectivity.AliyunClient, product, version,
 	request := map[string]interface{}{
 		"RegionId":   client.RegionId,
 		paramKey:     paramValue,
-		"PageSize":    PageSizeLarge,
-		"PageNumber":  1,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
 	}
 	for {
 		response, err := client.RpcPost(product, version, action, nil, request, true)
@@ -179,8 +186,8 @@ func listDependentResources(client *connectivity.AliyunClient, product, version,
 func deleteDependentResource(client *connectivity.AliyunClient, product, version, action, idField, id string) {
 	log.Printf("[INFO] Deleting %s: %s", action, id)
 	request := map[string]interface{}{
-		idField:     id,
-		"RegionId":  client.RegionId,
+		idField:    id,
+		"RegionId": client.RegionId,
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
