@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func resourceAliCloudRdsDatabase() *schema.Resource {
@@ -231,20 +230,20 @@ func resourceAliCloudRdsDatabaseDelete(d *schema.ResourceData, meta interface{})
 	// The delete retries and completion waiter share the configured timeout.
 	deadline := time.Now().Add(d.Timeout(schema.TimeoutDelete))
 	deleted := false
-	err = resource.Retry(time.Until(deadline), func() *resource.RetryError {
+	err = retry.Retry(time.Until(deadline), func() *retry.RetryError {
 		instance, parentErr := rdsService.describeRdsParentInstance(parts[0], 0)
 		if parentErr != nil {
 			if NotFoundError(parentErr) {
 				return nil
 			}
 			if isRdsRetryableQueryError(parentErr) {
-				return resource.RetryableError(parentErr)
+				return retry.RetryableError(parentErr)
 			}
-			return resource.NonRetryableError(parentErr)
+			return retry.NonRetryableError(parentErr)
 		}
 		if instance["DBInstanceStatus"] != "Running" {
 			// Deleting is in progress; only confirmed absence completes deletion.
-			return resource.RetryableError(fmt.Errorf("parent instance status is %v", instance["DBInstanceStatus"]))
+			return retry.RetryableError(fmt.Errorf("parent instance status is %v", instance["DBInstanceStatus"]))
 		}
 		response, deleteErr := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if deleteErr == nil {
@@ -261,14 +260,14 @@ func resourceAliCloudRdsDatabaseDelete(d *schema.ResourceData, meta interface{})
 				return nil
 			}
 			if confirmed != deleteErr && !isRdsRetryableQueryError(confirmed) {
-				return resource.NonRetryableError(confirmed)
+				return retry.NonRetryableError(confirmed)
 			}
-			return resource.RetryableError(confirmed)
+			return retry.RetryableError(confirmed)
 		}
 		if NeedRetry(deleteErr) {
-			return resource.RetryableError(deleteErr)
+			return retry.RetryableError(deleteErr)
 		}
-		return resource.NonRetryableError(WrapErrorf(deleteErr, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR))
+		return retry.NonRetryableError(WrapErrorf(deleteErr, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR))
 	})
 	if err != nil {
 		if !time.Now().Before(deadline) {

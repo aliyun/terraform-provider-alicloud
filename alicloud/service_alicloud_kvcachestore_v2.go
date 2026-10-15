@@ -8,7 +8,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type KvcachestoreServiceV2 struct {
@@ -29,15 +29,15 @@ func (s *KvcachestoreServiceV2) DescribeKvcachestoreKvCacheStore(id string) (obj
 	action := "GetKVCacheStore"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Kvcachestore", "2026-06-17", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -57,11 +57,11 @@ func (s *KvcachestoreServiceV2) DescribeKvcachestoreKvCacheStore(id string) (obj
 	return v.(map[string]interface{}), nil
 }
 
-func (s *KvcachestoreServiceV2) KvcachestoreKvCacheStoreStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *KvcachestoreServiceV2) KvcachestoreKvCacheStoreStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.KvcachestoreKvCacheStoreStateRefreshFuncWithApi(id, field, failStates, s.DescribeKvcachestoreKvCacheStore)
 }
 
-func (s *KvcachestoreServiceV2) KvcachestoreKvCacheStoreStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *KvcachestoreServiceV2) KvcachestoreKvCacheStoreStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

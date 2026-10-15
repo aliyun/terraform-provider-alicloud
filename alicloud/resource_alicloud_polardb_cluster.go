@@ -14,7 +14,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func resourceAlicloudPolarDBCluster() *schema.Resource {
@@ -2648,14 +2647,14 @@ func modifyPolarDBDistributedNodeClass(d *schema.ResourceData, client *connectiv
 		"ModifyType":  d.Get("modify_type").(string),
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+	err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 		response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "OperationDenied.OrderProcessing"}) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -2685,16 +2684,16 @@ func resizePolarDBDistributedNodes(d *schema.ResourceData, client *connectivity.
 		}
 		request.DBNode = &newNodes
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
 				return polardbClient.CreateDBNodes(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
@@ -2714,16 +2713,16 @@ func resizePolarDBDistributedNodes(d *schema.ResourceData, client *connectivity.
 		request.DBNodeType = dbNodeType
 		request.DBNodeId = &deleteSubGroupNames
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
 				return polardbClient.DeleteDBNodes(request)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
-					return resource.RetryableError(err)
+					return retry.RetryableError(err)
 				}
-				return resource.NonRetryableError(err)
+				return retry.NonRetryableError(err)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil

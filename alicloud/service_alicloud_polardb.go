@@ -18,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type PolarDBService struct {
@@ -741,16 +740,16 @@ func (s *PolarDBService) DescribePolarDBInstanceNetInfo(id string) ([]polardb.DB
 	request.DBClusterId = id
 	var response *polardb.DescribeDBClusterEndpointsResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.DescribeDBClusterEndpoints(request)
 		})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*polardb.DescribeDBClusterEndpointsResponse)

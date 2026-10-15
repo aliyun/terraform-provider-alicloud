@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type ApigServiceV2 struct {
@@ -1174,15 +1173,15 @@ func (s *ApigServiceV2) DescribeApigSecret(id string) (object map[string]interfa
 	action := fmt.Sprintf("/v1/secrets/%s", secretId)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
 
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
+				return retry.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return retry.NonRetryableError(err)
 		}
 		return nil
 	})
@@ -1205,11 +1204,11 @@ func (s *ApigServiceV2) DescribeApigSecret(id string) (object map[string]interfa
 	return v.(map[string]interface{}), nil
 }
 
-func (s *ApigServiceV2) ApigSecretStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigSecretStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigSecretStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigSecret)
 }
 
-func (s *ApigServiceV2) ApigSecretStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) resource.StateRefreshFunc {
+func (s *ApigServiceV2) ApigSecretStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {

@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 type VpcService struct {
@@ -1272,7 +1271,7 @@ func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(id stri
 // variant of the shared attachment refresh: when the VPC is no longer
 // associated the refresh returns a nil object, which lets WaitForState finish
 // through its resource-gone path instead of polling until the timeout.
-func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentDeleteStateRefreshFunc(id string) resource.StateRefreshFunc {
+func (s *VpcService) DescribeVpcDhcpOptionsSetAttachmentDeleteStateRefreshFunc(id string) retry.StateRefreshFunc {
 	refreshFunc := s.DescribeVpcDhcpOptionsSetAttachmentStateRefreshFunc(id, []string{})
 	return func() (interface{}, string, error) {
 		object, status, err := refreshFunc()

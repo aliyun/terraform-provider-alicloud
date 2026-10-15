@@ -5,7 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -105,7 +105,7 @@ func dataSourceAlicloudPolarDBEndpointsRead(d *schema.ResourceData, meta interfa
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		var callErr error
 		raw, callErr = client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
 			return polardbClient.DescribeDBClusterEndpoints(request)
@@ -113,9 +113,9 @@ func dataSourceAlicloudPolarDBEndpointsRead(d *schema.ResourceData, meta interfa
 		if callErr != nil {
 			if NeedRetry(callErr) {
 				wait()
-				return resource.RetryableError(callErr)
+				return retry.RetryableError(callErr)
 			}
-			return resource.NonRetryableError(callErr)
+			return retry.NonRetryableError(callErr)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
