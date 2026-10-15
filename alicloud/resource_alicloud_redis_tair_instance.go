@@ -34,6 +34,14 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"additional_bandwidth": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"additional_bandwidth_node_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"auto_renew": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -44,6 +52,10 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			},
 			"backup_id": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"bandwidth_burst": {
+				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"cluster_backup_id": {
@@ -1281,6 +1293,47 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	if d.HasChanges("bandwidth_burst", "additional_bandwidth", "additional_bandwidth_node_id") {
+		request = make(map[string]interface{})
+		query = make(map[string]interface{})
+		request["InstanceId"] = d.Id()
+		request["ChargeType"] = "PostPaid"
+		if v, ok := d.GetOkExists("bandwidth_burst"); ok {
+			request["BandWidthBurst"] = v
+		}
+		if v, ok := d.GetOk("additional_bandwidth"); ok && v.(string) != "" {
+			request["Bandwidth"] = v
+		}
+		if v, ok := d.GetOk("additional_bandwidth_node_id"); ok && v.(string) != "" {
+			request["NodeId"] = v
+		}
+		action = "EnableAdditionalBandwidth"
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		redisServiceV2 := RedisServiceV2{client}
+		instanceStatusConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		if _, err := instanceStatusConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	if d.HasChange("tags") {
