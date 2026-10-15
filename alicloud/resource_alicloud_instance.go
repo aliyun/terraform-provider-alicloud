@@ -675,7 +675,23 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ForceNew:      true,
-				ConflictsWith: []string{"spot_strategy", "spot_price_limit"},
+				ConflictsWith: []string{"spot_strategy", "spot_price_limit", "managed_host_id"},
+			},
+			"managed_host_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"dedicated_host_id"},
+				Description:   "The ID of the managed host on which to create the instance. It is only used for managed host scenarios and conflicts with dedicated_host_id.",
+			},
+			"additional_attributes": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 10,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Description: "A set of additional attributes to request when the provider queries the instance via DescribeInstances, such as DDH_CLUSTER, PRIVATE_DNS_OPTIONS or MANAGED_HOST_ID. " +
+					"Configured values are merged into the default set the provider always requests, so existing reads keep working. " +
+					"DescribeInstances accepts at most 10 items, 5 of which are taken by the defaults, so at most 5 additional values can be set here.",
 			},
 			"launch_template_name": {
 				Type:     schema.TypeString,
@@ -1248,6 +1264,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["DedicatedHostId"] = v
 	}
 
+	if v, ok := d.GetOk("managed_host_id"); ok {
+		request["ManagedHostId"] = v
+	}
+
 	if v, ok := d.GetOk("private_pool_options_match_criteria"); ok {
 		request["PrivatePoolOptions.MatchCriteria"] = v
 	}
@@ -1323,11 +1343,21 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 	return resourceAliCloudInstanceUpdate(d, meta)
 }
 
+// instanceDescribeAdditionalAttributes returns the user-configured
+// additional_attributes; an empty result makes the ECS service fall back to
+// the default attribute set.
+func instanceDescribeAdditionalAttributes(d *schema.ResourceData) []string {
+	if v, ok := d.GetOk("additional_attributes"); ok {
+		return expandStringList(v.(*schema.Set).List())
+	}
+	return nil
+}
+
 func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
-	instance, err := ecsService.DescribeInstance(d.Id())
+	instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_instance ecsService.DescribeInstance Failed!!! %s", err)
@@ -1702,7 +1732,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("private_pool_options_match_criteria", instanceAttachmentAttribute["PrivatePoolOptionsMatchCriteria"])
 	d.Set("private_pool_options_id", instanceAttachmentAttribute["PrivatePoolOptionsId"])
 
-	ecsInstanceAttribute, err := ecsService.DescribeEcsInstance(d.Id())
+	ecsInstanceAttribute, err := ecsService.DescribeEcsInstance(d.Id(), instanceDescribeAdditionalAttributes(d))
 	if err != nil {
 		return WrapError(err)
 	}
@@ -1742,6 +1772,20 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	// MetadataOptions struct, so read it from the raw response map.
 	if metadataOptions, ok := ecsInstanceAttribute["MetadataOptions"].(map[string]interface{}); ok {
 		d.Set("instance_metadata_tags", metadataOptions["InstanceMetadataTags"])
+	}
+
+	// DescribeInstances returns ManagedHostId under AdditionalInfo only when
+	// AdditionalAttributes carries the MANAGED_HOST_ID query attribute, but it is
+	// not present in the SDK AdditionalInfo struct, so read it from the raw
+	// response map. Write it back only when managed_host_id is configured: the
+	// attribute is requested only when the user configures it, and writing an
+	// absent value into this Optional+ForceNew field would plan a perpetual rebuild.
+	if _, ok := d.GetOk("managed_host_id"); ok {
+		if additionalInfo, ok := ecsInstanceAttribute["AdditionalInfo"].(map[string]interface{}); ok {
+			if managedHostId, ok := additionalInfo["ManagedHostId"].(string); ok && managedHostId != "" {
+				d.Set("managed_host_id", managedHostId)
+			}
+		}
 	}
 
 	return nil
@@ -1851,7 +1895,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if d.HasChange("system_disk_size") {
-			instance, errDesc := ecsService.DescribeInstance(d.Id())
+			instance, errDesc := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 			if errDesc != nil {
 				return WrapError(errDesc)
 			}
@@ -1981,7 +2025,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || cpuOptionsUpdate || statusUpdate {
 		run = true
-		instance, errDesc := ecsService.DescribeInstance(d.Id())
+		instance, errDesc := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 		if errDesc != nil {
 			return WrapError(errDesc)
 		}
@@ -2112,7 +2156,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if d.HasChange("secondary_private_ips") {
 		var response map[string]interface{}
-		instance, err := ecsService.DescribeInstance(d.Id())
+		instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -2188,7 +2232,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if d.HasChange("secondary_private_ip_address_count") {
 		var response map[string]interface{}
-		instance, err := ecsService.DescribeInstance(d.Id())
+		instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -2386,7 +2430,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if !d.IsNewResource() && d.HasChange("ipv6_addresses") {
 		var response map[string]interface{}
-		instance, err := ecsService.DescribeInstance(d.Id())
+		instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -2465,7 +2509,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if !d.IsNewResource() && d.HasChange("key_name") {
 		var response map[string]interface{}
-		instance, err := ecsService.DescribeInstance(d.Id())
+		instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -2725,7 +2769,18 @@ func resourceAliCloudInstanceDelete(d *schema.ResourceData, meta interface{}) er
 // resourceAliCloudInstanceCustomizeDiff turns an image_id change into a replacement when the
 // provider is configured with features.ecs_instance.replace_on_image_update. Without it, such a
 // change is applied in place by modifyInstanceImage, which the plan can only describe as an update.
+// It also rejects additional_attributes configurations whose merge with the provider defaults
+// exceeds the 10 AdditionalAttributes items DescribeInstances accepts.
 func resourceAliCloudInstanceCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+	// The provider always merges the defaults into the query, so the user budget
+	// is what remains of the 10 items DescribeInstances accepts.
+	if v, ok := diff.GetOk("additional_attributes"); ok {
+		merged := unionInstanceAdditionalAttributes(expandStringList(v.(*schema.Set).List()))
+		if len(merged) > 10 {
+			return fmt.Errorf("additional_attributes: merged with the provider defaults the request would carry %d AdditionalAttributes items %v, but DescribeInstances accepts at most 10, so at most 5 values outside the defaults can be configured", len(merged), merged)
+		}
+	}
+
 	client, ok := meta.(*connectivity.AliyunClient)
 	if !ok || client == nil || !client.Features.EcsInstance.ReplaceOnImageUpdate {
 		return nil
@@ -2796,7 +2851,7 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 		}
 		// Wait for instance charge type has been changed
 		if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-			if instance, err := ecsService.DescribeInstance(d.Id()); err != nil {
+			if instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...); err != nil {
 				return retry.NonRetryableError(err)
 			} else if instance.InstanceChargeType == chargeType {
 				return nil
@@ -2825,7 +2880,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		if !run {
 			return update, nil
 		}
-		instance, err := ecsService.DescribeInstance(d.Id())
+		instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 		if err != nil {
 			return update, WrapError(err)
 		}
@@ -2865,7 +2920,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		// Ensure instance's image has been replaced successfully.
 		timeout := DefaultTimeoutMedium
 		for {
-			instance, errDesc := ecsService.DescribeInstance(d.Id())
+			instance, errDesc := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 			if errDesc != nil {
 				return update, WrapError(errDesc)
 			}
@@ -3166,7 +3221,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 		// Ensure instance's type has been replaced successfully.
 		timeout := DefaultTimeoutMedium
 		for {
-			instance, err := ecsService.DescribeInstance(d.Id())
+			instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 
 			if err != nil {
 				return update, WrapError(err)
@@ -3314,7 +3369,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 
 		deadline := time.Now().Add(DefaultTimeout * time.Second)
 		for {
-			instance, err := ecsService.DescribeInstance(d.Id())
+			instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 			if err != nil {
 				return WrapError(err)
 			}
@@ -3338,7 +3393,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 		deadline = time.Now().Add(DefaultTimeout * time.Second)
 		if d.Get("instance_charge_type").(string) == string(PrePaid) && d.Get("internet_max_bandwidth_out").(int) > 0 {
 			for {
-				instance, err := ecsService.DescribeInstance(d.Id())
+				instance, err := ecsService.DescribeInstance(d.Id(), instanceDescribeAdditionalAttributes(d)...)
 				if err != nil {
 					return WrapError(err)
 				}
