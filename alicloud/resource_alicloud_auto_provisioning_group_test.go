@@ -38,7 +38,7 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -212,7 +212,7 @@ func TestAccAlicloudAutoProvisioningGroup_valid(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -255,4 +255,105 @@ resource "alicloud_launch_template" "template" {
   instance_type     = "ecs.sn1ne.large"
   security_group_id = "${alicloud_security_group.default.id}"
 }`, EcsInstanceCommonTestCase, name)
+}
+
+func TestAccAlicloudAutoProvisioningGroup_launchConfiguration(t *testing.T) {
+	var v ecs.AutoProvisioningGroup
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testAccapglc%d", rand)
+	resourceId := "alicloud_auto_provisioning_group.default"
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAutoProvisioningGroup")
+	rac := resourceAttrCheckInit(rc, resourceAttrInit(resourceId, map[string]string{
+		"total_target_capacity":         "2",
+		"pay_as_you_go_target_capacity": "1",
+		"spot_target_capacity":          "1",
+	}))
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAutoProvisioningGroupLaunchConfigurationConfig(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+}
+
+func testAccAutoProvisioningGroupLaunchConfigurationConfig(name string) string {
+	return fmt.Sprintf(`
+%s
+
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_auto_provisioning_group" "default" {
+  total_target_capacity         = "2"
+  pay_as_you_go_target_capacity = "1"
+  spot_target_capacity          = "1"
+
+  launch_template_config {
+    instance_type     = "ecs.sn1ne.large"
+    vswitch_id        = alicloud_vswitch.default.id
+    weighted_capacity = "1"
+    max_price         = "2"
+  }
+
+  launch_configuration {
+    image_id                      = data.alicloud_images.default.images.0.id
+    instance_name                 = "tf-testAcc-apg-instance"
+    instance_description          = "test acc instance description"
+    host_name                     = "tf-test-host"
+    credit_specification          = "Standard"
+    io_optimized                  = "optimized"
+    security_group_id             = alicloud_security_group.default.id
+    security_enhancement_strategy = "Active"
+    internet_max_bandwidth_in     = 5
+    internet_max_bandwidth_out    = 5
+    internet_charge_type          = "PayByTraffic"
+    password                      = "TestAcc1234!"
+    password_inherit              = false
+    system_disk_category          = "cloud_efficiency"
+    system_disk_size              = 40
+    system_disk_performance_level = "PL1"
+    system_disk_name              = "tf-test-sys-disk"
+    system_disk_description       = "test system disk"
+
+    system_disk {
+      encrypted = "false"
+    }
+
+    data_disk {
+      category             = "cloud_efficiency"
+      disk_name            = "tf-test-data-disk"
+      size                 = "40"
+      device               = "/dev/xvdb"
+      description          = "test data disk"
+      delete_with_instance = "true"
+      encrypted            = "false"
+      performance_level    = "PL1"
+    }
+
+    network_interface {
+      security_group_id = alicloud_security_group.default.id
+      instance_type      = "ecs.sn1ne.large"
+    }
+
+    tag {
+      key   = "test-key"
+      value = "test-value"
+    }
+  }
+}
+`, EcsInstanceCommonTestCase, name)
 }
