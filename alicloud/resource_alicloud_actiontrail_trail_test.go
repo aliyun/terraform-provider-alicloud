@@ -693,7 +693,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 
 // Test Actiontrail Trail. >>> Resource test cases, automatically generated.
 // Case Trail投递MaxCompute用例 11012
-func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
+func TestAccAliCloudActionTrailTrail_basic11012(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_trail.default"
 	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
@@ -875,7 +875,7 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudActiontrailTrail_basic11012_twin(t *testing.T) {
+func TestAccAliCloudActionTrailTrail_basic11012_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_trail.default"
 	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
@@ -985,7 +985,7 @@ func AliCloudActiontrailTrailBasicDependence11012(name string) string {
 }
 
 // Case 适配废弃字段name 11016
-func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
+func TestAccAliCloudActionTrailTrail_basic11016(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_trail.default"
 	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
@@ -1167,7 +1167,7 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudActiontrailTrail_basic11016_twin(t *testing.T) {
+func TestAccAliCloudActionTrailTrail_basic11016_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_trail.default"
 	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)

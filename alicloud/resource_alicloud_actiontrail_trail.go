@@ -85,9 +85,10 @@ func resourceAliCloudActionTrailTrail() *schema.Resource {
 				Computed: true,
 			},
 			"status": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
 			},
 			"trail_name": {
 				Type:         schema.TypeString,
