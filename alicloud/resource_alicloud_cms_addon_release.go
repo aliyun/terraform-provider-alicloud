@@ -64,8 +64,98 @@ func resourceAliCloudCmsAddonRelease() *schema.Resource {
 				Computed: true,
 			},
 			"dry_run": {
-				Type:     schema.TypeBool,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field `dry_run` has been deprecated from provider version 2.2.0.",
+			},
+			"entity_rules": {
+				Type:     schema.TypeList,
 				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"instance_ids": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"entity_types": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"region_ids": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"ip_match_rule": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"ip_field_key": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"ip_cidr": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"tags": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"op": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringInSlice([]string{"in", "notIn", "equals", "startWith", "endWith", "inAll", "notExist"}, false),
+									},
+									"tag_key": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"tag_values": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+								},
+							},
+						},
+						"field_rules": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"op": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringInSlice([]string{"in", "notIn", "equals", "startWith", "endWith", "inAll", "notExist"}, false),
+									},
+									"field_key": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"field_values": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			"env_type": {
 				Type:     schema.TypeString,
@@ -125,6 +215,96 @@ func resourceAliCloudCmsAddonReleaseCreate(d *schema.ResourceData, meta interfac
 		request["dryRun"] = v
 	}
 	request["addonName"] = d.Get("addon_name")
+	if v, ok := d.GetOk("entity_rules"); ok {
+		entityRulesMap := map[string]interface{}{}
+		for _, entityRules := range convertToInterfaceArray(v) {
+			if entityRulesArg, ok := entityRules.(map[string]interface{}); ok {
+				if resourceGroupId, ok := entityRulesArg["resource_group_id"]; ok {
+					entityRulesMap["resourceGroupId"] = resourceGroupId
+				}
+
+				if instanceIds, ok := entityRulesArg["instance_ids"]; ok {
+					entityRulesMap["instanceIds"] = convertToInterfaceArray(instanceIds)
+				}
+
+				if entityTypes, ok := entityRulesArg["entity_types"]; ok {
+					entityRulesMap["entityTypes"] = convertToInterfaceArray(entityTypes)
+				}
+
+				if regionIds, ok := entityRulesArg["region_ids"]; ok {
+					entityRulesMap["regionIds"] = convertToInterfaceArray(regionIds)
+				}
+
+				if v, ok := entityRulesArg["ip_match_rule"]; ok {
+					ipMatchRuleMap := map[string]interface{}{}
+					for _, ipMatchRule := range convertToInterfaceArray(v) {
+						if ipMatchRuleArg, ok := ipMatchRule.(map[string]interface{}); ok {
+							if ipFieldKey, ok := ipMatchRuleArg["ip_field_key"]; ok {
+								ipMatchRuleMap["ipFieldKey"] = ipFieldKey
+							}
+
+							if ipCIDR, ok := ipMatchRuleArg["ip_cidr"]; ok {
+								ipMatchRuleMap["ipCIDR"] = ipCIDR
+							}
+						}
+					}
+
+					entityRulesMap["ipMatchRule"] = ipMatchRuleMap
+				}
+
+				if v, ok := entityRulesArg["tags"]; ok {
+					tagsMaps := make([]map[string]interface{}, 0)
+					for _, tagsList := range convertToInterfaceArray(v) {
+						tagsMap := map[string]interface{}{}
+						if tagsArg, ok := tagsList.(map[string]interface{}); ok {
+							if op, ok := tagsArg["op"]; ok {
+								tagsMap["op"] = op
+							}
+
+							if tagKey, ok := tagsArg["tag_key"]; ok {
+								tagsMap["tagKey"] = tagKey
+							}
+
+							if tagValues, ok := tagsArg["tag_values"]; ok {
+								tagsMap["tagValues"] = convertToInterfaceArray(tagValues)
+							}
+						}
+
+						tagsMaps = append(tagsMaps, tagsMap)
+					}
+
+					entityRulesMap["tags"] = tagsMaps
+				}
+
+				if v, ok := entityRulesArg["field_rules"]; ok {
+					fieldRulesMaps := make([]map[string]interface{}, 0)
+					for _, fieldRulesList := range convertToInterfaceArray(v) {
+						fieldRulesMap := map[string]interface{}{}
+						if fieldRulesArg, ok := fieldRulesList.(map[string]interface{}); ok {
+							if op, ok := fieldRulesArg["op"]; ok {
+								fieldRulesMap["op"] = op
+							}
+
+							if fieldKey, ok := fieldRulesArg["field_key"]; ok {
+								fieldRulesMap["fieldKey"] = fieldKey
+							}
+
+							if fieldValues, ok := fieldRulesArg["field_values"]; ok {
+								fieldRulesMap["fieldValues"] = convertToInterfaceArray(fieldValues)
+							}
+						}
+
+						fieldRulesMaps = append(fieldRulesMaps, fieldRulesMap)
+					}
+
+					entityRulesMap["fieldRules"] = fieldRulesMaps
+				}
+			}
+		}
+
+		request["entityRules"] = entityRulesMap
+	}
+
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -176,6 +356,103 @@ func resourceAliCloudCmsAddonReleaseRead(d *schema.ResourceData, meta interface{
 	d.Set("addon_release_name", objectRaw["releaseName"])
 	d.Set("integration_policy_id", objectRaw["policyId"])
 
+	if entityRulesObj, ok := objectRaw["entityRules"]; ok {
+		if entityRulesObjMap, ok := entityRulesObj.(map[string]interface{}); ok {
+			if entityRules, ok := entityRulesObjMap["entityRules"]; ok {
+				entityRulesMaps := make([]map[string]interface{}, 0)
+				entityRulesMap := map[string]interface{}{}
+
+				if entityRulesArg, ok := entityRules.(map[string]interface{}); ok {
+					if resourceGroupId, ok := entityRulesArg["resourceGroupId"]; ok {
+						entityRulesMap["resource_group_id"] = resourceGroupId
+					}
+
+					if instanceIds, ok := entityRulesArg["instanceIds"]; ok {
+						entityRulesMap["instance_ids"] = instanceIds
+					}
+
+					if entityTypes, ok := entityRulesArg["entityTypes"]; ok {
+						entityRulesMap["entity_types"] = entityTypes
+					}
+
+					if regionIds, ok := entityRulesArg["regionIds"]; ok {
+						entityRulesMap["region_ids"] = regionIds
+					}
+
+					if ipMatchRule, ok := entityRulesArg["ipMatchRule"]; ok {
+						ipMatchRuleMaps := make([]map[string]interface{}, 0)
+						ipMatchRuleMap := map[string]interface{}{}
+						if ipMatchRuleArg, ok := ipMatchRule.(map[string]interface{}); ok {
+							if ipFieldKey, ok := ipMatchRuleArg["ipFieldKey"]; ok {
+								ipMatchRuleMap["ip_field_key"] = ipFieldKey
+							}
+
+							if ipCIDR, ok := ipMatchRuleArg["ipCIDR"]; ok {
+								ipMatchRuleMap["ip_cidr"] = ipCIDR
+							}
+						}
+
+						ipMatchRuleMaps = append(ipMatchRuleMaps, ipMatchRuleMap)
+
+						entityRulesMap["ip_match_rule"] = ipMatchRuleMaps
+					}
+
+					if v, ok := entityRulesArg["tags"]; ok {
+						tagsMaps := make([]map[string]interface{}, 0)
+						for _, tagsList := range convertToInterfaceArray(v) {
+							tagsMap := map[string]interface{}{}
+							if tagsArg, ok := tagsList.(map[string]interface{}); ok {
+								if op, ok := tagsArg["op"]; ok {
+									tagsMap["op"] = op
+								}
+
+								if tagKey, ok := tagsArg["tagKey"]; ok {
+									tagsMap["tag_key"] = tagKey
+								}
+
+								if tagValues, ok := tagsArg["tagValues"]; ok {
+									tagsMap["tag_values"] = tagValues
+								}
+							}
+
+							tagsMaps = append(tagsMaps, tagsMap)
+						}
+
+						entityRulesMap["tags"] = tagsMaps
+					}
+
+					if v, ok := entityRulesArg["fieldRules"]; ok {
+						fieldRulesMaps := make([]map[string]interface{}, 0)
+						for _, fieldRulesList := range convertToInterfaceArray(v) {
+							fieldRulesMap := map[string]interface{}{}
+							if fieldRulesArg, ok := fieldRulesList.(map[string]interface{}); ok {
+								if op, ok := fieldRulesArg["op"]; ok {
+									fieldRulesMap["op"] = op
+								}
+
+								if fieldKey, ok := fieldRulesArg["fieldKey"]; ok {
+									fieldRulesMap["field_key"] = fieldKey
+								}
+
+								if fieldValues, ok := fieldRulesArg["fieldValues"]; ok {
+									fieldRulesMap["field_values"] = fieldValues
+								}
+							}
+
+							fieldRulesMaps = append(fieldRulesMaps, fieldRulesMap)
+						}
+
+						entityRulesMap["field_rules"] = fieldRulesMaps
+					}
+				}
+
+				entityRulesMaps = append(entityRulesMaps, entityRulesMap)
+
+				d.Set("entity_rules", entityRulesMaps)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -209,6 +486,100 @@ func resourceAliCloudCmsAddonReleaseUpdate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["dryRun"] = v
 	}
+
+	if d.HasChange("entity_rules") {
+		update = true
+	}
+	if v, ok := d.GetOk("entity_rules"); ok {
+		entityRulesMap := map[string]interface{}{}
+		for _, entityRules := range convertToInterfaceArray(v) {
+			if entityRulesArg, ok := entityRules.(map[string]interface{}); ok {
+				if resourceGroupId, ok := entityRulesArg["resource_group_id"]; ok {
+					entityRulesMap["resourceGroupId"] = resourceGroupId
+				}
+
+				if instanceIds, ok := entityRulesArg["instance_ids"]; ok {
+					entityRulesMap["instanceIds"] = convertToInterfaceArray(instanceIds)
+				}
+
+				if entityTypes, ok := entityRulesArg["entity_types"]; ok {
+					entityRulesMap["entityTypes"] = convertToInterfaceArray(entityTypes)
+				}
+
+				if regionIds, ok := entityRulesArg["region_ids"]; ok {
+					entityRulesMap["regionIds"] = convertToInterfaceArray(regionIds)
+				}
+
+				if v, ok := entityRulesArg["ip_match_rule"]; ok {
+					ipMatchRuleMap := map[string]interface{}{}
+					for _, ipMatchRule := range convertToInterfaceArray(v) {
+						if ipMatchRuleArg, ok := ipMatchRule.(map[string]interface{}); ok {
+							if ipFieldKey, ok := ipMatchRuleArg["ip_field_key"]; ok {
+								ipMatchRuleMap["ipFieldKey"] = ipFieldKey
+							}
+
+							if ipCIDR, ok := ipMatchRuleArg["ip_cidr"]; ok {
+								ipMatchRuleMap["ipCIDR"] = ipCIDR
+							}
+						}
+					}
+
+					entityRulesMap["ipMatchRule"] = ipMatchRuleMap
+				}
+
+				if v, ok := entityRulesArg["tags"]; ok {
+					tagsMaps := make([]map[string]interface{}, 0)
+					for _, tagsList := range convertToInterfaceArray(v) {
+						tagsMap := map[string]interface{}{}
+						if tagsArg, ok := tagsList.(map[string]interface{}); ok {
+							if op, ok := tagsArg["op"]; ok {
+								tagsMap["op"] = op
+							}
+
+							if tagKey, ok := tagsArg["tag_key"]; ok {
+								tagsMap["tagKey"] = tagKey
+							}
+
+							if tagValues, ok := tagsArg["tag_values"]; ok {
+								tagsMap["tagValues"] = convertToInterfaceArray(tagValues)
+							}
+						}
+
+						tagsMaps = append(tagsMaps, tagsMap)
+					}
+
+					entityRulesMap["tags"] = tagsMaps
+				}
+
+				if v, ok := entityRulesArg["field_rules"]; ok {
+					fieldRulesMaps := make([]map[string]interface{}, 0)
+					for _, fieldRulesList := range convertToInterfaceArray(v) {
+						fieldRulesMap := map[string]interface{}{}
+						if fieldRulesArg, ok := fieldRulesList.(map[string]interface{}); ok {
+							if op, ok := fieldRulesArg["op"]; ok {
+								fieldRulesMap["op"] = op
+							}
+
+							if fieldKey, ok := fieldRulesArg["field_key"]; ok {
+								fieldRulesMap["fieldKey"] = fieldKey
+							}
+
+							if fieldValues, ok := fieldRulesArg["field_values"]; ok {
+								fieldRulesMap["fieldValues"] = convertToInterfaceArray(fieldValues)
+							}
+						}
+
+						fieldRulesMaps = append(fieldRulesMaps, fieldRulesMap)
+					}
+
+					entityRulesMap["fieldRules"] = fieldRulesMaps
+				}
+			}
+		}
+
+		request["entityRules"] = entityRulesMap
+	}
+
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
