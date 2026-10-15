@@ -16,181 +16,45 @@ jobs:
   title:
     name: Pull Request Title
     permissions:
-      pull-requests: read
-    runs-on: terraform-ci-policy
-    timeout-minutes: 3
+      contents: read
+    # The gate runs go-run checker code from the pull request head with no
+    # secrets, so it runs where untrusted code belongs; the route action
+    # supports opened/reopened/synchronize/ready_for_review only, and this
+    # workflow must also re-run on edited title fixes.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Checking the title info
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      - name: Check out event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          script: |
-            const pullRequest = context.payload.pull_request;
-            const pullNumber = pullRequest?.number;
-            const prTitle = pullRequest?.title;
-            if (
-              !Number.isSafeInteger(pullNumber) ||
-              pullNumber <= 0 ||
-              typeof prTitle !== "string"
-            ) {
-              throw new Error("Invalid pull request metadata.");
-            }
-
-            core.info(`PR Title: ${JSON.stringify(prTitle)}`);
-
-            const changedFiles = await github.paginate(
-              github.rest.pulls.listFiles,
-              {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pullNumber,
-                per_page: 100,
-              }
-            );
-            const addedFiles = changedFiles
-              .filter(({ status }) => status === "added")
-              .map(({ filename }) => filename);
-            const modifiedFiles = changedFiles
-              .filter(
-                ({ status }) => status === "modified" || status === "renamed",
-              )
-              .map(({ filename }) => filename);
-
-            let failed = false;
-            let docsOnly = true;
-            let testcaseOnly = true;
-            let docsChanged = false;
-            let testcaseChanged = false;
-
-            const reportError = (message) => {
-              core.error(message);
-              failed = true;
-            };
-            const resourceName = (filename, prefix) => {
-              const withoutPrefix = filename.slice(prefix.length);
-              return withoutPrefix.endsWith(".go")
-                ? withoutPrefix.slice(0, -3)
-                : withoutPrefix;
-            };
-            // A split-layout service path cannot yield the full resource name
-            // (alicloud_cen_* lives in service/cbn), so service sources only
-            // clear the docs-only/testcase-only states without adding title
-            // requirements; renamed files classify by their new name.
-            const isServiceSource = (filename) =>
-              filename.startsWith("alicloud/service/") &&
-              filename.endsWith(".go");
-
-            if (prTitle.includes("…")) {
-              reportError(
-                "The PR title should not omit important infos about added or modified files. xxx... is not recommended."
-              );
-            }
-
-            for (const addedFile of addedFiles) {
-              if (addedFile.endsWith("_test.go")) {
-                testcaseChanged = true;
-                continue;
-              }
-              if (addedFile.startsWith("website/docs")) {
-                testcaseOnly = false;
-                docsChanged = true;
-                continue;
-              }
-              if (isServiceSource(addedFile)) {
-                docsOnly = false;
-                testcaseOnly = false;
-                continue;
-              }
-              if (addedFile.startsWith("alicloud/resource_alicloud")) {
-                docsOnly = false;
-                testcaseOnly = false;
-                const titleStr = `New Resource: ${resourceName(
-                  addedFile,
-                  "alicloud/resource_"
-                )}`;
-                if (!prTitle.includes(titleStr)) {
-                  reportError(
-                    `The PR title should contains new resource info ${titleStr}`
-                  );
-                }
-                continue;
-              }
-              if (addedFile.startsWith("alicloud/data_source_alicloud")) {
-                docsOnly = false;
-                testcaseOnly = false;
-                const titleStr = `New Data Source: ${resourceName(
-                  addedFile,
-                  "alicloud/data_source_"
-                )}`;
-                if (!prTitle.includes(titleStr)) {
-                  reportError(
-                    `The PR title should contains new datasource info ${titleStr}`
-                  );
-                }
-              }
-            }
-
-            for (const modifiedFile of modifiedFiles) {
-              if (modifiedFile.endsWith("_test.go")) {
-                testcaseChanged = true;
-                continue;
-              }
-              if (modifiedFile.startsWith("website/docs")) {
-                testcaseOnly = false;
-                docsChanged = true;
-                continue;
-              }
-              if (isServiceSource(modifiedFile)) {
-                docsOnly = false;
-                testcaseOnly = false;
-                continue;
-              }
-              if (modifiedFile.startsWith("alicloud/resource_alicloud")) {
-                docsOnly = false;
-                testcaseOnly = false;
-                const titleStr = `resource/${resourceName(
-                  modifiedFile,
-                  "alicloud/resource_"
-                )}: `;
-                if (!prTitle.includes(titleStr)) {
-                  reportError(
-                    `The PR title should contains modified info like ${titleStr}xxx`
-                  );
-                }
-              }
-              if (modifiedFile.startsWith("alicloud/data_source_alicloud")) {
-                docsOnly = false;
-                testcaseOnly = false;
-                const titleStr = `data-source/${resourceName(
-                  modifiedFile,
-                  "alicloud/data_source_"
-                )}: `;
-                if (!prTitle.includes(titleStr)) {
-                  reportError(
-                    `The PR title should contains modified info like ${titleStr}xxx`
-                  );
-                }
-              }
-            }
-
-            if (docsChanged && docsOnly) {
-              const titleStr = "docs: ";
-              if (!prTitle.startsWith(titleStr)) {
-                reportError(
-                  `The PR title should contains docs modified info like ${titleStr}xxx`
-                );
-              }
-            } else if (testcaseChanged && testcaseOnly) {
-              const titleStr = "testcase: ";
-              if (!prTitle.includes(titleStr)) {
-                reportError(
-                  `The PR title should contains testcase modified info like ${titleStr}xxx`
-                );
-              }
-            }
-
-            if (failed) {
-              core.setFailed("Pull request title validation failed.");
-            }
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Checking the title info
+        # The title entries are derived from the provider.go registration
+        # join, not from flat filenames: a shared plumbing file implements
+        # no registered entity and demands nothing, and a file registered
+        # under a different TypeName demands its registered name.
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
+          go run scripts/title/title_check.go -fileNames="diff.out" -title="$PR_TITLE"
 
   commits:
     name: Pull Request Max Commits
