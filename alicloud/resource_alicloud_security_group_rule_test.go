@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -953,7 +954,7 @@ variable "name" {
 }
 
 variable "cidr_ip_list" {
-  type    = "list"
+  type    = list(string)
   default = [%s]
 }
 
@@ -1228,4 +1229,28 @@ resource "alicloud_security_group_rule" "egress" {
   description                = "tf-testAccSGRSrcOwnerCrossEgress"
 }
 `, resourceName, resourceName, peerSecurityGroupID, peerAccountID, peerSecurityGroupID, peerAccountID, peerAccountID)
+}
+
+func TestUnitECSSecurityGroupRuleInvalidImportID(t *testing.T) {
+	d := schema.TestResourceDataRaw(t, resourceAliyunSecurityGroupRule().Schema, map[string]interface{}{})
+	// Reading a malformed ID must return a format error instead of panicking
+	// with an index-out-of-range crash (#4888).
+	for _, id := range []string{
+		"sgr-wz94ntdd0kr6ns3m6hgy",
+		"sg-bp11r3e0h88zlzt7n9y7_ingress_icmp_1_65535_0.0.0.0/0",
+		"sg-12345678:ingress",
+		"sg-12345678:ingress:tcp:80/80:internet:10.0.0.0/8:accept:1:extra",
+	} {
+		d.SetId(id)
+		err := resourceAliyunSecurityGroupRuleRead(d, nil)
+		if err == nil || !strings.Contains(err.Error(), "Expected ID in format") {
+			t.Fatalf("expected a format error for malformed rule ID %q, got %v", id, err)
+		}
+	}
+
+	// A legacy six-part ID must parse to an empty value instead of panicking.
+	d.SetId("sg-12345678:ingress:tcp:80/80:internet:0.0.0.0/0")
+	if v := parseSecurityRuleId(d, nil, 6); v != "" {
+		t.Fatalf("expected empty policy for a six-part ID, got %q", v)
+	}
 }

@@ -290,9 +290,16 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{}) error {
+	// A malformed ID (e.g. a wrong-format `terraform import` argument) must
+	// fail with a readable error instead of panicking on parts[1] below.
+	// Six-part IDs come from states written by legacy provider versions and
+	// are completed with policy and priority below.
+	parts := strings.Split(d.Id(), ":")
+	if len(parts) != 8 && len(parts) != 6 {
+		return WrapError(fmt.Errorf("Invalid security group rule ID %s. Expected ID in format <security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<cidr_ip>:<policy>:<priority>, e.g. sg-12345678:ingress:tcp:80/80:internet:10.0.0.0/8:accept:1. If the rule uses ipv6_cidr_ip, replace ':' with '_' in the IPv6 address", d.Id()))
+	}
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-	parts := strings.Split(d.Id(), ":")
 	policy := parseSecurityRuleId(d, meta, 6)
 	strPriority := parseSecurityRuleId(d, meta, 7)
 	var priority int
@@ -583,5 +590,10 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 
 func parseSecurityRuleId(d *schema.ResourceData, meta interface{}, index int) (result string) {
 	parts := strings.Split(d.Id(), ":")
+	if index >= len(parts) {
+		// Legacy IDs written by old provider versions have fewer parts; the
+		// caller falls back to the values stored in the state.
+		return ""
+	}
 	return parts[index]
 }
