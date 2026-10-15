@@ -9,7 +9,7 @@ PARALLEL ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4
 tools:
 	@echo "==> installing required tooling..."
 	go install golang.org/x/tools/cmd/goimports@latest
-	go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@latest
+	go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH || $$GOPATH)/bin v2.12.2
 
 default: build
@@ -34,6 +34,9 @@ goimports: tools
 
 # Test a specific resource with debug logs
 # Usage: make test-resource-debug RESOURCE=alicloud_vpc TESTCASE=basic LOGLEVEL=TRACE LOGFILE=vpc-test.log
+# Flat-layout resources run against ./alicloud; split-layout resources
+# (alicloud/service/<product>/) are discovered from the service package and
+# run in their own subpackage.
 test-resource-debug:
 	@if [ -z "$(RESOURCE)" ]; then \
 		echo "Error: RESOURCE is required. Usage: make test-resource-debug RESOURCE=alicloud_vpc"; \
@@ -42,16 +45,30 @@ test-resource-debug:
 	@RESOURCE_NAME=$$(echo "$(RESOURCE)" | sed 's/^alicloud_//'); \
 	TEST_FILE="alicloud/resource_alicloud_$${RESOURCE_NAME}_test.go"; \
 	TEST_TYPE="resource"; \
+	TEST_PKG="./alicloud"; \
 	if [ ! -f "$$TEST_FILE" ]; then \
 		TEST_FILE="alicloud/data_source_alicloud_$${RESOURCE_NAME}_test.go"; \
 		TEST_TYPE="data_source"; \
-		if [ ! -f "$$TEST_FILE" ]; then \
-			echo "Error: Test file not found for resource $(RESOURCE)"; \
-			echo "Tried: resource_alicloud_$${RESOURCE_NAME}_test.go and data_source_alicloud_$${RESOURCE_NAME}_test.go"; \
-			exit 1; \
-		fi; \
 	fi; \
-	echo "Found test file: $$TEST_FILE ($$TEST_TYPE)"; \
+	if [ ! -f "$$TEST_FILE" ]; then \
+		for f in alicloud/service/*/resource_*_test.go alicloud/service/*/data_source_*_test.go; do \
+			[ -f "$$f" ] || continue; \
+			d=$$(basename $$(dirname "$$f")); \
+			b=$$(basename "$$f" _test.go); b=$${b#resource_}; b=$${b#data_source_}; \
+			if [ "alicloud_$${d}_$${b}" = "$(RESOURCE)" ]; then \
+				TEST_FILE="$$f"; \
+				TEST_TYPE="split"; \
+				TEST_PKG="./alicloud/service/$${d}"; \
+				break; \
+			fi; \
+		done; \
+	fi; \
+	if [ ! -f "$$TEST_FILE" ]; then \
+		echo "Error: Test file not found for resource $(RESOURCE)"; \
+		echo "Tried alicloud/resource_alicloud_$${RESOURCE_NAME}_test.go, alicloud/data_source_alicloud_$${RESOURCE_NAME}_test.go and alicloud/service/*/{resource,data_source}_$${RESOURCE_NAME}_test.go"; \
+		exit 1; \
+	fi; \
+	echo "Found test file: $$TEST_FILE ($$TEST_TYPE, package $$TEST_PKG)"; \
 	LOGLEVEL=$${LOGLEVEL:-DEBUG}; \
 	LOGFILE_BASE="$(LOGFILE)"; \
 	PROJECT_ROOT=$$(pwd); \
@@ -101,7 +118,7 @@ test-resource-debug:
 		if [ -n "$$LOGFILE_BASE" ]; then \
 			TEST_API_LOG="$${PROJECT_ROOT}/$${LOGFILE_BASE}-$${TEST_NAME}-api.log"; \
 			TEST_CONSOLE_LOG="$${PROJECT_ROOT}/$${LOGFILE_BASE}-$${TEST_NAME}-console.log"; \
-			if TF_LOG=$$LOGLEVEL TF_LOG_PATH=$$TEST_API_LOG TF_ACC=1 go test -v ./alicloud -run="^$$TEST_NAME\$$" -timeout 360m 2>&1 | tee $$TEST_CONSOLE_LOG; then \
+			if TF_LOG=$$LOGLEVEL TF_LOG_PATH=$$TEST_API_LOG TF_ACC=1 go test -v $$TEST_PKG -run="^$$TEST_NAME\$$" -timeout 360m 2>&1 | tee $$TEST_CONSOLE_LOG; then \
 				echo "✓ PASSED: $$TEST_NAME"; \
 				echo "  API logs: $$TEST_API_LOG"; \
 				echo "  Console logs: $$TEST_CONSOLE_LOG"; \
@@ -112,7 +129,7 @@ test-resource-debug:
 				FAILED_TESTS="$$FAILED_TESTS$$TEST_NAME\n"; \
 			fi; \
 		else \
-			if TF_LOG=$$LOGLEVEL TF_ACC=1 go test -v ./alicloud -run="^$$TEST_NAME\$$" -timeout 360m; then \
+			if TF_LOG=$$LOGLEVEL TF_ACC=1 go test -v $$TEST_PKG -run="^$$TEST_NAME\$$" -timeout 360m; then \
 				echo "✓ PASSED: $$TEST_NAME"; \
 			else \
 				echo "✗ FAILED: $$TEST_NAME"; \
@@ -185,22 +202,14 @@ ci-check: fmtcheck
 	@OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
 	if [ "$(SKIP_BUILD)" != "1" ]; then \
 	    if [ "$$OS" = "darwin" ]; then \
-	        $(MAKE) mac; \
-	        cd bin && tar -xzf terraform-provider-alicloud_darwin-amd64.tgz 2>/dev/null || true; \
-	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
+	        $(MAKE) native; \
 	    elif [ "$$OS" = "linux" ]; then \
 	        $(MAKE) linux; \
-	        cd bin && tar -xzf terraform-provider-alicloud_linux-amd64.tgz 2>/dev/null || true; \
-	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
 	    elif echo "$$OS" | grep -q "mingw\|msys\|cygwin"; then \
 	        $(MAKE) windows; \
-	        cd bin && tar -xzf terraform-provider-alicloud_windows-amd64.tgz 2>/dev/null || true; \
-	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud.exe . && rmdir bin; fi; \
 	    else \
 	        echo "Unknown OS: $$OS, building for linux as fallback"; \
 	        $(MAKE) linux; \
-	        cd bin && tar -xzf terraform-provider-alicloud_linux-amd64.tgz 2>/dev/null || true; \
-	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
 	    fi; \
 	fi
 	@CI_CHECK_FLAGS="--skip-build"; \
@@ -254,7 +263,7 @@ sweep:
 		TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	fi
 
-.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep
+.PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native
 
 all: mac windows linux
 
@@ -274,6 +283,12 @@ mac:
 	GOOS=darwin GOARCH=amd64 go build -o bin/terraform-provider-alicloud
 	tar czvf bin/terraform-provider-alicloud_darwin-amd64.tgz bin/terraform-provider-alicloud
 	rm -rf bin/terraform-provider-alicloud
+
+# Build for the host platform and architecture, named the way
+# scripts/local-example-check.sh discovers binaries
+# (terraform-provider-alicloud_<os>-<arch>), for local checks
+native:
+	GOOS= GOARCH= go build -o bin/terraform-provider-alicloud_$$(go env GOOS)-$$(go env GOARCH)
 
 windowscopy:
 	tar -xvf bin/terraform-provider-alicloud_windows-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)
