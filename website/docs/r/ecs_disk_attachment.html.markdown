@@ -108,6 +108,7 @@ The following arguments are supported:
 * `disk_id` - (Required, ForceNew) ID of the Disk to be attached.
 * `delete_with_instance` - (Optional) Indicates whether the disk is released together with the instance. Default to: `false`.
 * `bootable` - (Optional, ForceNew) Whether to mount as a system disk. Default to: `false`.
+* `force` - (Optional, ForceNew) Whether to perform a forced attach. Default to: `false`. Currently, only ESSD regional redundant disks (`cloud_regional_disk_auto`) support setting this field to `true`.
 * `key_pair_name` - (Optional, ForceNew) The name of key pair
 * `password` - (Optional, ForceNew) When mounting the system disk, setting the user name and password of the instance is only effective for the administrator and root user names, and other user names are not effective.
 

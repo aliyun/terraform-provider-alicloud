@@ -44,6 +44,12 @@ func resourceAlicloudEcsDiskAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: true,
+			},
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -67,26 +73,8 @@ func resourceAlicloudEcsDiskAttachmentCreate(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "AttachDisk"
-	request := make(map[string]interface{})
+	request := buildAttachDiskRequest(d)
 	var err error
-	if v, ok := d.GetOkExists("bootable"); ok {
-		request["Bootable"] = v
-	}
-
-	if v, ok := d.GetOkExists("delete_with_instance"); ok {
-		request["DeleteWithInstance"] = v
-	}
-
-	request["DiskId"] = d.Get("disk_id")
-	request["InstanceId"] = d.Get("instance_id")
-	if v, ok := d.GetOk("key_pair_name"); ok {
-		request["KeyPairName"] = v
-	}
-
-	if v, ok := d.GetOk("password"); ok {
-		request["Password"] = v
-	}
-
 	ecsService := EcsService{client}
 	oldDisk, err := ecsService.DescribeEcsDisk(d.Get("disk_id").(string))
 	if err != nil {
@@ -160,11 +148,49 @@ func resourceAlicloudEcsDiskAttachmentRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
+	setEcsDiskAttachmentReadState(d, disk)
+
+	return nil
+}
+
+// setEcsDiskAttachmentReadState writes the disk-attachment attributes that are
+// readable from DescribeDisks back into state. force is intentionally NOT set
+// here: it is a create-only argument of AttachDisk (only effective for ESSD
+// cloud_regional_disk_auto disks) and is never returned by DescribeDisks, so it
+// is not refreshed. import and a no-op refresh therefore keep force at its
+// configured/default value instead of drifting.
+func setEcsDiskAttachmentReadState(d *schema.ResourceData, disk map[string]interface{}) {
 	d.Set("instance_id", disk["InstanceId"])
 	d.Set("disk_id", disk["DiskId"])
 	d.Set("device", disk["Device"])
+}
 
-	return nil
+// buildAttachDiskRequest constructs the AttachDisk request body from the
+// resource schema. force is only included when it is explicitly set in the
+// configuration: omitting it leaves the request without a Force key, which
+// matches the OpenAPI contract (AttachDisk Force: Boolean/Optional, default
+// false). An explicit false still sends Force=false, which is semantically
+// equivalent to the API default.
+func buildAttachDiskRequest(d *schema.ResourceData) map[string]interface{} {
+	request := make(map[string]interface{})
+	if v, ok := d.GetOkExists("bootable"); ok {
+		request["Bootable"] = v
+	}
+	if v, ok := d.GetOkExists("delete_with_instance"); ok {
+		request["DeleteWithInstance"] = v
+	}
+	if v, ok := d.GetOkExists("force"); ok {
+		request["Force"] = v
+	}
+	request["DiskId"] = d.Get("disk_id")
+	request["InstanceId"] = d.Get("instance_id")
+	if v, ok := d.GetOk("key_pair_name"); ok {
+		request["KeyPairName"] = v
+	}
+	if v, ok := d.GetOk("password"); ok {
+		request["Password"] = v
+	}
+	return request
 }
 func resourceAlicloudEcsDiskAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
