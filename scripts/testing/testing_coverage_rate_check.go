@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/flatlayout"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -61,6 +62,15 @@ func main() {
 
 	byt, _ := os.ReadFile(*fileNames)
 	diff, _ := diffparser.Parse(string(byt))
+	// The provider.go map literals are the only flat registration source;
+	// the constructor → registration table is shared by every flat file
+	// in the diff.
+	providerSrc, err := os.ReadFile("alicloud/provider.go")
+	if err != nil {
+		log.Errorf("read alicloud/provider.go failed. Error: %s", err)
+		os.Exit(1)
+	}
+	flatRegistrations := flatlayout.ProviderRegistrations(providerSrc)
 	resourceNameMap := make(map[string]struct{})
 	// checkCandidate deduplicates and checks one resource touched by the diff.
 	// An empty testPath or implPath keeps the flat-layout default paths inside
@@ -82,10 +92,55 @@ func main() {
 		resName := ""
 		isResource := true
 		fileType := "resource"
-		if resourceFileTestRegex.MatchString(file.NewName) {
-			resName = strings.TrimSuffix(strings.Split(file.NewName, "/")[1], "_test.go")
-		} else if resourceFileRegex.MatchString(file.NewName) {
-			resName = strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go")
+		if resourceFileTestRegex.MatchString(file.NewName) || resourceFileRegex.MatchString(file.NewName) {
+			// The flat filename is not a reliable entity name: shared
+			// plumbing files declare no constructor, and stock files can
+			// declare constructors registered under a different TypeName.
+			// Join the file's declared constructors to the provider.go
+			// registrations and check the real entities; a test file
+			// joins through its implementation sibling.
+			implPath := file.NewName
+			if strings.HasSuffix(implPath, "_test.go") {
+				implPath = flatlayout.ImplPathOf(implPath)
+			}
+			joined, err := flatlayout.JoinWith(implPath, flatRegistrations)
+			if err == nil {
+				if len(joined.Registrations) > 0 {
+					for _, r := range joined.Registrations {
+						rFileType := "resource"
+						if r.DataSource {
+							rFileType = "data source"
+						}
+						checkCandidate(strings.TrimPrefix(r.TypeName, "alicloud_"), !r.DataSource, rFileType,
+							strings.TrimSuffix(implPath, ".go")+"_test.go", implPath)
+					}
+					continue
+				}
+				// No provider.go entry calls the declared constructors.
+				// A NEWLY ADDED file declaring them means the registration
+				// is missing; a modified one is stock (legacy V0 helper or
+				// dead code) and is skipped untouched.
+				if len(joined.Unregistered) > 0 {
+					if file.Mode == diffparser.NEW {
+						log.Errorf("flat source file %s declares %v but no provider.go entry registers it", implPath, joined.Unregistered)
+						exitCode = 1
+					} else {
+						log.Infof("==> %s declares %v but no provider.go entry registers it; nothing to check", implPath, joined.Unregistered)
+					}
+					continue
+				}
+				log.Infof("==> %s declares no resource or data source constructor (shared source file); nothing to check", implPath)
+				continue
+			}
+			// The implementation file is gone (e.g. the entity moved to
+			// the split layout): fall back to the filename derivation,
+			// which the provider runtime maps still resolve.
+			log.Warnf("fail to join flat-layout file %s to its registrations, falling back to the filename-derived name. Error: %s", file.NewName, err)
+			if resourceFileTestRegex.MatchString(file.NewName) {
+				resName = strings.TrimSuffix(strings.Split(file.NewName, "/")[1], "_test.go")
+			} else {
+				resName = strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go")
+			}
 		} else if product, stem, _, ok := splitlayout.IsSplitSource(file.NewName); ok {
 			// The implementation and its test share the stem; the first of
 			// the pair to appear in the diff carries both paths.
