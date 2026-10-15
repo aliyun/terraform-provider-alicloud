@@ -102,8 +102,39 @@ resource "alicloud_polardb_gateway_model_api" "dependency" {
 `
 }
 
+func resourcePolarDBGatewayAICostRuleResourceDependence(name string) string {
+	return resourcePolarDBGatewayAIModelServiceDependence(name) + `
+resource "alicloud_polardb_gateway_model_service" "dependency_updated" {
+  gateway_id     = alicloud_polardb_gateway.dependency.id
+  name           = "${var.name}-service-updated"
+  model_category = "text"
+  protocol       = "openai"
+  base_url       = "https://example.com/openai/v1"
+  api_key        = "tf-acc-placeholder"
+  vendor         = "custom"
+}
+`
+}
+
+func resourcePolarDBGatewayAICostRuleDependence(name string) string {
+	return resourcePolarDBGatewayAICostRuleResourceDependence(name) + `
+resource "alicloud_polardb_gateway_cost_rule" "dependency" {
+  gateway_id                     = alicloud_polardb_gateway.dependency.id
+  model_name                     = "tf-acc-model"
+  model_service_id               = alicloud_polardb_gateway_model_service.dependency.model_service_id
+  input_cost_points_per_million  = "10"
+  output_cost_points_per_million = "20"
+  cache_cost_points_per_million  = "2"
+}
+`
+}
+
 func testAccPreCheckPolarDBGatewayAI(t *testing.T) {
 	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Beijing})
+}
+
+func testAccCheckPolarDBGatewayCostRuleDestroy(s *terraform.State) error {
+	return testAccCheckPolarDBGatewayAIChildDestroy(s, "alicloud_polardb_gateway_cost_rule", "DescribeCostRules", "", "CostRuleId")
 }
 
 func testAccCheckPolarDBGatewayModelAPIDestroy(s *terraform.State) error {
@@ -264,5 +295,11 @@ func TestUnitPolarDBGatewayAIResourceSchemas(t *testing.T) {
 	}
 	if !resourceAlicloudPolarDBGatewayModelService().Schema["name"].ForceNew {
 		t.Fatal("model service name must be ForceNew because ModifyModelService cannot change it")
+	}
+	if !resourceAlicloudPolarDBGatewayCostRule().Schema["model_name"].ForceNew {
+		t.Fatal("cost rule model_name must be ForceNew because ModifyCostRule does not change it")
+	}
+	if !resourceAlicloudPolarDBGatewayCostRule().Schema["model_service_id"].ForceNew {
+		t.Fatal("cost rule model_service_id must be ForceNew because ModifyCostRule retains it")
 	}
 }
