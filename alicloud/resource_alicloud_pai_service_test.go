@@ -26,9 +26,9 @@ func TestAccAliCloudPaiService_basic7678_modified(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -117,6 +117,7 @@ func TestAccAliCloudPaiService_basic7678_modified(t *testing.T) {
 var AlicloudPaiServiceMap7678_modified = map[string]string{
 	"create_time": CHECKSET,
 	"region_id":   CHECKSET,
+	"service_uid": CHECKSET,
 }
 
 func AlicloudPaiServiceBasicDependence7678_modified(name string) string {
@@ -174,9 +175,9 @@ func TestAccAliCloudPaiService_basic3213(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -223,6 +224,7 @@ func TestAccAliCloudPaiService_basic3213(t *testing.T) {
 var AlicloudPaiServiceMap3213 = map[string]string{
 	"create_time": CHECKSET,
 	"region_id":   CHECKSET,
+	"service_uid": CHECKSET,
 }
 
 func AlicloudPaiServiceBasicDependence3213(name string) string {

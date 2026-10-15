@@ -48,11 +48,11 @@ resource "alicloud_pai_service" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `develop` - (Optional) Whether to enter the development mode.
-* `service_config` - (Required, JsonString) Service configuration information. Please refer to https://www.alibabacloud.com/help/en/pai/user-guide/parameters-of-model-services
+* `develop` - (Optional) Specifies whether to enter development mode. Valid values: `true`, `false`.
+* `service_config` - (Required, JsonString) Service configuration information. Please refer to [Parameters of Model Services](https://www.alibabacloud.com/help/en/pai/user-guide/parameters-of-model-services).
 * `status` - (Optional, Computed) Service Current Status.
-* `tags` - (Optional, Map, Available since v1.245.0) The tag of the resource.
-* `workspace_id` - (Optional) Workspace id
+* `tags` - (Optional, Map, Available since v1.245.0) The custom label.
+* `workspace_id` - (Optional) The workspace ID.
 
 ## Attributes Reference
 
@@ -60,6 +60,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time of the service
 * `region_id` - The region ID of the resource
+* `service_uid` - (Available since v2.1.0) Unique Service ID
 
 ## Timeouts
 
