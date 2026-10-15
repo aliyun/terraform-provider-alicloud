@@ -28,16 +28,21 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
+			// Regression for QA F-1: an empty labels block used to reach Apply with a
+			// nil element and panic the Create path. The nil-element guard now skips
+			// it, labels.key stays Optional (no required/non-empty validation), and
+			// the create must succeed without sending an empty Labels payload.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"accessibility":   "PRIVATE",
 					"artifact_uri":    "oss://yyt-409262.oss-cn-hangzhou.aliyuncs.com/test/",
 					"experiment_name": name,
 					"workspace_id":    "${alicloud_pai_workspace_workspace.defaultDI9fsL.id}",
+					"labels":          []map[string]interface{}{{}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -52,11 +57,139 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"accessibility":   "PUBLIC",
 					"experiment_name": name + "_update",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "env",
+							"value": "prod",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"accessibility":   "PUBLIC",
 						"experiment_name": name + "_update",
+						"labels.#":        "1",
+						"labels.0.key":    "env",
+						"labels.0.value":  "prod",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "alpha",
+							"value": "one",
+						},
+						{
+							"key":   "beta",
+							"value": "two",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessibility":   "PUBLIC",
+						"experiment_name": name + "_update",
+						"labels.#":        "2",
+						"labels.0.key":    REMOVEKEY,
+						"labels.0.value":  REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "beta",
+							"value": "two",
+						},
+						{
+							"key":   "alpha",
+							"value": "one",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "beta",
+							"value": "two",
+						},
+						{
+							"key":   "alpha",
+							"value": "one",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessibility":   "PUBLIC",
+						"experiment_name": name + "_update",
+						"labels.#":        "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels":          REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessibility":   "PUBLIC",
+						"experiment_name": name + "_update",
+						"labels.#":        "0",
+					}),
+				),
+			},
+			// Regression for QA F-2: the delete-label request path must encode the key,
+			// otherwise a key like "team#component" truncates the URL at the fragment.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels": []map[string]interface{}{
+						{
+							"key":   "team#component",
+							"value": "ops",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessibility":   "PUBLIC",
+						"experiment_name": name + "_update",
+						"labels.#":        "1",
+						"labels.0.key":    "team#component",
+						"labels.0.value":  "ops",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":   "PUBLIC",
+					"experiment_name": name + "_update",
+					"labels":          REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accessibility":   "PUBLIC",
+						"experiment_name": name + "_update",
+						"labels.#":        "0",
+						"labels.0.key":    REMOVEKEY,
+						"labels.0.value":  REMOVEKEY,
 					}),
 				),
 			},
@@ -109,9 +242,9 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic6043(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

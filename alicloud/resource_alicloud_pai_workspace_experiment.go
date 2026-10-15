@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"regexp"
 	"time"
 
@@ -46,6 +47,22 @@ func resourceAliCloudPaiWorkspaceExperiment() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"labels": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"workspace_id": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -74,6 +91,22 @@ func resourceAliCloudPaiWorkspaceExperimentCreate(d *schema.ResourceData, meta i
 		request["Accessibility"] = v
 	}
 	request["Name"] = d.Get("experiment_name")
+	if v, ok := d.GetOk("labels"); ok {
+		labelsMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.([]interface{}) {
+			dataLoopTmp, ok := dataLoop.(map[string]interface{})
+			if !ok || dataLoopTmp["key"] == nil {
+				continue
+			}
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["Key"] = dataLoopTmp["key"]
+			dataLoopMap["Value"] = dataLoopTmp["value"]
+			labelsMapsArray = append(labelsMapsArray, dataLoopMap)
+		}
+		if len(labelsMapsArray) > 0 {
+			request["Labels"] = labelsMapsArray
+		}
+	}
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -128,6 +161,23 @@ func resourceAliCloudPaiWorkspaceExperimentRead(d *schema.ResourceData, meta int
 		d.Set("workspace_id", objectRaw["WorkspaceId"])
 	}
 
+	labels1Raw := objectRaw["Labels"]
+	labelsMaps := make([]map[string]interface{}, 0)
+	if labels1Raw != nil {
+		for _, labelsChild1Raw := range labels1Raw.([]interface{}) {
+			labelsMap := make(map[string]interface{})
+			labelsChild1Raw := labelsChild1Raw.(map[string]interface{})
+			labelsMap["key"] = labelsChild1Raw["Key"]
+			labelsMap["value"] = labelsChild1Raw["Value"]
+			labelsMaps = append(labelsMaps, labelsMap)
+		}
+	}
+	if objectRaw["Labels"] != nil {
+		if err := d.Set("labels", labelsMaps); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -174,6 +224,90 @@ func resourceAliCloudPaiWorkspaceExperimentUpdate(d *schema.ResourceData, meta i
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("labels") {
+		oldEntry, newEntry := d.GetChange("labels")
+		removed := oldEntry
+		added := newEntry
+
+		if len(removed.([]interface{})) > 0 {
+			ExperimentId := d.Id()
+			localData := removed.([]interface{})
+			for _, dataLoop := range localData {
+				dataLoopTmp, ok := dataLoop.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				key, ok := dataLoopTmp["key"].(string)
+				if !ok || key == "" {
+					continue
+				}
+				action := fmt.Sprintf("/api/v1/experiments/%s/labels/%s", ExperimentId, url.PathEscape(key))
+				request = make(map[string]interface{})
+				query = make(map[string]*string)
+				body = make(map[string]interface{})
+				request["ExperimentId"] = d.Id()
+				request["Key"] = key
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RoaDelete("AIWorkSpace", "2021-02-04", action, query, nil, nil, true)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+
+		if len(added.([]interface{})) > 0 {
+			ExperimentId := d.Id()
+			action := fmt.Sprintf("/api/v1/experiments/%s/labels", ExperimentId)
+			request = make(map[string]interface{})
+			query = make(map[string]*string)
+			body = make(map[string]interface{})
+			request["ExperimentId"] = d.Id()
+			localData := added.([]interface{})
+			labelsMapsArray := make([]interface{}, 0)
+			for _, dataLoop := range localData {
+				dataLoopTmp, ok := dataLoop.(map[string]interface{})
+				if !ok || dataLoopTmp["key"] == nil {
+					continue
+				}
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["Key"] = dataLoopTmp["key"]
+				dataLoopMap["Value"] = dataLoopTmp["value"]
+				labelsMapsArray = append(labelsMapsArray, dataLoopMap)
+			}
+			if len(labelsMapsArray) > 0 {
+				request["Labels"] = labelsMapsArray
+				body = request
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
 		}
 	}
 
