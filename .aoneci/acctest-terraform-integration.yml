@@ -27,6 +27,10 @@ jobs:
           # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
           diffFiles=$(git diff --name-only HEAD^ HEAD)
           noNeedRun=true
+          # The acceptance tests run per package: flat sources test in
+          # ./alicloud, split-layout sources in their product package, where
+          # the co-located _test.go file carries the TestAcc funcs.
+          declare -A pkgFuncs=()
           for fileName in ${diffFiles[@]};
           do
               if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* ]];then
@@ -51,7 +55,42 @@ jobs:
                       continue
                     fi
                     DiffFuncNames=$DiffFuncNames";"${func}
+                    if [[ " ${pkgFuncs[./alicloud]:-} " != *" ${func} "* ]]; then
+                      pkgFuncs[./alicloud]="${pkgFuncs[./alicloud]:-}${func} "
+                    fi
                   done
+              elif [[ ${fileName} == "alicloud/service/"*".go" ]]; then
+                  # Split-layout sources: the stem carries no meaning to a
+                  # grep, but the file itself is an implementation or its
+                  # co-located test file, so the acceptance funcs are read
+                  # from the product package they live in.
+                  baseName=$(basename ${fileName})
+                  if [[ ${baseName} == resource_* || ${baseName} == data_source_* || ${baseName} == ephemeral_* || ${baseName} == action_* || ${baseName} == list_* ]]; then
+                      testFile=${fileName}
+                      if [[ ${testFile} != *?_test.go ]]; then
+                          testFile=(${fileName//\.go/_test\.go })
+                      fi
+                      echo -e "\n\033[37mchecking diff file $testFile ... \033[0m"
+                      noNeedRun=false
+                      if [[ $(grep -c "func TestAcc.*" ${testFile}) -lt 1 ]]; then
+                        echo -e "\033[33m[WARNING]\033[0m missing the acceptance test cases in the file $testFile, continue..."
+                        continue
+                      fi
+                      checkFuncs=$(grep "func TestAcc.*" ${testFile})
+                      echo -e "found the test funcs:\n${checkFuncs}\n"
+                      funcs=(${checkFuncs//"(t *testing.T) {"/ })
+                      pkg=./$(dirname ${fileName})
+                      for func in ${funcs[@]};
+                      do
+                        if [[ ${func} != "TestAcc"* ]]; then
+                          continue
+                        fi
+                        DiffFuncNames=$DiffFuncNames";"${func}
+                        if [[ " ${pkgFuncs[${pkg}]:-} " != *" ${func} "* ]]; then
+                          pkgFuncs[${pkg}]="${pkgFuncs[${pkg}]:-}${func} "
+                        fi
+                      done
+                  fi
               fi
           done
 
@@ -64,14 +103,13 @@ jobs:
               exit 0
           fi
           failed_count=0
-          for func in ${funcs[@]};
+          for pkg in "${!pkgFuncs[@]}";
           do
-            if [[ ${func} != "TestAcc"* ]]; then
-              continue
-            fi
+          for func in ${pkgFuncs[${pkg}]};
+          do
             echo -e "\033[34m################################################################################\033[0m"
-            echo -e "\033[34mTF_ACC=1 go test ./alicloud -v -run=${func} -timeout=1200m\033[0m"
-            TF_ACC=1 ALICLOUD_ACCESS_KEY=${{secrets.ak}} ALICLOUD_SECRET_KEY=${{secrets.sk}} go test ./alicloud -v -run=${func} -timeout=1200m | {
+            echo -e "\033[34mTF_ACC=1 go test ${pkg} -v -run=${func} -timeout=1200m\033[0m"
+            TF_ACC=1 ALICLOUD_ACCESS_KEY=${{secrets.ak}} ALICLOUD_SECRET_KEY=${{secrets.sk}} go test ${pkg} -v -run=${func} -timeout=1200m | {
             while read LINE
             do
               echo -e "$LINE"
@@ -89,6 +127,7 @@ jobs:
               echo $failed_count > failed.txt
             fi
             }
+          done
           done
           read FAILED_COUNT < failed.txt
           if [[ $FAILED_COUNT -gt 0 ]]; then
@@ -112,6 +151,14 @@ jobs:
           fetch-depth: '2'
       - name: Docs Example Test Check
         run: |
+          # A split-layout filename cannot yield the entity name: resolve
+          # the docs of the changed service sources through the register.go
+          # join first. The checker is restored from the merge request base
+          # so master's code judges the merge request data; only the merge
+          # request that introduces the checker runs the copy it adds.
+          if git cat-file -e "HEAD^:scripts/title/title_check.go" 2>/dev/null; then
+            git checkout HEAD^ -- scripts/title scripts/internal/splitlayout
+          fi
           diffFiles=$(git diff --name-only HEAD^ HEAD)
           noNeedRun=true
           exampleCount=0
@@ -119,7 +166,31 @@ jobs:
             echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to check."
             exit 0
           fi
+          # Each changed file maps to the docs files whose examples it
+          # affects: split-layout sources map through the resolved entities,
+          # everything else stays itself. Ephemeral, action and list sources
+          # have no r/d docs example gate; service files that resolve to
+          # nothing contribute no entry, the same way non-matching paths
+          # always did.
+          exampleFiles=()
           for fileName in ${diffFiles[@]}; do
+            if [[ ${fileName} == alicloud/service/*/*.go ]]; then
+              baseName=$(basename ${fileName})
+              if [[ ${baseName} == resource_* || ${baseName} == data_source_* ]]; then
+                resolveOut=$(go run scripts/title/title_check.go -resolve ${fileName})
+                while IFS=$'\t' read -r implPath typeName kind; do
+                  if [[ ${kind} == "resource" ]]; then
+                    exampleFiles+=("website/docs/r/${typeName#alicloud_}.html.markdown")
+                  elif [[ ${kind} == "data_source" ]]; then
+                    exampleFiles+=("website/docs/d/${typeName#alicloud_}.html.markdown")
+                  fi
+                done <<< "${resolveOut}"
+              fi
+            else
+              exampleFiles+=("${fileName}")
+            fi
+          done
+          for fileName in ${exampleFiles[@]}; do
             if [[ ${fileName} == *?_test.go ]]; then
                 echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
                 continue
@@ -185,7 +256,7 @@ jobs:
           docsExampleTestRunResultLog=terraform-example.run.result.log
           declare -A allExample
           allExample["init"]=1
-          for fileName in ${diffFiles[@]}; do
+          for fileName in ${exampleFiles[@]}; do
             if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* || ${fileName} == "website/docs/r/"* || ${fileName} == "website/docs/d/"* ]]; then
               docsPathKey="website/docs/r"
               if [[ $fileName =~ "data_source_alicloud" || $fileName =~ "website/docs/d/" ]]; then
