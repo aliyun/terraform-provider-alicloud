@@ -103,7 +103,8 @@ resource "alicloud_ecs_invocation" "default" {
 The following arguments are supported:
 
 * `command_id` - (Required, ForceNew) The ID of the command.
-* `instance_id` - (Required, ForceNew) The list of instances to execute the command. You can specify up to 50 instance IDs.
+* `instance_id` - (Optional, Computed, ForceNew) The list of instances to execute the command. You can specify up to 50 instance IDs. **NOTE:** `instance_id` and `resource_tag` are mutually exclusive (`ConflictsWith`) and at least one of them must be specified (`AtLeastOneOf`). `instance_id` is a list whose element order is significant: changing the configured order forces replacement. The order returned by the API on refresh is normalized against the prior state so that an unchanged membership does not drift into replacement, while an explicit change to the configured order still forces replacement.
+* `resource_tag` - (Optional, ForceNew) The resource tag used to select the target instances, an alternative to `instance_id`. `resource_tag` and `instance_id` are mutually exclusive (`ConflictsWith`) and at least one of them must be specified (`AtLeastOneOf`). It is a set of `key`/`value` pairs. See [`resource_tag`](#resource_tag) below.
 * `repeat_mode` - (Optional, ForceNew, Computed) Specifies how to run the command. Valid values: `Once`, `Period`, `NextRebootOnly`, `EveryReboot`. Default value: When `frequency` is not specified, the default value of `repeat_mode` is `Once`. When `frequency` is specified, `Period` is used as the value of `repeat_mode` regardless of whether `repeat_mode` is specified.
 * `timed` - (Optional, ForceNew, Computed, Deprecated) Specifies whether to periodically run the command. Default value: `false`. **NOTE:** This parameter has been deprecated by the ECS API and no longer takes effect. To run a command periodically, set `repeat_mode` to `Period` and specify `frequency` instead. Existing configurations in which `timed` is set to `true` together with `frequency` are not affected because the command runs periodically as long as `frequency` is specified.
 * `frequency` - (Optional, ForceNew) The schedule on which the recurring execution of the command takes place. Take note of the following items:
@@ -116,6 +117,18 @@ The following arguments are supported:
   * For Windows instances, the System username is used.
   * You can also specify other usernames that already exist in the ECS instance to run the command. It is more secure to run Cloud Assistant commands as a regular user. For more information, see [Configure a regular user to run Cloud Assistant commands](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/run-cloud-assistant-commands-as-a-regular-user).
 * `windows_password_name` - (Optional, ForceNew) The name of the password used to run the command on a Windows instance.
+* `resource_group_id` - (Optional, ForceNew) The ID of the resource group. This is a create-only field: it is accepted by `InvokeCommand` and used as a query filter by `DescribeInvocations`, but the Invocation response object does not return it. The configured value is preserved across refreshes; it cannot be recovered on import.
+* `oss_output_delivery` - (Optional, ForceNew) The OSS output delivery configuration. When set, the command output is uploaded to the configured OSS bucket.
+* `working_dir` - (Optional, Computed, ForceNew) The working directory for the command on the instance.
+
+### `resource_tag`
+
+The `resource_tag` block nests the following attributes:
+
+* `key` - (Required, ForceNew) The resource tag key.
+* `value` - (Required, ForceNew) The resource tag value.
+
+Modifying any nested `key`/`value` forces replacement of the invocation.
 
 ## Attributes Reference
 
@@ -138,3 +151,5 @@ ECS Invocation can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_ecs_invocation.example <id>
 ```
+
+-> **NOTE:** `resource_group_id` is a create-only query filter that is not returned by the Invocation response, so it cannot be recovered on import; supply it again in the configuration after import if it is still required. `instance_id` is backfilled from the API response during import when the invocation was originally created with `instance_id`.

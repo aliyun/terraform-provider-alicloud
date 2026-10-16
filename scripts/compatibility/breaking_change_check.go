@@ -261,6 +261,52 @@ func compareBreakingChange(oldContent, newContent string) bool {
 }
 
 func IsBreakingChange(oldAttrs, newAttrs map[string]map[string]interface{}) (res bool) {
+	// Top-level attribute comparison (new top-level Required, deletion,
+	// optional->required, type change, ForceNew added, validate values).
+	res = compareAttrs(oldAttrs, newAttrs)
+
+	// Nested Elem children are compared only under parents that already
+	// existed in the old schema. Adding a Required child to an existing
+	// Optional parent is breaking (existing users of the parent must now
+	// supply it). A brand-new Optional parent's nested Required children are
+	// a legal non-breaking addition — the whole block is new and Optional —
+	// so they are skipped here (parentExisted == false).
+	//
+	// The comparison recurses to arbitrary nesting depth: a schema may nest
+	// Elem &schema.Resource{} several levels deep (block → sub-block →
+	// field). Only the first level under each parent was compared previously,
+	// so a Required addition, deletion, type or ForceNew change on a deeper
+	// grandchild under an existing parent chain was silently missed. Recursing
+	// via IsBreakingChange applies the same single-level rules (compareAttrs)
+	// at every depth and descends into each existing parent's Nested map,
+	// while still skipping brand-new Optional parents at any level.
+	//
+	// The recursion must NOT be skipped when newNested is empty: an existing
+	// parent whose nested subtree was fully removed (Elem schema emptied,
+	// Resource->flat, or every leaf deleted) has newNested == {} while
+	// oldNested is non-empty. That is a breaking deletion of the removed
+	// child attributes, and compareAttrs(oldNested, {}) flags every old child
+	// absent from the empty new set. Skipping it (the previous len()==0
+	// guard) silently missed full nested-subtree deletions. The recursion is
+	// a no-op when both sides are empty (compareAttrs({}, {}) == false).
+	for fieldName, newAttr := range newAttrs {
+		oldAttr, parentExisted := oldAttrs[fieldName]
+		if !parentExisted {
+			continue
+		}
+		newNested, _ := newAttr["Nested"].(map[string]map[string]interface{})
+		oldNested, _ := oldAttr["Nested"].(map[string]map[string]interface{})
+		if IsBreakingChange(oldNested, newNested) {
+			res = true
+		}
+	}
+	return
+}
+
+// compareAttrs reports whether evolving oldAttrs into newAttrs is a breaking
+// change for a single schema level (used for both top-level and nested Elem
+// attributes).
+func compareAttrs(oldAttrs, newAttrs map[string]map[string]interface{}) (res bool) {
 	// First check for removed attributes
 	for filedName, oldAttr := range oldAttrs {
 		// Check if attribute was deleted
@@ -400,6 +446,15 @@ func ParseSchemaFromAST(source string) map[string]map[string]interface{} {
 			// Check if this is a Schema map
 			if isSchemaMap(compLit) {
 				extractSchemaFields(compLit, attributeMap)
+				// Stop recursing into this map. Nested Elem schema maps
+				// (the children of a TypeSet/TypeList &schema.Resource) are
+				// extracted as children of their parent field by
+				// extractFieldProperties ("Elem"), not flattened into the
+				// top-level attribute map. Recursing here would re-import
+				// nested Required children (e.g. resource_tag.key/value) as
+				// top-level attributes and falsely flag them as new global
+				// Required fields.
+				return false
 			}
 		}
 		return true
@@ -480,6 +535,16 @@ func extractFieldProperties(compLit *ast.CompositeLit, props map[string]interfac
 			case "ValidateFunc":
 				// Extract validation function (simplified for now)
 				props[propName] = "present"
+			case "Elem":
+				// When Elem is &schema.Resource{Schema: map[string]*schema.Schema{...}}
+				// the nested child schema is recorded under the parent field's
+				// "Nested" key (recursively) instead of being flattened into the
+				// top-level attribute map. Flat Elem (e.g.
+				// &schema.Schema{Type: schema.TypeString}) contributes no nested
+				// attributes.
+				if nested := extractNestedSchema(kv.Value); len(nested) > 0 {
+					props["Nested"] = nested
+				}
 			}
 		}
 	}
@@ -649,6 +714,57 @@ func requiresReplace(expr ast.Expr) bool {
 		}
 	}
 	return false
+}
+
+// extractNestedSchema extracts the child schema map from an Elem expression
+// when it is &schema.Resource{Schema: map[string]*schema.Schema{...}}. It
+// returns nil for flat Elem values so they do not contribute nested
+// attributes.
+func extractNestedSchema(elemValue ast.Expr) map[string]map[string]interface{} {
+	compLit := compositeLitOf(elemValue)
+	if compLit == nil || !isSchemaResourceLit(compLit) {
+		return nil
+	}
+	for _, elt := range compLit.Elts {
+		kv, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		ident, ok := kv.Key.(*ast.Ident)
+		if !ok || ident.Name != "Schema" {
+			continue
+		}
+		nestedMap, ok := kv.Value.(*ast.CompositeLit)
+		if !ok {
+			continue
+		}
+		children := make(map[string]map[string]interface{})
+		extractSchemaFields(nestedMap, children)
+		return children
+	}
+	return nil
+}
+
+// compositeLitOf unwraps a leading & (address-of) and returns the composite
+// literal, or nil if the expression is not a composite literal.
+func compositeLitOf(expr ast.Expr) *ast.CompositeLit {
+	if unary, ok := expr.(*ast.UnaryExpr); ok {
+		expr = unary.X
+	}
+	if compLit, ok := expr.(*ast.CompositeLit); ok {
+		return compLit
+	}
+	return nil
+}
+
+// isSchemaResourceLit reports whether a composite literal is schema.Resource{...}.
+func isSchemaResourceLit(compLit *ast.CompositeLit) bool {
+	selExpr, ok := compLit.Type.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	xIdent, ok := selExpr.X.(*ast.Ident)
+	return ok && xIdent.Name == "schema" && selExpr.Sel.Name == "Resource"
 }
 
 // ParseRetryErrorCodesFromContent extracts retry error codes from full file content
