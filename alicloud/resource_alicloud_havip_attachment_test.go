@@ -358,6 +358,7 @@ func AliCloudHavipAttachmentBasicDependence0(name string) string {
 	data "alicloud_zones" "default" {
   		available_disk_category     = "cloud_efficiency"
   		available_resource_creation = "VSwitch"
+  		available_instance_type     = "ecs.g6.large"
 	}
 
 	data "alicloud_images" "default" {
@@ -420,6 +421,7 @@ func AliCloudHavipAttachmentBasicDependence1(name string) string {
 	data "alicloud_zones" "default" {
   		available_disk_category     = "cloud_efficiency"
   		available_resource_creation = "VSwitch"
+  		available_instance_type     = "ecs.g6.large"
 	}
 
 	data "alicloud_images" "default" {
@@ -482,6 +484,7 @@ func AliCloudHavipAttachmentBasicDependence2(name string) string {
 	data "alicloud_zones" "default" {
   		available_disk_category     = "cloud_efficiency"
   		available_resource_creation = "VSwitch"
+  		available_instance_type     = "ecs.g6.large"
 	}
 
 	data "alicloud_images" "default" {
@@ -555,6 +558,7 @@ func AliCloudHavipAttachmentBasicDependence_bug_fix(name string) string {
 	data "alicloud_zones" "default" {
   		available_disk_category     = "cloud_efficiency"
   		available_resource_creation = "VSwitch"
+  		available_instance_type     = "ecs.g6.large"
 	}
 
 	data "alicloud_images" "default" {
