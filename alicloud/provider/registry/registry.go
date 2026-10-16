@@ -10,6 +10,7 @@ import (
 
 	alicloudfunction "github.com/aliyun/terraform-provider-alicloud/alicloud/function"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/agentloop"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudauth"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cr"
@@ -41,6 +42,7 @@ var servicePackages = []conns.ServicePackage{
 	cs.ServicePackage(),
 	cr.ServicePackage(),
 	sts.ServicePackage(),
+	agentloop.ServicePackage(),
 }
 
 var validateOnce sync.Once
