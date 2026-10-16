@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
@@ -775,6 +776,52 @@ func TestUnitECSDisk(t *testing.T) {
 	}
 }
 
+func TestUnitEcsDiskCategoryTransitionState(t *testing.T) {
+	cases := []struct {
+		status, category, target string
+		expected                 string
+	}{
+		{"Modifying", "cloud_essd", "cloud_auto", "Modifying"},
+		{"Modifying", "cloud_auto", "cloud_auto", "Modifying"},
+		{"Available", "cloud_essd", "cloud_auto", "CategoryConverting"},
+		{"In_use", "cloud_essd", "cloud_auto", "CategoryConverting"},
+		{"Available", "cloud_auto", "cloud_auto", "Available"},
+		{"In_use", "cloud_auto", "cloud_auto", "In_use"},
+		{"Available", "cloud_essd", "cloud_essd", "Available"},
+		{"Creating", "cloud_auto", "cloud_auto", "Creating"},
+	}
+	for _, c := range cases {
+		if got := ecsDiskCategoryTransitionState(c.status, c.category, c.target); got != c.expected {
+			t.Fatalf("ecsDiskCategoryTransitionState(%q, %q, %q) = %q, expected %q", c.status, c.category, c.target, got, c.expected)
+		}
+	}
+}
+
+func TestUnitEcsDiskCategoryTransitionWaitCompletesOnlyWhenStatusAndCategoryAgree(t *testing.T) {
+	responses := []struct{ status, category string }{
+		{"Available", "cloud_essd"},
+		{"Modifying", "cloud_auto"},
+		{"Available", "cloud_auto"},
+	}
+	calls := 0
+	conf := BuildStateConf([]string{"Modifying", "CategoryConverting"}, []string{"Available", "In_use"}, 30*time.Second, 0, func() (interface{}, string, error) {
+		if calls >= len(responses) {
+			return nil, "", fmt.Errorf("unexpected DescribeDisks call %d", calls)
+		}
+		r := responses[calls]
+		calls++
+		return map[string]interface{}{}, ecsDiskCategoryTransitionState(r.status, r.category, "cloud_auto"), nil
+	})
+	conf.MinTimeout = time.Millisecond
+	conf.PollInterval = time.Millisecond
+	if _, err := conf.WaitForState(); err != nil {
+		t.Fatalf("combined wait should succeed through the race sequence: %v", err)
+	}
+	if calls != len(responses) {
+		t.Fatalf("wait completed after %d refreshes, expected %d: it must not complete before Status and Category agree within one response", calls, len(responses))
+	}
+}
+
 // Test Ecs Disk. >>> Resource test cases, automatically generated.
 // Case cloud_efficiency生命周期 8017
 func TestAccAliCloudECSDisk_basic8017(t *testing.T) {
@@ -793,9 +840,9 @@ func TestAccAliCloudECSDisk_basic8017(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -973,9 +1020,9 @@ func TestAccAliCloudECSDisk_basic8017_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1131,9 +1178,9 @@ func TestAccAliCloudECSDisk_basic8018(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1297,9 +1344,9 @@ func TestAccAliCloudECSDisk_basic8018_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1369,9 +1416,9 @@ func TestAccAliCloudECSDisk_basic8019(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1545,9 +1592,9 @@ func TestAccAliCloudECSDisk_basic8019_twin_excluding_kms_key_id(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1617,9 +1664,9 @@ func TestAccAliCloudECSDisk_basic8019_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1678,12 +1725,25 @@ func TestAccAliCloudECSDisk_basic8019_twin(t *testing.T) {
 // bursting_enabled update combinations across the Update path.
 // Covers the distinct code paths in the bursting_enabled Update logic:
 //  1. needBurstingPost defer: category changes TO cloud_auto in the same apply,
-//     so BurstingEnabled is deferred until after ModifyDiskSpec + WaitForState
-//     confirms the disk is cloud_auto (Step2 ESSD->cloud_auto bursting=true).
+//     so BurstingEnabled is deferred until after ModifyDiskSpec + a Status
+//     WaitForState (with "Modifying" pending on the category-change path) and a
+//     Category-field WaitForState confirm the disk has truly reached cloud_auto
+//     (Step2 ESSD->cloud_auto bursting=true). The conversion is asynchronous and
+//     may report Status "Modifying" while it runs; with an empty Pending list the
+//     state machine already polls through unknown states, and listing "Modifying"
+//     makes that known transition explicit. Both waits are bounded by the
+//     configured update timeout (default 30m) with no multiplied budget, and no
+//     explicit timeouts block is set in this test so the default configuration is
+//     exercised end to end.
 //  2. else branch, category unchanged: BurstingEnabled is set directly while the
-//     disk is already cloud_auto (Step3 disable, Step4 re-enable).
+//     disk is already cloud_auto (Step3 disable, Step4 re-enable); these steps do
+//     not enter the ModifyDiskSpec wait block.
 //  3. import: round-trip the resource through Read to confirm state is stable
 //     after the category and bursting transitions above.
+//
+// The non-category ModifyDiskSpec wait branch (Status wait with empty Pending
+// after an iops-only change) is covered by TestAccAliCloudECSDisk_basic8019
+// Step8, which changes provisioned_iops on an existing cloud_auto disk.
 func TestAccAliCloudECSDisk_basic8019_essd_to_autopl_burst(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
@@ -1710,13 +1770,8 @@ func TestAccAliCloudECSDisk_basic8019_essd_to_autopl_burst(t *testing.T) {
 					"category":          "cloud_essd",
 					"encrypt_algorithm": "",
 					"size":              "500",
-					"timeouts": []map[string]interface{}{
-						{
-							"update": "30m",
-						},
-					},
-					"type":    "offline",
-					"zone_id": "${data.alicloud_zones.default.zones.0.id}",
+					"type":              "offline",
+					"zone_id":           "${data.alicloud_zones.default.zones.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1818,9 +1873,9 @@ func TestAccAliCloudECSDisk_basic8020(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1994,9 +2049,9 @@ func TestAccAliCloudECSDisk_basic8020_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
