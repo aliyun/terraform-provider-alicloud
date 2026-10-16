@@ -208,7 +208,19 @@ func (s *MongodbServiceV2) DescribeMongodbGlobalSecurityIPGroup(id string) (obje
 		return object, WrapErrorf(NotFoundErr("GlobalSecurityIPGroup", id), NotFoundMsg, response)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	// DescribeGlobalSecurityIPGroup is a list query that returns all global
+	// security IP groups under the account, so the matching item must be
+	// located by GlobalSecurityGroupId. Blindly taking the first element causes
+	// a persistent diff when multiple groups exist (e.g. count > 1).
+	result, _ := v.([]interface{})
+	for _, item := range result {
+		group := item.(map[string]interface{})
+		if fmt.Sprint(group["GlobalSecurityGroupId"]) != id {
+			continue
+		}
+		return group, nil
+	}
+	return object, WrapErrorf(NotFoundErr("GlobalSecurityIPGroup", id), NotFoundMsg, response)
 }
 
 func (s *MongodbServiceV2) MongodbGlobalSecurityIPGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
