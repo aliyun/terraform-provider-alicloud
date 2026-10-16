@@ -57,4 +57,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `authorization_token` - The password that was used to log on to the registry.
   * `temp_username` - The username that was used to log on to the registry.
   * `tags` - (Available since v1.288.0) A mapping of tags assigned to the instance.
+  * `instance_issue` - (Available since v1.295.0) The issue currently reported on the instance. Empty when the instance is healthy.
+  * `modified_time` - (Available since v1.295.0) The last modification time of the instance, as a Unix timestamp in milliseconds.
   

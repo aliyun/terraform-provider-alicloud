@@ -10,6 +10,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+// BssOpenApi CreateInstance requires Logistics to be a JSON-format address
+// string; the HCL renderer inserts the Go string raw inside quotes, so the
+// quotes must be escaped here.
+const crEEInstanceLogisticsConfig = `{\"cityCode\":\"330100\",\"cityName\":\"Hangzhou\",\"contactName\":\"TerraformAcc\",\"countryCode\":\"CN\",\"detailAddress\":\"No.1 Test Road\",\"districtCode\":\"330106\",\"districtName\":\"Xihu District\",\"email\":\"tfacc@example.com\",\"mobilePhone\":\"153564848844\",\"phone\":\"1234567\",\"provCode\":\"330000\",\"provName\":\"Zhejiang\",\"streetCode\":\"33010610\",\"streetName\":\"Zhuantang\",\"zipCode\":\"0000\"}`
+
 func TestAccAliCloudCrInstance_Basic(t *testing.T) {
 	var v *cr_ee.GetInstanceResponse
 	resourceId := "alicloud_cr_ee_instance.default"
@@ -34,55 +39,86 @@ func TestAccAliCloudCrInstance_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type": "Subscription",
-					"period":       "1",
-					//"renew_period":   "0",
+					"payment_type":   "Subscription",
+					"period":         "1",
 					"renewal_status": "ManualRenewal",
 					"instance_type":  "Basic",
 					"instance_name":  name,
+					"logistics":      crEEInstanceLogisticsConfig,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status":       CHECKSET,
-						"created_time": CHECKSET,
-						"end_time":     CHECKSET,
-						//"renew_period":   "0",
+						"status":         CHECKSET,
+						"created_time":   CHECKSET,
+						"end_time":       CHECKSET,
 						"renewal_status": "ManualRenewal",
 						"instance_name":  name,
 						"instance_type":  "Basic",
 						"payment_type":   "Subscription",
+						"logistics":      CHECKSET,
 					}),
 				),
 			},
-			// The cr ResetLoginPassword API rejects the credentials used by the
-			// acceptance test framework with STS_NOT_SUPPORT ("STS is not supported."),
-			// so password / kms_encrypted_password / kms_encryption_context cannot be
-			// exercised here. Verified again 2026-08-04, RequestId
-			// 019FCBFA-FBDA-54DA-A088-BDF2D5779CF2.
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"password": "YourPassword123",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{}),
-			//	),
-			//},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
-			//		"kms_encryption_context": map[string]string{
-			//			"name": name,
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":   "Subscription",
+					"period":         "1",
+					"renewal_status": "ManualRenewal",
+					"instance_type":  "Basic",
+					"instance_name":  name,
+					"logistics":      crEEInstanceLogisticsConfig,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logistics": CHECKSET,
+					}),
+				),
+			},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "custom_oss_bucket", "password", "kms_encrypted_password", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"period", "custom_oss_bucket", "password", "kms_encrypted_password", "kms_encryption_context", "logistics"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":   "Subscription",
+					"period":         "1",
+					"renewal_status": "ManualRenewal",
+					"instance_type":  "Basic",
+					"instance_name":  name,
+					"logistics":      crEEInstanceLogisticsConfig,
+					// kms_encrypted_password is only honored when password is unset;
+					// declaring it together with password would have the provider's
+					// kmsDiffSuppressFunc suppress it out of state.
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name,
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kms_encrypted_password":      CHECKSET,
+						"kms_encryption_context.%":    "1",
+						"kms_encryption_context.name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":   "Subscription",
+					"period":         "1",
+					"renewal_status": "ManualRenewal",
+					"instance_type":  "Basic",
+					"instance_name":  name,
+					"logistics":      crEEInstanceLogisticsConfig,
+					"password":       "YourPassword123",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password": CHECKSET,
+					}),
+				),
 			},
 		},
 	})
