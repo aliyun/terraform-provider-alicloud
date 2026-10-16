@@ -86,6 +86,10 @@ func dataSourceAlicloudOssBucketObjects() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"x_oss_hash_crc64ecma": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"etag": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -205,6 +209,7 @@ func bucketObjectsDescriptionAttributes(d *schema.ResourceData, bucketName strin
 			mapping["expires"] = objectHeader.Get("Expires")
 			mapping["server_side_encryption"] = objectHeader.Get(oss.HTTPHeaderOssServerSideEncryption)
 			mapping["sse_kms_key_id"] = objectHeader.Get(oss.HTTPHeaderOssServerSideEncryptionKeyID)
+			mapping["x_oss_hash_crc64ecma"] = objectHeader.Get(oss.HTTPHeaderOssCRC64)
 		}
 		if debugOn() {
 			addDebug("GetObjectDetailedMeta", raw, requestInfo, map[string]string{"objectKey": object.Key})

@@ -60,7 +60,7 @@ func TestAccAliCloudOssBucketObjectsDataSource_basic(t *testing.T) {
 		return map[string]string{
 			"objects.#":                        "1",
 			"objects.0.key":                    fmt.Sprintf("tf-sample/%s-object", fmt.Sprintf("tf-testacc-bucket-object-%d", rand)),
-			"objects.0.acl":                    "public-read",
+			"objects.0.acl":                    "private",
 			"objects.0.content_type":           "text/plain",
 			"objects.0.content_length":         CHECKSET,
 			"objects.0.cache_control":          "max-age=0",
@@ -71,6 +71,7 @@ func TestAccAliCloudOssBucketObjectsDataSource_basic(t *testing.T) {
 			"objects.0.etag":                   CHECKSET,
 			"objects.0.storage_class":          CHECKSET,
 			"objects.0.last_modification_time": CHECKSET,
+			"objects.0.x_oss_hash_crc64ecma":   "653038730487567532",
 		}
 	}
 
@@ -153,6 +154,7 @@ func TestAccAliCloudOssBucketObjectsDataSource_versioning(t *testing.T) {
 			"objects.0.etag":                   CHECKSET,
 			"objects.0.storage_class":          CHECKSET,
 			"objects.0.last_modification_time": CHECKSET,
+			"objects.0.x_oss_hash_crc64ecma":   "653038730487567532",
 		}
 	}
 
@@ -200,7 +202,7 @@ resource "alicloud_oss_bucket_object" "default" {
 	content_disposition = "attachment; filename=\"my-object\""
 	content_encoding = "gzip"
 	expires = "Wed, 06 May 2020 00:00:00 GMT"
-	acl = "public-read"
+	acl = "private"
 }
 
 `, name)
