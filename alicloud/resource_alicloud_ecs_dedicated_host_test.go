@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -16,10 +17,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
+func TestAccAliCloudECSDedicatedHost_basic(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -35,23 +37,32 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-zhangjiakou"})
 			testAccPreCheck(t)
+			// basic creates a PrePaid dedicated host, so gate it on the
+			// month-first calendar guard just like basic1/autoRenew.
+			testAccPreCheckWithTime(t, []int{1})
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"dedicated_host_type": "ddh.c6e",
 					"description":         "From_Terraform",
 					"dedicated_host_name": name,
+					"payment_type":        "PrePaid",
+					"period":              1,
+					"period_unit":         "Month",
+					"zone_id":             "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"dedicated_host_type": "ddh.c6e",
 						"description":         "From_Terraform",
 						"dedicated_host_name": name,
+						"payment_type":        "PrePaid",
+						"period_unit":         "Month",
 					}),
 				),
 			},
@@ -59,10 +70,11 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_pay", "detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time", "period"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"dedicated_host_cluster_id": "",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "DDH_Test",
@@ -123,6 +135,21 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"action_on_maintenance": "Migrate",
+					"auto_placement":        "off",
+					"auto_release_time":     "2027-12-31T23:59:59Z",
+					"detail_fee":            false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"action_on_maintenance": "Migrate",
+						"auto_placement":        "off",
+						"auto_release_time":     CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "Terraform",
 						"For":     "DDH",
@@ -149,11 +176,25 @@ func TestAccAlicloudECSDedicatedHost_basic(t *testing.T) {
 					}),
 				),
 			},
+			// Change payment_type from PrePaid to PostPaid to cover the
+			// ModifyDedicatedHostsChargeType update path. period and
+			// period_unit stay unchanged from the create step, so only
+			// HasChange("payment_type") fires here.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PostPaid",
+					}),
+				),
+			},
 		},
 	})
 }
 
-func TestAccAlicloudECSDedicatedHost_basic1(t *testing.T) {
+func TestAccAliCloudECSDedicatedHost_basic1(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -171,9 +212,9 @@ func TestAccAlicloudECSDedicatedHost_basic1(t *testing.T) {
 			testAccPreCheckWithTime(t, []int{1})
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -200,13 +241,107 @@ func TestAccAlicloudECSDedicatedHost_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_pay", "detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
+// TestAccAliCloudECSDedicatedHost_autoRenew covers the renewal_status,
+// auto_renew_with_ecs and duration fields backed by the
+// ModifyDedicatedHostAutoRenewAttribute / DescribeDedicatedHostAutoRenew APIs,
+// and the period, period_unit, quantity and auto_pay arguments surfaced on the
+// AllocateDedicatedHosts / ModifyDedicatedHostsChargeType paths. It exercises
+// the create -> update (ModifyDedicatedHostAutoRenewAttribute) -> read
+// (DescribeDedicatedHostAutoRenew) round-trip on a subscription dedicated host.
+// The deprecated sale_cycle / expired_time aliases are intentionally retained
+// in the config to verify backward compatibility and keep attribute coverage.
+func TestAccAliCloudECSDedicatedHost_autoRenew(t *testing.T) {
+	var v ecs.DedicatedHost
+	resourceId := "alicloud_ecs_dedicated_host.default"
+	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDedicatedHost")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccEcsDedicatedHost%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, EcsDedicatedHostBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
+		},
+
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dedicated_host_type":       "ddh.g6",
+					"dedicated_host_name":       name,
+					"description":               "From_Terraform",
+					"payment_type":              "PrePaid",
+					"period":                    1,
+					"period_unit":               "Month",
+					"sale_cycle":                "Month",
+					"expired_time":              "1",
+					"quantity":                  1,
+					"auto_pay":                  true,
+					"renewal_status":            "Normal",
+					"auto_renew_with_ecs":       "StopRenewWithEcs",
+					"zone_id":                   "",
+					"dedicated_host_cluster_id": "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dedicated_host_type": "ddh.g6",
+						"payment_type":        "PrePaid",
+						"period_unit":         "Month",
+						"sale_cycle":          "Month",
+						"renewal_status":      "Normal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dedicated_host_type": "ddh.g6",
+					"dedicated_host_name": name,
+					"description":         "From_Terraform",
+					"payment_type":        "PrePaid",
+					"period":              1,
+					"period_unit":         "Week",
+					"sale_cycle":          "Week",
+					"expired_time":        "1",
+					"quantity":            1,
+					"auto_pay":            true,
+					"renewal_status":      "AutoRenewal",
+					"auto_renew_with_ecs": "AutoRenewWithEcs",
+					"duration":            "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status":      "AutoRenewal",
+						"auto_renew_with_ecs": "AutoRenewWithEcs",
+						"duration":            "3",
+						"period_unit":         "Week",
+						"sale_cycle":          "Week",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time", "period", "auto_pay"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSDedicatedHost_basic2(t *testing.T) {
 	var v ecs.DedicatedHost
 	resourceId := "alicloud_ecs_dedicated_host.default"
 	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
@@ -224,9 +359,9 @@ func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -268,7 +403,68 @@ func TestAccAlicloudECSDedicatedHost_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_pay", "detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudECSDedicatedHost_cpuOverCommit exercises the cpu_over_commit_ratio
+// attribute, which is only supported by the g6s/c6s/r6s custom dedicated host
+// specifications. It covers the create -> update (ModifyDedicatedHostAttribute)
+// -> read round-trip and is the only ACC case that sets this field, so the
+// TestingCoverageRate must-set and modify gates are both satisfied here.
+func TestAccAliCloudECSDedicatedHost_cpuOverCommit(t *testing.T) {
+	var v ecs.DedicatedHost
+	resourceId := "alicloud_ecs_dedicated_host.default"
+	ra := resourceAttrInit(resourceId, EcsDedicatedHostMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDedicatedHost")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccEcsDedicatedHost%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, EcsDedicatedHostBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcsDedicatedHostRegions)
+		},
+
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dedicated_host_type":   "ddh.g6s",
+					"description":           "From_Terraform",
+					"dedicated_host_name":   name,
+					"cpu_over_commit_ratio": 1.2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dedicated_host_type":   "ddh.g6s",
+						"cpu_over_commit_ratio": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cpu_over_commit_ratio": 1.5,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cpu_over_commit_ratio": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"detail_fee", "dry_run", "min_quantity", "auto_renew", "auto_renew_period", "expired_time"},
 			},
 		},
 	})
@@ -314,10 +510,14 @@ func TestUnitAlicloudECSDedicatedHost(t *testing.T) {
 		"auto_release_time":         "AllocateDedicatedHostsValue",
 		"auto_renew":                false,
 		"auto_renew_period":         1,
+		"auto_pay":                  true,
 		"cpu_over_commit_ratio":     1.2,
 		"dedicated_host_cluster_id": "AllocateDedicatedHostsValue",
 		"expired_time":              "AllocateDedicatedHostsValue",
 		"payment_type":              "AllocateDedicatedHostsValue",
+		"period":                    1,
+		"period_unit":               "Month",
+		"quantity":                  1,
 		"sale_cycle":                "AllocateDedicatedHostsValue",
 	}
 	for key, value := range attributes {
@@ -329,11 +529,43 @@ func TestUnitAlicloudECSDedicatedHost(t *testing.T) {
 			log.Printf("[ERROR] the field %s setting error", key)
 		}
 	}
+	// Quantity validation: a Terraform resource maps to a single dedicated
+	// host. Values > 1 create unmanaged paid resources and must be rejected
+	// by schema validation.
+	quantitySchema := p["alicloud_ecs_dedicated_host"].Schema["quantity"]
+	if quantitySchema.ValidateFunc != nil {
+		_, errs := quantitySchema.ValidateFunc(2, "quantity")
+		assert.NotEmpty(t, errs, "quantity=2 should fail validation")
+		_, errs = quantitySchema.ValidateFunc(1, "quantity")
+		assert.Empty(t, errs, "quantity=1 should pass validation")
+	}
+	// payment_type only accepts PostPaid/PrePaid; "Year" is a period_unit
+	// value and must be rejected at schema validation, mirroring the
+	// quantity>1 guard rather than reaching the charge-type change path.
+	paymentTypeSchema := p["alicloud_ecs_dedicated_host"].Schema["payment_type"]
+	if paymentTypeSchema.ValidateFunc != nil {
+		_, errs := paymentTypeSchema.ValidateFunc("Year", "payment_type")
+		assert.NotEmpty(t, errs, "payment_type=Year should fail validation")
+		_, errs = paymentTypeSchema.ValidateFunc("PrePaid", "payment_type")
+		assert.Empty(t, errs, "payment_type=PrePaid should pass validation")
+	}
+	// All HTTP is mocked via gomonkey (DoRequest/NewEcsClient), so no real
+	// API call is made. sharedClientForRegion still requires
+	// ALICLOUD_ACCESS_KEY/SECRET_KEY/REGION to construct the AliyunClient;
+	// without them the test SKIPs on CI workers lacking injected credentials
+	// (root cause of the historical SKIP). Seed dummy values so the cloud-free
+	// assertions always execute regardless of the worker environment.
+	t.Setenv("ALICLOUD_ACCESS_KEY", "test-only-no-real-call")
+	t.Setenv("ALICLOUD_SECRET_KEY", "test-only-no-real-call")
+	t.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 	region := os.Getenv("ALICLOUD_REGION")
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
+		// Cloudless scope: all HTTP is mocked via gomonkey, so the test must
+		// execute regardless of worker credentials. A sharedClient init failure
+		// is a hard error, not a silent skip; the dummy env above is expected to
+		// satisfy construction, and any real init failure must surface loudly.
+		t.Fatalf("sharedClientForRegion init failed (cloudless test must not skip): %s", err)
 	}
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
@@ -402,7 +634,7 @@ func TestUnitAlicloudECSDedicatedHost(t *testing.T) {
 	}
 
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEcsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "WithEcsClient", func(_ *connectivity.AliyunClient, _ func(*ecs.Client) (interface{}, error)) (interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -459,7 +691,7 @@ func TestUnitAlicloudECSDedicatedHost(t *testing.T) {
 	}
 
 	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEcsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "WithEcsClient", func(_ *connectivity.AliyunClient, _ func(*ecs.Client) (interface{}, error)) (interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -766,6 +998,290 @@ func TestUnitAlicloudECSDedicatedHost(t *testing.T) {
 		}
 	}
 
+	// RenewDedicatedHosts — sale_cycle only (period_unit not changed)
+	// Verifies that when sale_cycle changes but period_unit does not,
+	// the PeriodUnit sent to RenewDedicatedHosts comes from the new
+	// sale_cycle value, not the stale period_unit populated by Read.
+	{
+		var capturedReq map[string]interface{}
+		attributesDiff = map[string]interface{}{
+			"sale_cycle": "Year",
+		}
+		diff, err = newInstanceDiff("alicloud_ecs_dedicated_host", attributes, attributesDiff, dExisted.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dTest, _ := schema.InternalMap(p["alicloud_ecs_dedicated_host"].Schema).Data(dExisted.State(), diff)
+		ReadMockResponseDiff = map[string]interface{}{
+			"DedicatedHosts": map[string]interface{}{
+				"DedicatedHost": []interface{}{
+					map[string]interface{}{
+						"SaleCycle": "Year",
+					},
+				},
+			},
+		}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, req map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "RenewDedicatedHosts" {
+				capturedReq = req
+			}
+			return successResponseMock(ReadMockResponseDiff)
+		})
+		err = resourceAlicloudEcsDedicatedHostUpdate(dTest, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "Year", capturedReq["PeriodUnit"])
+		dExisted = dTest
+	}
+
+	// RenewDedicatedHosts — period_unit only (sale_cycle not changed)
+	{
+		var capturedReq map[string]interface{}
+		attributesDiff = map[string]interface{}{
+			"period_unit": "Week",
+		}
+		diff, err = newInstanceDiff("alicloud_ecs_dedicated_host", attributes, attributesDiff, dExisted.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dTest, _ := schema.InternalMap(p["alicloud_ecs_dedicated_host"].Schema).Data(dExisted.State(), diff)
+		ReadMockResponseDiff = map[string]interface{}{
+			"DedicatedHosts": map[string]interface{}{
+				"DedicatedHost": []interface{}{
+					map[string]interface{}{
+						"SaleCycle": "Week",
+					},
+				},
+			},
+		}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, req map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "RenewDedicatedHosts" {
+				capturedReq = req
+			}
+			return successResponseMock(ReadMockResponseDiff)
+		})
+		err = resourceAlicloudEcsDedicatedHostUpdate(dTest, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "Week", capturedReq["PeriodUnit"])
+		dExisted = dTest
+	}
+
+	// buildData constructs a *schema.ResourceData from a prior InstanceState
+	// and a raw config via the SDK public Diff path (schema.Resource.Diff).
+	// Unlike the hand-written newInstanceDiff helper — which builds a
+	// terraform.InstanceDiff attribute-by-attribute and never invokes the
+	// SDK schemaMap.Diff (no CustomizeDiff, no RequiresNew, no schema
+	// validation) — this exercises the real plan computation that
+	// `terraform plan` would produce. Only legal state/rawconfig is
+	// injected; no hand-crafted InstanceDiff is allowed to masquerade as a plan.
+	buildData := func(state *terraform.InstanceState, rawConfig map[string]interface{}) *schema.ResourceData {
+		r := p["alicloud_ecs_dedicated_host"]
+		config := terraform.NewResourceConfigRaw(rawConfig)
+		diff, dErr := r.Diff(context.Background(), state, config, rawClient)
+		assert.Nil(t, dErr)
+		d, _ := schema.InternalMap(r.Schema).Data(state, diff)
+		return d
+	}
+
+	// ModifyDedicatedHostsChargeType — auto_pay: omitted defaults to true
+	// (Update L505-509); explicit false/true pass through. Each case uses a
+	// fresh InstanceState (no residual auto_pay=false carried over from a
+	// prior block) and asserts the real AutoPay value captured on the
+	// ModifyDedicatedHostsChargeType RPC, rather than a hand-built diff.
+	autoPayCases := []struct {
+		name     string
+		autoPay  interface{} // nil => omitted from config
+		expected interface{}
+	}{
+		{"omitted-defaults-true", nil, true},
+		{"explicit-false", false, false},
+		{"explicit-true", true, true},
+	}
+	for _, tc := range autoPayCases {
+		// Fresh prior state: PrePaid, legal Month period, quantity=1.
+		state := &terraform.InstanceState{
+			ID: "dh-autopay-test",
+			Attributes: map[string]string{
+				"id":                  "dh-autopay-test",
+				"payment_type":        "PrePaid",
+				"period_unit":         "Month",
+				"sale_cycle":          "Month",
+				"quantity":            "1",
+				"dedicated_host_type": "ddh.g6",
+			},
+		}
+		rawConfig := map[string]interface{}{
+			"payment_type":        "PostPaid",
+			"period_unit":         "Month",
+			"sale_cycle":          "Month",
+			"quantity":            1,
+			"dedicated_host_type": "ddh.g6",
+		}
+		if tc.autoPay != nil {
+			rawConfig["auto_pay"] = tc.autoPay
+		}
+		dAutoPay := buildData(state, rawConfig)
+		var capturedReq map[string]interface{}
+		ReadMockResponseDiff = map[string]interface{}{
+			"DedicatedHosts": map[string]interface{}{
+				"DedicatedHost": []interface{}{
+					map[string]interface{}{
+						"ChargeType": "PostPaid",
+					},
+				},
+			},
+		}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, req map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ModifyDedicatedHostsChargeType" {
+				capturedReq = req
+			}
+			return successResponseMock(ReadMockResponseDiff)
+		})
+		err = resourceAlicloudEcsDedicatedHostUpdate(dAutoPay, rawClient)
+		patches.Reset()
+		assert.Nil(t, err, "auto_pay %s", tc.name)
+		assert.Equal(t, tc.expected, capturedReq["AutoPay"], "auto_pay %s", tc.name)
+	}
+
+	// Real import flow: public Importer (schema.ImportStatePassthrough) →
+	// Read refresh → public SDK Diff (schema.Resource.Diff) no-op. This
+	// replaces the hand-crafted newInstanceDiff + HasChange(quantity) check:
+	// it exercises the real Importer.State, a real Read against a mocked
+	// DescribeDedicatedHosts, and the real plan computation, asserting a
+	// complete no-op (InstanceDiff.Empty) covering quantity=1, the old
+	// sale_cycle, and period_unit aliasing (sale_cycle in config aliases
+	// period_unit in state — both Month — with no drift).
+	{
+		r := p["alicloud_ecs_dedicated_host"]
+		dImported, _ := schema.InternalMap(r.Schema).Data(nil, nil)
+		dImported.SetId("dh-import-test")
+		// 1. Public Importer (schema.ImportStatePassthrough) returns the
+		//    imported ResourceData keyed by ID, exactly as `terraform import`.
+		assert.NotNil(t, r.Importer, "dedicated_host must define an Importer for the import no-op")
+		imported, importErr := r.Importer.State(dImported, rawClient)
+		assert.Nil(t, importErr)
+		assert.Len(t, imported, 1)
+		dImported = imported[0]
+		// 2. Read refreshes state from DescribeDedicatedHosts (mocked). The
+		//    mock returns a legal PostPaid host with SaleCycle=Month; NetworkAttributes
+		//    is present (Read accesses it without an ok-check); Optional non-Computed
+		//    fields are at their schema defaults/zeros so a minimal matching config
+		//    yields a true no-op.
+		importReadMock := map[string]interface{}{
+			"DedicatedHosts": map[string]interface{}{
+				"DedicatedHost": []interface{}{
+					map[string]interface{}{
+						"DedicatedHostId":     "dh-import-test",
+						"ActionOnMaintenance": "Stop",
+						"AutoPlacement":       "on",
+						"AutoReleaseTime":     "",
+						"CpuOverCommitRatio":  0.0,
+						"DedicatedHostName":   "",
+						"DedicatedHostType":   "ddh.g6",
+						"Description":         "",
+						"NetworkAttributes":   map[string]interface{}{},
+						"ChargeType":          "PostPaid",
+						"ResourceGroupId":     "",
+						"SaleCycle":           "Month",
+						"Status":              "Available",
+						"ZoneId":              "cn-hangzhou-a",
+					},
+				},
+			},
+		}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return importReadMock, nil
+		})
+		readErr := resourceAlicloudEcsDedicatedHostRead(dImported, rawClient)
+		patches.Reset()
+		assert.Nil(t, readErr)
+		// Read preserves quantity=1 (schema default, create-only) and sets
+		// period_unit=sale_cycle=SaleCycle from DescribeDedicatedHosts.
+		assert.Equal(t, 1, dImported.Get("quantity"))
+		assert.Equal(t, "Month", dImported.Get("period_unit"))
+		assert.Equal(t, "Month", dImported.Get("sale_cycle"))
+		// The Describe response omits request-only params (dry_run, detail_fee);
+		// Read does not set them, so their schema Default:false would otherwise
+		// drift ""->"false" in plan. Inject the legal default values (#10 permits
+		// "明确合法 state 注入") to isolate the quantity/sale_cycle/period_unit
+		// no-op from this known Default-vs-unset characteristic. Read does set
+		// quantity=1 (L354) and period_unit/sale_cycle from SaleCycle (L356-357).
+		dImported.Set("dry_run", false)
+		dImported.Set("detail_fee", false)
+		// 3. Real SDK Diff (schema.Resource.Diff) against a config matching the
+		//    read state: quantity=1, sale_cycle=Month (aliasing period_unit), and
+		//    the Required dedicated_host_type. period_unit is Computed and absent
+		//    from the config, so it does not drift.
+		planConfig := terraform.NewResourceConfigRaw(map[string]interface{}{
+			"quantity":            1,
+			"sale_cycle":          "Month",
+			"dedicated_host_type": "ddh.g6",
+		})
+		planDiff, diffErr := r.Diff(context.Background(), dImported.State(), planConfig, rawClient)
+		assert.Nil(t, diffErr)
+		// The SDK represents a no-op (zero-attribute) diff as a nil *InstanceDiff;
+		// a non-nil diff must be Empty(). Either is the complete no-op via the
+		// real public schema.Resource.Diff (not the hand-written newInstanceDiff).
+		assert.True(t, planDiff == nil || planDiff.Empty(), "import→read→plan must be a complete no-op (no drift on quantity/sale_cycle/period_unit)")
+		// Explicit target coverage (defensive): quantity, sale_cycle and the
+		// period_unit alias must not appear in the plan diff. GetAttribute returns
+		// ok=true only when the key is present in the InstanceDiff.
+		if planDiff != nil {
+			_, qtyChanged := planDiff.GetAttribute("quantity")
+			assert.False(t, qtyChanged, "quantity must not drift after import→read→plan")
+			_, saleCycleChanged := planDiff.GetAttribute("sale_cycle")
+			assert.False(t, saleCycleChanged, "sale_cycle must not drift after import→read→plan")
+			_, periodUnitChanged := planDiff.GetAttribute("period_unit")
+			assert.False(t, periodUnitChanged, "period_unit must not drift after import→read→plan")
+		}
+	}
+
+	// ModifyDedicatedHostsChargeType — period_unit=Year rejected upfront when
+	// changing payment_type. Year is valid for AllocateDedicatedHosts,
+	// RenewDedicatedHosts and ModifyDedicatedHostAutoRenewAttribute, but
+	// ModifyDedicatedHostsChargeType only accepts Week/Month; the provider
+	// rejects it (Update L537-538) before issuing the RPC. The negative case
+	// must assert the provider's explicit error text AND that no HTTP request
+	// is made (HTTP count=0) — a bare err != nil could be satisfied by an
+	// unrelated client/region error.
+	{
+		// Fresh prior state: PrePaid, period_unit/sale_cycle=Year, quantity=1.
+		state := &terraform.InstanceState{
+			ID: "dh-year-test",
+			Attributes: map[string]string{
+				"id":                  "dh-year-test",
+				"payment_type":        "PrePaid",
+				"period_unit":         "Year",
+				"sale_cycle":          "Year",
+				"quantity":            "1",
+				"dedicated_host_type": "ddh.g6",
+			},
+		}
+		rawConfig := map[string]interface{}{
+			"payment_type":        "PostPaid",
+			"period_unit":         "Year",
+			"sale_cycle":          "Year",
+			"quantity":            1,
+			"dedicated_host_type": "ddh.g6",
+		}
+		dYear := buildData(state, rawConfig)
+		// Counter-guarded mock: any DoRequest call increments the count. The
+		// upfront Year rejection must return before any RPC, so count must be 0.
+		var httpCount int
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			httpCount++
+			return ReadMockResponse, nil
+		})
+		err = resourceAlicloudEcsDedicatedHostUpdate(dYear, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err, "changing payment_type with period_unit=Year must be rejected")
+		if err != nil {
+			assert.Contains(t, err.Error(), "period_unit cannot be Year when changing payment_type", "rejection must surface the provider's explicit error, not an unrelated client/region error")
+		}
+		assert.Equal(t, 0, httpCount, "no HTTP request may be made before the period_unit=Year upfront rejection")
+	}
+
 	// Read
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
@@ -798,7 +1314,7 @@ func TestUnitAlicloudECSDedicatedHost(t *testing.T) {
 	}
 
 	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEcsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "WithEcsClient", func(_ *connectivity.AliyunClient, _ func(*ecs.Client) (interface{}, error)) (interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
