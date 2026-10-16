@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -112,11 +113,32 @@ func (s *EcsService) DescribeZones(d *schema.ResourceData) (zones []ecs.Zone, er
 	}
 }
 
-func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err error) {
+// defaultInstanceAdditionalAttributes is the union of the attribute sets the
+// resource Read chain used to hardcode in DescribeInstance and DescribeEcsInstance.
+var defaultInstanceAdditionalAttributes = []string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT", "DISK_HIGH_DENSITY_MODE", "CPU_OPTIONS_TOPOLOGY_TYPE"}
+
+// unionInstanceAdditionalAttributes merges user-configured attributes into the
+// default set, dropping duplicates. DescribeInstances accepts at most 10
+// AdditionalAttributes items.
+func unionInstanceAdditionalAttributes(additionalAttributes []string) []string {
+	merged := make([]string, 0, len(defaultInstanceAdditionalAttributes)+len(additionalAttributes))
+	merged = append(merged, defaultInstanceAdditionalAttributes...)
+	for _, v := range additionalAttributes {
+		exists := slices.Contains(merged, v)
+		if !exists {
+			merged = append(merged, v)
+		}
+	}
+	return merged
+}
+
+// Variadic because the common test machinery invokes this method reflectively with only the instance ID.
+func (s *EcsService) DescribeInstance(id string, additionalAttributes ...string) (instance ecs.Instance, err error) {
 	request := ecs.CreateDescribeInstancesRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceIds = convertListToJsonString([]interface{}{id})
-	request.AdditionalAttributes = &[]string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT", "DISK_HIGH_DENSITY_MODE"}
+	additionalAttributes = unionInstanceAdditionalAttributes(additionalAttributes)
+	request.AdditionalAttributes = &additionalAttributes
 
 	var response *ecs.DescribeInstancesResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)
@@ -3793,7 +3815,7 @@ func (s *EcsService) isSupportedNetworkCardIndex(instanceType string) (bool, err
 	return false, nil
 }
 
-func (s *EcsService) DescribeEcsInstance(id string) (object map[string]interface{}, err error) {
+func (s *EcsService) DescribeEcsInstance(id string, additionalAttributes []string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -3802,7 +3824,7 @@ func (s *EcsService) DescribeEcsInstance(id string) (object map[string]interface
 	query = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["InstanceIds"] = convertListToJsonString([]interface{}{id})
-	request["AdditionalAttributes"] = []string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT", "LOGIN_AS_NON_ROOT", "CPU_OPTIONS_TOPOLOGY_TYPE"}
+	request["AdditionalAttributes"] = unionInstanceAdditionalAttributes(additionalAttributes)
 
 	action := "DescribeInstances"
 

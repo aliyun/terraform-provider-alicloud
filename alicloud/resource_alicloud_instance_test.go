@@ -4,15 +4,19 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -6491,4 +6495,586 @@ func resourceECSInstanceTagsDependence(name string) string {
   		vpc_id = alicloud_vpc.default.id
 	}
 `, name)
+}
+
+// managed_host_id is ForceNew and conflicts with dedicated_host_id. Step 1 creates the
+// instance on a pre-provisioned managed host and configures the MANAGED_HOST_ID query
+// attribute in additional_attributes so Read refreshes managed_host_id from
+// AdditionalInfo; step 2 removes the attribute and verifies the instance is replaced,
+// with the replacement created without ManagedHostId.
+func TestAccAliCloudECSInstanceManagedHostId(t *testing.T) {
+	managedHostId := os.Getenv("ALICLOUD_MANAGED_HOST_ID")
+	if managedHostId == "" {
+		t.Skip("ALICLOUD_MANAGED_HOST_ID must be set to a valid managed host ID to run this test")
+	}
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceManagedHostId%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceManagedHostIdConfigDependence)
+	firstInstanceId := ""
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":          "${data.alicloud_images.default.images.0.id}",
+					"security_groups":   []string{"${alicloud_security_group.default.id}"},
+					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone": "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"instance_name":     "${var.name}",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"managed_host_id":   managedHostId,
+					// The MANAGED_HOST_ID query attribute is requested only through
+					// explicit configuration; it is what makes Read return the value.
+					"additional_attributes": []string{"MANAGED_HOST_ID"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":   name,
+						"managed_host_id": managedHostId,
+					}),
+					func(s *terraform.State) error {
+						firstInstanceId = s.RootModule().Resources[resourceId].Primary.ID
+						return nil
+					},
+				),
+			},
+			{
+				// Removing the ForceNew attribute replaces the instance; the
+				// replacement instance is created without ManagedHostId.
+				Config: testAccConfig(map[string]interface{}{
+					"managed_host_id": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":   name,
+						"managed_host_id": REMOVEKEY,
+					}),
+					func(s *terraform.State) error {
+						id := s.RootModule().Resources[resourceId].Primary.ID
+						if id == firstInstanceId {
+							return fmt.Errorf("instance %s was not replaced after removing managed_host_id", id)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func resourceInstanceManagedHostIdConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_instance_types" "default" {
+	cpu_core_count = 1
+	memory_size    = 2
+}
+
+data "alicloud_images" "default" {
+	name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
+	owners     = "system"
+}
+
+resource "alicloud_vpc" "default" {
+	vpc_name = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+	vpc_id       = alicloud_vpc.default.id
+	zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+	cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+	vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+	name   = var.name
+	vpc_id = alicloud_vpc.default.id
+}
+`, name)
+}
+
+func TestAccAliCloudECSInstanceManagedHostIdConflict(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, nil)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+resource "alicloud_instance" "default" {
+  instance_name     = "tf-testAccEcsInstanceManagedHostIdConflict"
+  managed_host_id   = "mh-conflict-test"
+  dedicated_host_id = "dh-conflict-test"
+}
+`,
+				ExpectError: regexp.MustCompile(`conflicts with (managed_host_id|dedicated_host_id)`),
+			},
+		},
+	})
+}
+
+const unitTestMockInstanceID = "i-mock-managed-host-1"
+const unitTestMockManagedHostID = "mh-mock-1234567890"
+
+// The MANAGED_HOST_ID query attribute is a plain passthrough value: the provider
+// requests it only when the user configures it in additional_attributes. The
+// trigger value is MANAGED_HOST_ID per the ManagedHost OpenAPI change doc; the
+// PascalCase ManagedHostId is only the response field inside AdditionalInfo.
+const unitTestManagedHostIdAdditionalAttribute = "MANAGED_HOST_ID"
+
+func TestUnitAliCloudInstanceManagedHostId(t *testing.T) {
+	var mu sync.Mutex
+	// instanceOnManagedHost simulates the cloud-side state: DescribeInstances returns
+	// AdditionalInfo.ManagedHostId only for instances created on a managed host and only
+	// when the query requests the ManagedHostId attribute.
+	var instanceOnManagedHost bool
+	type capturedRequest struct {
+		action          string
+		managedHostID   string
+		additionalAttrs []string
+	}
+	var requests []capturedRequest
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request form failed: %v", err)
+		}
+		action := r.FormValue("Action")
+		managedHostID := r.FormValue("ManagedHostId")
+		var additionalAttrs []string
+		if vs := r.Form["AdditionalAttributes"]; len(vs) > 0 {
+			additionalAttrs = append(additionalAttrs, vs...)
+		}
+		for i := 1; ; i++ {
+			v := r.FormValue(fmt.Sprintf("AdditionalAttributes.%d", i))
+			if v == "" {
+				break
+			}
+			additionalAttrs = append(additionalAttrs, v)
+		}
+		mu.Lock()
+		requests = append(requests, capturedRequest{action: action, managedHostID: managedHostID, additionalAttrs: additionalAttrs})
+		if action == "RunInstances" && managedHostID != "" {
+			instanceOnManagedHost = true
+		}
+		onManagedHost := instanceOnManagedHost
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		switch action {
+		case "RunInstances":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","InstanceIdSets":{"InstanceIdSet":["%s"]}}`, unitTestMockInstanceID)
+		case "DescribeInstances":
+			var additionalInfo string
+			hasTrigger := false
+			for _, attr := range additionalAttrs {
+				if attr == unitTestManagedHostIdAdditionalAttribute {
+					hasTrigger = true
+					break
+				}
+			}
+			if onManagedHost && hasTrigger {
+				additionalInfo = fmt.Sprintf(`,"AdditionalInfo":{"ManagedHostId":"%s"}`, unitTestMockManagedHostID)
+			}
+			fmt.Fprintf(w, `{"RequestId":"mockrid","TotalCount":1,"PageNumber":1,"PageSize":10,"Instances":{"Instance":[{"InstanceId":"%s","Status":"Running","InstanceName":"%s","ImageId":"aliyun-2193317896-mock","InstanceType":"ecs.n4.small","ZoneId":"cn-hangzhou-i","RegionId":"cn-hangzhou","InstanceChargeType":"PostPaid","SpotInterruptionBehavior":""%s}]}}`, unitTestMockInstanceID, unitTestMockInstanceID, additionalInfo)
+		case "DescribeDisks":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","TotalCount":1,"Disks":{"Disk":[{"DiskId":"d-mock-system-disk","InstanceId":"%s","Category":"cloud_efficiency","DiskName":"mock-system-disk","Size":40,"Type":"system","Status":"In_use"}]}}`, unitTestMockInstanceID)
+		case "DescribeInstanceMaintenanceAttributes":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","MaintenanceAttributes":{"MaintenanceAttribute":[{"InstanceId":"%s","NotifyOnMaintenance":false}]}}`, unitTestMockInstanceID)
+		case "DescribeInstanceAttribute":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","InstanceId":"%s"}`, unitTestMockInstanceID)
+		case "DescribeInstanceAttachmentAttributes":
+			fmt.Fprintf(w, `{"RequestId":"mockrid","Instances":{"Instance":[{"InstanceId":"%s","PrivatePoolOptionsMatchCriteria":"","PrivatePoolOptionsId":""}]}}`, unitTestMockInstanceID)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mockrid"}`)
+		}
+	}))
+	defer server.Close()
+
+	t.Setenv("NO_PROXY", "127.0.0.1")
+	t.Setenv("no_proxy", "127.0.0.1")
+
+	credential, err := credentials.NewCredential(new(credentials.Config).SetType("access_key").
+		SetAccessKeyId("test-access-key-id").
+		SetAccessKeySecret("test-access-key-secret"))
+	if err != nil {
+		t.Fatalf("build credential failed: %v", err)
+	}
+	endpoints := new(sync.Map)
+	config := connectivity.Config{
+		AccessKey:            "test-access-key-id",
+		SecretKey:            "test-access-key-secret",
+		Credential:           credential,
+		RegionId:             "cn-hangzhou",
+		AccountType:          "test",
+		Protocol:             "http",
+		SkipRegionValidation: true,
+		Endpoints:            endpoints,
+		SignVersion:          new(sync.Map),
+	}
+	rawClient, err := config.Client()
+	if err != nil {
+		t.Fatalf("build client failed: %v", err)
+	}
+	// Both the tea RPC layer and the legacy SDK prepend the protocol scheme themselves,
+	// so the endpoint is stored without a scheme.
+	endpoints.Store("ecs", strings.TrimPrefix(server.URL, "http://"))
+
+	resources := Provider().ResourcesMap
+
+	createInstance := func(t *testing.T, managedHostID string, additionalAttributes []interface{}) *schema.ResourceData {
+		t.Helper()
+		raw := map[string]interface{}{"instance_name": "tf-mock-managed-host-instance"}
+		if managedHostID != "" {
+			raw["managed_host_id"] = managedHostID
+		}
+		if len(additionalAttributes) > 0 {
+			raw["additional_attributes"] = additionalAttributes
+		}
+		d := schema.TestResourceDataRaw(t, resources["alicloud_instance"].Schema, raw)
+		d.MarkNewResource()
+		if err := resourceAliCloudInstanceCreate(d, rawClient); err != nil {
+			t.Fatalf("create instance failed: %v", err)
+		}
+		return d
+	}
+
+	t.Run("SchemaManagedHostId", func(t *testing.T) {
+		s, ok := resources["alicloud_instance"].Schema["managed_host_id"]
+		if !ok {
+			t.Fatal("alicloud_instance schema does not contain managed_host_id")
+		}
+		if s.Type != schema.TypeString {
+			t.Errorf("managed_host_id type = %v, want TypeString", s.Type)
+		}
+		if !s.Optional {
+			t.Error("managed_host_id should be Optional")
+		}
+		if !s.ForceNew {
+			t.Error("managed_host_id should be ForceNew (ECS does not support changing the managed host after creation)")
+		}
+		if s.Computed {
+			t.Error("managed_host_id should not be Computed")
+		}
+		if len(s.ConflictsWith) != 1 || s.ConflictsWith[0] != "dedicated_host_id" {
+			t.Errorf("managed_host_id ConflictsWith = %v, want [dedicated_host_id]", s.ConflictsWith)
+		}
+	})
+
+	t.Run("CreateWithManagedHostId", func(t *testing.T) {
+		mu.Lock()
+		requests = nil
+		instanceOnManagedHost = false
+		mu.Unlock()
+
+		// additional_attributes carries the ManagedHostId query attribute, so
+		// Read refreshes managed_host_id from AdditionalInfo.
+		d := createInstance(t, unitTestMockManagedHostID, []interface{}{unitTestManagedHostIdAdditionalAttribute})
+		if d.Id() != unitTestMockInstanceID {
+			t.Fatalf("instance id = %s, want %s", d.Id(), unitTestMockInstanceID)
+		}
+
+		mu.Lock()
+		runInstancesCount := 0
+		describeWithTrigger := 0
+		describeWithoutDefaults := 0
+		for _, req := range requests {
+			switch req.action {
+			case "RunInstances":
+				runInstancesCount++
+				if req.managedHostID != unitTestMockManagedHostID {
+					t.Errorf("RunInstances ManagedHostId = %q, want %q", req.managedHostID, unitTestMockManagedHostID)
+				}
+			case "DescribeInstances":
+				hasTrigger := false
+				hasDefault := false
+				for _, attr := range req.additionalAttrs {
+					if attr == unitTestManagedHostIdAdditionalAttribute {
+						hasTrigger = true
+					}
+					if attr == "META_OPTIONS" {
+						hasDefault = true
+					}
+				}
+				if hasTrigger {
+					describeWithTrigger++
+				}
+				// Configured values merge into the defaults instead of
+				// replacing them, so every query still carries them.
+				if !hasDefault {
+					describeWithoutDefaults++
+				}
+			}
+		}
+		mu.Unlock()
+		if runInstancesCount < 1 {
+			t.Error("RunInstances was not called")
+		}
+		if describeWithTrigger < 1 {
+			t.Error("no DescribeInstances query requested the ManagedHostId attribute")
+		}
+		if describeWithoutDefaults > 0 {
+			t.Errorf("%d DescribeInstances queries dropped the provider default attributes", describeWithoutDefaults)
+		}
+		if v := d.Get("managed_host_id").(string); v != unitTestMockManagedHostID {
+			t.Errorf("state managed_host_id = %q, want %q", v, unitTestMockManagedHostID)
+		}
+
+		// Read must refresh the attribute from the API response instead of
+		// merely retaining the configured value.
+		if err := d.Set("managed_host_id", "mh-stale"); err != nil {
+			t.Fatalf("set managed_host_id failed: %v", err)
+		}
+		if err := resourceAliCloudInstanceRead(d, rawClient); err != nil {
+			t.Fatalf("read instance failed: %v", err)
+		}
+		if v := d.Get("managed_host_id").(string); v != unitTestMockManagedHostID {
+			t.Errorf("read managed_host_id = %q, want %q refreshed from AdditionalInfo", v, unitTestMockManagedHostID)
+		}
+	})
+
+	t.Run("CreateWithManagedHostIdWithoutAdditionalAttributes", func(t *testing.T) {
+		mu.Lock()
+		requests = nil
+		instanceOnManagedHost = false
+		mu.Unlock()
+
+		// The ManagedHostId query attribute is a pure passthrough: without it
+		// in additional_attributes the provider must not request it.
+		d := createInstance(t, unitTestMockManagedHostID, nil)
+		if d.Id() != unitTestMockInstanceID {
+			t.Fatalf("instance id = %s, want %s", d.Id(), unitTestMockInstanceID)
+		}
+
+		mu.Lock()
+		describeWithTrigger := 0
+		for _, req := range requests {
+			if req.action != "DescribeInstances" {
+				continue
+			}
+			for _, attr := range req.additionalAttrs {
+				if attr == unitTestManagedHostIdAdditionalAttribute {
+					describeWithTrigger++
+					break
+				}
+			}
+		}
+		mu.Unlock()
+		if describeWithTrigger > 0 {
+			t.Errorf("%d DescribeInstances queries requested the ManagedHostId attribute although it was not configured", describeWithTrigger)
+		}
+		if v := d.Get("managed_host_id").(string); v != unitTestMockManagedHostID {
+			t.Errorf("state managed_host_id = %q, want %q retained from config", v, unitTestMockManagedHostID)
+		}
+
+		// Read leaves the state value untouched: the response has no
+		// AdditionalInfo because the attribute was not requested.
+		if err := d.Set("managed_host_id", "mh-stale"); err != nil {
+			t.Fatalf("set managed_host_id failed: %v", err)
+		}
+		if err := resourceAliCloudInstanceRead(d, rawClient); err != nil {
+			t.Fatalf("read instance failed: %v", err)
+		}
+		if v := d.Get("managed_host_id").(string); v != "mh-stale" {
+			t.Errorf("read managed_host_id = %q, want %q left untouched", v, "mh-stale")
+		}
+	})
+
+	t.Run("CreateWithoutManagedHostId", func(t *testing.T) {
+		mu.Lock()
+		requests = nil
+		instanceOnManagedHost = false
+		mu.Unlock()
+
+		d := createInstance(t, "", nil)
+		if d.Id() != unitTestMockInstanceID {
+			t.Fatalf("instance id = %s, want %s", d.Id(), unitTestMockInstanceID)
+		}
+
+		mu.Lock()
+		runInstancesCount := 0
+		describeWithTrigger := 0
+		for _, req := range requests {
+			switch req.action {
+			case "RunInstances":
+				runInstancesCount++
+				if req.managedHostID != "" {
+					t.Errorf("RunInstances should not send ManagedHostId, got %q", req.managedHostID)
+				}
+			case "DescribeInstances":
+				for _, attr := range req.additionalAttrs {
+					if attr == unitTestManagedHostIdAdditionalAttribute {
+						describeWithTrigger++
+						break
+					}
+				}
+			}
+		}
+		mu.Unlock()
+		if runInstancesCount < 1 {
+			t.Error("RunInstances was not called")
+		}
+		if describeWithTrigger > 0 {
+			t.Errorf("%d DescribeInstances queries requested the ManagedHostId attribute although it was not configured", describeWithTrigger)
+		}
+		if v := d.Get("managed_host_id").(string); v != "" {
+			t.Errorf("state managed_host_id = %q, want empty", v)
+		}
+	})
+}
+
+func TestAccAliCloudECSInstanceAdditionalAttributes(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceConfigAdditionalAttributes%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceECSInstanceVpcDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"security_enhancement_strategy": "Active",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": NOSET,
+						"user_data":               "",
+					}),
+				),
+			},
+			{
+				// additional_attributes is a query-time parameter that is never returned
+				// by DescribeInstances, so an instance created without it imports without
+				// ignoring this attribute.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": []string{"META_OPTIONS", "LOGIN_AS_NON_ROOT"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": "2",
+						"user_data":               "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": []string{"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": "3",
+						"user_data":               "",
+					}),
+				),
+			},
+			{
+				// An explicit empty set keeps the attribute unset in state while the
+				// request falls back to the default attribute set.
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": CLEARLIST,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": "0",
+						"user_data":               "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": []string{
+						"META_OPTIONS", "NETWORK_PRIMARY_ENI_IP", "LOGIN_AS_NON_ROOT", "DISK_HIGH_DENSITY_MODE",
+						"CPU_OPTIONS_TOPOLOGY_TYPE", "TF_TEST_ATTRIBUTE_06", "TF_TEST_ATTRIBUTE_07", "TF_TEST_ATTRIBUTE_08",
+						"TF_TEST_ATTRIBUTE_09", "TF_TEST_ATTRIBUTE_10", "TF_TEST_ATTRIBUTE_11",
+					},
+				}),
+				ExpectError: regexp.MustCompile("supports 10 item maximum"),
+			},
+			{
+				// The provider merges its 5 defaults into every query and the API
+				// accepts at most 10 AdditionalAttributes items, so more than 5
+				// values outside the defaults fail at plan time even though the
+				// schema allows up to 10.
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": []string{
+						"TF_TEST_ATTRIBUTE_01", "TF_TEST_ATTRIBUTE_02", "TF_TEST_ATTRIBUTE_03",
+						"TF_TEST_ATTRIBUTE_04", "TF_TEST_ATTRIBUTE_05", "TF_TEST_ATTRIBUTE_06",
+					},
+				}),
+				ExpectError: regexp.MustCompile("at most 5 values outside the defaults can be configured"),
+			},
+			{
+				// The harness reuses the last step's config for the destroy phase, so
+				// the final step must stay valid or cleanup aborts and leaves the
+				// dependency resources behind.
+				Config: testAccConfig(map[string]interface{}{
+					"additional_attributes": []string{"META_OPTIONS"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"additional_attributes.#": "1",
+						"user_data":               "",
+					}),
+				),
+			},
+		},
+	})
 }
