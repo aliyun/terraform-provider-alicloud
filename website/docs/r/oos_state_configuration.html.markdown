@@ -13,7 +13,7 @@ Provides a OOS State Configuration resource.
 
 For information about OOS State Configuration and how to use it, see [What is State Configuration](https://www.alibabacloud.com/help/en/doc-detail/208728.html).
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
 
 ## Example Usage
 
@@ -50,16 +50,16 @@ resource "alicloud_oos_state_configuration" "default" {
 
 The following arguments are supported:
 
-* `configure_mode` - (Optional, Computed) Configuration mode. Valid values: `ApplyAndAutoCorrect`, `ApplyAndMonitor`, `ApplyOnly`.
-* `description` - (Optional) The description of the resource.
-* `parameters` - (Optional) The parameter of the Template. This field is in the format of JSON strings. For detailed definition instructions, please refer to [Metadata types that are supported by a configuration list](https://www.alibabacloud.com/help/en/doc-detail/208276.html).
-* `resource_group_id` - (Optional, Computed) The ID of the resource group.
-* `schedule_expression` - (Required) Timing expression.
-* `schedule_type` - (Required) Timing type. Valid values: `rate`.
+* `configure_mode` - (Optional, Computed) The configuration mode. Valid values: `ApplyAndAutoCorrect`, `ApplyAndMonitor`, `ApplyOnly`.
+* `description` - (Optional) The description.
+* `parameters` - (Optional) The parameters. This field is in the format of JSON strings. For detailed definition instructions, please refer to [Metadata types that are supported by a configuration list](https://www.alibabacloud.com/help/en/doc-detail/208276.html).
+* `resource_group_id` - (Optional, Computed) The resource group ID.
+* `schedule_expression` - (Required) The schedule expression. The interval between two schedules must be a minimum of 30 minutes.
+* `schedule_type` - (Required) The schedule type. Valid values: `rate`.
 * `tags` - (Optional) The tag of the resource.
-* `targets` - (Required) The Target resources.  This field is in the format of JSON strings. For detailed definition instructions, please refer to [Parameter](https://www.alibabacloud.com/help/en/doc-detail/120674.html).
-* `template_name` - (Required, ForceNew) The name of the template.
-* `template_version` - (Optional, Computed, ForceNew) The version number. If you do not specify this parameter, the system uses the latest version.
+* `targets` - (Required) The resources to be queried. This field is in the format of JSON strings. For detailed definition instructions, please refer to [Parameter](https://www.alibabacloud.com/help/en/doc-detail/120674.html).
+* `template_name` - (Required, ForceNew) The name of the template. The name must be 1 to 200 characters in length and can contain letters, digits, hyphens (-), and underscores (_).
+* `template_version` - (Optional, Computed, ForceNew) The version number of the template. If you do not specify this parameter, the latest version of the template is used.
 
 ## Attributes Reference
 
