@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
-func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
+func TestAccAliCloudEciContainerGroupsDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
@@ -88,34 +88,47 @@ func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
 	}
 	var existAlicloudEciContainerGroupsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                                        "1",
-			"names.#":                                      "1",
-			"groups.#":                                     "1",
-			"groups.0.id":                                  CHECKSET,
-			"groups.0.container_group_id":                  CHECKSET,
-			"groups.0.container_group_name":                CHECKSET,
-			"groups.0.containers.#":                        "1",
-			"groups.0.containers.0.image":                  fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
-			"groups.0.containers.0.name":                   "nginx",
-			"groups.0.containers.0.image_pull_policy":      "IfNotPresent",
-			"groups.0.containers.0.volume_mounts.#":        "1",
-			"groups.0.containers.0.ports.#":                "1",
-			"groups.0.containers.0.environment_vars.#":     "1",
-			"groups.0.cpu":                                 "2",
-			"groups.0.dns_config.#":                        "0",
-			"groups.0.host_aliases.#":                      "1",
-			"groups.0.init_containers.#":                   "1",
-			"groups.0.init_containers.0.name":              "init-busybox",
-			"groups.0.init_containers.0.image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30", defaultRegionToTest),
-			"groups.0.init_containers.0.image_pull_policy": "IfNotPresent",
-			"groups.0.memory":                              "4",
-			"groups.0.resource_group_id":                   CHECKSET,
-			"groups.0.security_group_id":                   CHECKSET,
-			"groups.0.status":                              "Running",
-			"groups.0.vswitch_id":                          CHECKSET,
-			"groups.0.vpc_id":                              CHECKSET,
-			"groups.0.zone_id":                             CHECKSET,
-			"groups.0.volumes.#":                           "1",
+			"ids.#":                                                "1",
+			"names.#":                                              "1",
+			"groups.#":                                             "1",
+			"groups.0.id":                                          CHECKSET,
+			"groups.0.container_group_id":                          CHECKSET,
+			"groups.0.container_group_name":                        CHECKSET,
+			"groups.0.containers.#":                                "1",
+			"groups.0.containers.0.image":                          fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
+			"groups.0.containers.0.name":                           "nginx",
+			"groups.0.containers.0.image_pull_policy":              "IfNotPresent",
+			"groups.0.containers.0.volume_mounts.#":                "1",
+			"groups.0.containers.0.ports.#":                        "1",
+			"groups.0.containers.0.environment_vars.#":             "2",
+			"groups.0.containers.0.environment_vars.0.field_ref.#": "0",
+			"groups.0.containers.0.environment_vars.1.field_ref.#": "1",
+			"groups.0.containers.0.environment_vars.1.field_ref.0.field_path": "metadata.name",
+			"groups.0.containers.0.stdin":                                     "true",
+			"groups.0.containers.0.stdin_once":                                "true",
+			"groups.0.containers.0.tty":                                       "true",
+			"groups.0.containers.0.volume_mounts.0.sub_path":                  "sub",
+			"groups.0.containers.0.volume_mounts.0.mount_propagation":         "None",
+			"groups.0.cpu":                                                         "2",
+			"groups.0.dns_config.#":                                                "0",
+			"groups.0.host_aliases.#":                                              "1",
+			"groups.0.init_containers.#":                                           "1",
+			"groups.0.init_containers.0.name":                                      "init-busybox",
+			"groups.0.init_containers.0.image":                                     fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30", defaultRegionToTest),
+			"groups.0.init_containers.0.image_pull_policy":                         "IfNotPresent",
+			"groups.0.init_containers.0.environment_vars.#":                        "2",
+			"groups.0.init_containers.0.environment_vars.1.field_ref.#":            "1",
+			"groups.0.init_containers.0.environment_vars.1.field_ref.0.field_path": "metadata.name",
+			"groups.0.init_containers.0.volume_mounts.#":                           "1",
+			"groups.0.init_containers.0.volume_mounts.0.mount_propagation":         "None",
+			"groups.0.memory":                                                      "4",
+			"groups.0.resource_group_id":                                           CHECKSET,
+			"groups.0.security_group_id":                                           CHECKSET,
+			"groups.0.status":                                                      "Running",
+			"groups.0.vswitch_id":                                                  CHECKSET,
+			"groups.0.vpc_id":                                                      CHECKSET,
+			"groups.0.zone_id":                                                     CHECKSET,
+			"groups.0.volumes.#":                                                   "1",
 		}
 	}
 	var fakeAlicloudEciContainerGroupsDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -170,10 +183,15 @@ resource "alicloud_eci_container_group" "default" {
     working_dir       = "/tmp/nginx"
     image_pull_policy = "IfNotPresent"
     commands          = ["/bin/sh", "-c", "sleep 9999"]
+    stdin             = true
+    stdin_once        = true
+    tty               = true
     volume_mounts {
-      mount_path = "/tmp/test"
-      read_only  = false
-      name       = "empty1"
+      mount_path        = "/tmp/test"
+      read_only         = false
+      name              = "empty1"
+      sub_path          = "sub"
+      mount_propagation = "None"
     }
     ports {
       port     = 80
@@ -182,6 +200,12 @@ resource "alicloud_eci_container_group" "default" {
     environment_vars {
       key   = "test"
       value = "nginx"
+    }
+    environment_vars {
+      key = "test2"
+      field_ref {
+        field_path = "metadata.name"
+      }
     }
   }
   host_aliases {
@@ -198,6 +222,22 @@ resource "alicloud_eci_container_group" "default" {
     image_pull_policy = "IfNotPresent"
     commands          = ["echo"]
     args              = ["hello initcontainer"]
+    volume_mounts {
+      mount_path        = "/tmp/init"
+      read_only         = false
+      name              = "empty1"
+      mount_propagation = "None"
+    }
+    environment_vars {
+      key   = "test"
+      value = "nginx"
+    }
+    environment_vars {
+      key = "test2"
+      field_ref {
+        field_path = "metadata.name"
+      }
+    }
   }
 
   #################################

@@ -113,6 +113,18 @@ func dataSourceAlicloudEciContainerGroups() *schema.Resource {
 													Type:     schema.TypeString,
 													Computed: true,
 												},
+												"field_ref": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"field_path": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+														},
+													},
+												},
 											},
 										},
 									},
@@ -160,6 +172,18 @@ func dataSourceAlicloudEciContainerGroups() *schema.Resource {
 										Type:     schema.TypeInt,
 										Computed: true,
 									},
+									"stdin": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"stdin_once": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"tty": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
 									"volume_mounts": {
 										Type:     schema.TypeList,
 										Computed: true,
@@ -175,6 +199,14 @@ func dataSourceAlicloudEciContainerGroups() *schema.Resource {
 												},
 												"read_only": {
 													Type:     schema.TypeBool,
+													Computed: true,
+												},
+												"sub_path": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"mount_propagation": {
+													Type:     schema.TypeString,
 													Computed: true,
 												},
 											},
@@ -350,6 +382,18 @@ func dataSourceAlicloudEciContainerGroups() *schema.Resource {
 													Type:     schema.TypeString,
 													Computed: true,
 												},
+												"field_ref": {
+													Type:     schema.TypeList,
+													Computed: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"field_path": {
+																Type:     schema.TypeString,
+																Computed: true,
+															},
+														},
+													},
+												},
 											},
 										},
 									},
@@ -412,6 +456,10 @@ func dataSourceAlicloudEciContainerGroups() *schema.Resource {
 												},
 												"read_only": {
 													Type:     schema.TypeBool,
+													Computed: true,
+												},
+												"mount_propagation": {
+													Type:     schema.TypeString,
 													Computed: true,
 												},
 											},
@@ -695,6 +743,9 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 						"name":              m1["Name"],
 						"ready":             m1["Ready"],
 						"restart_count":     m1["RestartCount"],
+						"stdin":             m1["Stdin"],
+						"stdin_once":        m1["StdinOnce"],
+						"tty":               m1["Tty"],
 						"working_dir":       m1["WorkingDir"],
 					}
 					if m1["EnvironmentVars"] != nil {
@@ -704,6 +755,17 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 							environmentVarsMap := map[string]interface{}{
 								"key":   environmentVars["Key"],
 								"value": environmentVars["Value"],
+							}
+							if environmentVars["ValueFrom"] != nil {
+								fieldRefMaps := make([]map[string]interface{}, 0)
+								fieldRefValue := environmentVars["ValueFrom"].(map[string]interface{})["FieldRef"]
+								if fieldRefValue != nil && fieldRefValue.(map[string]interface{})["FieldPath"] != nil {
+									fieldRefMap := map[string]interface{}{
+										"field_path": fieldRefValue.(map[string]interface{})["FieldPath"],
+									}
+									fieldRefMaps = append(fieldRefMaps, fieldRefMap)
+									environmentVarsMap["field_ref"] = fieldRefMaps
+								}
 							}
 							environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 						}
@@ -726,9 +788,11 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 						for _, volumeMountsValue := range m1["VolumeMounts"].([]interface{}) {
 							volumeMounts := volumeMountsValue.(map[string]interface{})
 							volumeMountsMap := map[string]interface{}{
-								"mount_path": volumeMounts["MountPath"],
-								"name":       volumeMounts["Name"],
-								"read_only":  volumeMounts["ReadOnly"],
+								"mount_path":        volumeMounts["MountPath"],
+								"name":              volumeMounts["Name"],
+								"read_only":         volumeMounts["ReadOnly"],
+								"sub_path":          volumeMounts["SubPath"],
+								"mount_propagation": volumeMounts["MountPropagation"],
 							}
 							volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 						}
@@ -798,6 +862,17 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 								"key":   environmentVars["Key"],
 								"value": environmentVars["Value"],
 							}
+							if environmentVars["ValueFrom"] != nil {
+								fieldRefMaps := make([]map[string]interface{}, 0)
+								fieldRefValue := environmentVars["ValueFrom"].(map[string]interface{})["FieldRef"]
+								if fieldRefValue != nil && fieldRefValue.(map[string]interface{})["FieldPath"] != nil {
+									fieldRefMap := map[string]interface{}{
+										"field_path": fieldRefValue.(map[string]interface{})["FieldPath"],
+									}
+									fieldRefMaps = append(fieldRefMaps, fieldRefMap)
+									environmentVarsMap["field_ref"] = fieldRefMaps
+								}
+							}
 							environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 						}
 						temp1["environment_vars"] = environmentVarsMaps
@@ -819,9 +894,10 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 						for _, volumeMountsValue := range m1["VolumeMounts"].([]interface{}) {
 							volumeMounts := volumeMountsValue.(map[string]interface{})
 							volumeMountsMap := map[string]interface{}{
-								"mount_path": volumeMounts["MountPath"],
-								"name":       volumeMounts["Name"],
-								"read_only":  volumeMounts["ReadOnly"],
+								"mount_path":        volumeMounts["MountPath"],
+								"name":              volumeMounts["Name"],
+								"read_only":         volumeMounts["ReadOnly"],
+								"mount_propagation": volumeMounts["MountPropagation"],
 							}
 							volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 						}

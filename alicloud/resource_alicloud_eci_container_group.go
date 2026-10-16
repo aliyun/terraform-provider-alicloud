@@ -258,6 +258,14 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 										Optional: true,
 										Default:  false,
 									},
+									"sub_path": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"mount_propagation": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
 								},
 							},
 						},
@@ -427,6 +435,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 							Type:     schema.TypeList,
 							Optional: true,
 							Computed: true,
+							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"capability": {
@@ -453,6 +462,10 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 										Optional: true,
 										ForceNew: true,
 									},
+									"read_only_root_filesystem": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
 								},
 							},
 						},
@@ -462,6 +475,18 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+						},
+						"stdin": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"stdin_once": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"tty": {
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 					},
 				},
@@ -583,6 +608,10 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 										Optional: true,
 										Default:  false,
 									},
+									"mount_propagation": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
 								},
 							},
 						},
@@ -598,6 +627,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 							Type:     schema.TypeList,
 							Optional: true,
 							Computed: true,
+							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"capability": {
@@ -617,6 +647,10 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 									},
 									"run_as_user": {
 										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"read_only_root_filesystem": {
+										Type:     schema.TypeBool,
 										Optional: true,
 									},
 								},
@@ -845,6 +879,187 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 					},
 				},
 			},
+			"active_deadline_seconds": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"compute_category_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"container_resource_view": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"core_pattern": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cpu_architecture": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"AMD64", "ARM64"}, false),
+			},
+			"cpu_options_core": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cpu_options_numa": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cpu_options_threads_per_core": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_cache_bucket": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_cache_bursting_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_cache_pl": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_cache_provisioned_iops": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"egress_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ingress_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"eip_common_bandwidth_package": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"eip_isp": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"BGP", "BGP_PRO"}, false),
+			},
+			"environment_var_hide": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"fixed_ip": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"true", "false"}, false),
+			},
+			"fixed_ip_retain_hour": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"image_accelerate_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"nydus", "dadi", "p2p", "imc"}, false),
+			},
+			"image_snapshot_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ipv6_address": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ipv6_address_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ipv6_gateway_bandwidth": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ipv6_gateway_bandwidth_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ntp_server": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"overhead_reservation_option": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable_overhead_reservation": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
+			"private_ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"schedule_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"VSwitchOrdered", "VSwitchRandom"}, false),
+			},
+			"share_process_namespace": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"spot_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"strict_spot": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"update_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"RenewUpdate", "IncrementalUpdate"}, false),
+			},
 			"internet_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -912,6 +1127,8 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 			VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 			VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+			VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
+			VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 		}
 		Containers[i]["VolumeMount"] = VolumeMounts
 
@@ -994,11 +1211,16 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				}
 			}
 			SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+			SecurityContext["ReadOnlyRootFilesystem"] = SecurityContextMap["read_only_root_filesystem"]
 			Containers[i]["SecurityContextPrivileged"] = SecurityContextMap["privileged"]
 		}
 		Containers[i]["SecurityContext"] = SecurityContext
 
 		Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_exec"]
+		Containers[i]["Stdin"] = ContainersMap["stdin"]
+		Containers[i]["StdinOnce"] = ContainersMap["stdin_once"]
+		Containers[i]["Tty"] = ContainersMap["tty"]
+		Containers[i]["EnvironmentVarHide"] = d.Get("environment_var_hide")
 
 	}
 	request["Container"] = Containers
@@ -1126,6 +1348,7 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 			}
 			InitContainers[i]["VolumeMount"] = VolumeMounts
 
@@ -1142,6 +1365,7 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 					}
 				}
 				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+				SecurityContext["ReadOnlyRootFilesystem"] = SecurityContextMap["read_only_root_filesystem"]
 			}
 			InitContainers[i]["SecurityContext"] = SecurityContext
 		}
@@ -1247,6 +1471,102 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["InsecureRegistry"] = v
 	}
 
+	if v, ok := d.GetOk("active_deadline_seconds"); ok {
+		request["ActiveDeadlineSeconds"] = v
+	}
+	if v, ok := d.GetOk("compute_category_list"); ok {
+		request["ComputeCategory"] = v
+	}
+	if v, ok := d.GetOkExists("container_resource_view"); ok {
+		request["ContainerResourceView"] = v
+	}
+	if v, ok := d.GetOk("core_pattern"); ok {
+		request["CorePattern"] = v
+	}
+	if v, ok := d.GetOk("cpu_architecture"); ok {
+		request["CpuArchitecture"] = v
+	}
+	if v, ok := d.GetOk("cpu_options_core"); ok {
+		request["CpuOptionsCore"] = v
+	}
+	if v, ok := d.GetOk("cpu_options_numa"); ok {
+		request["CpuOptionsNuma"] = v
+	}
+	if v, ok := d.GetOk("cpu_options_threads_per_core"); ok {
+		request["CpuOptionsThreadsPerCore"] = v
+	}
+	if v, ok := d.GetOk("data_cache_bucket"); ok {
+		request["DataCacheBucket"] = v
+	}
+	if v, ok := d.GetOkExists("data_cache_bursting_enabled"); ok {
+		request["DataCacheBurstingEnabled"] = v
+	}
+	if v, ok := d.GetOk("data_cache_pl"); ok {
+		request["DataCachePl"] = v
+	}
+	if v, ok := d.GetOk("data_cache_provisioned_iops"); ok {
+		request["DataCacheProvisionedIops"] = v
+	}
+	if v, ok := d.GetOk("egress_bandwidth"); ok {
+		request["EgressBandwidth"] = v
+	}
+	if v, ok := d.GetOk("ingress_bandwidth"); ok {
+		request["IngressBandwidth"] = v
+	}
+	if v, ok := d.GetOk("eip_common_bandwidth_package"); ok {
+		request["EipCommonBandwidthPackage"] = v
+	}
+	if v, ok := d.GetOk("eip_isp"); ok {
+		request["EipIsp"] = v
+	}
+	if v, ok := d.GetOk("fixed_ip"); ok {
+		request["FixedIp"] = v
+	}
+	if v, ok := d.GetOk("fixed_ip_retain_hour"); ok {
+		request["FixedIpRetainHour"] = v
+	}
+	if v, ok := d.GetOk("image_accelerate_mode"); ok {
+		request["ImageAccelerateMode"] = v
+	}
+	if v, ok := d.GetOk("image_snapshot_id"); ok {
+		request["ImageSnapshotId"] = v
+	}
+	if v, ok := d.GetOk("ipv6_address_count"); ok {
+		request["Ipv6AddressCount"] = v
+	}
+	if v, ok := d.GetOk("ipv6_gateway_bandwidth"); ok {
+		request["Ipv6GatewayBandwidth"] = v
+	}
+	if v, ok := d.GetOkExists("ipv6_gateway_bandwidth_enable"); ok {
+		request["Ipv6GatewayBandwidthEnable"] = v
+	}
+	if v, ok := d.GetOk("ntp_server"); ok {
+		request["NtpServer"] = v
+	}
+	if v, ok := d.GetOk("overhead_reservation_option"); ok {
+		for _, OverheadReservationOptionValue := range v.([]interface{}) {
+			OverheadReservationOptionMap := OverheadReservationOptionValue.(map[string]interface{})
+			request["OverheadReservationOption"] = map[string]interface{}{
+				"EnableOverheadReservation": OverheadReservationOptionMap["enable_overhead_reservation"],
+			}
+		}
+	}
+	if v, ok := d.GetOk("private_ip_address"); ok {
+		request["PrivateIpAddress"] = v
+	}
+	if v, ok := d.GetOk("schedule_strategy"); ok {
+		request["ScheduleStrategy"] = v
+	}
+	if v, ok := d.GetOkExists("share_process_namespace"); ok {
+		request["ShareProcessNamespace"] = v
+	}
+	if v, ok := d.GetOk("spot_duration"); ok {
+		request["SpotDuration"] = v
+	}
+	if v, ok := d.GetOkExists("strict_spot"); ok {
+		request["StrictSpot"] = v
+	}
+
 	if v, ok := d.GetOk("termination_grace_period_seconds"); ok {
 		request["TerminationGracePeriodSeconds"] = v
 	}
@@ -1302,6 +1622,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 	d.Set("container_group_name", object["ContainerGroupName"])
 	d.Set("internet_ip", object["InternetIp"])
 	d.Set("intranet_ip", object["IntranetIp"])
+	d.Set("ipv6_address", object["Ipv6Address"])
 	d.Set("ephemeral_storage", object["EphemeralStorage"])
 
 	containers := make([]map[string]interface{}, 0)
@@ -1319,6 +1640,9 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					"name":              m1["Name"],
 					"ready":             m1["Ready"],
 					"restart_count":     m1["RestartCount"],
+					"stdin":             m1["Stdin"],
+					"stdin_once":        m1["StdinOnce"],
+					"tty":               m1["Tty"],
 					"working_dir":       m1["WorkingDir"],
 				}
 				if m1["EnvironmentVars"] != nil {
@@ -1361,9 +1685,11 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					for _, volumeMountsValue := range m1["VolumeMounts"].([]interface{}) {
 						volumeMounts := volumeMountsValue.(map[string]interface{})
 						volumeMountsMap := map[string]interface{}{
-							"mount_path": volumeMounts["MountPath"],
-							"name":       volumeMounts["Name"],
-							"read_only":  volumeMounts["ReadOnly"],
+							"mount_path":        volumeMounts["MountPath"],
+							"name":              volumeMounts["Name"],
+							"read_only":         volumeMounts["ReadOnly"],
+							"sub_path":          volumeMounts["SubPath"],
+							"mount_propagation": volumeMounts["MountPropagation"],
 						}
 						volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 					}
@@ -1458,8 +1784,9 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					SecurityContextMaps := make([]map[string]interface{}, 0)
 					SecurityContextValue := m1["SecurityContext"].(map[string]interface{})
 					SecurityContextMap := map[string]interface{}{
-						"run_as_user": SecurityContextValue["RunAsUser"],
-						"privileged":  getSecurityContextPrivileged(d, temp1["name"]),
+						"run_as_user":               SecurityContextValue["RunAsUser"],
+						"privileged":                getSecurityContextPrivileged(d, temp1["name"]),
+						"read_only_root_filesystem": SecurityContextValue["ReadOnlyRootFilesystem"],
 					}
 					if SecurityContextValue["Capability"] != nil && SecurityContextValue["Capability"].(map[string]interface{})["Adds"] != nil {
 						Capabilities := make([]map[string]interface{}, 0)
@@ -1601,9 +1928,10 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					for _, volumeMountsValue := range m1["VolumeMounts"].([]interface{}) {
 						volumeMounts := volumeMountsValue.(map[string]interface{})
 						volumeMountsMap := map[string]interface{}{
-							"mount_path": volumeMounts["MountPath"],
-							"name":       volumeMounts["Name"],
-							"read_only":  volumeMounts["ReadOnly"],
+							"mount_path":        volumeMounts["MountPath"],
+							"name":              volumeMounts["Name"],
+							"read_only":         volumeMounts["ReadOnly"],
+							"mount_propagation": volumeMounts["MountPropagation"],
 						}
 						volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 					}
@@ -1613,7 +1941,8 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					SecurityContextMaps := make([]map[string]interface{}, 0)
 					SecurityContextValue := m1["SecurityContext"].(map[string]interface{})
 					SecurityContextMap := map[string]interface{}{
-						"run_as_user": SecurityContextValue["RunAsUser"],
+						"run_as_user":               SecurityContextValue["RunAsUser"],
+						"read_only_root_filesystem": SecurityContextValue["ReadOnlyRootFilesystem"],
 					}
 					if SecurityContextValue["Capability"] != nil && SecurityContextValue["Capability"].(map[string]interface{})["Adds"] != nil {
 						Capabilities := make([]map[string]interface{}, 0)
@@ -1855,6 +2184,12 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 	}
 
 	request["UpdateType"] = "IncrementalUpdate"
+	if d.HasChange("update_type") {
+		update = true
+		if v, ok := d.GetOk("update_type"); ok {
+			request["UpdateType"] = v.(string)
+		}
+	}
 
 	if update {
 
@@ -1901,6 +2236,8 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
+				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 			}
 			Containers[i]["VolumeMount"] = VolumeMounts
 
@@ -1985,10 +2322,14 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 					}
 				}
 				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+				SecurityContext["ReadOnlyRootFilesystem"] = SecurityContextMap["read_only_root_filesystem"]
 			}
 			Containers[i]["SecurityContext"] = SecurityContext
 
 			Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_exec"]
+			Containers[i]["Stdin"] = ContainersMap["stdin"]
+			Containers[i]["StdinOnce"] = ContainersMap["stdin_once"]
+			Containers[i]["Tty"] = ContainersMap["tty"]
 		}
 		request["Container"] = Containers
 
@@ -2035,6 +2376,7 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 			}
 			InitContainers[i]["VolumeMount"] = VolumeMounts
 
@@ -2050,6 +2392,7 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				}
 				SecurityContext["Capability"] = CapabilityValue
 				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+				SecurityContext["ReadOnlyRootFilesystem"] = SecurityContextMap["read_only_root_filesystem"]
 			}
 			InitContainers[i]["SecurityContext"] = SecurityContext
 		}
