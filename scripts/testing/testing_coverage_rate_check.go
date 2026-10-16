@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 //nolint:all
 package main
 
@@ -13,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/fwschema"
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/hcltestconfig"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -107,18 +112,31 @@ func main() {
 				}
 				checkCandidate(strings.TrimPrefix(r.TypeName, "alicloud_"), r.IsResource(), rFileType, r.TestPath, r.ImplPath)
 			}
-			// Framework-native registrations — managed resources, data
-			// sources, ephemerals, list resources and actions — live outside
-			// the provider's SDKv2 maps, so their attribute coverage cannot
-			// be measured; said so per registration instead of passing
-			// silently.
+			// Framework-native registrations — managed resources, data sources,
+			// ephemerals, list resources and actions — live outside the
+			// provider's SDKv2 maps. Managed resources and data sources are
+			// still measured: their real schema is synthesized from Schema()
+			// (in checkResourceByName via fwschema) and checked against the
+			// test file, fail-closed on a parse error. Ephemerals, list
+			// resources and actions have no ResourcesMap/DataSourcesMap slot
+			// and no ACC attribute-coverage contract, so they are noted by
+			// name instead of silently passing.
 			fwResolved, err := splitlayout.FrameworkResolve(product, stem)
 			if err != nil {
 				log.Warnf("fail to resolve framework registrations of %s. Error: %s", file.NewName, err)
 				continue
 			}
 			for _, r := range fwResolved {
-				log.Infof("==> %s is registered framework-native (%s): the SDKv2 attribute coverage check does not apply", r.TypeName, r.Kind)
+				if r.Kind == splitlayout.KindResource || r.Kind == splitlayout.KindDataSource {
+					rFileType := "data source"
+					rIsResource := r.IsResource()
+					if rIsResource {
+						rFileType = "resource"
+					}
+					checkCandidate(strings.TrimPrefix(r.TypeName, "alicloud_"), rIsResource, rFileType, r.TestPath, r.ImplPath)
+					continue
+				}
+				log.Infof("==> %s is registered framework-native (%s): attribute coverage does not apply to this entity kind", r.TypeName, r.Kind)
 			}
 			if len(resolved) == 0 && len(fwResolved) == 0 {
 				log.Warnf("==> %s registers no resource, data source, ephemeral, action or list resource", file.NewName)
@@ -177,13 +195,50 @@ func checkSingleResource(fullName string) bool {
 				fileType = "data source"
 			}
 			testPath, implPath = r.TestPath, r.ImplPath
+		} else if r := splitlayout.FrameworkFindByTypeName("alicloud_" + resName); r != nil {
+			// Framework-native: not in the SDKv2 map, but its real schema is
+			// synthesized in checkResourceByName and measured against the test
+			// file, instead of being skipped as "registered framework-native".
+			isResource = r.IsResource()
+			fileType = "resource"
+			if !r.IsResource() {
+				fileType = "data source"
+			}
+			testPath, implPath = r.TestPath, r.ImplPath
 		} else if splitlayout.FrameworkRegistered("alicloud_" + resName) {
-			log.Infof("==> %s %s is registered framework-native; the SDKv2 attribute coverage check does not apply", fileType, resName)
-			return true
+			// Registered framework-native but the factory cannot be resolved to an
+			// implementation file (e.g. an inline closure), so the real schema
+			// cannot be synthesized. Fail closed: coverage is unmeasurable rather
+			// than silently passed.
+			log.Errorf("framework %s %s is registered but its factory cannot be resolved to an implementation file; attribute coverage cannot be measured\n\n", fileType, resName)
+			return false
 		}
 	}
 
 	return checkResourceByName(resName, isResource, fileType, testPath, implPath)
+}
+
+// frameworkSchema synthesizes the real schema of a framework-native resource or
+// data source when it is absent from the SDKv2 runtime maps. It resolves the
+// implementation file from the framework registration (or the caller-supplied
+// implPath) and reads the real Schema() AST, fail-closed on a parse error. A nil
+// resource with no error means the name is not framework-registered: the caller
+// reports it as not found. Synthesizing — rather than skipping a registered
+// framework entity — keeps attribute coverage measurable against the real
+// schema and never silently passes on registration alone.
+func frameworkSchema(resName, implPath string) (*schema.Resource, error) {
+	if implPath == "" {
+		r := splitlayout.FrameworkFindByTypeName("alicloud_" + resName)
+		if r == nil {
+			return nil, nil
+		}
+		implPath = r.ImplPath
+	}
+	synth, err := fwschema.FrameworkResource(implPath)
+	if err != nil {
+		return nil, fmt.Errorf("framework resource %s schema synthesis failed: %w", resName, err)
+	}
+	return synth, nil
 }
 
 // checkResourceByName checks a resource by name and type. An empty testPath
@@ -198,14 +253,30 @@ func checkResourceByName(resName string, isResource bool, fileType, testPath, im
 	if isResource {
 		resource, ok = alicloud.Provider().ResourcesMap["alicloud_"+resName]
 		if !ok || resource == nil {
-			log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resName)
-			return false
+			synth, ferr := frameworkSchema(resName, implPath)
+			if ferr != nil {
+				log.Errorf("%v\n\n", ferr)
+				return false
+			}
+			if synth == nil {
+				log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resName)
+				return false
+			}
+			resource = synth
 		}
 	} else {
 		resource, ok = alicloud.Provider().DataSourcesMap["alicloud_"+resName]
 		if !ok || resource == nil {
-			log.Errorf("data source %s is not found in the provider DataSourcesMap\n\n", resName)
-			return false
+			synth, ferr := frameworkSchema(resName, implPath)
+			if ferr != nil {
+				log.Errorf("%v\n\n", ferr)
+				return false
+			}
+			if synth == nil {
+				log.Errorf("data source %s is not found in the provider DataSourcesMap\n\n", resName)
+				return false
+			}
+			resource = synth
 		}
 	}
 
@@ -226,6 +297,43 @@ func checkResourceByName(resName string, isResource bool, fileType, testPath, im
 	}
 	check := getTestCaseAttr(testPath, resName, &testMustSet, &testModifySet, &testIgnoreSet)
 
+	// Split-layout Framework tests speak the plugin-testing dialect — a step's
+	// Config is a fmt.Sprintf HCL helper-function call rather than the flat
+	// monolith's inline map[string]interface{}. The standard template parser
+	// cannot read it, so a split test that the parser left empty is resolved
+	// here from its HCL helpers instead of being silently skipped as
+	// "unmeasurable". hcltestconfig.ResolveFromFile returns (measured, result,
+	// err): measured=false with nil error means the test carries no resolvable
+	// helper (genuinely unmeasurable → fail closed), and an error means a
+	// malformed helper (fail closed). Only when measured=true are the helper's
+	// resolved must/modify attributes folded into the test sets so the real
+	// synthesized schema coverage check runs. A framework-native resource may
+	// keep its ACC test in the flat alicloud/ package (package alicloud_test)
+	// so `go test ./alicloud` discovers it; that test uses the same fmt.Sprintf
+	// dialect the standard parser cannot read, so FrameworkRegistered widens
+	// the gate beyond split-layout paths to those flat framework-native tests
+	// without touching SDKv2 flat tests (which FrameworkRegistered excludes).
+	if _, _, _, isSplit := splitlayout.IsSplitSource(testPath); (isSplit || splitlayout.FrameworkRegistered("alicloud_"+resName)) &&
+		testMustSet.Cardinality() == 0 && testModifySet.Cardinality() == 0 {
+		measured, hclResult, hclErr := hcltestconfig.ResolveFromFile(testPath, "alicloud_"+resName)
+		if hclErr != nil {
+			log.Errorf("framework resource %s split-layout HCL config parse failed: %v\n\n", resName, hclErr)
+			return false
+		}
+		if !measured {
+			log.Errorf("framework resource %s's split-layout test %s has no resolvable HCL config helper; attribute coverage is unmeasurable and cannot be silently passed\n\n", resName, testPath)
+			return false
+		}
+		for _, a := range hclResult.Must {
+			testMustSet.Add(a)
+		}
+		for _, a := range hclResult.Modify {
+			testModifySet.Add(a)
+		}
+		check = true
+		log.Infof("==> %s %s's split-layout HCL configs resolved to %d set / %d modified attributes", fileType, resName, testMustSet.Cardinality(), testModifySet.Cardinality())
+	}
+
 	// "check" denotes the test code is using a standard template
 	if check {
 		log.Infof("==> checking %s %s attributes' coverage rate", fileType, resName)
@@ -234,17 +342,6 @@ func checkResourceByName(resName string, isResource bool, fileType, testPath, im
 			log.Infof("--- PASS!\n\n")
 			return true
 		}
-	}
-	// Split-layout tests speak the plugin-testing dialect; the standard
-	// template (resourceTestAccConfigFunc and the testAccCheck maps) lives
-	// in the flat monolith package and is not importable from
-	// alicloud/service/<product>. A split test the parser cannot read is a
-	// recognized skip rather than a failure; flat-layout behavior is
-	// unchanged.
-	if _, _, _, isSplit := splitlayout.IsSplitSource(testPath); isSplit &&
-		(!check || (testMustSet.Cardinality() == 0 && testModifySet.Cardinality() == 0)) {
-		log.Infof("==> %s %s's split-layout test %s is not written in the standard template; attribute coverage is unmeasurable and skipped", fileType, resName, testPath)
-		return true
 	}
 	// Flat data-source tests speak the existConfig/fakeConfig dialect of
 	// dataSourceTestAccConfigFunc; the standard template's Config/Check
