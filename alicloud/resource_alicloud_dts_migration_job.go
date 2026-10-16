@@ -58,10 +58,11 @@ func resourceAlicloudDtsMigrationJob() *schema.Resource {
 			},
 
 			"destination_endpoint_engine_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL"}, false),
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     StringInSlice([]string{"ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MARIADB", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL"}, true),
+				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_instance_id": {
 				Type:     schema.TypeString,
@@ -124,10 +125,11 @@ func resourceAlicloudDtsMigrationJob() *schema.Resource {
 				ForceNew: true,
 			},
 			"source_endpoint_engine_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA"}, false),
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MARIADB", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA"}, true),
+				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_region": {
 				Type:     schema.TypeString,
@@ -338,7 +340,7 @@ func resourceAlicloudDtsMigrationJobCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprint(response["DtsJobId"]))
 	dtsService := DtsService{client}
-	stateConf := BuildStateConf([]string{}, []string{"PreCheckPass", "Migrating", "PrecheckFailed"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dtsService.DtsMigrationJobStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Migrating", "PrecheckFailed", "Finished"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dtsService.DtsMigrationJobStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -433,6 +435,10 @@ func resourceAlicloudDtsMigrationJobUpdate(d *schema.ResourceData, meta interfac
 				addDebug(action, response, request)
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				stateConf := BuildStateConf([]string{}, []string{"Migrating"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, dtsService.DtsMigrationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed"}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
 				}
 
 			}

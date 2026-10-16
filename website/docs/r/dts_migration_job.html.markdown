@@ -154,7 +154,7 @@ The following arguments supported:
 * `source_endpoint_ssl` - (Optional, Computed, Available since v1.287.0) The connection method of the source instance. Valid values: `0` (an unencrypted connection), `1` (an SSL-secured connection). Only supported when the source endpoint is accessed as a cloud instance or as a self-managed database hosted on ECS.
 * `destination_endpoint_ssl` - (Optional, Computed, Available since v1.287.0) The connection method of the destination instance. Valid values: `0` (an unencrypted connection), `1` (an SSL-secured connection), `3` (a connection using SCRAM-SHA-256, for a Kafka destination only). `1` is only supported when the destination endpoint is accessed as a cloud instance or as a self-managed database hosted on ECS.
 * `source_endpoint_instance_type` - (Required, ForceNew) The type of source instance. Valid values: `CEN`, `DG`, `DISTRIBUTED_DMSLOGICDB`, `ECS`, `EXPRESS`, `MONGODB`, `OTHER`, `PolarDB`, `POLARDBX20`, `RDS`.
-* `source_endpoint_engine_name` - (Required, ForceNew) The type of source database. Valid values: `AS400`, `DB2`, `DMSPOLARDB`, `HBASE`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `POSTGRESQL`, `TERADATA`.
+* `source_endpoint_engine_name` - (Required, ForceNew) The type of source database. Valid values: `AS400`, `DB2`, `DMSPOLARDB`, `HBASE`, `MARIADB`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `POSTGRESQL`, `TERADATA`.
 * `source_endpoint_instance_id` - (Optional, ForceNew) The ID of source instance.
 * `source_endpoint_region` - (Optional, ForceNew) The region of source instance.
 * `source_endpoint_ip` - (Optional, ForceNew) The ip of source endpoint.
@@ -168,7 +168,7 @@ The following arguments supported:
 * `src_primary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the primary vSwitch on the source side of a VPC NAT connection.
 * `src_secondary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the secondary vSwitch on the source side of a VPC NAT connection.
 * `destination_endpoint_instance_type` - (Required, ForceNew) The type of destination instance. Valid values: `ADS`, `CEN`, `DATAHUB`, `DG`, `ECS`, `EXPRESS`, `GREENPLUM`, `MONGODB`, `OTHER`, `PolarDB`, `POLARDBX20`, `RDS`.
-* `destination_endpoint_engine_name` - (Required, ForceNew) The type of destination database. Valid values: `ADS`, `ADB30`, `AS400`, `DATAHUB`, `DB2`, `GREENPLUM`, `KAFKA`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `PostgreSQL`.
+* `destination_endpoint_engine_name` - (Required, ForceNew) The type of destination database. Valid values: `ADS`, `ADB30`, `AS400`, `DATAHUB`, `DB2`, `GREENPLUM`, `KAFKA`, `MARIADB`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `PostgreSQL`.
 * `destination_endpoint_instance_id` - (Optional, ForceNew) The ID of destination instance.
 * `destination_endpoint_region` - (Optional, ForceNew) The region of destination instance.
 * `destination_endpoint_ip` - (Optional, ForceNew) The ip of source endpoint.

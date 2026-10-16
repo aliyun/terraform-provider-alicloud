@@ -4,6 +4,8 @@ ENHANCEMENTS:
 
 - resource/alicloud_nlb_server_group: support ip_version_affinity_mode. ([#10705](https://github.com/aliyun/terraform-provider-alicloud/issues/10705))
 - resource/alicloud_nas_file_system: support Agentic storage type; skip general-purpose NAS recycle bin/ACL calls on Agentic file systems. ([#10730](https://github.com/aliyun/terraform-provider-alicloud/issues/10730))
+- resource/alicloud_dts_migration_instance: support mariadb engine for source and destination endpoints and accept engine names case-insensitively.
+- resource/alicloud_dts_migration_job: support MARIADB engine for source and destination endpoints and accept engine names case-insensitively.
 
 ## 1.294.0 (October 8, 2026)
 
