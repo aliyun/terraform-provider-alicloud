@@ -54,11 +54,46 @@ func resourceAlicloudEcsSnapshotGroup() *schema.Resource {
 			"instant_access": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"instant_access_retention_days": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.IntBetween(1, 65535),
+			},
+			"snapshots": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"available": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"instant_access": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"instant_access_retention_days": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"progress": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"snapshot_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"source_disk_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": tagsSchema(),
+					},
+				},
 			},
 			"snapshot_group_name": {
 				Type:         schema.TypeString,
@@ -164,8 +199,51 @@ func resourceAlicloudEcsSnapshotGroupRead(d *schema.ResourceData, meta interface
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
 	}
+	if v, ok := object["InstantAccess"]; ok {
+		d.Set("instant_access", v)
+	}
+	if v, ok := object["InstantAccessRetentionDays"]; ok {
+		d.Set("instant_access_retention_days", v)
+	}
+	if err := d.Set("snapshots", flattenEcsSnapshotGroupSnapshots(object["Snapshots"])); err != nil {
+		return WrapError(err)
+	}
 
 	return nil
+}
+
+func flattenEcsSnapshotGroupSnapshots(snapshots interface{}) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0)
+	if snapshots == nil {
+		return result
+	}
+	snapshotsMap, ok := snapshots.(map[string]interface{})
+	if !ok {
+		return result
+	}
+	snapshotList, ok := snapshotsMap["Snapshot"].([]interface{})
+	if !ok {
+		return result
+	}
+	for _, s := range snapshotList {
+		snap, ok := s.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		m := map[string]interface{}{
+			"available":                     snap["Available"],
+			"instant_access":                snap["InstantAccess"],
+			"instant_access_retention_days": snap["InstantAccessRetentionDays"],
+			"progress":                      snap["Progress"],
+			"snapshot_id":                   snap["SnapshotId"],
+			"source_disk_id":                snap["SourceDiskId"],
+		}
+		if v, ok := snap["Tags"].(map[string]interface{}); ok {
+			m["tags"] = tagsToMap(v["Tag"])
+		}
+		result = append(result, m)
+	}
+	return result
 }
 func resourceAlicloudEcsSnapshotGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
