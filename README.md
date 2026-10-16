@@ -49,6 +49,8 @@ $ make build
 
 `make build` compiles the provider for macOS, Linux and Windows and places the archives under `bin/`. To build and install a development provider that replaces the one used by your local Terraform CLI, run `make dev` (macOS), `make devlinux` (Linux) or `make devwin` (Windows).
 
+Before you open a pull request, confirm that your commit identity is correct. Git records both an author and a committer for every commit; inspect them with `git var GIT_AUTHOR_IDENT` and `git var GIT_COMMITTER_IDENT`. Use the email address associated with your GitHub account so that the contributor license agreement (CLA) check running on the pull request can identify you. If the recorded identity is wrong, set it for this repository before you commit rather than rewriting existing commits.
+
 In order to test the provider, you can simply run `make test`. In order to run the full suite of Acceptance tests, run `make testacc`.
 
 *Note:* Acceptance tests create real resources, and often cost money to run.
