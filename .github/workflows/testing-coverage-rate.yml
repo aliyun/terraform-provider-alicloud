@@ -86,4 +86,4 @@ jobs:
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
           git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
-          go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"
+          go run scripts/testing/coverage_rate/main.go -fileNames="diff.out"
