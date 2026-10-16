@@ -40,7 +40,7 @@ resource "alicloud_tag_policy" "example" {
   policy_desc    = var.name
   user_type      = "USER"
   policy_content = <<EOF
-		{"tags":{"CostCenter":{"tag_value":{"@@assign":["Beijing","Shanghai"]},"tag_key":{"@@assign":"CostCenter"}}}}
+  {"tags":{"CostCenter":{"tag_value":{"@@assign":["Beijing","Shanghai"]},"tag_key":{"@@assign":"CostCenter"}}}}
     EOF
 }
 ```
@@ -51,10 +51,10 @@ resource "alicloud_tag_policy" "example" {
 
 The following arguments are supported:
 
-* `policy_name` - (Required) The name of the tag policy. The name must be 1 to 128 characters in length and can contain letters, digits, and underscores (_).
-* `policy_content` - (Required) The document of the tag policy.
-* `policy_desc` - (Optional) The description of the policy. The description must be 1 to 512 characters in length.
-* `user_type` - (Optional, ForceNew)The mode of the Tag Policy feature. Valid values: `USER`, `RD`.
+* `policy_name` - (Required) The name of the tag policy. The name must be 1 to 128 characters in length and can contain letters, digits, and underscores (\_).
+* `policy_content` - (Required) The document of the tag policy. For more information about the syntax of a tag policy, see [Syntax of a tag policy](https://www.alibabacloud.com/help/en/doc-detail/417436.html).
+* `policy_desc` - (Optional) The description of the tag policy. The description must be 0 to 512 characters in length.
+* `user_type` - (Optional, ForceNew) The mode of the Tag Policy feature. Valid values: USER: single-account mode. Set the value to USER if you use an Alibaba Cloud account or a member of a resource directory to call this API operation to create a tag policy for the Alibaba Cloud account or member. RD: multi-account mode. Set the value to RD if you use the management account of a resource directory to call this API operation to create a tag policy for the resource directory. For more information about the modes of the Tag Policy feature, see [Modes of the Tag Policy feature](https://www.alibabacloud.com/help/en/doc-detail/417434.html).
 
 ## Attributes Reference
 
