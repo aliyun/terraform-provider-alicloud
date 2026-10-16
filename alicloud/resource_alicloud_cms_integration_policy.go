@@ -35,6 +35,12 @@ func resourceAliCloudCmsIntegrationPolicy() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"entity_user_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
 						"cluster_id": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -44,6 +50,16 @@ func resourceAliCloudCmsIntegrationPolicy() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
+							ForceNew: true,
+						},
+						"cluster_namespace": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"disable_policy_share": {
+							Type:     schema.TypeBool,
+							Optional: true,
 							ForceNew: true,
 						},
 					},
@@ -90,13 +106,25 @@ func resourceAliCloudCmsIntegrationPolicyCreate(d *schema.ResourceData, meta int
 	entityGroup := make(map[string]interface{})
 
 	if v := d.Get("entity_group"); !IsNil(v) {
+		clusterEntityType1, _ := jsonpath.Get("$[0].cluster_entity_type", v)
+		if clusterEntityType1 != nil && clusterEntityType1 != "" {
+			entityGroup["clusterEntityType"] = clusterEntityType1
+		}
 		clusterId1, _ := jsonpath.Get("$[0].cluster_id", v)
 		if clusterId1 != nil && clusterId1 != "" {
 			entityGroup["clusterId"] = clusterId1
 		}
-		clusterEntityType1, _ := jsonpath.Get("$[0].cluster_entity_type", v)
-		if clusterEntityType1 != nil && clusterEntityType1 != "" {
-			entityGroup["clusterEntityType"] = clusterEntityType1
+		clusterNamespace1, _ := jsonpath.Get("$[0].cluster_namespace", v)
+		if clusterNamespace1 != nil && clusterNamespace1 != "" {
+			entityGroup["clusterNamespace"] = clusterNamespace1
+		}
+		disablePolicyShare1, _ := jsonpath.Get("$[0].disable_policy_share", v)
+		if disablePolicyShare1 != nil && disablePolicyShare1 != "" {
+			entityGroup["disablePolicyShare"] = disablePolicyShare1
+		}
+		entityUserId1, _ := jsonpath.Get("$[0].entity_user_id", v)
+		if entityUserId1 != nil && entityUserId1 != "" {
+			entityGroup["entityUserId"] = entityUserId1
 		}
 
 		request["entityGroup"] = entityGroup
@@ -164,6 +192,15 @@ func resourceAliCloudCmsIntegrationPolicyRead(d *schema.ResourceData, meta inter
 	if len(bindResourceRaw) > 0 {
 		entityGroupMap["cluster_entity_type"] = bindResourceRaw["clusterType"]
 		entityGroupMap["cluster_id"] = bindResourceRaw["clusterId"]
+		entityGroupMap["entity_user_id"] = bindResourceRaw["entityUserId"]
+
+		if v, ok := d.GetOk("entity_group.0.disable_policy_share"); ok {
+			entityGroupMap["disable_policy_share"] = v
+		}
+
+		if v, ok := d.GetOk("entity_group.0.cluster_namespace"); ok {
+			entityGroupMap["cluster_namespace"] = v
+		}
 
 		if fmt.Sprint(policyRaw["policyType"]) == "CS" {
 			if entityGroup, ok := policyRaw["entityGroup"]; ok {

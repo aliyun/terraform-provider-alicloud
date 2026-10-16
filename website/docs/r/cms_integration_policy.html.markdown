@@ -75,6 +75,11 @@ The following arguments are supported:
 The entity_group supports the following:
 * `cluster_entity_type` - (Optional, ForceNew) The cluster entity type.
 * `cluster_id` - (Optional, ForceNew) The cluster ID.
+* `entity_user_id` - (Optional, ForceNew, Available since v2.1.0) The ID of the user who owns the cluster.
+* `disable_policy_share` - (Optional, Bool, ForceNew, Available since v2.1.0) Specifies whether to disable unique policy binding. Default Value: `false`. Valid values: `true`, `false`.
+* `cluster_namespace` - (Optional, ForceNew, Available since v2.1.0) The cluster Namespace.
+
+-> **NOTE:** If `disable_policy_share` is set to `true`, you can create multiple policies for a container cluster, and `cluster_namespace` is required.
 
 ## Attributes Reference
 
