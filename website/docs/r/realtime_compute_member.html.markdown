@@ -96,7 +96,7 @@ The following arguments are supported:
 * `member` - (Required, ForceNew) The name of the member.
 * `namespace` - (Required, ForceNew) The name of the namespace.
 * `resource_id` - (Required, ForceNew) The workspace ID.
-* `role` - (Required) The role of the member. Valid values: `viewer`, `owner`, `editor`.
+* `role` - (Required) The role of the member. Valid values: `viewer`, `owner`, `editor` and custom role.
 
 ## Attributes Reference
 

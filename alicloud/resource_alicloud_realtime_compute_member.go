@@ -45,9 +45,8 @@ func resourceAliCloudRealtimeComputeMember() *schema.Resource {
 				ForceNew: true,
 			},
 			"role": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: StringInSlice([]string{"viewer", "owner", "editor"}, false),
+				Type:     schema.TypeString,
+				Required: true,
 			},
 		},
 	}
