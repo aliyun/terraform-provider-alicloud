@@ -18,6 +18,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// collection-order: bypass application_name_list -- pre-existing list unchanged by this PR; fixes cover scalar release fixtures and order updates only
+// collection-order: bypass repeat_days -- pre-existing list unchanged by this PR; fixes cover scalar release fixtures and order updates only
+
 // lintignore: R001
 func TestUnitAliCloudCloudFirewallVpcFirewallControlPolicy(t *testing.T) {
 	p := Provider().ResourcesMap
@@ -37,7 +40,7 @@ func TestUnitAliCloudCloudFirewallVpcFirewallControlPolicy(t *testing.T) {
 		"member_uid":       "CreateVpcFirewallControlPolicyValue",
 		"order":            1,
 		"proto":            "CreateVpcFirewallControlPolicyValue",
-		"release":          true,
+		"release":          "true",
 		"source":           "CreateVpcFirewallControlPolicyValue",
 		"source_type":      "CreateVpcFirewallControlPolicyValue",
 		"vpc_firewall_id":  "CreateVpcFirewallControlPolicyValue",
@@ -346,9 +349,9 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic_no_order(t *test
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -402,15 +405,15 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic11929(t *testing.
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccloudfirewall%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence11929)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallVpcFirewallControlPolicyOrderDependence11929)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -440,6 +443,22 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic11929(t *testing.
 						"application_name": "ANY",
 						"dest_port":        "80/88",
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"order": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"order": "2"}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"order": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"order": "1"}),
 				),
 			},
 			{
@@ -628,9 +647,9 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic11929_twin0(t *te
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -711,9 +730,9 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic11929_twin1(t *te
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -792,6 +811,24 @@ var AliCloudCloudFirewallVpcFirewallControlPolicyMap11929 = map[string]string{
 	"source_group_cidrs.#":      CHECKSET,
 }
 
+// A second policy makes moving the tested policy to position two valid.
+func AliCloudCloudFirewallVpcFirewallControlPolicyOrderDependence11929(name string) string {
+	return AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence11929(name) + `
+resource "alicloud_cloud_firewall_vpc_firewall_control_policy" "sibling" {
+  acl_action       = "accept"
+  description      = "${var.name}-sibling"
+  destination      = "127.0.0.3/32"
+  destination_type = "net"
+  proto            = "TCP"
+  source           = "127.0.0.1/32"
+  source_type      = "net"
+  vpc_firewall_id  = alicloud_cen_instance.default.id
+  application_name = "ANY"
+  dest_port        = "80/88"
+}
+`
+}
+
 func AliCloudCloudFirewallVpcFirewallControlPolicyBasicDependence11929(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -839,9 +876,9 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic12022(t *testing.
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1059,9 +1096,9 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic12022_twin0(t *te
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1142,9 +1179,9 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic12022_twin1(t *te
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

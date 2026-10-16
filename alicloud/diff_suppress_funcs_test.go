@@ -2656,8 +2656,8 @@ func TestUnitCommonPolardbAndCreationDiffSuppressFunc(t *testing.T) {
 			name:             "PostgreSQL_Normal",
 			dbType:           "PostgreSQL",
 			creationCategory: "Normal",
-			expected:         true,
-			description:      "Non-MySQL should suppress diff",
+			expected:         false,
+			description:      "Normal category must preserve the diff independently of database type",
 		},
 	}
 

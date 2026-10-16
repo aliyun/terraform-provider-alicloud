@@ -1296,8 +1296,13 @@ func vpnAttachmentValidateTunnelChanges(ctx context.Context, d *schema.ResourceD
 	}
 	// The SDK prefixes set hashes with ~ when configuration contains unknowns.
 	// Keep that diff intact so an explicit unknown never becomes a prior value.
-	if len(d.GetChangedKeysPrefix(key+".~")) != 0 {
-		return nil
+	// GetChangedKeysPrefix matches complete path segments, not a textual
+	// prefix. Query the set path, then inspect its hash segment separately.
+	changedKeys := d.GetChangedKeysPrefix(key)
+	for _, address := range changedKeys {
+		if strings.HasPrefix(address, key+".~") {
+			return nil
+		}
 	}
 	previousValue, plannedValue := d.GetChange(key)
 	previous := previousValue.(*schema.Set).List()
@@ -1312,7 +1317,7 @@ func vpnAttachmentValidateTunnelChanges(ctx context.Context, d *schema.ResourceD
 	// its hashes need not equal the addresses in the original diff. Resolve
 	// those addresses by the required identity fields before inheriting.
 	prefixes := make(map[int]string)
-	for _, address := range d.GetChangedKeysPrefix(key + ".") {
+	for _, address := range changedKeys {
 		if !strings.HasSuffix(address, ".tunnel_index") {
 			continue
 		}

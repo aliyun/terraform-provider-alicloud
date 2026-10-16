@@ -3483,6 +3483,22 @@ func TestUnitKvstoreResolveMajorVersionForSpecChange(t *testing.T) {
 			expectedVersion:    "",
 			expectFallbackCall: true,
 		},
+		{
+			name:         "fallback returns empty when response is nil",
+			describeFunc: func(string) (map[string]interface{}, error) { return nil, nil },
+		},
+		{
+			name: "fallback returns empty when EngineVersion is nil",
+			describeFunc: func(string) (map[string]interface{}, error) {
+				return map[string]interface{}{"EngineVersion": nil}, nil
+			},
+		},
+		{
+			name: "fallback preserves empty EngineVersion",
+			describeFunc: func(string) (map[string]interface{}, error) {
+				return map[string]interface{}{"EngineVersion": ""}, nil
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

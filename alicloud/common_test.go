@@ -532,14 +532,17 @@ func TestUnitCommonAddDebug(t *testing.T) {
 
 func TestUnitCommonCompareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(t *testing.T) {
 	tests := []struct {
-		name  string
-		yaml1 string
-		yaml2 string
+		name     string
+		yaml1    string
+		yaml2    string
+		expected bool
+		wantErr  bool
 	}{
 		{
-			name: "equal yamls with different order",
+			name:     "equal yamls with different order",
+			expected: true,
 			yaml1: `
-Products:
+products:
   - namespace: ns1
     metric_info:
       - metric_list: ["metric1", "metric2"]
@@ -548,7 +551,7 @@ Products:
       - metric_list: ["metric3"]
 `,
 			yaml2: `
-Products:
+products:
   - namespace: ns2
     metric_info:
       - metric_list: ["metric3"]
@@ -558,14 +561,16 @@ Products:
 `,
 		},
 		{
-			name:  "empty yamls",
-			yaml1: "",
-			yaml2: "",
+			name:     "empty yamls",
+			expected: true,
+			yaml1:    "",
+			yaml2:    "",
 		},
 		{
-			name: "one valid one invalid",
+			name:    "one valid one invalid",
+			wantErr: true,
 			yaml1: `
-Products:
+products:
   - namespace: ns1
     metric_info:
       - metric_list: ["metric1"]
@@ -575,13 +580,13 @@ Products:
 		{
 			name: "same namespace different metrics",
 			yaml1: `
-Products:
+products:
   - namespace: ns1
     metric_info:
       - metric_list: ["metric1"]
 `,
 			yaml2: `
-Products:
+products:
   - namespace: ns1
     metric_info:
       - metric_list: ["metric1", "metric2"]
@@ -590,13 +595,13 @@ Products:
 		{
 			name: "completely different",
 			yaml1: `
-Products:
+products:
   - namespace: ns1
     metric_info:
       - metric_list: ["metric1"]
 `,
 			yaml2: `
-Products:
+products:
   - namespace: ns2
     metric_info:
       - metric_list: ["metric2"]
@@ -606,16 +611,9 @@ Products:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Just verify the function doesn't panic and returns without error
 			result, err := compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tt.yaml1, tt.yaml2)
-
-			// Function always returns nil error
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-			}
-
-			// Just log the result for manual verification if needed
-			_ = result
+			assert.Equal(t, tt.wantErr, err != nil, "unexpected YAML parsing outcome: %v", err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

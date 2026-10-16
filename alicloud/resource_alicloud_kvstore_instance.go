@@ -1935,5 +1935,9 @@ func resolveMajorVersionForSpecChange(engineVersion string, describeFunc func(id
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(object["EngineVersion"]), nil
+	version, ok := object["EngineVersion"]
+	if !ok || version == nil {
+		return "", nil
+	}
+	return fmt.Sprint(version), nil
 }

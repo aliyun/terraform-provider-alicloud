@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// collection-order: bypass vswitch_ids -- pre-existing list unchanged by this PR; only invalid unit-test fixture fields are removed
+
 // lintignore: R001
 func TestUnitAliCloudAmqpInstance(t *testing.T) {
 	p := Provider().ResourcesMap
@@ -39,7 +41,6 @@ func TestUnitAliCloudAmqpInstance(t *testing.T) {
 		"period":           1,
 		"queue_capacity":   "50",
 		"support_eip":      false,
-		"logistics":        "logistics",
 		"max_eip_tps":      "128",
 		"renewal_duration": 1,
 		"renewal_status":   "ManualRenewal",
@@ -58,7 +59,6 @@ func TestUnitAliCloudAmqpInstance(t *testing.T) {
 		"period":           1,
 		"queue_capacity":   "50",
 		"support_eip":      true,
-		"logistics":        "logistics",
 		"renewal_duration": 1,
 		"renewal_status":   "ManualRenewal",
 		"storage_size":     "800",
@@ -76,7 +76,6 @@ func TestUnitAliCloudAmqpInstance(t *testing.T) {
 		"period":         1,
 		"queue_capacity": "50",
 		"support_eip":    false,
-		"logistics":      "logistics",
 		"renewal_status": "AutoRenewal",
 		"storage_size":   "800",
 	} {

@@ -3804,6 +3804,56 @@ func TestUnitVpnGatewayVpnAttachmentSetReorderNoDiff(t *testing.T) {
 	vpnAttachmentUnitAssertNoDiff(t, r, refreshed, config, client)
 }
 
+// Reading service-populated fields rehashes a set member. The configured
+// member's original hash still identifies its explicit writable changes.
+func TestUnitVpnGatewayVpnAttachmentSetExplicitUpdateAfterRefresh(t *testing.T) {
+	for _, reverse := range []bool{false, true} {
+		t.Run(fmt.Sprint(reverse), func(t *testing.T) {
+			r := resourceAliCloudVpnGatewayVpnAttachment()
+			original := vpnAttachmentDistinctConfig()
+			old := schema.TestResourceDataRaw(t, r.Schema, original)
+			old.SetId("vco-unit-test")
+			client, _ := vpnAttachmentUnitClient(t, vpnAttachmentUnitAPIDistinctComputed(original))
+			baseline, diags := r.RefreshWithoutUpgrade(context.Background(), old.State(), client)
+			if diags.HasError() {
+				t.Fatalf("refresh: %v", diags)
+			}
+			config := vpnAttachmentDistinctConfig()
+			tunnels := config["tunnel_options_specification"].([]interface{})
+			tunnels[1].(map[string]interface{})["tunnel_ipsec_config"].([]interface{})[0].(map[string]interface{})["ipsec_lifetime"] = 12345
+			if reverse {
+				tunnels[0], tunnels[1] = tunnels[1], tunnels[0]
+			}
+			diff, err := r.Diff(context.Background(), baseline, terraform.NewResourceConfigRaw(config), client)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff == nil || diff.Empty() {
+				t.Fatal("explicit IPsec lifetime update was replaced by prior state")
+			}
+			found := false
+			for key, change := range diff.Attributes {
+				if strings.HasPrefix(key, "tunnel_options_specification.") && strings.HasSuffix(key, ".tunnel_ipsec_config.0.ipsec_lifetime") && change.New == "12345" && !change.NewComputed {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatal("planned set hash omitted the configured IPsec lifetime")
+			}
+			updatedClient, requests := vpnAttachmentUnitClient(t, vpnAttachmentUnitAPIDistinctComputed(config))
+			state, diags := r.Apply(context.Background(), baseline, diff, updatedClient)
+			if diags.HasError() {
+				t.Fatalf("apply: %v", diags)
+			}
+			calls := requests.modifyCalls()
+			if len(calls) != 1 || calls[0].Get("TunnelOptionsSpecification.1.TunnelIndex") != "2" || calls[0].Get("TunnelOptionsSpecification.1.TunnelIpsecConfig.IpsecLifetime") != "12345" {
+				t.Fatal("explicit update was not sent to tunnel 2")
+			}
+			vpnAttachmentUnitAssertNoDiff(t, r, state, config, updatedClient)
+		})
+	}
+}
+
 func TestUnitVpnGatewayVpnAttachmentSetExplicitWholeIke(t *testing.T) {
 	r := resourceAliCloudVpnGatewayVpnAttachment()
 	original := vpnAttachmentDistinctConfig()
@@ -4041,6 +4091,9 @@ func TestUnitVpnGatewayVpnAttachmentRoleCompatibility(t *testing.T) {
 					t.Fatalf("role-only configuration must have no diff: %#v", diff.Attributes)
 				}
 			} else {
+				if diff == nil || diff.Empty() {
+					t.Fatal("writable IPsec change was lost while suppressing read-only role")
+				}
 				applied, applyDiags := r.Apply(context.Background(), baseline, diff, client)
 				if applyDiags.HasError() {
 					t.Fatalf("%v", applyDiags)
