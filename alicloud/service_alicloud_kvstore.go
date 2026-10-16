@@ -16,7 +16,7 @@ type KvstoreService struct {
 	client *connectivity.AliyunClient
 }
 
-var KVstoreInstanceStatusCatcher = Catcher{"OperationDenied.KVstoreInstanceStatus", 60, 5}
+var KVstoreInstanceStatusCatcher = Catcher{Reason: "OperationDenied.KVstoreInstanceStatus", RetryCount: 60, RetryWaitSeconds: 5}
 
 func (s *KvstoreService) DescribeKVstoreInstance(id string) (*r_kvstore.DBInstanceAttribute, error) {
 	instance := &r_kvstore.DBInstanceAttribute{}
