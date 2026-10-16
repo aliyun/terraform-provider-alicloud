@@ -874,6 +874,36 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_redis_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": []string{"${alicloud_redis_global_security_ip_group.default.0.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_security_group_list": "${alicloud_redis_global_security_ip_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_security_group_list.#": "3",
+					}),
+				),
+			},
 		},
 	})
 }
@@ -910,26 +940,28 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"resource_group_id":          "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"zone_id":                    "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":                 "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id":          "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"global_security_group_list": "${alicloud_redis_global_security_ip_group.default.*.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":    "redis.shard.small.ce",
-						"db_instance_name":  name,
-						"instance_type":     "Redis",
-						"engine_version":    "7.0",
-						"shard_count":       "2",
-						"bandwidth":         "200",
-						"tags.%":            "2",
-						"tags.Created":      "TF",
-						"tags.For":          "acceptance test",
-						"resource_group_id": CHECKSET,
-						"zone_id":           CHECKSET,
-						"vswitch_id":        CHECKSET,
-						"secondary_zone_id": CHECKSET,
+						"instance_class":               "redis.shard.small.ce",
+						"db_instance_name":             name,
+						"instance_type":                "Redis",
+						"engine_version":               "7.0",
+						"shard_count":                  "2",
+						"bandwidth":                    "200",
+						"tags.%":                       "2",
+						"tags.Created":                 "TF",
+						"tags.For":                     "acceptance test",
+						"resource_group_id":            CHECKSET,
+						"zone_id":                      CHECKSET,
+						"vswitch_id":                   CHECKSET,
+						"secondary_zone_id":            CHECKSET,
+						"global_security_group_list.#": "3",
 					}),
 				),
 			},
@@ -3533,6 +3565,12 @@ func AliCloudKVStoreRedisInstanceVpcBasicDependence0(name string) string {
   		name                = "tf-example"
   		vpc_id              = data.alicloud_vpcs.default.ids.0
 	}
+
+resource "alicloud_redis_global_security_ip_group" "default" {
+  count                = 3
+  global_ip_group_name = "tfacc${count.index}"
+  global_ip_list       = "192.168.0.1,10.10.10.10,172.16.0.1"
+}
 	`)
 }
 
