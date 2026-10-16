@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -77,7 +77,7 @@ func resourceAlicloudPolarDBPolarFsEndpointCreate(d *schema.ResourceData, meta i
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_polardb_polar_fs_endpoint", action, AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := &resource.StateChangeConf{
+	stateConf := &retry.StateChangeConf{
 		Pending:    []string{"Pending"},
 		Target:     []string{"Available"},
 		Timeout:    d.Timeout(schema.TimeoutCreate),
@@ -161,7 +161,7 @@ func resourceAlicloudPolarDBPolarFsEndpointDelete(d *schema.ResourceData, meta i
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteDBClusterEndpoint", AlibabaCloudSdkGoERROR)
 	}
-	stateConf := &resource.StateChangeConf{
+	stateConf := &retry.StateChangeConf{
 		Pending: []string{"Exists"}, Target: []string{}, Timeout: d.Timeout(schema.TimeoutDelete), MinTimeout: 5 * time.Second,
 		Refresh: func() (interface{}, string, error) {
 			endpoints, refreshErr := describePolarDBPolarFsEndpoints(client, parts[0], d.Get("polar_fs_instance_id").(string), parts[1])
