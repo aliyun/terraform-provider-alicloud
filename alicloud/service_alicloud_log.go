@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-var SlsClientTimeoutCatcher = Catcher{LogClientTimeout, 15, 5}
+var SlsClientTimeoutCatcher = Catcher{Reason: LogClientTimeout, RetryCount: 15, RetryWaitSeconds: 5}
 
 type LogService struct {
 	client *connectivity.AliyunClient

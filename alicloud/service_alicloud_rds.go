@@ -35,7 +35,7 @@ type RdsService struct {
 // The API return 200 for resource not found.
 // When getInstance is empty, then throw InstanceNotfound error.
 // That the business layer only need to check error.
-var DBInstanceStatusCatcher = Catcher{"OperationDenied.DBInstanceStatus", 60, 5}
+var DBInstanceStatusCatcher = Catcher{Reason: "OperationDenied.DBInstanceStatus", RetryCount: 60, RetryWaitSeconds: 5}
 
 // State errors require a parent lookup; they do not establish that an instance
 // has been released. In particular, a locked instance may still be recoverable.

@@ -1,14 +1,14 @@
 package alicloud
 
 import (
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 )
 
-type Tag struct {
-	Key   string
-	Value string
-}
+// Tag moved to alicloud/tags (tags/tags.go); this alias keeps
+// flat-file references and AddTagsArgs/RemoveTagsArgs compiling unchanged.
+type Tag = tags.Tag
 
 type JsonTag struct {
 	TagKey   string
