@@ -379,7 +379,6 @@ func TestUnitAliCloudCloudFirewallInstance(t *testing.T) {
 		"band_width":            10,
 		"cfw_log":               false,
 		"cfw_log_storage":       1000,
-		"cfw_service":           false,
 		"period":                6,
 		"fw_vpc_number":         10,
 		"instance_count":        10,

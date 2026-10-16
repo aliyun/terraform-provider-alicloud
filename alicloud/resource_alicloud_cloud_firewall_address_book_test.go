@@ -19,6 +19,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+// collection-order: bypass asset_region_resource_types -- pre-existing list unchanged by this PR; regression changes cover address_list unknown handling only
+
 func TestAccAliCloudCloudFirewallAddressBook_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_address_book.default"
@@ -945,9 +947,12 @@ func TestUnitCloudFirewallAddressBookRefreshDiff(t *testing.T) {
 	}
 }
 
-func cloudFirewallAddressBookTestClient(t *testing.T, addresses []interface{}) *connectivity.AliyunClient {
+func cloudFirewallAddressBookTestClient(t *testing.T, addresses []interface{}, inspect ...func(*http.Request)) *connectivity.AliyunClient {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		for _, check := range inspect {
+			check(req)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(map[string]interface{}{"Acls": []interface{}{map[string]interface{}{
 			"GroupUuid": "address-book", "GroupName": "test", "GroupType": "ip", "Description": "test", "AddressList": addresses, "TagList": []interface{}{},
@@ -984,8 +989,8 @@ func TestUnitCloudFirewallAddressBookConfiguredDiff(t *testing.T) {
 		{"same", []interface{}{a, b}, false, "test", false},
 		{"configured reorder", []interface{}{b, a}, false, "test", true},
 		{"computed omitted", nil, true, "test", false},
-		// The SDK preserves existing state for an entirely unknown Optional+Computed list.
-		{"whole list unknown", "74D93920-ED26-11E3-AC10-0800200C9A66", false, "test", false},
+		// The SDK plans an unknown count for an entirely unknown Optional+Computed list.
+		{"whole list unknown", "74D93920-ED26-11E3-AC10-0800200C9A66", false, "test", true},
 		{"unknown element", []interface{}{a, "74D93920-ED26-11E3-AC10-0800200C9A66"}, false, "test", true},
 		{"other change", []interface{}{a, b}, false, "updated", true},
 	} {
@@ -1003,6 +1008,30 @@ func TestUnitCloudFirewallAddressBookConfiguredDiff(t *testing.T) {
 			}
 			if changed := diff != nil && !diff.Empty(); changed != tc.changed {
 				t.Fatalf("changed=%v want=%v diff=%#v", changed, tc.changed, diff)
+			}
+			if tc.name == "whole list unknown" {
+				count := diff.Attributes["address_list.#"]
+				if count == nil || !count.NewComputed {
+					t.Fatal("unknown list count must remain computed in the plan")
+				}
+				if len(diff.Attributes) != 1 {
+					t.Fatalf("unknown list must not produce concrete element changes: %#v", diff.Attributes)
+				}
+				client := cloudFirewallAddressBookTestClient(t, []interface{}{a, b}, func(req *http.Request) {
+					if err := req.ParseForm(); err != nil {
+						t.Error(err)
+					}
+					if req.Form.Get("Action") == "ModifyAddressBook" && req.Form.Has("AddressList") {
+						t.Errorf("unknown list must not be sent to the API: %q", req.Form.Get("AddressList"))
+					}
+				})
+				applied, diags := r.Apply(context.Background(), d.State(), diff, client)
+				if diags.HasError() {
+					t.Fatalf("apply unknown list: %v", diags)
+				}
+				if applied.Attributes["address_list.#"] != "2" || applied.Attributes["address_list.0"] != a || applied.Attributes["address_list.1"] != b {
+					t.Fatalf("apply must preserve remote addresses: %#v", applied.Attributes)
+				}
 			}
 			if tc.name == "other change" && diff.Attributes["description"] == nil {
 				t.Fatal("description diff lost")
