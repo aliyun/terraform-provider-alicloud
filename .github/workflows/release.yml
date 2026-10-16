@@ -31,7 +31,7 @@ jobs:
       - name: Validate release branch ancestry
         shell: bash
         env:
-          V2_RELEASE_BRANCH: ${{ vars.V2_RELEASE_BRANCH || 'release/v2' }}
+          V2_RELEASE_BRANCH: ${{ vars.V2_RELEASE_BRANCH || 'master' }}
         run: |
           if [[ ! "$V2_RELEASE_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || ! git check-ref-format --branch "$V2_RELEASE_BRANCH" >/dev/null; then
             echo "Invalid V2 release branch name" >&2

@@ -8,7 +8,6 @@ on:
       - ready_for_review
     branches:
       - master
-      - release/v2
 
 permissions: {}
 
@@ -36,7 +35,7 @@ jobs:
               "synchronize",
               "ready_for_review",
             ]);
-            const supportedBaseRefs = new Set(["master", "release/v2"]);
+            const supportedBaseRefs = new Set(["master"]);
             const actionsApp = {
               id: 15368,
               slug: "github-actions",

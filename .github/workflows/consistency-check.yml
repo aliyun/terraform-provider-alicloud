@@ -12,7 +12,6 @@ on:
       - ready_for_review
     branches:
       - master
-      - release/v2
 
 permissions: {}
 

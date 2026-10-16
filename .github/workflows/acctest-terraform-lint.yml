@@ -8,7 +8,6 @@ on:
       - ready_for_review
     branches:
       - master
-      - release/v2
     paths:
       - .github/workflows/acctest-terraform-lint.yml
       - alicloud/**/*.go

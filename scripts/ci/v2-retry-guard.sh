@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Guard the release/v2 branch against new SDK v2 helper/resource retry usage.
+# Guard the v2 line (master, formerly release/v2) against new SDK v2 helper/resource retry usage.
 #
 # Background: helper/resource and terraform-plugin-testing both register a
 # -sweep flag in init(), so a test binary linking both dies at startup with
@@ -156,7 +156,7 @@ fi
 
 if ((violations > 0)); then
         echo "v2-retry-guard: ${violations} deprecated helper/resource usage(s) introduced."
-        echo "        release/v2 requires terraform-plugin-sdk/v2/helper/retry; apply the replacements above."
+        echo "        the v2 line requires terraform-plugin-sdk/v2/helper/retry; apply the replacements above."
         echo "        The rewrite is mechanical: scripts/migration/retry_rewrite.sh applies it."
         exit 1
 fi
