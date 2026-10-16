@@ -13,7 +13,7 @@ Provides a OOS Service Setting resource.
 
 For information about OOS Service Setting and how to use it, see [What is Service Setting](https://www.alibabacloud.com/help/en/doc-detail/268700.html).
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testaccoossetting"
+  default = "tf-accoossetting"
 }
 
 resource "alicloud_oss_bucket" "default" {
@@ -58,11 +58,13 @@ resource "alicloud_oos_service_setting" "default" {
 
 The following arguments are supported:
 
-* `delivery_oss_bucket_name` - (Optional) The name of the OSS bucket. **NOTE:** When the `delivery_oss_enabled` is `true`, The `delivery_oss_bucket_name` is valid.
-* `delivery_oss_enabled` - (Optional) Is the recording function for the OSS delivery template enabled.  
-* `delivery_oss_key_prefix` - (Optional) The Directory of the OSS bucket. **NOTE:** When the `delivery_oss_enabled` is `true`, The `delivery_oss_bucket_name` is valid.
-* `delivery_sls_enabled` - (Optional) Is the execution record function to SLS delivery Template turned on.
-* `delivery_sls_project_name` - (Optional) The name of SLS  Project. **NOTE:** When the `delivery_sls_enabled` is `true`, The `delivery_sls_project_name` is valid.
+* `delivery_oss_bucket_name` - (Optional) The name of OSS bucket to deliver. **NOTE:** When the `delivery_oss_enabled` is `true`, The `delivery_oss_bucket_name` is valid.
+* `delivery_oss_enabled` - (Optional) Whether to enable OSS delivery.
+* `delivery_oss_key_prefix` - (Optional) The key prefix of OSS to deliver. **NOTE:** When the `delivery_oss_enabled` is `true`, The `delivery_oss_bucket_name` is valid.
+* `delivery_sls_enabled` - (Optional) Whether to enable SLS delivery.
+* `delivery_sls_project_name` - (Optional) The name of SLS project to deliver. **NOTE:** When the `delivery_sls_enabled` is `true`, The `delivery_sls_project_name` is valid.
+* `service_access_rd_enabled` - (Optional) Whether the service access RD is enabled.
+* `rd_folder_ids` - (Optional) The list of resource folder IDs. **NOTE:** The OOS API is read/write asymmetric: `rd_folder_ids` is sent as the `RdFolderIds` array on create/update, while the read response returns the `RdFolders` field as a single string.
 
 
 ## Attributes Reference
@@ -70,6 +72,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Service Setting.
+* `rdc_enterprise_id` - Cloud effect enterprise ID.
 
 ## Import
 
