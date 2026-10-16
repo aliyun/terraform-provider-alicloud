@@ -11,7 +11,6 @@ on:
       - ready_for_review
     branches:
       - master
-      - release/v2
     paths:
       - .github/workflows/collection-order-coverage.yml
       - scripts/collection-order/**

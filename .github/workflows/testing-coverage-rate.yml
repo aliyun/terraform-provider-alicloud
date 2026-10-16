@@ -11,7 +11,6 @@ on:
       - ready_for_review
     branches:
       - master
-      - release/v2
     paths:
       - .github/workflows/testing-coverage-rate.yml
       - .go-version

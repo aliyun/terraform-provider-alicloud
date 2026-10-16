@@ -40,15 +40,15 @@ jobs:
   V2RetryGuard:
     steps:
       - uses: checkout
-      - name: Reject new SDK v2 helper/resource retry usage on release/v2
+      - name: Reject new SDK v2 helper/resource retry usage
         run: |
           targetBranch='${{git.merge_request.targetBranch ?: ""}}'
-          if [[ "$targetBranch" != "release/v2" ]]; then
+          if [[ "$targetBranch" != "master" ]]; then
             echo "target branch is ${targetBranch:-<empty>}, skipping the v2 retry guard"
             exit 0
           fi
-          git fetch --no-tags origin release/v2:refs/remotes/origin/release/v2
-          DIFF_BASE="$(git merge-base origin/release/v2 HEAD)" \
+          git fetch --no-tags origin master:refs/remotes/origin/master
+          DIFF_BASE="$(git merge-base origin/master HEAD)" \
           DIFF_HEAD="$(git rev-parse HEAD)" \
             bash scripts/ci/v2-retry-guard.sh
 

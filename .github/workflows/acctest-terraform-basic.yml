@@ -10,7 +10,6 @@ on:
       - ready_for_review
     branches:
       - master
-      - release/v2
 
 permissions: {}
 
@@ -42,7 +41,7 @@ jobs:
               "synchronize",
               "ready_for_review",
             ]);
-            const supportedBaseRefs = new Set(["master", "release/v2"]);
+            const supportedBaseRefs = new Set(["master"]);
             const actionsApp = {
               id: 15368,
               slug: "github-actions",
@@ -184,9 +183,9 @@ jobs:
 
   V2RetryGuard:
     needs: route
-    # Only release/v2 carries the helper/retry migration; new SDK v2
-    # helper/resource retry usage must not be merged into it.
-    if: ${{ needs.route.outputs.relevant == 'true' && github.event.pull_request.base.ref == 'release/v2' }}
+    # The v2 line lives on master since the line switch: non-test code
+    # must use helper/retry, never the SDK v2 helper/resource retry helpers.
+    if: ${{ needs.route.outputs.relevant == 'true' }}
     permissions:
       contents: read
     runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
