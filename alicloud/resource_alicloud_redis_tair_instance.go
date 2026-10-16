@@ -271,6 +271,18 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Disable", "Enable", "Update"}, false),
 			},
+			"ca_cert_download_url": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ca_cert_common_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ssl_expired_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -645,6 +657,9 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	if objectRaw["SSLEnabled"] != nil {
 		d.Set("ssl_enabled", objectRaw["SSLEnabled"])
 	}
+	d.Set("ca_cert_download_url", objectRaw["CertDownloadURL"])
+	d.Set("ca_cert_common_name", objectRaw["CertCommonName"])
+	d.Set("ssl_expired_time", objectRaw["SSLExpiredTime"])
 	if objectRaw["InstanceId"] != nil {
 		d.Set("tair_instance_id", objectRaw["InstanceId"])
 	}
