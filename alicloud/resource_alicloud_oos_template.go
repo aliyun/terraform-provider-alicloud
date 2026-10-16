@@ -5,10 +5,43 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// oosTemplateTagsConvergenceTimeout bounds how long Create/Update re-read the
+// template until the tags written by CreateTemplate/UpdateTemplate are
+// reflected in the read-back state.
+const oosTemplateTagsConvergenceTimeout = 2 * time.Minute
+
+// readOosTemplateUntilTagsConverged reads the template and, while the tags just
+// written are not reflected in state, waits and reads again within timeout.
+// GetTemplate may serve the previous tag set from stale replicas even after a
+// poll returned the new tags, so the read that persists state must be
+// re-checked, not just any single GetTemplate call. An empty desired map skips
+// the loop because no tags were written.
+func readOosTemplateUntilTagsConverged(d *schema.ResourceData, meta interface{}, desired map[string]interface{}, timeout time.Duration) error {
+	if len(desired) < 1 {
+		return resourceAlicloudOosTemplateRead(d, meta)
+	}
+	wait := incrementalWait(2*time.Second, 2*time.Second)
+	err := retry.Retry(timeout, func() *retry.RetryError {
+		if err := resourceAlicloudOosTemplateRead(d, meta); err != nil {
+			return retry.NonRetryableError(err)
+		}
+		if oosTemplateTagsEqual(d.Get("tags").(map[string]interface{}), desired) {
+			return nil
+		}
+		wait()
+		return retry.RetryableError(fmt.Errorf("tags of OOS template %s have not converged to the desired tags yet", d.Id()))
+	})
+	if err != nil {
+		return WrapErrorf(err, "waiting for tags of OOS template %s to converge: %s", d.Id(), err)
+	}
+	return nil
+}
 
 func resourceAlicloudOosTemplate() *schema.Resource {
 	return &schema.Resource{
@@ -88,6 +121,11 @@ func resourceAlicloudOosTemplate() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"resource_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -134,6 +172,12 @@ func resourceAlicloudOosTemplateCreate(d *schema.ResourceData, meta interface{})
 	responseTemplate := response["Template"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseTemplate["TemplateName"]))
 
+	// GetTemplate may not reflect the tags written by CreateTemplate yet; the
+	// read below is retried until the written tags are reflected in state.
+	if _, ok := request["Tags"]; ok {
+		return readOosTemplateUntilTagsConverged(d, meta, d.Get("tags").(map[string]interface{}), oosTemplateTagsConvergenceTimeout)
+	}
+
 	return resourceAlicloudOosTemplateRead(d, meta)
 }
 
@@ -166,6 +210,36 @@ func resourceAlicloudOosTemplateRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("updated_by", object["UpdatedBy"])
 	d.Set("updated_date", object["UpdatedDate"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+
+	// $.ResourceIds is exposed as a computed attribute and sourced from
+	// ListTagResources ($.TagResources.TagResource[*].ResourceId). The query
+	// is scoped to the current template, so de-duplicate the echoed resource
+	// ids that ListTagResources returns once per bound tag. Only non-empty
+	// string ResourceId values are accepted; missing, null or non-string
+	// entries are ignored so that "<nil>" never leaks into state.
+	tagResp, err := oosService.ListOosTemplateTagResources(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	tagResources, _ := jsonpath.Get("$.TagResources.TagResource", tagResp)
+	resourceIds := make([]string, 0)
+	seen := make(map[string]bool)
+	for _, tagResource := range convertToInterfaceArray(tagResources) {
+		tagResourceMap, ok := tagResource.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		rid, ok := tagResourceMap["ResourceId"].(string)
+		if !ok || rid == "" {
+			continue
+		}
+		if seen[rid] {
+			continue
+		}
+		seen[rid] = true
+		resourceIds = append(resourceIds, rid)
+	}
+	d.Set("resource_ids", resourceIds)
 	return nil
 }
 
@@ -215,6 +289,12 @@ func resourceAlicloudOosTemplateUpdate(d *schema.ResourceData, meta interface{})
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		// Tags changed by UpdateTemplate may not be visible to GetTemplate yet;
+		// the read below is retried until the written tags are reflected in
+		// state. An empty new tag set carries no tags to converge on.
+		if d.HasChange("tags") {
+			return readOosTemplateUntilTagsConverged(d, meta, d.Get("tags").(map[string]interface{}), oosTemplateTagsConvergenceTimeout)
 		}
 	}
 	return resourceAlicloudOosTemplateRead(d, meta)

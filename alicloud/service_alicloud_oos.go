@@ -40,6 +40,57 @@ func (s *OosService) DescribeOosTemplate(id string) (object map[string]interface
 	return object, nil
 }
 
+// ListOosTemplateTagResources queries the OOS tags bound to a template via
+// ListTagResources. The Template resource exposes $.ResourceIds as a computed
+// attribute sourced from $.TagResources.TagResource[*].ResourceId, so a Read
+// calls this with ResourceType=template and the template name as the only
+// resource id to enumerate the tagged resource ids.
+func (s *OosService) ListOosTemplateTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	action := "ListTagResources"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"ResourceType": "template",
+		"ResourceIds":  convertObjectToJsonString(expandSingletonToList(id)),
+	}
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+// oosTemplateTagsEqual reports whether the tag map read back from GetTemplate
+// equals the desired tag map, comparing values by their string form because the
+// API response and the schema state may type equal scalars differently. Named
+// locally to avoid the package-wide tagsMapEqual in tags.go, which operates on
+// map[string]string.
+func oosTemplateTagsEqual(actual map[string]interface{}, desired map[string]interface{}) bool {
+	if len(actual) != len(desired) {
+		return false
+	}
+	for key, want := range desired {
+		have, ok := actual[key]
+		if !ok || fmt.Sprint(have) != fmt.Sprint(want) {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *OosService) DescribeOosExecution(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
