@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -3243,6 +3244,373 @@ func TestAccAliCloudKVStoreRedisInstance_classic_cluster_instance_class(t *testi
 					testAccCheck(map[string]string{
 						"instance_class": "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
 					}),
+				),
+			},
+		},
+	})
+}
+
+// AliCloudKVStoreRedisInstanceGlobalInstanceMap is the base attribute map for the
+// distributed (global) instance acceptance tests. connection_domain is always
+// populated for a created instance; global_instance_id is asserted per-step via
+// CHECKSET to prove the gr- ID is read back into state.
+var AliCloudKVStoreRedisInstanceGlobalInstanceMap = map[string]string{
+	"connection_domain": CHECKSET,
+}
+
+// aliCloudKvstoreGlobalInstanceDependence renders the shared dependencies for the
+// single-region distributed first-child test: Tair_rdb zones (GlobalInstance
+// requires a Tair内存型 instance), the default test VPC, a vswitch with a
+// create-on-missing fallback, and locals exposing vswitch_id/zone_id.
+func aliCloudKvstoreGlobalInstanceDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_kvstore_zones" "default" {
+  product_type = "Tair_rdb"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vswitch_name = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+}
+`, name)
+}
+
+// TestAccAliCloudKVStoreRedisInstance_globalInstance verifies AC1: creating the
+// first child of a distributed (global) instance with global_instance = true
+// produces a gr- ID that the Read function reads back into state
+// (global_instance_id), so a cross-region child can later join by referencing it.
+//
+// The GlobalInstance API parameter requires a Tair内存型 instance with engine
+// version 5.0 and is documented as China-site only, so the first child uses a
+// Tair instance class (tair.rdb.2g) on a Tair_rdb zone. global_instance_id is
+// marked Computed on the schema precisely so this read back does not produce a
+// perpetual diff for a first child whose config omits global_instance_id.
+//
+// Creating a distributed instance requires the 全球多活 (global distribution)
+// feature, which is not enabled on the standard ACC worker account — there,
+// GlobalInstance = true is accepted but produces a normal instance whose
+// DescribeInstanceAttribute response omits GlobalInstanceId, so this test is
+// gated behind TF_ACC_KVSTORE_DISTRIBUTED and skips unless run against an
+// account/region that can actually create a distributed first child. The
+// read-back code path itself is covered by
+// TestAccAliCloudKVStoreRedisInstance_globalInstanceIdReadback.
+func TestAccAliCloudKVStoreRedisInstance_globalInstance(t *testing.T) {
+	if v := os.Getenv("TF_ACC_KVSTORE_DISTRIBUTED"); v != "true" {
+		t.Skip("distributed (global) instance creation requires the 全球多活 feature; set TF_ACC_KVSTORE_DISTRIBUTED=true on an account/region that supports it")
+	}
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreRedisInstanceGlobalInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreGlobalInstance-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, aliCloudKvstoreGlobalInstanceDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_name": name,
+					"instance_type":    "Redis",
+					"instance_class":   "tair.rdb.2g",
+					"engine_version":   "5.0",
+					"payment_type":     "PostPaid",
+					"shard_count":      "2",
+					"global_instance":  true,
+					"zone_id":          "${local.zone_id}",
+					"vswitch_id":       "${local.vswitch_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_name": name,
+						"instance_type":    "Redis",
+						"instance_class":   "tair.rdb.2g",
+						"engine_version":   "5.0",
+						"payment_type":     "PostPaid",
+						"shard_count":      "2",
+						// global_instance is a create-only flag (its DiffSuppressFunc
+						// keeps it out of state outside of create), so it is not asserted
+						// here. global_instance_id is the gr- ID read back from the API.
+						"global_instance_id": CHECKSET,
+						"zone_id":            CHECKSET,
+						"vswitch_id":         CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudKVStoreRedisInstance_globalInstanceIdReadback verifies the Read
+// path added for distributed (global) instances: global_instance_id is read back
+// from the DescribeInstanceAttribute response (the gr- ID, returned only for a
+// child of a distributed instance). For a normal, non-distributed instance the
+// API omits GlobalInstanceId, so global_instance_id must read back as empty —
+// proving the new d.Set runs cleanly and produces no perpetual diff (the schema
+// marks global_instance_id Computed for exactly this reason). This case runs on
+// the standard ACC worker; the distributed case (gr- ID populated) is gated
+// behind TF_ACC_KVSTORE_DISTRIBUTED in
+// TestAccAliCloudKVStoreRedisInstance_globalInstance.
+func TestAccAliCloudKVStoreRedisInstance_globalInstanceIdReadback(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreRedisInstanceGlobalInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreGlobalInstanceIdReadback-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, aliCloudKvstoreGlobalInstanceDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_name": name,
+					"instance_type":    "Redis",
+					"instance_class":   "tair.rdb.2g",
+					"engine_version":   "5.0",
+					"payment_type":     "PostPaid",
+					"shard_count":      "2",
+					"zone_id":          "${local.zone_id}",
+					"vswitch_id":       "${local.vswitch_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_name": name,
+						"instance_type":    "Redis",
+						"instance_class":   "tair.rdb.2g",
+						"engine_version":   "5.0",
+						"payment_type":     "PostPaid",
+						"shard_count":      "2",
+						// Non-distributed instance: the API omits GlobalInstanceId,
+						// so the read back is empty — no perpetual diff (Computed).
+						"global_instance_id": "",
+						"zone_id":            CHECKSET,
+						"vswitch_id":         CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+		},
+	})
+}
+
+// kvstoreGlobalDistributedInstanceConfig is the cross-region distributed
+// instance HCL for TestAccAliCloudKVStoreRedisInstance_globalDistributedInstance.
+// %[1]s = primary region, %[2]s = secondary region, %[3]s = primary name,
+// %[4]s = secondary name. The secondary child references
+// alicloud_kvstore_instance.primary.global_instance_id, which is only non-empty
+// once Read reads the gr- ID back into state — the end-to-end proof of the fix.
+const kvstoreGlobalDistributedInstanceConfig = `
+provider "alicloud" {
+  region = "%[1]s"
+}
+
+provider "alicloud" {
+  alias  = "secondary"
+  region = "%[2]s"
+}
+
+variable "name" {
+  default = "%[3]s"
+}
+
+data "alicloud_kvstore_zones" "primary" {
+  product_type = "Tair_rdb"
+}
+
+data "alicloud_vpcs" "primary" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "primary" {
+  vpc_id  = data.alicloud_vpcs.primary.ids.0
+  zone_id = data.alicloud_kvstore_zones.primary.zones.0.id
+}
+
+resource "alicloud_vswitch" "primary_fallback" {
+  count = length(data.alicloud_vswitches.primary.ids) > 0 ? 0 : 1
+  vswitch_name = var.name
+  vpc_id = data.alicloud_vpcs.primary.ids.0
+  zone_id = data.alicloud_kvstore_zones.primary.zones.0.id
+  cidr_block = cidrsubnet(data.alicloud_vpcs.primary.vpcs.0.cidr_block, 8, 4)
+}
+
+locals {
+  primary_vswitch_id = length(data.alicloud_vswitches.primary.ids) > 0 ? data.alicloud_vswitches.primary.ids.0 : concat(alicloud_vswitch.primary_fallback.*.id, [""])[0]
+  primary_zone_id = data.alicloud_kvstore_zones.primary.zones.0.id
+}
+
+data "alicloud_kvstore_zones" "secondary" {
+  provider     = alicloud.secondary
+  product_type = "Tair_rdb"
+}
+
+resource "alicloud_vpc" "secondary" {
+  provider   = alicloud.secondary
+  vpc_name   = var.name
+  cidr_block = "172.17.0.0/16"
+}
+
+resource "alicloud_vswitch" "secondary" {
+  provider   = alicloud.secondary
+  vpc_id     = alicloud_vpc.secondary.id
+  cidr_block = "172.17.0.0/24"
+  zone_id    = data.alicloud_kvstore_zones.secondary.zones.0.id
+}
+
+resource "alicloud_kvstore_instance" "primary" {
+  db_instance_name = var.name
+  instance_type    = "Redis"
+  instance_class   = "tair.rdb.2g"
+  engine_version   = "5.0"
+  payment_type     = "PostPaid"
+  shard_count      = 2
+  global_instance  = true
+  zone_id          = local.primary_zone_id
+  vswitch_id       = local.primary_vswitch_id
+}
+
+resource "alicloud_kvstore_instance" "secondary" {
+  provider            = alicloud.secondary
+  db_instance_name    = "%[4]s"
+  instance_type       = "Redis"
+  instance_class      = "tair.rdb.2g"
+  engine_version      = "5.0"
+  payment_type        = "PostPaid"
+  shard_count         = 2
+  global_instance_id = alicloud_kvstore_instance.primary.global_instance_id
+  zone_id             = data.alicloud_kvstore_zones.secondary.zones.0.id
+  vswitch_id          = alicloud_vswitch.secondary.id
+}
+`
+
+// TestAccAliCloudKVStoreRedisInstance_globalDistributedInstance verifies AC2:
+// after the first child (global_instance = true) is created and its gr- ID is
+// read back into state, a second child in another region joins the distributed
+// instance via global_instance_id = <first child's gr- ID>. Both children then
+// share the same gr- ID in state, proving the read back enables the cross-region
+// join that was previously impossible.
+//
+// Gated: a distributed (global) instance needs an account/regions with the
+// feature available and is heavier to provision. The GlobalInstance API
+// parameter is documented as China-site only, so this exercises two China-site
+// regions (international HK+SG is not supported by this parameter — see the
+// delivery report). Set TF_ACC_KVSTORE_DISTRIBUTED=true and ALICLOUD_REGION_2 to
+// run; it skips cleanly otherwise.
+func TestAccAliCloudKVStoreRedisInstance_globalDistributedInstance(t *testing.T) {
+	if v := os.Getenv("TF_ACC_KVSTORE_DISTRIBUTED"); v != "true" {
+		t.Skip("set TF_ACC_KVSTORE_DISTRIBUTED=true and ALICLOUD_REGION_2 to run the cross-region distributed instance test")
+	}
+	primaryRegion := os.Getenv("ALICLOUD_REGION")
+	if primaryRegion == "" {
+		primaryRegion = "cn-hangzhou"
+	}
+	secondaryRegion := os.Getenv("ALICLOUD_REGION_2")
+	if secondaryRegion == "" {
+		secondaryRegion = "cn-shanghai"
+	}
+	if primaryRegion == secondaryRegion {
+		t.Fatalf("primary and secondary regions must differ, both are %q", primaryRegion)
+	}
+
+	// Fresh provider per factory call so the aliased (secondary-region) provider
+	// does not clobber the default provider's region on the shared singleton.
+	var providers []*schema.Provider
+	factories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			p := Provider()
+			providers = append(providers, p)
+			return p, nil
+		},
+	}
+	var v map[string]interface{}
+	resourceId := "alicloud_kvstore_instance.primary"
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		for _, p := range providers {
+			if meta := p.Meta(); meta != nil {
+				if c := meta.(*connectivity.AliyunClient); c.RegionId == primaryRegion {
+					return &R_kvstoreService{c}
+				}
+			}
+		}
+		for _, p := range providers {
+			if meta := p.Meta(); meta != nil {
+				return &R_kvstoreService{meta.(*connectivity.AliyunClient)}
+			}
+		}
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, resourceAttrInit(resourceId, map[string]string{}))
+
+	rand := acctest.RandIntRange(1000000, 9999999)
+	namePrimary := fmt.Sprintf("tf-testAccKvstoreGDistPri-%d", rand)
+	nameSecondary := fmt.Sprintf("tf-testAccKvstoreGDistSec-%d", rand)
+	config := fmt.Sprintf(kvstoreGlobalDistributedInstanceConfig, primaryRegion, secondaryRegion, namePrimary, nameSecondary)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: factories,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_kvstore_instance.primary", "global_instance_id"),
+					resource.TestCheckResourceAttrSet("alicloud_kvstore_instance.secondary", "global_instance_id"),
+					resource.TestCheckResourceAttrPair("alicloud_kvstore_instance.primary", "global_instance_id", "alicloud_kvstore_instance.secondary", "global_instance_id"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.primary", "engine_version", "5.0"),
+					resource.TestCheckResourceAttr("alicloud_kvstore_instance.secondary", "engine_version", "5.0"),
 				),
 			},
 		},

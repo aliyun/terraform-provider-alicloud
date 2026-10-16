@@ -248,7 +248,7 @@ The following arguments are supported:
 * `business_info`- (Optional, Available since v1.101.0) The ID of the event or the business information.
 * `auto_use_coupon`- (Optional, Bool, ForceNew, Available since v1.101.0) Specifies whether to use a coupon. Default value: `false`.
 * `instance_release_protection`- (Optional, Bool, Available since v1.101.0) Whether to open the release protection.
-* `global_instance_id`- (Optional, Available since v1.101.0) The ID of distributed cache.
+* `global_instance_id`- (Optional, Computed, Available since v1.101.0) The ID of the distributed cache instance (`gr-` ID). It is set on the first child created with `global_instance = true` and read back from the API for every child of a distributed instance, so cross-region children can join by referencing it.
 * `global_instance`- (Optional, ForceNew, Bool, Available since v1.101.0) Whether to create a distributed cache. Default value: `false`.
 * `backup_period`- (Optional, List, Available since v1.104.0) Backup period.
 * `backup_time`- (Optional, Available since v1.104.0) Backup time, the format is HH:mmZ-HH:mmZ (UTC time).

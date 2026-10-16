@@ -156,6 +156,7 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 			"global_instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"instance_class": {
 				Type:     schema.TypeString,
@@ -695,6 +696,12 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("instance_name", object["InstanceName"])
 	d.Set("end_time", object["EndTime"])
 	d.Set("engine_version", object["EngineVersion"])
+	// GlobalInstanceId is the gr- ID of the distributed (global) instance that
+	// this instance belongs to. DescribeInstanceAttribute returns it only when the
+	// instance is a child of a distributed instance. Reading it back lets the first
+	// child (created via global_instance = true) propagate its gr- ID into state,
+	// so cross-region children can join via global_instance_id.
+	d.Set("global_instance_id", object["GlobalInstanceId"])
 	d.Set("instance_class", object["RealInstanceClass"])
 	d.Set("instance_release_protection", object["InstanceReleaseProtection"])
 	d.Set("instance_type", object["InstanceType"])
@@ -1920,5 +1927,11 @@ func resolveMajorVersionForSpecChange(engineVersion string, describeFunc func(id
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprint(object["EngineVersion"]), nil
+	// fmt.Sprint(nil) returns "<nil>", not "", so a response that omits
+	// EngineVersion must be mapped to an empty major version explicitly.
+	v, ok := object["EngineVersion"]
+	if !ok || v == nil {
+		return "", nil
+	}
+	return fmt.Sprint(v), nil
 }
