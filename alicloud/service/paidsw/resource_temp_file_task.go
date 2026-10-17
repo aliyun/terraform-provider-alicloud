@@ -105,9 +105,12 @@ func (r *tempFileTaskResource) Schema(ctx context.Context, req resource.SchemaRe
 			"gmt_modified_time": schema.StringAttribute{
 				Computed:    true,
 				Description: "The modification time of the temp file task.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				// No UseStateForUnknown: GmtModifiedTime is advanced by the
+				// service on every Update. Pinning the prior state value in the
+				// plan (UseStateForUnknown) would disagree with the refreshed
+				// value Read returns after Update, producing a deterministic
+				// inconsistent-result-after-apply. Leaving it unknown in plan so
+				// the post-Read value applies cleanly (R3.8 server-advanced).
 			},
 			"region_id": schema.StringAttribute{
 				Computed:    true,
