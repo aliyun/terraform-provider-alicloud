@@ -82,6 +82,14 @@ func testSweepCSKubernetes(region string) error {
 	for _, v := range clusters {
 		name := v.Name
 		id := v.ClusterID
+		// Scope deletion to the sweep region only. DescribeClusters("") lists
+		// clusters across every region; without this filter SWEEP_ALL deletes
+		// out-of-scope clusters (e.g. a cn-hangzhou cluster when sweeping
+		// cn-beijing). RegionID is the cluster's region (json:"region_id").
+		if string(v.RegionID) != region {
+			log.Printf("[INFO] Skipping CS Cluster (out-of-sweep-region %s): %s (%s)", v.RegionID, name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
