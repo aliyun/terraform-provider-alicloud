@@ -663,6 +663,96 @@ func (s *EcsServiceV2) EcsSnapshotStateRefreshFunc(id string, field string, fail
 
 // DescribeEcsSnapshot >>> Encapsulated.
 
+// DescribeEcsSnapshotLock <<< Encapsulated get interface for Ecs Snapshot lock info.
+
+func (s *EcsServiceV2) DescribeEcsSnapshotLock(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeLockedSnapshots"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SnapshotIds"] = convertListToJsonString([]interface{}{id})
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidSnapshotLock.NotFound"}) {
+			return nil, nil
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// DescribeLockedSnapshots returns LockedSnapshotsInfo as a direct JSON array
+	// (e.g. {"LockedSnapshotsInfo":[{"LockStatus":"compliance",...}]}), not a
+	// nested {"LockedSnapshotsInfo":{"LockedSnapshotInfo":[...]}} object. Match the
+	// real shape so a locked snapshot is read instead of being silently dropped.
+	//
+	// Fetch the raw LockedSnapshotsInfo value (without the [*] wildcard) and
+	// validate it is a JSON array before iterating. PaesslerAG/jsonpath's [*]
+	// wildcard silently returns an empty []interface{} (no error) when applied to
+	// a scalar such as a string, so a wildcard-only retrieval masked a malformed
+	// {"LockedSnapshotsInfo":"compliance"} response as an empty array and silently
+	// treated it as "no lock" (Read succeeded, misjudging a possibly locked
+	// snapshot as unlocked). Only a genuine empty array (or the
+	// InvalidSnapshotLock.NotFound already handled above) is a confirmed unlocked
+	// snapshot; a non-array root, a non-object element, a foreign/missing
+	// SnapshotId, or a permission/network/service error all surface an error so
+	// the caller knows the lock state could not be determined rather than masking
+	// a possibly locked snapshot.
+	raw, err := jsonpath.Get("$.LockedSnapshotsInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo", response)
+	}
+	if raw == nil {
+		// LockedSnapshotsInfo absent (key missing or JSON null). The real
+		// DescribeLockedSnapshots API always includes the key as a JSON array
+		// (an empty array for an unlocked snapshot, never null). An absent root
+		// field means the response shape is unexpected and the lock state cannot
+		// be determined safely; surface an error rather than silently treating the
+		// snapshot as unlocked, consistent with the non-array case below. A
+		// possibly-locked snapshot must never be misjudged as unlocked because a
+		// malformed response dropped the lock-info key.
+		return object, WrapErrorf(fmt.Errorf("LockedSnapshotsInfo is absent (missing key or JSON null), cannot determine lock state"), FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo", response)
+	}
+	arr, ok := raw.([]interface{})
+	if !ok {
+		return object, WrapErrorf(fmt.Errorf("LockedSnapshotsInfo is not a JSON array, got %T", raw), FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo", response)
+	}
+	if len(arr) == 0 {
+		return nil, nil
+	}
+	// Find the lock entry whose SnapshotId matches the requested snapshot. The
+	// request filtered by SnapshotIds=[id], so a response carrying only other
+	// snapshots' locks (or an entry missing SnapshotId) is unexpected and must
+	// not be assigned to this resource.
+	for _, elem := range arr {
+		entry, ok := elem.(map[string]interface{})
+		if !ok {
+			return object, WrapErrorf(fmt.Errorf("LockedSnapshotsInfo element is not a JSON object, got %T", elem), FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo", response)
+		}
+		if sid, ok := entry["SnapshotId"].(string); ok && sid == id {
+			return entry, nil
+		}
+	}
+	return object, WrapErrorf(fmt.Errorf("no LockedSnapshotsInfo entry matches snapshot id %q", id), FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo", response)
+}
+
+// DescribeEcsSnapshotLock >>> Encapsulated.
+
 // DescribeEcsRamRoleAttachment <<< Encapsulated get interface for Ecs RamRoleAttachment.
 
 func (s *EcsServiceV2) DescribeEcsRamRoleAttachment(id string) (object map[string]interface{}, err error) {
