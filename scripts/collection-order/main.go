@@ -12,6 +12,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/collection-order/internal/coverage"
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 )
 
 func main() {
@@ -34,7 +35,7 @@ func run(base, head, resourceName string) error {
 	if err != nil {
 		return err
 	}
-	registry, err := coverage.RegistryUnion(current, registers)
+	registry, err := coverage.CombinedRegistry(current, registers)
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func run(base, head, resourceName string) error {
 			}
 			baseRegisters[path] = registerSrc
 		}
-		before, err = coverage.RegistryUnion(src, baseRegisters)
+		before, err = coverage.CombinedRegistry(src, baseRegisters)
 		if err != nil {
 			return err
 		}
@@ -135,7 +136,23 @@ func run(base, head, resourceName string) error {
 		}
 		r := provider.ResourcesMap[name]
 		if r == nil {
-			return fmt.Errorf("resource missing from runtime schema: %s", name)
+			// Framework-native resources are not in the SDKv2 runtime schema.
+			// Instead of skipping them as out of scope, synthesize their schema
+			// from the real Schema() AST so the collection-order check applies
+			// with the same fail-closed semantics as SDKv2: a framework resource
+			// with a configurable ordered collection (ListNestedBlock) is checked,
+			// and one without reaches an empty candidate set by reading its real
+			// schema, not by a generic skip. A parse failure is reported, not
+			// swallowed.
+			resolved := splitlayout.FrameworkFindByTypeName(name)
+			if resolved == nil {
+				return fmt.Errorf("resource missing from runtime schema: %s", name)
+			}
+			synth, err := coverage.FrameworkResource(resolved.ImplPath)
+			if err != nil {
+				return fmt.Errorf("framework resource %s: %w", name, err)
+			}
+			r = synth
 		}
 		if len(coverage.Candidates(r)) == 0 {
 			fmt.Printf("%s: no configurable multi-member TypeList attributes\n", name)

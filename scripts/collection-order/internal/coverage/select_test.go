@@ -123,6 +123,81 @@ func TestSplitSelection(t *testing.T) {
 			t.Fatal(got, err)
 		}
 	})
+	// Helper tests (resource_foo_crud_test.go, resource_foo_internal_test.go)
+	// derive a resource_foo_crud.go impl that does not exist; they must resolve to
+	// the registered resource's real impl (resource_foo.go) so the collection-order
+	// check still applies — coverage is preserved, not blanket-ignored. An orphan
+	// helper test (no matching impl, or an impl that is not registered) fails closed.
+	t.Run("split crud helper test resolves to registered impl", func(t *testing.T) {
+		got, err := Select([]string{"alicloud/service/cloudauth/resource_face_config_crud_test.go"}, before, after, sources, missing)
+		if err != nil || got["alicloud_cloudauth_face_config"] != "alicloud/service/cloudauth/resource_face_config_test.go" {
+			t.Fatalf("crud helper test must resolve to the registered resource's standard test; got %v, %v", got, err)
+		}
+	})
+	t.Run("split internal helper test resolves to registered impl", func(t *testing.T) {
+		got, err := Select([]string{"alicloud/service/cloudauth/resource_face_config_internal_test.go"}, before, after, sources, missing)
+		if err != nil || got["alicloud_cloudauth_face_config"] != "alicloud/service/cloudauth/resource_face_config_test.go" {
+			t.Fatalf("internal helper test must resolve to the registered resource's standard test; got %v, %v", got, err)
+		}
+	})
+	t.Run("orphan helper test with no impl fails closed", func(t *testing.T) {
+		if _, err := Select([]string{"alicloud/service/cloudauth/resource_orphan_crud_test.go"}, before, after, sources, missing); err == nil {
+			t.Fatal("an orphan helper test with no matching impl must fail closed, not be silently skipped")
+		}
+	})
+	t.Run("helper test resolving to an unregistered impl fails closed", func(t *testing.T) {
+		unregisteredSources := map[string][]byte{
+			implPath: impl,
+			"alicloud/service/cloudauth/resource_other.go": []byte(`package cloudauth; func ResourceOther() {}`),
+		}
+		if _, err := Select([]string{"alicloud/service/cloudauth/resource_other_crud_test.go"}, before, after, unregisteredSources, missing); err == nil {
+			t.Fatal("a helper test resolving to an unregistered impl must fail closed")
+		}
+	})
+	// A framework-native resource may keep its ACC test in the flat alicloud/
+	// directory (package alicloud_test, so `go test ./alicloud` discovers it)
+	// while its real implementation lives in alicloud/service/<product>/. The
+	// flat impl path the standard pairing derives does not exist at either
+	// revision; the check must resolve it to the split-layout impl so the
+	// collection-order check still applies — coverage is preserved, not
+	// blanket-ignored. A flat test whose split impl is not registered fails
+	// closed, and a flat test with no matching split impl also fails closed.
+	t.Run("flat test for split-layout framework resource resolves to split impl", func(t *testing.T) {
+		splitImpl := "alicloud/service/ecs/resource_security_group_snapshot_policy.go"
+		splitTest := "alicloud/service/ecs/resource_security_group_snapshot_policy_test.go"
+		flatTest := "alicloud/resource_alicloud_security_group_snapshot_policy_test.go"
+		fwAfter := map[string]string{"alicloud_security_group_snapshot_policy": "ecs.NewSecurityGroupSnapshotPolicy"}
+		fwSources := map[string][]byte{
+			splitImpl: []byte(`package ecs; func NewSecurityGroupSnapshotPolicy() {}`),
+		}
+		got, err := Select([]string{flatTest}, map[string]string{}, fwAfter, fwSources, missing)
+		if err != nil {
+			t.Fatalf("flat test for a split-layout resource must resolve; got %v", err)
+		}
+		if got["alicloud_security_group_snapshot_policy"] != splitTest {
+			t.Fatalf("flat test must resolve to the split-layout standard test; got %v, want %v", got, map[string]string{"alicloud_security_group_snapshot_policy": splitTest})
+		}
+	})
+	t.Run("flat test for unregistered split impl fails closed", func(t *testing.T) {
+		splitImpl := "alicloud/service/ecs/resource_security_group_snapshot_policy.go"
+		flatTest := "alicloud/resource_alicloud_security_group_snapshot_policy_test.go"
+		fwSources := map[string][]byte{
+			splitImpl: []byte(`package ecs; func NewSecurityGroupSnapshotPolicy() {}`),
+		}
+		if _, err := Select([]string{flatTest}, map[string]string{}, map[string]string{}, fwSources, missing); err == nil {
+			t.Fatal("a flat test whose split impl is not registered must fail closed")
+		}
+	})
+	t.Run("flat test with no matching split impl fails closed", func(t *testing.T) {
+		flatTest := "alicloud/resource_alicloud_security_group_snapshot_policy_test.go"
+		// sources only have a flat impl for a different resource
+		flatSources := map[string][]byte{
+			"alicloud/resource_alicloud_example.go": []byte(`package alicloud; func resourceExample() {}`),
+		}
+		if _, err := Select([]string{flatTest}, map[string]string{}, map[string]string{"alicloud_security_group_snapshot_policy": "ecs.NewSecurityGroupSnapshotPolicy"}, flatSources, missing); err == nil {
+			t.Fatal("a flat test with no matching split impl must fail closed")
+		}
+	})
 }
 
 func TestRegistryUnion(t *testing.T) {
