@@ -495,6 +495,7 @@ var regularProductEndpoint = map[string]string{
 	"quickbi_public":       "quickbi.%s.aliyuncs.com",
 	"ddosbgp":              "ddosbgp.%s.aliyuncs.com",
 	"apig":                 "apig.%s.aliyuncs.com",
+	"paifeaturestore":      "paifeaturestore.%s.aliyuncs.com",
 	"dds":                  "mongodb.%s.aliyuncs.com",
 	"cloudcontrol":         "cloudcontrol.aliyuncs.com",
 	"bpstudio":             "bpstudio.cn-hangzhou.aliyuncs.com",
