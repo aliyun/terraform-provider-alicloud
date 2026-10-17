@@ -85,6 +85,7 @@ The following arguments are supported:
 * `model_type` - (Optional) The model type. Example: Checkpoint or LoRA.
 * `order_number` - (Optional, Int) The sequence number of the model. Can be used for custom sorting.
 * `origin` - (Optional) The source of the model. The community or organization to which the source model belongs, such as ModelScope or HuggingFace.
+* `parameter_size` - (Optional, Int) The parameter size of the model, in M.
 * `task` - (Optional) The task of the model. Describes the specific problem that the model solves. Example: text-classification.
 * `workspace_id` - (Optional, ForceNew) The ID of the workspace.
 

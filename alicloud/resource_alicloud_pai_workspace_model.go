@@ -82,6 +82,10 @@ func resourceAliCloudPaiWorkspaceModel() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"parameter_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"task": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -118,6 +122,10 @@ func resourceAliCloudPaiWorkspaceModelCreate(d *schema.ResourceData, meta interf
 			dataLoopMap["Value"] = dataLoopTmp["value"]
 			labelsMapsArray = append(labelsMapsArray, dataLoopMap)
 		}
+		// Tag is the recommended field that replaces the deprecated Labels;
+		// both are populated from the same labels property to complete the
+		// body.Tag mapping and avoid regression while Labels is still honored.
+		request["Tag"] = labelsMapsArray
 		request["Labels"] = labelsMapsArray
 	}
 
@@ -150,6 +158,9 @@ func resourceAliCloudPaiWorkspaceModelCreate(d *schema.ResourceData, meta interf
 	}
 	if v, ok := d.GetOk("extra_info"); ok {
 		request["ExtraInfo"] = v
+	}
+	if v, ok := d.GetOkExists("parameter_size"); ok {
+		request["ParameterSize"] = v
 	}
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -198,6 +209,7 @@ func resourceAliCloudPaiWorkspaceModelRead(d *schema.ResourceData, meta interfac
 	d.Set("model_name", objectRaw["ModelName"])
 	d.Set("model_type", objectRaw["ModelType"])
 	d.Set("order_number", objectRaw["OrderNumber"])
+	d.Set("parameter_size", objectRaw["ParameterSize"])
 	d.Set("origin", objectRaw["Origin"])
 	d.Set("task", objectRaw["Task"])
 	d.Set("workspace_id", objectRaw["WorkspaceId"])
@@ -294,6 +306,12 @@ func resourceAliCloudPaiWorkspaceModelUpdate(d *schema.ResourceData, meta interf
 	}
 	if v, ok := d.GetOk("extra_info"); ok {
 		request["ExtraInfo"] = v
+	}
+	if d.HasChange("parameter_size") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("parameter_size"); ok {
+		request["ParameterSize"] = v
 	}
 	body = request
 	if update {
