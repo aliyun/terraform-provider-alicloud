@@ -1,5 +1,9 @@
 ## 1.295.0 (Unreleased)
 
+NEW RESOURCES:
+
+- **New Resource:** `alicloud_pai_workspace_default_workspace`
+
 ENHANCEMENTS:
 
 - resource/alicloud_nlb_server_group: support ip_version_affinity_mode. ([#10705](https://github.com/aliyun/terraform-provider-alicloud/issues/10705))
