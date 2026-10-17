@@ -59,12 +59,52 @@ resource "alicloud_drds_polardbx_instance" "default" {
 }
 ```
 
+Subscription (PREPAY) Instance
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+provider "alicloud" {
+  region = "ap-southeast-1"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+resource "alicloud_vpc" "example" {
+  vpc_name = var.name
+}
+resource "alicloud_vswitch" "example" {
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  cidr_block   = "172.16.0.0/24"
+  vswitch_name = var.name
+}
+resource "alicloud_drds_polardbx_instance" "default" {
+  topology_type  = "3azones"
+  vswitch_id     = alicloud_vswitch.example.id
+  primary_zone   = "ap-southeast-1a"
+  cn_node_count  = "2"
+  dn_class       = "mysql.n4.medium.25"
+  cn_class       = "polarx.x4.medium.2e"
+  dn_node_count  = "2"
+  secondary_zone = "ap-southeast-1b"
+  tertiary_zone  = "ap-southeast-1c"
+  vpc_id         = alicloud_vpc.example.id
+  pay_type       = "PREPAY"
+  period         = "Month"
+  used_time      = 1
+  auto_renew     = true
+}
+```
+
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_drds_polardbx_instance&spm=docs.r.drds_polardbx_instance.example&intl_lang=EN_US)
 
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_renew` - (Optional, ForceNew) Whether to enable auto-renewal for the subscription instance. Valid values: `true`, `false`. **NOTE:** Only valid when `pay_type` is `PREPAY`.
 * `cn_class` - (Required) Compute node (CN) specifications. Since v1.285.0 the field is mutable and supports in-place class change. Refer to the `CnClass` parameter in the [CreateDBInstance API reference](https://www.alibabacloud.com/help/en/polardb/polardb-for-xscale/api-createdbinstance-1) for the list of valid values.
 * `cn_node_count` - (Required, Int) Number of computing nodes.
 * `description` - (Optional, Available since v1.268.0) Instance remarks
@@ -82,6 +122,11 @@ The following arguments are supported:
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
+* `pay_type` - (Optional, ForceNew, Computed) The billing method of the instance. Valid values:
+  - `PREPAY`: the subscription (yearly/monthly) billing method;
+  - `POSTPAY`: the pay-as-you-go billing method.
+  Default to `POSTPAY`. Use `PREPAY` together with `period`, `used_time` and `auto_renew` to create a subscription instance. **NOTE:** Subscription (`PREPAY`) instances cannot be released before the subscription period expires. When the resource is destroyed, Terraform will remove it from the state file, but the cloud resource may remain until the subscription expires.
+* `period` - (Optional, ForceNew) The billing cycle for a subscription instance. Valid values: `Year`, `Month`. **NOTE:** Only valid when `pay_type` is `PREPAY`.
 * `primary_zone` - (Required, ForceNew) Primary Availability Zone.
 * `resource_group_id` - (Optional, Computed) The resource group ID can be empty. This parameter is not supported for the time being.
 * `secondary_zone` - (Optional, ForceNew) Secondary availability zone.
@@ -101,6 +146,7 @@ The following arguments are supported:
 * `topology_type` - (Required, ForceNew) Topology type:
   - `3azones`: three available areas;
   - `1azone`: Single zone.
+* `used_time` - (Optional, ForceNew, Int) The subscription duration. When `period` is `Year`, valid values are `1`, `2`, `3`; when `period` is `Month`, valid values are `1`-`9`. **NOTE:** Only valid when `pay_type` is `PREPAY`.
 * `vswitch_id` - (Required, ForceNew) The ID of the virtual switch.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 
@@ -109,6 +155,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource
+* `pay_type` - The billing method of the resource.
 * `region_id` - The region ID of the resource
 * `status` - The status of the resource
 

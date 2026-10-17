@@ -25,6 +25,11 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(61 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"cn_class": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -66,6 +71,19 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 			"is_read_db_instance": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"pay_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"PREPAY", "POSTPAY"}, false),
+			},
+			"period": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Year", "Month"}, false),
 			},
 			"primary_db_instance_name": {
 				Type:     schema.TypeString,
@@ -128,6 +146,12 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"1azone", "3azones"}, false),
 			},
+			"used_time": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: IntAtLeast(1),
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -161,7 +185,20 @@ func resourceAliCloudDrdsPolardbxInstanceCreate(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	request["PayType"] = "POSTPAY"
+	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PREPAY" {
+		request["PayType"] = "PREPAY"
+		if v, ok := d.GetOk("period"); ok {
+			request["Period"] = v
+		}
+		if v, ok := d.GetOk("used_time"); ok {
+			request["UsedTime"] = v
+		}
+		if v, ok := d.GetOkExists("auto_renew"); ok {
+			request["AutoRenew"] = v
+		}
+	} else {
+		request["PayType"] = "POSTPAY"
+	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -245,6 +282,7 @@ func resourceAliCloudDrdsPolardbxInstanceRead(d *schema.ResourceData, meta inter
 	d.Set("dn_node_count", objectRaw["DnNodeCount"])
 	d.Set("dn_storage_space", objectRaw["DnStorageSpace"])
 	d.Set("engine_version", objectRaw["EngineVersion"])
+	d.Set("pay_type", convertDrdsPolardbxInstanceDBInstancePayTypeResponse(objectRaw["PayType"]))
 	d.Set("primary_zone", objectRaw["PrimaryZone"])
 	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
@@ -432,11 +470,27 @@ func resourceAliCloudDrdsPolardbxInstanceUpdate(d *schema.ResourceData, meta int
 func resourceAliCloudDrdsPolardbxInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
+	drdsServiceV2 := DrdsServiceV2{client}
+
+	// Prepaid (subscription) instances cannot be released via DeleteDBInstance
+	// before the subscription period expires. Remove the resource from state and
+	// let the subscription expire and release automatically.
+	object, err := drdsServiceV2.DescribeDrdsPolardbxInstance(d.Id())
+	if err != nil {
+		if NotFoundError(err) || IsExpectedErrors(err, []string{"DBInstance.NotFound"}) {
+			return nil
+		}
+		return WrapError(err)
+	}
+	if fmt.Sprint(object["PayType"]) == "Prepaid" {
+		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_drds_polardbx_instance. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
+
 	action := "DeleteDBInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	var err error
 	request = make(map[string]interface{})
 	request["DBInstanceName"] = d.Id()
 	request["RegionId"] = client.RegionId
@@ -462,7 +516,6 @@ func resourceAliCloudDrdsPolardbxInstanceDelete(d *schema.ResourceData, meta int
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	drdsServiceV2 := DrdsServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 60*time.Second, drdsServiceV2.DescribeAsyncDrdsPolardbxInstanceStateRefreshFunc(d, response, "$.Items", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
@@ -474,6 +527,10 @@ func resourceAliCloudDrdsPolardbxInstanceDelete(d *schema.ResourceData, meta int
 func convertDrdsPolardbxInstanceDBInstancePayTypeResponse(source interface{}) interface{} {
 	source = fmt.Sprint(source)
 	switch source {
+	case "Postpaid":
+		return "POSTPAY"
+	case "Prepaid":
+		return "PREPAY"
 	}
 	return source
 }
