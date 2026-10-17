@@ -519,6 +519,17 @@ func resourceAlicloudRdsCloneDbInstanceCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
+	// Tags are passed atomically into CloneDBInstance so that the cloned
+	// instance carries the configured tags on creation, mirroring the
+	// CreateDBInstance atomic tag pattern in resource_alicloud_db_instance.
+	if v, ok := d.GetOk("tags"); ok {
+		count := 1
+		for key, value := range v.(map[string]interface{}) {
+			request[fmt.Sprintf("Tag.%d.Key", count)] = key
+			request[fmt.Sprintf("Tag.%d.Value", count)] = value
+			count++
+		}
+	}
 
 	instance, err := rdsService.DescribeDBInstance(d.Get("source_db_instance_id").(string))
 	if err != nil {
