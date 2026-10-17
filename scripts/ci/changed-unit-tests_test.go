@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -160,5 +162,145 @@ func TestUnitChangedSummaryAllowsSkipWithoutHidingErrors(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+const registrationFixture = `package alicloud
+func Provider() *schema.Provider {
+ return &schema.Provider{
+  ResourcesMap: map[string]*schema.Resource{RESOURCE_ENTRIES},
+  DataSourcesMap: map[string]*schema.Resource{DATA_ENTRIES},
+  ConfigureFunc: configure,
+ }
+}
+`
+
+func registrationSource(resources, data string) string {
+	return strings.NewReplacer("RESOURCE_ENTRIES", resources, "DATA_ENTRIES", data).Replace(registrationFixture)
+}
+
+func TestUnitChangedRegistrationProof(t *testing.T) {
+	base := registrationSource(`"alicloud_old": resourceOld(),`, `"alicloud_data": dataSourceOld(),`)
+	for _, tc := range []struct {
+		name, after string
+		ok          bool
+		count       int
+	}{
+		{"add resource", registrationSource(`"alicloud_old": resourceOld(), "alicloud_new": resourceNew(),`, `"alicloud_data": dataSourceOld(),`), true, 1},
+		{"add data source", registrationSource(`"alicloud_old": resourceOld(),`, `"alicloud_data": dataSourceOld(), "alicloud_new": dataSourceNew(),`), true, 1},
+		{"remove both", registrationSource("", ""), true, 2},
+		{"rename alias", registrationSource(`"alicloud_alias": resourceOld(),`, `"alicloud_data": dataSourceOld(),`), true, 2},
+		{"replace factory", strings.Replace(base, "resourceOld()", "resourceNew()", 1), false, 0},
+		{"change configure", strings.Replace(base, "ConfigureFunc: configure", "ConfigureFunc: configureNew", 1), false, 0},
+		{"other declaration", base + "\nvar shared = 1\n", false, 0},
+		{"import change", strings.Replace(base, "package alicloud", "package alicloud\nimport x \"example.com/x\"", 1), false, 0},
+		{"dynamic map", strings.Replace(base, `map[string]*schema.Resource{"alicloud_old": resourceOld(),}`, "resources()", 1), false, 0},
+		{"duplicate key", registrationSource(`"alicloud_old": resourceOld(), "alicloud_old": resourceOld(),`, `"alicloud_data": dataSourceOld(),`), false, 0},
+		{"dynamic key", registrationSource(`key: resourceOld(),`, `"alicloud_data": dataSourceOld(),`), false, 0},
+		{"missing map", strings.Replace(base, "DataSourcesMap:", "SomethingElse:", 1), false, 0},
+		{"second provider literal", strings.Replace(base, "return &schema.Provider", "_ = schema.Provider{}; return &schema.Provider", 1), false, 0},
+		{"build directive", "//go:build custom\n\n" + base, false, 0},
+		{"syntax error", "package alicloud\nfunc Provider(", false, 0},
+		{"format only", strings.ReplaceAll(base, ": ", ":    "), true, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			changed, ok := registrationChanges([]byte(base), []byte(tc.after))
+			if ok != tc.ok || (ok && len(changed) != tc.count) {
+				t.Fatalf("ok=%v changes=%d", ok, len(changed))
+			}
+		})
+	}
+	if _, ok := registrationChanges([]byte("invalid"), []byte(base)); ok {
+		t.Fatal("invalid base narrowed")
+	}
+}
+
+func registrationGitBase(t *testing.T) string {
+	t.Helper()
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=Unit Fixture", "-c", "user.email=fixture@example.invalid", "-c", "core.hooksPath=/dev/null", "commit", "-qm", "fixture"}} {
+		if out, err := exec.Command("git", args...).CombinedOutput(); err != nil {
+			t.Fatalf("git: %v %s", err, out)
+		}
+	}
+	out, err := exec.Command("git", "rev-parse", "HEAD").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func TestUnitChangedRegistrationSelection(t *testing.T) {
+	before := registrationSource(`"alicloud_old": resourceOld(),`, "")
+	for _, tc := range []struct {
+		name, after string
+		extra       []string
+		remove      string
+		broad       bool
+		names       []string
+	}{
+		{name: "add resource and data source", after: registrationSource(`"alicloud_old": resourceOld(), "alicloud_new": resourceNew(),`, `"alicloud_data": dataSourceNew(),`), names: []string{"TestUnitData", "TestUnitNew"}},
+		{name: "remove registration", after: registrationSource("", ""), names: []string{"TestUnitOld"}},
+		{name: "alias uses actual factory", after: registrationSource(`"alicloud_old": resourceOld(), "alicloud_alias": resourceNew(),`, ""), names: []string{"TestUnitNew"}},
+		{name: "helper still broadens", after: registrationSource("", ""), extra: []string{"alicloud/common.go"}, broad: true},
+		{name: "module still broadens", after: registrationSource("", ""), extra: []string{"go.mod"}, broad: true},
+		{name: "replacement broadens", after: registrationSource(`"alicloud_old": resourceNew(),`, ""), broad: true},
+		{name: "unknown factory broadens", after: registrationSource(`"alicloud_new": missing(),`, ""), broad: true},
+		{name: "qualified factory broadens", after: registrationSource(`"alicloud_new": ecs.Resource(),`, ""), broad: true},
+		{name: "arguments broaden", after: registrationSource(`"alicloud_new": resourceNew(1),`, ""), broad: true},
+		{name: "missing companion broadens", after: registrationSource("", ""), remove: "alicloud/resource_alicloud_old_test.go", broad: true},
+		{name: "deleted implementation broadens", after: registrationSource("", ""), remove: "alicloud/resource_alicloud_old.go", broad: true},
+		{name: "no unit companion is explicit no match", after: registrationSource(`"alicloud_old": resourceOld(),`, `"alicloud_acc": dataSourceAcc(),`), names: []string{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			unitFixture(t, map[string]string{
+				"alicloud/provider.go":                       before,
+				"alicloud/resource_alicloud_old.go":          "package alicloud\nfunc resourceOld() {}",
+				"alicloud/resource_alicloud_old_test.go":     "package alicloud\nfunc TestUnitOld(t *testing.T) {}",
+				"alicloud/resource_alicloud_new.go":          "package alicloud\nfunc resourceNew() {}",
+				"alicloud/resource_alicloud_new_test.go":     "package alicloud\nfunc TestUnitNew(t *testing.T) {}",
+				"alicloud/data_source_alicloud_data.go":      "package alicloud\nfunc dataSourceNew() {}",
+				"alicloud/data_source_alicloud_data_test.go": "package alicloud\nfunc TestUnitData(t *testing.T) {}",
+				"alicloud/data_source_alicloud_acc.go":       "package alicloud\nfunc dataSourceAcc() {}",
+				"alicloud/data_source_alicloud_acc_test.go":  "package alicloud\nfunc TestAccOnly(t *testing.T) {}",
+				"alicloud/common_test.go":                    "package alicloud\nfunc TestUnitShared(t *testing.T) {}",
+			})
+			base := registrationGitBase(t)
+			if err := os.WriteFile("alicloud/provider.go", []byte(tc.after), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if tc.remove != "" {
+				if err := os.Remove(tc.remove); err != nil {
+					t.Fatal(err)
+				}
+			}
+			files := append([]string{"alicloud/provider.go"}, tc.extra...)
+			cases, broad, err := selectCases(files, base)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tc.broad {
+				if !reflect.DeepEqual(broad, []string{"./alicloud"}) {
+					t.Fatalf("missing fallback: %v", broad)
+				}
+				return
+			}
+			names := []string{}
+			for _, c := range cases {
+				names = append(names, c.Name)
+			}
+			if len(broad) != 0 || !reflect.DeepEqual(names, tc.names) {
+				t.Fatalf("cases=%v broad=%v", names, broad)
+			}
+		})
+	}
+}
+
+func TestUnitChangedRegistrationMissingBaseBroadens(t *testing.T) {
+	unitFixture(t, map[string]string{"alicloud/provider.go": registrationSource("", ""), "alicloud/common_test.go": unitSample})
+	for _, base := range []string{"", "nonexistent"} {
+		cases, broad, err := selectCases([]string{"alicloud/provider.go"}, base)
+		if err != nil || len(cases) != 1 || len(broad) != 1 {
+			t.Fatalf("%v %v %v", cases, broad, err)
+		}
 	}
 }
