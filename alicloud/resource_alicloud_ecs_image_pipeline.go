@@ -30,14 +30,14 @@ func resourceAlicloudEcsImagePipeline() *schema.Resource {
 			},
 			"base_image": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 			"base_image_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"IMAGE", "IMAGE_FAMILY"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"IMAGE", "IMAGE_FAMILY", "OSS"}, false),
 			},
 			"build_content": {
 				Type:     schema.TypeString,
@@ -112,20 +112,168 @@ func resourceAlicloudEcsImagePipeline() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"test_content": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"image_family": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"repair_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"nvme_support": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"advanced_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"retain_cloud_assistant": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"image_name_suffix": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
+			"import_image_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"architecture": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"platform": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"boot_mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"license_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"os_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"retain_imported_image": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"features": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							MaxItems: 1,
+							ForceNew: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"nvme_support": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+										ForceNew: true,
+									},
+								},
+							},
+						},
+						"disk_device_mappings": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							MaxItems: 17,
+							ForceNew: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"oss_bucket": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+										ForceNew: true,
+									},
+									"oss_object": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+										ForceNew: true,
+									},
+									"format": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+										ForceNew: true,
+									},
+									"disk_image_size": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										Computed: true,
+										ForceNew: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
 
-func resourceAlicloudEcsImagePipelineCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "CreateImagePipeline"
+// expandImagePipelineCreateRequest builds the CreateImagePipeline RPC request map from the
+// ResourceData schema. RegionId and ClientToken are intentionally excluded (they depend on the
+// caller/client) and set by Create. Extracted to enable no-cloud unit testing of the full
+// parameter mapping and disk_device_mappings ordering without invoking the SDK or a real API.
+func expandImagePipelineCreateRequest(d *schema.ResourceData, regionId string) map[string]interface{} {
 	request := make(map[string]interface{})
-	var err error
 	if v, ok := d.GetOk("add_account"); ok {
 		request["AddAccount"] = v.(*schema.Set).List()
 	}
-	request["BaseImage"] = d.Get("base_image")
+	if v, ok := d.GetOk("base_image"); ok {
+		request["BaseImage"] = v
+	}
 	request["BaseImageType"] = d.Get("base_image_type")
 	if v, ok := d.GetOk("build_content"); ok {
 		request["BuildContent"] = v
@@ -148,7 +296,7 @@ func resourceAlicloudEcsImagePipelineCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("name"); ok {
 		request["Name"] = v
 	}
-	request["RegionId"] = client.RegionId
+	request["RegionId"] = regionId
 	if v, ok := d.GetOk("system_disk_size"); ok {
 		request["SystemDiskSize"] = v
 	}
@@ -170,6 +318,78 @@ func resourceAlicloudEcsImagePipelineCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
+	if v, ok := d.GetOk("test_content"); ok {
+		request["TestContent"] = v
+	}
+	if v, ok := d.GetOk("image_family"); ok {
+		request["ImageFamily"] = v
+	}
+	if v, ok := d.GetOk("repair_mode"); ok {
+		request["RepairMode"] = v
+	}
+	if v, ok := d.GetOk("nvme_support"); ok {
+		request["NvmeSupport"] = v
+	}
+	if v, ok := d.GetOk("advanced_options"); ok && len(v.([]interface{})) > 0 {
+		if retain, ok := d.GetOkExists("advanced_options.0.retain_cloud_assistant"); ok {
+			request["AdvancedOptions.RetainCloudAssistant"] = retain
+		}
+		if suffix, ok := d.GetOkExists("advanced_options.0.image_name_suffix"); ok {
+			request["AdvancedOptions.ImageNameSuffix"] = suffix
+		}
+	}
+	if v, ok := d.GetOk("import_image_options"); ok && len(v.([]interface{})) > 0 {
+		if architecture, ok := d.GetOk("import_image_options.0.architecture"); ok {
+			request["ImportImageOptions.Architecture"] = architecture
+		}
+		if platform, ok := d.GetOk("import_image_options.0.platform"); ok {
+			request["ImportImageOptions.Platform"] = platform
+		}
+		if bootMode, ok := d.GetOk("import_image_options.0.boot_mode"); ok {
+			request["ImportImageOptions.BootMode"] = bootMode
+		}
+		if licenseType, ok := d.GetOk("import_image_options.0.license_type"); ok {
+			request["ImportImageOptions.LicenseType"] = licenseType
+		}
+		if osType, ok := d.GetOk("import_image_options.0.os_type"); ok {
+			request["ImportImageOptions.OSType"] = osType
+		}
+		if retain, ok := d.GetOkExists("import_image_options.0.retain_imported_image"); ok {
+			request["ImportImageOptions.RetainImportedImage"] = retain
+		}
+		if features, ok := d.GetOk("import_image_options.0.features"); ok && len(features.([]interface{})) > 0 {
+			if nvme, ok := d.GetOk("import_image_options.0.features.0.nvme_support"); ok {
+				request["ImportImageOptions.Features.NvmeSupport"] = nvme
+			}
+		}
+		if mappings, ok := d.GetOk("import_image_options.0.disk_device_mappings"); ok {
+			for i, raw := range mappings.([]interface{}) {
+				mapping := raw.(map[string]interface{})
+				index := i + 1
+				if v, ok := mapping["oss_bucket"]; ok && fmt.Sprint(v) != "" {
+					request[fmt.Sprintf("ImportImageOptions.DiskDeviceMappings.%d.OSSBucket", index)] = v
+				}
+				if v, ok := mapping["oss_object"]; ok && fmt.Sprint(v) != "" {
+					request[fmt.Sprintf("ImportImageOptions.DiskDeviceMappings.%d.OSSObject", index)] = v
+				}
+				if v, ok := mapping["format"]; ok && fmt.Sprint(v) != "" {
+					request[fmt.Sprintf("ImportImageOptions.DiskDeviceMappings.%d.Format", index)] = v
+				}
+				if v, ok := mapping["disk_image_size"]; ok && fmt.Sprint(v) != "0" {
+					request[fmt.Sprintf("ImportImageOptions.DiskDeviceMappings.%d.DiskImageSize", index)] = v
+				}
+			}
+		}
+	}
+	return request
+}
+
+func resourceAlicloudEcsImagePipelineCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateImagePipeline"
+	request := expandImagePipelineCreateRequest(d, client.RegionId)
+	var err error
 	request["ClientToken"] = buildClientToken("CreateImagePipeline")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -204,6 +424,15 @@ func resourceAlicloudEcsImagePipelineRead(d *schema.ResourceData, meta interface
 		}
 		return WrapError(err)
 	}
+	return flattenImagePipelineRead(d, object)
+}
+
+// flattenImagePipelineRead writes the DescribeImagePipelines API response into the ResourceData
+// schema, including the nested AdvancedOptions, ImportImageOptions.Features and
+// ImportImageOptions.DiskDeviceMappings blocks. Extracted from Read so the flatten/round-trip
+// (the same path the Importer uses via ImportStatePassthrough → Read) is unit-testable without
+// invoking the SDK or a real API.
+func flattenImagePipelineRead(d *schema.ResourceData, object map[string]interface{}) error {
 	d.Set("base_image", object["BaseImage"])
 	d.Set("base_image_type", object["BaseImageType"])
 	d.Set("delete_instance_on_failure", object["DeleteInstanceOnFailure"])
@@ -244,6 +473,67 @@ func resourceAlicloudEcsImagePipelineRead(d *schema.ResourceData, meta interface
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
 	}
+	d.Set("test_content", object["TestContent"])
+	d.Set("image_family", object["ImageFamily"])
+	d.Set("repair_mode", object["RepairMode"])
+	d.Set("nvme_support", object["NvmeSupport"])
+
+	advancedOptionsList := make([]map[string]interface{}, 0)
+	if advancedOptions, ok := object["AdvancedOptions"].(map[string]interface{}); ok {
+		m := map[string]interface{}{}
+		if v, ok := advancedOptions["RetainCloudAssistant"]; ok {
+			m["retain_cloud_assistant"] = v
+		}
+		if v, ok := advancedOptions["ImageNameSuffix"]; ok {
+			m["image_name_suffix"] = v
+		}
+		advancedOptionsList = append(advancedOptionsList, m)
+	}
+	d.Set("advanced_options", advancedOptionsList)
+
+	importImageOptionsList := make([]map[string]interface{}, 0)
+	if importImageOptions, ok := object["ImportImageOptions"].(map[string]interface{}); ok {
+		m := map[string]interface{}{
+			"architecture":          importImageOptions["Architecture"],
+			"platform":              importImageOptions["Platform"],
+			"boot_mode":             importImageOptions["BootMode"],
+			"license_type":          importImageOptions["LicenseType"],
+			"os_type":               importImageOptions["OSType"],
+			"retain_imported_image": importImageOptions["RetainImportedImage"],
+		}
+		featuresList := make([]map[string]interface{}, 0)
+		if features, ok := importImageOptions["Features"].(map[string]interface{}); ok {
+			fm := map[string]interface{}{}
+			if v, ok := features["NvmeSupport"]; ok {
+				fm["nvme_support"] = v
+			}
+			featuresList = append(featuresList, fm)
+		}
+		m["features"] = featuresList
+		diskDeviceMappingsList := make([]map[string]interface{}, 0)
+		if diskDeviceMappings, ok := importImageOptions["DiskDeviceMappings"].(map[string]interface{}); ok {
+			if diskDeviceMapping, ok := diskDeviceMappings["DiskDeviceMapping"].([]interface{}); ok {
+				for _, item := range diskDeviceMapping {
+					mapping, ok := item.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					dm := map[string]interface{}{
+						"oss_bucket": mapping["OSSBucket"],
+						"oss_object": mapping["OSSObject"],
+						"format":     mapping["Format"],
+					}
+					if v, ok := mapping["DiskImageSize"]; ok && fmt.Sprint(v) != "0" {
+						dm["disk_image_size"] = formatInt(v)
+					}
+					diskDeviceMappingsList = append(diskDeviceMappingsList, dm)
+				}
+			}
+		}
+		m["disk_device_mappings"] = diskDeviceMappingsList
+		importImageOptionsList = append(importImageOptionsList, m)
+	}
+	d.Set("import_image_options", importImageOptionsList)
 	return nil
 }
 func resourceAlicloudEcsImagePipelineDelete(d *schema.ResourceData, meta interface{}) error {
