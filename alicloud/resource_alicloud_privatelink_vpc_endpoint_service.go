@@ -66,13 +66,21 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				MaxItems: 10,
-				// Hash an element on resource_id + resource_type only, so the
-				// server-assigned zone_id (Optional + Computed) never changes an
-				// element's identity after Read. This keeps the set order- and
-				// value-independent and avoids perpetual diff / detach-attach churn.
+				// Hash an element on resource_id + resource_type + zone_id. zone_id
+				// is part of the backend identity: the dedicated subresource
+				// alicloud_privatelink_vpc_endpoint_service_resource keys on
+				// ServiceId:ResourceId:ZoneId, and Attach/Detach send ZoneId per
+				// backend. Hashing only on resource_id + resource_type silently
+				// deduped two backends with the same resource_id + resource_type
+				// in different zones, dropping the cross-zone backend and
+				// producing a perpetual diff. To keep a server-assigned zone_id
+				// (Optional + Computed) from churning element identity now that
+				// zone_id is in the hash, Read preserves the user-configured
+				// zone_id instead of overwriting an empty one with the
+				// server-returned zone (see Read below).
 				Set: func(v interface{}) int {
 					m := v.(map[string]interface{})
-					return helper.Hashcode(fmt.Sprintf("%s|%s", m["resource_id"], m["resource_type"]))
+					return helper.Hashcode(fmt.Sprintf("%s|%s|%s", m["resource_id"], m["resource_type"], m["zone_id"]))
 				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -272,19 +280,48 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceRead(d *schema.ResourceData, m
 	if err != nil {
 		return WrapError(err)
 	}
+	// Collect the zone_id values the user already configured for each
+	// (resource_id, resource_type) pair. zone_id is now part of the TypeSet
+	// element identity (see the Set hash), so a server-assigned zone read back
+	// into state would change an element's hash and cause perpetual diff /
+	// detach-attach churn. For a backend the user left unpinned (zone_id == ""),
+	// keep "" instead of adopting the server-returned zone; for a backend the
+	// user pinned to a zone, confirm that exact zone.
+	configuredZones := map[string]map[string]bool{}
+	if rs, ok := d.Get("resource").(*schema.Set); ok {
+		for _, e := range rs.List() {
+			m := e.(map[string]interface{})
+			pair := fmt.Sprintf("%s|%s", m["resource_id"], m["resource_type"])
+			z := vpcEndpointServiceResourceZoneId(m["zone_id"])
+			if configuredZones[pair] == nil {
+				configuredZones[pair] = map[string]bool{}
+			}
+			configuredZones[pair][z] = true
+		}
+	}
 	resourceMaps := make([]map[string]interface{}, 0, len(resourcesRaw))
 	for _, v := range resourcesRaw {
 		item := v.(map[string]interface{})
-		// Normalize ZoneId so an absent/nil API value is stored as "" rather than
-		// nil; this keeps TypeSet element hashing stable (nil vs "" hash
-		// differently) and avoids perpetual diff / detach-attach churn.
-		zoneId := vpcEndpointServiceResourceZoneId(item["ZoneId"])
-		resourceMap := map[string]interface{}{
-			"resource_id":   item["ResourceId"],
-			"resource_type": item["ResourceType"],
-			"zone_id":       zoneId,
+		resourceId := item["ResourceId"]
+		resourceType := item["ResourceType"]
+		// Normalize ZoneId so an absent/nil API value is stored as "" rather
+		// than nil; this keeps TypeSet element hashing stable (nil vs "" hash
+		// differently).
+		apiZoneId := vpcEndpointServiceResourceZoneId(item["ZoneId"])
+		zoneId := apiZoneId
+		if zones, ok := configuredZones[fmt.Sprintf("%s|%s", resourceId, resourceType)]; ok && apiZoneId != "" {
+			// Only adopt the server-returned zone when it matches one the user
+			// configured; if the user left zone_id empty, keep it empty so the
+			// element's hash stays stable and no churn is introduced.
+			if !zones[apiZoneId] && zones[""] {
+				zoneId = ""
+			}
 		}
-		resourceMaps = append(resourceMaps, resourceMap)
+		resourceMaps = append(resourceMaps, map[string]interface{}{
+			"resource_id":   resourceId,
+			"resource_type": resourceType,
+			"zone_id":       zoneId,
+		})
 	}
 	d.Set("resource", resourceMaps)
 
