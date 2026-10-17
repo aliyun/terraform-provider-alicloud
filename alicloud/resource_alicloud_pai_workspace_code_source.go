@@ -39,6 +39,11 @@ func resourceAliCloudPaiWorkspaceCodeSource() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"clone_type": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
+			},
 			"code_repo": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -108,6 +113,9 @@ func resourceAliCloudPaiWorkspaceCodeSourceCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("code_commit"); ok {
 		request["CodeCommit"] = v
 	}
+	if v, ok := d.GetOk("clone_type"); ok {
+		request["CloneType"] = v
+	}
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -154,6 +162,9 @@ func resourceAliCloudPaiWorkspaceCodeSourceRead(d *schema.ResourceData, meta int
 	}
 	if objectRaw["CodeCommit"] != nil {
 		d.Set("code_commit", objectRaw["CodeCommit"])
+	}
+	if objectRaw["CloneType"] != nil {
+		d.Set("clone_type", objectRaw["CloneType"])
 	}
 	if objectRaw["CodeRepo"] != nil {
 		d.Set("code_repo", objectRaw["CodeRepo"])
@@ -263,6 +274,12 @@ func resourceAliCloudPaiWorkspaceCodeSourceUpdate(d *schema.ResourceData, meta i
 	}
 	if v, ok := d.GetOk("code_commit"); ok || d.HasChange("code_commit") {
 		request["CodeCommit"] = v
+	}
+	if d.HasChange("clone_type") {
+		update = true
+	}
+	if v, ok := d.GetOk("clone_type"); ok || d.HasChange("clone_type") {
+		request["CloneType"] = v
 	}
 	if d.HasChange("code_repo_user_name") {
 		update = true

@@ -28,9 +28,9 @@ func TestAccAliCloudPaiWorkspaceCodeSource_basic9010(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -43,6 +43,7 @@ func TestAccAliCloudPaiWorkspaceCodeSource_basic9010(t *testing.T) {
 					"workspace_id":           "${alicloud_pai_workspace_workspace.defaultgklBnM.id}",
 					"code_branch":            "master",
 					"code_repo_user_name":    "user-01",
+					"clone_type":             1,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -55,6 +56,7 @@ func TestAccAliCloudPaiWorkspaceCodeSource_basic9010(t *testing.T) {
 						"workspace_id":           CHECKSET,
 						"code_branch":            "master",
 						"code_repo_user_name":    "user-01",
+						"clone_type":             "1",
 					}),
 				),
 			},
@@ -68,6 +70,7 @@ func TestAccAliCloudPaiWorkspaceCodeSource_basic9010(t *testing.T) {
 					"code_branch":            "master-02",
 					"code_repo_user_name":    "user-02",
 					"code_commit":            "0",
+					"clone_type":             0,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -79,6 +82,7 @@ func TestAccAliCloudPaiWorkspaceCodeSource_basic9010(t *testing.T) {
 						"code_branch":            "master-02",
 						"code_repo_user_name":    "user-02",
 						"code_commit":            "0",
+						"clone_type":             "0",
 					}),
 				),
 			},
