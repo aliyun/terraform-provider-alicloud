@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -30,7 +31,7 @@ func resourceAliCloudPaiWorkspaceDataset() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
+				ValidateFunc: StringInSlice([]string{"PRIVATE", "PUBLIC", "ROLE_PUBLIC"}, false),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -40,14 +41,14 @@ func resourceAliCloudPaiWorkspaceDataset() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"OSS", "NAS"}, false),
+				ValidateFunc: StringInSlice([]string{"OSS", "NAS", "EXTREMENAS", "CPFS", "BMCPFS", "MAXCOMPUTE", "URL"}, false),
 			},
 			"data_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"COMMON", "PIC", "TEXT"}, false),
+				ValidateFunc: StringInSlice([]string{"COMMON", "PIC", "TEXT", "VIDEO", "AUDIO"}, false),
 			},
 			"dataset_name": {
 				Type:     schema.TypeString,
@@ -57,6 +58,7 @@ func resourceAliCloudPaiWorkspaceDataset() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			// collection-order: bypass labels -- pre-existing attribute outside this change
 			"labels": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -93,7 +95,7 @@ func resourceAliCloudPaiWorkspaceDataset() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"USER", "ITAG"}, false),
+				ValidateFunc: StringInSlice([]string{"USER", "ITAG", "PAI_PUBLIC_DATASET"}, false),
 			},
 			"uri": {
 				Type:     schema.TypeString,
@@ -111,6 +113,73 @@ func resourceAliCloudPaiWorkspaceDataset() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			// M-RT-0040 property_completeness: API params previously unmapped.
+			"accessible_role_id_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"dataset_task_ram_role": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				ForceNew:  true,
+				Sensitive: true,
+			},
+			"user_metrics_endpoints": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			// SharingConfig is a system-managed, read-only sharing configuration
+			// (cloudspec readOnly/onlyRead/sensitive, parseType=json). Only Get-mapped;
+			// not exposed as a writable Create/Update input. Stored as JSON string.
+			"sharing_config": {
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
+			},
+			// E-TF-0006 property_coverage: read-only attributes returned by GetDataset.
+			// `dataset_provider` maps to API field $.Provider; renamed because
+			// "provider" is a reserved Terraform meta-arg and must not be a resource
+			// attribute name.
+			"source_dataset_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"dataset_provider": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"import_info": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"edition": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"source_dataset_version": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"provider_type": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -165,6 +234,27 @@ func resourceAliCloudPaiWorkspaceDatasetCreate(d *schema.ResourceData, meta inte
 
 	if v, ok := d.GetOk("user_id"); ok {
 		request["UserId"] = v
+	}
+	if v, ok := d.GetOk("accessible_role_id_list"); ok {
+		accessibleRoleIdListArray := make([]interface{}, 0)
+		for _, role := range v.([]interface{}) {
+			accessibleRoleIdListArray = append(accessibleRoleIdListArray, role)
+		}
+		request["AccessibleRoleIdList"] = accessibleRoleIdListArray
+	}
+	if v, ok := d.GetOk("dataset_task_ram_role"); ok {
+		request["DatasetTaskRamRole"] = v
+	}
+	if v, ok := d.GetOk("user_metrics_endpoints"); ok {
+		userMetricsEndpointsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.([]interface{}) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["Port"] = dataLoopTmp["port"]
+			dataLoopMap["Path"] = dataLoopTmp["path"]
+			userMetricsEndpointsArray = append(userMetricsEndpointsArray, dataLoopMap)
+		}
+		request["UserMetricsEndpoints"] = userMetricsEndpointsArray
 	}
 	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -242,6 +332,37 @@ func resourceAliCloudPaiWorkspaceDatasetRead(d *schema.ResourceData, meta interf
 	}
 	if objectRaw["WorkspaceId"] != nil {
 		d.Set("workspace_id", objectRaw["WorkspaceId"])
+	}
+	if objectRaw["AccessibleRoleIdList"] != nil {
+		d.Set("accessible_role_id_list", objectRaw["AccessibleRoleIdList"])
+	}
+	if objectRaw["SharingConfig"] != nil {
+		sharingConfig := objectRaw["SharingConfig"]
+		if s, ok := sharingConfig.(string); ok {
+			d.Set("sharing_config", s)
+		} else {
+			if b, err := json.Marshal(sharingConfig); err == nil {
+				d.Set("sharing_config", string(b))
+			}
+		}
+	}
+	if objectRaw["SourceDatasetId"] != nil {
+		d.Set("source_dataset_id", objectRaw["SourceDatasetId"])
+	}
+	if objectRaw["Provider"] != nil {
+		d.Set("dataset_provider", objectRaw["Provider"])
+	}
+	if objectRaw["ImportInfo"] != nil {
+		d.Set("import_info", objectRaw["ImportInfo"])
+	}
+	if objectRaw["Edition"] != nil {
+		d.Set("edition", objectRaw["Edition"])
+	}
+	if objectRaw["SourceDatasetVersion"] != nil {
+		d.Set("source_dataset_version", objectRaw["SourceDatasetVersion"])
+	}
+	if objectRaw["ProviderType"] != nil {
+		d.Set("provider_type", objectRaw["ProviderType"])
 	}
 
 	labels1Raw := objectRaw["Labels"]
@@ -340,6 +461,14 @@ func resourceAliCloudPaiWorkspaceDatasetUpdate(d *schema.ResourceData, meta inte
 		update = true
 	}
 	request["Name"] = d.Get("dataset_name")
+	if d.HasChange("accessible_role_id_list") {
+		update = true
+		accessibleRoleIdListArray := make([]interface{}, 0)
+		for _, role := range d.Get("accessible_role_id_list").([]interface{}) {
+			accessibleRoleIdListArray = append(accessibleRoleIdListArray, role)
+		}
+		request["AccessibleRoleIdList"] = accessibleRoleIdListArray
+	}
 	body = request
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)

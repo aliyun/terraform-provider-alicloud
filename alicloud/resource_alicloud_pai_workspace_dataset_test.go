@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -28,9 +29,9 @@ func TestAccAliCloudPaiWorkspaceDataset_basic9002(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -136,9 +137,9 @@ func TestAccAliCloudPaiWorkspaceDataset_basic8536(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -244,9 +245,9 @@ func TestAccAliCloudPaiWorkspaceDataset_basic8538(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -367,9 +368,9 @@ func TestAccAliCloudPaiWorkspaceDataset_basic8539(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -485,9 +486,9 @@ func TestAccAliCloudPaiWorkspaceDataset_basic8519(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -608,9 +609,9 @@ func TestAccAliCloudPaiWorkspaceDataset_basic7381(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -695,6 +696,157 @@ variable "name" {
 resource "alicloud_pai_workspace_workspace" "default6RZ5Rl" {
   description    = "dataset_pop_test_56"
   display_name   = "DatasetTestCaseWorkSpace_753"
+  workspace_name = var.name
+  env_types      = ["prod"]
+}
+
+
+`, name)
+}
+
+// Case Dataset governance coverage (M-RT-0040 property_completeness + E-TF-0006 property_coverage) gov
+func TestAccAliCloudPaiWorkspaceDataset_governanceCoverage(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_pai_workspace_dataset.default"
+	ra := resourceAttrInit(resourceId, AlicloudPaiWorkspaceDatasetMapGov)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PaiWorkspaceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePaiWorkspaceDataset")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPaiWorkspaceDatasetBasicDependenceGov)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// dataset_task_ram_role is edition-dependent: the Create API rejects
+				// it for BASIC datasets (400 "DatasetTaskRamRole is not supported
+				// for BASIC dataset"). Edition is API-managed (Computed) and cannot
+				// be forced to non-BASIC from Terraform, so the success path cannot
+				// exercise dataset_task_ram_role. This step still sends
+				// DatasetTaskRamRole in the Create request (exercises the schema
+				// mapping) and pins the edition-dependent constraint via ExpectError.
+				Config: testAccConfig(map[string]interface{}{
+					"description":             "governance_coverage_create",
+					"accessibility":           "ROLE_PUBLIC",
+					"dataset_name":            name,
+					"data_source_type":        "NAS",
+					"source_type":             "USER",
+					"workspace_id":            "${alicloud_pai_workspace_workspace.defaultWorkspace.id}",
+					"data_type":               "COMMON",
+					"property":                "DIRECTORY",
+					"uri":                     "nas://086b649545.cn-hangzhou/",
+					"source_id":               "d-xxxxx_v1",
+					"user_id":                 "1511928242963727",
+					"accessible_role_id_list": []interface{}{"PAI_Workspace_Admin"},
+					"dataset_task_ram_role":   "acs:ram::1234567890123456:role/test-role",
+					"user_metrics_endpoints": []map[string]interface{}{
+						{
+							"port": 9090,
+							"path": "/metrics",
+						},
+					},
+				}),
+				ExpectError: regexp.MustCompile("DatasetTaskRamRole is not supported"),
+			},
+			{
+				// Exercise the user_metrics_endpoints Create mapping (M-RT-0040) via
+				// ExpectError: with dataset_task_ram_role and accessible_role_id_list
+				// removed, the Create API reaches UserMetricsEndpoints validation and
+				// rejects it for NAS datasets ("UserMetricsEndpoints is only supported
+				// for JUICEFS datasets"), proving UserMetricsEndpoints is sent in the
+				// Create request. accessibility=PRIVATE avoids the workspace role lookup.
+				Config: testAccConfig(map[string]interface{}{
+					"dataset_task_ram_role":   REMOVEKEY,
+					"accessible_role_id_list": REMOVEKEY,
+					"accessibility":           "PRIVATE",
+				}),
+				ExpectError: regexp.MustCompile("UserMetricsEndpoints is only supported for JUICEFS"),
+			},
+			{
+				// Create on BASIC for the success path: remove user_metrics_endpoints
+				// (JUICEFS-only, unavailable in the ACC workspace). The dataset_task_ram_role
+				// and accessible_role_id_list removed in the prior step stay removed
+				// (edition/role constraints); accessibility stays PRIVATE (no role lookup).
+				// The subsequent Update/Import/Update-mapping steps build on this resource.
+				Config: testAccConfig(map[string]interface{}{
+					"user_metrics_endpoints": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":      "governance_coverage_create",
+						"accessibility":    "PRIVATE",
+						"dataset_name":     name,
+						"data_source_type": "NAS",
+						"source_type":      "USER",
+						"workspace_id":     CHECKSET,
+						"data_type":        "COMMON",
+						"property":         "DIRECTORY",
+						"uri":              "nas://086b649545.cn-hangzhou/",
+						"source_id":        "d-xxxxx_v1",
+						"user_id":          "1511928242963727",
+					}),
+				),
+			},
+			{
+				// Update description + dataset_name (success path). accessibility stays
+				// PRIVATE and accessible_role_id_list stays absent (no valid role codes
+				// in the ACC workspace); UpdateDataset receives Description + Name only.
+				Config: testAccConfig(map[string]interface{}{
+					"description":  "governance_coverage_update",
+					"dataset_name": name + "_upd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":   "governance_coverage_update",
+						"accessibility": "PRIVATE",
+						"dataset_name":  name + "_upd",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dataset_task_ram_role", "user_metrics_endpoints"},
+			},
+			{
+				// Exercise the accessible_role_id_list Update mapping (M-RT-0040) via
+				// ExpectError: the ACC workspace has no valid role codes, so UpdateDataset
+				// rejects the role list with "Role codes are not in the workspace".
+				// ROLE_PUBLIC != PUBLIC so no /publish; UpdateDataset receives
+				// Accessibility + AccessibleRoleIdList and validates the roles.
+				Config: testAccConfig(map[string]interface{}{
+					"accessibility":           "ROLE_PUBLIC",
+					"accessible_role_id_list": []interface{}{"PAI_Workspace_Admin", "role-testcustom"},
+				}),
+				ExpectError: regexp.MustCompile("Role codes are not in the workspace"),
+			},
+		},
+	})
+}
+
+var AlicloudPaiWorkspaceDatasetMapGov = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudPaiWorkspaceDatasetBasicDependenceGov(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_pai_workspace_workspace" "defaultWorkspace" {
+  description    = "dataset_pop_test_gov"
+  display_name   = "DatasetResouceTest_Gov"
   workspace_name = var.name
   env_types      = ["prod"]
 }
