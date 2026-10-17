@@ -66,6 +66,9 @@ The following arguments are supported:
   - PUBLIC: In this workspace, it is visible to everyone.
 * `code_branch` - (Optional) Code repository branch.
 * `code_commit` - (Optional) The code CommitId.
+* `clone_type` - (Optional) The clone mode of the code source. Valid values:
+  - `0` (default): Create a new subdirectory.
+  - `1`: Flatten to the current directory.
 * `code_repo` - (Required) Code repository address.
 * `code_repo_access_token` - (Optional) The Token used to access the code repository.
 * `code_repo_user_name` - (Optional) The user name of the code repository.
