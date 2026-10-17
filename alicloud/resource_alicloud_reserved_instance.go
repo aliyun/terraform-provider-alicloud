@@ -8,10 +8,108 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+// autoRenewFromRawConfig checks whether the user explicitly set `auto_renew` in
+// their HCL configuration, as opposed to a value populated by Read (computed).
+//
+// GetOkExists("auto_renew") cannot make this distinction: because auto_renew is
+// Optional+Computed and Read always calls d.Set("auto_renew", …), the merged
+// writer carries the Read-derived value, causing GetOkExists to return
+// exists=true even when the user never wrote auto_renew in their config.  This
+// leads to a control-flow inversion in Update: the computed auto_renew value
+// overrides the user's explicit renewal_status, making it impossible to switch
+// auto-renewal on or off via the legacy field alone.
+//
+// GetRawConfig() returns only what the user wrote; attributes not present in the
+// HCL are null.  This lets us correctly distinguish "user set auto_renew=false"
+// from "user did not set auto_renew at all".
+//
+// During plan, computed-but-unknown values are represented as
+// cty.UnknownVal(bool).  Such a value is NOT an explicit user choice and must
+// be treated the same as absent: IsKnown() returns false, so we return
+// (false, false).  Without this check, UnknownVal(bool) would fall through to
+// RawEquals(cty.True) (which is false) and incorrectly return (false, true),
+// making the provider believe the user explicitly set auto_renew=false.
+//
+// Returns (value, true) when auto_renew is explicit in config (true or false),
+// (false, false) when it is absent or unknown (computed).
+func autoRenewFromRawConfig(rawConfig cty.Value) (bool, bool) {
+	if rawConfig.IsNull() {
+		return false, false
+	}
+	attr := rawConfig.GetAttr("auto_renew")
+	if !attr.IsKnown() || attr.IsNull() {
+		return false, false
+	}
+	return attr.RawEquals(cty.True), true
+}
+
+// autoRenewFromConfig is the production wrapper around autoRenewFromRawConfig.
+func autoRenewFromConfig(d *schema.ResourceData) (bool, bool) {
+	return autoRenewFromRawConfig(d.GetRawConfig())
+}
+
+// renewalStatusFromConfig returns the explicitly-configured renewal_status and
+// whether the user set it in HCL, mirroring autoRenewFromConfig's distinction
+// between an explicit value and one populated by Read (computed).
+//
+// In Update, d.GetOk("renewal_status") returns exists=true for the computed
+// state value (Read always calls d.Set("renewal_status", …)), so a period-only
+// update — where the user set neither auto_renew nor renewal_status — would
+// otherwise re-send the stale state RenewalStatus and overwrite a server-side
+// renewal-status change. ModifyReservedInstanceAutoRenewAttribute treats
+// RenewalStatus as optional (omitting it preserves the cloud's current renewal
+// status), so a period-only update must omit it rather than re-assert state.
+// https://www.alibabacloud.com/help/en/ecs/developer-reference/api-ecs-2014-05-26-modifyreservedinstanceautorenewattribute
+func renewalStatusFromConfig(d *schema.ResourceData) (string, bool) {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() {
+		return "", false
+	}
+	attr := rawConfig.GetAttr("renewal_status")
+	if !attr.IsKnown() || attr.IsNull() {
+		return "", false
+	}
+	return attr.AsString(), true
+}
+
+// renewalStatusDiffSuppress is the pure logic of the renewal_status
+// DiffSuppressFunc, extracted so it can be unit-tested with cty values
+// without relying on the SDK's GetRawConfig (which is null in test
+// ResourceData built via Data(state, diff)).
+//
+// When auto_renew is explicitly set in config it takes precedence over
+// renewal_status.  Suppress the renewal_status diff so that the computed
+// value (set by Read from the auto_renew-derived RenewalStatus) does not
+// produce a perpetual diff against the user's renewal_status value.
+func renewalStatusDiffSuppress(rawConfig cty.Value) bool {
+	if _, explicit := autoRenewFromRawConfig(rawConfig); explicit {
+		return true
+	}
+	return false
+}
+
+// autoRenewPeriodDiffSuppress is the pure logic of the auto_renew_period
+// DiffSuppressFunc, extracted for the same testability reason as above.
+//
+// The period is meaningful only when auto-renewal is active.  When auto_renew
+// is explicit, its value determines whether the period diff is suppressed.
+// When auto_renew is not in config, the effective renewal_status (from config
+// or state) determines suppression.
+func autoRenewPeriodDiffSuppress(rawConfig cty.Value, renewalStatus string) bool {
+	if v, explicit := autoRenewFromRawConfig(rawConfig); explicit {
+		return !v
+	}
+	if renewalStatus == string(RenewAutoRenewal) {
+		return false
+	}
+	return true
+}
 
 func resourceAliCloudReservedInstance() *schema.Resource {
 	return &schema.Resource{
@@ -36,6 +134,14 @@ func resourceAliCloudReservedInstance() *schema.Resource {
 				Computed:     true,
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{string(RenewAutoRenewal), string(RenewNormal)}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return renewalStatusDiffSuppress(d.GetRawConfig())
+				},
+			},
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 			"auto_renew_period": {
 				Computed:     true,
@@ -43,10 +149,7 @@ func resourceAliCloudReservedInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				ValidateFunc: validation.IntInSlice([]int{1, 12, 36, 60}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if d.Get("renewal_status").(string) == string(RenewAutoRenewal) {
-						return false
-					}
-					return true
+					return autoRenewPeriodDiffSuppress(d.GetRawConfig(), d.Get("renewal_status").(string))
 				},
 			},
 			"create_time": {
@@ -209,7 +312,9 @@ func resourceAliCloudReservedInstanceCreate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if v, ok := d.GetOk("renewal_status"); ok {
+	if v, explicit := autoRenewFromConfig(d); explicit {
+		request["AutoRenew"] = v
+	} else if v, ok := d.GetOk("renewal_status"); ok {
 		request["AutoRenew"] = v.(string) == string(RenewAutoRenewal)
 	}
 	if v, ok := d.GetOkExists("auto_renew_period"); ok {
@@ -294,7 +399,7 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 
 	}
 
-	if d.HasChanges("auto_renew_period", "renewal_status") {
+	if d.HasChanges("auto_renew", "auto_renew_period", "renewal_status") {
 		request := map[string]interface{}{
 			"ReservedInstanceId": []string{d.Id()},
 			"RegionId":           client.RegionId,
@@ -308,7 +413,13 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 				request["PeriodUnit"] = "Year"
 			}
 		}
-		if v, ok := d.GetOk("renewal_status"); ok {
+		if v, explicit := autoRenewFromConfig(d); explicit {
+			if v {
+				request["RenewalStatus"] = string(RenewAutoRenewal)
+			} else {
+				request["RenewalStatus"] = string(RenewNormal)
+			}
+		} else if v, ok := renewalStatusFromConfig(d); ok {
 			request["RenewalStatus"] = v
 		}
 
@@ -356,7 +467,7 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("name", reservedInstances.ReservedInstanceName)
 	d.Set("reserved_instance_name", reservedInstances.ReservedInstanceName)
 	d.Set("description", reservedInstances.Description)
-	d.Set("resource_group_id", reservedInstances.ReservedInstanceId)
+	d.Set("resource_group_id", reservedInstances.ResourceGroupId)
 	d.Set("status", reservedInstances.Status)
 	d.Set("create_time", reservedInstances.CreationTime)
 	d.Set("expired_time", reservedInstances.ExpiredTime)
@@ -379,7 +490,9 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("renewal_status", object["RenewalStatus"])
+	renewalStatus, _ := object["RenewalStatus"].(string)
+	d.Set("renewal_status", renewalStatus)
+	d.Set("auto_renew", renewalStatus == string(RenewAutoRenewal))
 
 	if v, ok := object["Duration"]; ok && formatInt(v) != 0 {
 		renewPeriod := formatInt(v)
@@ -392,5 +505,6 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 	return nil
 }
 func resourceAliCloudReservedInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	return WrapError(Error("'Subscription' instance cannot be destroyed: a reserved instance cannot be released and remains valid until it expires. To remove it from the state only, run 'terraform state rm'."))
+	// PurchaseReservedInstancesOffering can not be release.
+	return nil
 }
