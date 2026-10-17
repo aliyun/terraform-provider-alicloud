@@ -3,9 +3,13 @@ package alicloud
 import (
 	"errors"
 	"fmt"
+	"net"
 	"regexp"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -1125,4 +1129,503 @@ func TestAccAliCloudRouteEntry_stateGapRecoveryVbr(t *testing.T) {
 			},
 		},
 	})
+}
+
+// System route tables can contain user-created Custom entries. Delete only
+// those entries after verifying the table's actual VPC, never the System table.
+func vpcRouteEntrySweeper(region, vpcID string, rpc vpcSweepRPC) *resource.Sweeper {
+	return &resource.Sweeper{Name: "alicloud_route_entry", F: func(actual string) error {
+		if region == "" || region != actual || vpcID == "" {
+			return fmt.Errorf("route entry sweeper requires selected VPC and matching region")
+		}
+		return sweepVpcRouteEntries(region, vpcID, rpc, time.Sleep, 120)
+	}}
+}
+
+func sweepVpcRouteEntries(region, vpcID string, rpc vpcSweepRPC, pause func(time.Duration), attempts int) error {
+	if attempts < 1 {
+		return fmt.Errorf("route entry sweeper requires positive wait bound")
+	}
+	tables, err := vpcRPCList(rpc, "Vpc", "2016-04-28", "DescribeRouteTableList", "$.RouterTableList.RouterTableListType", map[string]interface{}{"RegionId": region, "VpcId": vpcID}, false)
+	if err != nil {
+		return err
+	}
+	var failures []string
+	for _, table := range tables {
+		actual, ok := table["VpcId"].(string)
+		if !ok || actual == "" {
+			failures = append(failures, "route table has unknown VPC ownership")
+			continue
+		}
+		if actual != vpcID {
+			continue
+		}
+		id, ok := table["RouteTableId"].(string)
+		if !ok || id == "" {
+			failures = append(failures, "route table has invalid ID")
+			continue
+		}
+		if err := sweepVpcRouteTableEntries(region, vpcID, id, rpc, pause, attempts); err != nil {
+			failures = append(failures, err.Error())
+		}
+	}
+	if len(failures) > 0 {
+		return fmt.Errorf("VPC custom route entry cleanup incomplete: %s", strings.Join(failures, "; "))
+	}
+	return nil
+}
+
+func verifyVpcRouteTable(rpc vpcSweepRPC, region, vpcID, tableID string) error {
+	rows, err := vpcRPCList(rpc, "Vpc", "2016-04-28", "DescribeRouteTableList", "$.RouterTableList.RouterTableListType", map[string]interface{}{"RegionId": region, "RouteTableId": tableID}, false)
+	if err != nil {
+		return err
+	}
+	if len(rows) != 1 || rows[0]["RouteTableId"] != tableID || rows[0]["VpcId"] != vpcID {
+		return fmt.Errorf("route table %s ownership missing or changed; refusing deletion", tableID)
+	}
+	return nil
+}
+
+func listVpcRouteEntries(rpc vpcSweepRPC, region, tableID string) ([]map[string]interface{}, error) {
+	request := map[string]interface{}{"RegionId": region, "RouteTableId": tableID, "MaxResult": PageSizeLarge}
+	seen := map[string]bool{}
+	var all []map[string]interface{}
+	for page := 0; page < 10000; page++ {
+		response, err := rpc("Vpc", "2016-04-28", "DescribeRouteEntryList", nil, request, true)
+		if err != nil {
+			return nil, err
+		}
+		rows, err := serviceVpcOwnerRows("$.RouteEntrys.RouteEntry", response)
+		if err != nil {
+			return nil, err
+		}
+		for _, row := range rows {
+			if row["RouteTableId"] != tableID {
+				return nil, fmt.Errorf("route entry returned wrong or unknown table ownership")
+			}
+			// Native System/SystemCreate/SYSTEM rows legitimately omit an ID.
+			// They are never deleted; table ownership must still be verified.
+			if row["Type"] == "System" {
+				continue
+			}
+			if id, ok := row["RouteEntryId"].(string); !ok || id == "" {
+				return nil, fmt.Errorf("route entry has unknown identity")
+			}
+		}
+		all = append(all, rows...)
+		token, exists := response["NextToken"]
+		if !exists || token == nil || token == "" {
+			return all, nil
+		}
+		next, ok := token.(string)
+		if !ok || seen[next] {
+			return nil, fmt.Errorf("invalid/repeated route entry pagination token")
+		}
+		seen[next], request["NextToken"] = true, next
+	}
+	return nil, fmt.Errorf("route entry pagination exceeded bound")
+}
+
+func sweepVpcRouteTableEntries(region, vpcID, tableID string, rpc vpcSweepRPC, pause func(time.Duration), attempts int) error {
+	if err := verifyVpcRouteTable(rpc, region, vpcID, tableID); err != nil {
+		return err
+	}
+	rows, err := listVpcRouteEntries(rpc, region, tableID)
+	if err != nil {
+		return err
+	}
+	var failures []string
+	for _, row := range rows {
+		if row["Type"] == "System" {
+			continue
+		}
+		service, known := row["ServiceType"].(string)
+		if row["Type"] != "Custom" || row["Origin"] != "CustomCreate" || !known || (service != "" && service != "DEFAULT_NULL") {
+			failures = append(failures, fmt.Sprintf("route %v is not an explicitly user-created, unmanaged Custom entry; retained", row["RouteEntryId"]))
+			continue
+		}
+		id := row["RouteEntryId"].(string)
+		cidr, ok := row["DestinationCidrBlock"].(string)
+		if _, _, err := net.ParseCIDR(cidr); !ok || err != nil {
+			failures = append(failures, "route "+id+" has invalid destination")
+			continue
+		}
+		// RouteTableId/DestinationCidrBlock are mutually exclusive with the
+		// exact route ID. Both ID and composite modes still require next hops.
+		request := map[string]interface{}{"RegionId": region, "RouteEntryId": id}
+		hops, err := serviceVpcOwnerRows("$.NextHops.NextHop", row)
+		if err != nil || len(hops) == 0 {
+			failures = append(failures, "route "+id+" has unknown next hops")
+			continue
+		}
+		valid := len(hops) <= 16
+		seenHops := map[string]bool{}
+		for index, hop := range hops {
+			hopID, idOK := hop["NextHopId"].(string)
+			hopType, typeOK := hop["NextHopType"].(string)
+			if !idOK || hopID == "" || !typeOK || hopType == "" || seenHops[hopID] {
+				valid = false
+			}
+			seenHops[hopID] = true
+			if len(hops) == 1 {
+				request["NextHopId"] = hopID
+			} else {
+				// Native ECMP deletion accepts RouterInterface next hops only.
+				if hopType != "RouterInterface" {
+					valid = false
+				}
+				request[fmt.Sprintf("NextHopList.%d.NextHopId", index+1)] = hopID
+				request[fmt.Sprintf("NextHopList.%d.NextHopType", index+1)] = hopType
+			}
+		}
+		if !valid {
+			failures = append(failures, "route "+id+" has invalid next hops")
+			continue
+		}
+		if err := verifyVpcRouteTable(rpc, region, vpcID, tableID); err != nil {
+			failures = append(failures, err.Error())
+			continue
+		}
+		deleted := false
+		for attempt := 0; attempt < attempts; attempt++ {
+			routeEntryTaskLock.Lock()
+			_, err = rpc("Vpc", "2016-04-28", "DeleteRouteEntry", nil, request, true)
+			routeEntryTaskLock.Unlock()
+			if err == nil || rdsErrorHasCode(err, "InvalidRouteEntry.NotFound") {
+				deleted = true
+				break
+			}
+			if !(NeedRetry(err) || rdsErrorHasCode(err, "IncorrectInstanceStatus", "IncorrectRouteEntryStatus", "SystemBusy", "InvalidVBRStatus", "LastTokenProcessing", "IncorrectStatus.Ipv6Address", "IncorrectStatus", "OperationFailed.DistibuteLock", "ServiceUnavailable", "IncorrectStatus.RouteTableStatus", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectVpcStatus", "IncorrectHaVipStatus", "OperationConflict", "TaskConflict", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.VpcPeer", "IncorrectStatus.PrefixList", "InternalError")) {
+				break
+			}
+			if attempt+1 < attempts {
+				pause(7 * time.Second)
+			}
+		}
+		if !deleted {
+			failures = append(failures, fmt.Sprintf("delete route %s: %v", id, err))
+			continue
+		}
+		gone := false
+		for attempt := 0; attempt < attempts; attempt++ {
+			if err = verifyVpcRouteTable(rpc, region, vpcID, tableID); err != nil {
+				break
+			}
+			current, listErr := listVpcRouteEntries(rpc, region, tableID)
+			if listErr != nil {
+				err = listErr
+				break
+			}
+			present := false
+			for _, item := range current {
+				if item["RouteEntryId"] == id {
+					present = true
+				}
+			}
+			if !present {
+				gone = true
+				break
+			}
+			if attempt+1 < attempts {
+				pause(5 * time.Second)
+			}
+		}
+		if !gone {
+			if err != nil {
+				failures = append(failures, err.Error())
+			} else {
+				failures = append(failures, "route "+id+" still present after bounded deletion wait")
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return fmt.Errorf("route table %s cleanup incomplete: %s", tableID, strings.Join(failures, "; "))
+	}
+	return nil
+}
+
+func vpcRouteSweepFixture(id, kind, origin, service string) map[string]interface{} {
+	return map[string]interface{}{"RouteEntryId": id, "RouteTableId": "table-target", "Type": kind, "Origin": origin, "ServiceType": service, "DestinationCidrBlock": "172.20.0.0/16", "NextHops": map[string]interface{}{"NextHop": []interface{}{map[string]interface{}{"NextHopId": "ri-target", "NextHopType": "RouterInterface"}}}}
+}
+
+func vpcRouteSweepList(rows ...interface{}) map[string]interface{} {
+	return map[string]interface{}{"RouteEntrys": map[string]interface{}{"RouteEntry": rows}}
+}
+
+func vpcRouteSweepTables(rows ...interface{}) map[string]interface{} {
+	return map[string]interface{}{"RouterTableList": map[string]interface{}{"RouterTableListType": rows}}
+}
+
+func TestUnitVpcSweepRouteEntrySystemTableCustomRouteAndProtectedBoundary(t *testing.T) {
+	deleted, polls, pauses := 0, 0, 0
+	rpc := func(product, version, action string, query, request map[string]interface{}, read bool) (map[string]interface{}, error) {
+		switch action {
+		case "DescribeRouteTableList":
+			target := map[string]interface{}{"RouteTableId": "table-target", "VpcId": "vpc-target", "RouteTableType": "System"}
+			if request["RouteTableId"] != nil {
+				return vpcRouteSweepTables(target), nil
+			}
+			return vpcRouteSweepTables(target, map[string]interface{}{"RouteTableId": "table-protected", "VpcId": "vpc-protected"}), nil
+		case "DescribeRouteEntryList":
+			if request["RouteTableId"] != "table-target" || request["MaxResult"] != PageSizeLarge {
+				t.Fatalf("unscoped or wrong pagination: %v", request)
+			}
+			if deleted > 0 && request["NextToken"] == nil {
+				polls++
+			}
+			if deleted > 0 && polls > 1 {
+				return vpcRouteSweepList(vpcRouteSweepFixture("system", "System", "System", "")), nil
+			}
+			if request["NextToken"] == nil {
+				response := vpcRouteSweepList(vpcRouteSweepFixture("system", "System", "System", ""))
+				response["NextToken"] = "page2"
+				return response, nil
+			}
+			return vpcRouteSweepList(vpcRouteSweepFixture("custom", "Custom", "CustomCreate", "DEFAULT_NULL")), nil
+		case "DeleteRouteEntry":
+			if request["RouteEntryId"] != "custom" || request["RegionId"] != "cn-hangzhou" || request["NextHopId"] != "ri-target" || len(request) != 3 {
+				t.Fatalf("unsafe delete: %v", request)
+			}
+			deleted++
+			return map[string]interface{}{}, nil
+		default:
+			t.Fatalf("unexpected action %s", action)
+		}
+		return nil, nil
+	}
+	err := sweepVpcRouteEntries("cn-hangzhou", "vpc-target", rpc, func(time.Duration) { pauses++ }, 3)
+	if err != nil || deleted != 1 || pauses != 1 {
+		t.Fatalf("delete=%d pauses=%d err=%v", deleted, pauses, err)
+	}
+}
+
+func TestUnitVpcSweepRouteEntryManagedUnknownAndWrongScopeRetained(t *testing.T) {
+	for _, scenario := range []string{"managed", "unknown-type", "unknown-origin", "missing-service", "wrong-table", "wrong-owner", "missing-owner", "list-error", "bad-token"} {
+		mutated := false
+		rpc := func(product, version, action string, query, request map[string]interface{}, read bool) (map[string]interface{}, error) {
+			switch action {
+			case "DescribeRouteTableList":
+				table := map[string]interface{}{"RouteTableId": "table-target", "VpcId": "vpc-target"}
+				if scenario == "wrong-owner" && request["RouteTableId"] != nil {
+					table["VpcId"] = "vpc-protected"
+				}
+				if scenario == "missing-owner" {
+					delete(table, "VpcId")
+				}
+				return vpcRouteSweepTables(table), nil
+			case "DescribeRouteEntryList":
+				if scenario == "list-error" {
+					return nil, fmt.Errorf("permission denied")
+				}
+				row := vpcRouteSweepFixture("custom", "Custom", "CustomCreate", "DEFAULT_NULL")
+				switch scenario {
+				case "managed":
+					row["ServiceType"] = "CEN"
+				case "unknown-type":
+					delete(row, "Type")
+				case "unknown-origin":
+					delete(row, "Origin")
+				case "missing-service":
+					delete(row, "ServiceType")
+				case "wrong-table":
+					row["RouteTableId"] = "table-protected"
+				}
+				response := vpcRouteSweepList(row)
+				if scenario == "bad-token" {
+					response["NextToken"] = "same"
+				}
+				return response, nil
+			case "DeleteRouteEntry":
+				mutated = true
+				return nil, nil
+			}
+			return nil, fmt.Errorf("unexpected action %s", action)
+		}
+		if err := sweepVpcRouteEntries("cn-hangzhou", "vpc-target", rpc, func(time.Duration) {}, 2); err == nil || mutated {
+			t.Fatalf("%s mutated=%v err=%v", scenario, mutated, err)
+		}
+	}
+}
+
+func TestUnitVpcSweepRouteEntryRetryAndExactWaitErrors(t *testing.T) {
+	for _, scenario := range []string{"retry", "notfound", "denied", "read-error", "bad-wait-id", "timeout"} {
+		deletes, pauses := 0, 0
+		rpc := func(product, version, action string, query, request map[string]interface{}, read bool) (map[string]interface{}, error) {
+			switch action {
+			case "DescribeRouteTableList":
+				return vpcRouteSweepTables(map[string]interface{}{"RouteTableId": "table-target", "VpcId": "vpc-target"}), nil
+			case "DescribeRouteEntryList":
+				if deletes > 0 {
+					if scenario == "read-error" {
+						return nil, fmt.Errorf("access denied")
+					}
+					if scenario == "bad-wait-id" {
+						row := vpcRouteSweepFixture("custom", "Custom", "CustomCreate", "")
+						delete(row, "RouteEntryId")
+						return vpcRouteSweepList(row), nil
+					}
+					if scenario != "timeout" {
+						return vpcRouteSweepList(), nil
+					}
+				}
+				return vpcRouteSweepList(vpcRouteSweepFixture("custom", "Custom", "CustomCreate", "")), nil
+			case "DeleteRouteEntry":
+				deletes++
+				if scenario == "retry" && deletes == 1 {
+					return nil, &tea.SDKError{Code: tea.String("TaskConflict"), Message: tea.String("injected"), StatusCode: tea.Int(400), Data: nil}
+				}
+				if scenario == "notfound" {
+					return nil, &tea.SDKError{Code: tea.String("InvalidRouteEntry.NotFound"), Message: tea.String("route absent"), StatusCode: tea.Int(400), Data: nil}
+				}
+				if scenario == "denied" {
+					return nil, &tea.SDKError{Code: tea.String("Forbidden.RAM"), Message: tea.String("access denied"), StatusCode: tea.Int(403), Data: nil}
+				}
+				return map[string]interface{}{}, nil
+			}
+			return nil, fmt.Errorf("unexpected action %s", action)
+		}
+		err := sweepVpcRouteEntries("cn-hangzhou", "vpc-target", rpc, func(time.Duration) { pauses++ }, 3)
+		if scenario == "retry" {
+			if err != nil || deletes != 2 || pauses != 1 {
+				t.Fatalf("retry deletes=%d pauses=%d err=%v", deletes, pauses, err)
+			}
+		} else if scenario == "notfound" {
+			if err != nil || deletes != 1 || pauses != 0 {
+				t.Fatalf("notfound deletes=%d pauses=%d err=%v", deletes, pauses, err)
+			}
+		} else if err == nil {
+			t.Fatalf("%s falsely considered gone", scenario)
+		}
+		if scenario == "denied" && (deletes != 1 || pauses != 0) {
+			t.Fatalf("denied was retried deletes=%d pauses=%d", deletes, pauses)
+		}
+		if scenario == "timeout" && pauses != 2 {
+			t.Fatalf("wait not bounded: %d", pauses)
+		}
+	}
+}
+
+func TestUnitVpcSweepRouteEntryRejectsWrongRegionBeforeRead(t *testing.T) {
+	rpc := func(string, string, string, map[string]interface{}, map[string]interface{}, bool) (map[string]interface{}, error) {
+		t.Fatal("wrong region made API call")
+		return nil, nil
+	}
+	if err := vpcRouteEntrySweeper("cn-hangzhou", "vpc-target", rpc).F("cn-beijing"); err == nil {
+		t.Fatal("wrong region accepted")
+	}
+}
+
+func TestUnitVpcSweepRouteEntryNativeSystemWithoutID(t *testing.T) {
+	for _, scenario := range []string{"system", "wrong-table", "custom-no-id", "unknown-no-id"} {
+		t.Run(scenario, func(t *testing.T) {
+			row := map[string]interface{}{"RouteTableId": "table-target", "Type": "System", "Origin": "SystemCreate", "ServiceType": "SYSTEM", "DestinationCidrBlock": "172.16.0.0/16"}
+			switch scenario {
+			case "wrong-table":
+				row["RouteTableId"] = "table-protected"
+			case "custom-no-id":
+				row["Type"] = "Custom"
+				row["Origin"] = "CustomCreate"
+				row["ServiceType"] = "DEFAULT_NULL"
+			case "unknown-no-id":
+				row["Type"] = "Unknown"
+			}
+			rpc := vpcSweepRPC(func(product, version, action string, query, request map[string]interface{}, auto bool) (map[string]interface{}, error) {
+				switch action {
+				case "DescribeRouteTableList":
+					return vpcRouteSweepTables(map[string]interface{}{"RouteTableId": "table-target", "VpcId": "vpc-target"}), nil
+				case "DescribeRouteEntryList":
+					return vpcRouteSweepList(row), nil
+				default:
+					t.Fatalf("System/unknown route must not be mutated: %s", action)
+					return nil, nil
+				}
+			})
+			err := sweepVpcRouteEntries("cn-beijing", "vpc-target", rpc, func(time.Duration) { t.Fatal("read-only route required wait") }, 1)
+			if (err != nil) != (scenario != "system") {
+				t.Fatalf("scenario=%s err=%v", scenario, err)
+			}
+		})
+	}
+}
+
+func TestUnitVpcSweepRouteEntryDeleteExactIDMode(t *testing.T) {
+	for _, ecmp := range []bool{false, true} {
+		deleted := false
+		rpc := vpcSweepRPC(func(product, version, action string, query, request map[string]interface{}, auto bool) (map[string]interface{}, error) {
+			switch action {
+			case "DescribeRouteTableList":
+				return vpcRouteSweepTables(map[string]interface{}{"RouteTableId": "table-target", "VpcId": "vpc-target"}), nil
+			case "DescribeRouteEntryList":
+				if deleted {
+					return vpcRouteSweepList(), nil
+				}
+				row := vpcRouteSweepFixture("custom", "Custom", "CustomCreate", "DEFAULT_NULL")
+				if ecmp {
+					row["NextHops"] = map[string]interface{}{"NextHop": []interface{}{map[string]interface{}{"NextHopId": "ri-first", "NextHopType": "RouterInterface"}, map[string]interface{}{"NextHopId": "ri-second", "NextHopType": "RouterInterface"}}}
+				}
+				return vpcRouteSweepList(row), nil
+			case "DeleteRouteEntry":
+				for _, key := range []string{"RouteTableId", "DestinationCidrBlock", "NextHopList"} {
+					if _, exists := request[key]; exists {
+						t.Fatalf("exact-ID delete mixed composite-key parameter %s", key)
+					}
+				}
+				if request["RegionId"] != "cn-beijing" || request["RouteEntryId"] != "custom" {
+					t.Fatalf("wrong exact identity %v", request)
+				}
+				if ecmp {
+					if len(request) != 6 || request["NextHopId"] != nil || request["NextHopList.1.NextHopId"] != "ri-first" || request["NextHopList.2.NextHopId"] != "ri-second" || request["NextHopList.1.NextHopType"] != "RouterInterface" || request["NextHopList.2.NextHopType"] != "RouterInterface" {
+						t.Fatalf("wrong native ECMP next hops %v", request)
+					}
+				} else if len(request) != 3 || request["NextHopId"] != "ri-target" {
+					t.Fatalf("missing single next hop would return InvalidNextHop: %v", request)
+				}
+				deleted = true
+				return nil, nil
+			default:
+				t.Fatalf("unexpected action %s", action)
+				return nil, nil
+			}
+		})
+		if err := sweepVpcRouteEntries("cn-beijing", "vpc-target", rpc, func(time.Duration) { t.Fatal("unexpected pause") }, 1); err != nil {
+			t.Fatal(err)
+		}
+		if !deleted {
+			t.Fatal("exact route was not deleted")
+		}
+	}
+}
+
+func TestUnitVpcSweepRouteEntryInvalidECMPNeverDeletes(t *testing.T) {
+	for _, scenario := range []string{"duplicate", "unsupported-type", "too-many"} {
+		t.Run(scenario, func(t *testing.T) {
+			rpc := vpcSweepRPC(func(product, version, action string, query, request map[string]interface{}, auto bool) (map[string]interface{}, error) {
+				switch action {
+				case "DescribeRouteTableList":
+					return vpcRouteSweepTables(map[string]interface{}{"RouteTableId": "table-target", "VpcId": "vpc-target"}), nil
+				case "DescribeRouteEntryList":
+					row := vpcRouteSweepFixture("custom", "Custom", "CustomCreate", "DEFAULT_NULL")
+					hops := []interface{}{map[string]interface{}{"NextHopId": "ri-first", "NextHopType": "RouterInterface"}, map[string]interface{}{"NextHopId": "ri-second", "NextHopType": "RouterInterface"}}
+					switch scenario {
+					case "duplicate":
+						hops[1].(map[string]interface{})["NextHopId"] = "ri-first"
+					case "unsupported-type":
+						hops[1].(map[string]interface{})["NextHopType"] = "Instance"
+					case "too-many":
+						for i := 2; i < 17; i++ {
+							hops = append(hops, map[string]interface{}{"NextHopId": fmt.Sprintf("ri-extra-%d", i), "NextHopType": "RouterInterface"})
+						}
+					}
+					row["NextHops"] = map[string]interface{}{"NextHop": hops}
+					return vpcRouteSweepList(row), nil
+				default:
+					t.Fatalf("invalid ECMP reached write API %s", action)
+					return nil, nil
+				}
+			})
+			if err := sweepVpcRouteEntries("cn-beijing", "vpc-target", rpc, func(time.Duration) { t.Fatal("unexpected wait") }, 1); err == nil {
+				t.Fatal("invalid ECMP was accepted")
+			}
+		})
+	}
 }

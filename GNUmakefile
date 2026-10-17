@@ -203,7 +203,7 @@ ci-check: fmtcheck
 	if [ "$(SKIP_BUILD)" != "1" ]; then \
 	    if [ "$$OS" = "darwin" ]; then \
 	        $(MAKE) native; \
-	    elif [ "$$OS" = "linux" ]; then \
+		elif [ "$$OS" = "linux" ]; then \
 	        $(MAKE) linux; \
 	    elif echo "$$OS" | grep -q "mingw\|msys\|cygwin"; then \
 	        $(MAKE) windows; \
@@ -244,13 +244,16 @@ minimal-test-set:
 # Usage:
 #   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc
 #   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc OLDER_THAN=12h              # only delete VPCs created more than 12h ago
-#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc SWEEP_ALL=1                 # delete all resources, skip prefix check
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc SWEEP_ALL=1                 # delete all resource names; VPC cleanup protects explicit do-not-delete VPCs
 #   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc SWEEP_ALL=1 OLDER_THAN=24h  # delete all, but protect resources newer than 24h
 # Note: For resources with dependencies (specified in Dependencies field), include them with pipe separator.
 #       Example: RESOURCE="alicloud_vpc_ipam_ipam_pool|alicloud_vpc_ipam_ipam"
 # OLDER_THAN accepts a Go duration (12h, 24h, 30m, 1h30m). When set, resources created within that
 # window are spared even if they match the name prefix — useful when several people run AccTest on
 # the same account and you only want to clean up stale leftovers.
+# SWEEP_ALL traverses a whole dependency graph and may exceed Go's default 10m.
+# SWEEP_TIMEOUT overrides this inner Go deadline; remote runner deadlines still apply.
+SWEEP_TIMEOUT ?= $(if $(filter 1,$(SWEEP_ALL)),3h,10m)
 sweep:
 	@if [ -z "$(REGION)" ]; then \
 		echo "Error: REGION is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
@@ -262,10 +265,10 @@ sweep:
 	fi
 	@if [ "$(SWEEP_ALL)" = "1" ]; then \
 		echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
-		ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+		ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	else \
 		echo "Sweeping $(RESOURCE) in region $(REGION)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
-		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	fi
 
 .PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native
