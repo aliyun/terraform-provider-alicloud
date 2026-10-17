@@ -423,6 +423,7 @@ var regularProductEndpoint = map[string]string{
 	"actiontrail":          "actiontrail.%s.aliyuncs.com",
 	"hitsdb":               "hitsdb.%s.aliyuncs.com",
 	"oos":                  "oos.%s.aliyuncs.com",
+	"paillmtrace":          "paillmtrace.%s.aliyuncs.com",
 	"nas":                  "nas.%s.aliyuncs.com",
 	"dms_enterprise":       "dms-enterprise.%s.aliyuncs.com",
 	"kms":                  "kms.%s.aliyuncs.com",
