@@ -241,7 +241,11 @@ func resourceAliCloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	d.Set("spec", object["Spec"])
 	d.Set("bandwidth_billing_type", object["BandwidthBillingType"])
 	if v, ok := object["Bandwidth"]; ok {
-		d.Set("bandwidth", formatInt(v))
+		bandwidthVal, err244 := formatInt(v)
+		if err244 != nil {
+			return err244
+		}
+		d.Set("bandwidth", bandwidthVal)
 	}
 	d.Set("payment_type", convertGaAcceleratorPaymentTypeResponse(object["InstanceChargeType"]))
 	d.Set("cross_border_status", object["CrossBorderStatus"])
@@ -270,7 +274,11 @@ func resourceAliCloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	d.Set("renewal_status", describeAcceleratorAutoRenewAttributeObject["RenewalStatus"])
 
 	if v, ok := describeAcceleratorAutoRenewAttributeObject["AutoRenewDuration"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("auto_renew_duration", formatInt(v))
+		auto_renew_durationVal, err273 := formatInt(v)
+		if err273 != nil {
+			return err273
+		}
+		d.Set("auto_renew_duration", auto_renew_durationVal)
 	}
 
 	listTagResourcesObject, err := gaService.ListTagResources(d.Id(), "accelerator")

@@ -347,7 +347,11 @@ func resourceAlicloudSlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	d.Set("address", object["Address"])
 	d.Set("address_ip_version", object["AddressIPVersion"])
 	d.Set("address_type", object["AddressType"])
-	d.Set("bandwidth", formatInt(object["Bandwidth"]))
+	bandwidthVal, err350 := formatInt(object["Bandwidth"])
+	if err350 != nil {
+		return err350
+	}
+	d.Set("bandwidth", bandwidthVal)
 	d.Set("delete_protection", object["DeleteProtection"])
 	d.Set("internet_charge_type", convertSlbLoadBalancerInternetChargeTypeResponse(object["InternetChargeType"]))
 	d.Set("load_balancer_name", object["LoadBalancerName"])

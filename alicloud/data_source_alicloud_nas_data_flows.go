@@ -162,6 +162,11 @@ func dataSourceAlicloudNasDataFlowsRead(d *schema.ResourceData, meta interface{}
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		throughputVal, err178 := formatInt(object["Throughput"])
+		if err178 != nil {
+			return err178
+		}
 		mapping := map[string]interface{}{
 			"create_time":          object["CreateTime"],
 			"id":                   fmt.Sprint(object["FileSystemId"], ":", object["DataFlowId"]),
@@ -175,7 +180,7 @@ func dataSourceAlicloudNasDataFlowsRead(d *schema.ResourceData, meta interface{}
 			"source_security_type": object["SourceSecurityType"],
 			"source_storage":       object["SourceStorage"],
 			"status":               object["Status"],
-			"throughput":           formatInt(object["Throughput"]),
+			"throughput":           throughputVal,
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))

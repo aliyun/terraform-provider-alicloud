@@ -41,8 +41,10 @@ func TestAccAliCloudSDDPConfig_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"code":  "access_failed_cnt",
-					"value": "10",
+					"description": "description",
+					"lang":        "lang",
+					"code":        "access_failed_cnt",
+					"value":       "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -53,7 +55,8 @@ func TestAccAliCloudSDDPConfig_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"value": "40",
+					"description": "zh",
+					"value":       "40",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

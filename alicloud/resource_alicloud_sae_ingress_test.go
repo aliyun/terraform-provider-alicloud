@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -105,7 +106,7 @@ func testSweepSaeIngress(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSAEIngress_basic0(t *testing.T) {
+func TestAccAliCloudSAEIngress_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_ingress.default"
@@ -119,10 +120,18 @@ func TestAccAlicloudSAEIngress_basic0(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%ssaeingress%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEIngressBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_id":  "${alicloud_sae_namespace.default.id}",
+					"slb_id":        "${alicloud_slb.default.id}",
+					"listener_port": "80",
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"namespace_id":  "${alicloud_sae_namespace.default.id}",
@@ -156,10 +165,12 @@ func TestAccAlicloudSAEIngress_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"load_balance_type": "alb",
 					"default_rule": []map[string]interface{}{
 						{
+							"app_name":       "${alicloud_sae_application.default.app_name}",
 							"app_id":         "${alicloud_sae_application.default.id}",
-							"container_port": "443",
+							"container_port": "8080",
 						},
 					},
 				}),
@@ -203,7 +214,7 @@ func TestAccAlicloudSAEIngress_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"rules": []map[string]interface{}{
 						{
-							"app_name":       "${alicloud_sae_application.default.app_name}",
+							"app_name":       "${alicloud_sae_application.default.app_name}-upd",
 							"container_port": "443",
 							"domain":         "www.sohu.com",
 							"app_id":         "${alicloud_sae_application.default.id}",
@@ -257,7 +268,7 @@ func TestAccAlicloudSAEIngress_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSAEIngress_basic1(t *testing.T) {
+func TestAccAliCloudSAEIngress_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_ingress.default"
@@ -271,9 +282,9 @@ func TestAccAlicloudSAEIngress_basic1(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%ssaeingress%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEIngressBasicDependence1)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

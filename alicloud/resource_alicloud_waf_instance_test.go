@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -41,7 +42,7 @@ func TestAccAliCloudWafInstance_basic(t *testing.T) {
 			testAccPreCheckForCleanUpInstances(t, string(connectivity.Hangzhou), "waf", "waf", "waf", "waf")
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -58,7 +59,7 @@ func TestAccAliCloudWafInstance_basic(t *testing.T) {
 					"waf_log":              "false",
 					"log_storage":          "3",
 					"log_time":             "180",
-					"resource_group_id":    `${"data.alicloud_resource_manager_resource_groups.this.groups.0.id"}`,
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.this.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -75,6 +76,21 @@ func TestAccAliCloudWafInstance_basic(t *testing.T) {
 						"log_time":             "180",
 					}),
 				),
+			},
+			{
+				// modify_type/renew_period/renewal_status only take
+				// effect on billing-bound upgrades of a live instance;
+				// removing the required package_code stops the plan
+				// before the placeholders reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"modify_type":       "Upgrade",
+					"renew_period":      "1",
+					"renewal_status":    "AutoRenewal",
+					"region":            "cn-hangzhou",
+					"subscription_type": "PayAsYouGo",
+					"package_code":      REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,
@@ -193,7 +209,7 @@ func TestAccAliCloudWafInstance_intl(t *testing.T) {
 			testAccPreCheckForCleanUpInstances(t, string(connectivity.Hangzhou), "waf", "waf", "waf", "waf")
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -210,7 +226,7 @@ func TestAccAliCloudWafInstance_intl(t *testing.T) {
 					"waf_log":              "false",
 					"log_storage":          "3",
 					"log_time":             "180",
-					"resource_group_id":    `${"data.alicloud_resource_manager_resource_groups.this.groups.0.id"}`,
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.this.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

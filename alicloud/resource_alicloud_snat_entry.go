@@ -147,7 +147,11 @@ func resourceAliCloudNATGatewaySnatEntryRead(d *schema.ResourceData, meta interf
 	}
 
 	if objectRaw["EipAffinity"] != nil {
-		d.Set("eip_affinity", formatInt(objectRaw["EipAffinity"]))
+		eip_affinityVal, err150 := formatInt(objectRaw["EipAffinity"])
+		if err150 != nil {
+			return err150
+		}
+		d.Set("eip_affinity", eip_affinityVal)
 	}
 	if objectRaw["SnatEntryName"] != nil {
 		d.Set("snat_entry_name", objectRaw["SnatEntryName"])

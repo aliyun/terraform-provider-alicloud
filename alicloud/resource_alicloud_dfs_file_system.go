@@ -182,7 +182,11 @@ func resourceAliCloudDfsFileSystemRead(d *schema.ResourceData, meta interface{})
 	d.Set("description", objectRaw["Description"])
 	d.Set("file_system_name", objectRaw["FileSystemName"])
 	d.Set("protocol_type", objectRaw["ProtocolType"])
-	d.Set("provisioned_throughput_in_mi_bps", formatInt(objectRaw["ProvisionedThroughputInMiBps"]))
+	provisioned_throughput_in_mi_bpsVal, err185 := formatInt(objectRaw["ProvisionedThroughputInMiBps"])
+	if err185 != nil {
+		return err185
+	}
+	d.Set("provisioned_throughput_in_mi_bps", provisioned_throughput_in_mi_bpsVal)
 	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("space_capacity", objectRaw["SpaceCapacity"])
 	d.Set("storage_type", objectRaw["StorageType"])

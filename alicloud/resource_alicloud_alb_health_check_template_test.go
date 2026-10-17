@@ -69,7 +69,11 @@ func testSweepAlbHealthCheckTemplate(region string) error {
 
 		resp, err := jsonpath.Get("$.HealthCheckTemplates", response)
 
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v72, err72 := formatInt(response["TotalCount"])
+		if err72 != nil {
+			return err72
+		}
+		if v72 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.HealthCheckTemplates", action, err)
 			return nil
 		}

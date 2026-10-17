@@ -143,9 +143,17 @@ func resourceAliCloudSlbServerGroupServerAttachmentRead(d *schema.ResourceData, 
 
 	d.Set("server_group_id", parts[0])
 	d.Set("server_id", object["ServerId"])
-	d.Set("port", formatInt(object["Port"]))
+	portVal, err146 := formatInt(object["Port"])
+	if err146 != nil {
+		return err146
+	}
+	d.Set("port", portVal)
 	d.Set("type", object["Type"])
-	d.Set("weight", formatInt(object["Weight"]))
+	weightVal, err148 := formatInt(object["Weight"])
+	if err148 != nil {
+		return err148
+	}
+	d.Set("weight", weightVal)
 	d.Set("description", object["Description"])
 
 	return nil

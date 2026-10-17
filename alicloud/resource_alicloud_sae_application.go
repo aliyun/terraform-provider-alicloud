@@ -1556,27 +1556,51 @@ func resourceAliCloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 	d.Set("update_strategy", object["UpdateStrategy"])
 
 	if v, ok := object["Replicas"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("replicas", formatInt(v))
+		replicasVal, err1559 := formatInt(v)
+		if err1559 != nil {
+			return err1559
+		}
+		d.Set("replicas", replicasVal)
 	}
 
 	if v, ok := object["Cpu"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("cpu", formatInt(v))
+		cpuVal, err1563 := formatInt(v)
+		if err1563 != nil {
+			return err1563
+		}
+		d.Set("cpu", cpuVal)
 	}
 
 	if v, ok := object["Memory"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("memory", formatInt(v))
+		memoryVal, err1567 := formatInt(v)
+		if err1567 != nil {
+			return err1567
+		}
+		d.Set("memory", memoryVal)
 	}
 
 	if v, ok := object["MinReadyInstances"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("min_ready_instances", formatInt(v))
+		min_ready_instancesVal, err1571 := formatInt(v)
+		if err1571 != nil {
+			return err1571
+		}
+		d.Set("min_ready_instances", min_ready_instancesVal)
 	}
 
 	if v, ok := object["MinReadyInstanceRatio"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("min_ready_instance_ratio", formatInt(v))
+		min_ready_instance_ratioVal, err1575 := formatInt(v)
+		if err1575 != nil {
+			return err1575
+		}
+		d.Set("min_ready_instance_ratio", min_ready_instance_ratioVal)
 	}
 
 	if v, ok := object["TerminationGracePeriodSeconds"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("termination_grace_period_seconds", formatInt(v))
+		termination_grace_period_secondsVal, err1579 := formatInt(v)
+		if err1579 != nil {
+			return err1579
+		}
+		d.Set("termination_grace_period_seconds", termination_grace_period_secondsVal)
 	}
 
 	if v, ok := object["OssMountDescs"].([]interface{}); ok {

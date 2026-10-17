@@ -134,9 +134,14 @@ func dataSourceAlicloudImmProjectsRead(d *schema.ResourceData, meta interface{})
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		compute_unitVal, err139 := formatInt(object["CU"])
+		if err139 != nil {
+			return err139
+		}
 		mapping := map[string]interface{}{
 			"billing_type": object["BillingType"],
-			"compute_unit": formatInt(object["CU"]),
+			"compute_unit": compute_unitVal,
 			"create_time":  object["CreateTime"],
 			"modify_time":  object["ModifyTime"],
 			"type":         object["Type"],

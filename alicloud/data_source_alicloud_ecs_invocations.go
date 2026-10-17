@@ -284,17 +284,32 @@ func dataSourceAlicloudEcsInvocationsRead(d *schema.ResourceData, meta interface
 			if invokeInstance, ok := invokeInstances.(map[string]interface{})["InvokeInstance"]; ok && invokeInstance != nil {
 				for _, invokeInstanceItem := range invokeInstance.([]interface{}) {
 					item := invokeInstanceItem.(map[string]interface{})
+
+					repeatsVal, err292 := formatInt(item["Repeats"])
+					if err292 != nil {
+						return err292
+					}
+
+					droppedVal, err295 := formatInt(item["Dropped"])
+					if err295 != nil {
+						return err295
+					}
+
+					exit_codeVal, err297 := formatInt(item["ExitCode"])
+					if err297 != nil {
+						return err297
+					}
 					instanceIdItems = append(instanceIdItems, map[string]interface{}{
 						"creation_time":          item["CreationTime"],
 						"update_time":            item["UpdateTime"],
 						"finish_time":            item["FinishTime"],
 						"invocation_status":      item["InvocationStatus"],
-						"repeats":                formatInt(item["Repeats"]),
+						"repeats":                repeatsVal,
 						"instance_id":            item["InstanceId"],
 						"output":                 item["Output"],
-						"dropped":                formatInt(item["Dropped"]),
+						"dropped":                droppedVal,
 						"stop_time":              item["StopTime"],
-						"exit_code":              formatInt(item["ExitCode"]),
+						"exit_code":              exit_codeVal,
 						"start_time":             item["StartTime"],
 						"error_info":             item["ErrorInfo"],
 						"timed":                  item["Timed"],

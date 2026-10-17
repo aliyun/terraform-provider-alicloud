@@ -319,7 +319,11 @@ func resourceAliCloudEfloHyperNodeRead(d *schema.ResourceData, meta interface{})
 	d.Set("payment_type", objectRaw["SubscriptionType"])
 	d.Set("region_id", objectRaw["Region"])
 	if fmt.Sprint(objectRaw["RenewalDurationUnit"]) == "Y" {
-		d.Set("renewal_duration", formatInt(objectRaw["RenewalDuration"])*12)
+		v322, err322 := formatInt(objectRaw["RenewalDuration"])
+		if err322 != nil {
+			return err322
+		}
+		d.Set("renewal_duration", v322*12)
 	} else {
 		d.Set("renewal_duration", objectRaw["RenewalDuration"])
 	}

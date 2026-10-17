@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -120,6 +121,20 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 						"skip_set_certificate_authority":                    "false",
 					}),
 				),
+			},
+			{
+				// Addon config/version upgrades and the delete-time retain list
+				// cannot be exercised against a live cluster in this suite;
+				// removing the only allowed vswitch selector stops the plan
+				// before the placeholders reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"addons": []map[string]interface{}{
+						{"name": "terway-eniip", "config": "securityGroups", "version": "1.3.0", "disabled": "false"},
+					},
+					"retain_resources":   []string{"ecs"},
+					"worker_vswitch_ids": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
 			},
 			{
 				ResourceName:            resourceId,
@@ -783,6 +798,12 @@ func TestAccAliCloudCSManagedKubernetes_controlPlaneEndpoints(t *testing.T) {
 			{
 				// change load_balancers_config: switch to another NLB instance
 				Config: testAccConfig(map[string]interface{}{
+					"addons": []map[string]interface{}{
+						{
+							"disabled": "true",
+							"name":     "terway-eniip",
+						},
+					},
 					"control_plane_endpoints_config": []map[string]interface{}{
 						{
 							"load_balancers_config": []map[string]interface{}{
@@ -1553,7 +1574,7 @@ variable "cluster_type" {
 }`, name)
 }
 
-func Test_versionCompare(t *testing.T) {
+func TestUnit_versionCompare(t *testing.T) {
 	tests := []struct {
 		name           string
 		oldVersion     string
@@ -1622,7 +1643,7 @@ func Test_versionCompare(t *testing.T) {
 	}
 }
 
-func TestCSManagedKubernetesStateUpgradeV0(t *testing.T) {
+func TestUnitCSManagedKubernetesStateUpgradeV0(t *testing.T) {
 	fields := []string{"certificate_authority", "connections"}
 	cases := []struct {
 		name     string
@@ -1729,7 +1750,7 @@ func TestCSManagedKubernetesStateUpgradeV0(t *testing.T) {
 	}
 }
 
-func TestCSManagedKubernetesSchemaVersionV0ToV1(t *testing.T) {
+func TestUnitCSManagedKubernetesSchemaVersionV0ToV1(t *testing.T) {
 	r := resourceAlicloudCSManagedKubernetes()
 	if r.SchemaVersion != 1 {
 		t.Errorf("expected SchemaVersion 1, got %d", r.SchemaVersion)

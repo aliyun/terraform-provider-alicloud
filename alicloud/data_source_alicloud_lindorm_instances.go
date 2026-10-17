@@ -285,9 +285,14 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		engine_typeVal, err290 := formatInt(object["EngineType"])
+		if err290 != nil {
+			return err290
+		}
 		mapping := map[string]interface{}{
 			"create_time":      fmt.Sprint(object["CreateMilliseconds"]),
-			"engine_type":      formatInt(object["EngineType"]),
+			"engine_type":      engine_typeVal,
 			"expired_time":     fmt.Sprint(object["ExpiredMilliseconds"]),
 			"id":               fmt.Sprint(object["InstanceId"]),
 			"instance_id":      fmt.Sprint(object["InstanceId"]),
@@ -319,7 +324,11 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 		}
 		mapping["auto_renew"] = getResp1["AutoRenew"]
 		if v, ok := getResp1["ColdStorage"]; ok {
-			mapping["cold_storage"] = formatInt(v)
+			v322, err322 := formatInt(v)
+			if err322 != nil {
+				return err322
+			}
+			mapping["cold_storage"] = v322
 		}
 		mapping["deletion_proection"] = getResp1["DeletionProtection"]
 		mapping["disk_category"] = getResp1["DiskCategory"]
@@ -333,27 +342,51 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 			return WrapError(err)
 		}
 		if v, ok := getResp2["FileEngineNodeCount"]; ok {
-			mapping["file_engine_node_count"] = formatInt(v)
+			v336, err336 := formatInt(v)
+			if err336 != nil {
+				return err336
+			}
+			mapping["file_engine_node_count"] = v336
 		}
 		mapping["file_engine_specification"] = getResp2["FileEngineSpecification"]
 		if v, ok := getResp2["LtsNodeCount"]; ok {
-			mapping["lts_node_count"] = formatInt(v)
+			v340, err340 := formatInt(v)
+			if err340 != nil {
+				return err340
+			}
+			mapping["lts_node_count"] = v340
 		}
 		mapping["lts_node_specification"] = getResp2["LtsNodeSpecification"]
 		if v, ok := getResp2["PhoenixNodeCount"]; ok {
-			mapping["phoenix_node_count"] = formatInt(v)
+			v344, err344 := formatInt(v)
+			if err344 != nil {
+				return err344
+			}
+			mapping["phoenix_node_count"] = v344
 		}
 		mapping["phoenix_node_specification"] = getResp2["PhoenixNodeSpecification"]
 		if v, ok := getResp2["SearchEngineNodeCount"]; ok {
-			mapping["search_engine_node_count"] = formatInt(v)
+			v348, err348 := formatInt(v)
+			if err348 != nil {
+				return err348
+			}
+			mapping["search_engine_node_count"] = v348
 		}
 		mapping["search_engine_specification"] = getResp2["SearchEngineSpecification"]
 		if v, ok := getResp2["TableEngineNodeCount"]; ok {
-			mapping["table_engine_node_count"] = formatInt(v)
+			v352, err352 := formatInt(v)
+			if err352 != nil {
+				return err352
+			}
+			mapping["table_engine_node_count"] = v352
 		}
 		mapping["table_engine_specification"] = getResp2["TableEngineSpecification"]
 		if v, ok := getResp2["TimeSeriesNodeCount"]; ok {
-			mapping["time_series_engine_node_count"] = formatInt(v)
+			v356, err356 := formatInt(v)
+			if err356 != nil {
+				return err356
+			}
+			mapping["time_series_engine_node_count"] = v356
 		}
 		mapping["time_serires_engine_specification"] = getResp2["TimeSeriesSpecification"]
 

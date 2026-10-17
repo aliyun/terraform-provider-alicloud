@@ -116,9 +116,17 @@ func resourceAlicloudMhubAppRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("bundle_id", object["BundleId"])
 	d.Set("product_id", parts[0])
 
-	d.Set("type", convertTypeResponse(formatInt(object["Type"])))
+	v119, err119 := formatInt(object["Type"])
+	if err119 != nil {
+		return err119
+	}
+	d.Set("type", convertTypeResponse(v119))
 	d.Set("encoded_icon", object["EncodedIcon"])
-	d.Set("industry_id", fmt.Sprint(formatInt(object["IndustryId"])))
+	v121, err121 := formatInt(object["IndustryId"])
+	if err121 != nil {
+		return err121
+	}
+	d.Set("industry_id", fmt.Sprint(v121))
 	d.Set("package_name", object["PackageName"])
 	return nil
 }

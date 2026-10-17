@@ -31,6 +31,8 @@ func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"archive_backup_retention_period":   "1",
+					"category":                          "Flash",
 					"instance_id":                       "${alicloud_db_instance.default.id}",
 					"local_log_retention_hours":         "18",
 					"high_space_usage_protection":       "Enable",
@@ -54,8 +56,10 @@ func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"log_backup":        "true",
-					"enable_backup_log": "true",
+					"archive_backup_retention_period": "2",
+					"category":                        "Standard",
+					"log_backup":                      "true",
+					"enable_backup_log":               "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

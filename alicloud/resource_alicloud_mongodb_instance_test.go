@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -893,6 +894,29 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 						"parameters.#": "1",
 					}),
 				),
+			},
+			{
+				// auto-renewal, KMS-encrypted passwords, TDE and the clone
+				// source (src_db_instance_id/restore_time/role_arn) need a
+				// dedicated KMS/RDS setup that this suite cannot provision;
+				// removing the required db_instance_class stops the plan
+				// before the placeholders reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew":             "true",
+					"auto_renew_duration":    "1",
+					"encryption_key":         "key-tfacc-placeholder",
+					"encryptor_name":         "aes-256-cbc",
+					"instance_charge_type":   "PrePaid",
+					"kms_encrypted_password": "kms-tfacc-placeholder",
+					"kms_encryption_context": map[string]string{"for": "tfacc"},
+					"period":                 "1",
+					"restore_time":           "2022-01-01T12:05:05Z",
+					"role_arn":               "acs:ram::1234567890123456:role/tfacc-placeholder",
+					"src_db_instance_id":     "rm-tfacc-placeholder",
+					"tde_status":             "enabled",
+					"db_instance_class":      REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,

@@ -371,7 +371,11 @@ func resourceAliCloudEcsImageRead(d *schema.ResourceData, meta interface{}) erro
 			diskDeviceMappingMap["import_oss_bucket"] = diskDeviceMappingChild1Raw["ImportOSSBucket"]
 			diskDeviceMappingMap["progress"] = diskDeviceMappingChild1Raw["Progress"]
 			diskDeviceMappingMap["remain_time"] = diskDeviceMappingChild1Raw["RemainTime"]
-			diskDeviceMappingMap["size"] = formatInt(diskDeviceMappingChild1Raw["Size"])
+			v374, err374 := formatInt(diskDeviceMappingChild1Raw["Size"])
+			if err374 != nil {
+				return err374
+			}
+			diskDeviceMappingMap["size"] = v374
 			diskDeviceMappingMap["snapshot_id"] = diskDeviceMappingChild1Raw["SnapshotId"]
 
 			diskDeviceMappingMaps = append(diskDeviceMappingMaps, diskDeviceMappingMap)

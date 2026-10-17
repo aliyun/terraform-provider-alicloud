@@ -465,7 +465,11 @@ func resourceAliCloudHbrPolicyBindingRead(d *schema.ResourceData, meta interface
 			udmDetailMap["pre_script_path"] = udmDetailRaw["PreScriptPath"]
 			udmDetailMap["post_script_path"] = udmDetailRaw["PostScriptPath"]
 			udmDetailMap["enable_fs_freeze"] = udmDetailRaw["EnableFsFreeze"]
-			udmDetailMap["timeout_in_seconds"] = formatInt(udmDetailRaw["TimeoutInSeconds"])
+			v468, err468 := formatInt(udmDetailRaw["TimeoutInSeconds"])
+			if err468 != nil {
+				return err468
+			}
+			udmDetailMap["timeout_in_seconds"] = v468
 			udmDetailMap["enable_writers"] = udmDetailRaw["EnableWriters"]
 			udmDetailMaps = append(udmDetailMaps, udmDetailMap)
 		}

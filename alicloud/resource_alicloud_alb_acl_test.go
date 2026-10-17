@@ -59,7 +59,11 @@ func testSweepAlbAcl(region string) error {
 		}
 
 		resp, err := jsonpath.Get("$.Acls", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v62, err62 := formatInt(response["TotalCount"])
+		if err62 != nil {
+			return err62
+		}
+		if v62 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Acls", action, err)
 			return nil
 		}

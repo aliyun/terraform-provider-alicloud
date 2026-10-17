@@ -246,12 +246,17 @@ func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData,
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		bandwidthVal, err254 := formatInt(object["Bandwidth"])
+		if err254 != nil {
+			return err254
+		}
 		mapping := map[string]interface{}{
 			"ali_uid":                  object["AliUid"],
 			"anycast_eip_address_name": object["Name"],
 			"id":                       fmt.Sprint(object["AnycastId"]),
 			"anycast_id":               fmt.Sprint(object["AnycastId"]),
-			"bandwidth":                formatInt(object["Bandwidth"]),
+			"bandwidth":                bandwidthVal,
 			"bid":                      object["Bid"],
 			"business_status":          object["BusinessStatus"],
 			"description":              object["Description"],

@@ -987,11 +987,19 @@ func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interf
 	}
 
 	if object.NodeCidrMask != nil {
-		d.Set("node_cidr_mask", formatInt(tea.StringValue(object.NodeCidrMask)))
+		node_cidr_maskVal, err990 := formatInt(tea.StringValue(object.NodeCidrMask))
+		if err990 != nil {
+			return err990
+		}
+		d.Set("node_cidr_mask", node_cidr_maskVal)
 	} else {
 		// node_cidr_mask
 		if v, ok := capabilities["NodeCIDRMask"]; ok {
-			d.Set("node_cidr_mask", formatInt(v))
+			node_cidr_maskVal2, err994 := formatInt(v)
+			if err994 != nil {
+				return err994
+			}
+			d.Set("node_cidr_mask", node_cidr_maskVal2)
 		}
 	}
 

@@ -378,7 +378,11 @@ func resourceAliCloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("db_node_count", object["DBNodeCount"])
 	d.Set("db_node_storage", object["DBNodeStorage"])
 	d.Set("description", object["DBClusterDescription"])
-	d.Set("elastic_io_resource", formatInt(object["ElasticIOResource"]))
+	elastic_io_resourceVal, err381 := formatInt(object["ElasticIOResource"])
+	if err381 != nil {
+		return err381
+	}
+	d.Set("elastic_io_resource", elastic_io_resourceVal)
 	d.Set("maintain_time", object["MaintainTime"])
 	d.Set("mode", object["Mode"])
 	d.Set("payment_type", convertAdbDBClusterPaymentTypeResponse(object["PayType"].(string)))
@@ -402,7 +406,11 @@ func resourceAliCloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 		}
 		renewPeriod := 1
 		if describeAutoRenewAttributeObject != nil {
-			renewPeriod = formatInt(describeAutoRenewAttributeObject["Duration"])
+			renewPeriodVal, err405 := formatInt(describeAutoRenewAttributeObject["Duration"])
+			if err405 != nil {
+				return err405
+			}
+			renewPeriod = renewPeriodVal
 		}
 		if describeAutoRenewAttributeObject != nil && describeAutoRenewAttributeObject["PeriodUnit"] == string(Year) {
 			renewPeriod = renewPeriod * 12

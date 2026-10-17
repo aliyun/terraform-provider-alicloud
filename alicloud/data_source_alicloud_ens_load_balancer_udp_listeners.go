@@ -193,7 +193,11 @@ func dataSourceAliCloudEnsLoadBalancerUdpListenerRead(d *schema.ResourceData, me
 
 		mapping["description"] = objectRaw["Description"]
 		mapping["status"] = objectRaw["Status"]
-		mapping["listener_port"] = formatInt(objectRaw["ListenerPort"])
+		v196, err196 := formatInt(objectRaw["ListenerPort"])
+		if err196 != nil {
+			return err196
+		}
+		mapping["listener_port"] = v196
 		mapping["load_balancer_id"] = objectRaw["LoadBalancerId"]
 		mapping["protocol"] = objectRaw["Protocol"]
 

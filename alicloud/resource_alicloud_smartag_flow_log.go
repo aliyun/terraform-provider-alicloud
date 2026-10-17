@@ -163,17 +163,29 @@ func resourceAlicloudSmartagFlowLogRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	if v, ok := object["ActiveAging"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("active_aging", formatInt(v))
+		active_agingVal, err166 := formatInt(v)
+		if err166 != nil {
+			return err166
+		}
+		d.Set("active_aging", active_agingVal)
 	}
 	d.Set("description", object["Description"])
 	d.Set("flow_log_name", object["Name"])
 	if v, ok := object["InactiveAging"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("inactive_aging", formatInt(v))
+		inactive_agingVal, err171 := formatInt(v)
+		if err171 != nil {
+			return err171
+		}
+		d.Set("inactive_aging", inactive_agingVal)
 	}
 	d.Set("logstore_name", object["LogstoreName"])
 	d.Set("netflow_server_ip", object["NetflowServerIp"])
 	if v, ok := object["NetflowServerPort"]; ok {
-		d.Set("netflow_server_port", formatInt(v))
+		netflow_server_portVal, err176 := formatInt(v)
+		if err176 != nil {
+			return err176
+		}
+		d.Set("netflow_server_port", netflow_server_portVal)
 	}
 	d.Set("netflow_version", object["NetflowVersion"])
 	d.Set("output_type", object["OutputType"])

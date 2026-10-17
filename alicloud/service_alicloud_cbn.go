@@ -1929,7 +1929,11 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainPeerMember(id string
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
 	}
-	if formatInt(count) == 0 {
+	v1932, err1932 := formatInt(count)
+	if err1932 != nil {
+		return nil, err1932
+	}
+	if v1932 == 0 {
 		return object, WrapErrorf(NotFoundErr("CEN.TransitRouterMulticastDomainPeerMember", id), NotFoundWithResponse, response)
 	}
 	v, err := jsonpath.Get("$.TransitRouterMulticastGroups[0]", response)

@@ -38,10 +38,11 @@ func TestAccAliCloudPvtzZoneRecord_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"rr":      "www",
-					"type":    "A",
-					"value":   "2.2.2.2",
-					"zone_id": "${alicloud_pvtz_zone.default.id}",
+					"user_client_ip": "172.16.0.0/16",
+					"rr":             "www",
+					"type":           "A",
+					"value":          "2.2.2.2",
+					"zone_id":        "${alicloud_pvtz_zone.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -56,7 +57,8 @@ func TestAccAliCloudPvtzZoneRecord_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"status": "DISABLE",
+					"user_client_ip": "172.16.0.0/16-upd",
+					"status":         "DISABLE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -106,7 +108,8 @@ func TestAccAliCloudPvtzZoneRecord_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ttl": "30",
+					"lang": "en",
+					"ttl":  "30",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

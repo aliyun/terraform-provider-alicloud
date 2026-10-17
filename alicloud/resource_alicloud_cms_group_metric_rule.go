@@ -394,8 +394,16 @@ func resourceAliCloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interfa
 	d.Set("email_subject", object["MailSubject"])
 	d.Set("effective_interval", object["EffectiveInterval"])
 	d.Set("no_effective_interval", object["NoEffectiveInterval"])
-	d.Set("period", formatInt(object["Period"]))
-	d.Set("silence_time", formatInt(object["SilenceTime"]))
+	periodVal, err397 := formatInt(object["Period"])
+	if err397 != nil {
+		return err397
+	}
+	d.Set("period", periodVal)
+	silence_timeVal, err398 := formatInt(object["SilenceTime"])
+	if err398 != nil {
+		return err398
+	}
+	d.Set("silence_time", silence_timeVal)
 	d.Set("webhook", object["Webhook"])
 	d.Set("status", object["AlertState"])
 

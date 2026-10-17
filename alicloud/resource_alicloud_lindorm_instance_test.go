@@ -152,8 +152,9 @@ func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"file_engine_node_count": "3",
-					"instance_storage":       "160",
+					"file_engine_specification": "lindorm.c.xlarge-upd",
+					"file_engine_node_count":    "3",
+					"instance_storage":          "160",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

@@ -196,21 +196,44 @@ func dataSourceAlicloudAlbHealthCheckTemplatesRead(d *schema.ResourceData, meta 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		health_check_connect_portVal, err201 := formatInt(object["HealthCheckConnectPort"])
+		if err201 != nil {
+			return err201
+		}
+
+		health_check_intervalVal, err204 := formatInt(object["HealthCheckInterval"])
+		if err204 != nil {
+			return err204
+		}
+
+		health_check_timeoutVal, err211 := formatInt(object["HealthCheckTimeout"])
+		if err211 != nil {
+			return err211
+		}
+		healthy_thresholdVal, err212 := formatInt(object["HealthyThreshold"])
+		if err212 != nil {
+			return err212
+		}
+		unhealthy_thresholdVal, err213 := formatInt(object["UnhealthyThreshold"])
+		if err213 != nil {
+			return err213
+		}
 		mapping := map[string]interface{}{
 			"health_check_codes":         object["HealthCheckCodes"],
-			"health_check_connect_port":  formatInt(object["HealthCheckConnectPort"]),
+			"health_check_connect_port":  health_check_connect_portVal,
 			"health_check_host":          object["HealthCheckHost"],
 			"health_check_http_version":  object["HealthCheckHttpVersion"],
-			"health_check_interval":      formatInt(object["HealthCheckInterval"]),
+			"health_check_interval":      health_check_intervalVal,
 			"health_check_method":        object["HealthCheckMethod"],
 			"health_check_path":          object["HealthCheckPath"],
 			"health_check_protocol":      object["HealthCheckProtocol"],
 			"id":                         fmt.Sprint(object["HealthCheckTemplateId"]),
 			"health_check_template_id":   fmt.Sprint(object["HealthCheckTemplateId"]),
 			"health_check_template_name": object["HealthCheckTemplateName"],
-			"health_check_timeout":       formatInt(object["HealthCheckTimeout"]),
-			"healthy_threshold":          formatInt(object["HealthyThreshold"]),
-			"unhealthy_threshold":        formatInt(object["UnhealthyThreshold"]),
+			"health_check_timeout":       health_check_timeoutVal,
+			"healthy_threshold":          healthy_thresholdVal,
+			"unhealthy_threshold":        unhealthy_thresholdVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["HealthCheckTemplateName"])

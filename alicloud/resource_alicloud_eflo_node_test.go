@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,9 +27,9 @@ func TestAccAliCloudEfloNode_basic10171(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -107,10 +108,72 @@ func TestAccAliCloudEfloNode_basic10171(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"hostname":       "tfacc-host",
+					"cluster_id":     "ehc-tfacc-placeholder",
+					"node_group_id":  "ng-tfacc-placeholder",
+					"login_password": "YourPassword_123",
+					"machine_type":   "efg1.large",
+					"node_type":      "ei",
+					"user_data":      "I3RmYWNjCg==",
+					"vswitch_id":     "vsw-tfacc-placeholder",
+					"vpc_id":         "vpc-tfacc-placeholder",
+					"install_pai":    "true",
+					"data_disk": []map[string]interface{}{
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL1",
+							"size":              "2000",
+						},
+					},
+					"ip_allocation_policy": []map[string]interface{}{
+						{
+							"machine_type_policy": []map[string]interface{}{
+								{
+									"bonds": []map[string]interface{}{
+										{
+											"name":   "tfacc-bond",
+											"subnet": "vsw-tfacc-placeholder",
+										},
+									},
+									"machine_type": "efg1.large",
+								},
+							},
+							"bond_policy": []map[string]interface{}{
+								{
+									"bonds": []map[string]interface{}{
+										{
+											"name":   "tfacc-bond-bp",
+											"subnet": "vsw-tfacc-placeholder-bp",
+										},
+									},
+									"bond_default_subnet": "vsw-tfacc-placeholder-default",
+								},
+							},
+							"node_policy": []map[string]interface{}{
+								{
+									"bonds": []map[string]interface{}{
+										{
+											"name":   "tfacc-bond-np",
+											"subnet": "vsw-tfacc-placeholder-np",
+										},
+									},
+									"node_id":  "ein-tfacc-placeholder",
+									"hostname": "tfacc-node",
+								},
+							},
+						},
+					},
+					"status":       "Running",
+					"payment_type": "Bogus",
+				}),
+				ExpectError: regexp.MustCompile("expected payment_type to be one of"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"billing_cycle", "classify", "computing_server", "discount_level", "hpn_zone", "payment_ratio", "period", "product_form", "renew_period", "renewal_status", "server_arch", "stage_num", "zone"},
+				ImportStateVerifyIgnore: []string{"billing_cycle", "classify", "computing_server", "discount_level", "payment_ratio", "period", "product_form", "renew_period", "renewal_status", "server_arch", "stage_num"},
 			},
 		},
 	})
@@ -152,9 +215,9 @@ func TestAccAliCloudEfloNode_basic11276(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -291,9 +354,9 @@ func TestAccAliCloudEfloNode_basic11280(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -430,9 +493,9 @@ func TestAccAliCloudEfloNode_basic11275(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -569,9 +632,9 @@ func TestAccAliCloudEfloNode_basic11278(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

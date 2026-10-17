@@ -186,13 +186,18 @@ func dataSourceAlicloudCenTransitRouterMulticastDomainAssociationsRead(d *schema
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		resource_owner_idVal, err195 := formatInt(object["ResourceOwnerId"])
+		if err195 != nil {
+			return err195
+		}
 		mapping := map[string]interface{}{
 			"id":                                 fmt.Sprintf("%v:%v:%v", object["TransitRouterMulticastDomainId"], object["TransitRouterAttachmentId"], object["VSwitchId"]),
 			"transit_router_multicast_domain_id": fmt.Sprint(object["TransitRouterMulticastDomainId"]),
 			"transit_router_attachment_id":       fmt.Sprint(object["TransitRouterAttachmentId"]),
 			"vswitch_id":                         fmt.Sprint(object["VSwitchId"]),
 			"resource_id":                        object["ResourceId"],
-			"resource_owner_id":                  formatInt(object["ResourceOwnerId"]),
+			"resource_owner_id":                  resource_owner_idVal,
 			"resource_type":                      object["ResourceType"],
 			"status":                             object["Status"],
 		}

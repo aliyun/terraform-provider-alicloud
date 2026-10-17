@@ -314,7 +314,11 @@ func resourceAliCloudOceanBaseInstanceRead(d *schema.ResourceData, meta interfac
 		d.Set("commodity_code", objectRaw["CommodityCode"])
 	}
 	if objectRaw["Cpu"] != nil {
-		d.Set("cpu", formatInt(objectRaw["Cpu"]))
+		cpuVal, err317 := formatInt(objectRaw["Cpu"])
+		if err317 != nil {
+			return err317
+		}
+		d.Set("cpu", cpuVal)
 	}
 	if objectRaw["DiskSize"] != nil {
 		d.Set("disk_size", objectRaw["DiskSize"])

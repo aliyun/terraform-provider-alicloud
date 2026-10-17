@@ -118,8 +118,16 @@ func resourceAliCloudDMSEnterpriseAuthorityTemplateRead(d *schema.ResourceData, 
 	d.Set("description", authorityTemplateView1Raw["Description"])
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("tid", formatInt(parts[0]))
-	d.Set("authority_template_id", formatInt(parts[1]))
+	tidVal, err121 := formatInt(parts[0])
+	if err121 != nil {
+		return err121
+	}
+	d.Set("tid", tidVal)
+	authority_template_idVal, err122 := formatInt(parts[1])
+	if err122 != nil {
+		return err122
+	}
+	d.Set("authority_template_id", authority_template_idVal)
 	return nil
 }
 

@@ -161,8 +161,13 @@ func dataSourceAlicloudResourceManagerControlPoliciesRead(d *schema.ResourceData
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		attachment_countVal, err165 := formatInt(object["AttachmentCount"])
+		if err165 != nil {
+			return err165
+		}
 		mapping := map[string]interface{}{
-			"attachment_count":    formatInt(object["AttachmentCount"]),
+			"attachment_count":    attachment_countVal,
 			"control_policy_name": object["PolicyName"],
 			"description":         object["Description"],
 			"effect_scope":        object["EffectScope"],

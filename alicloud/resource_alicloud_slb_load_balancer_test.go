@@ -151,6 +151,8 @@ func TestAccAliCloudSLBLoadBalancer_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"address_ip_version":   "ipv4",
+					"period":               "1",
 					"load_balancer_name":   "${var.name}",
 					"load_balancer_spec":   "slb.s3.small",
 					"internet_charge_type": "PayByBandwidth",
@@ -170,7 +172,10 @@ func TestAccAliCloudSLBLoadBalancer_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bandwidth": `5`,
+					"internet_charge_type": "PayByTraffic",
+					"payment_type":         "PayAsYouGo",
+					"period":               "2",
+					"bandwidth":            `5`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

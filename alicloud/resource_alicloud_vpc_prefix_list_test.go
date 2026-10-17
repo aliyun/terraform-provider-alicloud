@@ -68,7 +68,11 @@ func testSweepVpcPrefixList(region string) error {
 		}
 
 		resp, err := jsonpath.Get("$.PrefixLists", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v71, err71 := formatInt(response["TotalCount"])
+		if err71 != nil {
+			return err71
+		}
+		if v71 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.PrefixLists", action, err)
 			return nil
 		}

@@ -64,6 +64,7 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 					"zone_ids": []string{"cn-hangzhou-j", "cn-hangzhou-k"},
 				}),
 				PlanOnly: true,
+				Check:    resource.ComposeTestCheckFunc(),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

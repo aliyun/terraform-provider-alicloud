@@ -224,15 +224,31 @@ func resourceAlicloudDcdnWafRuleCreate(d *schema.ResourceData, meta interface{})
 		rateLimitMap["target"] = rateLimit["target"]
 		rateLimitMap["interval"] = rateLimit["interval"]
 		rateLimitMap["subKey"] = rateLimit["sub_key"]
-		rateLimitMap["threshold"] = formatInt(rateLimit["threshold"])
-		rateLimitMap["ttl"] = formatInt(rateLimit["ttl"])
+		v227, err227 := formatInt(rateLimit["threshold"])
+		if err227 != nil {
+			return err227
+		}
+		rateLimitMap["threshold"] = v227
+		v228, err228 := formatInt(rateLimit["ttl"])
+		if err228 != nil {
+			return err228
+		}
+		rateLimitMap["ttl"] = v228
 
 		if v, ok := rateLimit["status"]; ok && len(v.([]interface{})) > 0 {
 			rateLimitStatusMap := make(map[string]interface{})
 			rateLimitStatus := v.([]interface{})[0].(map[string]interface{})
 			rateLimitStatusMap["code"] = rateLimitStatus["code"]
-			rateLimitStatusMap["ratio"] = formatInt(rateLimitStatus["ratio"])
-			rateLimitStatusMap["count"] = formatInt(rateLimitStatus["count"])
+			v234, err234 := formatInt(rateLimitStatus["ratio"])
+			if err234 != nil {
+				return err234
+			}
+			rateLimitStatusMap["ratio"] = v234
+			v235, err235 := formatInt(rateLimitStatus["count"])
+			if err235 != nil {
+				return err235
+			}
+			rateLimitStatusMap["count"] = v235
 			rateLimitMap["status"] = rateLimitStatusMap
 		}
 
@@ -245,7 +261,11 @@ func resourceAlicloudDcdnWafRuleCreate(d *schema.ResourceData, meta interface{})
 		ruleConfigMap["otherRegionList"] = v
 	}
 	if v, ok := d.GetOk("policy_id"); ok {
-		request["PolicyId"] = formatInt(v)
+		v248, err248 := formatInt(v)
+		if err248 != nil {
+			return err248
+		}
+		request["PolicyId"] = v248
 	}
 	if v, ok := d.GetOk("rule_name"); ok {
 		ruleConfigMap["name"] = v

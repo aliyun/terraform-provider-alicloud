@@ -297,7 +297,11 @@ func resourceAliCloudResourceManagerDeliveryChannelRead(d *schema.ResourceData, 
 		resourceChangeDeliveryRaw = objectRaw["ResourceChangeDelivery"].(map[string]interface{})
 	}
 	if len(resourceChangeDeliveryRaw) > 0 {
-		resourceChangeDeliveryMap["enabled"] = formatBool(resourceChangeDeliveryRaw["Enabled"])
+		v300, err300 := formatBool(resourceChangeDeliveryRaw["Enabled"])
+		if err300 != nil {
+			return err300
+		}
+		resourceChangeDeliveryMap["enabled"] = v300
 		resourceChangeDeliveryMap["target_arn"] = resourceChangeDeliveryRaw["TargetArn"]
 		resourceChangeDeliveryMap["target_type"] = resourceChangeDeliveryRaw["TargetType"]
 
@@ -327,7 +331,11 @@ func resourceAliCloudResourceManagerDeliveryChannelRead(d *schema.ResourceData, 
 	if len(resourceSnapshotDeliveryRaw) > 0 {
 		resourceSnapshotDeliveryMap["custom_expression"] = resourceSnapshotDeliveryRaw["CustomExpression"]
 		resourceSnapshotDeliveryMap["delivery_time"] = resourceSnapshotDeliveryRaw["DeliveryTime"]
-		resourceSnapshotDeliveryMap["enabled"] = formatBool(resourceSnapshotDeliveryRaw["Enabled"])
+		v330, err330 := formatBool(resourceSnapshotDeliveryRaw["Enabled"])
+		if err330 != nil {
+			return err330
+		}
+		resourceSnapshotDeliveryMap["enabled"] = v330
 		resourceSnapshotDeliveryMap["target_arn"] = resourceSnapshotDeliveryRaw["TargetArn"]
 		resourceSnapshotDeliveryMap["target_type"] = resourceSnapshotDeliveryRaw["TargetType"]
 

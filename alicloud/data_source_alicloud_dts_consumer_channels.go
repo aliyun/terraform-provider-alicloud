@@ -132,14 +132,23 @@ func dataSourceAlicloudDtsConsumerChannelsRead(d *schema.ResourceData, meta inte
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		message_delayVal, err141 := formatInt(object["MessageDelay"])
+		if err141 != nil {
+			return err141
+		}
+		unconsumed_dataVal, err142 := formatInt(object["UnconsumedData"])
+		if err142 != nil {
+			return err142
+		}
 		mapping := map[string]interface{}{
 			"id":                       fmt.Sprint(request["DtsInstanceId"], ":", object["ConsumerGroupId"]),
 			"consumer_group_id":        fmt.Sprint(object["ConsumerGroupId"]),
 			"consumer_group_name":      object["ConsumerGroupName"],
 			"consumer_group_user_name": object["ConsumerGroupUserName"],
 			"consumption_checkpoint":   fmt.Sprint(object["ConsumptionCheckpoint"]),
-			"message_delay":            formatInt(object["MessageDelay"]),
-			"unconsumed_data":          formatInt(object["UnconsumedData"]),
+			"message_delay":            message_delayVal,
+			"unconsumed_data":          unconsumed_dataVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

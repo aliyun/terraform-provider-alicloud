@@ -103,7 +103,7 @@ func testSweepOnsTopic(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOnsTopic_basic(t *testing.T) {
+func TestAccAliCloudOnsTopic_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ons_topic.default"
 	ra := resourceAttrInit(resourceId, onsTopicBasicMap)
@@ -123,12 +123,13 @@ func TestAccAlicloudOnsTopic_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"topic_name":   name,
 					"instance_id":  "${alicloud_ons_instance.default.id}",
 					"topic":        "${var.topic}",
 					"message_type": "1",

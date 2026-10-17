@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudNASRecycleBin_basic0(t *testing.T) {
+func TestAccAliCloudNASRecycleBin_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_recycle_bin.default"
 	checkoutSupportedRegions(t, true, connectivity.NASSupportRegions)
@@ -36,9 +36,9 @@ func TestAccAlicloudNASRecycleBin_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -69,7 +69,7 @@ func TestAccAlicloudNASRecycleBin_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudNASRecycleBin_basic1(t *testing.T) {
+func TestAccAliCloudNASRecycleBin_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_recycle_bin.default"
 	checkoutSupportedRegions(t, true, connectivity.NASSupportRegions)
@@ -86,9 +86,9 @@ func TestAccAlicloudNASRecycleBin_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -245,7 +245,11 @@ func resourceAliCloudRdsAiInstanceRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("ca_type", objectRaw["CAType"])
-	d.Set("ssl_enabled", formatInt(objectRaw["SSLEnabled"]))
+	ssl_enabledVal, err248 := formatInt(objectRaw["SSLEnabled"])
+	if err248 != nil {
+		return err248
+	}
+	d.Set("ssl_enabled", ssl_enabledVal)
 	d.Set("server_cert", objectRaw["ServerCert"])
 	d.Set("server_key", objectRaw["ServerKey"])
 

@@ -227,8 +227,18 @@ func dataSourceAlicloudEcdDesktopsRead(d *schema.ResourceData, meta interface{})
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		cpuVal, err231 := formatInt(object["Cpu"])
+		if err231 != nil {
+			return err231
+		}
+
+		system_disk_sizeVal, err246 := formatInt(object["SystemDiskSize"])
+		if err246 != nil {
+			return err246
+		}
 		mapping := map[string]interface{}{
-			"cpu":                  formatInt(object["Cpu"]),
+			"cpu":                  cpuVal,
 			"create_time":          object["CreationTime"],
 			"id":                   fmt.Sprint(object["DesktopId"]),
 			"desktop_id":           fmt.Sprint(object["DesktopId"]),
@@ -243,7 +253,7 @@ func dataSourceAlicloudEcdDesktopsRead(d *schema.ResourceData, meta interface{})
 			"payment_type":         convertEcdDesktopPaymentTypeResponse(object["ChargeType"]),
 			"policy_group_id":      object["PolicyGroupId"],
 			"status":               object["DesktopStatus"],
-			"system_disk_size":     formatInt(object["SystemDiskSize"]),
+			"system_disk_size":     system_disk_sizeVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["DesktopName"])

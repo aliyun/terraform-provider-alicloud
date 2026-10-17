@@ -68,7 +68,11 @@ func testSweepOOSApplication(region string) error {
 		}
 
 		resp, err := jsonpath.Get("$.Applications", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v71, err71 := formatInt(response["TotalCount"])
+		if err71 != nil {
+			return err71
+		}
+		if v71 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Applications", action, err)
 			return nil
 		}
@@ -108,7 +112,7 @@ func testSweepOOSApplication(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOOSApplication_basic0(t *testing.T) {
+func TestAccAliCloudOOSApplication_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_application.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSApplicationSupportRegions)
@@ -150,7 +154,8 @@ func TestAccAlicloudOOSApplication_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": name + "update",
+					"application_name": name + "-upd",
+					"description":      name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -197,7 +202,7 @@ func TestAccAlicloudOOSApplication_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOOSApplication_basic1(t *testing.T) {
+func TestAccAliCloudOOSApplication_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_application.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSApplicationSupportRegions)

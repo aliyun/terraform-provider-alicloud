@@ -826,7 +826,11 @@ func resourceAliCloudCloudMonitorServiceMetricAlarmRuleUpdate(d *schema.Resource
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "EnableState", objectRaw)
 		}
-		if formatBool(currentStatus) != target {
+		v829, err829 := formatBool(currentStatus)
+		if err829 != nil {
+			return err829
+		}
+		if v829 != target {
 			if target == true {
 				action := "EnableMetricRules"
 				request = make(map[string]interface{})

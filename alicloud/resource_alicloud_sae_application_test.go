@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -457,6 +458,15 @@ func TestAccAliCloudSAEApplication_basicImage(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"acr_assume_role_arn": "acs:ram::1234567890123456:role/tfacc-placeholder",
+					"acr_instance_id":     "cri-tfacc-placeholder",
+					"image_pull_secrets":  "tfacc-secret",
+					"app_name":            REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -467,7 +477,7 @@ func TestAccAliCloudSAEApplication_basicImage(t *testing.T) {
 }
 
 // package_type = FatJar Skip testing because api does not support STS authentication
-func SkipTestAccAliCloudSAEApplication_basicFatJar(t *testing.T) {
+func TestAccAliCloudSAEApplication_basicFatJar(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"
@@ -1469,7 +1479,7 @@ func TestAccAliCloudSAEApplication_basicPhp(t *testing.T) {
 }
 
 // Skip testing because api has bug
-func SkipTestAccAliCloudSAEApplication_basicNewImage(t *testing.T) {
+func TestAccAliCloudSAEApplication_basicNewImage(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"
@@ -1841,7 +1851,7 @@ func SkipTestAccAliCloudSAEApplication_basicNewImage(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudSAEApplication_basicNewFatJar(t *testing.T) {
+func TestAccAliCloudSAEApplication_basicNewFatJar(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"

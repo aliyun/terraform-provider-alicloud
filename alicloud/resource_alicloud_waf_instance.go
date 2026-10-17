@@ -201,7 +201,11 @@ func resourceAlicloudWafInstanceRead(d *schema.ResourceData, meta interface{}) e
 		}
 		return WrapError(err)
 	}
-	d.Set("status", formatInt(object["Status"]))
+	statusVal, err204 := formatInt(object["Status"])
+	if err204 != nil {
+		return err204
+	}
+	d.Set("status", statusVal)
 	d.Set("subscription_type", object["SubscriptionType"])
 	return nil
 }

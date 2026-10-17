@@ -272,7 +272,11 @@ func resourceAliCloudEcsElasticityAssuranceRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
-	d.Set("auto_renew", formatBool(convertEcsElasticityAssuranceElasticityAssuranceRenewAttributesElasticityAssuranceRenewAttributeRenewalStatusResponse(objectRaw["RenewalStatus"])))
+	auto_renewVal, err275 := formatBool(convertEcsElasticityAssuranceElasticityAssuranceRenewAttributesElasticityAssuranceRenewAttributeRenewalStatusResponse(objectRaw["RenewalStatus"]))
+	if err275 != nil {
+		return err275
+	}
+	d.Set("auto_renew", auto_renewVal)
 	d.Set("auto_renew_period", objectRaw["Period"])
 	d.Set("auto_renew_period_unit", objectRaw["PeriodUnit"])
 	d.Set("elasticity_assurance_id", objectRaw["PrivatePoolOptionsId"])

@@ -98,7 +98,11 @@ func resourceAliCloudOssAccountPublicAccessBlockRead(d *schema.ResourceData, met
 		return WrapError(err)
 	}
 
-	d.Set("block_public_access", formatBool(objectRaw["BlockPublicAccess"]))
+	block_public_accessVal, err101 := formatBool(objectRaw["BlockPublicAccess"])
+	if err101 != nil {
+		return err101
+	}
+	d.Set("block_public_access", block_public_accessVal)
 
 	return nil
 }

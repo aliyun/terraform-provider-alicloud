@@ -228,10 +228,24 @@ func dataSourceAlicloudVpcTrafficMirrorSessionsRead(d *schema.ResourceData, meta
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		packet_lengthVal, err233 := formatInt(object["PacketLength"])
+		if err233 != nil {
+			return err233
+		}
+		priorityVal, err234 := formatInt(object["Priority"])
+		if err234 != nil {
+			return err234
+		}
+
+		virtual_network_idVal, err245 := formatInt(object["VirtualNetworkId"])
+		if err245 != nil {
+			return err245
+		}
 		mapping := map[string]interface{}{
 			"enabled":                                object["Enabled"],
-			"packet_length":                          formatInt(object["PacketLength"]),
-			"priority":                               formatInt(object["Priority"]),
+			"packet_length":                          packet_lengthVal,
+			"priority":                               priorityVal,
 			"status":                                 object["TrafficMirrorSessionStatus"],
 			"traffic_mirror_filter_id":               object["TrafficMirrorFilterId"],
 			"traffic_mirror_session_business_status": object["TrafficMirrorSessionBusinessStatus"],
@@ -242,7 +256,7 @@ func dataSourceAlicloudVpcTrafficMirrorSessionsRead(d *schema.ResourceData, meta
 			"traffic_mirror_source_ids":              object["TrafficMirrorSourceIds"],
 			"traffic_mirror_target_id":               object["TrafficMirrorTargetId"],
 			"traffic_mirror_target_type":             object["TrafficMirrorTargetType"],
-			"virtual_network_id":                     formatInt(object["VirtualNetworkId"]),
+			"virtual_network_id":                     virtual_network_idVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["TrafficMirrorSessionName"])

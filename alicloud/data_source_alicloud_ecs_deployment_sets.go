@@ -177,6 +177,10 @@ func dataSourceAlicloudEcsDeploymentSetsRead(d *schema.ResourceData, meta interf
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
+		instance_amountVal, err187 := formatInt(object["InstanceAmount"])
+		if err187 != nil {
+			return err187
+		}
 		mapping := map[string]interface{}{
 			"create_time":         object["CreationTime"],
 			"deployment_set_id":   object["DeploymentSetId"],
@@ -184,7 +188,7 @@ func dataSourceAlicloudEcsDeploymentSetsRead(d *schema.ResourceData, meta interf
 			"description":         object["DeploymentSetDescription"],
 			"domain":              convertEcsDeploymentSetDomainResponse(object["Domain"]),
 			"granularity":         convertEcsDeploymentSetGranularityResponse(object["Granularity"]),
-			"instance_amount":     formatInt(object["InstanceAmount"]),
+			"instance_amount":     instance_amountVal,
 			"strategy":            object["DeploymentStrategy"],
 		}
 		if v, ok := object["InstanceIds"].(map[string]interface{}); ok {

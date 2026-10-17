@@ -342,13 +342,18 @@ func dataSourceAliCloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		auto_add_tag_ecsVal, err351 := formatInt(object["AutoAddTagEcs"])
+		if err351 != nil {
+			return err351
+		}
 		mapping := map[string]interface{}{
 			"id":               fmt.Sprint(object["GroupUuid"]),
 			"group_uuid":       fmt.Sprint(object["GroupUuid"]),
 			"group_name":       object["GroupName"],
 			"group_type":       object["GroupType"],
 			"description":      object["Description"],
-			"auto_add_tag_ecs": formatInt(object["AutoAddTagEcs"]),
+			"auto_add_tag_ecs": auto_add_tag_ecsVal,
 			"tag_relation":     object["TagRelation"],
 			"address_list":     object["AddressList"],
 		}
@@ -366,7 +371,11 @@ func dataSourceAliCloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 		assetMemberUids := make([]int, 0)
 		if v, ok := object["AssetMemberUids"].([]interface{}); ok {
 			for _, assetMemberUid := range v {
-				assetMemberUids = append(assetMemberUids, formatInt(assetMemberUid))
+				v369, err369 := formatInt(assetMemberUid)
+				if err369 != nil {
+					return err369
+				}
+				assetMemberUids = append(assetMemberUids, v369)
 			}
 		}
 
@@ -374,11 +383,19 @@ func dataSourceAliCloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 		mapping["asset_region_resource_types"] = flattenCloudFirewallAddressBookAssetRegionResourceTypes(object["AssetRegionResourceTypes"])
 
 		if v, ok := object["AddressListCount"]; ok {
-			mapping["address_list_count"] = formatInt(v)
+			v377, err377 := formatInt(v)
+			if err377 != nil {
+				return err377
+			}
+			mapping["address_list_count"] = v377
 		}
 
 		if v, ok := object["ReferenceCount"]; ok {
-			mapping["reference_count"] = formatInt(v)
+			v381, err381 := formatInt(v)
+			if err381 != nil {
+				return err381
+			}
+			mapping["reference_count"] = v381
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))

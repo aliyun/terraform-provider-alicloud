@@ -200,9 +200,19 @@ func dataSourceAlicloudEcdImagesRead(d *schema.ResourceData, meta interface{}) e
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		data_disk_sizeVal, err205 := formatInt(object["DataDiskSize"])
+		if err205 != nil {
+			return err205
+		}
+
+		sizeVal, err214 := formatInt(object["Size"])
+		if err214 != nil {
+			return err214
+		}
 		mapping := map[string]interface{}{
 			"create_time":    object["CreationTime"],
-			"data_disk_size": formatInt(object["DataDiskSize"]),
+			"data_disk_size": data_disk_sizeVal,
 			"description":    object["Description"],
 			"gpu_category":   object["GpuCategory"],
 			"id":             fmt.Sprint(object["ImageId"]),
@@ -211,7 +221,7 @@ func dataSourceAlicloudEcdImagesRead(d *schema.ResourceData, meta interface{}) e
 			"image_type":     object["ImageType"],
 			"os_type":        object["OsType"],
 			"progress":       object["Progress"],
-			"size":           formatInt(object["Size"]),
+			"size":           sizeVal,
 			"status":         object["Status"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))

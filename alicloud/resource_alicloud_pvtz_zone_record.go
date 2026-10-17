@@ -169,12 +169,20 @@ func resourceAlicloudPvtzZoneRecordRead(d *schema.ResourceData, meta interface{}
 	}
 	d.Set("record_id", fmt.Sprint(parts[0]))
 	d.Set("zone_id", parts[1])
-	d.Set("priority", formatInt(object["Priority"]))
+	priorityVal, err172 := formatInt(object["Priority"])
+	if err172 != nil {
+		return err172
+	}
+	d.Set("priority", priorityVal)
 	d.Set("remark", object["Remark"])
 	d.Set("rr", object["Rr"])
 	d.Set("resource_record", object["Rr"])
 	d.Set("status", object["Status"])
-	d.Set("ttl", formatInt(object["Ttl"]))
+	ttlVal, err177 := formatInt(object["Ttl"])
+	if err177 != nil {
+		return err177
+	}
+	d.Set("ttl", ttlVal)
 	d.Set("type", object["Type"])
 	d.Set("value", object["Value"])
 	return nil

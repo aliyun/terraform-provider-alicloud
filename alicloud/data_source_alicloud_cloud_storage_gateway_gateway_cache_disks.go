@@ -149,18 +149,38 @@ func dataSourceAlicloudCloudStorageGatewayGatewayCacheDisksRead(d *schema.Resour
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		cache_disk_size_in_gbVal, err154 := formatInt(object["SizeInGB"])
+		if err154 != nil {
+			return err154
+		}
+
+		expired_timeVal, err156 := formatInt(object["ExpiredTime"])
+		if err156 != nil {
+			return err156
+		}
+
+		iopsVal, err158 := formatInt(object["Iops"])
+		if err158 != nil {
+			return err158
+		}
+
+		statusVal, err163 := formatInt(object["ExpireStatus"])
+		if err163 != nil {
+			return err163
+		}
 		mapping := map[string]interface{}{
 			"cache_disk_category":   object["CacheType"],
-			"cache_disk_size_in_gb": formatInt(object["SizeInGB"]),
+			"cache_disk_size_in_gb": cache_disk_size_in_gbVal,
 			"cache_id":              object["CacheId"],
-			"expired_time":          formatInt(object["ExpiredTime"]),
+			"expired_time":          expired_timeVal,
 			"gateway_id":            request["GatewayId"],
-			"iops":                  formatInt(object["Iops"]),
+			"iops":                  iopsVal,
 			"is_used":               object["IsUsed"],
 			"id":                    fmt.Sprint(request["GatewayId"], ":", object["CacheId"], ":", object["LocalFilePath"]),
 			"local_file_path":       fmt.Sprint(object["LocalFilePath"]),
 			"renew_url":             object["RenewURL"],
-			"status":                formatInt(object["ExpireStatus"]),
+			"status":                statusVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

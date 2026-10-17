@@ -250,6 +250,15 @@ func dataSourceAliCloudGaBasicAcceleratorsRead(d *schema.ResourceData, meta inte
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		create_timeVal, err263 := formatInt(object["CreateTime"])
+		if err263 != nil {
+			return err263
+		}
+		expired_timeVal, err264 := formatInt(object["ExpiredTime"])
+		if err264 != nil {
+			return err264
+		}
 		mapping := map[string]interface{}{
 			"id":                      fmt.Sprint(object["AcceleratorId"]),
 			"basic_accelerator_id":    fmt.Sprint(object["AcceleratorId"]),
@@ -260,8 +269,8 @@ func dataSourceAliCloudGaBasicAcceleratorsRead(d *schema.ResourceData, meta inte
 			"instance_charge_type":    object["InstanceChargeType"],
 			"description":             object["Description"],
 			"region_id":               object["RegionId"],
-			"create_time":             formatInt(object["CreateTime"]),
-			"expired_time":            formatInt(object["ExpiredTime"]),
+			"create_time":             create_timeVal,
+			"expired_time":            expired_timeVal,
 			"status":                  object["State"],
 		}
 

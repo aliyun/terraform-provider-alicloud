@@ -129,7 +129,11 @@ func resourceAliCloudSslCertificatesServiceInstanceCertificateRead(d *schema.Res
 	// CertificateId is typed inconsistently across this product: an integer here and on
 	// GetInstanceDetail, a string on ListCertificates. formatInt normalises whichever form arrives.
 	if v, ok := objectRaw["CertificateId"]; ok && v != nil {
-		d.Set("certificate_id", formatInt(v))
+		certificate_idVal, err132 := formatInt(v)
+		if err132 != nil {
+			return err132
+		}
+		d.Set("certificate_id", certificate_idVal)
 	}
 	d.Set("instance_id", objectRaw["InstanceId"])
 	d.Set("cert_identifier", objectRaw["CertIdentifier"])

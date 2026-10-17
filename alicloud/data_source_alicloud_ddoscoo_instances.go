@@ -226,26 +226,72 @@ func extractDdoscooInstance(d *schema.ResourceData, instanceSpecs map[string]map
 	var s []map[string]interface{}
 
 	for _, item := range instance {
+
+		debt_statusVal, err234 := formatInt(item["DebtStatus"])
+		if err234 != nil {
+			return err234
+		}
+		editionVal, err235 := formatInt(item["Edition"])
+		if err235 != nil {
+			return err235
+		}
+
+		statusVal, err237 := formatInt(item["Status"])
+		if err237 != nil {
+			return err237
+		}
+		enabledVal, err238 := formatInt(item["Enabled"])
+		if err238 != nil {
+			return err238
+		}
+		expire_timeVal, err239 := formatInt(item["ExpireTime"])
+		if err239 != nil {
+			return err239
+		}
+		create_timeVal, err240 := formatInt(item["CreateTime"])
+		if err240 != nil {
+			return err240
+		}
 		mapping := map[string]interface{}{
 			"id":          fmt.Sprint(item["InstanceId"]),
 			"name":        item["Remark"],
 			"remark":      item["Remark"],
 			"ip_mode":     item["IpMode"],
-			"debt_status": formatInt(item["DebtStatus"]),
-			"edition":     formatInt(item["Edition"]),
+			"debt_status": debt_statusVal,
+			"edition":     editionVal,
 			"ip_version":  item["IpVersion"],
-			"status":      formatInt(item["Status"]),
-			"enabled":     formatInt(item["Enabled"]),
-			"expire_time": formatInt(item["ExpireTime"]),
-			"create_time": formatInt(item["CreateTime"]),
+			"status":      statusVal,
+			"enabled":     enabledVal,
+			"expire_time": expire_timeVal,
+			"create_time": create_timeVal,
 		}
 
 		if v, ok := instanceSpecs[fmt.Sprint(item["InstanceId"])]; ok {
-			mapping["bandwidth"] = formatInt(v["ElasticBandwidth"])
-			mapping["base_bandwidth"] = formatInt(v["BaseBandwidth"])
-			mapping["service_bandwidth"] = formatInt(v["BandwidthMbps"])
-			mapping["port_count"] = formatInt(v["PortLimit"])
-			mapping["domain_count"] = formatInt(v["DomainLimit"])
+			v244, err244 := formatInt(v["ElasticBandwidth"])
+			if err244 != nil {
+				return err244
+			}
+			mapping["bandwidth"] = v244
+			v245, err245 := formatInt(v["BaseBandwidth"])
+			if err245 != nil {
+				return err245
+			}
+			mapping["base_bandwidth"] = v245
+			v246, err246 := formatInt(v["BandwidthMbps"])
+			if err246 != nil {
+				return err246
+			}
+			mapping["service_bandwidth"] = v246
+			v247, err247 := formatInt(v["PortLimit"])
+			if err247 != nil {
+				return err247
+			}
+			mapping["port_count"] = v247
+			v248, err248 := formatInt(v["DomainLimit"])
+			if err248 != nil {
+				return err248
+			}
+			mapping["domain_count"] = v248
 		}
 
 		instanceIds = append(instanceIds, fmt.Sprint(mapping["id"]))

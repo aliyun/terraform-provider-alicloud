@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -109,7 +110,7 @@ func testSweepGpdbElasticInstances(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudGPDBElasticInstanceVpc(t *testing.T) {
+func TestAccAliCloudGPDBElasticInstanceVpc(t *testing.T) {
 	var instance gpdb.DBInstanceAttribute
 	resourceId := "alicloud_gpdb_elastic_instance.default"
 	serverFunc := func() interface{} {
@@ -226,7 +227,7 @@ func resourceGpdbElasticInstanceConfigDependence(name string) string {
         `, name)
 }
 
-func SkipTestAccAlicloudGPDBElasticInstance_basic0(t *testing.T) {
+func TestAccAliCloudGPDBElasticInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_elastic_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudGpdbElasticInstanceMap0)
@@ -294,6 +295,17 @@ func SkipTestAccAlicloudGPDBElasticInstance_basic0(t *testing.T) {
 						"tags.%": "3",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_network_type": "VPC",
+					"payment_type":          "Subscription",
+					"payment_duration":      "1",
+					"payment_duration_unit": "Month",
+					"zone_id":               "cn-hangzhou-g",
+					"instance_spec":         REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,

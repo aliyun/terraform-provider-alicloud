@@ -111,7 +111,11 @@ func resourceAlicloudNasSnapshotRead(d *schema.ResourceData, meta interface{}) e
 	}
 	d.Set("description", object["Description"])
 	if v, ok := object["RetentionDays"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("retention_days", formatInt(v))
+		retention_daysVal, err114 := formatInt(v)
+		if err114 != nil {
+			return err114
+		}
+		d.Set("retention_days", retention_daysVal)
 	}
 	d.Set("snapshot_name", object["SnapshotName"])
 	d.Set("file_system_id", object["SourceFileSystemId"])

@@ -122,7 +122,11 @@ func resourceAlicloudPvtzRuleRead(d *schema.ResourceData, meta interface{}) erro
 			forwardConfigArg := forwardConfigArgs.(map[string]interface{})
 			forwardConfigsMap := make(map[string]interface{})
 			forwardConfigsMap["ip"] = forwardConfigArg["Ip"]
-			forwardConfigsMap["port"] = formatInt(forwardConfigArg["Port"])
+			v125, err125 := formatInt(forwardConfigArg["Port"])
+			if err125 != nil {
+				return err125
+			}
+			forwardConfigsMap["port"] = v125
 			forwardConfigsSli = append(forwardConfigsSli, forwardConfigsMap)
 		}
 	}

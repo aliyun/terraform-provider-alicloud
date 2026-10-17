@@ -222,16 +222,26 @@ func dataSourceAlicloudEcdCommandsRead(d *schema.ResourceData, meta interface{})
 		if invokeDesktopsList, ok := object["InvokeDesktops"].([]interface{}); ok {
 			for _, v := range invokeDesktopsList {
 				if m1, ok := v.(map[string]interface{}); ok {
+
+					droppedVal, err227 := formatInt(m1["Dropped"])
+					if err227 != nil {
+						return err227
+					}
+
+					repeatsVal, err234 := formatInt(m1["Repeats"])
+					if err234 != nil {
+						return err234
+					}
 					temp1 := map[string]interface{}{
 						"desktop_id":        m1["DesktopId"],
-						"dropped":           formatInt(m1["Dropped"]),
+						"dropped":           droppedVal,
 						"error_code":        m1["ErrorCode"],
 						"error_info":        m1["ErrorInfo"],
 						"exit_code":         m1["ExitCode"],
 						"finish_time":       m1["FinishTime"],
 						"invocation_status": m1["InvocationStatus"],
 						"output":            m1["Output"],
-						"repeats":           formatInt(m1["Repeats"]),
+						"repeats":           repeatsVal,
 						"start_time":        m1["StartTime"],
 						"stop_time":         m1["StopTime"],
 					}

@@ -328,11 +328,19 @@ func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta
 			}
 		}
 		if v, ok := getResp["Port"]; ok && v.(string) != "" {
-			mapping["port"] = formatInt(v)
+			v331, err331 := formatInt(v)
+			if err331 != nil {
+				return err331
+			}
+			mapping["port"] = v331
 		}
 		mapping["public_connection_string"] = getResp["PublicConnectionString"]
 		if v, ok := getResp["PublicPort"]; ok && fmt.Sprint(v) != "0" {
-			mapping["public_port"] = formatInt(v)
+			v335, err335 := formatInt(v)
+			if err335 != nil {
+				return err335
+			}
+			mapping["public_port"] = v335
 		}
 		s = append(s, mapping)
 	}

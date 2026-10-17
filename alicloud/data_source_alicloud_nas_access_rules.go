@@ -130,9 +130,14 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		priorityVal, err135 := formatInt(object["Priority"])
+		if err135 != nil {
+			return err135
+		}
 		mapping := map[string]interface{}{
 			"source_cidr_ip": object["SourceCidrIp"],
-			"priority":       formatInt(object["Priority"]),
+			"priority":       priorityVal,
 			"access_rule_id": object["AccessRuleId"],
 			"user_access":    object["UserAccess"],
 			"rw_access":      object["RWAccess"],

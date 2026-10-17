@@ -49,7 +49,11 @@ func testSweepCloudSsoDirectoryAccessConfigurationProvisioning(region, directory
 	}
 
 	resp, err := jsonpath.Get("$.AccessConfigurationProvisionings", response)
-	if formatInt(response["TotalCounts"]) != 0 && err != nil {
+	v52, err52 := formatInt(response["TotalCounts"])
+	if err52 != nil {
+		return err52
+	}
+	if v52 != 0 && err != nil {
 		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.AccessConfigurationProvisionings", action, err)
 		return nil
 	}
@@ -83,7 +87,7 @@ func testSweepCloudSsoDirectoryAccessConfigurationProvisioning(region, directory
 	return nil
 }
 
-func TestAccAlicloudCloudSSOAccessConfigurationProvisioning_basic0(t *testing.T) {
+func TestAccAliCloudCloudSSOAccessConfigurationProvisioning_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_sso_access_configuration_provisioning.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudSsoSupportRegions)
@@ -117,6 +121,20 @@ func TestAccAlicloudCloudSSOAccessConfigurationProvisioning_basic0(t *testing.T)
 						"access_configuration_id": CHECKSET,
 						"target_type":             "RD-Account",
 						"target_id":               CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":                  "Provisioned",
+					"directory_id":            "${local.directory_id}",
+					"access_configuration_id": "${alicloud_cloud_sso_access_configuration.default.access_configuration_id}",
+					"target_type":             "RD-Account",
+					"target_id":               "${data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Provisioned",
 					}),
 				),
 			},

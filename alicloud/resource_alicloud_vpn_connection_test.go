@@ -66,9 +66,9 @@ func TestAccAliCloudVPNConnectionBasic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -303,9 +303,9 @@ func TestAccAliCloudVPNConnection_basic2(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectRegions)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -509,9 +509,9 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5678(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -665,28 +665,28 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5678(t *testing.T) {
 							"role":                "master",
 							"tunnel_bgp_config": []map[string]interface{}{
 								{
-									"local_asn":    "1219002",
+									"local_asn":    "1219003",
 									"tunnel_cidr":  "169.254.30.0/30",
 									"local_bgp_ip": "169.254.30.1",
 								},
 							},
 							"tunnel_ike_config": []map[string]interface{}{
 								{
-									"ike_auth_alg": "md5",
-									"ike_enc_alg":  "aes256",
+									"ike_auth_alg": "sha1",
+									"ike_enc_alg":  "aes",
 									"ike_lifetime": "3600",
-									"ike_mode":     "aggressive",
+									"ike_mode":     "main",
 									"ike_pfs":      "group14",
-									"ike_version":  "ikev2",
-									"local_id":     "localid_tunnel2",
+									"ike_version":  "ikev1",
+									"local_id":     "localid_tunnel2_update",
 									"psk":          "12345678",
 									"remote_id":    "remote2",
 								},
 							},
 							"tunnel_ipsec_config": []map[string]interface{}{
 								{
-									"ipsec_auth_alg": "md5",
-									"ipsec_enc_alg":  "aes256",
+									"ipsec_auth_alg": "sha1",
+									"ipsec_enc_alg":  "aes",
 									"ipsec_lifetime": "16400",
 									"ipsec_pfs":      "group5",
 								},
@@ -893,9 +893,9 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1338,7 +1338,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5663(t *testing.T) {
 			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		// CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1459,7 +1459,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5663(t *testing.T) {
 					"ipsec_config": []map[string]interface{}{
 						{
 							"ipsec_pfs":      "group2",
-							"ipsec_enc_alg":  "aes",
+							"ipsec_enc_alg":  "aes256",
 							"ipsec_auth_alg": "sha1",
 							"ipsec_lifetime": "86400",
 						},
@@ -2062,9 +2062,9 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5678_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2189,7 +2189,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		// CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -2312,9 +2312,9 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5663_twin(t *testing.T) {
 			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

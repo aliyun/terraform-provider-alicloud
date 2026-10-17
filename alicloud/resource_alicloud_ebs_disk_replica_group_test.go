@@ -57,7 +57,11 @@ func testSweepEbsDiskReplicaGroup(region string) error {
 		}
 
 		resp, err := jsonpath.Get("$.ReplicaGroups", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v60, err60 := formatInt(response["TotalCount"])
+		if err60 != nil {
+			return err60
+		}
+		if v60 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.ReplicaGroups", action, err)
 			return nil
 		}

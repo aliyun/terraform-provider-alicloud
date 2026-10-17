@@ -68,7 +68,11 @@ func (s *EdsUserService) DescribeEcdUser(id string) (object map[string]interface
 func (s *EdsUserService) EcdUserStateRefreshFunc(id string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdUser(id)
-		status := convertEcdUserStatusResponse(strconv.Itoa(formatInt(object["Status"])))
+		v71, err71 := formatInt(object["Status"])
+		if err71 != nil {
+			return nil, "", err71
+		}
+		status := convertEcdUserStatusResponse(strconv.Itoa(v71))
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.

@@ -341,7 +341,11 @@ func dataSourceAlicloudHbrBackupJobsRead(d *schema.ResourceData, meta interface{
 
 		if object["SourceType"].(string) == "ECS_FILE" || object["SourceType"].(string) == "NAS" || object["SourceType"].(string) == "OSS" || object["SourceType"].(string) == "OTS" {
 			mapping["cross_account_type"] = object["CrossAccountType"]
-			mapping["cross_account_user_id"] = formatInt(object["CrossAccountUserId"])
+			v344, err344 := formatInt(object["CrossAccountUserId"])
+			if err344 != nil {
+				return err344
+			}
+			mapping["cross_account_user_id"] = v344
 			mapping["cross_account_role_name"] = object["CrossAccountRoleName"]
 		}
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -20,7 +21,7 @@ import (
 )
 
 // Skipped: The resource and its apis have deprecated
-func SkipTestAccAliCloudConfigDeliveryChannel_basic(t *testing.T) {
+func TestAccAliCloudConfigDeliveryChannel_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_delivery_channel.default"
 	ra := resourceAttrInit(resourceId, ConfigDeliveryChannelMap)
@@ -37,9 +38,9 @@ func SkipTestAccAliCloudConfigDeliveryChannel_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -54,6 +55,17 @@ func SkipTestAccAliCloudConfigDeliveryChannel_basic(t *testing.T) {
 						"delivery_channel_type":            "OSS",
 					}),
 				),
+			},
+			{
+				// Changing the role ARN requires the resource manager
+				// master account; removing the required
+				// delivery_channel_type stops the plan before the
+				// placeholder reaches the API.
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_channel_assume_role_arn": "acs:ram::1234567890123456:role/tfacc-placeholder",
+					"delivery_channel_type":            REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:      resourceId,
@@ -140,7 +152,7 @@ func SkipTestAccAliCloudConfigDeliveryChannel_basic(t *testing.T) {
 }
 
 // Skipped: The resource and its apis have deprecated
-func SkipTestAccAliCloudConfigDeliveryChannel_MNS(t *testing.T) {
+func TestAccAliCloudConfigDeliveryChannel_MNS(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_delivery_channel.default"
 	ra := resourceAttrInit(resourceId, ConfigDeliveryChannelMap)
@@ -157,9 +169,9 @@ func SkipTestAccAliCloudConfigDeliveryChannel_MNS(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -259,7 +271,7 @@ func SkipTestAccAliCloudConfigDeliveryChannel_MNS(t *testing.T) {
 }
 
 // Skipped: The resource and its apis have deprecated
-func SkipTestAccAliCloudConfigDeliveryChannel_SLS(t *testing.T) {
+func TestAccAliCloudConfigDeliveryChannel_SLS(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_delivery_channel.default"
 	ra := resourceAttrInit(resourceId, ConfigDeliveryChannelMap)
@@ -276,9 +288,9 @@ func SkipTestAccAliCloudConfigDeliveryChannel_SLS(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

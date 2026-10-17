@@ -268,11 +268,28 @@ func dataSourceAlicloudEcsDedicatedHostClustersRead(d *schema.ResourceData, meta
 
 		dedicatedHostClusterCapacity := make([]map[string]interface{}, 0)
 		if dedicatedHostClusterCapacityArr, ok := object["DedicatedHostClusterCapacity"].(map[string]interface{}); ok {
+
+			total_memoryVal, err272 := formatInt(dedicatedHostClusterCapacityArr["TotalMemory"])
+			if err272 != nil {
+				return err272
+			}
+			available_memoryVal, err273 := formatInt(dedicatedHostClusterCapacityArr["AvailableMemory"])
+			if err273 != nil {
+				return err273
+			}
+			available_vcpusVal, err274 := formatInt(dedicatedHostClusterCapacityArr["AvailableVcpus"])
+			if err274 != nil {
+				return err274
+			}
+			total_vcpusVal, err275 := formatInt(dedicatedHostClusterCapacityArr["TotalVcpus"])
+			if err275 != nil {
+				return err275
+			}
 			temp1 := map[string]interface{}{
-				"total_memory":     formatInt(dedicatedHostClusterCapacityArr["TotalMemory"]),
-				"available_memory": formatInt(dedicatedHostClusterCapacityArr["AvailableMemory"]),
-				"available_vcpus":  formatInt(dedicatedHostClusterCapacityArr["AvailableVcpus"]),
-				"total_vcpus":      formatInt(dedicatedHostClusterCapacityArr["TotalVcpus"]),
+				"total_memory":     total_memoryVal,
+				"available_memory": available_memoryVal,
+				"available_vcpus":  available_vcpusVal,
+				"total_vcpus":      total_vcpusVal,
 			}
 
 			localStorageCapacity := make([]map[string]interface{}, 0)
@@ -280,10 +297,20 @@ func dataSourceAlicloudEcsDedicatedHostClustersRead(d *schema.ResourceData, meta
 				if localStorageCapacityList, ok := localStorageCapacitiesArr["LocalStorageCapacity"].([]interface{}); ok {
 					for _, v := range localStorageCapacityList {
 						if m1, ok := v.(map[string]interface{}); ok {
+
+							available_diskVal, err284 := formatInt(m1["AvailableDisk"])
+							if err284 != nil {
+								return err284
+							}
+
+							total_diskVal, err286 := formatInt(m1["TotalDisk"])
+							if err286 != nil {
+								return err286
+							}
 							temp1 := map[string]interface{}{
-								"available_disk":     formatInt(m1["AvailableDisk"]),
+								"available_disk":     available_diskVal,
 								"data_disk_category": m1["DataDiskCategory"],
-								"total_disk":         formatInt(m1["TotalDisk"]),
+								"total_disk":         total_diskVal,
 							}
 							localStorageCapacity = append(localStorageCapacity, temp1)
 						}

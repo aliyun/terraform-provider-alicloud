@@ -480,11 +480,20 @@ func (s *RdsService) RefreshPgHbaConf(d *schema.ResourceData, attribute string) 
 		item := item.(map[string]interface{})
 		for _, item2 := range runningHbaItems {
 			item2 := item2.(map[string]interface{})
-			if item["priority_id"] == formatInt(item2["PriorityId"]) {
+			v484, err484 := formatInt(item2["PriorityId"])
+			if err484 != nil {
+				return err484
+			}
+			if item["priority_id"] == v484 {
+
+				priority_idVal, err488 := formatInt(item2["PriorityId"])
+				if err488 != nil {
+					return err488
+				}
 				mapping := map[string]interface{}{
 					"type":        item2["Type"],
 					"database":    item2["Database"],
-					"priority_id": formatInt(item2["PriorityId"]),
+					"priority_id": priority_idVal,
 					"address":     item2["Address"],
 					"user":        item2["User"],
 					"method":      item2["Method"],
@@ -2570,7 +2579,11 @@ func (s *RdsService) DescribeUpgradeMajorVersionPrecheckTask(id string, taskId i
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 	} else {
-		if formatInt(v.([]interface{})[0].(map[string]interface{})["TaskId"]) != taskId {
+		v2574, err2574 := formatInt(v.([]interface{})[0].(map[string]interface{})["TaskId"])
+		if err2574 != nil {
+			return nil, err2574
+		}
+		if v2574 != taskId {
 			return object, WrapErrorf(NotFoundErr("RDS", id), NotFoundWithResponse, response)
 		}
 	}

@@ -115,14 +115,29 @@ func dataSourceAlicloudSaeInstanceSpecificationsRead(d *schema.ResourceData, met
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		cpuVal, err119 := formatInt(object["Cpu"])
+		if err119 != nil {
+			return err119
+		}
+
+		memoryVal, err123 := formatInt(object["Memory"])
+		if err123 != nil {
+			return err123
+		}
+
+		versionVal, err125 := formatInt(object["Version"])
+		if err125 != nil {
+			return err125
+		}
 		mapping := map[string]interface{}{
-			"cpu":                       formatInt(object["Cpu"]),
+			"cpu":                       cpuVal,
 			"enable":                    object["Enable"],
 			"id":                        fmt.Sprint(object["Id"]),
 			"instance_specification_id": fmt.Sprint(object["Id"]),
-			"memory":                    formatInt(object["Memory"]),
+			"memory":                    memoryVal,
 			"spec_info":                 object["SpecInfo"],
-			"version":                   formatInt(object["Version"]),
+			"version":                   versionVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

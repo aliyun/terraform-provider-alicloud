@@ -161,10 +161,15 @@ func dataSourceAlicloudVpcTrafficMirrorFilterIngressRulesRead(d *schema.Resource
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		priorityVal, err167 := formatInt(object["Priority"])
+		if err167 != nil {
+			return err167
+		}
 		mapping := map[string]interface{}{
 			"destination_cidr_block":        object["DestinationCidrBlock"],
 			"destination_port_range":        object["DestinationPortRange"],
-			"priority":                      formatInt(object["Priority"]),
+			"priority":                      priorityVal,
 			"rule_action":                   object["Action"],
 			"protocol":                      object["Protocol"],
 			"source_cidr_block":             object["SourceCidrBlock"],

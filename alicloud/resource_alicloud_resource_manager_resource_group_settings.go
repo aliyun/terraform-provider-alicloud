@@ -118,7 +118,11 @@ func resourceAliCloudResourceManagerResourceGroupSettingsUpdate(d *schema.Resour
 		target := d.Get("resource_group_notification_setting_status").(bool)
 
 		currentStatus := objectRaw["ResourceGroupNotificationEnableStatus"]
-		if formatBool(currentStatus) != target {
+		v121, err121 := formatBool(currentStatus)
+		if err121 != nil {
+			return err121
+		}
+		if v121 != target {
 			if target == false {
 				action := "DisableResourceGroupNotification"
 				request = make(map[string]interface{})

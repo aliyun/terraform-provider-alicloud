@@ -114,7 +114,7 @@ func testSweepDirectMailReceivers(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDirectMailReceivers_basic0(t *testing.T) {
+func TestAccAliCloudDirectMailReceivers_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_direct_mail_receivers.default"
 	ra := resourceAttrInit(resourceId, AlicloudDirectMailReceiversMap0)

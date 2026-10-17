@@ -60,7 +60,11 @@ func testSweepCloudStorageGatewayExpressSync(region string) error {
 	}
 
 	resp, err := jsonpath.Get("$.ExpressSyncs.ExpressSync", response)
-	if formatInt(response["TotalCount"]) != 0 && err != nil {
+	v63, err63 := formatInt(response["TotalCount"])
+	if err63 != nil {
+		return err63
+	}
+	if v63 != 0 && err != nil {
 		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.ExpressSyncs.ExpressSync", action, err)
 		return nil
 	}
@@ -122,6 +126,7 @@ func TestAccAliCloudCloudStorageGatewayExpressSync_basic0(t *testing.T) {
 					"bucket_name":       "${alicloud_cloud_storage_gateway_gateway_file_share.default.oss_bucket_name}",
 					"express_sync_name": name,
 					"bucket_region":     "${var.region}",
+					"bucket_prefix":     "testsync/",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

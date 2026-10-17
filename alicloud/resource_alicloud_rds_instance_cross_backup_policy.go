@@ -101,7 +101,11 @@ func resourceAlicloudRdsInstanceCrossBackupPolicyRead(d *schema.ResourceData, me
 	d.Set("backup_enabled", object["BackupEnabled"])
 	d.Set("log_backup_enabled", object["LogBackupEnabled"])
 	d.Set("cross_backup_region", object["CrossBackupRegion"])
-	d.Set("retention", formatInt(object["Retention"]))
+	retentionVal, err104 := formatInt(object["Retention"])
+	if err104 != nil {
+		return err104
+	}
+	d.Set("retention", retentionVal)
 	d.Set("backup_enabled_time", object["BackupEnabledTime"])
 	d.Set("log_backup_enabled_time", object["LogBackupEnabledTime"])
 	d.Set("db_instance_status", object["DBInstanceStatus"])

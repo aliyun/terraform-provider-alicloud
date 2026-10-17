@@ -138,7 +138,11 @@ func resourceAliCloudEcsDiskEncryptionByDefaultUpdate(d *schema.ResourceData, me
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "Encrypted", objectRaw)
 		}
-		if formatBool(currentStatus) != target {
+		v141, err141 := formatBool(currentStatus)
+		if err141 != nil {
+			return err141
+		}
+		if v141 != target {
 			if target == true {
 				action := "EnableDiskEncryptionByDefault"
 				request = make(map[string]interface{})

@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudSAEApplicationScalingRule_basic0(t *testing.T) {
+func TestAccAliCloudSAEApplicationScalingRule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application_scaling_rule.default"
@@ -36,9 +36,9 @@ func TestAccAlicloudSAEApplicationScalingRule_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -78,6 +78,16 @@ func TestAccAlicloudSAEApplicationScalingRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"min_replicas": "3",
+					"scaling_rule_metric": []map[string]interface{}{
+						{
+							"scale_up_rules": []map[string]interface{}{
+								{
+									"disabled": "true",
+								},
+							},
+						},
+					},
 					"scaling_rule_enable": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -176,7 +186,7 @@ func TestAccAlicloudSAEApplicationScalingRule_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSAEApplicationScalingRule_basic1(t *testing.T) {
+func TestAccAliCloudSAEApplicationScalingRule_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application_scaling_rule.default"
@@ -193,9 +203,9 @@ func TestAccAlicloudSAEApplicationScalingRule_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -280,7 +290,7 @@ func TestAccAlicloudSAEApplicationScalingRule_basic1(t *testing.T) {
 							"scale_down_rules": []map[string]interface{}{
 								{
 									"step":                         "90",
-									"disabled":                     "false",
+									"disabled":                     "true",
 									"stabilization_window_seconds": "200",
 								},
 							},
@@ -303,7 +313,7 @@ func TestAccAlicloudSAEApplicationScalingRule_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSAEApplicationScalingRule_basic2(t *testing.T) {
+func TestAccAliCloudSAEApplicationScalingRule_basic2(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application_scaling_rule.default"
@@ -320,9 +330,9 @@ func TestAccAlicloudSAEApplicationScalingRule_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -332,23 +342,6 @@ func TestAccAlicloudSAEApplicationScalingRule_basic2(t *testing.T) {
 					"min_ready_instances":      "3",
 					"min_ready_instance_ratio": "-1",
 					"scaling_rule_enable":      "true",
-					"scaling_rule_timer": []map[string]interface{}{
-						{
-							"period": "* * *",
-							"schedules": []map[string]interface{}{
-								{
-									"at_time":      "08:00",
-									"max_replicas": "20",
-									"min_replicas": "3",
-								},
-								{
-									"at_time":      "20:00",
-									"max_replicas": "10",
-									"min_replicas": "3",
-								},
-							},
-						},
-					},
 					"scaling_rule_metric": []map[string]interface{}{
 						{
 							"max_replicas": "50",
@@ -398,13 +391,29 @@ func TestAccAlicloudSAEApplicationScalingRule_basic2(t *testing.T) {
 						"scaling_rule_name":     name,
 						"scaling_rule_type":     "mix",
 						"scaling_rule_enable":   "true",
-						"scaling_rule_timer.#":  "1",
 						"scaling_rule_metric.#": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"scaling_rule_timer": []map[string]interface{}{
+						{
+							"period": "* * *",
+							"schedules": []map[string]interface{}{
+								{
+									"at_time":      "08:00",
+									"max_replicas": "20",
+									"min_replicas": "3",
+								},
+								{
+									"at_time":      "20:00",
+									"max_replicas": "10",
+									"min_replicas": "3",
+								},
+							},
+						},
+					},
 					"scaling_rule_metric": []map[string]interface{}{
 						{
 							"max_replicas": "40",
@@ -441,7 +450,7 @@ func TestAccAlicloudSAEApplicationScalingRule_basic2(t *testing.T) {
 							"scale_down_rules": []map[string]interface{}{
 								{
 									"step":                         "90",
-									"disabled":                     "false",
+									"disabled":                     "true",
 									"stabilization_window_seconds": "200",
 								},
 							},
@@ -450,6 +459,7 @@ func TestAccAlicloudSAEApplicationScalingRule_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"scaling_rule_timer.#":  "1",
 						"scaling_rule_metric.#": "1",
 					}),
 				),

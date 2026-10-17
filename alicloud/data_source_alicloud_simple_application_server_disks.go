@@ -193,6 +193,11 @@ func dataSourceAlicloudSimpleApplicationServerDisksRead(d *schema.ResourceData, 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		sizeVal, err206 := formatInt(object["Size"])
+		if err206 != nil {
+			return err206
+		}
 		mapping := map[string]interface{}{
 			"category":     object["Category"],
 			"create_time":  object["CreationTime"],
@@ -203,7 +208,7 @@ func dataSourceAlicloudSimpleApplicationServerDisksRead(d *schema.ResourceData, 
 			"disk_type":    object["DiskType"],
 			"instance_id":  object["InstanceId"],
 			"payment_type": convertSimpleApplicationServerDiskPaymentTypeResponse(object["DiskChargeType"].(string)),
-			"size":         formatInt(object["Size"]),
+			"size":         sizeVal,
 			"status":       object["Status"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))

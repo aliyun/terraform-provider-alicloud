@@ -130,12 +130,17 @@ func dataSourceAlicloudSaeIngressesRead(d *schema.ResourceData, meta interface{}
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		listener_portVal, err138 := formatInt(object["ListenerPort"])
+		if err138 != nil {
+			return err138
+		}
 		mapping := map[string]interface{}{
 			"cert_id":       object["CertId"],
 			"description":   object["Description"],
 			"id":            fmt.Sprint(object["Id"]),
 			"ingress_id":    fmt.Sprint(object["Id"]),
-			"listener_port": formatInt(object["ListenerPort"]),
+			"listener_port": listener_portVal,
 			"namespace_id":  object["NamespaceId"],
 			"slb_id":        object["SlbId"],
 		}

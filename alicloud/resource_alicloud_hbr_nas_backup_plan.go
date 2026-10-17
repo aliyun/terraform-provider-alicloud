@@ -167,7 +167,11 @@ func resourceAlicloudHbrNasBackupPlanRead(d *schema.ResourceData, meta interface
 	}
 
 	d.Set("backup_type", object["BackupType"])
-	t := int64(formatInt(object["CreateTime"]))
+	v170, err170 := formatInt(object["CreateTime"])
+	if err170 != nil {
+		return err170
+	}
+	t := int64(v170)
 	d.Set("create_time", ConvertNasFileSystemUnixToString(d.Get("create_time").(string), t))
 	d.Set("file_system_id", object["FileSystemId"])
 	d.Set("nas_backup_plan_name", object["PlanName"])
@@ -175,12 +179,20 @@ func resourceAlicloudHbrNasBackupPlanRead(d *schema.ResourceData, meta interface
 	if object["Paths"] != nil {
 		d.Set("path", object["Paths"].(map[string]interface{})["Path"])
 	}
-	d.Set("retention", fmt.Sprint(formatInt(object["Retention"])))
+	v178, err178 := formatInt(object["Retention"])
+	if err178 != nil {
+		return err178
+	}
+	d.Set("retention", fmt.Sprint(v178))
 	d.Set("schedule", object["Schedule"])
 	d.Set("vault_id", object["VaultId"])
 	d.Set("disabled", object["Disabled"])
 	d.Set("cross_account_type", object["CrossAccountType"])
-	d.Set("cross_account_user_id", formatInt(object["CrossAccountUserId"]))
+	cross_account_user_idVal, err183 := formatInt(object["CrossAccountUserId"])
+	if err183 != nil {
+		return err183
+	}
+	d.Set("cross_account_user_id", cross_account_user_idVal)
 	d.Set("cross_account_role_name", object["CrossAccountRoleName"])
 
 	return nil

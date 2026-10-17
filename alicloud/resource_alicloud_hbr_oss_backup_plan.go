@@ -154,12 +154,20 @@ func resourceAlicloudHbrOssBackupPlanRead(d *schema.ResourceData, meta interface
 	d.Set("bucket", object["Bucket"])
 	d.Set("oss_backup_plan_name", object["PlanName"])
 	d.Set("prefix", object["Prefix"])
-	d.Set("retention", fmt.Sprint(formatInt(object["Retention"])))
+	v157, err157 := formatInt(object["Retention"])
+	if err157 != nil {
+		return err157
+	}
+	d.Set("retention", fmt.Sprint(v157))
 	d.Set("schedule", object["Schedule"])
 	d.Set("vault_id", object["VaultId"])
 	d.Set("disabled", object["Disabled"])
 	d.Set("cross_account_type", object["CrossAccountType"])
-	d.Set("cross_account_user_id", formatInt(object["CrossAccountUserId"]))
+	cross_account_user_idVal, err162 := formatInt(object["CrossAccountUserId"])
+	if err162 != nil {
+		return err162
+	}
+	d.Set("cross_account_user_id", cross_account_user_idVal)
 	d.Set("cross_account_role_name", object["CrossAccountRoleName"])
 
 	return nil

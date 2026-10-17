@@ -239,10 +239,15 @@ func dataSourceAlicloudRdsCrossRegionBackupsRead(d *schema.ResourceData, meta in
 		var response map[string]interface{}
 		if object["Engine"].(string) != "mssql" {
 			action := "DescribeAvailableRecoveryTime"
+
+			crossBackupIdVal, err245 := formatInt(object["CrossBackupId"])
+			if err245 != nil {
+				return err245
+			}
 			request := map[string]interface{}{
 				"RegionId":      client.RegionId,
 				"SourceIp":      client.SourceIp,
-				"CrossBackupId": formatInt(object["CrossBackupId"]),
+				"CrossBackupId": crossBackupIdVal,
 			}
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
@@ -263,12 +268,26 @@ func dataSourceAlicloudRdsCrossRegionBackupsRead(d *schema.ResourceData, meta in
 				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_rds_cross_backups", action, AlibabaCloudSdkGoERROR)
 			}
 		}
+
+		instance_idVal, err271 := formatInt(object["InstanceId"])
+		if err271 != nil {
+			return err271
+		}
+
+		backup_set_statusVal, err280 := formatInt(object["BackupSetStatus"])
+		if err280 != nil {
+			return err280
+		}
+		cross_backup_set_sizeVal, err281 := formatInt(object["CrossBackupSetSize"])
+		if err281 != nil {
+			return err281
+		}
 		mapping := map[string]interface{}{
 			"id":                         fmt.Sprint(object["CrossBackupId"]),
 			"cross_backup_id":            fmt.Sprint(object["CrossBackupId"]),
 			"db_instance_storage_type":   object["DBInstanceStorageType"],
 			"cross_backup_set_location":  object["CrossBackupSetLocation"],
-			"instance_id":                formatInt(object["InstanceId"]),
+			"instance_id":                instance_idVal,
 			"cross_backup_download_link": object["CrossBackupDownloadLink"],
 			"engine_version":             fmt.Sprint(object["EngineVersion"]),
 			"backup_start_time":          object["BackupStartTime"],
@@ -277,8 +296,8 @@ func dataSourceAlicloudRdsCrossRegionBackupsRead(d *schema.ResourceData, meta in
 			"consistent_time":            fmt.Sprint(object["ConsistentTime"]),
 			"cross_backup_set_file":      object["CrossBackupSetFile"],
 			"backup_set_scale":           object["BackupSetScale"],
-			"backup_set_status":          formatInt(object["BackupSetStatus"]),
-			"cross_backup_set_size":      formatInt(object["CrossBackupSetSize"]),
+			"backup_set_status":          backup_set_statusVal,
+			"cross_backup_set_size":      cross_backup_set_sizeVal,
 			"cross_backup_region":        object["CrossBackupRegion"],
 			"category":                   object["Category"],
 			"engine":                     object["Engine"],

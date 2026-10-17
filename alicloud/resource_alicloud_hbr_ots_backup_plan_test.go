@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -129,6 +130,14 @@ func TestAccAliCloudHbrOtsBackupPlan_basic0(t *testing.T) {
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
+				// backup_type is required; a plan without it must be rejected
+				// before any API call is made.
+				Config: testAccConfig(map[string]interface{}{
+					"vault_id": "${alicloud_hbr_vault.default.id}",
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"vault_id":                "${alicloud_hbr_vault.default.id}",
 					"ots_backup_plan_name":    name,
@@ -170,6 +179,11 @@ func TestAccAliCloudHbrOtsBackupPlan_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ots_detail": []map[string]interface{}{
+						{
+							"table_names": "${alicloud_ots_table.basic.table_name}",
+						},
+					},
 					"ots_backup_plan_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -203,10 +217,10 @@ func TestAccAliCloudHbrOtsBackupPlan_basic0(t *testing.T) {
 					"rules": []map[string]interface{}{
 						{
 							"schedule":    "I|1602673264|P1D",
-							"retention":   "1",
-							"disabled":    "false",
+							"retention":   "2",
+							"disabled":    "true",
 							"rule_name":   name,
-							"backup_type": "COMPLETE",
+							"backup_type": "INCREMENTAL",
 						},
 					},
 				}),
@@ -227,10 +241,9 @@ func TestAccAliCloudHbrOtsBackupPlan_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"update_paths"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -320,10 +333,9 @@ func TestAccAliCloudHbrOtsBackupPlan_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"update_paths"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

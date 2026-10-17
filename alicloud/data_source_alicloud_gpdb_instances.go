@@ -395,7 +395,11 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 		mapping["memory_size"] = getResp["MemorySize"]
 		mapping["seg_node_num"] = getResp["SegNodeNum"]
 		if v, ok := getResp["StorageSize"]; ok && fmt.Sprint(v) != "0" {
-			mapping["storage_size"] = formatInt(v)
+			v398, err398 := formatInt(v)
+			if err398 != nil {
+				return err398
+			}
+			mapping["storage_size"] = v398
 		}
 		mapping["storage_type"] = getResp["StorageType"]
 		gpdbService = GpdbService{client}

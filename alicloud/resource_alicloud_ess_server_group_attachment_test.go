@@ -29,7 +29,7 @@ func TestAccAliCloudEssServerGroupAttachment_basic_alb(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssServerGroupsDestroy,
+		CheckDestroy:      testAccCheckEssServerGroupsDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -82,7 +82,7 @@ func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_alb(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssServerGroupsDestroy,
+		CheckDestroy:      testAccCheckEssServerGroupsDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -135,7 +135,7 @@ func TestAccAliCloudEssServerGroupAttachment_basic_nlb(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssServerGroupsDestroy,
+		CheckDestroy:      testAccCheckEssServerGroupsDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -237,7 +237,7 @@ func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_nlb(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssServerGroupsDestroy,
+		CheckDestroy:      testAccCheckEssServerGroupsDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -290,7 +290,7 @@ func TestAccAliCloudEssServerGroupAttachment_nonForceAttach_mutil(t *testing.T) 
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssServerGroupsDestroy,
+		CheckDestroy:      testAccCheckEssServerGroupsDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -517,7 +517,7 @@ func testAccEssScalingGroupServerGroup(name string) string {
   		owners      = "system"
 	}
 	data "alicloud_instance_types" "c6" {
-      instance_type_family = "ecs.n4"
+	  instance_type_family = "ecs.g8i"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 	data "alicloud_resource_manager_resource_groups" "default" {}
@@ -553,6 +553,7 @@ func testAccEssScalingGroupServerGroup(name string) string {
 		scaling_group_id = alicloud_ess_scaling_group.default.id
 		image_id = data.alicloud_images.default2.images[0].id
 		instance_type = data.alicloud_instance_types.c6.instance_types[0].id
+		system_disk_category = "cloud_essd"
 		security_group_id = alicloud_security_group.default.id
 		force_delete = true
 		active = true

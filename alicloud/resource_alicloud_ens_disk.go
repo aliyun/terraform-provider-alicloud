@@ -172,7 +172,11 @@ func resourceAliCloudEnsDiskRead(d *schema.ResourceData, meta interface{}) error
 
 	e := jsonata.MustCompile("$number($.Size & '') / 1024")
 	evaluation, _ := e.Eval(objectRaw)
-	d.Set("size", formatInt(evaluation))
+	sizeVal, err175 := formatInt(evaluation)
+	if err175 != nil {
+		return err175
+	}
+	d.Set("size", sizeVal)
 
 	objectRaw, err = ensServiceV2.DescribeDiskListTagResources(d.Id())
 	if err != nil && !NotFoundError(err) {

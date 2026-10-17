@@ -109,6 +109,11 @@ func dataSourceAlicloudCassandraBackupPlansRead(d *schema.ResourceData, meta int
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		retention_periodVal, err120 := formatInt(object["RetentionPeriod"])
+		if err120 != nil {
+			return err120
+		}
 		mapping := map[string]interface{}{
 			"id":               fmt.Sprint(object["ClusterId"], ":", object["DataCenterId"]),
 			"active":           object["Active"],
@@ -117,7 +122,7 @@ func dataSourceAlicloudCassandraBackupPlansRead(d *schema.ResourceData, meta int
 			"cluster_id":       object["ClusterId"],
 			"create_time":      object["CreatedTime"],
 			"data_center_id":   object["DataCenterId"],
-			"retention_period": formatInt(object["RetentionPeriod"]),
+			"retention_period": retention_periodVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

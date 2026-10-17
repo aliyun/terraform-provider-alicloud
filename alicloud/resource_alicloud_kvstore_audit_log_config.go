@@ -106,7 +106,11 @@ func resourceAlicloudKvstoreAuditLogConfigRead(d *schema.ResourceData, meta inte
 	d.Set("instance_id", d.Id())
 	d.Set("db_audit", object["DbAudit"])
 	if v, ok := object["Retention"]; ok && v.(string) != "" {
-		d.Set("retention", formatInt(v))
+		retentionVal, err109 := formatInt(v)
+		if err109 != nil {
+			return err109
+		}
+		d.Set("retention", retentionVal)
 	}
 	describeInstanceAttributeObject, err := rKvstoreService.DescribeInstanceAttribute(d.Id())
 	if err != nil {

@@ -70,7 +70,11 @@ func testSweepVPCTrafficMirrorFilter(region string) error {
 		}
 
 		resp, err := jsonpath.Get("$.TrafficMirrorFilters", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v73, err73 := formatInt(response["TotalCount"])
+		if err73 != nil {
+			return err73
+		}
+		if v73 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.TrafficMirrorFilters", action, err)
 			return nil
 		}

@@ -138,15 +138,30 @@ func dataSourceAlicloudMseEngineNamespacesRead(d *schema.ResourceData, meta inte
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		config_countVal, err142 := formatInt(object["ConfigCount"])
+		if err142 != nil {
+			return err142
+		}
+
+		quotaVal, err147 := formatInt(object["Quota"])
+		if err147 != nil {
+			return err147
+		}
+
+		typeVal, err149 := formatInt(object["Type"])
+		if err149 != nil {
+			return err149
+		}
 		mapping := map[string]interface{}{
-			"config_count":        formatInt(object["ConfigCount"]),
+			"config_count":        config_countVal,
 			"id":                  fmt.Sprint(request["InstanceId"], ":", object["Namespace"]),
 			"namespace_id":        fmt.Sprint(object["Namespace"]),
 			"namespace_desc":      object["NamespaceDesc"],
 			"namespace_show_name": object["NamespaceShowName"],
-			"quota":               formatInt(object["Quota"]),
+			"quota":               quotaVal,
 			"service_count":       object["ServiceCount"],
-			"type":                formatInt(object["Type"]),
+			"type":                typeVal,
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

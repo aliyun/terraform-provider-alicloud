@@ -291,9 +291,9 @@ func TestAccAliCloudCloudMonitorServiceHybridMonitorSlsTask_basic1(t *testing.T)
 						{
 							"statistics": []map[string]interface{}{
 								{
-									"function":      "count",
-									"alias":         "level_count",
-									"sls_key_name":  "name",
+									"function":      "sum",
+									"alias":         "status_sum",
+									"sls_key_name":  "status",
 									"parameter_one": "100",
 									"parameter_two": "299",
 								},

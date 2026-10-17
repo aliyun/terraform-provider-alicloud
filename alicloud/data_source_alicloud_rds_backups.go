@@ -219,6 +219,11 @@ func dataSourceAlicloudRdsBackupsRead(d *schema.ResourceData, meta interface{}) 
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		is_availVal, err239 := formatInt(object["IsAvail"])
+		if err239 != nil {
+			return err239
+		}
 		mapping := map[string]interface{}{
 			"backup_download_url":          object["BackupDownloadURL"],
 			"backup_end_time":              object["BackupEndTime"],
@@ -236,7 +241,7 @@ func dataSourceAlicloudRdsBackupsRead(d *schema.ResourceData, meta interface{}) 
 			"db_instance_id":               object["DBInstanceId"],
 			"encryption":                   object["Encryption"],
 			"host_instance_id":             object["HostInstanceID"],
-			"is_avail":                     formatInt(object["IsAvail"]),
+			"is_avail":                     is_availVal,
 			"meta_status":                  object["MetaStatus"],
 			"backup_status":                object["BackupStatus"],
 			"storage_class":                object["StorageClass"],

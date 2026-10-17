@@ -142,7 +142,11 @@ func resourceAlicloudNasDataFlowRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("source_security_type", object["SourceSecurityType"])
 	d.Set("source_storage", object["SourceStorage"])
 	d.Set("status", object["Status"])
-	d.Set("throughput", formatInt(object["Throughput"]))
+	throughputVal, err145 := formatInt(object["Throughput"])
+	if err145 != nil {
+		return err145
+	}
+	d.Set("throughput", throughputVal)
 	return nil
 }
 func resourceAlicloudNasDataFlowUpdate(d *schema.ResourceData, meta interface{}) error {

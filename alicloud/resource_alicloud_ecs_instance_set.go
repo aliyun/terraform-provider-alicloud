@@ -415,7 +415,11 @@ func resourceAliCloudEcsInstanceSetCreate(d *schema.ResourceData, meta interface
 
 	amount := 1
 	if v, ok := d.GetOk("amount"); ok {
-		amount = formatInt(v)
+		amountVal, err418 := formatInt(v)
+		if err418 != nil {
+			return err418
+		}
+		amount = amountVal
 	}
 
 	err, instanceIds := buildEcsInstanceSetRunInstanceRequest(d, meta, amount)
@@ -659,7 +663,11 @@ func resourceAliCloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}
 	}
 
 	amount := d.Get("amount")
-	if len(objects) != formatInt(amount) {
+	v662, err662 := formatInt(amount)
+	if err662 != nil {
+		return err662
+	}
+	if len(objects) != v662 {
 
 		instanceIds := make([]string, 0)
 		for _, object := range objects {

@@ -359,7 +359,11 @@ func dataSourceAlicloudVpcsRead(d *schema.ResourceData, meta interface{}) error 
 	if err := d.Set("vpcs", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err362 := formatInt(response["TotalCount"])
+	if err362 != nil {
+		return err362
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

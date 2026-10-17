@@ -253,16 +253,32 @@ func resourceAlicloudSddpInstanceRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("payment_type", convertSddpInstancePaymentTypeToStandard(object["ChargeType"]))
 	d.Set("sddp_version", object["Version"])
-	d.Set("sdc", fmt.Sprint(formatInt(object["InstanceNum"])))
+	v256, err256 := formatInt(object["InstanceNum"])
+	if err256 != nil {
+		return err256
+	}
+	d.Set("sdc", fmt.Sprint(v256))
 
 	d.Set("authed", object["Authed"])
 	d.Set("renewal_status", object["RenewStatus"])
-	d.Set("instance_num", fmt.Sprint(formatInt(object["InstanceNum"])))
+	v260, err260 := formatInt(object["InstanceNum"])
+	if err260 != nil {
+		return err260
+	}
+	d.Set("instance_num", fmt.Sprint(v260))
 	d.Set("odps_set", object["OdpsSet"])
 	d.Set("oss_bucket_set", object["OssBucketSet"])
-	d.Set("oss_size", fmt.Sprint(formatInt(object["OssSize"])))
+	v263, err263 := formatInt(object["OssSize"])
+	if err263 != nil {
+		return err263
+	}
+	d.Set("oss_size", fmt.Sprint(v263))
 	d.Set("rds_set", object["RdsSet"])
-	d.Set("status", fmt.Sprint(formatInt(object["InstanceStatus"])))
+	v265, err265 := formatInt(object["InstanceStatus"])
+	if err265 != nil {
+		return err265
+	}
+	d.Set("status", fmt.Sprint(v265))
 	d.Set("remain_days", object["RemainDays"])
 	return nil
 }

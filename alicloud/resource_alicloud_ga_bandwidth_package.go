@@ -235,12 +235,20 @@ func resourceAliCloudGaBandwidthPackageRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	d.Set("bandwidth", formatInt(object["Bandwidth"]))
+	bandwidthVal, err238 := formatInt(object["Bandwidth"])
+	if err238 != nil {
+		return err238
+	}
+	d.Set("bandwidth", bandwidthVal)
 	d.Set("type", object["Type"])
 	d.Set("bandwidth_type", object["BandwidthType"])
 	d.Set("payment_type", convertGaBandwidthPackagePaymentTypeResponse(object["ChargeType"].(string)))
 	d.Set("billing_type", object["BillingType"])
-	d.Set("ratio", formatInt(object["Ratio"]))
+	ratioVal, err243 := formatInt(object["Ratio"])
+	if err243 != nil {
+		return err243
+	}
+	d.Set("ratio", ratioVal)
 	d.Set("cbn_geographic_region_ida", object["CbnGeographicRegionIdA"])
 	d.Set("cbn_geographic_region_idb", object["CbnGeographicRegionIdB"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
@@ -256,7 +264,11 @@ func resourceAliCloudGaBandwidthPackageRead(d *schema.ResourceData, meta interfa
 	d.Set("renewal_status", describeBandwidthPackageAutoRenewAttributeObject["RenewalStatus"])
 
 	if v, ok := describeBandwidthPackageAutoRenewAttributeObject["AutoRenewDuration"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("auto_renew_duration", formatInt(v))
+		auto_renew_durationVal, err259 := formatInt(v)
+		if err259 != nil {
+			return err259
+		}
+		d.Set("auto_renew_duration", auto_renew_durationVal)
 	}
 
 	listTagResourcesObject, err := gaService.ListTagResources(d.Id(), "bandwidthpackage")

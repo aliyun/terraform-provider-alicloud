@@ -190,6 +190,11 @@ func dataSourceAlicloudCloudSsoAccessConfigurationsRead(d *schema.ResourceData, 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		session_durationVal, err201 := formatInt(object["SessionDuration"])
+		if err201 != nil {
+			return err201
+		}
 		mapping := map[string]interface{}{
 			"id":                        fmt.Sprint(request["DirectoryId"], ":", object["AccessConfigurationId"]),
 			"access_configuration_id":   fmt.Sprint(object["AccessConfigurationId"]),
@@ -198,7 +203,7 @@ func dataSourceAlicloudCloudSsoAccessConfigurationsRead(d *schema.ResourceData, 
 			"description":               object["Description"],
 			"directory_id":              request["DirectoryId"],
 			"relay_state":               object["RelayState"],
-			"session_duration":          formatInt(object["SessionDuration"]),
+			"session_duration":          session_durationVal,
 			"status_notifications":      object["StatusNotifications"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))

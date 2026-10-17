@@ -1,9 +1,12 @@
 package alicloud
 
 import (
+	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccAliCloudECSInstanceTypesDataSource_basic(t *testing.T) {
@@ -424,3 +427,69 @@ data "alicloud_instance_types" "zone" {
   sorted_by = "Price"
 }
 `
+
+func TestAccAliCloudECSInstanceTypesDataSource_sortedBy(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactory,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAliCloudInstanceTypesDataSourceSortedByConfig("CPU"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.sorted"),
+					testAccCheckInstanceTypesAscending("data.alicloud_instance_types.sorted", "cpu_core_count"),
+				),
+			},
+			{
+				Config: testAccCheckAliCloudInstanceTypesDataSourceSortedByConfig("Memory"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.sorted"),
+					testAccCheckInstanceTypesAscending("data.alicloud_instance_types.sorted", "memory_size"),
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckAliCloudInstanceTypesDataSourceSortedByConfig(sortedBy string) string {
+	return fmt.Sprintf(`
+data "alicloud_instance_types" "sorted" {
+  instance_type_family = "ecs.g6"
+  sorted_by            = "%s"
+}
+`, sortedBy)
+}
+
+func testAccCheckInstanceTypesAscending(name string, attr string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[name]
+		if !ok {
+			return fmt.Errorf("data source %s not found in state", name)
+		}
+		count, err := strconv.Atoi(rs.Primary.Attributes["instance_types.#"])
+		if err != nil {
+			return fmt.Errorf("reading instance_types.# got an error: %v", err)
+		}
+		if count < 2 {
+			return fmt.Errorf("expected multiple instance types sorted by %s, got %d", attr, count)
+		}
+		parse := func(idx int) (float64, error) {
+			return strconv.ParseFloat(rs.Primary.Attributes[fmt.Sprintf("instance_types.%d.%s", idx, attr)], 64)
+		}
+		prev, err := parse(0)
+		if err != nil {
+			return fmt.Errorf("reading instance_types.0.%s got an error: %v", attr, err)
+		}
+		for i := 1; i < count; i++ {
+			cur, err := parse(i)
+			if err != nil {
+				return fmt.Errorf("reading instance_types.%d.%s got an error: %v", i, attr, err)
+			}
+			if cur < prev {
+				return fmt.Errorf("instance_types not ascending by %s: index %d (%v) < index %d (%v)", attr, i, cur, i-1, prev)
+			}
+			prev = cur
+		}
+		return nil
+	}
+}

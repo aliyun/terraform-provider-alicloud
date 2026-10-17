@@ -198,13 +198,21 @@ func resourceAlicloudHbrEcsBackupPlanRead(d *schema.ResourceData, meta interface
 	if object["Paths"] != nil {
 		d.Set("path", object["Paths"].(map[string]interface{})["Path"])
 	}
-	d.Set("retention", fmt.Sprint(formatInt(object["Retention"])))
+	v201, err201 := formatInt(object["Retention"])
+	if err201 != nil {
+		return err201
+	}
+	d.Set("retention", fmt.Sprint(v201))
 	d.Set("schedule", object["Schedule"])
 	d.Set("speed_limit", object["SpeedLimit"])
 	d.Set("vault_id", object["VaultId"])
 	d.Set("disabled", object["Disabled"])
 	d.Set("cross_account_type", object["CrossAccountType"])
-	d.Set("cross_account_user_id", formatInt(object["CrossAccountUserId"]))
+	cross_account_user_idVal, err207 := formatInt(object["CrossAccountUserId"])
+	if err207 != nil {
+		return err207
+	}
+	d.Set("cross_account_user_id", cross_account_user_idVal)
 	d.Set("cross_account_role_name", object["CrossAccountRoleName"])
 
 	return nil

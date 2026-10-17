@@ -156,12 +156,20 @@ func resourceAlicloudEcdBundleRead(d *schema.ResourceData, meta interface{}) err
 	for _, item := range object["Disks"].([]interface{}) {
 		disk := item.(map[string]interface{})
 		if fmt.Sprint(disk["DiskType"]) == "SYSTEM" {
-			d.Set("root_disk_size_gib", formatInt(disk["DiskSize"]))
+			root_disk_size_gibVal, err159 := formatInt(disk["DiskSize"])
+			if err159 != nil {
+				return err159
+			}
+			d.Set("root_disk_size_gib", root_disk_size_gibVal)
 			d.Set("root_disk_performance_level", disk["DiskPerformanceLevel"])
 		}
 
 		if fmt.Sprint(disk["DiskType"]) == "DATA" {
-			diskArr = append(diskArr, formatInt(disk["DiskSize"]))
+			v164, err164 := formatInt(disk["DiskSize"])
+			if err164 != nil {
+				return err164
+			}
+			diskArr = append(diskArr, v164)
 			d.Set("user_disk_performance_level", disk["DiskPerformanceLevel"])
 		}
 	}

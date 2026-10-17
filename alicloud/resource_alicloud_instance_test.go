@@ -5397,14 +5397,17 @@ func testAccInstancePrivatePoolId(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("cannot read instance availability for the private pool: %s", err)
 	}
-	id := selectInstancePrivatePool(pools, zones)
+	id, err := selectInstancePrivatePool(pools, zones)
+	if err != nil {
+		t.Fatalf("cannot read private pool allocation counts: %s", err)
+	}
 	if id == "" {
 		t.Fatal("the test requires an active private pool with unused, unlocked capacity and a WithStock instance type in its zone")
 	}
 	return id
 }
 
-func selectInstancePrivatePool(pools []map[string]interface{}, zones []ecs.AvailableZone) string {
+func selectInstancePrivatePool(pools []map[string]interface{}, zones []ecs.AvailableZone) (string, error) {
 	withStock := make(map[string]bool)
 	for _, zone := range zones {
 		if zone.Status != "Available" {
@@ -5433,12 +5436,24 @@ func selectInstancePrivatePool(pools []map[string]interface{}, zones []ecs.Avail
 		}
 		// The fixture uses the first allocation of the selected pool.
 		allocation, _ := allocations[0].(map[string]interface{})
-		remaining := formatInt(allocation["TotalAmount"]) - formatInt(allocation["UsedAmount"]) - formatInt(allocation["LockedAmount"])
+		totalAmountVal, err := formatInt(allocation["TotalAmount"])
+		if err != nil {
+			return "", err
+		}
+		usedAmountVal, err := formatInt(allocation["UsedAmount"])
+		if err != nil {
+			return "", err
+		}
+		lockedAmountVal, err := formatInt(allocation["LockedAmount"])
+		if err != nil {
+			return "", err
+		}
+		remaining := totalAmountVal - usedAmountVal - lockedAmountVal
 		if remaining > 0 && withStock[fmt.Sprint(allocation["zoneId"])+"/"+fmt.Sprint(allocation["InstanceType"])] {
-			return id
+			return id, nil
 		}
 	}
-	return ""
+	return "", nil
 }
 
 func resourceInstanceDedicatedHostIdConfigDependence(name, autoReleaseTime string) string {

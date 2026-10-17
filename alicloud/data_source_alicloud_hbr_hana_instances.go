@@ -199,13 +199,18 @@ func dataSourceAlicloudHbrHanaInstancesRead(d *schema.ResourceData, meta interfa
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		instance_numberVal, err208 := formatInt(object["InstanceNumber"])
+		if err208 != nil {
+			return err208
+		}
 		mapping := map[string]interface{}{
 			"alert_setting":        object["AlertSetting"],
 			"id":                   fmt.Sprint(object["VaultId"], ":", object["ClusterId"]),
 			"hana_instance_id":     fmt.Sprint(object["ClusterId"]),
 			"hana_name":            object["HanaName"],
 			"host":                 object["Host"],
-			"instance_number":      formatInt(object["InstanceNumber"]),
+			"instance_number":      instance_numberVal,
 			"resource_group_id":    object["ResourceGroupId"],
 			"status":               fmt.Sprint(object["Status"]),
 			"status_message":       object["StatusMessage"],

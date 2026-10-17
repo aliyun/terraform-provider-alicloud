@@ -201,14 +201,24 @@ func dataSourceAliCloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		priorityVal, err207 := formatInt(object["Priority"])
+		if err207 != nil {
+			return err207
+		}
+
+		ttlVal, err211 := formatInt(object["Ttl"])
+		if err211 != nil {
+			return err211
+		}
 		mapping := map[string]interface{}{
 			"id":              fmt.Sprint(object["RecordId"], ":", request["ZoneId"]),
 			"record_id":       fmt.Sprint(object["RecordId"]),
-			"priority":        formatInt(object["Priority"]),
+			"priority":        priorityVal,
 			"remark":          object["Remark"],
 			"rr":              object["Rr"],
 			"resource_record": object["Rr"],
-			"ttl":             formatInt(object["Ttl"]),
+			"ttl":             ttlVal,
 			"type":            object["Type"],
 			"value":           object["Value"],
 			"status":          object["Status"],

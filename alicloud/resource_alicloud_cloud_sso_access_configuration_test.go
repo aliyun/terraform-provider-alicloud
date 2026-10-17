@@ -49,7 +49,11 @@ func testSweepCloudSsoDirectoryAccessConfiguration(region, directoryId string) e
 	}
 
 	resp, err := jsonpath.Get("$.AccessConfigurations", response)
-	if formatInt(response["TotalCounts"]) != 0 && err != nil {
+	v52, err52 := formatInt(response["TotalCounts"])
+	if err52 != nil {
+		return err52
+	}
+	if v52 != 0 && err != nil {
 		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.AccessAssignments", action, err)
 		return nil
 	}

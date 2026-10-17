@@ -291,7 +291,11 @@ func resourceAlicloudRosChangeSetRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("stack_name", object["StackName"])
 	d.Set("status", object["Status"])
 	d.Set("template_body", object["TemplateBody"])
-	d.Set("timeout_in_minutes", formatInt(object["TimeoutInMinutes"]))
+	timeout_in_minutesVal, err294 := formatInt(object["TimeoutInMinutes"])
+	if err294 != nil {
+		return err294
+	}
+	d.Set("timeout_in_minutes", timeout_in_minutesVal)
 	return nil
 }
 func resourceAlicloudRosChangeSetDelete(d *schema.ResourceData, meta interface{}) error {

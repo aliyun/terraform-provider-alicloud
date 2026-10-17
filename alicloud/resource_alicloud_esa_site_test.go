@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -27,18 +28,20 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_name":         name,
-					"coverage":          "overseas",
-					"access_type":       "NS",
-					"instance_id":       "${data.alicloud_esa_sites.default.sites.0.instance_id}",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"paused":            "false",
+					"cache_reserve_enable":      "true",
+					"cache_reserve_instance_id": "${data.alicloud_esa_sites.default.sites.0.instance_id}",
+					"site_name":                 name,
+					"coverage":                  "overseas",
+					"access_type":               "NS",
+					"instance_id":               "${data.alicloud_esa_sites.default.sites.0.instance_id}",
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"paused":                    "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -53,7 +56,11 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"coverage": "global",
+					"cache_architecture_mode": "edge",
+					"cache_reserve_enable":    "false",
+					"paused":                  "true",
+					"site_version":            "1",
+					"coverage":                "global",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -274,6 +281,20 @@ func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 				),
 			},
 			{
+				// ai_mode/ai_template come from the DDoS intelligent protection
+				// plan and cache reserve instances are bound in the ESA console;
+				// neither can be provisioned standalone here. Removing the
+				// required site_name stops the plan before the placeholders
+				// reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"ai_mode":                   "custom",
+					"ai_template":               "balanced",
+					"cache_reserve_instance_id": "crs-tfacc-placeholder",
+					"site_name":                 REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -301,9 +322,9 @@ func TestAccAliCloudEsaSite_basic8490_twin(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -461,9 +482,9 @@ func TestAccAliCloudEsaSite_basic8484(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -593,9 +614,9 @@ func TestAccAliCloudEsaSite_basic8288(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -725,9 +746,9 @@ func TestAccAliCloudEsaSite_basic8106(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -857,9 +878,9 @@ func TestAccAliCloudEsaSite_basic9798(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -986,9 +1007,9 @@ func TestAccAliCloudEsaSite_basic10677(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

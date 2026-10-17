@@ -414,7 +414,11 @@ func dataSourceAlicloudSaeApplicationScalingRulesRead(d *schema.ResourceData, me
 				scaleUpRulesArg := scaleUpRules.(map[string]interface{})
 				if len(scaleUpRulesArg) > 0 {
 					scaleUpRulesMap := map[string]interface{}{}
-					scaleUpRulesMap["step"] = formatInt(scaleUpRulesArg["Step"])
+					v417, err417 := formatInt(scaleUpRulesArg["Step"])
+					if err417 != nil {
+						return err417
+					}
+					scaleUpRulesMap["step"] = v417
 					scaleUpRulesMap["disabled"] = scaleUpRulesArg["Disabled"]
 					scaleUpRulesMap["stabilization_window_seconds"] = scaleUpRulesArg["StabilizationWindowSeconds"]
 					scaleUpRulesMaps = append(scaleUpRulesMaps, scaleUpRulesMap)
@@ -427,7 +431,11 @@ func dataSourceAlicloudSaeApplicationScalingRulesRead(d *schema.ResourceData, me
 				scaleDownRulesArg := scaleDownRules.(map[string]interface{})
 				if len(scaleDownRulesArg) > 0 {
 					scaleDownRulesMap := map[string]interface{}{}
-					scaleDownRulesMap["step"] = formatInt(scaleDownRulesArg["Step"])
+					v430, err430 := formatInt(scaleDownRulesArg["Step"])
+					if err430 != nil {
+						return err430
+					}
+					scaleDownRulesMap["step"] = v430
 					scaleDownRulesMap["disabled"] = scaleDownRulesArg["Disabled"]
 					scaleDownRulesMap["stabilization_window_seconds"] = scaleDownRulesArg["StabilizationWindowSeconds"]
 					scaleDownRulesMaps = append(scaleDownRulesMaps, scaleDownRulesMap)

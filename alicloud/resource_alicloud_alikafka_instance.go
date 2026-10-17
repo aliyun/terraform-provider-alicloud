@@ -690,7 +690,11 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("kms_key_id", object["KmsKeyId"])
 	d.Set("enable_auto_group", object["AutoCreateGroupEnable"])
 	d.Set("enable_auto_topic", convertAliKafkaAutoCreateTopicEnableResponse(object["AutoCreateTopicEnable"]))
-	d.Set("default_topic_partition_num", formatInt(object["DefaultPartitionNum"]))
+	default_topic_partition_numVal, err693 := formatInt(object["DefaultPartitionNum"])
+	if err693 != nil {
+		return err693
+	}
+	d.Set("default_topic_partition_num", default_topic_partition_numVal)
 
 	if allConfig, ok := object["AllConfig"]; ok && fmt.Sprint(allConfig) != "" {
 		allConfigMap, err := convertJsonStringToMap(fmt.Sprint(allConfig))

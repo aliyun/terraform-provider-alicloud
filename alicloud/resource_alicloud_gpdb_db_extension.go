@@ -179,7 +179,11 @@ func resourceAliCloudGpdbDbExtensionUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "IsLatestVersion", objectRaw)
 		}
-		if formatBool(currentStatus) != target {
+		v182, err182 := formatBool(currentStatus)
+		if err182 != nil {
+			return err182
+		}
+		if v182 != target {
 			if target == true {
 				parts := strings.Split(d.Id(), ":")
 				action := "UpgradeExtensions"

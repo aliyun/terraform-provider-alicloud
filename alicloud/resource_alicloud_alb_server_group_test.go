@@ -59,7 +59,11 @@ func testSweepAlbServerGroup(region string) error {
 		}
 
 		resp, err := jsonpath.Get("$.ServerGroups", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		v62, err62 := formatInt(response["TotalCount"])
+		if err62 != nil {
+			return err62
+		}
+		if v62 != 0 && err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.ServerGroups", action, err)
 			return nil
 		}
@@ -124,6 +128,7 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"service_name":      name,
 					"server_group_name": name,
 					"vpc_id":            "${data.alicloud_vpcs.default.vpcs.0.id}",
 					"sticky_session_config": []map[string]interface{}{
@@ -156,6 +161,7 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"service_name":       "name-upd",
 					"cross_zone_enabled": "false",
 					"slow_start_config": []map[string]interface{}{
 						{

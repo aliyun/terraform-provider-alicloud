@@ -183,6 +183,11 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	descriptions := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		metered_sizeVal, err193 := formatInt(object["MeteredSize"])
+		if err193 != nil {
+			return err193
+		}
 		mapping := map[string]interface{}{
 			"id":               fmt.Sprint(object["FileSystemId"]),
 			"region_id":        object["RegionId"],
@@ -190,7 +195,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			"description":      object["Description"],
 			"protocol_type":    object["ProtocolType"],
 			"storage_type":     object["StorageType"],
-			"metered_size":     formatInt(object["MeteredSize"]),
+			"metered_size":     metered_sizeVal,
 			"encrypt_type":     object["EncryptType"],
 			"file_system_type": object["FileSystemType"],
 			"capacity":         object["Capacity"],

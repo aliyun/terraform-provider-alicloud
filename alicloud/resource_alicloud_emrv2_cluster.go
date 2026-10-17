@@ -2012,9 +2012,14 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 
 			if v, ok := nodeGroupMap["SystemDisk"]; ok {
 				systemDiskMap := v.(map[string]interface{})
+
+				sizeVal, err2017 := formatInt(systemDiskMap["Size"])
+				if err2017 != nil {
+					return err2017
+				}
 				systemDisk := map[string]interface{}{
 					"category": systemDiskMap["Category"],
-					"size":     formatInt(systemDiskMap["Size"]),
+					"size":     sizeVal,
 				}
 				if oldNodeGroup, exists := oldNodeGroupsMap[nodeGroupMap["NodeGroupName"].(string)]; exists {
 					oldSystemDisk := oldNodeGroup["system_disk"].(*schema.Set).List()[0].(map[string]interface{})
@@ -2022,7 +2027,11 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 						systemDisk["performance_level"] = v
 					}
 					if v, exists := oldSystemDisk["count"]; exists && v != nil {
-						if count := formatInt(v); count > 0 {
+						countVal, err2025 := formatInt(v)
+						if err2025 != nil {
+							return err2025
+						}
+						if count := countVal; count > 0 {
 							systemDisk["count"] = count
 						}
 					}
@@ -2034,10 +2043,19 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 				var dataDisks []map[string]interface{}
 				for _, item := range v.([]interface{}) {
 					dataDisksMap := item.(map[string]interface{})
+
+					sizeVal2, err2039 := formatInt(dataDisksMap["Size"])
+					if err2039 != nil {
+						return err2039
+					}
+					countVal2, err2040 := formatInt(dataDisksMap["Count"])
+					if err2040 != nil {
+						return err2040
+					}
 					dataDisk := map[string]interface{}{
 						"category": dataDisksMap["Category"],
-						"size":     formatInt(dataDisksMap["Size"]),
-						"count":    formatInt(dataDisksMap["Count"]),
+						"size":     sizeVal2,
+						"count":    countVal2,
 					}
 					if oldNodeGroup, exists := oldNodeGroupsMap[nodeGroupMap["NodeGroupName"].(string)]; exists {
 						oldDataDisk := oldNodeGroup["data_disks"].(*schema.Set).List()[0].(map[string]interface{})
@@ -2045,8 +2063,16 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 							dataDisk["performance_level"] = v
 						}
 						if v, exists := oldDataDisk["count"]; exists && v != nil && v.(int) != 0 {
-							if count := formatInt(v); count > 0 {
-								dataDisk["count"] = formatInt(v)
+							countVal3, err2048 := formatInt(v)
+							if err2048 != nil {
+								return err2048
+							}
+							if count := countVal3; count > 0 {
+								v2049, err2049 := formatInt(v)
+								if err2049 != nil {
+									return err2049
+								}
+								dataDisk["count"] = v2049
 							}
 						}
 					}
@@ -2354,8 +2380,14 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					}
 				}
 
-				newNodeCount := formatInt(newNodeGroup["node_count"])
-				oldNodeCount := formatInt(oldNodeGroup["RunningNodeCount"])
+				newNodeCount, newNodeCountErr := formatInt(newNodeGroup["node_count"])
+				if newNodeCountErr != nil {
+					return newNodeCountErr
+				}
+				oldNodeCount, oldNodeCountErr := formatInt(oldNodeGroup["RunningNodeCount"])
+				if oldNodeCountErr != nil {
+					return oldNodeCountErr
+				}
 
 				// increase nodes
 				if oldNodeCount < newNodeCount {
@@ -2404,13 +2436,35 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 				// increase node disk size, we can only support single disk type.
 				currDataDisk := oldNodeGroup["DataDisks"].([]interface{})[0].(map[string]interface{})
 				targetDataDisk := newNodeGroup["data_disks"].(*schema.Set).List()[0].(map[string]interface{})
-				if formatInt(targetDataDisk["size"]) < formatInt(currDataDisk["Size"]) {
+				v2407, err2407 := formatInt(targetDataDisk["size"])
+				if err2407 != nil {
+					return err2407
+				}
+				v24072, err24072 := formatInt(currDataDisk["Size"])
+				if err24072 != nil {
+					return err24072
+				}
+
+				v2409, err2409 := formatInt(targetDataDisk["size"])
+				if err2409 != nil {
+					return err2409
+				}
+				v24092, err24092 := formatInt(currDataDisk["Size"])
+				if err24092 != nil {
+					return err24092
+				}
+				if v2407 < v24072 {
 					return WrapError(Error("EMR cluster can only increase node disk, decrease node disk is not supported."))
-				} else if formatInt(targetDataDisk["size"]) > formatInt(currDataDisk["Size"]) {
+				} else if v2409 > v24092 {
 					if currDataDisk["Category"].(string) == "local_hdd_pro" {
 						return WrapError(Error("EMR cluster can not support increase node disk with 'local_hdd_pro' disk type."))
 					}
 					action := "IncreaseNodesDiskSize"
+
+					sizeVal, err2421 := formatInt(targetDataDisk["size"])
+					if err2421 != nil {
+						return err2421
+					}
 					increaseNodeDiskSizeRequest := map[string]interface{}{
 						"ClusterId":   d.Id(),
 						"RegionId":    client.RegionId,
@@ -2418,7 +2472,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 						"DataDiskSizes": []map[string]interface{}{
 							{
 								"Category": currDataDisk["Category"].(string),
-								"Size":     formatInt(targetDataDisk["size"]),
+								"Size":     sizeVal,
 							},
 						},
 					}
@@ -2669,7 +2723,10 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					}
 				}
 
-				newNodeCount := formatInt(newNodeGroup["node_count"])
+				newNodeCount, newNodeCountErr2 := formatInt(newNodeGroup["node_count"])
+				if newNodeCountErr2 != nil {
+					return newNodeCountErr2
+				}
 				if newNodeCount > 0 {
 					increaseNodesGroup := map[string]interface{}{}
 					increaseNodesGroup["RegionId"] = client.RegionId
@@ -2700,7 +2757,10 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 		var deleteNodeGroups []map[string]interface{}
 		for nodeGroupName, oldNodeGroup := range oldNodeGroupMap { // Delete empty nodeGroup
 			if newNodeGroup, ok := newNodeGroupMap[nodeGroupName]; !ok {
-				oldNodeCount := formatInt(oldNodeGroup["RunningNodeCount"])
+				oldNodeCount, oldNodeCountErr2 := formatInt(oldNodeGroup["RunningNodeCount"])
+				if oldNodeCountErr2 != nil {
+					return oldNodeCountErr2
+				}
 				if oldNodeCount > 0 {
 					return WrapError(Error("The [nodeGroup: %v, nodeGroupType: %v] can not delete cause exists running nodes", nodeGroupName, oldNodeGroup["NodeGroupType"].(string)))
 				}
