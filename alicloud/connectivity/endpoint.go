@@ -351,6 +351,10 @@ var irregularProductEndpoint = map[string]string{
 	"openapiexplorer":         "openapi-mcp.cn-hangzhou.aliyuncs.com",
 	"computenestsupplier":     "computenestsupplier.cn-hangzhou.aliyuncs.com",
 	"agentloop":               "agentloop.%s.aliyuncs.com",
+	// PAI DSW: the location service rejects pai-dsw as a service code
+	// (DescribeEndpoints returns 404 Illegal Parameter), while the product
+	// publishes a regional endpoint per its service access point page.
+	"pai_dsw": "pai-dsw.%s.aliyuncs.com",
 }
 
 // irregularProductEndpointForIntlRegion specially records those product codes that
