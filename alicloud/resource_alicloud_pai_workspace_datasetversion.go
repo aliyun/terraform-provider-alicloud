@@ -31,6 +31,10 @@ func resourceAliCloudPaiWorkspaceDatasetversion() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"import_info": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"data_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -48,6 +52,30 @@ func resourceAliCloudPaiWorkspaceDatasetversion() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"dataset_task_ram_role": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"user_metrics_endpoints": {
+				// TypeSet: the API treats UserMetricsEndpoints as an unordered
+				// collection of {path, port} endpoints, so member order is not
+				// significant. A TypeSet carries that contract natively and is
+				// excluded from the collection-order convergence check.
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -139,6 +167,20 @@ func resourceAliCloudPaiWorkspaceDatasetversionCreate(d *schema.ResourceData, me
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
+	if v, ok := d.GetOk("dataset_task_ram_role"); ok {
+		request["DatasetTaskRamRole"] = v
+	}
+	if v, ok := d.GetOk("user_metrics_endpoints"); ok {
+		userMetricsEndpointsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.(*schema.Set).List() {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["Path"] = dataLoopTmp["path"]
+			dataLoopMap["Port"] = dataLoopTmp["port"]
+			userMetricsEndpointsArray = append(userMetricsEndpointsArray, dataLoopMap)
+		}
+		request["UserMetricsEndpoints"] = userMetricsEndpointsArray
+	}
 	if v, ok := d.GetOk("labels"); ok {
 		labelsMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range v.([]interface{}) {
@@ -225,6 +267,30 @@ func resourceAliCloudPaiWorkspaceDatasetversionRead(d *schema.ResourceData, meta
 	if objectRaw["VersionName"] != nil {
 		d.Set("version_name", objectRaw["VersionName"])
 	}
+	if objectRaw["ImportInfo"] != nil {
+		d.Set("import_info", objectRaw["ImportInfo"])
+	}
+	if objectRaw["DatasetTaskRamRole"] != nil {
+		d.Set("dataset_task_ram_role", objectRaw["DatasetTaskRamRole"])
+	}
+
+	userMetricsEndpointsRaw := objectRaw["UserMetricsEndpoints"]
+	userMetricsEndpointsMaps := make([]map[string]interface{}, 0)
+	if userMetricsEndpointsRaw != nil {
+		for _, userMetricsEndpointsChildRaw := range userMetricsEndpointsRaw.([]interface{}) {
+			userMetricsEndpointsMap := make(map[string]interface{})
+			userMetricsEndpointsChildRaw := userMetricsEndpointsChildRaw.(map[string]interface{})
+			userMetricsEndpointsMap["path"] = userMetricsEndpointsChildRaw["Path"]
+			userMetricsEndpointsMap["port"] = userMetricsEndpointsChildRaw["Port"]
+
+			userMetricsEndpointsMaps = append(userMetricsEndpointsMaps, userMetricsEndpointsMap)
+		}
+	}
+	if objectRaw["UserMetricsEndpoints"] != nil {
+		if err := d.Set("user_metrics_endpoints", userMetricsEndpointsMaps); err != nil {
+			return err
+		}
+	}
 
 	labels1Raw := objectRaw["Labels"]
 	labelsMaps := make([]map[string]interface{}, 0)
@@ -287,6 +353,31 @@ func resourceAliCloudPaiWorkspaceDatasetversionUpdate(d *schema.ResourceData, me
 	}
 	if v, ok := d.GetOk("description"); ok || d.HasChange("description") {
 		request["Description"] = v
+	}
+	if d.HasChange("dataset_task_ram_role") {
+		update = true
+	}
+	// dataset_task_ram_role is rejected by the API on BASIC datasets for any
+	// value (even empty), so it must be omitted from the request when the user
+	// removes it; only forward it when configured to a non-empty value.
+	if v, ok := d.GetOk("dataset_task_ram_role"); ok {
+		request["DatasetTaskRamRole"] = v
+	}
+	if d.HasChange("user_metrics_endpoints") {
+		update = true
+	}
+	// user_metrics_endpoints is likewise rejected on non-JUICEFS datasets, so
+	// omit it when unset/removed and forward only when configured.
+	if v, ok := d.GetOk("user_metrics_endpoints"); ok {
+		userMetricsEndpointsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.(*schema.Set).List() {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["Path"] = dataLoopTmp["path"]
+			dataLoopMap["Port"] = dataLoopTmp["port"]
+			userMetricsEndpointsArray = append(userMetricsEndpointsArray, dataLoopMap)
+		}
+		request["UserMetricsEndpoints"] = userMetricsEndpointsArray
 	}
 	body = request
 	if update {

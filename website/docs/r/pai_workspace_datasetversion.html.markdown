@@ -58,13 +58,18 @@ resource "alicloud_pai_workspace_dataset" "defaultDataset" {
 
 
 resource "alicloud_pai_workspace_datasetversion" "default" {
-  options          = jsonencode({ "mountPath" : "/mnt/data/verion/" })
-  description      = var.name
-  data_source_type = "OSS"
-  source_type      = "USER"
-  source_id        = "d-xxxxx_v1"
-  data_size        = "2068"
-  data_count       = "1000"
+  options               = jsonencode({ "mountPath" : "/mnt/data/verion/" })
+  description           = var.name
+  data_source_type      = "OSS"
+  source_type           = "USER"
+  source_id             = "d-xxxxx_v1"
+  data_size             = "2068"
+  data_count            = "1000"
+  dataset_task_ram_role = "acs:ram::1234567890123456:role/roletest"
+  user_metrics_endpoints {
+    path = "/metrics"
+    port = 9090
+  }
   labels {
     key   = "key1"
     value = "example1"
@@ -86,6 +91,7 @@ The following arguments are supported:
   - OSS: Alibaba Cloud Object Storage (OSS).
   - NAS: Alibaba cloud file storage (NAS).
 * `dataset_id` - (Required, ForceNew) The first ID of the resource
+* `dataset_task_ram_role` - (Optional) The RAM role used by the dataset task.
 * `description` - (Optional) Description of dataset version.
 * `labels` - (Optional, ForceNew, List) The tag of the resource See [`labels`](#labels) below.
 * `options` - (Optional) The extended field, which is of the JsonString type.
@@ -95,7 +101,7 @@ The following arguments are supported:
   - FILE: FILE.
   - DIRECTORY: folder.
 * `source_id` - (Optional, ForceNew) The data source ID.
-* `source_type` - (Optional, ForceNew) The data source type. The default value is USER. 
+* `source_type` - (Optional, ForceNew) The data source type. The default value is USER.
 * `uri` - (Required, ForceNew) The Uri configuration sample is as follows:
   - The data source type is OSS:'oss:// bucket.endpoint/object'
   - The data source type is NAS:
@@ -107,6 +113,13 @@ The following arguments are supported:
   CPFS2.0:'nas://.region//'.
 
   CPFS1.0 and CPFS2.0 are distinguished by the format of fsid: CPFS1.0 is cpfs-;CPFS2.0 is cpfs-.
+* `user_metrics_endpoints` - (Optional) The user metrics endpoints. `UserMetricsEndpoints` is only supported for JUICEFS datasets; setting it on a non-JUICEFS dataset version is rejected by the API. See [`user_metrics_endpoints`](#user_metrics_endpoints) below.
+
+### `user_metrics_endpoints`
+
+The user_metrics_endpoints supports the following:
+* `path` - (Optional) The path of the metrics endpoint.
+* `port` - (Optional) The port of the metrics endpoint.
 
 ### `labels`
 
@@ -119,6 +132,7 @@ The labels supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<dataset_id>:<version_name>`.
 * `create_time` - Update time.
+* `import_info` - The import information of the dataset version.
 * `version_name` - The name of the resource
 
 ## Timeouts
