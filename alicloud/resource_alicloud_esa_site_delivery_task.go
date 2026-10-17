@@ -332,7 +332,15 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 		}
 		headerParam1, _ := jsonpath.Get("$[0].header_param", v)
 		if headerParam1 != nil && headerParam1 != "" {
-			httpDelivery["HeaderParam"] = headerParam1
+			// API 期望每个值形如 {"<key>":{"StaticValue":"..."}}，schema 为扁平 TypeMap，此处按值包装。
+			headerParam := make(map[string]interface{})
+			for key, value := range headerParam1.(map[string]interface{}) {
+				if strValue, ok := value.(string); ok {
+					value = map[string]interface{}{"StaticValue": strValue}
+				}
+				headerParam[key] = value
+			}
+			httpDelivery["HeaderParam"] = headerParam
 		}
 		compress1, _ := jsonpath.Get("$[0].compress", v)
 		if compress1 != nil && compress1 != "" {
@@ -348,7 +356,15 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 		}
 		queryParam1, _ := jsonpath.Get("$[0].query_param", v)
 		if queryParam1 != nil && queryParam1 != "" {
-			httpDelivery["QueryParam"] = queryParam1
+			// 同 HeaderParam：API 期望每个值为 {"StaticValue":"..."} 对象。
+			queryParam := make(map[string]interface{})
+			for key, value := range queryParam1.(map[string]interface{}) {
+				if strValue, ok := value.(string); ok {
+					value = map[string]interface{}{"StaticValue": strValue}
+				}
+				queryParam[key] = value
+			}
+			httpDelivery["QueryParam"] = queryParam
 		}
 		maxBatchSize1, _ := jsonpath.Get("$[0].max_batch_size", v)
 		if maxBatchSize1 != nil && maxBatchSize1 != "" {
@@ -620,7 +636,10 @@ func resourceAliCloudEsaSiteDeliveryTaskUpdate(d *schema.ResourceData, meta inte
 	query["SiteId"] = parts[0]
 	query["TaskName"] = parts[1]
 
-	if d.HasChange("status") {
+	if !d.IsNewResource() && d.HasChange("status") {
+		update = true
+	}
+	if d.IsNewResource() && d.Get("status").(string) == "offline" {
 		update = true
 	}
 	if v, ok := d.GetOk("status"); ok {
