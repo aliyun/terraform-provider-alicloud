@@ -86,7 +86,7 @@ The following arguments are supported:
 * `email_subject` - (Optional) The subject of the alert notification email.
 * `effective_interval` - (Optional) The time period during which the alert rule is effective.
 * `no_effective_interval` - (Optional) The time period during which the alert rule is ineffective.
-* `interval` - (Optional, ForceNew) The interval at which Cloud Monitor checks whether the alert rule is triggered. Unit: seconds.
+* `interval` - (Optional) The interval at which Cloud Monitor checks whether the alert rule is triggered. Unit: seconds.
 * `period` - (Optional, Int) The aggregation period of the monitoring data. Unit: seconds. The value is an integral multiple of 60. Default value: `300`.
 * `silence_time` - (Optional, Int) The mute period during which new alerts are not reported even if the alert trigger conditions are met. Unit: seconds. Default value: `86400`, which is equivalent to one day.
 * `webhook` - (Optional) The callback URL.

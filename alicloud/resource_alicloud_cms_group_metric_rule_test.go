@@ -105,9 +105,9 @@ func TestAccAliCloudCmsGroupMetricRule_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -252,6 +252,26 @@ func TestAccAliCloudCmsGroupMetricRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"interval": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"interval": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"interval": "90",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"interval": "90",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"targets": []map[string]interface{}{
 						{
 							"id":          "1",
@@ -357,9 +377,9 @@ func TestAccAliCloudCmsGroupMetricRule_basic0_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -828,6 +848,37 @@ func TestUnitAliCloudCmsGroupMetricRule(t *testing.T) {
 			if retryIndex >= len(errorCodes)-1 {
 				break
 			}
+		}
+	})
+
+	// UpdateIntervalOnly: an interval-only change must still issue PutGroupMetricRule
+	// carrying the Interval field against the existing rule id (in-place update, no re-create).
+	t.Run("UpdateIntervalOnly", func(t *testing.T) {
+		attributesDiff := map[string]interface{}{
+			"interval": "90",
+		}
+		diff, err := newInstanceDiff("alicloud_cms_group_metric_rule", attributes, attributesDiff, dExisted.State())
+		if err != nil {
+			t.Error(err)
+		}
+		dExisted, _ = schema.InternalMap(p["alicloud_cms_group_metric_rule"].Schema).Data(dExisted.State(), diff)
+		putCalled := false
+		var capturedRequest map[string]interface{}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, request map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "PutGroupMetricRule" {
+				putCalled = true
+				capturedRequest = request
+				return CreateMockResponse, nil
+			}
+			return ReadMockResponse, nil
+		})
+		err = resourceAliCloudCmsGroupMetricRuleUpdate(dExisted, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.True(t, putCalled, "interval-only change must still issue PutGroupMetricRule")
+		if putCalled {
+			assert.Equal(t, "90", capturedRequest["Interval"], "interval-only update request must carry Interval")
+			assert.Equal(t, "CreateGroupMetricRuleValue", capturedRequest["RuleId"], "update must target the existing rule id")
 		}
 	})
 
