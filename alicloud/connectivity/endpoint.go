@@ -217,6 +217,7 @@ var productCodeToLocationCode = map[string]string{
 	"eipanycast":              "eipanycast",        // Eipanycast
 	"oos":                     "oos",               // OOS
 	"ims":                     "ims",               //IMS
+	"paiplugin":               "paiplugin",         // PAIPlugin
 	"resourcemanager":         "resourcemanager",   // ResourceManager
 	"nas":                     "nas",               //NAS
 	"dms_enterprise":          "dmsenterprise",     //DMSEnterprise
@@ -474,6 +475,7 @@ var regularProductEndpoint = map[string]string{
 	"cdn":                  "cdn.aliyuncs.com",
 	"cloudauth":            "cloudauth.aliyuncs.com",
 	"ims":                  "ims.aliyuncs.com",
+	"paiplugin":            "paiplugin.aliyuncs.com",
 	"mhub":                 "mhub.cn-shanghai.aliyuncs.com",
 	"eds_user":             "eds-user.cn-shanghai.aliyuncs.com",
 	"eipanycast":           "eipanycast.cn-hangzhou.aliyuncs.com",
