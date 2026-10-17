@@ -1,5 +1,7 @@
 ## 1.295.0 (Unreleased)
 
+- **New Resource:** `alicloud_itag_label_user`
+
 ENHANCEMENTS:
 
 - resource/alicloud_nlb_server_group: support ip_version_affinity_mode. ([#10705](https://github.com/aliyun/terraform-provider-alicloud/issues/10705))
