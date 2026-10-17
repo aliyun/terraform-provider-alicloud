@@ -7,7 +7,7 @@ description: |-
   Provides an ECS Reserved Instance resource.
 ---
 
-# alicloud\_reserved\_instance
+# alicloud_reserved_instance
 
 Provides an Reserved Instance resource.
 
@@ -63,11 +63,16 @@ The following arguments are supported:
 * `name` - (Optional, Computed, Deprecated from v1.194.0+) Field `name` has been deprecated from provider version 1.194.0. New field `reserved_instance_name` instead.
 * `platform` - (Optional, ForceNew) The operating system type of the image used by the instance. Optional values: `Windows`, `Linux`. Default is `Linux`.
 * `reserved_instance_name` - (Optional, Computed, Available since v1.194.0)  Name of the RI. The name must be a string of 2 to 128 characters in length and can contain letters, numbers, colons (:), underscores (_), and hyphens. It must start with a letter. It cannot start with http:// or https://.
-* `renewal_status` - (Optional, Computed, Available since v1.194.0) Automatic renewal status. Valid values: `AutoRenewal`,`Normal`.
-* `auto_renew_period` - (Optional, Computed, Available since v1.194.0) The auto-renewal term of the reserved instance. This parameter takes effect only when AutoRenew is set to true. Valid values: 1, 12, 36, and 60. Default value when `period_unit` is set to Month: 1 Default value when `period_unit` is set to Year: 12
+* `renewal_status` - (Optional, Computed, Available since v1.194.0) Automatic renewal status. Valid values: `AutoRenewal`,`Normal`. This is the legacy field for controlling auto-renewal. When `auto_renew` is also set, `auto_renew` takes precedence (see below). When neither field is configured, the cloud-side renewal status is left unchanged.
+* `auto_renew` - (Optional, Computed) Whether to enable auto-renewal for the reserved instance. Valid values: `true`, `false`. When set, this field takes precedence over `renewal_status`. Use `auto_renew = true` to enable auto-renewal and `auto_renew = false` to disable it explicitly. If `auto_renew` is omitted from the configuration, the provider falls back to `renewal_status`; if both are omitted, the cloud-side renewal status is not modified.
+* `auto_renew_period` - (Optional, Computed, Available since v1.194.0) The auto-renewal term of the reserved instance. This parameter takes effect only when auto-renewal is active (`auto_renew = true` or `renewal_status = AutoRenewal`). Valid values: 1, 12, 36, and 60. Default value when `period_unit` is set to Month: 1. Default value when `period_unit` is set to Year: 12. Changes to this field are suppressed when auto-renewal is inactive.
 * `tags` - (Optional, Available since v1.194.0) A mapping of tags to assign to the resource.
 
-### Removing alicloud_reserved_instance from your configuration
+-> **NOTE:** `auto_renew` (boolean) and `renewal_status` (string) both control auto-renewal. When `auto_renew` is set, it takes precedence over `renewal_status`. Setting `auto_renew = false` explicitly disables auto-renewal; omitting both fields leaves the cloud-side renewal status unchanged. `auto_renew_period` changes are suppressed when auto-renewal is inactive.
+
+-> **NOTE:** The acceptance test for this resource (`TestAccAliCloudReservedInstanceBasic`) is gated to run only on the 1st day of each month (`testAccPreCheckWithTime`) because creating a Reserved Instance incurs real cost. No-cloud unit tests in `resource_alicloud_reserved_instance_test.go` verify the compatibility contract above without cloud access.
+
+## Removing alicloud_reserved_instance from your configuration
  
 The alicloud_reserved_instance resource allows you to manage your ReservedInstance, but Terraform cannot destroy it. Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the ReservedInstance.
  
@@ -102,3 +107,4 @@ reservedInstance can be imported using id, e.g.
 $ terraform import alicloud_reserved_instance.default ecsri-uf6df4xm0h3licit****
 ```
 
+After import, `renewal_status`, `auto_renew`, and `auto_renew_period` are populated from the cloud state by Read. Since these are Computed fields, a subsequent `terraform plan` with a configuration that omits them will not produce diffs and will not modify the cloud-side renewal status. To change the renewal status after import, explicitly set either `auto_renew` or `renewal_status` in the configuration.
