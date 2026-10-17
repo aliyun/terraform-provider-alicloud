@@ -29,9 +29,9 @@ func TestAccAliCloudPaiWorkspaceModel_basic9669(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -224,6 +224,26 @@ func TestAccAliCloudPaiWorkspaceModel_basic9669(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameter_size": "3000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameter_size": "3000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameter_size": "6000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameter_size": "6000",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -250,9 +270,9 @@ func TestAccAliCloudPaiWorkspaceModel_basic9669_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -266,6 +286,7 @@ func TestAccAliCloudPaiWorkspaceModel_basic9669_twin(t *testing.T) {
 					"model_description": "ModelDescription.",
 					"model_doc":         "https://eas-***.oss-cn-hangzhou.aliyuncs.com/s**.safetensors",
 					"domain":            "aigc",
+					"parameter_size":    "3000",
 					"labels": []map[string]interface{}{
 						{
 							"key":   "base_model",
@@ -296,6 +317,7 @@ func TestAccAliCloudPaiWorkspaceModel_basic9669_twin(t *testing.T) {
 						"model_description": "ModelDescription.",
 						"model_doc":         "https://eas-***.oss-cn-hangzhou.aliyuncs.com/s**.safetensors",
 						"domain":            "aigc",
+						"parameter_size":    "3000",
 						"labels.#":          "3",
 						"extra_info.%":      "1",
 						"extra_info.test":   "15",
