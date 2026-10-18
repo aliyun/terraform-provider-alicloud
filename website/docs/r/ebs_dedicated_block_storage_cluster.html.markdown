@@ -41,10 +41,12 @@ resource "alicloud_ebs_dedicated_block_storage_cluster" "default" {
 
 The following arguments are supported:
 * `dedicated_block_storage_cluster_name` - (Required) The name of the resource
-* `description` - (Computed,Optional) The description of the dedicated block storage cluster.
-* `total_capacity` - (Required,ForceNew) The total capacity of the dedicated block storage cluster. Unit: GiB.
-* `type` - (Required,ForceNew) The dedicated block storage cluster performance type. Possible values:-Standard: Basic type. This type of dedicated block storage cluster can create an ESSD PL0 cloud disk.-Premium: performance type. This type of dedicated block storage cluster can create an ESSD PL1 cloud disk.
-* `zone_id` - (Required,ForceNew) The zone ID  of the resource
+* `description` - (Computed, Optional) The description of the dedicated block storage cluster.
+* `period` - (Optional, ForceNew) The purchase period. When PeriodUnit is Month, valid values: 6, 7, 8, 9, 10, 11, 12, 24, 36.
+* `period_unit` - (Optional, ForceNew) The unit of the purchase period. Currently only Month is supported.
+* `total_capacity` - (Required, ForceNew) The total capacity of the dedicated block storage cluster. Unit: GiB.
+* `type` - (Required, ForceNew) The dedicated block storage cluster performance type. Possible values:-Standard: Basic type. This type of dedicated block storage cluster can create an ESSD PL0 cloud disk.-Premium: performance type. This type of dedicated block storage cluster can create an ESSD PL1 cloud disk.
+* `zone_id` - (Required, ForceNew) The zone ID  of the resource
 
 
 
