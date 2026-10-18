@@ -38,59 +38,80 @@ func testSweepDeviceGroup(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-	request := map[string]interface{}{
-		"CurrentPage": 1,
-		"PageSize":    PageSizeSmall,
-	}
-	var response map[string]interface{}
-	action := "QueryDeviceGroupList"
+	listAction := "QueryDeviceGroupList"
+	currentPage := 1
 	for {
-		response, err = client.RpcPost("Iot", "2018-01-20", action, nil, request, true)
+		request := map[string]interface{}{
+			"CurrentPage": currentPage,
+			"PageSize":    PageSizeSmall,
+		}
+		response, err := client.RpcPost("Iot", "2018-01-20", listAction, nil, request, true)
 		if err != nil {
-			log.Printf("[ERROR] %s got an error: %#v", action, err)
+			log.Printf("[ERROR] %s got an error: %#v", listAction, err)
 			return nil
 		}
-		addDebug(action, response, request)
+		addDebug(listAction, response, request)
 
-		resp, err := jsonpath.Get("$.Data.GroupInfo", response)
-		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.GroupInfo", response)
+		// Handle a missing Data.GroupInfo key as an empty list — the IoT
+		// QueryDeviceGroupList API omits the list key entirely when the
+		// account has no device groups, and jsonpath.Get returns an error in
+		// that case. Treat the error as "no items" rather than failing the
+		// sweep (see rocketmq-sub #10925 for the same defect pattern).
+		result := []interface{}{}
+		if resp, jsonErr := jsonpath.Get("$.Data.GroupInfo", response); jsonErr == nil {
+			if list, ok := resp.([]interface{}); ok {
+				result = list
+			}
 		}
 
-		result, _ := resp.([]interface{})
 		for _, v := range result {
-			item := v.(map[string]interface{})
-			skip := true
-			if _, ok := item["GroupName"]; !ok {
-				skip = false
-			} else {
+			item, ok := v.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name := fmt.Sprint(item["GroupName"])
+
+			// NODELETING / do-not-delete name guard at the TOP of the per-instance
+			// loop. Runs in BOTH sweepAll + normal mode (red-line #2; mirrors the
+			// hbase-sub #10923 / rds-sub #10924 / bastionhost-sub #10926 pattern).
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping Iot Device Group with do-not-delete marker: %s", name)
+				continue
+			}
+
+			// Standard prefix filter — only restrict by name when SWEEP_ALL is
+			// not set. When ALICLOUD_SWEEP_ALL_RESOURCES=true, bypass the prefix
+			// check (the NODELETING guard above still protects by name).
+			if !sweepAll() {
+				skip := true
 				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(fmt.Sprintf("%v", item["GroupName"])), strings.ToLower(prefix)) {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 						skip = false
 						break
 					}
 				}
+				if skip {
+					log.Printf("[INFO] Skipping Iot Device Group (prefix mismatch): %s", name)
+					continue
+				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping Iot Device Group: %v", item["GroupName"])
-				continue
-			}
-			action := "DeleteDeviceGroup"
-			request := map[string]interface{}{
+
+			deleteAction := "DeleteDeviceGroup"
+			deleteRequest := map[string]interface{}{
 				"GroupId": item["GroupId"],
 			}
-			_, err = client.RpcPost("Iot", "2018-01-20", action, nil, request, false)
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete Iot Device Group (%v): %s", item["GroupName"], err)
+			if _, err := client.RpcPost("Iot", "2018-01-20", deleteAction, nil, deleteRequest, false); err != nil {
+				log.Printf("[ERROR] Failed to delete Iot Device Group (%s): %s", name, err)
 				continue
 			}
 
-			log.Printf("[INFO] Delete Iot Device Group Success: %v ", item["GroupName"])
+			log.Printf("[INFO] Delete Iot Device Group Success: %s", name)
 		}
+
 		if len(result) < PageSizeSmall {
 			break
 		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
+		currentPage++
 	}
 	return nil
 }
