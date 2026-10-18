@@ -42,7 +42,8 @@ func testSweepWafDomains(region string) error {
 	}
 	resp, err := jsonpath.Get("$.InstanceInfos", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceInfos", response)
+		log.Printf("[ERROR] Failed to parse $.InstanceInfos (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -117,9 +118,9 @@ func TestAccAliCloudWafDomain(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
