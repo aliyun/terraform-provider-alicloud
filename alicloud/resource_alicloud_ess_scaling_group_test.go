@@ -18,7 +18,18 @@ import (
 func init() {
 	resource.AddTestSweepers("alicloud_ess_scaling_group", &resource.Sweeper{
 		Name: "alicloud_ess_scaling_group",
-		F:    testSweepEssGroups,
+		// Sweep children (configs/rules/hooks/notifications/alarms) before the
+		// parent group; the group delete also force-deletes, but listing the
+		// child sweepers here ensures orphans are cleaned first.
+		Dependencies: []string{
+			"alicloud_ess_scaling_configuration",
+			"alicloud_ess_scaling_rule",
+			"alicloud_ess_lifecycle_hook",
+			"alicloud_ess_notification",
+			"alicloud_ess_alarm",
+			"alicloud_ess_eci_scaling_configuration",
+		},
+		F: testSweepEssGroups,
 	})
 }
 
@@ -66,6 +77,10 @@ func testSweepEssGroups(region string) error {
 	for _, v := range groups {
 		name := v.ScalingGroupName
 		id := v.ScalingGroupId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Scaling Group (NODELETING): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {

@@ -66,11 +66,17 @@ func testSweepEssSchedules(region string) error {
 	for _, v := range groups {
 		name := v.ScheduledTaskName
 		id := v.ScheduledTaskId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Scheduled Task (NODELETING): %s (%s)", name, id)
+			continue
+		}
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
 		}
 		if skip {

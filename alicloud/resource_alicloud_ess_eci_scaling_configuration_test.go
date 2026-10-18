@@ -32,7 +32,7 @@ func testSweepEciScalingConfiguration(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc`",
+		"tf_testAcc",
 	}
 	var response map[string]interface{}
 	action := "DescribeEciScalingConfigurations"
@@ -52,11 +52,17 @@ func testSweepEciScalingConfiguration(region string) error {
 	for _, v := range result {
 		item := v.(map[string]interface{})
 		name := item["ScalingConfigurationName"].(string)
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Eci configuration (NODELETING): %s ", name)
+			continue
+		}
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
 		}
 		if skip {
