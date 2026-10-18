@@ -3,12 +3,140 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_scan_rule", &resource.Sweeper{
+		Name: "alicloud_cr_scan_rule",
+		F:    testSweepCrScanRule,
+	})
+}
+
+// testSweepCrScanRule cleans up Container Registry image scan rules left on CR
+// EE instances by acceptance tests. Rules on instances (or with rule names)
+// marked NODELETING are preserved; in non-SWEEP_ALL mode only rules on tf-*
+// named instances are removed.
+func testSweepCrScanRule(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	crService := &CrService{client}
+
+	prefixes := []string{"tf-testAcc", "tf_testAcc", "tftestAcc"}
+
+	pageNo, pageSize := 1, PageSizeLarge
+	for {
+		resp, lerr := crService.ListCrEEInstances(pageNo, pageSize)
+		if lerr != nil {
+			log.Printf("[ERROR] Failed to ListCrEEInstances: %s", lerr)
+			return nil
+		}
+		for _, inst := range resp.Instances {
+			if protectedSweepVpcName(inst.InstanceName) {
+				log.Printf("[INFO] Skipping CR scan rule on instance %s (%s): protected (NODELETING)", inst.InstanceId, inst.InstanceName)
+				continue
+			}
+			if !sweepAll() {
+				match := false
+				for _, p := range prefixes {
+					if strings.HasPrefix(strings.ToLower(inst.InstanceName), strings.ToLower(p)) {
+						match = true
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
+			listAction := "ListScanRule"
+			listQuery := map[string]interface{}{
+				"RegionId":   client.RegionId,
+				"InstanceId": inst.InstanceId,
+				"PageSize":   pageSize,
+				"PageNo":     1,
+			}
+			for {
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				var response map[string]interface{}
+				rerr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+					response, err = client.RpcGet("cr", "2018-12-01", listAction, listQuery, nil)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				if rerr != nil {
+					log.Printf("[ERROR] Failed to ListScanRule for instance %s: %s", inst.InstanceId, rerr)
+					break
+				}
+				raw, jerr := jsonpath.Get("$.ScanRules", response)
+				if jerr != nil {
+					log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", listAction, "$.ScanRules", response)
+					break
+				}
+				result, _ := raw.([]interface{})
+				for _, v := range result {
+					item := v.(map[string]interface{})
+					ruleId := fmt.Sprint(item["ScanRuleId"])
+					ruleName := fmt.Sprint(item["RuleName"])
+					if protectedSweepVpcName(ruleName) {
+						log.Printf("[INFO] Skipping CR scan rule %s:%s: protected (NODELETING)", inst.InstanceId, ruleName)
+						continue
+					}
+					log.Printf("[INFO] Deleting CR scan rule: %s:%s (%s)", inst.InstanceId, ruleId, ruleName)
+					delReq := map[string]interface{}{
+						"RegionId":   client.RegionId,
+						"InstanceId": inst.InstanceId,
+						"ScanRuleId": ruleId,
+					}
+					dwait := incrementalWait(3*time.Second, 3*time.Second)
+					if derr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+						_, e := client.RpcPost("cr", "2018-12-01", "DeleteScanRule", map[string]interface{}{}, delReq, true)
+						if e != nil {
+							if IsExpectedErrors(e, []string{"SCAN_RULE_NOT_EXIST"}) || NotFoundError(e) {
+								return nil
+							}
+							if NeedRetry(e) {
+								dwait()
+								return retry.RetryableError(e)
+							}
+							return retry.NonRetryableError(e)
+						}
+						return nil
+					}); derr != nil {
+						log.Printf("[ERROR] Failed to delete CR scan rule %s:%s: %s", inst.InstanceId, ruleId, derr)
+						continue
+					}
+				}
+				if len(result) < pageSize {
+					break
+				}
+				listQuery["PageNo"] = listQuery["PageNo"].(int) + 1
+			}
+		}
+		if len(resp.Instances) < pageSize {
+			break
+		}
+		pageNo++
+	}
+	return nil
+}
 
 // Test Cr ScanRule. >>> Resource test cases, automatically generated.
 // Case ScanRule-1_pl 11745
@@ -29,9 +157,9 @@ func TestAccAliCloudCrScanRule_basic11745(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -2,15 +2,120 @@ package alicloud
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_repo", &resource.Sweeper{
+		Name: "alicloud_cr_repo",
+		F:    testSweepCRRepo,
+	})
+}
+
+// testSweepCRRepo cleans up classic (personal) Container Registry repositories
+// left behind by acceptance tests. Repos are swept before namespaces
+// (alicloud_cr_namespace DependsOn alicloud_cr_repo) so a namespace with test
+// repos under it can be removed. Classic CR is not available in some regions
+// (see connectivity.CRNoSupportedRegions); the sweeper no-ops there.
+func testSweepCRRepo(region string) error {
+	for _, r := range connectivity.CRNoSupportedRegions {
+		if region == string(r) {
+			log.Printf("[INFO] testSweepCRRepo skipped not supported region: %s", region)
+			return nil
+		}
+	}
+
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tftestAcc",
+	}
+
+	var repos []crRepo
+	req := cr.CreateGetRepoListRequest()
+	req.RegionId = client.RegionId
+	req.PageSize = requests.NewInteger(PageSizeMedium)
+	req.Page = requests.NewInteger(1)
+
+	for {
+		raw, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+			return crClient.GetRepoList(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s", WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_repo", req.GetActionName(), AlibabaCloudSdkGoERROR))
+			return nil
+		}
+		var resp crDescribeReposResponse
+		if err := json.Unmarshal(raw.(*cr.GetRepoListResponse).GetHttpContentBytes(), &resp); err != nil {
+			log.Printf("[ERROR] %s", WrapError(err))
+			return nil
+		}
+		repos = append(repos, resp.Data.Repos...)
+		if len(resp.Data.Repos) < PageSizeMedium {
+			break
+		}
+		page, err := getNextpageNumber(req.Page)
+		if err != nil {
+			log.Printf("[ERROR] %s", WrapError(err))
+			return nil
+		}
+		req.Page = page
+	}
+
+	for _, repo := range repos {
+		id := fmt.Sprintf("%s/%s", repo.RepoNamespace, repo.RepoName)
+		if protectedSweepVpcName(repo.RepoName) || protectedSweepVpcName(repo.RepoNamespace) {
+			log.Printf("[INFO] Skipping CR repo %s: protected (NODELETING)", id)
+			continue
+		}
+		if !sweepAll() {
+			skip := true
+			for _, p := range prefixes {
+				pl := strings.ToLower(p)
+				if strings.HasPrefix(strings.ToLower(repo.RepoName), pl) ||
+					strings.HasPrefix(strings.ToLower(repo.RepoNamespace), pl) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				continue
+			}
+		}
+		log.Printf("[INFO] Deleting CR repo: %s", id)
+		delReq := cr.CreateDeleteRepoRequest()
+		delReq.RegionId = client.RegionId
+		delReq.RepoNamespace = repo.RepoNamespace
+		delReq.RepoName = repo.RepoName
+		if _, err := client.WithCrClient(func(crClient *cr.Client) (interface{}, error) {
+			return crClient.DeleteRepo(delReq)
+		}); err != nil {
+			if IsExpectedErrors(err, []string{"REPO_NOT_EXIST"}) {
+				continue
+			}
+			log.Printf("[ERROR] Failed to delete CR repo %s: %s", id, err)
+			continue
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudCRRepo_Basic(t *testing.T) {
 	var v *cr.GetRepoResponse

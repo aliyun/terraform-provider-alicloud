@@ -2,12 +2,148 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_ee_sync_rule", &resource.Sweeper{
+		Name: "alicloud_cr_ee_sync_rule",
+		F:    testSweepCrEESyncRule,
+	})
+}
+
+// testSweepCrEESyncRule cleans up Container Registry repo sync rules left on
+// CR EE instances by acceptance tests. A sync rule can only be deleted from its
+// SOURCE instance (sync_direction == "FROM"); rules seen from the target side
+// (TO / others) are skipped and left as leftovers because DeleteRepoSyncRule
+// refuses them. Rules on instances (or with rule names) marked NODELETING are
+// preserved; in non-SWEEP_ALL mode only rules on tf-* named instances are
+// removed.
+func testSweepCrEESyncRule(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	crService := &CrService{client}
+
+	prefixes := []string{"tf-testAcc", "tf_testAcc", "tftestAcc"}
+
+	pageNo, pageSize := 1, PageSizeLarge
+	for {
+		resp, lerr := crService.ListCrEEInstances(pageNo, pageSize)
+		if lerr != nil {
+			log.Printf("[ERROR] Failed to ListCrEEInstances: %s", lerr)
+			return nil
+		}
+		for _, inst := range resp.Instances {
+			if protectedSweepVpcName(inst.InstanceName) {
+				log.Printf("[INFO] Skipping CR EE sync rule on instance %s (%s): protected (NODELETING)", inst.InstanceId, inst.InstanceName)
+				continue
+			}
+			if !sweepAll() {
+				match := false
+				for _, p := range prefixes {
+					if strings.HasPrefix(strings.ToLower(inst.InstanceName), strings.ToLower(p)) {
+						match = true
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
+			listAction := "ListRepoSyncRule"
+			listReq := map[string]interface{}{
+				"RegionId":   client.RegionId,
+				"InstanceId": inst.InstanceId,
+				"PageSize":   pageSize,
+				"PageNo":     1,
+			}
+			for {
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				var response map[string]interface{}
+				rerr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+					response, err = client.RpcPost("cr", "2018-12-01", listAction, map[string]interface{}{}, listReq, true)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				if rerr != nil {
+					log.Printf("[ERROR] Failed to ListRepoSyncRule for instance %s: %s", inst.InstanceId, rerr)
+					break
+				}
+				raw, jerr := jsonpath.Get("$.SyncRules", response)
+				if jerr != nil {
+					log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", listAction, "$.SyncRules", response)
+					break
+				}
+				result, _ := raw.([]interface{})
+				for _, v := range result {
+					item := v.(map[string]interface{})
+					syncRuleId := fmt.Sprint(item["SyncRuleId"])
+					syncRuleName := fmt.Sprint(item["SyncRuleName"])
+					syncDirection := fmt.Sprint(item["SyncDirection"])
+					if protectedSweepVpcName(syncRuleName) {
+						log.Printf("[INFO] Skipping CR EE sync rule %s:%s: protected (NODELETING)", inst.InstanceId, syncRuleName)
+						continue
+					}
+					if syncDirection != "FROM" {
+						log.Printf("[INFO] Skipping CR EE sync rule %s:%s: sync_direction=%s (must delete from source instance)", inst.InstanceId, syncRuleName, syncDirection)
+						continue
+					}
+					log.Printf("[INFO] Deleting CR EE sync rule: %s:%s (%s)", inst.InstanceId, syncRuleId, syncRuleName)
+					delReq := map[string]interface{}{
+						"RegionId":   client.RegionId,
+						"InstanceId": inst.InstanceId,
+						"SyncRuleId": syncRuleId,
+					}
+					dwait := incrementalWait(3*time.Second, 3*time.Second)
+					if derr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+						_, e := client.RpcPost("cr", "2018-12-01", "DeleteRepoSyncRule", map[string]interface{}{}, delReq, true)
+						if e != nil {
+							if NotFoundError(e) {
+								return nil
+							}
+							if NeedRetry(e) {
+								dwait()
+								return retry.RetryableError(e)
+							}
+							return retry.NonRetryableError(e)
+						}
+						return nil
+					}); derr != nil {
+						log.Printf("[ERROR] Failed to delete CR EE sync rule %s:%s: %s", inst.InstanceId, syncRuleId, derr)
+						continue
+					}
+				}
+				if len(result) < pageSize {
+					break
+				}
+				listReq["PageNo"] = listReq["PageNo"].(int) + 1
+			}
+		}
+		if len(resp.Instances) < pageSize {
+			break
+		}
+		pageNo++
+	}
+	return nil
+}
 
 func TestAccAliCloudCrRepoSyncRule_basic0(t *testing.T) {
 	var v map[string]interface{}
@@ -25,9 +161,9 @@ func TestAccAliCloudCrRepoSyncRule_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -77,9 +213,9 @@ func TestAccAliCloudCrRepoSyncRule_basic0_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -137,9 +273,9 @@ func TestAccAliCloudCrRepoSyncRule_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -189,9 +325,9 @@ func TestAccAliCloudCrRepoSyncRule_basic1_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

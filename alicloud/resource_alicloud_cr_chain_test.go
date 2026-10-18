@@ -104,10 +104,15 @@ func testSweepCRChain(region string) error {
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
-				skip := true
 				item := v.(map[string]interface{})
+				chainName := fmt.Sprint(item["Name"])
+				if protectedSweepVpcName(chainName) {
+					log.Printf("[INFO] Skipping CR Chain (NODELETING): %s (%v)", chainName, item["ChainId"])
+					continue
+				}
+				skip := true
 				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["Name"])), strings.ToLower(prefix)) {
+					if strings.HasPrefix(strings.ToLower(chainName), strings.ToLower(prefix)) {
 						skip = false
 						break
 					}

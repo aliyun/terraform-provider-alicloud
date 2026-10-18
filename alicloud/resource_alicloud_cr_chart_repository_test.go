@@ -2,11 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,10 +18,142 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_chart_repository", &resource.Sweeper{
+		Name: "alicloud_cr_chart_repository",
+		F:    testSweepCrChartRepository,
+	})
+}
+
+// testSweepCrChartRepository cleans up Helm chart repositories left on CR EE
+// instances by acceptance tests. It sweeps before chart namespaces
+// (alicloud_cr_chart_namespace DependsOn this sweeper) so a chart namespace
+// with test repos under it can be removed.
+func testSweepCrChartRepository(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	crService := &CrService{client}
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tftestAcc",
+	}
+
+	// Chart repositories live on CR EE instances; enumerate the instances first.
+	pageNo, pageSize := 1, PageSizeLarge
+	var instanceIds []string
+	for {
+		resp, err := crService.ListCrEEInstances(pageNo, pageSize)
+		if err != nil {
+			log.Printf("[ERROR] Failed to ListCrEEInstances: %s", err)
+			return nil
+		}
+		for _, inst := range resp.Instances {
+			instanceIds = append(instanceIds, inst.InstanceId)
+		}
+		if len(resp.Instances) < pageSize {
+			break
+		}
+		pageNo++
+	}
+
+	for _, instanceId := range instanceIds {
+		action := "ListChartRepository"
+		request := map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"InstanceId": instanceId,
+		}
+		rrPageNo, rrPageSize := 1, PageSizeLarge
+		for {
+			request["PageNo"] = rrPageNo
+			request["PageSize"] = rrPageSize
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			var response map[string]interface{}
+			rerr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+				response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			if rerr != nil {
+				log.Printf("[ERROR] Failed to ListChartRepository for instance %s: %s", instanceId, rerr)
+				break
+			}
+			raw, jerr := jsonpath.Get("$.Repositories", response)
+			if jerr != nil {
+				log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", action, "$.Repositories", response)
+				break
+			}
+			result, _ := raw.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				repoName := fmt.Sprint(item["RepoName"])
+				repoNsName := fmt.Sprint(item["RepoNamespaceName"])
+				if protectedSweepVpcName(repoName) || protectedSweepVpcName(repoNsName) {
+					log.Printf("[INFO] Skipping CR chart repository %s:%s:%s: protected (NODELETING)", instanceId, repoNsName, repoName)
+					continue
+				}
+				if !sweepAll() {
+					skip := true
+					for _, p := range prefixes {
+						pl := strings.ToLower(p)
+						if strings.HasPrefix(strings.ToLower(repoName), pl) ||
+							strings.HasPrefix(strings.ToLower(repoNsName), pl) {
+							skip = false
+							break
+						}
+					}
+					if skip {
+						continue
+					}
+				}
+				log.Printf("[INFO] Deleting CR chart repository: %s:%s:%s", instanceId, repoNsName, repoName)
+				delAction := "DeleteChartRepository"
+				delReq := map[string]interface{}{
+					"RegionId":          client.RegionId,
+					"InstanceId":        instanceId,
+					"RepoNamespaceName": repoNsName,
+					"RepoName":          repoName,
+				}
+				dwait := incrementalWait(3*time.Second, 3*time.Second)
+				if derr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+					_, derr := client.RpcPost("cr", "2018-12-01", delAction, nil, delReq, false)
+					if derr != nil {
+						if NeedRetry(derr) {
+							dwait()
+							return retry.RetryableError(derr)
+						}
+						return retry.NonRetryableError(derr)
+					}
+					return nil
+				}); derr != nil {
+					log.Printf("[ERROR] Failed to delete CR chart repository %s:%s:%s: %s", instanceId, repoNsName, repoName, derr)
+					continue
+				}
+			}
+			if len(result) < rrPageSize {
+				break
+			}
+			rrPageNo++
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudCRChartRepository_basic0(t *testing.T) {
 	var v map[string]interface{}
@@ -35,9 +171,9 @@ func TestAccAlicloudCRChartRepository_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

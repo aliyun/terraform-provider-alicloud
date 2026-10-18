@@ -17,8 +17,9 @@ import (
 
 func init() {
 	resource.AddTestSweepers("alicloud_cr_namespace", &resource.Sweeper{
-		Name: "alicloud_cr_namespace",
-		F:    testSweepCRNamespace,
+		Name:         "alicloud_cr_namespace",
+		Dependencies: []string{"alicloud_cr_repo"},
+		F:            testSweepCRNamespace,
 	})
 }
 
@@ -62,11 +63,23 @@ func testSweepCRNamespace(region string) error {
 
 	var ns []string
 	for _, n := range resp.Data.Namespace {
-		for _, p := range prefixes {
-			if strings.HasPrefix(n.Namespace, strings.ToLower(p)) {
-				ns = append(ns, n.Namespace)
+		if protectedSweepVpcName(n.Namespace) {
+			log.Printf("[INFO] Skipping CR namespace %s: protected (NODELETING)", n.Namespace)
+			continue
+		}
+		if !sweepAll() {
+			matches := false
+			for _, p := range prefixes {
+				if strings.HasPrefix(strings.ToLower(n.Namespace), strings.ToLower(p)) {
+					matches = true
+					break
+				}
+			}
+			if !matches {
+				continue
 			}
 		}
+		ns = append(ns, n.Namespace)
 	}
 
 	for _, n := range ns {

@@ -2,11 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,10 +18,139 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_chart_namespace", &resource.Sweeper{
+		Name:         "alicloud_cr_chart_namespace",
+		Dependencies: []string{"alicloud_cr_chart_repository"},
+		F:            testSweepCrChartNamespace,
+	})
+}
+
+// testSweepCrChartNamespace cleans up Helm chart namespaces left on CR EE
+// instances by acceptance tests. Chart repositories are swept first
+// (alicloud_cr_chart_namespace DependsOn alicloud_cr_chart_repository) so a
+// namespace with test repos under it can be removed.
+func testSweepCrChartNamespace(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	crService := &CrService{client}
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tftestAcc",
+	}
+
+	// Chart namespaces live on CR EE instances; enumerate the instances first.
+	pageNo, pageSize := 1, PageSizeLarge
+	var instanceIds []string
+	for {
+		resp, err := crService.ListCrEEInstances(pageNo, pageSize)
+		if err != nil {
+			log.Printf("[ERROR] Failed to ListCrEEInstances: %s", err)
+			return nil
+		}
+		for _, inst := range resp.Instances {
+			instanceIds = append(instanceIds, inst.InstanceId)
+		}
+		if len(resp.Instances) < pageSize {
+			break
+		}
+		pageNo++
+	}
+
+	for _, instanceId := range instanceIds {
+		action := "ListChartNamespace"
+		request := map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"InstanceId": instanceId,
+		}
+		nsPageNo, nsPageSize := 1, PageSizeLarge
+		for {
+			request["PageNo"] = nsPageNo
+			request["PageSize"] = nsPageSize
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			var response map[string]interface{}
+			rerr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+				response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			if rerr != nil {
+				log.Printf("[ERROR] Failed to ListChartNamespace for instance %s: %s", instanceId, rerr)
+				break
+			}
+			raw, jerr := jsonpath.Get("$.Namespaces", response)
+			if jerr != nil {
+				log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", action, "$.Namespaces", response)
+				break
+			}
+			result, _ := raw.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				name := fmt.Sprint(item["NamespaceName"])
+				if protectedSweepVpcName(name) {
+					log.Printf("[INFO] Skipping CR chart namespace %s:%s: protected (NODELETING)", instanceId, name)
+					continue
+				}
+				if !sweepAll() {
+					skip := true
+					for _, p := range prefixes {
+						if strings.HasPrefix(strings.ToLower(name), strings.ToLower(p)) {
+							skip = false
+							break
+						}
+					}
+					if skip {
+						continue
+					}
+				}
+				log.Printf("[INFO] Deleting CR chart namespace: %s:%s", instanceId, name)
+				delAction := "DeleteChartNamespace"
+				delReq := map[string]interface{}{
+					"RegionId":      client.RegionId,
+					"InstanceId":    instanceId,
+					"NamespaceName": name,
+				}
+				dwait := incrementalWait(3*time.Second, 3*time.Second)
+				if derr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+					_, derr := client.RpcPost("cr", "2018-12-01", delAction, nil, delReq, false)
+					if derr != nil {
+						if NeedRetry(derr) {
+							dwait()
+							return retry.RetryableError(derr)
+						}
+						return retry.NonRetryableError(derr)
+					}
+					return nil
+				}); derr != nil {
+					log.Printf("[ERROR] Failed to delete CR chart namespace %s:%s: %s", instanceId, name, derr)
+					continue
+				}
+			}
+			if len(result) < nsPageSize {
+				break
+			}
+			nsPageNo++
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudCRChartNamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
@@ -35,9 +168,9 @@ func TestAccAlicloudCRChartNamespace_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

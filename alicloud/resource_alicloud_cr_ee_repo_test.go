@@ -2,12 +2,122 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_ee_repo", &resource.Sweeper{
+		Name: "alicloud_cr_ee_repo",
+		F:    testSweepCrEERepo,
+	})
+}
+
+// testSweepCrEERepo cleans up Container Registry Enterprise Edition
+// repositories left on CR EE instances by acceptance tests. Repositories are
+// swept before namespaces (alicloud_cr_ee_namespace DependsOn
+// alicloud_cr_ee_repo) so a namespace with test repos under it can be
+// removed. Repositories on namespaces or instances marked NODELETING are
+// preserved; in non-SWEEP_ALL mode only names with the standard test prefixes
+// are removed.
+func testSweepCrEERepo(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	crService := &CrService{client}
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tftestAcc",
+	}
+
+	// Repositories live under namespaces on CR EE instances; enumerate the
+	// instances and their namespaces first.
+	pageNo, pageSize := 1, PageSizeLarge
+	var instanceIds []string
+	for {
+		resp, err := crService.ListCrEEInstances(pageNo, pageSize)
+		if err != nil {
+			log.Printf("[ERROR] Failed to ListCrEEInstances: %s", err)
+			return nil
+		}
+		for _, inst := range resp.Instances {
+			instanceIds = append(instanceIds, inst.InstanceId)
+		}
+		if len(resp.Instances) < pageSize {
+			break
+		}
+		pageNo++
+	}
+
+	for _, instanceId := range instanceIds {
+		nsPageNo, nsPageSize := 1, PageSizeLarge
+		for {
+			nsResp, err := crService.ListCrEENamespaces(instanceId, nsPageNo, nsPageSize)
+			if err != nil {
+				log.Printf("[ERROR] Failed to ListCrEENamespaces for instance %s: %s", instanceId, err)
+				break
+			}
+			for _, ns := range nsResp.Namespaces {
+				repoPageNo, repoPageSize := 1, PageSizeLarge
+				for {
+					repoResp, err := crService.ListCrEERepos(instanceId, ns.NamespaceName, repoPageNo, repoPageSize)
+					if err != nil {
+						log.Printf("[ERROR] Failed to ListCrEERepos for instance %s namespace %s: %s", instanceId, ns.NamespaceName, err)
+						break
+					}
+					for _, repo := range repoResp.Repositories {
+						name := repo.RepoName
+						if protectedSweepVpcName(name) || protectedSweepVpcName(repo.RepoNamespaceName) {
+							log.Printf("[INFO] Skipping CR EE repo %s:%s:%s: protected (NODELETING)", instanceId, repo.RepoNamespaceName, name)
+							continue
+						}
+						if !sweepAll() {
+							skip := true
+							for _, p := range prefixes {
+								pl := strings.ToLower(p)
+								if strings.HasPrefix(strings.ToLower(name), pl) ||
+									strings.HasPrefix(strings.ToLower(repo.RepoNamespaceName), pl) {
+									skip = false
+									break
+								}
+							}
+							if skip {
+								continue
+							}
+						}
+						id := fmt.Sprintf("%s:%s:%s", instanceId, repo.RepoNamespaceName, name)
+						log.Printf("[INFO] Deleting CR EE repo: %s (repoId=%s)", id, repo.RepoId)
+						if _, derr := crService.DeleteCrEERepo(id, repo.RepoId); derr != nil {
+							if NotFoundError(derr) {
+								continue
+							}
+							log.Printf("[ERROR] Failed to delete CR EE repo %s: %s", id, derr)
+							continue
+						}
+					}
+					if len(repoResp.Repositories) < repoPageSize {
+						break
+					}
+					repoPageNo++
+				}
+			}
+			if len(nsResp.Namespaces) < nsPageSize {
+				break
+			}
+			nsPageNo++
+		}
+	}
+	return nil
+}
 
 func TestAccAliCloudCREERepo_basic0(t *testing.T) {
 	var v map[string]interface{}

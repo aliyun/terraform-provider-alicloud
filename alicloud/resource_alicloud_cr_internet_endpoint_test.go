@@ -2,12 +2,100 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_internet_endpoint", &resource.Sweeper{
+		Name:         "alicloud_cr_internet_endpoint",
+		Dependencies: []string{"alicloud_cr_endpoint_acl_policy"},
+		F:            testSweepCrInternetEndpoint,
+	})
+}
+
+// testSweepCrInternetEndpoint disables the internet access endpoint on CR EE
+// instances left enabled by acceptance tests. alicloud_cr_internet_endpoint has
+// no real Delete API — its destroy sets Enable=false via
+// UpdateInstanceEndpointStatus — so the sweeper mirrors that (fire-and-forget
+// disable, idempotent). Endpoint ACL policies are swept first (Dependency).
+// Instances marked NODELETING are preserved; in non-SWEEP_ALL mode only tf-*
+// named instances are touched.
+func testSweepCrInternetEndpoint(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	crService := &CrService{client}
+
+	prefixes := []string{"tf-testAcc", "tf_testAcc", "tftestAcc"}
+
+	pageNo, pageSize := 1, PageSizeLarge
+	for {
+		resp, lerr := crService.ListCrEEInstances(pageNo, pageSize)
+		if lerr != nil {
+			log.Printf("[ERROR] Failed to ListCrEEInstances: %s", lerr)
+			return nil
+		}
+		for _, inst := range resp.Instances {
+			if protectedSweepVpcName(inst.InstanceName) {
+				log.Printf("[INFO] Skipping CR internet endpoint on instance %s (%s): protected (NODELETING)", inst.InstanceId, inst.InstanceName)
+				continue
+			}
+			if !sweepAll() {
+				match := false
+				for _, p := range prefixes {
+					if strings.HasPrefix(strings.ToLower(inst.InstanceName), strings.ToLower(p)) {
+						match = true
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
+			log.Printf("[INFO] Disabling CR internet endpoint on instance: %s (%s)", inst.InstanceId, inst.InstanceName)
+			delReq := map[string]interface{}{
+				"RegionId":     client.RegionId,
+				"InstanceId":   inst.InstanceId,
+				"Enable":       "false",
+				"ModuleName":   "Registry",
+				"EndpointType": "Internet",
+			}
+			dwait := incrementalWait(3*time.Second, 3*time.Second)
+			if derr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+				_, e := client.RpcPost("cr", "2018-12-01", "UpdateInstanceEndpointStatus", map[string]interface{}{}, delReq, true)
+				if e != nil {
+					if NotFoundError(e) {
+						return nil
+					}
+					if NeedRetry(e) {
+						dwait()
+						return retry.RetryableError(e)
+					}
+					return retry.NonRetryableError(e)
+				}
+				return nil
+			}); derr != nil {
+				log.Printf("[ERROR] Failed to disable CR internet endpoint on instance %s: %s", inst.InstanceId, derr)
+				continue
+			}
+		}
+		if len(resp.Instances) < pageSize {
+			break
+		}
+		pageNo++
+	}
+	return nil
+}
 
 // TestAccAliCloudCrInternetEndpoint_basic0 covers the full lifecycle:
 // create with two ACL entries -> update to a single entry (add + remove) ->

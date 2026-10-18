@@ -3,12 +3,139 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_artifact_lifecycle_rule", &resource.Sweeper{
+		Name: "alicloud_cr_artifact_lifecycle_rule",
+		F:    testSweepCrArtifactLifecycleRule,
+	})
+}
+
+// testSweepCrArtifactLifecycleRule cleans up Container Registry artifact
+// lifecycle rules left on CR EE instances by acceptance tests. Lifecycle rules
+// have no user-set name (only a server-generated RuleId), so the sweeper
+// relies on the instance-level guard: rules on instances marked NODELETING are
+// preserved, and in non-SWEEP_ALL mode only rules on tf-* named instances are
+// removed.
+func testSweepCrArtifactLifecycleRule(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	crService := &CrService{client}
+
+	prefixes := []string{"tf-testAcc", "tf_testAcc", "tftestAcc"}
+
+	pageNo, pageSize := 1, PageSizeLarge
+	for {
+		resp, lerr := crService.ListCrEEInstances(pageNo, pageSize)
+		if lerr != nil {
+			log.Printf("[ERROR] Failed to ListCrEEInstances: %s", lerr)
+			return nil
+		}
+		for _, inst := range resp.Instances {
+			if protectedSweepVpcName(inst.InstanceName) {
+				log.Printf("[INFO] Skipping CR artifact lifecycle rule on instance %s (%s): protected (NODELETING)", inst.InstanceId, inst.InstanceName)
+				continue
+			}
+			if !sweepAll() {
+				match := false
+				for _, p := range prefixes {
+					if strings.HasPrefix(strings.ToLower(inst.InstanceName), strings.ToLower(p)) {
+						match = true
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
+			listAction := "ListArtifactLifecycleRule"
+			listQuery := map[string]interface{}{
+				"RegionId":                     client.RegionId,
+				"InstanceId":                   inst.InstanceId,
+				"EnableDeleteTag":              "true",
+				"EnableDeleteUntaggedManifest": "false",
+				"PageSize":                     pageSize,
+				"PageNo":                       1,
+			}
+			for {
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				var response map[string]interface{}
+				rerr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+					response, err = client.RpcGet("cr", "2018-12-01", listAction, listQuery, nil)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				if rerr != nil {
+					log.Printf("[ERROR] Failed to ListArtifactLifecycleRule for instance %s: %s", inst.InstanceId, rerr)
+					break
+				}
+				raw, jerr := jsonpath.Get("$.Rules", response)
+				if jerr != nil {
+					log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", listAction, "$.Rules", response)
+					break
+				}
+				result, _ := raw.([]interface{})
+				for _, v := range result {
+					item := v.(map[string]interface{})
+					ruleId := fmt.Sprint(item["RuleId"])
+					log.Printf("[INFO] Deleting CR artifact lifecycle rule: %s:%s", inst.InstanceId, ruleId)
+					delReq := map[string]interface{}{
+						"RegionId":   client.RegionId,
+						"InstanceId": inst.InstanceId,
+						"RuleId":     ruleId,
+					}
+					dwait := incrementalWait(3*time.Second, 3*time.Second)
+					if derr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+						_, e := client.RpcPost("cr", "2018-12-01", "DeleteArtifactLifecycleRule", map[string]interface{}{}, delReq, true)
+						if e != nil {
+							if NotFoundError(e) {
+								return nil
+							}
+							if NeedRetry(e) {
+								dwait()
+								return retry.RetryableError(e)
+							}
+							return retry.NonRetryableError(e)
+						}
+						return nil
+					}); derr != nil {
+						log.Printf("[ERROR] Failed to delete CR artifact lifecycle rule %s:%s: %s", inst.InstanceId, ruleId, derr)
+						continue
+					}
+				}
+				if len(result) < pageSize {
+					break
+				}
+				listQuery["PageNo"] = listQuery["PageNo"].(int) + 1
+			}
+		}
+		if len(resp.Instances) < pageSize {
+			break
+		}
+		pageNo++
+	}
+	return nil
+}
 
 // Test Cr ArtifactLifecycleRule. >>> Resource test cases, automatically generated.
 // Case resource_ArtifactLifecycleRule_test 12942
