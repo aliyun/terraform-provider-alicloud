@@ -23,7 +23,6 @@ func testSweepCloudSsoDirectoryAccessConfigurationProvisioning(region, directory
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"",
 	}
 	action := "ListAccessConfigurationProvisionings"
 	request := map[string]interface{}{}
@@ -57,15 +56,23 @@ func testSweepCloudSsoDirectoryAccessConfigurationProvisioning(region, directory
 	for _, v := range result {
 		item := v.(map[string]interface{})
 
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(item["AccessConfigurationName"].(string)), strings.ToLower(prefix)) {
-				skip = false
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Cloud Sso AccessConfigurationName: %s", item["AccessConfigurationName"].(string))
+		accessConfigurationName, _ := item["AccessConfigurationName"].(string)
+		if protectedSweepVpcName(accessConfigurationName) {
+			log.Printf("[INFO] Skipping protected Cloud Sso AccessConfigurationProvisioning: %s", accessConfigurationName)
 			continue
+		}
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(accessConfigurationName), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Cloud Sso AccessConfigurationName: %s", accessConfigurationName)
+				continue
+			}
 		}
 		action := "DeprovisionAccessConfiguration"
 		req := map[string]interface{}{
@@ -76,9 +83,35 @@ func testSweepCloudSsoDirectoryAccessConfigurationProvisioning(region, directory
 		}
 		_, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, req, false)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Cloud Sso AccessAssignment (%s): %s", item["AccessConfigurationName"].(string), err)
+			log.Printf("[ERROR] Failed to delete Cloud Sso AccessConfigurationProvisioning (%s): %s", accessConfigurationName, err)
+		} else {
+			log.Printf("[INFO] Delete Cloud Sso AccessConfigurationProvisioning success: %s ", accessConfigurationName)
 		}
-		log.Printf("[INFO] Delete Cloud Sso AccessAssignment success: %s ", item["AccessConfigurationName"].(string))
+	}
+	return nil
+}
+
+func init() {
+	resource.AddTestSweepers("alicloud_cloud_sso_access_configuration_provisioning", &resource.Sweeper{
+		Name: "alicloud_cloud_sso_access_configuration_provisioning",
+		F:    testSweepCloudSsoAccessConfigurationProvisioning,
+	})
+}
+
+// testSweepCloudSsoAccessConfigurationProvisioning is the registered sweeper
+// entry point for alicloud_cloud_sso_access_configuration_provisioning.
+// Provisionings live inside a directory, so this wrapper enumerates every
+// directory in the region and delegates to
+// testSweepCloudSsoDirectoryAccessConfigurationProvisioning for each one.
+func testSweepCloudSsoAccessConfigurationProvisioning(region string) error {
+	directoryIds, err := testSweepCloudSsoDirectoryIds(region)
+	if err != nil {
+		return err
+	}
+	for _, directoryId := range directoryIds {
+		if err := testSweepCloudSsoDirectoryAccessConfigurationProvisioning(region, directoryId); err != nil {
+			log.Printf("[ERROR] Failed to sweep Cloud Sso AccessConfigurationProvisioning in directory %s: %s", directoryId, err)
+		}
 	}
 	return nil
 }
