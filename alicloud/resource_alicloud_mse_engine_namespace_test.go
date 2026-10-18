@@ -6,7 +6,9 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,9 +16,105 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_mse_engine_namespace", &resource.Sweeper{
+		Name: "alicloud_mse_engine_namespace",
+		F:    testSweepMseEngineNamespace,
+	})
+}
+
+// testSweepMseEngineNamespace sweeps leftover engine namespaces from every MSE
+// cluster in the region. Engine namespaces are children of a cluster, so the
+// sweeper walks every cluster, lists its namespaces via ListEngineNamespaces
+// (the same API the provider Read uses) and deletes each one whose name passes
+// the NODELETING / prefix guard via DeleteEngineNamespace (mirroring
+// resourceAlicloudMseEngineNamespaceDelete). Errors per namespace are logged
+// and skipped; the sweeper always returns nil.
+func testSweepMseEngineNamespace(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	clusters, err := listMseSweepClusters(client)
+	if err != nil {
+		log.Printf("[ERROR] ListClusters for mse_engine_namespace sweep failed: %s", err)
+		return nil
+	}
+
+	for _, cluster := range clusters {
+		clusterName := fmt.Sprint(cluster["ClusterAliasName"])
+		instanceId := fmt.Sprint(cluster["InstanceId"])
+		if !mseSweepNameAllowed(clusterName) {
+			log.Printf("[INFO] Skipping engine namespaces of cluster %s (%s): name not allowed", clusterName, instanceId)
+			continue
+		}
+		if err := sweepMseEngineNamespacesForCluster(client, instanceId); err != nil {
+			log.Printf("[ERROR] Listing engine namespaces for cluster %s failed: %s", instanceId, err)
+			continue
+		}
+	}
+	return nil
+}
+
+func sweepMseEngineNamespacesForCluster(client *connectivity.AliyunClient, instanceId string) error {
+	action := "ListEngineNamespaces"
+	request := map[string]interface{}{
+		"InstanceId": instanceId,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	var response map[string]interface{}
+	var err error
+	if err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	addDebug(action, response, request)
+	// The cluster may already be deleted; the API surfaces that as success=false.
+	if fmt.Sprint(response["Success"]) == "false" {
+		return nil
+	}
+	resp, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return err
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		name := fmt.Sprint(item["NamespaceShowName"])
+		namespaceId := fmt.Sprint(item["Namespace"])
+		if !mseSweepNameAllowed(name) {
+			log.Printf("[INFO] Skipping mse engine namespace: %s (%s)", name, namespaceId)
+			continue
+		}
+		deleteAction := "DeleteEngineNamespace"
+		deleteRequest := map[string]interface{}{
+			"Id":         namespaceId,
+			"InstanceId": instanceId,
+		}
+		if _, derr := client.RpcPost("mse", "2019-05-31", deleteAction, nil, deleteRequest, false); derr != nil {
+			log.Printf("[ERROR] Failed to delete mse engine namespace %s:%s: %s", instanceId, namespaceId, derr)
+			continue
+		}
+		log.Printf("[INFO] Delete mse engine namespace success: %s:%s", instanceId, namespaceId)
+	}
+	return nil
+}
 
 func TestAccAliCloudMSEEngineNamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
