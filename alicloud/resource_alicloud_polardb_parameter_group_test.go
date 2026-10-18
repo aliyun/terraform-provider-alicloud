@@ -58,11 +58,13 @@ func testSweepPolarDBParameterGroup(region string) error {
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_polardb_parameter_group", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to list PolarDB parameter groups: %s", err)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.ParameterGroups", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ParameterGroups", response)
+		log.Printf("[ERROR] Failed to parse $.ParameterGroups (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
