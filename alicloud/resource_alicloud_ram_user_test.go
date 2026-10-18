@@ -45,6 +45,7 @@ func testSweepRamUsers(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to list Ram User: %s", err)
+			break
 		}
 		response, _ := raw.(*ram.ListUsersResponse)
 		if len(response.Users.User) < 1 {
@@ -83,6 +84,9 @@ func testSweepRamUsers(region string) error {
 		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			log.Printf("[ERROR] ListPoliciesForUser: %s (%s)", name, id)
 		}
+		if err != nil {
+			continue
+		}
 		listPoliciesForUserResponse, _ := raw.(*ram.ListPoliciesForUserResponse)
 		if len(listPoliciesForUserResponse.Policies.Policy) > 0 {
 			detachPolicyFromUserRequest := ram.CreateDetachPolicyFromUserRequest()
@@ -108,6 +112,9 @@ func testSweepRamUsers(region string) error {
 		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			log.Printf("[ERROR] ListAccessKeys: %s (%s)", name, id)
 		}
+		if err != nil {
+			continue
+		}
 		listAccessKeysResponse, _ := raw.(*ram.ListAccessKeysResponse)
 		if len(listAccessKeysResponse.AccessKeys.AccessKey) > 0 {
 			deleteAccessKeyRequest := ram.CreateDeleteAccessKeyRequest()
@@ -132,6 +139,7 @@ func testSweepRamUsers(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] ListGroupsForUser: %s (%s)", name, id)
+			continue
 		}
 		listGroupsForUserResponse, _ := raw.(*ram.ListGroupsForUserResponse)
 		if len(listGroupsForUserResponse.Groups.Group) > 0 {
@@ -182,9 +190,9 @@ func TestAccAliCloudRAMUser(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckRamUserDestroy,
+		CheckDestroy:      testAccCheckRamUserDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRamUserNameConfig(randInt),

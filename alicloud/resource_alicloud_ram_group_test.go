@@ -43,7 +43,8 @@ func testSweepRamGroups(region string) error {
 			return ramClient.ListGroups(request)
 		})
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] ram ListGroups: %s", err)
+			break
 		}
 		resp, _ := raw.(*ram.ListGroupsResponse)
 		if len(resp.Groups.Group) < 1 {
@@ -81,6 +82,7 @@ func testSweepRamGroups(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to list Ram Group (%s): %s", name, err)
+			continue
 		}
 		response, _ := raw.(*ram.ListPoliciesForGroupResponse)
 		for _, p := range response.Policies.Policy {
@@ -129,9 +131,9 @@ func TestAccAliCloudRamGroup_basic10096(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -179,9 +181,9 @@ func TestAccAliCloudRamGroup_basic10096_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -223,9 +225,9 @@ func TestAccAliCloudRamGroup_basic10098(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -273,9 +275,9 @@ func TestAccAliCloudRamGroup_basic10098_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -330,9 +332,9 @@ func TestAccAliCloudRamGroup_basic_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
