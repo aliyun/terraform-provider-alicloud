@@ -3,12 +3,166 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+// testSweepStarRocksNodeGroup <<< Sweeper for StarRocks NodeGroup.
+// node_groups are cluster-scoped: the API lists node_groups under a specific
+// cluster (describeNodeGroups needs ClusterId), so this sweeper parent-walks —
+// list every instance, then list node_groups under each instance — and deletes
+// them with /webapi/lifecycle/releaseNodeGroup. The NODELETING guard
+// (protectedSweepVpcName) is always active; NORMAL mode adds a tftestacc prefix
+// filter, SWEEP_ALL mode cleans every non-NODELETING node group.
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_star_rocks_node_group",
+		&resource.Sweeper{
+			Name: "alicloud_star_rocks_node_group",
+			F:    testSweepStarRocksNodeGroup,
+		})
+}
+
+func testSweepStarRocksNodeGroup(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	// node_groups are cluster-scoped, so walk all instances first.
+	listAction := "/webapi/starrocks/describeInstances"
+	listQuery := map[string]*string{
+		"RegionId": StringPointer(client.RegionId),
+	}
+	listBody := make(map[string]interface{})
+	var listResp map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
+		resp, e := client.RoaPost("starrocks", "2022-10-19", listAction, listQuery, nil, listBody, true)
+		listResp = resp
+		if e != nil {
+			if NeedRetry(e) {
+				wait()
+				return retry.RetryableError(e)
+			}
+			return retry.NonRetryableError(e)
+		}
+		return nil
+	})
+	addDebug(listAction, listResp, listBody)
+	if err != nil {
+		log.Printf("[ERROR] Failed to fetch StarRocks Instances for node_group walk: %s", WrapErrorf(err, DataDefaultErrorMsg, "alicloud_star_rocks_node_group", listAction, AlibabaCloudSdkGoERROR))
+		return nil
+	}
+	v, err := jsonpath.Get("$.Data[*]", listResp)
+	if err != nil {
+		log.Printf("[WARN] StarRocks describeInstances returned no Data (empty region?): %v", err)
+		return nil
+	}
+	instances, ok := v.([]interface{})
+	if !ok || len(instances) == 0 {
+		log.Printf("[INFO] StarRocks node_group walk: 0 instances in region %s", client.RegionId)
+		return nil
+	}
+	for _, inst := range instances {
+		instance := inst.(map[string]interface{})
+		clusterId := fmt.Sprint(instance["InstanceId"])
+		instanceName := fmt.Sprint(instance["InstanceName"])
+
+		// describeNodeGroups needs ClusterId; omit nodeGroupIds to list every node group.
+		ngAction := "/webapi/nodegroup/describeNodeGroups"
+		ngQuery := map[string]*string{
+			"ClusterId": StringPointer(clusterId),
+			"RegionId":  StringPointer(client.RegionId),
+		}
+		ngBody := make(map[string]interface{})
+		var ngResp map[string]interface{}
+		ngWait := incrementalWait(3*time.Second, 5*time.Second)
+		ngErr := retry.Retry(2*time.Minute, func() *retry.RetryError {
+			resp, e := client.RoaPost("starrocks", "2022-10-19", ngAction, ngQuery, nil, ngBody, true)
+			ngResp = resp
+			if e != nil {
+				if NeedRetry(e) {
+					ngWait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			return nil
+		})
+		addDebug(ngAction, ngResp, ngBody)
+		if ngErr != nil {
+			log.Printf("[ERROR] Failed to list StarRocks NodeGroups for cluster %s (%s): %s", instanceName, clusterId, ngErr)
+			continue
+		}
+		ngV, ngPathErr := jsonpath.Get("$.Data[*]", ngResp)
+		if ngPathErr != nil {
+			log.Printf("[WARN] StarRocks describeNodeGroups returned no Data for cluster %s (%s): %v", instanceName, clusterId, ngPathErr)
+			continue
+		}
+		nodeGroups, ok := ngV.([]interface{})
+		if !ok || len(nodeGroups) == 0 {
+			continue
+		}
+		for _, ngItem := range nodeGroups {
+			ng := ngItem.(map[string]interface{})
+			nodeGroupId := fmt.Sprint(ng["NodeGroupId"])
+			// node_group names are not always present; fall back to the cluster name.
+			ngName := instanceName
+			if rawName, hasName := ng["NodeGroupName"]; hasName && fmt.Sprint(rawName) != "" {
+				ngName = fmt.Sprint(rawName)
+			}
+
+			// NODELETING guard — always active (both NORMAL and SWEEP_ALL modes).
+			if protectedSweepVpcName(ngName) {
+				log.Printf("[INFO] Skipping StarRocks NodeGroup (NODELETING): %s (%s:%s)", ngName, clusterId, nodeGroupId)
+				continue
+			}
+			// NORMAL mode: only clean resources carrying the tftestacc prefix.
+			if !sweepAll() {
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(ngName), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping StarRocks NodeGroup (no prefix): %s (%s:%s)", ngName, clusterId, nodeGroupId)
+					continue
+				}
+			}
+			log.Printf("[INFO] Deleting StarRocks NodeGroup: %s (%s:%s)", ngName, clusterId, nodeGroupId)
+			delAction := "/webapi/lifecycle/releaseNodeGroup"
+			delQuery := map[string]*string{
+				"InstanceId":  StringPointer(clusterId),
+				"NodeGroupId": StringPointer(nodeGroupId),
+				"RegionId":    StringPointer(client.RegionId),
+			}
+			delBody := make(map[string]interface{})
+			if _, e := client.RoaPost("starrocks", "2022-10-19", delAction, delQuery, nil, delBody, true); e != nil {
+				log.Printf("[ERROR] Failed to delete StarRocks NodeGroup (%s:%s): %s", clusterId, nodeGroupId, e)
+				continue
+			}
+			log.Printf("[INFO] Delete StarRocks NodeGroup success: %s (%s:%s)", ngName, clusterId, nodeGroupId)
+		}
+	}
+	return nil
+}
+
+// testSweepStarRocksNodeGroup >>> Sweeper.
 
 // Test StarRocks NodeGroup. >>> Resource test cases, automatically generated.
 // Case NodeGroup_副本1760322662795 11601
