@@ -40,6 +40,7 @@ func testSweepDatahubProject(region string) error {
 	if err != nil {
 		// Now, only some region support Datahub
 		log.Printf("[ERROR] Failed to list Datahub projects: %s", err)
+		return nil
 	}
 	projects, _ := raw.(*datahub.ListProjectResult)
 
