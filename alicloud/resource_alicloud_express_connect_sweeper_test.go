@@ -243,8 +243,11 @@ func expressConnectListQosIds(client *connectivity.AliyunClient) []string {
 		}
 		raw, err := jsonpath.Get("$.QosList", response)
 		if err != nil {
-			log.Printf("[ERROR] parsing DescribeExpressConnectTrafficQos response got an error: %v", err)
-			return ids
+			// When the region has no QoS policies (TotalCount==0) the API
+			// omits the QosList key entirely rather than returning an empty
+			// array; treat that as an empty page and stop paginating instead
+			// of logging a spurious parse error.
+			break
 		}
 		items, _ := raw.([]interface{})
 		for _, v := range items {
