@@ -66,7 +66,8 @@ func testSweepDirectMailReceivers(region string) error {
 		}
 		resp, err := jsonpath.Get("$.data.receiver", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.data.receiver", response)
+			log.Printf("[ERROR] Failed to parse Direct Mail Receivers: %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
