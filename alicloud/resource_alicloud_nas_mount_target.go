@@ -26,6 +26,11 @@ func resourceAliCloudNasMountTarget() *schema.Resource {
 			Delete: schema.DefaultTimeout(40 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"access_point_access_only": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"access_group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -162,6 +167,7 @@ func resourceAliCloudNasMountTargetRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.Set("access_group_name", objectRaw["AccessGroup"])
+	d.Set("access_point_access_only", objectRaw["AccessPointAccessOnly"])
 	d.Set("network_type", objectRaw["NetworkType"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("vswitch_id", objectRaw["VswId"])
@@ -193,6 +199,10 @@ func resourceAliCloudNasMountTargetUpdate(d *schema.ResourceData, meta interface
 		update = true
 	}
 	request["AccessGroupName"] = d.Get("access_group_name")
+	if d.HasChange("access_point_access_only") {
+		update = true
+		request["AccessPointAccessOnly"] = d.Get("access_point_access_only")
+	}
 	if d.HasChange("status") {
 		update = true
 		request["Status"] = d.Get("status")
