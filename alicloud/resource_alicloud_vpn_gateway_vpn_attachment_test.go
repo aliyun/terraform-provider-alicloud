@@ -94,16 +94,22 @@ func testSweepVpnGatewayVpnAttachment(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 
-			skip := true
 			name := fmt.Sprint(item["Name"])
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Vpn Gateway Vpn Attachment: %s", name)
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping Vpn Gateway Vpn Attachment (do-not-delete): %s", name)
 				continue
+			}
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping Vpn Gateway Vpn Attachment: %s", name)
+					continue
+				}
 			}
 			action := "DeleteVpnAttachment"
 			request := map[string]interface{}{

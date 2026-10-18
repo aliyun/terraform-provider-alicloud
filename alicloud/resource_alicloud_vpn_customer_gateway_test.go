@@ -71,6 +71,10 @@ func testSweepVPNCustomerGateways(region string) error {
 	for _, v := range gws {
 		name := v.Name
 		id := v.CustomerGatewayId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping VPN Customer Gateway (do-not-delete): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {

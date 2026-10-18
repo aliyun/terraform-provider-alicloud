@@ -70,15 +70,22 @@ func testSweepVpnIpsecServer(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["IpsecServerName"].(string)), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Vpn Ipsec Server: %s", item["IpsecServerName"].(string))
+			name := fmt.Sprint(item["IpsecServerName"])
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping Vpn Ipsec Server (do-not-delete): %s", name)
 				continue
+			}
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping Vpn Ipsec Server: %s", name)
+					continue
+				}
 			}
 			action := "DeleteIpsecServer"
 			request := map[string]interface{}{

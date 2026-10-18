@@ -20,6 +20,7 @@ func init() {
 		Name: "alicloud_vpn_gateway",
 		F:    testSweepVPNGateways,
 		Dependencies: []string{
+			"alicloud_vpn_connection",
 			"alicloud_ssl_vpn_server",
 			"alicloud_ssl_vpn_client_cert",
 		},
@@ -74,6 +75,10 @@ func testSweepVPNGateways(region string) error {
 	for _, v := range gws {
 		name := v.Name
 		id := v.VpnGatewayId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping VPN Gateway (do-not-delete): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {

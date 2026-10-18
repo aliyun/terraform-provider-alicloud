@@ -67,16 +67,22 @@ func testSweepSslVpnServers(region string) error {
 	for _, v := range servers {
 		name := v.Name
 		id := v.SslVpnServerId
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Ssl Vpn Server: %s (%s)", name, id)
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Ssl Vpn Server (do-not-delete): %s (%s)", name, id)
 			continue
+		}
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Ssl Vpn Server: %s (%s)", name, id)
+				continue
+			}
 		}
 		sweeped = true
 		log.Printf("[INFO] Deleting Ssl Vpn Server: %s (%s)", name, id)
