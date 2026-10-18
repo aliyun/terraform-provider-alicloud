@@ -2,11 +2,16 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 func TestAccAliCloudHbrPolicy_basic(t *testing.T) {
@@ -1409,4 +1414,122 @@ variable "name" {
 
 
 `, name)
+}
+
+func init() {
+	resource.AddTestSweepers("alicloud_hbr_policy", &resource.Sweeper{
+		Name: "alicloud_hbr_policy",
+		F:    testSweepHbrPolicies,
+		Dependencies: []string{
+			"alicloud_hbr_policy_binding",
+		},
+	})
+}
+
+// testSweepHbrPolicies cleans HBR backup policies. Fleet-wipe pattern: SWEEP_ALL
+// bypasses the tf-prefix filter -> cleans ALL non-NODELETING policies (test
+// account has no prod data); NORMAL mode only cleans tf-prefix policies. The
+// NODELETING guard is always-active (both modes). DeletePolicyV2 fails with
+// Code 38006 "PolicyBinding exists, cannot delete policy" while bindings remain;
+// the policy_binding sweeper (Dependency) runs first to clear them.
+func testSweepHbrPolicies(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
+		"tftestacc",
+	}
+
+	action := "DescribePoliciesV2"
+	request := map[string]interface{}{
+		"MaxResults": 100,
+	}
+	policies := make([]map[string]interface{}, 0)
+	for {
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve HBR Policies: %s", err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.Policies", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			if item, ok := v.(map[string]interface{}); ok {
+				policies = append(policies, item)
+			}
+		}
+		nextTokenRaw, _ := jsonpath.Get("$.NextToken", response)
+		nextToken := fmt.Sprint(nextTokenRaw)
+		if nextToken == "" {
+			break
+		}
+		request["NextToken"] = nextToken
+	}
+
+	if len(policies) == 0 {
+		log.Printf("[INFO] HBR Policy: 0 policies in region %s", region)
+		return nil
+	}
+
+	for _, policy := range policies {
+		name := fmt.Sprint(policy["PolicyName"])
+		id := fmt.Sprint(policy["PolicyId"])
+		if name == "" || id == "" {
+			continue
+		}
+		// NODELETING guard -- always-active (both NORMAL and SWEEP_ALL).
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping HBR Policy (NODELETING): %s (%s)", name, id)
+			continue
+		}
+		// Fleet-wipe: SWEEP_ALL bypasses the tf-prefix filter.
+		if !sweepAll() {
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping HBR Policy (no prefix): %s (%s)", name, id)
+				continue
+			}
+		}
+		log.Printf("[INFO] Deleting HBR Policy: %s (%s)", name, id)
+		deleteAction := "DeletePolicyV2"
+		deleteRequest := map[string]interface{}{
+			"PolicyId": id,
+		}
+		_, e := client.RpcPost("hbr", "2017-09-08", deleteAction, nil, deleteRequest, false)
+		if e != nil {
+			log.Printf("[ERROR] Failed to delete HBR Policy (%s (%s)): %s", name, id, e)
+			continue
+		}
+		log.Printf("[INFO] Delete HBR Policy success: %s (%s)", name, id)
+	}
+	return nil
 }

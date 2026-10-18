@@ -5,8 +5,11 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,6 +17,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
@@ -303,9 +307,9 @@ func TestAccAliCloudHbrVault_basic7218(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -447,9 +451,9 @@ func TestAccAliCloudHbrVault_basic7218_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -509,3 +513,122 @@ func AliCloudHbrVaultBasicDependence7218Twin(name string) string {
 }
 
 // Test Hbr Vault. <<< Resource test cases, automatically generated.
+
+func init() {
+	resource.AddTestSweepers("alicloud_hbr_vault", &resource.Sweeper{
+		Name: "alicloud_hbr_vault",
+		F:    testSweepHbrVaults,
+		Dependencies: []string{
+			"alicloud_hbr_policy_binding",
+			"alicloud_hbr_policy",
+		},
+	})
+}
+
+// testSweepHbrVaults cleans HBR backup vaults. Fleet-wipe pattern: SWEEP_ALL
+// bypasses the tf-prefix filter -> cleans ALL non-NODELETING vaults (test
+// account has no prod data); NORMAL mode only cleans tf-prefix vaults. The
+// NODELETING guard is always-active (both modes). DeleteVault fails with
+// VaultBoundPolicyCannotBeDeleted if a policy still references the vault; the
+// policy_binding + policy sweepers (Dependencies) run first to clear bindings
+// and policies so vaults become deletable.
+func testSweepHbrVaults(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
+		"tftestacc",
+	}
+
+	action := "DescribeVaults"
+	request := map[string]interface{}{
+		"PageNumber": 1,
+		"PageSize":   PageSizeLarge,
+	}
+	vaults := make([]map[string]interface{}, 0)
+	for {
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve HBR Vaults: %s", err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.Vaults.Vault", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Vaults.Vault", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			if item, ok := v.(map[string]interface{}); ok {
+				vaults = append(vaults, item)
+			}
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	if len(vaults) == 0 {
+		log.Printf("[INFO] HBR Vault: 0 vaults in region %s", region)
+		return nil
+	}
+
+	for _, vault := range vaults {
+		name := fmt.Sprint(vault["VaultName"])
+		id := fmt.Sprint(vault["VaultId"])
+		if name == "" || id == "" {
+			continue
+		}
+		// NODELETING guard -- always-active (both NORMAL and SWEEP_ALL).
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping HBR Vault (NODELETING): %s (%s)", name, id)
+			continue
+		}
+		// Fleet-wipe: SWEEP_ALL bypasses the tf-prefix filter.
+		if !sweepAll() {
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping HBR Vault (no prefix): %s (%s)", name, id)
+				continue
+			}
+		}
+		log.Printf("[INFO] Deleting HBR Vault: %s (%s)", name, id)
+		deleteAction := "DeleteVault"
+		deleteRequest := map[string]interface{}{
+			"VaultId": id,
+		}
+		_, e := client.RpcPost("hbr", "2017-09-08", deleteAction, nil, deleteRequest, false)
+		if e != nil {
+			log.Printf("[ERROR] Failed to delete HBR Vault (%s (%s)): %s", name, id, e)
+			continue
+		}
+		log.Printf("[INFO] Delete HBR Vault success: %s (%s)", name, id)
+	}
+	return nil
+}
