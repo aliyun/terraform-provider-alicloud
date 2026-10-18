@@ -35,24 +35,13 @@ provider "alicloud" {
   region = "cn-beijing"
 }
 
-variable "zone_id" {
-  default = "cn-beijing-h"
-}
-
-variable "region_id" {
-  default = "cn-beijing"
-}
-
-
 resource "alicloud_redis_global_security_ip_group" "default" {
   global_ip_group_name = "ggn_example_create"
   global_ip_list       = "192.168.0.1,10.10.10.10,172.16.0.1"
 }
 ```
 
-
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_redis_global_security_ip_group&spm=docs.r.redis_global_security_ip_group.example&intl_lang=EN_US)
-
 
 ## Argument Reference
 
@@ -61,7 +50,6 @@ The following arguments are supported:
 * `global_ip_group_name` - (Required) The name of the IP whitelist template.
 
 -> **NOTE:**   Multiple IP addresses are separated by commas (,). You can create up to 1,000 IP addresses or CIDR blocks for all IP whitelists.
-
 
 ## Attributes Reference
 

@@ -15,7 +15,7 @@ import (
 func TestAccAliCloudRedisGlobalSecurityIpGroup_basic12846(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_redis_global_security_ip_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudRedisGlobalSecurityIpGroupMap12846)
+	ra := resourceAttrInit(resourceId, AliCloudRedisGlobalSecurityIpGroupMap12846)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeRedisGlobalSecurityIpGroup")
@@ -23,11 +23,11 @@ func TestAccAliCloudRedisGlobalSecurityIpGroup_basic12846(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccredis%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisGlobalSecurityIpGroupBasicDependence12846)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRedisGlobalSecurityIpGroupBasicDependence12846)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -35,54 +35,144 @@ func TestAccAliCloudRedisGlobalSecurityIpGroup_basic12846(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"global_ip_group_name": "ggn_test_create",
-					"global_ip_list":       "192.168.0.1,10.10.10.10,172.16.0.1",
+					"global_ip_group_name": name,
+					"global_ip_list":       "192.168.1.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"global_ip_group_name": "ggn_test_create",
-						"global_ip_list":       "192.168.0.1,10.10.10.10,172.16.0.1",
+						"global_ip_group_name": name,
+						"global_ip_list":       "192.168.1.1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"global_ip_group_name": "ggn_test_update",
-					"global_ip_list":       "192.168.0.1,10.10.10.10",
+					"global_ip_group_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"global_ip_group_name": "ggn_test_update",
-						"global_ip_list":       "192.168.0.1,10.10.10.10",
+						"global_ip_group_name": name + "update",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"global_ip_list": "192.168.1.1,192.168.1.2,192.168.1.3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_ip_list": "192.168.1.1,192.168.1.2,192.168.1.3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_ip_list": "192.168.1.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_ip_list": "192.168.1.1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
 }
 
-var AlicloudRedisGlobalSecurityIpGroupMap12846 = map[string]string{}
+func TestAccAliCloudRedisGlobalSecurityIpGroup_basic12846_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_global_security_ip_group.default"
+	ra := resourceAttrInit(resourceId, AliCloudRedisGlobalSecurityIpGroupMap12846)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisGlobalSecurityIpGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccredis%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRedisGlobalSecurityIpGroupBasicDependence12846)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"global_ip_group_name": name,
+					"global_ip_list":       "192.168.1.1,192.168.1.2,192.168.1.3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_ip_group_name": name,
+						"global_ip_list":       "192.168.1.1,192.168.1.2,192.168.1.3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
 
-func AlicloudRedisGlobalSecurityIpGroupBasicDependence12846(name string) string {
+func TestAccAliCloudRedisGlobalSecurityIpGroup_multi(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_global_security_ip_group.default.5"
+	ra := resourceAttrInit(resourceId, AliCloudRedisGlobalSecurityIpGroupMap12846)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisGlobalSecurityIpGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccredis%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRedisGlobalSecurityIpGroupBasicDependence12846)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"count":                "6",
+					"global_ip_group_name": name + "${count.index}",
+					"global_ip_list":       "192.168.1.1,192.168.1.2,192.168.1.3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"global_ip_group_name": name + fmt.Sprint(5),
+						"global_ip_list":       "192.168.1.1,192.168.1.2,192.168.1.3",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AliCloudRedisGlobalSecurityIpGroupMap12846 = map[string]string{}
+
+func AliCloudRedisGlobalSecurityIpGroupBasicDependence12846(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
 }
-
-variable "zone_id" {
-  default = "cn-beijing-h"
-}
-
-variable "region_id" {
-  default = "cn-beijing"
-}
-
-
 `, name)
 }
 
