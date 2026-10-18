@@ -538,17 +538,31 @@ func testSweepCmsAlertRuleV2(region string) error {
 	// alert_rule_v2 list is a RoaPost (/queryAlertRules); delete is a RoaPost
 	// (/manageAlertRules body {uuid, action:DELETE}). Both need RegionId in the
 	// query. Mirror the provider's queryAlertRules call
-	// (service_alicloud_cms_v2.go): query carries ONLY RegionId; the body holds
-	// any filter (provider uses filter.uuid.eq for single-id lookup). For a
-	// fleet list-all we send an empty body so every rule is returned. Putting
-	// maxResults in the query caused a 400 (unrecognized query param for this
-	// ROA endpoint). Pagination via nextToken is handled below if the response
-	// carries one.
+	// (service_alicloud_cms_v2.go, Cms 2024-03-30): the query carries ONLY
+	// RegionId; the body holds any filter (provider uses filter.uuid.eq for a
+	// single-id lookup). For a fleet list-all we send a minimal pagination body
+	// (no filter) — an empty body {} is rejected with 400 ParameterInvalid
+	// "Request body is required" even though every body field is optional.
+	// Putting maxResults in the query also caused a 400 (unrecognized query
+	// param for this ROA endpoint). Pagination is body-based
+	// (pagination.pageNumber/pageSize); the response carries data.totalCount,
+	// not a nextToken.
 	var all []map[string]interface{}
+	// queryAlertRules (Cms 2024-03-30 ROA POST /queryAlertRules) rejects an
+	// empty body with 400 ParameterInvalid "Request body is required", even
+	// though every body field (filter/pagination/workspace) is optional. Send
+	// a minimal pagination body so the endpoint accepts the request; the body
+	// also drives page-based pagination (pageNumber/pageSize) per the schema,
+	// since the response carries data.totalCount rather than a nextToken.
 	query := map[string]*string{
 		"RegionId": StringPointer(client.RegionId),
 	}
-	body := map[string]interface{}{}
+	body := map[string]interface{}{
+		"pagination": map[string]interface{}{
+			"pageNumber": 1,
+			"pageSize":   PageSizeLarge,
+		},
+	}
 	for {
 		resp, err := cmsRoaPost(client, "/queryAlertRules", query, body, nil)
 		if err != nil {
@@ -566,14 +580,13 @@ func testSweepCmsAlertRuleV2(region string) error {
 				all = append(all, m)
 			}
 		}
-		next := ""
-		if t, ok := resp["nextToken"].(string); ok && t != "" {
-			next = t
-			query["nextToken"] = StringPointer(next)
-		}
-		if next == "" {
+		// body-based pagination: stop when a page returns fewer than pageSize
+		// items (last page); otherwise advance pageNumber and fetch again.
+		if len(items) < PageSizeLarge {
 			break
 		}
+		pag := body["pagination"].(map[string]interface{})
+		pag["pageNumber"] = pag["pageNumber"].(int) + 1
 	}
 	for _, item := range all {
 		uuid := cmsGetField(item, "uuid")
