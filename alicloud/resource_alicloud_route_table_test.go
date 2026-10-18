@@ -60,11 +60,13 @@ func testSweepRouteTable(region string) error {
 	for {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
-			return fmt.Errorf("Error retrieving RouteTables: %s", err)
+			log.Printf("[ERROR] Failed to list RouteTables: %s", err)
+			break
 		}
 		resp, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.RouterTableList.RouterTableListType", response)
+			log.Printf("[ERROR] Failed to parse $.RouterTableList.RouterTableListType for %s: %s", action, err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
