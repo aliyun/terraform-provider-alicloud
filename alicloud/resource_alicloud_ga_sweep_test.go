@@ -474,8 +474,23 @@ func testSweepGaDomain(region string) error {
 			domain := v.(map[string]interface{})
 			domainName := fmt.Sprint(domain["Domain"])
 			acceleratorId := fmt.Sprint(domain["AcceleratorId"])
-			if gaSweepSkipName(domainName) {
-				log.Printf("[INFO] Skipping Ga domain (NODELETING/prefix): %s", domainName)
+			// Ga domain names are real存/ICP-backed in production. Per the
+			// red-line rule, ALWAYS require the tf-testAcc prefix EVEN under
+			// SWEEP_ALL — never bypass the prefix filter for domains. The
+			// NODELETING name guard applies on top.
+			if protectedSweepVpcName(domainName) {
+				log.Printf("[INFO] Skipping Ga domain (NODELETING): %s", domainName)
+				continue
+			}
+			domainSkip := true
+			for _, prefix := range gaSweepPrefixes {
+				if strings.HasPrefix(domainName, prefix) {
+					domainSkip = false
+					break
+				}
+			}
+			if domainSkip {
+				log.Printf("[INFO] Skipping Ga domain (no tf-testAcc prefix; real存 guard): %s", domainName)
 				continue
 			}
 			log.Printf("[Info] Delete Ga domain relation: %s -> %s", domainName, acceleratorId)
