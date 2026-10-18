@@ -115,6 +115,9 @@ func testSweepPolarDBGlobalDatabaseNetwork(region string) error {
 }
 
 func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
+	// Keep the provider's API request/response debug in the acceptance log so
+	// the create and update calls can be verified at the API boundary.
+	t.Setenv("DEBUG", "terraform")
 	var v map[string]interface{}
 	resourceId := "alicloud_polardb_global_database_network.default"
 	ra := acctest.ResourceAttrInit(resourceId, ResourceGlobalDatabaseNetworkMap)
@@ -135,21 +138,39 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id": "${alicloud_polardb_cluster.default.id}",
+					"db_cluster_id":             "${alicloud_polardb_cluster.default.id}",
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"gdn_version":               "1.0",
+					"enable_global_domain_name": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id": CHECKSET,
+						"db_cluster_id":             CHECKSET,
+						"resource_group_id":         CHECKSET,
+						"gdn_version":               "1.0",
+						"enable_global_domain_name": "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "tf-testAcc",
+					"enable_global_domain_name": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "tf-testAcc",
+						"enable_global_domain_name": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":       "tf-testAcc",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":       "tf-testAcc",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -159,21 +180,24 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "update-tf-testAcc",
+						"description":       "update-tf-testAcc",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_global_domain_name", "resource_group_id"},
 			},
 		},
 	})
 }
 
 var ResourceGlobalDatabaseNetworkMap = map[string]string{
-	"status": CHECKSET,
+	"status":            CHECKSET,
+	"resource_group_id": CHECKSET,
 }
 
 func ResourceGlobalDatabaseNetworkBasicDependence(name string) string {
@@ -181,6 +205,8 @@ func ResourceGlobalDatabaseNetworkBasicDependence(name string) string {
 variable "name" {
 	default = "%s"
 }
+
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
@@ -205,6 +231,9 @@ resource "alicloud_polardb_cluster" "default" {
 	db_node_class = "polar.mysql.x4.medium"
 	vswitch_id    = alicloud_vswitch.default.id
 	description   = "${var.name}"
+	lifecycle {
+		ignore_changes = [encrypt_new_tables]
+	}
 }
 
 `, name)
