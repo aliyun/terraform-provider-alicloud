@@ -55,7 +55,8 @@ func testAliCloudEcsDisk(region string) error {
 
 		resp, err := jsonpath.Get("$.Disks.Disk", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Disks.Disk", response)
+			log.Printf("[ERROR] Failed to parse $.Disks.Disk for %s: %s", action, err)
+			break
 		}
 
 		result, _ := resp.([]interface{})

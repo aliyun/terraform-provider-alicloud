@@ -49,11 +49,13 @@ func testSweepEcsAutoSnapshotPolicy(region string) error {
 		action := "DescribeAutoSnapshotPolicyEx"
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_auto_snapshot_policy", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list %s: %s", action, err)
+			break
 		}
 		resp, err := jsonpath.Get("$.AutoSnapshotPolicies.AutoSnapshotPolicy", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AutoSnapshotPolicies.AutoSnapshotPolicy", response)
+			log.Printf("[ERROR] Failed to parse $.AutoSnapshotPolicies.AutoSnapshotPolicy for %s: %s", action, err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
