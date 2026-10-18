@@ -52,29 +52,43 @@ func testSweepLindormInstances(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_lindorm_instances", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list lindorm instances: %s", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.InstanceList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList", response)
+			log.Printf("[ERROR] Failed to parse $.InstanceList (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
-			skip := true
 			item := v.(map[string]interface{})
+			alias := fmt.Sprint(item["InstanceAlias"])
+			id := fmt.Sprint(item["InstanceId"])
+			// Name-based do-not-delete protection (NODELETING markers). Applies under SWEEP_ALL too.
+			if protectedSweepVpcName(alias) {
+				log.Printf("[INFO] Skipping Lindorm Instance (do-not-delete): %s (%s)", alias, id)
+				continue
+			}
+			// Mirror resource Delete: PREPAY instances cannot be released via the API.
+			if fmt.Sprint(item["PayType"]) == "PREPAY" {
+				log.Printf("[WARN] Skipping PREPAY Lindorm Instance (cannot release): %s (%s)", alias, id)
+				continue
+			}
+			skip := true
 			if !sweepAll() {
 				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["InstanceAlias"])), strings.ToLower(prefix)) {
+					if strings.HasPrefix(strings.ToLower(alias), strings.ToLower(prefix)) {
 						skip = false
 						break
 					}
 				}
 				if skip {
-					log.Printf("[INFO] Skipping Lindorm Instance: %v (%v)", item["InstanceAlias"], item["InstanceId"])
+					log.Printf("[INFO] Skipping Lindorm Instance: %s (%s)", alias, id)
 					continue
 				}
 			}
-			lindormInstanceIds = append(lindormInstanceIds, fmt.Sprint(item["InstanceId"]))
+			lindormInstanceIds = append(lindormInstanceIds, id)
 		}
 		if len(result) < PageSizeLarge {
 			break

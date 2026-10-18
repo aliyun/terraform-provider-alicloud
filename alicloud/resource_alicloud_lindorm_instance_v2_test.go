@@ -3,12 +3,137 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_lindorm_instance_v2", &resource.Sweeper{
+		Name: "alicloud_lindorm_instance_v2",
+		F:    testSweepLindormInstanceV2s,
+	})
+}
+
+// testSweepLindormInstanceV2s cleans up Lindorm V2 (new-architecture) test instances.
+// V2 instances are returned by GetLindormInstanceList with ServiceType="lindorm_v2" and
+// must be released via ReleaseLindormV2Instance (ReleaseLindormInstance rejects them with
+// an ApiVersionMismatch error). The delete mirrors resourceAliCloudLindormInstanceV2Delete.
+func testSweepLindormInstanceV2s(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting AliCloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	action := "GetLindormInstanceList"
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var response map[string]interface{}
+	type lindormV2Target struct {
+		id, alias string
+	}
+	targets := make([]lindormV2Target, 0)
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			log.Printf("[ERROR] Failed to list lindorm instance_v2: %s", err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.InstanceList", response)
+		if err != nil {
+			log.Printf("[ERROR] Failed to parse $.InstanceList (treat as empty): %s", err)
+			return nil
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			// Only V2 (new-architecture) instances belong to this sweeper;
+			// V1 instances (ServiceType="lindorm") are handled by testSweepLindormInstances.
+			if fmt.Sprint(item["ServiceType"]) != "lindorm_v2" {
+				continue
+			}
+			alias := fmt.Sprint(item["InstanceAlias"])
+			id := fmt.Sprint(item["InstanceId"])
+			// Name-based do-not-delete protection (NODELETING markers). Applies under SWEEP_ALL too.
+			if protectedSweepVpcName(alias) {
+				log.Printf("[INFO] Skipping Lindorm V2 Instance (do-not-delete): %s (%s)", alias, id)
+				continue
+			}
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(alias), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping Lindorm V2 Instance: %s (%s)", alias, id)
+					continue
+				}
+			}
+			targets = append(targets, lindormV2Target{id: id, alias: alias})
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	for _, t := range targets {
+		log.Printf("[INFO] Deleting Lindorm V2 Instance: %s (%s)", t.alias, t.id)
+		action := "ReleaseLindormV2Instance"
+		request := map[string]interface{}{
+			"InstanceId":  t.id,
+			"RegionId":    client.RegionId,
+			"Immediately": "true",
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+			_, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			// Mirror resource Delete: already-deleted/not-found is success.
+			if IsExpectedErrors(err, []string{"Instance.IsDeleted"}) || NotFoundError(err) {
+				continue
+			}
+			log.Printf("[ERROR] Failed to delete Lindorm V2 Instance (%s): %s", t.id, err)
+		}
+	}
+	return nil
+}
 
 // Test Lindorm InstanceV2. >>> Resource test cases, automatically generated.
 // Case InstanceV2修改删除白名单测试用例 11876
@@ -29,9 +154,9 @@ func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -156,9 +281,9 @@ func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -284,9 +409,9 @@ func TestAccAliCloudLindormInstanceV2_basic11176(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -415,9 +540,9 @@ func TestAccAliCloudLindormInstanceV2_basic11191(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -531,9 +656,9 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
