@@ -159,12 +159,14 @@ func testSweepFCServices(region string) error {
 			request["PageNumber"] = 1
 			response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
-				return WrapError(err)
+				log.Printf("[ERROR] Failed to list network interfaces (%s (%s)): %s", name, id, err)
+				continue
 			}
 			addDebug(action, response, request)
 			resp, err := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NetworkInterfaceSets.NetworkInterfaceSet", response)
+				log.Printf("[ERROR] Failed to parse $.NetworkInterfaceSets.NetworkInterfaceSet (treat as empty, %s (%s)): %s", name, id, err)
+				continue
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
@@ -193,7 +195,8 @@ func testSweepFCServices(region string) error {
 			return fcClient.ListServiceVersions(input)
 		})
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to list FC service versions (%s (%s)): %s", name, id, err)
+			continue
 		}
 
 		output := raw.(*fc.ListServiceVersionsOutput)
@@ -242,9 +245,9 @@ func TestAccAliCloudFCServiceUpdate(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcServiceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -396,9 +399,9 @@ func TestAccAliCloudFCServiceVpcAndNasUpdate(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcServiceConfigVpcDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -569,9 +572,9 @@ func TestAccAliCloudFCServiceMulti(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcServiceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

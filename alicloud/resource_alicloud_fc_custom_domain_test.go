@@ -40,7 +40,8 @@ func testSweepFCCustomDomain(region string) error {
 		return fcClient.ListServices(fc.NewListServicesInput())
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving FC services: %s", err)
+		log.Printf("[ERROR] Failed to list FC services: %s", err)
+		return nil
 	}
 
 	// Delete FC function and services.
@@ -162,7 +163,8 @@ func testSweepFCCustomDomain(region string) error {
 			return fcClient.ListCustomDomains(fc.NewListCustomDomainsInput().WithNextToken(nextToken))
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving FC custom domains: %s", err)
+			log.Printf("[ERROR] Failed to list FC custom domains: %s", err)
+			return nil
 		}
 		response := raw.(*fc.ListCustomDomainsOutput)
 		if response == nil {
@@ -225,9 +227,9 @@ func TestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcCustomDomainConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
