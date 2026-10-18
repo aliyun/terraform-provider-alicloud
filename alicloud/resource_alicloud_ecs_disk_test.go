@@ -66,14 +66,16 @@ func testAliCloudEcsDisk(region string) error {
 				continue
 			}
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["DiskName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["DiskName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Disk: %s", item["DiskName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Disk: %s", item["DiskName"].(string))
+					continue
+				}
 			}
 			action = "DeleteDisk"
 			request := map[string]interface{}{
