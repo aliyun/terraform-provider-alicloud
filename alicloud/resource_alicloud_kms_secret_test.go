@@ -53,13 +53,15 @@ func testSweepKmsSecret(region string) error {
 	for {
 		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 		if err != nil {
-			return WrapErrorf(err, SweepDefaultErrorMsg, "alicloud_kms_secret", action)
+			log.Printf("[ERROR] Failed to list kms secret: %s", err)
+			return nil
 		}
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.SecretList.Secret", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.SecretList.Secret", response)
+			log.Printf("[ERROR] Failed to parse $.SecretList.Secret (treat as empty): %s", err)
+			return nil
 		}
 
 		result, _ := resp.([]interface{})
