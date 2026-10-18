@@ -69,7 +69,8 @@ func testSweepCenFlowlog(region string) error {
 		}
 
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return err
+			log.Printf("[ERROR] Failed to paginate cen flowlogs (stopping): %s", err)
+			break
 		} else {
 			request.PageNumber = page
 		}
