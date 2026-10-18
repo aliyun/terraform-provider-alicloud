@@ -44,6 +44,7 @@ func testSweepNetworkAclAttachment(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", request.GetActionName(), err)
+			break
 		}
 		response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
 		if len(response.NetworkAcls.NetworkAcl) < 1 {
@@ -56,7 +57,8 @@ func testSweepNetworkAclAttachment(region string) error {
 		}
 
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to get next page number: %s", err)
+			break
 		} else {
 			request.PageNumber = page
 		}

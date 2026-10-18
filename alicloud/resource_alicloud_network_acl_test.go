@@ -50,7 +50,8 @@ func testSweepNetworkAcl(region string) error {
 		}
 		resp, err := jsonpath.Get("$.NetworkAcls.NetworkAcl", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NetworkAcls.NetworkAcl", response)
+			log.Printf("[ERROR] Failed to parse $.NetworkAcls.NetworkAcl (treat as empty): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -83,7 +84,8 @@ func testSweepNetworkAcl(region string) error {
 		//	Delete attach resources
 		object, err := vpcService.DescribeNetworkAcl(id)
 		if err != nil {
-			log.Println("DescribeNetworkAcl failed", err)
+			log.Printf("[ERROR] Failed to describe Network Acl (%s): %s", id, err)
+			continue
 		}
 		deleteResources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
 		if len(deleteResources) > 0 {
