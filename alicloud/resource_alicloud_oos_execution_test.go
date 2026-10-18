@@ -194,14 +194,74 @@ func TestAccAliCloudOOSExecution_complete(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudOOSExecution_resourceGroup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_execution.default"
+	ra := resourceAttrInit(resourceId, OosExecutionMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosExecution")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccOosExecution%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, OosExecutionResourceGroupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_name":     "${alicloud_oos_template.default.template_name}",
+					"parameters":        `{\"Status\":\"Running\"}`,
+					"resource_group_id": "${alicloud_resource_manager_resource_group.default.id}",
+					"safety_check":      "Skip",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"template_name":     CHECKSET,
+						"parameters":        CHECKSET,
+						"resource_group_id": CHECKSET,
+						"mode":              "Automatic",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_name":     "${alicloud_oos_template.default.template_name}",
+					"parameters":        `{\"Status\":\"Running\"}`,
+					"resource_group_id": "${alicloud_resource_manager_resource_group.change.id}",
+					"safety_check":      "Skip",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
 var OosExecutionMap = map[string]string{
-	"create_date": CHECKSET,
-	"executed_by": CHECKSET,
-	"is_parent":   CHECKSET,
-	"start_date":  CHECKSET,
-	"status":      CHECKSET,
-	"template_id": CHECKSET,
-	"update_date": CHECKSET,
+	"create_date":       CHECKSET,
+	"executed_by":       CHECKSET,
+	"is_parent":         CHECKSET,
+	"resource_group_id": CHECKSET,
+	"start_date":        CHECKSET,
+	"status":            CHECKSET,
+	"template_id":       CHECKSET,
+	"update_date":       CHECKSET,
 }
 
 func OosExecutionBasicdependence(name string) string {
@@ -241,6 +301,21 @@ func OosExecutionBasicdependence(name string) string {
 	`, name)
 }
 
+func OosExecutionResourceGroupDependence(name string) string {
+	return fmt.Sprintf(`%s
+
+resource "alicloud_resource_manager_resource_group" "default" {
+  resource_group_name = "%s"
+  display_name        = "%s"
+}
+
+resource "alicloud_resource_manager_resource_group" "change" {
+  resource_group_name = "%s-c"
+  display_name        = "%s-c"
+}
+`, OosExecutionBasicdependence(name), name, name, name, name)
+}
+
 // lintignore: R001
 func TestUnitAlicloudOOSExecution(t *testing.T) {
 	p := Provider().ResourcesMap
@@ -253,6 +328,7 @@ func TestUnitAlicloudOOSExecution(t *testing.T) {
 		"loop_mode":           "loop_mode",
 		"mode":                "mode",
 		"parent_execution_id": "parent_execution_id",
+		"resource_group_id":   "resource_group_id",
 		"safety_check":        "safety_check",
 		"template_content":    "template_content",
 		"template_name":       "template_name",
@@ -290,6 +366,7 @@ func TestUnitAlicloudOOSExecution(t *testing.T) {
 					"For":     "Test",
 				},
 				"ParentExecutionId": "parent_execution_id",
+				"ResourceGroupId":   "resource_group_id",
 				"RamRole":           "ram_role",
 				"StartDate":         "start_date",
 				"Status":            "Success",
@@ -327,10 +404,6 @@ func TestUnitAlicloudOOSExecution(t *testing.T) {
 			}
 		},
 		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
-			result := ReadMockResponse
-			return result, nil
-		},
-		"UpdateNormal": func(errorCode string) (map[string]interface{}, error) {
 			result := ReadMockResponse
 			return result, nil
 		},
@@ -392,8 +465,9 @@ func TestUnitAlicloudOOSExecution(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	// Set ID for Update and Delete Method
+	// Set ID for Delete Method
 	d.SetId("MockExecutionId")
+
 	// Delete
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewOosClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
