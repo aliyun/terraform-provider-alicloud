@@ -73,7 +73,8 @@ func testSweepCSKubernetes(region string) error {
 		return csClient.DescribeClusters("")
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving CS Clusters: %s", err)
+		log.Printf("[ERROR] Failed to list alicloud_cs_kubernetes (treat as empty): %s", err)
+		return nil
 	}
 	clusters, _ := raw.([]cs.ClusterType)
 	sweeped := false

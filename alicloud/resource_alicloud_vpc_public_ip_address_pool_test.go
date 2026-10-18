@@ -59,7 +59,8 @@ func testSweepVpcPublicIpAddressPool(region string) error {
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpc_public_ip_address_pool", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to list alicloud_vpc_public_ip_address_pool (treat as empty): %s", err)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.PublicIpAddressPoolList", response)
 	if err != nil {
