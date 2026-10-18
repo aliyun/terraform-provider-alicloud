@@ -134,6 +134,7 @@ func listOtsSweepInstances(client *connectivity.AliyunClient) ([]ots.InstanceInf
 			req.PageNum = page
 		}
 	}
+	log.Printf("[INFO] listOtsSweepInstances: ListInstance returned %d OTS instance(s) for region %s", len(insts), client.RegionId)
 	return insts, nil
 }
 
