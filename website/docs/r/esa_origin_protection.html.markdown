@@ -44,8 +44,9 @@ resource "alicloud_esa_site" "default" {
 
 
 resource "alicloud_esa_origin_protection" "default" {
-  origin_converge = "on"
-  site_id         = alicloud_esa_site.default.id
+  origin_converge      = "on"
+  auto_confirm_ip_list = "off"
+  site_id              = alicloud_esa_site.default.id
 }
 ```
 
@@ -58,7 +59,10 @@ The following arguments are supported:
 
   - on
   - off
+* `auto_confirm_ip_list` - (Optional, Default: off) Whether to automatically enable the latest origin IP list. Valid values: `on`, `off`.
 * `site_id` - (Required, ForceNew) Site Id
+
+-> **NOTE:** `origin_converge` and `auto_confirm_ip_list` are mutually exclusive. Enabling both at the same time (`on`) is not allowed and results in a `FunctionArgConflict.OriginProtection` error.
 
 ## Attributes Reference
 
