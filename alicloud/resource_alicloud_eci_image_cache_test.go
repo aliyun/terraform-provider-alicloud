@@ -38,6 +38,9 @@ func testSweepEciImageCache(region string) error {
 	}
 	addDebug(queryRequest.GetActionName(), raw)
 	response, _ := raw.(*eci.DescribeImageCachesResponse)
+	if response == nil {
+		return nil
+	}
 	for _, cache := range response.ImageCaches {
 		if strings.HasPrefix(cache.ImageCacheName, "tf-testacc") {
 			allCaches = append(allCaches, cache)
@@ -79,9 +82,9 @@ func TestAccAlicloudEciImageCache_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

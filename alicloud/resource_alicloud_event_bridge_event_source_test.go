@@ -60,11 +60,13 @@ func testSweepEventBridgeEventSource(region string) error {
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapError(fmt.Errorf("ListUserDefinedEventSources failed. Response: %v. Error: %v", response, err))
+		log.Printf("[ERROR] Failed to list EventBridge Event Sources: %s", err)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.Data.EventSourceList", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.EventSourceList", response)
+		log.Printf("[ERROR] Failed to parse $.Data.EventSourceList (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {

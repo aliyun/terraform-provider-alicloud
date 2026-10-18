@@ -42,6 +42,9 @@ func testSweepDatahubProject(region string) error {
 		log.Printf("[ERROR] Failed to list Datahub projects: %s", err)
 	}
 	projects, _ := raw.(*datahub.ListProjectResult)
+	if projects == nil {
+		return nil
+	}
 
 	for _, projectName := range projects.ProjectNames {
 		// a testing project?
@@ -56,7 +59,8 @@ func testSweepDatahubProject(region string) error {
 			return dataHubClient.ListTopic(projectName)
 		})
 		if err != nil {
-			return fmt.Errorf("error listing Datahub topics: %s", err)
+			log.Printf("[ERROR] Failed to list Datahub topics (%s): %s", projectName, err)
+			continue
 		}
 		topics, _ := raw.(*datahub.ListTopicResult)
 
@@ -69,7 +73,8 @@ func testSweepDatahubProject(region string) error {
 			})
 
 			if err != nil {
-				return fmt.Errorf("error listing Datahub subscriptions: %s", err)
+				log.Printf("[ERROR] Failed to list Datahub subscriptions (%s/%s): %s", projectName, topicName, err)
+				continue
 			}
 			subscriptions, _ := raw.(*datahub.ListSubscriptionResult)
 
@@ -133,9 +138,9 @@ func TestAccAlicloudDatahubProject_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -191,9 +196,9 @@ func TestAccAlicloudDatahubProject_multi(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
