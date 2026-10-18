@@ -54,14 +54,14 @@ func testSweepDcdnDomain(region string) error {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %v", action, err)
-			return nil
+			break
 		}
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Domains.PageData", response)
 		if err != nil {
 			log.Printf("[ERROR] Getting %s attribute by path %s failed: %v", action, "$.Domains.PageData", err)
-			return nil
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {

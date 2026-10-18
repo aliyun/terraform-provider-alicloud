@@ -73,13 +73,13 @@ func testSweepDcdnWafPolicy(region string) error {
 		addDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
+			break
 		}
 
 		resp, err := jsonpath.Get("$.Policies", response)
 		if err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Policies", action, err)
-			return nil
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
