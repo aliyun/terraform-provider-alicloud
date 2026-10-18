@@ -673,7 +673,8 @@ func vpcOtsAttachmentSweeper(region, vpcID string, api vpcOtsAttachmentAPI) *res
 		}
 		candidates, err := listVpcOtsAttachments(region, vpcID, "", api)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to list ots vpc attachments: %s", err)
+			return nil
 		}
 		var failures []string
 		for _, candidate := range candidates {
