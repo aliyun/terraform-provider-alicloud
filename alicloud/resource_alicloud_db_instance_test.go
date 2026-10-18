@@ -84,6 +84,12 @@ func testSweepDBInstances(region string) error {
 		item := v.(map[string]interface{})
 		name := fmt.Sprint(item["DBInstanceDescription"])
 		id := fmt.Sprint(item["DBInstanceId"])
+		// Name-based do-not-delete protection (NODELETING etc.) applies in both
+		// prefix and SWEEP_ALL modes so SWEEP_ALL never sweeps a marked resource.
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping RDS Instance (do-not-delete marker): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {

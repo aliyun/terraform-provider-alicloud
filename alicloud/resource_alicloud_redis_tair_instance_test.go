@@ -2,10 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	tea "github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -13,6 +16,141 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_redis_tair_instance", &resource.Sweeper{
+		Name: "alicloud_redis_tair_instance",
+		F:    testSweepRedisTairInstances,
+	})
+}
+
+// testSweepRedisTairInstances sweeps alicloud_redis_tair_instance resources.
+// Tair instances are created via CreateTairInstance on the R-kvstore product
+// and are NOT returned by the alicloud_kvstore_instance sweeper (which only
+// iterates InstanceType Redis/Memcache), so a dedicated sweeper is required.
+func testSweepRedisTairInstances(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	// InstanceType values supported by resource_alicloud_redis_tair_instance.
+	tairTypes := []string{"tair_rdb", "tair_scm", "tair_essd"}
+
+	action := "DescribeInstances"
+	objects := make([]interface{}, 0)
+	var response map[string]interface{}
+	for _, instanceType := range tairTypes {
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"InstanceType": instanceType,
+			"PageSize":     PageSizeXLarge,
+			"PageNumber":   1,
+		}
+		for {
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				log.Printf("[ERROR] %s got an error: %v", action, err)
+				break
+			}
+			resp, err := jsonpath.Get("$.Instances.KVStoreInstance", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Instances.KVStoreInstance", response)
+			}
+			result, _ := resp.([]interface{})
+			objects = append(objects, result...)
+			if len(result) < PageSizeXLarge {
+				break
+			}
+			request["PageNumber"] = request["PageNumber"].(int) + 1
+		}
+	}
+
+	for _, v := range objects {
+		item := v.(map[string]interface{})
+		name := fmt.Sprint(item["InstanceName"])
+		id := fmt.Sprint(item["InstanceId"])
+		// Name-based do-not-delete protection (NODELETING etc.) applies in both
+		// prefix and SWEEP_ALL modes so SWEEP_ALL never sweeps a marked resource.
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Redis Tair Instance (do-not-delete marker): %s (%s)", name, id)
+			continue
+		}
+		if !sweepAll() {
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Redis Tair Instance: %s (%s)", name, id)
+				continue
+			}
+		}
+
+		log.Printf("[INFO] Deleting Redis Tair Instance: %s (%s)", name, id)
+		// Clear release protection before deleting (mirrors KVStore sweeper).
+		modifyAction := "ModifyInstanceAttribute"
+		modifyRequest := map[string]interface{}{
+			"InstanceId":                id,
+			"InstanceReleaseProtection": false,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		if err := retry.Retry(1*time.Minute, func() *retry.RetryError {
+			_, e := client.RpcPost("R-kvstore", "2015-01-01", modifyAction, nil, modifyRequest, false)
+			if e != nil {
+				if NeedRetry(e) {
+					wait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			return nil
+		}); err != nil {
+			log.Printf("[ERROR] Failed to modify Redis Tair Instance release protection (%s): %s", id, err)
+		}
+
+		deleteAction := "DeleteInstance"
+		deleteRequest := map[string]interface{}{
+			"InstanceId": id,
+		}
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
+			_, e := client.RpcPost("R-kvstore", "2015-01-01", deleteAction, nil, deleteRequest, false)
+			if e != nil {
+				if NeedRetry(e) {
+					wait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			return nil
+		}); err != nil {
+			log.Printf("[ERROR] Failed to delete Redis Tair Instance (%s (%s)): %s", name, id, err)
+		}
+	}
+
+	return nil
+}
 
 // Case 3314
 func TestAccAliCloudRedisTairInstance_basic3314(t *testing.T) {
