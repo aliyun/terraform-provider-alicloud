@@ -69,6 +69,10 @@ func testSweepGaBandwidthPackage(region string) error {
 			bandwidthPackage := v.(map[string]interface{})
 			bandwidthPackageName := fmt.Sprint(bandwidthPackage["Name"])
 			bandwidthPackageId := fmt.Sprint(bandwidthPackage["BandwidthPackageId"])
+			if protectedSweepVpcName(bandwidthPackageName) {
+				log.Printf("[INFO] Skipping Ga bandwidth package (NODELETING): %s(%s) ", bandwidthPackageId, bandwidthPackageName)
+				continue
+			}
 			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(bandwidthPackageName, prefix) {
@@ -76,7 +80,7 @@ func testSweepGaBandwidthPackage(region string) error {
 					break
 				}
 			}
-			if skip {
+			if skip && !sweepAll() {
 				log.Printf("[INFO] Skipping Ga bandwidth package: %s(%s) ", bandwidthPackageId, bandwidthPackageName)
 				continue
 			}

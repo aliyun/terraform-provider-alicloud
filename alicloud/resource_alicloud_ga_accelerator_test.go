@@ -68,6 +68,10 @@ func testSweepGaAccelerator(region string) error {
 			accelerator := v.(map[string]interface{})
 			acceleratorName := fmt.Sprint(accelerator["Name"])
 			acceleratorId := fmt.Sprint(accelerator["AcceleratorId"])
+			if protectedSweepVpcName(acceleratorName) {
+				log.Printf("[INFO] Skipping Ga accelerator (NODELETING): %s(%s) ", acceleratorId, acceleratorName)
+				continue
+			}
 			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(acceleratorName, prefix) {
@@ -75,7 +79,7 @@ func testSweepGaAccelerator(region string) error {
 					break
 				}
 			}
-			if skip {
+			if skip && !sweepAll() {
 				log.Printf("[INFO] Skipping Ga accelerator: %s(%s) ", acceleratorId, acceleratorName)
 				continue
 			}
