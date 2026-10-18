@@ -84,9 +84,21 @@ func resourceAlicloudOosExecution() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"resource_ids": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"safety_check": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"start_date": {
@@ -130,12 +142,12 @@ func resourceAlicloudOosExecution() *schema.Resource {
 	}
 }
 
-func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "StartExecution"
+// oosExecutionStartExecutionRequest builds the StartExecution payload for the
+// configured execution. It is kept separate from Create so the exact payload
+// handed to the transport (notably the target ResourceGroupId) can be verified
+// without cloud access.
+func oosExecutionStartExecutionRequest(d *schema.ResourceData, regionId string) (map[string]interface{}, error) {
 	request := make(map[string]interface{})
-	var err error
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -156,7 +168,10 @@ func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}
 		request["ParentExecutionId"] = v
 	}
 
-	request["RegionId"] = client.RegionId
+	request["RegionId"] = regionId
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	if v, ok := d.GetOk("safety_check"); ok {
 		request["SafetyCheck"] = v
 	}
@@ -168,7 +183,7 @@ func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("tags"); ok {
 		respJson, err := convertMaptoJsonString(v.(map[string]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return nil, WrapError(err)
 		}
 		request["Tags"] = respJson
 	}
@@ -176,6 +191,18 @@ func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}
 	request["TemplateName"] = d.Get("template_name")
 	if v, ok := d.GetOk("template_version"); ok {
 		request["TemplateVersion"] = v
+	}
+
+	return request, nil
+}
+
+func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "StartExecution"
+	request, err := oosExecutionStartExecutionRequest(d, client.RegionId)
+	if err != nil {
+		return WrapError(err)
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -216,8 +243,21 @@ func resourceAlicloudOosExecutionRead(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
-	d.Set("counters", object["Counters"])
+	setOosExecutionState(d, object)
+	return nil
+}
+
+// setOosExecutionState maps a ListExecutions execution object into state. It is
+// kept separate from Read so the mapping of the response to resource_group_id
+// and the derived resource_ids is verifiable without cloud access.
+func setOosExecutionState(d *schema.ResourceData, object map[string]interface{}) {
 	d.Set("create_date", object["CreateDate"])
+	if v, ok := object["Counters"].(map[string]interface{}); ok {
+		counters, _ := convertMaptoJsonString(v)
+		d.Set("counters", counters)
+	} else {
+		d.Set("counters", object["Counters"])
+	}
 	d.Set("description", object["Description"])
 	d.Set("end_date", object["EndDate"])
 	d.Set("executed_by", object["ExecutedBy"])
@@ -233,6 +273,7 @@ func resourceAlicloudOosExecutionRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("parent_execution_id", object["ParentExecutionId"])
 	d.Set("ram_role", object["RamRole"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("safety_check", object["SafetyCheck"])
 	d.Set("start_date", object["StartDate"])
 	d.Set("status", object["Status"])
@@ -244,9 +285,18 @@ func resourceAlicloudOosExecutionRead(d *schema.ResourceData, meta interface{}) 
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v))
 	}
+	// $.ResourceIds is exposed as a computed attribute. ListExecutions returns
+	// the execution's tags but not its ResourceIds, and ListTagResources only
+	// echoes the queried execution id once per bound tag, so the value is the
+	// execution itself while it carries tags and empty otherwise.
+	resourceIds := make([]string, 0)
+	if v, ok := object["Tags"].(map[string]interface{}); ok && len(v) > 0 {
+		resourceIds = append(resourceIds, d.Id())
+	}
+	d.Set("resource_ids", resourceIds)
 	d.Set("update_date", object["UpdateDate"])
-	return nil
 }
+
 func resourceAlicloudOosExecutionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteExecutions"

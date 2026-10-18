@@ -64,8 +64,8 @@ resource "alicloud_oos_execution" "example" {
   template_name = alicloud_oos_template.default.template_name
   description   = "From TF Test"
   parameters    = <<EOF
-				{"Status":"Running"}
-		  	EOF
+{"Status":"Running"}
+EOF
   tags = {
     "Created" = "TF",
     "For"     = "execution Test"
@@ -84,7 +84,8 @@ The following arguments are supported:
 * `mode` - (Optional, ForceNew) The mode of OOS Execution. Valid: `Automatic`, `Debug`. Default to `Automatic`.
 * `parameters` - (Optional, ForceNew) The parameters required by the template. Default to `{}`.
 * `parent_execution_id` - (Optional, ForceNew) The id of parent execution.
-* `safety_check` - (Optional, ForceNew) The mode of safety check.
+* `resource_group_id` - (Optional, String, ForceNew, Computed, Available since v2.2.0) The ID of the resource group. The resource group to which the execution belongs.
+* `safety_check` - (Optional, String, ForceNew, Computed) The mode of safety check.
 * `template_name` - (Required, ForceNew) The name of execution template.
 * `template_version` - (Optional, ForceNew) The version of execution template.
 * `template_content` - (Optional, ForceNew, Available in v1.114.0+) The content of template. When the user selects an existing template to create and execute a task, it is not necessary to pass in this field.
@@ -102,6 +103,7 @@ The following attributes are exported:
 * `is_parent` - Whether to include subtasks.
 * `outputs` - The outputs of OOS Execution.
 * `ram_role` - The role that executes the current template.
+* `resource_ids` - (List, Available since v2.2.0) The IDs of the resources bound with tags, which is the execution itself while it carries tags. The value is an empty list when the execution has no tags.
 * `start_date` - The time when the execution was started.
 * `status` - The status of OOS Execution.
 * `status_message` - The message of status.
