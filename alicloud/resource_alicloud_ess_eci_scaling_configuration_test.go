@@ -40,12 +40,14 @@ func testSweepEciScalingConfiguration(region string) error {
 	}
 	response, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_eci_scaling_configuration", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to list Eci scaling configurations: %s", err)
+		return nil
 	}
 	addDebug(action, response, request)
 	resp, err := jsonpath.Get("$.ScalingConfigurations", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ScalingConfigurations", response)
+		log.Printf("[ERROR] Failed to parse $.ScalingConfigurations (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {

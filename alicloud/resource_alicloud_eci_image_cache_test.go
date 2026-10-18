@@ -35,6 +35,7 @@ func testSweepEciImageCache(region string) error {
 	})
 	if err != nil {
 		log.Printf("[ERROR] %s get an error %#v", queryRequest.GetActionName(), err)
+		return nil
 	}
 	addDebug(queryRequest.GetActionName(), raw)
 	response, _ := raw.(*eci.DescribeImageCachesResponse)
