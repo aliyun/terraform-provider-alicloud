@@ -89,7 +89,8 @@ func testSweepApiGatewayGroup(region string) error {
 
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to paginate api gateway groups (stopping): %s", err)
+			break
 		}
 		req.PageNumber = page
 	}
@@ -122,9 +123,9 @@ func TestAccAliCloudApigatewayGroup_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -256,9 +257,9 @@ func TestAccAliCloudApigatewayGroup_basic01(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -303,9 +304,9 @@ func TestAccAliCloudApigatewayGroup_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

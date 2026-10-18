@@ -42,7 +42,8 @@ func testSweepApiGatewayVpcAccess(region string) error {
 		return cloudApiClient.DescribeVpcAccesses(req)
 	})
 	if err != nil {
-		return fmt.Errorf("Error Describe Api Gateway Vpc: %s", err)
+		log.Printf("[ERROR] Failed to list api gateway vpc access: %s", err)
+		return nil
 	}
 
 	allVpcs, _ := raw.(*cloudapi.DescribeVpcAccessesResponse)

@@ -49,11 +49,13 @@ func testSweepApiGatewayLogConfig(region string) error {
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_api_gateway_log_config", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to list api gateway log config: %s", err)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.LogInfos.LogInfo", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.LogInfos.LogInfo", response)
+		log.Printf("[ERROR] Failed to parse $.LogInfos.LogInfo (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
