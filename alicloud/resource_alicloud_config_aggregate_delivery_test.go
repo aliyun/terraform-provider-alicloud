@@ -35,9 +35,9 @@ func TestAccAliCloudConfigAggregateDelivery_OSS(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -150,9 +150,9 @@ func TestAccAliCloudConfigAggregateDelivery_SLS(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -331,6 +331,8 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 		"delivery_channel_condition":             "CreateConfigDeliveryValue",
 		"oversized_data_oss_target_arn":          "CreateConfigDeliveryValue",
 		"configuration_snapshot":                 true,
+		"compliant_snapshot":                     true,
+		"delivery_snapshot_time":                 "09:10Z",
 		"configuration_item_change_notification": true,
 		"non_compliant_notification":             true,
 		"status":                                 1,
@@ -358,6 +360,8 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 			"OversizedDataOSSTargetArn":           "CreateConfigDeliveryValue",
 			"AggregatorId":                        "CreateConfigDeliveryValue",
 			"ConfigurationSnapshot":               true,
+			"CompliantSnapshot":                   true,
+			"DeliverySnapshotTime":                "09:10Z",
 			"Description":                         "CreateConfigDeliveryValue",
 			"DeliveryChannelId":                   "CreateConfigDeliveryValue",
 			"DeliveryChannelName":                 "CreateConfigDeliveryValue",
@@ -458,6 +462,8 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 		"delivery_channel_condition":             "UpdateConfigDeliveryValue",
 		"oversized_data_oss_target_arn":          "UpdateConfigDeliveryValue",
 		"configuration_snapshot":                 false,
+		"compliant_snapshot":                     false,
+		"delivery_snapshot_time":                 "16:00Z",
 		"configuration_item_change_notification": false,
 		"non_compliant_notification":             false,
 		"status":                                 0,
@@ -472,6 +478,8 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 			"Status":                              0,
 			"OversizedDataOSSTargetArn":           "UpdateConfigDeliveryValue",
 			"ConfigurationSnapshot":               false,
+			"CompliantSnapshot":                   false,
+			"DeliverySnapshotTime":                "16:00Z",
 			"Description":                         "UpdateConfigDeliveryValue",
 			"DeliveryChannelName":                 "UpdateConfigDeliveryValue",
 			"DeliveryChannelTargetArn":            "UpdateConfigDeliveryValue",
@@ -619,9 +627,9 @@ func TestAccAliCloudConfigAggregateDelivery_basic7102(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -899,9 +907,9 @@ func TestAccAliCloudConfigAggregateDelivery_basic7102_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -960,9 +968,9 @@ func TestAccAliCloudConfigAggregateDelivery_basic7102_raw(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1017,6 +1025,81 @@ func TestAccAliCloudConfigAggregateDelivery_basic7102_raw(t *testing.T) {
 						"non_compliant_notification":             "true",
 						"status":                                 "1",
 						"delivery_channel_condition":             "[{\"filterType\":\"RuleRiskLevel\",\"value\":\"3\",\"multiple\":false},{\"filterType\":\"ResourceType\",\"values\":[\"ACS::ECS::Instance\"],\"multiple\":true}]",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case 账号组投递自动化测试-TF接入 compliant_snapshot and delivery_snapshot_time
+func TestAccAliCloudConfigAggregateDelivery_compliantSnapshot(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregate_delivery.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateDeliveryMap7102)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregateDelivery")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregatedelivery%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateDeliveryBasicDependence7102)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_channel_target_arn": "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+					"delivery_channel_type":       "SLS",
+					"aggregator_id":               "${alicloud_config_aggregator.default8vEf3r.id}",
+					"configuration_snapshot":      "true",
+					"compliant_snapshot":          "true",
+					"delivery_snapshot_time":      "09:10Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_channel_target_arn": "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+						"delivery_channel_type":       "SLS",
+						"aggregator_id":               CHECKSET,
+						"configuration_snapshot":      "true",
+						"compliant_snapshot":          "true",
+						"delivery_snapshot_time":      "09:10Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compliant_snapshot":     "false",
+					"delivery_snapshot_time": "16:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compliant_snapshot":     "false",
+						"delivery_snapshot_time": "16:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compliant_snapshot":     "true",
+					"delivery_snapshot_time": "04:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compliant_snapshot":     "true",
+						"delivery_snapshot_time": "04:00Z",
 					}),
 				),
 			},

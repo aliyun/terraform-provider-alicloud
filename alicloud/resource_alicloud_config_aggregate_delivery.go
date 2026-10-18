@@ -32,6 +32,11 @@ func resourceAliCloudConfigAggregateDelivery() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"compliant_snapshot": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"configuration_item_change_notification": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -60,6 +65,11 @@ func resourceAliCloudConfigAggregateDelivery() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"delivery_snapshot_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -104,6 +114,9 @@ func resourceAliCloudConfigAggregateDeliveryCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("configuration_snapshot"); ok {
 		request["ConfigurationSnapshot"] = v
 	}
+	if v, ok := d.GetOk("compliant_snapshot"); ok {
+		request["CompliantSnapshot"] = v
+	}
 	if v, ok := d.GetOk("delivery_channel_condition"); ok {
 		request["DeliveryChannelCondition"] = v
 	}
@@ -114,6 +127,9 @@ func resourceAliCloudConfigAggregateDeliveryCreate(d *schema.ResourceData, meta 
 	request["DeliveryChannelType"] = d.Get("delivery_channel_type")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
+	}
+	if v, ok := d.GetOk("delivery_snapshot_time"); ok {
+		request["DeliverySnapshotTime"] = v
 	}
 	if v, ok := d.GetOk("non_compliant_notification"); ok {
 		request["NonCompliantNotification"] = v
@@ -164,6 +180,9 @@ func resourceAliCloudConfigAggregateDeliveryRead(d *schema.ResourceData, meta in
 	if objectRaw["ConfigurationSnapshot"] != nil {
 		d.Set("configuration_snapshot", objectRaw["ConfigurationSnapshot"])
 	}
+	if objectRaw["CompliantSnapshot"] != nil {
+		d.Set("compliant_snapshot", objectRaw["CompliantSnapshot"])
+	}
 	if objectRaw["DeliveryChannelCondition"] != nil {
 		d.Set("delivery_channel_condition", objectRaw["DeliveryChannelCondition"])
 	}
@@ -178,6 +197,9 @@ func resourceAliCloudConfigAggregateDeliveryRead(d *schema.ResourceData, meta in
 	}
 	if objectRaw["Description"] != nil {
 		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["DeliverySnapshotTime"] != nil {
+		d.Set("delivery_snapshot_time", objectRaw["DeliverySnapshotTime"])
 	}
 	if objectRaw["NonCompliantNotification"] != nil {
 		d.Set("non_compliant_notification", objectRaw["NonCompliantNotification"])
@@ -232,6 +254,11 @@ func resourceAliCloudConfigAggregateDeliveryUpdate(d *schema.ResourceData, meta 
 		request["ConfigurationSnapshot"] = d.Get("configuration_snapshot")
 	}
 
+	if !d.IsNewResource() && d.HasChange("compliant_snapshot") {
+		update = true
+		request["CompliantSnapshot"] = d.Get("compliant_snapshot")
+	}
+
 	if !d.IsNewResource() && d.HasChange("delivery_channel_condition") {
 		update = true
 		request["DeliveryChannelCondition"] = d.Get("delivery_channel_condition")
@@ -249,6 +276,11 @@ func resourceAliCloudConfigAggregateDeliveryUpdate(d *schema.ResourceData, meta 
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
+	}
+
+	if !d.IsNewResource() && d.HasChange("delivery_snapshot_time") {
+		update = true
+		request["DeliverySnapshotTime"] = d.Get("delivery_snapshot_time")
 	}
 
 	if !d.IsNewResource() && d.HasChange("non_compliant_notification") {
