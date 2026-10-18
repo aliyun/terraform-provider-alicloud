@@ -41,12 +41,14 @@ func testSweepDcdnKvNamespace(region string) error {
 	}
 
 	action := "DescribeDcdnKvAccount"
+	// DescribeDcdnKvAccount is a GET-only RPC (per OpenAPI: methods=["get"]).
+	// Using RpcPost here returns 403 UnsupportedHTTPMethod, so use RpcGet.
 	request := map[string]interface{}{}
 
 	var response map[string]interface{}
 	listWait := incrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
+		response, err = client.RpcGet("dcdn", "2018-01-15", action, request, nil)
 		if err != nil {
 			if NeedRetry(err) {
 				listWait()

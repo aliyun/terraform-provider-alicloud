@@ -64,9 +64,13 @@ func testSweepDcdnEr(region string) error {
 		return nil
 	}
 
+	// DescribeRoutineUserInfo returns Content.Routines (array) + Content.Subdomains.
+	// When the account has no routines, the Routines key is absent — jsonpath.Get
+	// then returns "unknown key Routines". Treat that as "no routines to sweep"
+	// (INFO, not ERROR) so the log isn't noisy on accounts without ER.
 	resp, err := jsonpath.Get("$.Content.Routines", response)
 	if err != nil {
-		log.Printf("[ERROR] Getting %s attribute by path %s failed: %v", action, "$.Content.Routines", err)
+		log.Printf("[INFO] DescribeRoutineUserInfo returned no Routines for this account (nothing to sweep): %v", err)
 		return nil
 	}
 	result, _ := resp.([]interface{})
