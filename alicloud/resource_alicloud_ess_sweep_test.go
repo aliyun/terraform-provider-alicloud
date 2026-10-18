@@ -226,58 +226,71 @@ func testSweepEssLifecycleHooks(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	var hooks []ess.LifecycleHook
-	req := ess.CreateDescribeLifecycleHooksRequest()
-	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
-	req.PageNumber = requests.NewInteger(1)
-	for {
-		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DescribeLifecycleHooks(req)
-		})
-		if err != nil {
-			return fmt.Errorf("error retrieving lifecycle hooks: %s", err)
-		}
-		resp, _ := raw.(*ess.DescribeLifecycleHooksResponse)
-		if resp == nil || len(resp.LifecycleHooks.LifecycleHook) < 1 {
-			break
-		}
-		hooks = append(hooks, resp.LifecycleHooks.LifecycleHook...)
-		if len(resp.LifecycleHooks.LifecycleHook) < PageSizeLarge {
-			break
-		}
-		page, err := getNextpageNumber(req.PageNumber)
-		if err != nil {
-			return err
-		}
-		req.PageNumber = page
+	// DescribeLifecycleHooks rejects an empty ScalingGroupId, so iterate per
+	// scaling group and inherit the parent group's NODELETING/prefix gate.
+	groupNames, err := essScalingGroupNames(client)
+	if err != nil {
+		return err
 	}
 
-	for _, v := range hooks {
-		name := v.LifecycleHookName
-		id := v.LifecycleHookId
-		if essSkipByName(name) {
-			log.Printf("[INFO] Skipping Lifecycle Hook: %s (%s)", name, id)
+	for scalingGroupId, groupName := range groupNames {
+		if essSkipByName(groupName) {
+			log.Printf("[INFO] Skipping Lifecycle Hooks of Scaling Group (protected): %s (%s)", groupName, scalingGroupId)
 			continue
 		}
-		log.Printf("[INFO] Deleting Lifecycle Hook: %s (%s)", name, id)
-		req := ess.CreateDeleteLifecycleHookRequest()
-		req.LifecycleHookId = id
+		req := ess.CreateDescribeLifecycleHooksRequest()
 		req.RegionId = client.RegionId
-		_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DeleteLifecycleHook(req)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete Lifecycle Hook (%s (%s)): %s", name, id, err)
+		req.ScalingGroupId = scalingGroupId
+		req.PageSize = requests.NewInteger(PageSizeLarge)
+		req.PageNumber = requests.NewInteger(1)
+		for {
+			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.DescribeLifecycleHooks(req)
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to list lifecycle hooks of Scaling Group %s (%s): %s", groupName, scalingGroupId, err)
+				break
+			}
+			resp, _ := raw.(*ess.DescribeLifecycleHooksResponse)
+			if resp == nil || len(resp.LifecycleHooks.LifecycleHook) < 1 {
+				break
+			}
+			for _, v := range resp.LifecycleHooks.LifecycleHook {
+				name := v.LifecycleHookName
+				id := v.LifecycleHookId
+				// Double-check the hook name itself for NODELETING markers.
+				if protectedSweepVpcName(name) {
+					log.Printf("[INFO] Skipping Lifecycle Hook (NODELETING): %s (%s)", name, id)
+					continue
+				}
+				log.Printf("[INFO] Deleting Lifecycle Hook: %s (%s)", name, id)
+				delReq := ess.CreateDeleteLifecycleHookRequest()
+				delReq.LifecycleHookId = id
+				delReq.RegionId = client.RegionId
+				_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+					return essClient.DeleteLifecycleHook(delReq)
+				})
+				if err != nil {
+					log.Printf("[ERROR] Failed to delete Lifecycle Hook (%s (%s)): %s", name, id, err)
+				}
+			}
+			if len(resp.LifecycleHooks.LifecycleHook) < PageSizeLarge {
+				break
+			}
+			page, err := getNextpageNumber(req.PageNumber)
+			if err != nil {
+				break
+			}
+			req.PageNumber = page
 		}
 	}
 	return nil
 }
 
-// testSweepEssNotifications lists notification configs (which have no name
-// field of their own) and inherits the parent scaling group's NODELETING/prefix
-// protection so real存 notification configs are never swept, even under
-// SWEEP_ALL=1.
+// testSweepEssNotifications lists notification configs per scaling group
+// (DescribeNotificationConfigurations requires a ScalingGroupId) and inherits
+// the parent scaling group's NODELETING/prefix protection so real存 notification
+// configs are never swept, even under SWEEP_ALL=1.
 func testSweepEssNotifications(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
@@ -291,62 +304,57 @@ func testSweepEssNotifications(region string) error {
 	}
 
 	action := "DescribeNotificationConfigurations"
-	request := map[string]interface{}{
-		"RegionId":   client.RegionId,
-		"PageSize":   PageSizeLarge,
-		"PageNumber": 1,
-	}
-	var all []map[string]interface{}
-	for {
-		response, err := client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
-		if err != nil {
-			return fmt.Errorf("error retrieving notification configurations: %s", err)
-		}
-		addDebug(action, response, request)
-		raw, err := jsonpath.Get("$.NotificationConfigurationModels.NotificationConfigurationModel", response)
-		if err != nil {
-			break
-		}
-		result, _ := raw.([]interface{})
-		if len(result) < 1 {
-			break
-		}
-		for _, v := range result {
-			if item, ok := v.(map[string]interface{}); ok {
-				all = append(all, item)
-			}
-		}
-		if len(result) < PageSizeLarge {
-			break
-		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
-	}
-
-	for _, item := range all {
-		arn := fmt.Sprint(item["NotificationArn"])
-		scalingGroupId := fmt.Sprint(item["ScalingGroupId"])
-		// Inherit the parent scaling group's protection. If the group is gone
-		// (orphaned config) fall back to matching on the ARN, which for tf
-		// tests embeds the tf- MNS queue/topic name.
-		groupName := groupNames[scalingGroupId]
-		name := groupName
-		if name == "" {
-			name = arn
-		}
-		if essSkipByName(name) {
-			log.Printf("[INFO] Skipping Notification %s:%s (group=%s)", scalingGroupId, arn, groupName)
+	for scalingGroupId, groupName := range groupNames {
+		// Inherit the parent scaling group's protection; a notification has no
+		// name of its own, so a NODELETING/prefix-mismatched group shields its
+		// notification configs.
+		if essSkipByName(groupName) {
+			log.Printf("[INFO] Skipping Notifications of Scaling Group (protected): %s (%s)", groupName, scalingGroupId)
 			continue
 		}
-		log.Printf("[INFO] Deleting Notification %s:%s (group=%s)", scalingGroupId, arn, groupName)
-		req := ess.CreateDeleteNotificationConfigurationRequest()
-		req.RegionId = client.RegionId
-		req.ScalingGroupId = scalingGroupId
-		req.NotificationArn = arn
-		_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.DeleteNotificationConfiguration(req)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete Notification %s:%s: %s", scalingGroupId, arn, err)
+		request := map[string]interface{}{
+			"RegionId":       client.RegionId,
+			"ScalingGroupId": scalingGroupId,
+			"PageSize":       PageSizeLarge,
+			"PageNumber":     1,
+		}
+		for {
+			response, err := client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
+			if err != nil {
+				log.Printf("[ERROR] Failed to list notifications of Scaling Group %s (%s): %s", groupName, scalingGroupId, err)
+				break
+			}
+			addDebug(action, response, request)
+			raw, err := jsonpath.Get("$.NotificationConfigurationModels.NotificationConfigurationModel", response)
+			if err != nil {
+				break
+			}
+			result, _ := raw.([]interface{})
+			if len(result) < 1 {
+				break
+			}
+			for _, v := range result {
+				item, ok := v.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				arn := fmt.Sprint(item["NotificationArn"])
+				log.Printf("[INFO] Deleting Notification %s:%s (group=%s)", scalingGroupId, arn, groupName)
+				req := ess.CreateDeleteNotificationConfigurationRequest()
+				req.RegionId = client.RegionId
+				req.ScalingGroupId = scalingGroupId
+				req.NotificationArn = arn
+				_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+					return essClient.DeleteNotificationConfiguration(req)
+				})
+				if err != nil {
+					log.Printf("[ERROR] Failed to delete Notification %s:%s: %s", scalingGroupId, arn, err)
+				}
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			request["PageNumber"] = request["PageNumber"].(int) + 1
 		}
 	}
 	return nil
