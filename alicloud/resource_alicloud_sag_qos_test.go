@@ -61,7 +61,8 @@ func testSweepSagQos(region string) error {
 
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to get next page number for Sag Qos: %s", err)
+			break
 		}
 		req.PageNumber = page
 	}
