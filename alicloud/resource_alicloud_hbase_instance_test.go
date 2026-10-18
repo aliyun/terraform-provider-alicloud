@@ -43,7 +43,8 @@ func testSweepHBaseInstances(region string) error {
 			return hbaseClient.DescribeInstances(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving HBase Instances: %s", err)
+			log.Printf("[ERROR] Failed to list hbase instances: %s", err)
+			return nil
 		}
 		resp, _ := raw.(*hbase.DescribeInstancesResponse)
 		if resp == nil || len(resp.Instances.Instance) < 1 {
@@ -57,7 +58,8 @@ func testSweepHBaseInstances(region string) error {
 
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to paginate hbase instances (stopping): %s", err)
+			break
 		}
 		req.PageNumber = page
 	}
@@ -67,6 +69,13 @@ func testSweepHBaseInstances(region string) error {
 	for _, v := range insts {
 		name := v.InstanceName
 		id := v.InstanceId
+		// Red-line: name-based NODELETING/do-not-delete protection runs in BOTH
+		// normal and SWEEP_ALL mode so a do-not-delete HBase instance is never
+		// swept even when the prefix filter is bypassed.
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping HBase Instance (do-not-delete marker): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
@@ -168,7 +177,7 @@ func TestAccAliCloudHBaseInstanceVpc(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -436,7 +445,7 @@ func TestAccAliCloudHBaseInstance_VpcId(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
