@@ -46,9 +46,9 @@ func gaSweepSkipName(name string) bool {
 func listGaAcceleratorIds(client *connectivity.AliyunClient) ([]string, error) {
 	var ids []string
 	request := map[string]interface{}{
-		"RegionId":    client.RegionId,
-		"PageSize":    PageSizeLarge,
-		"PageNumber":  1,
+		"RegionId":   client.RegionId,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
 	}
 	for {
 		action := "ListAccelerators"
@@ -321,8 +321,8 @@ func testSweepGaIpSet(region string) error {
 				}
 				log.Printf("[Info] Delete Ga ip set: %s(%s)", ipSetId, ipSetName)
 				req := map[string]interface{}{
-					"IpSetIds.1": ipSetId,
-					"RegionId":   client.RegionId,
+					"IpSetIds.1":  ipSetId,
+					"RegionId":    client.RegionId,
 					"ClientToken": buildClientToken("DeleteIpSet"),
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
