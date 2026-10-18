@@ -55,7 +55,8 @@ func testSweepOpenSearchAppGroup(region string) error {
 		}
 		resp, err := jsonpath.Get("$.result", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AppGroup.result", response)
+			log.Printf("[ERROR] Failed to parse $.result (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
