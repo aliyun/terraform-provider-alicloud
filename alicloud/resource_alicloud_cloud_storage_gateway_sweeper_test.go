@@ -38,12 +38,16 @@ func csgShouldSweepName(name string) bool {
 
 // csgListStorageBundles enumerates every Cloud Storage Gateway storage bundle
 // visible to the caller in the region (DescribeStorageBundles, paginated).
+// BackendBucketRegionId is mandatory for this action, so it is set to the
+// client's region (the sweep region); test storage bundles created in the
+// region carry the same backend bucket region.
 func csgListStorageBundles(client *connectivity.AliyunClient) ([]map[string]interface{}, error) {
 	action := "DescribeStorageBundles"
 	out := make([]map[string]interface{}, 0)
 	request := map[string]interface{}{
-		"PageSize":   PageSizeLarge,
-		"PageNumber": 1,
+		"BackendBucketRegionId": client.RegionId,
+		"PageSize":              PageSizeLarge,
+		"PageNumber":            1,
 	}
 	for {
 		var response map[string]interface{}
