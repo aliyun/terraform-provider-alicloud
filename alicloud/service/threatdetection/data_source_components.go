@@ -82,7 +82,6 @@ func (d *componentsDataSource) Schema(ctx context.Context, req datasource.Schema
 		},
 		Blocks: map[string]schema.Block{
 			"components": schema.ListNestedBlock{
-				Computed:    true,
 				Description: "A list of component entries.",
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -97,7 +96,6 @@ func (d *componentsDataSource) Schema(ctx context.Context, req datasource.Schema
 					},
 					Blocks: map[string]schema.Block{
 						"component_actions": schema.ListNestedBlock{
-							Computed:    true,
 							Description: "The list of actions supported by the component.",
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
@@ -106,7 +104,6 @@ func (d *componentsDataSource) Schema(ctx context.Context, req datasource.Schema
 								},
 								Blocks: map[string]schema.Block{
 									"input_configs": schema.ListNestedBlock{
-										Computed:    true,
 										Description: "The input configurations of the component action.",
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
@@ -120,7 +117,6 @@ func (d *componentsDataSource) Schema(ctx context.Context, req datasource.Schema
 										},
 									},
 									"output_configs": schema.ListNestedBlock{
-										Computed:    true,
 										Description: "The output configurations of the component action.",
 										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
@@ -133,7 +129,6 @@ func (d *componentsDataSource) Schema(ctx context.Context, req datasource.Schema
 							},
 						},
 						"component_asset_configs": schema.ListNestedBlock{
-							Computed:    true,
 							Description: "The asset configuration list of the component.",
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{

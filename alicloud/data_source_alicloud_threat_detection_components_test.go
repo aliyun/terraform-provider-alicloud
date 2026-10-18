@@ -1,4 +1,4 @@
-package alicloud
+package alicloud_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	tfacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // TestAccAlicloudThreatDetectionComponentsDataSource covers the data source
@@ -15,18 +15,24 @@ import (
 // filter that matches nothing returns an empty list rather than erroring on
 // Component.External.NotExist.
 //
-// The test lives in the top-level alicloud package and uses the SDK v2 test
-// harness (helper/resource) like the other 1200+ acceptance tests in this
-// provider. ProtoV5ProviderFactories still serves the muxed (Framework + SDK v2)
-// provider so the Framework-native data source is reachable; importing
-// terraform-plugin-testing/helper/resource alongside the SDK v2 one re-registers
-// the -sweep flag and panics on init, so the SDK v2 harness is used here.
+// The test is an external test (package alicloud_test) because it drives the
+// data source through acctest.ProtoV5ProviderFactories, the muxed (Framework +
+// SDK v2) server; package alicloud's own acceptance tests stay internal and use
+// the in-package factories, but importing acctest from package alicloud would
+// form an import cycle (acctest is a non-test file that imports package alicloud
+// for Provider()). The terraform-plugin-testing harness is used, matching the
+// other Framework/ephemeral acceptance tests (ims, kms); only one
+// helper/resource may be linked into a test binary because both the SDK v2 and
+// plugin-testing variants register a -sweep flag in init, and a binary linking
+// both panics with "flag redefined: sweep" before any test runs. The SDK v2
+// helper/acctest is imported only for RandIntRange and does not register the
+// flag, so it coexists with the plugin-testing harness.
 func TestAccAlicloudThreatDetectionComponentsDataSource(t *testing.T) {
 	rand := tfacctest.RandIntRange(1000000, 9999999)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
