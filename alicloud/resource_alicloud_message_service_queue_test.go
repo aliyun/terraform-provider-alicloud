@@ -60,14 +60,17 @@ func testSweepMessageServiceQueue(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_message_service_queue", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list/parse alicloud_message_service_queue (action %s): %s", action, err)
+			break
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			log.Printf("[ERROR] Failed to list alicloud_message_service_queue (action %s): response Success=false: %v", action, response)
+			break
 		}
 		resp, err := jsonpath.Get("$.Data.PageData", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.PageData", response)
+			log.Printf("[ERROR] Failed to parse alicloud_message_service_queue $.Data.PageData: %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -94,9 +97,6 @@ func testSweepMessageServiceQueue(region string) error {
 	for _, id := range MessageServiceQueueIds {
 		log.Printf("[INFO] Deleting MessageServiceQueue Instance: %s", id)
 		deleteAction := "DeleteQueue"
-		if err != nil {
-			return WrapError(err)
-		}
 		request = map[string]interface{}{
 			"QueueName": id,
 		}

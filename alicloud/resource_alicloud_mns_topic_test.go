@@ -39,7 +39,8 @@ func testSweepMnsTopics(region string) error {
 				return topicManager.ListTopicDetail(nextMaker, 1000, namePrefix)
 			})
 			if err != nil {
-				return fmt.Errorf("get topicDetails  error: %#v", err)
+				log.Printf("[ERROR] Failed to list/parse mns topics: %s", err)
+				break
 			}
 			topicDetails, _ := raw.(ali_mns.TopicDetails)
 			for _, attr := range topicDetails.Attrs {
