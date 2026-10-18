@@ -70,6 +70,11 @@ func resourceAliCloudDdosCooDomainPreciseAccessRule() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -86,6 +91,9 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleCreate(d *schema.ResourceData
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("domain"); ok {
 		request["Domain"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 	request["RegionId"] = client.RegionId
 
@@ -169,6 +177,13 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleRead(d *schema.ResourceData, 
 	d.Set("action", objectRaw["Action"])
 	d.Set("expires", objectRaw["ExpirePeriod"])
 	d.Set("name", objectRaw["Name"])
+	// ModifyWebPreciseAccessRule accepts ResourceGroupId, but DescribeWebPreciseAccessRule
+	// does not return it (the default resource group is omitted from the response). Only
+	// write back when the API returns a non-empty value, so the configured value is
+	// preserved and no perpetual diff is introduced.
+	if v, ok := objectRaw["ResourceGroupId"]; ok && fmt.Sprint(v) != "" {
+		d.Set("resource_group_id", v)
+	}
 
 	conditionListChildRaw := objectRaw["ConditionList"]
 	conditionMaps := make([]map[string]interface{}, 0)
@@ -209,9 +224,15 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleUpdate(d *schema.ResourceData
 	query = make(map[string]interface{})
 	request["Domain"] = parts[0]
 	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	rulesDataList := make(map[string]interface{})
 
 	if d.HasChange("condition") {
+		update = true
+	}
+	if d.HasChange("resource_group_id") {
 		update = true
 	}
 	if v := d.Get("condition"); !IsNil(v) {

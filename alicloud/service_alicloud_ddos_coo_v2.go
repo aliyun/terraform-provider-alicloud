@@ -722,11 +722,17 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainPreciseAccessRule(id string) (ob
 		return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
 	}
 
+	// ResourceGroupId is located at the PreciseAccessConfig level (parent of RuleList).
+	resourceGroupId, _ := jsonpath.Get("$.PreciseAccessConfigList[0].ResourceGroupId", response)
+
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
 		if fmt.Sprint(item["Name"]) != parts[1] {
 			continue
+		}
+		if resourceGroupId != nil {
+			item["ResourceGroupId"] = resourceGroupId
 		}
 		return item, nil
 	}

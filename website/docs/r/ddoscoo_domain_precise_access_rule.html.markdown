@@ -82,6 +82,7 @@ The following arguments are supported:
 -> **NOTE:**  The domain name must already have a website service forwarding rule configured. You can call [DescribeDomains](https://help.aliyun.com/document_detail/91724.html) to query all domain names.
 * `expires` - (Optional, Int) Rule validity period, in seconds. This parameter takes effect only when the rule's matching action is set to block (`action` is `block`), blocking access requests during the validity period. If this parameter is not specified, the rule remains effective permanently.
 * `name` - (Required, ForceNew) Rule name.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group. If not specified, the system automatically uses the default resource group.
 
 ### `condition`
 
