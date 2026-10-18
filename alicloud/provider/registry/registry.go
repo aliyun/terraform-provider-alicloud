@@ -14,6 +14,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudauth"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oos"
@@ -41,6 +42,7 @@ var servicePackages = []conns.ServicePackage{
 	cs.ServicePackage(),
 	cr.ServicePackage(),
 	sts.ServicePackage(),
+	dataworks.ServicePackage(),
 }
 
 var validateOnce sync.Once
