@@ -37,7 +37,8 @@ func testSweepSlbServerCertificate(region string) error {
 		return slbClient.DescribeServerCertificates(req)
 	})
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list Slb Server Certificates: %s", err)
+		return nil
 	}
 	resp, _ := raw.(*slb.DescribeServerCertificatesResponse)
 	for _, serverCertificate := range resp.ServerCertificates.ServerCertificate {
@@ -86,9 +87,9 @@ func TestAccAliCloudSLBServerCertificate_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -188,9 +189,9 @@ func SkipTestAccAlicloudSLBServerCertificate_aliCloud_server_certificate(t *test
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

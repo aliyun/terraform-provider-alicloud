@@ -64,11 +64,13 @@ func testSweepSlbCACertificate(region string) error {
 		if IsExpectedErrors(err, []string{"CACertificateId.NotFound"}) {
 			return nil
 		}
-		log.Println("List CA certificate failed!", err)
+		log.Printf("[ERROR] Failed to list Slb CA Certificates: %s", err)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.CACertificates.CACertificate", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.CACertificates.CACertificate", response)
+		log.Printf("[ERROR] Failed to parse Slb CA Certificates: %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 
