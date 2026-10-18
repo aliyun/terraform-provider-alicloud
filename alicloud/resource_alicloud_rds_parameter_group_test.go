@@ -5,8 +5,11 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,9 +17,115 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_rds_parameter_group", &resource.Sweeper{
+		Name: "alicloud_rds_parameter_group",
+		F:    testSweepRdsParameterGroups,
+	})
+}
+
+// testSweepRdsParameterGroups sweeps leftover test RDS parameter groups.
+// ParameterGroupType: 0 = system default, 1 = user custom (deletable),
+// 2 = system auto-backup. Only custom (type 1) groups created by tests are
+// deleted; system groups are always preserved.
+func testSweepRdsParameterGroups(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{"tf-testAcc", "tf_testAcc"}
+
+	action := "DescribeParameterGroups"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	var response map[string]interface{}
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		log.Printf("[ERROR] %s got an error: %v", action, err)
+		return nil
+	}
+
+	resp, err := jsonpath.Get("$.ParameterGroups.ParameterGroup", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ParameterGroups.ParameterGroup", response)
+	}
+	objects, _ := resp.([]interface{})
+
+	for _, v := range objects {
+		item := v.(map[string]interface{})
+		name := fmt.Sprint(item["ParameterGroupName"])
+		id := fmt.Sprint(item["ParameterGroupId"])
+
+		// Only custom parameter groups (type 1) are deletable; system (0) and
+		// auto-backup (2) templates are preserved regardless of SWEEP_ALL.
+		if pgType := fmt.Sprint(item["ParameterGroupType"]); pgType != "1" {
+			log.Printf("[INFO] Skipping RDS Parameter Group (system type %s): %s (%s)", pgType, name, id)
+			continue
+		}
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping RDS Parameter Group (do-not-delete marker): %s (%s)", name, id)
+			continue
+		}
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+		} else {
+			skip = false
+		}
+		if skip {
+			log.Printf("[INFO] Skipping RDS Parameter Group: %s (%s)", name, id)
+			continue
+		}
+
+		log.Printf("[INFO] Deleting RDS Parameter Group: %s (%s)", name, id)
+		deleteAction := "DeleteParameterGroup"
+		deleteRequest := map[string]interface{}{
+			"ParameterGroupId": id,
+			"SourceIp":         client.SourceIp,
+			"RegionId":         client.RegionId,
+		}
+		if e := retry.Retry(2*time.Minute, func() *retry.RetryError {
+			resp, e := client.RpcPost("Rds", "2014-08-15", deleteAction, nil, deleteRequest, false)
+			if e != nil {
+				if NeedRetry(e) || IsExpectedErrors(e, []string{"InternalError"}) {
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			addDebug(deleteAction, resp, deleteRequest)
+			return nil
+		}); e != nil {
+			log.Printf("[ERROR] Failed to delete RDS Parameter Group (%s (%s)): %s", name, id, e)
+		}
+	}
+
+	return nil
+}
 
 func TestAccAliCloudRdsParameterGroup_basic(t *testing.T) {
 	var v map[string]interface{}
