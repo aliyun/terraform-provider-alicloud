@@ -80,25 +80,36 @@ func testSweepDTSMigrationJob(region string) error {
 			if _, ok := item["DtsJobName"]; !ok {
 				continue
 			}
+			name := fmt.Sprint(item["DtsJobName"])
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping DTS Migration Job (NODELETING): %s", name)
+				continue
+			}
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["DtsJobName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if sweepAll() {
+				skip = false
+			} else {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping DTS Migration Job: %s", item["DtsJobName"].(string))
+				log.Printf("[INFO] Skipping DTS Migration Job: %s", name)
 				continue
 			}
 			action := "DeleteDtsJob"
 			request := map[string]interface{}{
 				"DtsJobId": item["DtsJobId"],
+				"RegionId": client.RegionId,
 			}
 			_, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete DTS Migration Job (%s): %s", item["DtsJobId"].(string), err)
+				log.Printf("[ERROR] Failed to delete DTS Migration Job (%s): %s", name, err)
+				continue
 			}
-			log.Printf("[INFO] Delete DTS Migration Job success: %s ", item["DtsJobId"].(string))
+			log.Printf("[INFO] Delete DTS Migration Job success: %s ", name)
 		}
 		if len(result) < PageSizeLarge {
 			break
