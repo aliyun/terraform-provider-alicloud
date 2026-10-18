@@ -80,7 +80,6 @@ func testSweepElasticsearch(region string) error {
 
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
-		"",
 		"tf-testAcc",
 		"tf_testAcc",
 	}
@@ -124,6 +123,12 @@ func testSweepElasticsearch(region string) error {
 	for _, v := range instances {
 		description := v.Description
 		id := v.InstanceId
+		// Name-based do-not-delete protection applies in both SWEEP_ALL and
+		// prefix-filtered modes so NODELETING/marked instances are never swept.
+		if protectedSweepVpcName(description) {
+			log.Printf("[INFO] Skipping Elasticsearch Instance (do-not-delete marker): %s (%s)", description, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
