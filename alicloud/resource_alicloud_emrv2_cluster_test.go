@@ -42,11 +42,13 @@ func testSweepEmrV2Cluster(region string) error {
 	for {
 		listClustersResponse, err := client.RpcPost("Emr", "2021-03-20", listClustersAction, nil, listClustersRequest, true)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_emrv2_cluster", listClustersAction, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list emrv2 clusters: %s", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Clusters", listClustersResponse)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, listClustersAction, "$.Clusters", listClustersResponse)
+			log.Printf("[ERROR] Failed to parse $.Clusters: %s", err)
+			return nil
 		}
 		if resp == nil || len(resp.([]interface{})) == 0 {
 			break
@@ -110,9 +112,9 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -553,9 +555,9 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1241,9 +1243,9 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1746,9 +1748,9 @@ func TestAccAliCloudEmrV2Cluster_basic3(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
