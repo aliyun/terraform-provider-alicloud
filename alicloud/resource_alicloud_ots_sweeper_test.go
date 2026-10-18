@@ -164,7 +164,8 @@ func testSweepOtsTables(region string) error {
 
 	insts, err := listOtsSweepInstances(client)
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list ots instances: %s", err)
+		return nil
 	}
 	for _, inst := range insts {
 		instanceName := inst.InstanceName
@@ -197,7 +198,8 @@ func testSweepOtsTunnels(region string) error {
 
 	insts, err := listOtsSweepInstances(client)
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list ots instances: %s", err)
+		return nil
 	}
 	for _, inst := range insts {
 		instanceName := inst.InstanceName
@@ -247,7 +249,8 @@ func testSweepOtsSearchIndexes(region string) error {
 
 	insts, err := listOtsSweepInstances(client)
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list ots instances: %s", err)
+		return nil
 	}
 	for _, inst := range insts {
 		instanceName := inst.InstanceName
@@ -284,7 +287,8 @@ func testSweepOtsSecondaryIndexes(region string) error {
 
 	insts, err := listOtsSweepInstances(client)
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list ots instances: %s", err)
+		return nil
 	}
 	for _, inst := range insts {
 		instanceName := inst.InstanceName
@@ -327,7 +331,8 @@ func testSweepOtsInstanceAttachments(region string) error {
 
 	insts, err := listOtsSweepInstances(client)
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list ots instances: %s", err)
+		return nil
 	}
 	for _, inst := range insts {
 		instanceName := inst.InstanceName

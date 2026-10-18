@@ -51,7 +51,8 @@ func testSweepOtsInstances(region string) error {
 			return otsClient.ListInstance(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving OTS Instances: %s", err)
+			log.Printf("[ERROR] Failed to list ots instances: %s", err)
+			return nil
 		}
 		resp, _ := raw.(*ots.ListInstanceResponse)
 		if resp == nil || len(resp.InstanceInfos.InstanceInfo) < 1 {
@@ -64,7 +65,8 @@ func testSweepOtsInstances(region string) error {
 		}
 
 		if page, err := getNextpageNumber(req.PageNum); err != nil {
-			return err
+			log.Printf("[ERROR] Failed to paginate ots instances (stopping): %s", err)
+			break
 		} else {
 			req.PageNum = page
 		}
