@@ -44,7 +44,8 @@ func testSweepGpdbElasticInstances(region string) error {
 			return gpdbClient.DescribeDBInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "testSweepGpdbElasticInstances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list GPDB elastic instances: %s", err)
+			return nil
 		}
 		response, _ := raw.(*gpdb.DescribeDBInstancesResponse)
 		addDebug(request.GetActionName(), response)
@@ -58,7 +59,8 @@ func testSweepGpdbElasticInstances(region string) error {
 			break
 		}
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to paginate GPDB elastic instances (stopping): %s", err)
+			break
 		} else {
 			request.PageNumber = page
 		}
