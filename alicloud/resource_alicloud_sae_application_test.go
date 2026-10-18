@@ -46,7 +46,8 @@ func testSweepSaeApplication(region string) error {
 	}
 	resp, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+		log.Printf("[ERROR] Failed to parse $.Data (treat as empty): %s", err)
+		return nil
 	}
 	namespace, _ := resp.([]interface{})
 
@@ -58,11 +59,13 @@ func testSweepSaeApplication(region string) error {
 		request["NamespaceId"] = StringPointer(item["NamespaceId"].(string))
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sae_application", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list sae applications (namespace %v): %s", item["NamespaceId"], err)
+			continue
 		}
 		resp, err := jsonpath.Get("$.Data.Applications", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Applications", response)
+			log.Printf("[ERROR] Failed to parse $.Data.Applications (treat as empty, namespace %v): %s", item["NamespaceId"], err)
+			continue
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
