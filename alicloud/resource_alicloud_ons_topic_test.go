@@ -48,7 +48,8 @@ func testSweepOnsTopic(region string) error {
 	}
 	resp, err := jsonpath.Get("$.Data.InstanceVO", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
+		log.Printf("[ERROR] Failed to parse ons instance in service list: %s", err)
+		return nil
 	}
 
 	var instanceIds []string
@@ -68,7 +69,8 @@ func testSweepOnsTopic(region string) error {
 		}
 		resp, err := jsonpath.Get("$.Data.PublishInfoDo", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.PublishInfoDo", response)
+			log.Printf("[ERROR] Failed to parse ons topics for instance %s: %s", instanceId, err)
+			continue
 		}
 
 		result, _ := resp.([]interface{})

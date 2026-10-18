@@ -57,7 +57,8 @@ func testSweepOnsInstance(region string) error {
 
 	resp, err := jsonpath.Get("$.Data.InstanceVO", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
+		log.Printf("[ERROR] Failed to parse ons instance in service list: %s", err)
+		return nil
 	}
 
 	result, _ := resp.([]interface{})
