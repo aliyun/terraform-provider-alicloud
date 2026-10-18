@@ -54,11 +54,13 @@ func testSweepRosStackGroup(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ros_stack_group", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list Ros StackGroup: %s", err)
+			break
 		}
 		resp, err := jsonpath.Get("$.StackGroups", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.StackGroups", response)
+			log.Printf("[ERROR] Failed to parse Ros StackGroup ($.StackGroups): %s", err)
+			break
 		}
 		sweeped := false
 		result, _ := resp.([]interface{})
