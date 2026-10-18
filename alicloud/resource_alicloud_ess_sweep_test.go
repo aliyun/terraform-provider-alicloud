@@ -88,7 +88,8 @@ func essScalingGroupNames(client *connectivity.AliyunClient) (map[string]string,
 			return essClient.DescribeScalingGroups(req)
 		})
 		if err != nil {
-			return names, fmt.Errorf("error retrieving scaling groups: %s", err)
+			log.Printf("[ERROR] Failed to list scaling groups: %s", err)
+			break
 		}
 		resp, _ := raw.(*ess.DescribeScalingGroupsResponse)
 		if resp == nil || len(resp.ScalingGroups.ScalingGroup) < 1 {
@@ -102,7 +103,8 @@ func essScalingGroupNames(client *connectivity.AliyunClient) (map[string]string,
 		}
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return names, err
+			log.Printf("[ERROR] Failed to parse next page number for scaling groups: %s", err)
+			break
 		}
 		req.PageNumber = page
 	}
@@ -126,7 +128,8 @@ func testSweepEssScalingConfigurations(region string) error {
 			return essClient.DescribeScalingConfigurations(req)
 		})
 		if err != nil {
-			return fmt.Errorf("error retrieving scaling configurations: %s", err)
+			log.Printf("[ERROR] Failed to list scaling configurations: %s", err)
+			break
 		}
 		resp, _ := raw.(*ess.DescribeScalingConfigurationsResponse)
 		if resp == nil || len(resp.ScalingConfigurations.ScalingConfiguration) < 1 {
@@ -138,7 +141,8 @@ func testSweepEssScalingConfigurations(region string) error {
 		}
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to parse next page number for scaling configurations: %s", err)
+			break
 		}
 		req.PageNumber = page
 	}
@@ -181,7 +185,8 @@ func testSweepEssScalingRules(region string) error {
 			return essClient.DescribeScalingRules(req)
 		})
 		if err != nil {
-			return fmt.Errorf("error retrieving scaling rules: %s", err)
+			log.Printf("[ERROR] Failed to list scaling rules: %s", err)
+			break
 		}
 		resp, _ := raw.(*ess.DescribeScalingRulesResponse)
 		if resp == nil || len(resp.ScalingRules.ScalingRule) < 1 {
@@ -193,7 +198,8 @@ func testSweepEssScalingRules(region string) error {
 		}
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to parse next page number for scaling rules: %s", err)
+			break
 		}
 		req.PageNumber = page
 	}
@@ -230,7 +236,7 @@ func testSweepEssLifecycleHooks(region string) error {
 	// scaling group and inherit the parent group's NODELETING/prefix gate.
 	groupNames, err := essScalingGroupNames(client)
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list scaling groups for lifecycle hooks: %s", err)
 	}
 
 	for scalingGroupId, groupName := range groupNames {
@@ -279,6 +285,7 @@ func testSweepEssLifecycleHooks(region string) error {
 			}
 			page, err := getNextpageNumber(req.PageNumber)
 			if err != nil {
+				log.Printf("[ERROR] Failed to parse next page number for lifecycle hooks of Scaling Group %s (%s): %s", groupName, scalingGroupId, err)
 				break
 			}
 			req.PageNumber = page
@@ -300,7 +307,7 @@ func testSweepEssNotifications(region string) error {
 
 	groupNames, err := essScalingGroupNames(client)
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list scaling groups for notifications: %s", err)
 	}
 
 	action := "DescribeNotificationConfigurations"
@@ -327,6 +334,7 @@ func testSweepEssNotifications(region string) error {
 			addDebug(action, response, request)
 			raw, err := jsonpath.Get("$.NotificationConfigurationModels.NotificationConfigurationModel", response)
 			if err != nil {
+				log.Printf("[ERROR] Failed to parse notifications of Scaling Group %s (%s): %s", groupName, scalingGroupId, err)
 				break
 			}
 			result, _ := raw.([]interface{})
@@ -377,7 +385,8 @@ func testSweepEssAlarms(region string) error {
 			return essClient.DescribeAlarms(req)
 		})
 		if err != nil {
-			return fmt.Errorf("error retrieving ess alarms: %s", err)
+			log.Printf("[ERROR] Failed to list ess alarms: %s", err)
+			break
 		}
 		resp, _ := raw.(*ess.DescribeAlarmsResponse)
 		if resp == nil || len(resp.AlarmList.Alarm) < 1 {
@@ -389,7 +398,8 @@ func testSweepEssAlarms(region string) error {
 		}
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to parse next page number for ess alarms: %s", err)
+			break
 		}
 		req.PageNumber = page
 	}
