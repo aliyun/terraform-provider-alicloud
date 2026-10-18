@@ -57,6 +57,31 @@ func apiGatewayNameMatchesPrefix(name string) bool {
 	return false
 }
 
+// apiGatewayIsBuiltInStageName reports whether name is one of the three
+// system-default stage environments (RELEASE/PRE/TEST). These are created by
+// the platform and must never be deleted; they are not produced by tests.
+func apiGatewayIsBuiltInStageName(name string) bool {
+	switch strings.ToUpper(strings.TrimSpace(name)) {
+	case "RELEASE", "PRE", "TEST":
+		return true
+	}
+	return false
+}
+
+// apiGatewayIsSharedInstance reports whether the instance is the
+// platform-managed shared instance (api-shared-* id, or name carries 共享/shared).
+// These cannot be deleted by the account owner and are skipped pre-emptively.
+func apiGatewayIsSharedInstance(id, name string) bool {
+	if strings.HasPrefix(id, "api-shared") {
+		return true
+	}
+	ln := strings.ToLower(name)
+	if strings.Contains(ln, "shared") || strings.Contains(name, "共享") {
+		return true
+	}
+	return false
+}
+
 // apiGatewaySweepNameSkip is the shared gate: NODELETING/do-not-delete markers
 // always skip; when SWEEP_ALL is off, only test-prefixed names are swept.
 func apiGatewaySweepNameSkip(name string) (bool, string) {
@@ -231,6 +256,13 @@ func testSweepApiGatewayInstances(region string) error {
 	for _, item := range items {
 		id := fmt.Sprint(item["InstanceId"])
 		name := fmt.Sprint(item["InstanceName"])
+		// Shared instances (api-shared-*, name contains 共享/shared) are
+		// platform-managed and cannot be deleted by the account owner; skip
+		// them rather than hammering DeleteInstance against a managed resource.
+		if apiGatewayIsSharedInstance(id, name) {
+			log.Printf("[INFO] Skipping ApiGateway Instance %s (%s): shared/managed instance", name, id)
+			continue
+		}
 		if skip, reason := apiGatewaySweepNameSkip(name); skip {
 			log.Printf("[INFO] Skipping ApiGateway Instance %s (%s): %s", name, id, reason)
 			continue
@@ -525,6 +557,12 @@ func testSweepApiGatewayStageModels(region string) error {
 		name := fmt.Sprint(item["StageName"])
 		if name == "" {
 			name = id
+		}
+		// The three system-default stage environments (RELEASE/PRE/TEST) are
+		// platform-managed and must never be deleted, even in SWEEP_ALL mode.
+		if apiGatewayIsBuiltInStageName(name) {
+			log.Printf("[INFO] Skipping ApiGateway StageModel %s (%s): built-in default stage", name, id)
+			continue
 		}
 		if skip, reason := apiGatewaySweepNameSkip(name); skip {
 			log.Printf("[INFO] Skipping ApiGateway StageModel %s (%s): %s", name, id, reason)
