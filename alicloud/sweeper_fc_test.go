@@ -331,9 +331,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_fcv3_alias", &resource.Sweeper{
 		Name: "alicloud_fcv3_alias",
 		F:    testSweepFcv3Alias,
-		Dependencies: []string{
-			"alicloud_fcv3_function",
-		},
 	})
 }
 
@@ -412,9 +409,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_fcv3_async_invoke_config", &resource.Sweeper{
 		Name: "alicloud_fcv3_async_invoke_config",
 		F:    testSweepFcv3AsyncInvokeConfig,
-		Dependencies: []string{
-			"alicloud_fcv3_function",
-		},
 	})
 }
 
@@ -464,9 +458,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_fcv3_concurrency_config", &resource.Sweeper{
 		Name: "alicloud_fcv3_concurrency_config",
 		F:    testSweepFcv3ConcurrencyConfig,
-		Dependencies: []string{
-			"alicloud_fcv3_function",
-		},
 	})
 }
 
@@ -579,9 +570,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_fcv3_function_version", &resource.Sweeper{
 		Name: "alicloud_fcv3_function_version",
 		F:    testSweepFcv3FunctionVersion,
-		Dependencies: []string{
-			"alicloud_fcv3_function",
-		},
 	})
 }
 
@@ -740,9 +728,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_fcv3_provision_config", &resource.Sweeper{
 		Name: "alicloud_fcv3_provision_config",
 		F:    testSweepFcv3ProvisionConfig,
-		Dependencies: []string{
-			"alicloud_fcv3_function",
-		},
 	})
 }
 
@@ -790,9 +775,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_fcv3_trigger", &resource.Sweeper{
 		Name: "alicloud_fcv3_trigger",
 		F:    testSweepFcv3Trigger,
-		Dependencies: []string{
-			"alicloud_fcv3_function",
-		},
 	})
 }
 
@@ -871,9 +853,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_fcv3_vpc_binding", &resource.Sweeper{
 		Name: "alicloud_fcv3_vpc_binding",
 		F:    testSweepFcv3VpcBinding,
-		Dependencies: []string{
-			"alicloud_fcv3_function",
-		},
 	})
 }
 
