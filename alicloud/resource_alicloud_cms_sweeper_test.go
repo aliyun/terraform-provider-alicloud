@@ -596,9 +596,16 @@ func testSweepCmsAlertRuleV2(region string) error {
 		}
 		log.Printf("[INFO] Deleting cms alert_rule_v2: %s", name)
 		delQuery := map[string]*string{"RegionId": StringPointer(client.RegionId)}
+		// /manageAlertRules DELETE requires the workspace id: the API rejects
+		// an empty workspace with 400 ParameterInvalid "workspace id must not
+		// be empty". Each queryAlertRules list item carries its workspace, so
+		// source it from there (matches the provider's Delete, which sets
+		// request["workspace"] in resource_alicloud_cms_alert_rule_v2.go).
+		workspace := cmsGetField(item, "workspace")
 		delBody := map[string]interface{}{
-			"uuid":   uuid,
-			"action": "DELETE",
+			"uuid":      uuid,
+			"workspace": workspace,
+			"action":    "DELETE",
 		}
 		if _, e := cmsRoaPost(client, "/manageAlertRules", delQuery, delBody, []string{"ResourceNotFound"}); e != nil {
 			log.Printf("[ERROR] Failed to delete cms alert_rule_v2 (%s): %s", name, e)
