@@ -2,12 +2,113 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_esa_site", &resource.Sweeper{
+		Name: "alicloud_esa_site",
+		F:    testSweepEsaSites,
+	})
+}
+
+// ESA sites are DOMAINS. The sweeper preserves real存/ICP-backed domains
+// (red-line #5): it uses an ALWAYS-active tf-prefix guard (DCDN pattern) —
+// even in SWEEP_ALL, only prefix-matched test sites are deleted; ambiguous or
+// real存-named sites (e.g. gositecdn.cn — no test suffix) are preserved.
+func testSweepEsaSites(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
+		"tftestacc",
+	}
+
+	action := "ListSites"
+	query := make(map[string]interface{})
+	query["RegionId"] = client.RegionId
+	query["PageSize"] = PageSizeLarge
+	query["PageNumber"] = 1
+	sites := make([]map[string]interface{}, 0)
+	for {
+		response, err := client.RpcGet("ESA", "2024-09-10", action, query, nil)
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve ESA Sites: %s", err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.Sites", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Sites", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			sites = append(sites, item)
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		query["PageNumber"] = query["PageNumber"].(int) + 1
+	}
+
+	if len(sites) == 0 {
+		log.Printf("[INFO] ESA Site: 0 sites in region %s", region)
+		return nil
+	}
+
+	for _, site := range sites {
+		name := fmt.Sprint(site["SiteName"])
+		id := fmt.Sprint(site["SiteId"])
+		if name == "" || id == "" {
+			continue
+		}
+		// NODELETING guard — always-active (both NORMAL and SWEEP_ALL).
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping ESA Site (NODELETING): %s (%s)", name, id)
+			continue
+		}
+		// ALWAYS-active tf-prefix guard — preserves real存/ICP-backed domains
+		// (e.g. gositecdn.cn) even in SWEEP_ALL. NO sweepAll() bypass.
+		skip := true
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+				skip = false
+				break
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping ESA Site (no prefix, possible real存): %s (%s)", name, id)
+			continue
+		}
+		log.Printf("[INFO] Deleting ESA Site: %s (%s)", name, id)
+		deleteAction := "DeleteSite"
+		deleteRequest := map[string]interface{}{
+			"SiteId": id,
+		}
+		_, e := client.RpcPost("ESA", "2024-09-10", deleteAction, nil, deleteRequest, false)
+		if e != nil {
+			log.Printf("[ERROR] Failed to delete ESA Site (%s (%s)): %s", name, id, e)
+			continue
+		}
+		log.Printf("[INFO] Delete ESA Site success: %s (%s)", name, id)
+	}
+	return nil
+}
 
 func TestAccAliCloudEsaSite_basic8490(t *testing.T) {
 	var v map[string]interface{}
