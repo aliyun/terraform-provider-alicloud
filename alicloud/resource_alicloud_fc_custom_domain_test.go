@@ -169,12 +169,30 @@ func testSweepFCCustomDomain(region string) error {
 			return nil
 		}
 		for _, domain := range response.CustomDomains {
-			log.Printf("[INFO] Deleting FC custom domain: %s", *domain.DomainName)
+			// FC custom domains may back real存 ICP-bound domains; the tf- prefix
+			// filter ALWAYS applies (even under SWEEP_ALL) to preserve them.
+			domainName := *domain.DomainName
+			if protectedSweepVpcName(domainName) {
+				log.Printf("[INFO] Skipping FC custom domain (NODELETING): %s", domainName)
+				continue
+			}
+			matches := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(domainName), strings.ToLower(prefix)) {
+					matches = true
+					break
+				}
+			}
+			if !matches {
+				log.Printf("[INFO] Skipping FC custom domain (no tf- prefix, real存 preserve): %s", domainName)
+				continue
+			}
+			log.Printf("[INFO] Deleting FC custom domain: %s", domainName)
 			_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-				return fcClient.DeleteCustomDomain(fc.NewDeleteCustomDomainInput(*domain.DomainName))
+				return fcClient.DeleteCustomDomain(fc.NewDeleteCustomDomainInput(domainName))
 			})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete FC custom domains(%s): %s", *domain.DomainName, err)
+				log.Printf("[ERROR] Failed to delete FC custom domains(%s): %s", domainName, err)
 			}
 		}
 		if response.NextToken == nil || *response.NextToken == "" {
