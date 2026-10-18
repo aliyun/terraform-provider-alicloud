@@ -113,7 +113,8 @@ func testSweepElasticsearch(region string) error {
 
 		page, err := getNextpageNumber(req.Page)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to parse next page number for Elasticsearch instances: %s", err)
+			break
 		}
 		req.Page = page
 	}
