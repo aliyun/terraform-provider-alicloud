@@ -2,12 +2,153 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/alibabacloud-go/cs-20151215/v8/client"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cs_kubernetes_addon", &resource.Sweeper{
+		Name: "alicloud_cs_kubernetes_addon",
+		F:    testSweepCSKubernetesAddon,
+	})
+}
+
+// testSweepCSKubernetesAddon sweeps leftover CS Kubernetes addons in the
+// region. Sub-resources inherit protection from their parent cluster's name:
+// NODELETING markers on the cluster name (or addon name) always skip, EVEN
+// when SWEEP_ALL=1 is set (red-line #2). The prefix check on the cluster name
+// is bypassed by sweepAll() (standard pattern, playbook line 55). Only
+// non-default addons (InstallByDefault == false) are uninstalled —
+// system-critical addons installed at cluster creation time (flannel,
+// kube-proxy, coredns, ...) are always skipped. Per-addon uninstall failures
+// are logged and continued (non-fatal). ACK prepaid clusters that cannot be
+// deleted themselves (ForbiddenRelease, red-line #4) still have their test
+// addons swept here.
+func testSweepCSKubernetesAddon(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	aliyunClient := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
+	}
+
+	raw, err := aliyunClient.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+		return csClient.DescribeClusters("")
+	})
+	if err != nil {
+		return fmt.Errorf("error retrieving CS Clusters: %s", err)
+	}
+	clusters, _ := raw.([]cs.ClusterType)
+
+	for _, cluster := range clusters {
+		clusterName := cluster.Name
+		clusterId := cluster.ClusterID
+
+		// NODELETING guard on the parent cluster name (always-on, NOT bypassed
+		// by sweepAll — red-line #2).
+		if protectedSweepVpcName(clusterName) {
+			log.Printf("[INFO] Skipping CS addons in protected cluster: %s (%s)", clusterName, clusterId)
+			continue
+		}
+
+		// Prefix check on the parent cluster name (bypassed by sweepAll —
+		// standard pattern, playbook line 55). Sub-resources of non-test
+		// clusters are spared unless sweepAll() forces it.
+		if !sweepAll() {
+			matched := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(clusterName), strings.ToLower(prefix)) {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				log.Printf("[INFO] Skipping CS addons in non-test cluster: %s (%s)", clusterName, clusterId)
+				continue
+			}
+		}
+
+		roaClient, err := aliyunClient.NewRoaCsClient()
+		if err != nil {
+			log.Printf("[ERROR] Failed to build ROA CS client for cluster %s (%s): %s", clusterName, clusterId, err)
+			continue
+		}
+		csClient := CsClient{roaClient}
+
+		availableAddons, err := csClient.ListAddons(clusterId)
+		if err != nil {
+			log.Printf("[ERROR] Failed to list addons for cluster %s (%s): %s", clusterName, clusterId, err)
+			continue
+		}
+
+		for name, addonInfo := range availableAddons {
+			// Skip system-critical addons installed by default at cluster
+			// creation (flannel, kube-proxy, coredns, ...) to avoid breaking
+			// the cluster.
+			if addonInfo != nil && addonInfo.InstallByDefault != nil && tea.BoolValue(addonInfo.InstallByDefault) {
+				continue
+			}
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping protected CS addon: %s in cluster %s", name, clusterId)
+				continue
+			}
+
+			instance, err := csClient.GetCsKubernetesAddonInstance(clusterId, name)
+			if err != nil {
+				if NotFoundError(err) {
+					// Addon not installed in this cluster — nothing to sweep.
+					continue
+				}
+				log.Printf("[ERROR] Failed to describe addon %s in cluster %s (%s): %s", name, clusterName, clusterId, err)
+				continue
+			}
+			if instance == nil || instance.Version == "" {
+				continue
+			}
+
+			log.Printf("[INFO] Uninstalling CS addon: %s in cluster %s (%s)", name, clusterName, clusterId)
+			body := make([]*client.UnInstallClusterAddonsRequestAddons, 0)
+			body = append(body, &client.UnInstallClusterAddonsRequestAddons{
+				Name: tea.String(name),
+			})
+			uninstallArgs := &client.UnInstallClusterAddonsRequest{
+				Addons: body,
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
+				_, err := csClient.client.UnInstallClusterAddons(&clusterId, uninstallArgs)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			}); err != nil {
+				log.Printf("[ERROR] Failed to uninstall CS addon (%s in cluster %s (%s)): %s", name, clusterName, clusterId, err)
+			}
+		}
+	}
+	return nil
+}
 
 // lintignore: AT001
 func TestAccAliCloudCSKubernetesAddon_apiserver(t *testing.T) {

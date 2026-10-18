@@ -2,15 +2,190 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_slb_listener", &resource.Sweeper{
+		Name: "alicloud_slb_listener",
+		// Let the load balancer sweeper run first so test-prefix SLBs (and
+		// their listeners, which are deleted server-side with the SLB) are
+		// gone before we enumerate survivors. This sweeper then only handles
+		// listeners that linger on SLBs the load balancer sweeper did NOT
+		// delete (e.g. a non-test SLB that test code wrote a listener onto,
+		// or a SLB protected by deletion-protection that we still want to
+		// clean test listeners off of).
+		Dependencies: []string{
+			"alicloud_slb_load_balancer",
+		},
+		F: testSweepSlbListener,
+	})
+}
+
+// testSweepSlbListener sweeps leftover SLB listeners in the region. SLB
+// listeners do not have their own name; they are identified by
+// (LoadBalancerId, ListenerPort, ListenerProtocol). Protection is therefore
+// inherited from the parent SLB's name:
+//   - NODELETING markers on the parent SLB name (or the listener description)
+//     always skip, EVEN when SWEEP_ALL=1 (red-line #2).
+//   - Prefix check on the parent SLB name is bypassed by sweepAll() (standard
+//     pattern): in SWEEP_ALL mode listeners on every non-protected SLB are
+//     deleted; otherwise only listeners on tf-testAcc/tf_testAcc SLBs.
+//
+// Per-listener delete failures are logged and continued (non-fatal). The SLB
+// itself is never deleted here (that is the load balancer sweeper's job).
+func testSweepSlbListener(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	// 1. List all SLBs in the region (paginated).
+	action := "DescribeLoadBalancers"
+	request := map[string]interface{}{
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+		"RegionId":   client.RegionId,
+	}
+	slbs := make([]map[string]interface{}, 0)
+	var response map[string]interface{}
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.LoadBalancers.LoadBalancer", response)
+		if err != nil {
+			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.LoadBalancers.LoadBalancer", action, err)
+			return nil
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item, _ := v.(map[string]interface{})
+			slbs = append(slbs, item)
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	// 2. For each surviving SLB, list its listeners and delete test ones.
+	for _, lb := range slbs {
+		lbName := fmt.Sprint(lb["LoadBalancerName"])
+		lbId := fmt.Sprint(lb["LoadBalancerId"])
+
+		// NODELETING guard on the parent SLB name (always-on, NOT bypassed by
+		// sweepAll — red-line #2).
+		if protectedSweepVpcName(lbName) {
+			log.Printf("[INFO] Skipping SLB listeners on protected SLB: %s (%s)", lbName, lbId)
+			continue
+		}
+
+		// Prefix check on the parent SLB name (bypassed by sweepAll — standard
+		// pattern, playbook line 55).
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(lbName), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping SLB listeners on non-test SLB: %s (%s)", lbName, lbId)
+				continue
+			}
+		}
+
+		// DescribeLoadBalancerAttribute returns ListenerPortsAndProtocol in a
+		// single response (no listener-level pagination).
+		lbReq := slb.CreateDescribeLoadBalancerAttributeRequest()
+		lbReq.RegionId = client.RegionId
+		lbReq.LoadBalancerId = lbId
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.DescribeLoadBalancerAttribute(lbReq)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to describe SLB %s (%s): %s", lbName, lbId, err)
+			continue
+		}
+		lbResp, _ := raw.(*slb.DescribeLoadBalancerAttributeResponse)
+		if lbResp == nil {
+			continue
+		}
+		listeners := lbResp.ListenerPortsAndProtocol.ListenerPortAndProtocol
+		for _, listener := range listeners {
+			port := listener.ListenerPort
+			protocol := listener.ListenerProtocol
+			desc := listener.Description
+
+			// Defensive NODELETING guard on the listener description too.
+			if protectedSweepVpcName(desc) {
+				log.Printf("[INFO] Skipping protected SLB listener: %s/%d (%s) on SLB %s (%s)", protocol, port, desc, lbName, lbId)
+				continue
+			}
+
+			log.Printf("[INFO] Deleting SLB listener: %s/%d on SLB %s (%s)", protocol, port, lbName, lbId)
+			delReq := slb.CreateDeleteLoadBalancerListenerRequest()
+			delReq.RegionId = client.RegionId
+			delReq.LoadBalancerId = lbId
+			delReq.ListenerPort = requests.NewInteger(port)
+			delReq.ListenerProtocol = protocol
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
+				_, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+					return slbClient.DeleteLoadBalancerListener(delReq)
+				})
+				if err != nil {
+					if IsExpectedErrors(err, SlbIsBusy) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					if NotFoundError(err) {
+						return nil
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			}); err != nil {
+				log.Printf("[ERROR] Failed to delete SLB listener (%s/%d on SLB %s (%s)): %s", protocol, port, lbName, lbId, err)
+			}
+		}
+	}
+	return nil
+}
 
 func TestAccAliCloudSLBListener_http_basic(t *testing.T) {
 	var v map[string]interface{}
