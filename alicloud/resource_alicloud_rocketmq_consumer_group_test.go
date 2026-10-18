@@ -2,12 +2,137 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
+
+// testSweepRocketMqConsumerGroup sweeps test RocketMQ consumer groups across
+// all instances in the region. It first lists instances via ListInstances
+// (GET /instances), then for each instance lists its consumer groups via
+// ListConsumerGroups (GET /instances/{instanceId}/consumerGroups) and deletes
+// any consumer group whose consumerGroupId matches the standard test prefixes
+// (or all of them under SWEEP_ALL=1), skipping entries protected by the
+// do-not-delete markers. The instance sweeper declares this as a Dependency
+// so consumer groups are removed before the parent instance is released.
+func init() {
+	resource.AddTestSweepers("alicloud_rocketmq_consumer_group", &resource.Sweeper{
+		Name: "alicloud_rocketmq_consumer_group",
+		F:    testSweepRocketMqConsumerGroup,
+	})
+}
+
+func testSweepRocketMqConsumerGroup(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "error getting AliCloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	// List every RocketMQ instance in the region; consumer groups live
+	// under instances, so we have to enumerate instances first.
+	instanceAction := "/instances"
+	instanceQuery := make(map[string]*string)
+	instanceQuery["pageNumber"] = tea.String("1")
+	instanceQuery["pageSize"] = tea.String("200")
+	instanceResp, err := client.RoaGet("RocketMQ", "2022-08-01", instanceAction, instanceQuery, nil, nil)
+	if err != nil {
+		log.Printf("[ERROR] Failed to retrieve rocketmq instances for consumer group sweep: %s", err)
+		return nil
+	}
+	instanceRaw, err := jsonpath.Get("$.data.list", instanceResp)
+	if err != nil {
+		// When the instance list is empty, the RocketMQ ListInstances API
+		// omits the "list" key entirely; treat as "no instances to sweep".
+		log.Printf("[INFO] rocketmq instance list empty or parse failed for consumer group sweep: %s", err)
+		return nil
+	}
+	instances, _ := instanceRaw.([]interface{})
+
+	for _, inst := range instances {
+		instanceItem, ok := inst.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		instanceId, _ := instanceItem["instanceId"].(string)
+		if instanceId == "" {
+			continue
+		}
+
+		// List consumer groups under this instance.
+		action := fmt.Sprintf("/instances/%s/consumerGroups", instanceId)
+		query := make(map[string]*string)
+		query["pageNumber"] = tea.String("1")
+		query["pageSize"] = tea.String("100")
+		response, err := client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
+		if err != nil {
+			log.Printf("[ERROR] Failed to list consumer groups for instance %s: %s", instanceId, err)
+			continue
+		}
+		grpRaw, err := jsonpath.Get("$.data.list", response)
+		if err != nil {
+			// When the consumer-group list is empty, the API omits the
+			// "list" key entirely; treat as "no consumer groups under this
+			// instance" and move on to the next instance.
+			log.Printf("[INFO] rocketmq consumer group list empty or parse failed for instance %s: %s", instanceId, err)
+			continue
+		}
+		groups, _ := grpRaw.([]interface{})
+
+		for _, g := range groups {
+			item, ok := g.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name, _ := item["consumerGroupId"].(string)
+			if name == "" {
+				continue
+			}
+			// Name-based NODELETING/do-not-delete protection. Runs even
+			// under SWEEP_ALL=1 so explicitly protected consumer groups
+			// are never force-deleted.
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping rocketmq consumer group (do-not-delete marker): %s/%s", instanceId, name)
+				continue
+			}
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping rocketmq consumer group: %s/%s", instanceId, name)
+					continue
+				}
+			}
+			log.Printf("[INFO] delete rocketmq consumer group: %s/%s", instanceId, name)
+			deleteAction := fmt.Sprintf("/instances/%s/consumerGroups/%s", instanceId, name)
+			deleteQuery := make(map[string]*string)
+			if _, err := client.RoaDelete("RocketMQ", "2022-08-01", deleteAction, deleteQuery, nil, nil, true); err != nil {
+				log.Printf("[ERROR] Failed to delete rocketmq consumer group (%s/%s): %s", instanceId, name, err)
+			}
+		}
+	}
+
+	return nil
+}
 
 // Test Rocketmq ConsumerGroup. >>> Resource test cases, automatically generated.
 // Case 4419

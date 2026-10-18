@@ -14,6 +14,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+// testSweepRocketMq is registered as the alicloud_rocketmq_instance sweeper.
+// It lists every RocketMQ instance in the region via ListInstances
+// (GET /instances on the RocketMQ 2022-08-01 API) and deletes any whose
+// instanceName matches the standard test prefixes (or all of them under
+// SWEEP_ALL=1), skipping entries protected by the do-not-delete markers.
+// Sub-resource sweepers (consumer_group, topic) are declared as Dependencies
+// so the orchestrator sweeps them first; instance deletion then cascades the
+// remaining child resources (accounts, acls) on the server side.
+func init() {
+	resource.AddTestSweepers("alicloud_rocketmq_instance", &resource.Sweeper{
+		Name: "alicloud_rocketmq_instance",
+		Dependencies: []string{
+			"alicloud_rocketmq_consumer_group",
+			"alicloud_rocketmq_topic",
+		},
+		F: testSweepRocketMq,
+	})
+}
+
 // Test case to verify the fix for send_receive_ratio validation issue
 func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 	var v map[string]interface{}
@@ -105,13 +124,26 @@ func testSweepRocketMq(region string) error {
 	}
 	resp, err := jsonpath.Get("$.data.list", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.data.list", response)
+		// When the instance list is empty, the RocketMQ ListInstances API
+		// omits the "list" key entirely from the response
+		// (data: {pageNumber, pageSize, totalCount:0}). Treat this as
+		// "no instances to sweep" and return nil so the sweeper succeeds
+		// with zero work, matching the canonical sweeper behavior.
+		log.Printf("[INFO] rocketmq instance list empty or parse failed: %s", err)
+		return nil
 	}
 
 	result, _ := resp.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
 		name := item["instanceName"].(string)
+		// Name-based NODELETING/do-not-delete protection (21 markers).
+		// Guard runs even under SWEEP_ALL=1 so infra-managed or explicitly
+		// protected instances are never force-deleted.
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping rocketmq instance (do-not-delete marker): %s ", name)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
