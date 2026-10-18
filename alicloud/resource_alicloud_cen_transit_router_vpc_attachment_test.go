@@ -1601,6 +1601,46 @@ func forEachCenForSubSweep(client *connectivity.AliyunClient, cb func(cenId, cen
 	return nil
 }
 
+// cenIdsProtectedFromSweep enumerates CEN instances in the region and returns
+// the set of CEN IDs whose name matches a do-not-delete marker
+// (protectedSweepVpcName). Sub-resource sweepers (flowlog, bandwidth package)
+// use this to skip resources attached to a protected parent CEN even in
+// SWEEP_ALL mode, so a shared infra CEN's children are never orphaned or
+// deleted ahead of the protected parent.
+func cenIdsProtectedFromSweep(client *connectivity.AliyunClient) (map[string]bool, error) {
+	protected := map[string]bool{}
+	describeCensRequest := cbn.CreateDescribeCensRequest()
+	describeCensRequest.RegionId = client.RegionId
+	describeCensRequest.PageSize = requests.NewInteger(PageSizeLarge)
+	describeCensRequest.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
+			return cenClient.DescribeCens(describeCensRequest)
+		})
+		if err != nil {
+			return protected, fmt.Errorf("error retrieving CEN Instances: %s", err)
+		}
+		describeCensResponse, _ := raw.(*cbn.DescribeCensResponse)
+		if len(describeCensResponse.Cens.Cen) < 1 {
+			break
+		}
+		for _, cenInstance := range describeCensResponse.Cens.Cen {
+			if protectedSweepVpcName(cenInstance.Name) {
+				protected[cenInstance.CenId] = true
+			}
+		}
+		if len(describeCensResponse.Cens.Cen) < PageSizeLarge {
+			break
+		}
+		page, err := getNextpageNumber(describeCensRequest.PageNumber)
+		if err != nil {
+			return protected, err
+		}
+		describeCensRequest.PageNumber = page
+	}
+	return protected, nil
+}
+
 // sweepCenTransitRouterAttachments lists transit-router attachments of the
 // given kind for a CEN and force-deletes each. listAction/deleteAction are the
 // cbn RPC action names. regions is the set of regions to probe for the LIST:

@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -46,405 +44,66 @@ func testSweepCenInstances(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-		"tf_example",
-		"tf-example",
-		"terraform-example",
-	}
-
-	var insts []cbn.Cen
-	describeCensRequest := cbn.CreateDescribeCensRequest()
-	describeCensRequest.RegionId = client.RegionId
-	describeCensRequest.PageSize = requests.NewInteger(PageSizeLarge)
-	describeCensRequest.PageNumber = requests.NewInteger(1)
-	for {
-		raw, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
-			return cenClient.DescribeCens(describeCensRequest)
-		})
-		if err != nil {
-			return fmt.Errorf("Error retrieving CEN Instances: %s", err)
-		}
-		describeCensResponse, _ := raw.(*cbn.DescribeCensResponse)
-		if len(describeCensResponse.Cens.Cen) < 1 {
-			break
-		}
-		insts = append(insts, describeCensResponse.Cens.Cen...)
-
-		if len(describeCensResponse.Cens.Cen) < PageSizeLarge {
-			break
-		}
-
-		page, err := getNextpageNumber(describeCensRequest.PageNumber)
-		if err != nil {
-			return err
-		}
-		describeCensRequest.PageNumber = page
-	}
+	// Regional clients are cached so each candidate region's cbn endpoint is
+	// created only once across all CENs. VPC/VBR/VPN attachments and transit
+	// routers are regional to the child instance's region, not the CEN's home
+	// region, so sub-resource cleanup must probe each candidate region.
+	regionalClients := map[string]*connectivity.AliyunClient{}
 
 	sweepCenInstanceIds = make([]string, 0)
-	for _, cenInstance := range insts {
-		name := cenInstance.Name
-		cenId := cenInstance.CenId
-		// Red-line: skip CEN instances carrying an explicit do-not-delete
-		// marker (e.g. "no-deleting-cen") even in SWEEP_ALL mode. CEN is a
-		// shared parent; protected instances are never detached or deleted.
-		// Mirrors the VPC sweeper's name-based protection (protectedSweepVpcName).
-		if protectedSweepVpcName(name) {
-			log.Printf("[INFO] Skipping CEN Instance (do-not-delete marker): %s (%s)", name, cenId)
-			continue
-		}
-		skip := true
-		if !sweepAll() {
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping CEN Instance: %s (%s)", name, cenId)
-				continue
-			}
-		}
+	if err := forEachCenForSubSweep(client, func(cenId, cenName string) {
 		sweepCenInstanceIds = append(sweepCenInstanceIds, cenId)
-		describeCenAttachedChildInstancesRequest := cbn.CreateDescribeCenAttachedChildInstancesRequest()
-		describeCenAttachedChildInstancesRequest.CenId = cenId
-		raw, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
-			return cenClient.DescribeCenAttachedChildInstances(describeCenAttachedChildInstancesRequest)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to Describe CEN Attached Instance (%s (%s)): %s", name, cenId, err)
-		}
-		describeCenAttachedChildInstancesResponse, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
-		for _, childInstance := range describeCenAttachedChildInstancesResponse.ChildInstances.ChildInstance {
-			instanceId := childInstance.ChildInstanceId
-			log.Printf("[INFO] Detaching CEN Child Instance: %s (%s %s)", name, cenId, instanceId)
-			detachCenChildInstanceRequest := cbn.CreateDetachCenChildInstanceRequest()
-			detachCenChildInstanceRequest.CenId = cenId
-			detachCenChildInstanceRequest.ChildInstanceId = instanceId
-			detachCenChildInstanceRequest.ChildInstanceType = childInstance.ChildInstanceType
-			detachCenChildInstanceRequest.ChildInstanceRegionId = childInstance.ChildInstanceRegionId
-			_, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
-				return cenClient.DetachCenChildInstance(detachCenChildInstanceRequest)
-			})
-			if err != nil {
-				log.Printf("[ERROR] Failed to Detach CEN Attached Instance (%s (%s %s)): %s", name, cenId, instanceId, err)
-			}
-			cenService := CenService{client}
-			err = cenService.WaitForCenInstanceAttachment(cenId+COLON_SEPARATED+instanceId, Deleted, DefaultCenTimeoutLong)
-			if err != nil {
-				log.Printf("[ERROR] Failed to WaitFor CEN Attached Instance Detached (%s (%s %s)): %s", name, cenId, instanceId, err)
-			}
-		}
 
-		action := "ListTransitRouterVbrAttachments"
-		request := make(map[string]interface{})
-		request["CenId"] = cenId
-		request["RegionId"] = client.RegionId
-		request["PageSize"] = PageSizeLarge
-		request["PageNumber"] = 1
-		var response map[string]interface{}
-		for {
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = retry.Retry(2*time.Minute, func() *retry.RetryError {
-				response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return retry.RetryableError(err)
-					}
-					return retry.NonRetryableError(err)
-				}
-				addDebug(action, response, request)
-				return nil
-			})
-			if err != nil {
-				log.Printf("[ERROR] %s failed: %v", action, err)
-				break
-			}
-			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
-			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
-			}
-			result, _ := resp.([]interface{})
-			for _, v := range result {
-				item := v.(map[string]interface{})
-				name := fmt.Sprint(item["TransitRouterAttachmentName"])
-				id := fmt.Sprint(item["TransitRouterAttachmentId"])
-				action := "DeleteTransitRouterVbrAttachment"
-				log.Printf("[DEBUG] %s %s:%s", action, id, name)
+		// (a) Detach basic child instances (VPC/VBR attached via the basic CEN
+		// child-instance model, not the enterprise TR attachment model). Clears
+		// InvalidOperation.AttachedChildInstanceExist on TRs that still have
+		// basic child-instance attachments.
+		detachCenChildInstances(client, cenId, cenName)
 
-				request := map[string]interface{}{
-					"TransitRouterAttachmentId": id,
-				}
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
-					if err != nil {
-						if IsExpectedErrors(err, []string{"Operation.Blocking", "InvalidOperation.ChildInstanceStatus"}) || NeedRetry(err) {
-							wait()
-							return retry.RetryableError(err)
-						}
-						return retry.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					log.Printf("[ERROR] %s failed %v", action, err)
-				}
-			}
-			if len(result) < PageSizeLarge {
-				break
-			}
-			request["PageNumber"] = request["PageNumber"].(int) + 1
-		}
+		// (b) Delete ALL transit-router attachments across all candidate
+		// regions FIRST. VPC/VBR/VPN attachments live in the child instance's
+		// region (queried via regional clients); peer attachments live in the
+		// CEN home region. Force=true removes route-table associations
+		// automatically. This clears AttachedChildInstanceExist on the TR.
+		sweepCenTransitRouterAttachments(client, cenId, cenName,
+			"ListTransitRouterVbrAttachments", "DeleteTransitRouterVbrAttachment", "VBR",
+			cenSubSweepRegions(client.RegionId), regionalClients)
+		sweepCenTransitRouterAttachments(client, cenId, cenName,
+			"ListTransitRouterVpcAttachments", "DeleteTransitRouterVpcAttachment", "VPC",
+			cenSubSweepRegions(client.RegionId), regionalClients)
+		sweepCenTransitRouterAttachments(client, cenId, cenName,
+			"ListTransitRouterVpnAttachments", "DeleteTransitRouterVpnAttachment", "VPN",
+			cenSubSweepRegions(client.RegionId), regionalClients)
+		sweepCenTransitRouterAttachments(client, cenId, cenName,
+			"ListTransitRouterPeerAttachments", "DeleteTransitRouterPeerAttachment", "Peer",
+			[]string{client.RegionId}, regionalClients)
 
-		action = "ListTransitRouterVpcAttachments"
-		request = make(map[string]interface{})
-		request["CenId"] = cenId
-		request["RegionId"] = client.RegionId
-		request["PageSize"] = PageSizeLarge
-		request["PageNumber"] = 1
-		for {
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = retry.Retry(2*time.Minute, func() *retry.RetryError {
-				response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return retry.RetryableError(err)
-					}
-					return retry.NonRetryableError(err)
-				}
-				addDebug(action, response, request)
-				return nil
-			})
-			if err != nil {
-				log.Printf("[ERROR] %s failed: %v", action, err)
-				break
-			}
-			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
-			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
-			}
-			result, _ := resp.([]interface{})
-			for _, v := range result {
-				item := v.(map[string]interface{})
-				name := fmt.Sprint(item["TransitRouterAttachmentName"])
-				id := fmt.Sprint(item["TransitRouterAttachmentId"])
-				action := "DeleteTransitRouterVpcAttachment"
-				log.Printf("[DEBUG] %s %s:%s", action, id, name)
+		// Fallback: delete orphaned TR Peer attachments by attachment ID.
+		// ListTransitRouterPeerAttachments returns IllegalParam when the
+		// owning TR was already deleted (by a prior sweep run), leaving
+		// orphaned Peer attachments with DataTransfer bandwidth allocations
+		// that block DeleteCen with InvalidOperation.AttachedChildInstanceExist.
+		sweepCenOrphanedPeerAttachments(client, cenId, cenName)
 
-				request := map[string]interface{}{
-					"TransitRouterAttachmentId": id,
-					"Force":                     true,
-				}
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
-					if err != nil {
-						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
-							wait()
-							return retry.RetryableError(err)
-						}
-						return retry.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					log.Printf("[ERROR] %s failed %v", action, err)
-				}
-			}
-			if len(result) < PageSizeLarge {
-				break
-			}
-			request["PageNumber"] = request["PageNumber"].(int) + 1
-		}
+		// Unroute private zones (non-fatal; legacy flow).
+		unrouteCenPrivateZones(client, cenId)
 
-		action = "ListTransitRouterPeerAttachments"
-		request = make(map[string]interface{})
-		request["CenId"] = cenId
-		request["RegionId"] = client.RegionId
-		request["PageSize"] = PageSizeLarge
-		request["PageNumber"] = 1
-		for {
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = retry.Retry(2*time.Minute, func() *retry.RetryError {
-				response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return retry.RetryableError(err)
-					}
-					return retry.NonRetryableError(err)
-				}
-				addDebug(action, response, request)
-				return nil
-			})
-			if err != nil {
-				log.Printf("[ERROR] %s failed: %v", action, err)
-				break
-			}
-			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
-			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
-			}
-			result, _ := resp.([]interface{})
-			for _, v := range result {
-				item := v.(map[string]interface{})
-				name := fmt.Sprint(item["TransitRouterAttachmentName"])
-				id := fmt.Sprint(item["TransitRouterAttachmentId"])
-				action := "DeleteTransitRouterPeerAttachment"
-				log.Printf("[DEBUG] %s %s:%s", action, id, name)
-
-				request := map[string]interface{}{
-					"TransitRouterAttachmentId": id,
-					"Force":                     true,
-				}
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
-					if err != nil {
-						if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User"}) || NeedRetry(err) {
-							wait()
-							return retry.RetryableError(err)
-						}
-						return retry.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					log.Printf("[ERROR] %s failed %v", action, err)
-				}
-			}
-			if len(result) < PageSizeLarge {
-				break
-			}
-			request["PageNumber"] = request["PageNumber"].(int) + 1
-		}
-
-		describeCenPrivateZoneRoutesRequest := cbn.CreateDescribeCenPrivateZoneRoutesRequest()
-		describeCenPrivateZoneRoutesRequest.RegionId = client.RegionId
-		describeCenPrivateZoneRoutesRequest.AccessRegionId = client.RegionId
-		describeCenPrivateZoneRoutesRequest.CenId = cenInstance.CenId
-
-		raw, err = client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCenPrivateZoneRoutes(describeCenPrivateZoneRoutesRequest)
-		})
-		if err == nil {
-			response, _ := raw.(*cbn.DescribeCenPrivateZoneRoutesResponse)
-			for _, resp := range response.PrivateZoneInfos.PrivateZoneInfo {
-				request := cbn.CreateUnroutePrivateZoneInCenToVpcRequest()
-				request.AccessRegionId = resp.AccessRegionId
-				request.CenId = cenInstance.CenId
-				if _, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-					return cbnClient.UnroutePrivateZoneInCenToVpc(request)
-				}); err != nil {
-					log.Printf("\n Failed to UnroutePrivateZoneInCenToVpc. Error: %v", err)
-				}
-			}
-		}
-
-		action = "ListTransitRouters"
-		request = make(map[string]interface{})
-		request["RegionId"] = client.RegionId
-		request["CenId"] = cenId
-		request["PageSize"] = PageSizeLarge
-		request["PageNumber"] = 1
-		for {
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
-			if err != nil {
-				log.Printf("[ERROR] %s failed: %v", action, err)
-				break
-			}
-			resp, err := jsonpath.Get("$.TransitRouters", response)
-			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouters", response)
-			}
-			result, _ := resp.([]interface{})
-			for _, v := range result {
-				item := v.(map[string]interface{})
-				id := fmt.Sprint(item["TransitRouterId"])
-				action := "ListTransitRouterRouteTables"
-				request := make(map[string]interface{})
-				request["RegionId"] = client.RegionId
-				request["TransitRouterId"] = id
-				request["PageSize"] = PageSizeLarge
-				request["PageNumber"] = 1
-				var response map[string]interface{}
-				for {
-					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, true)
-					if err != nil {
-						log.Printf("[ERROR] %s failed: %v", action, err)
-						break
-					}
-					resp, err := jsonpath.Get("$.TransitRouterRouteTables", response)
-					if err != nil {
-						log.Printf("\n jsonpath.Get $.TransitRouterRouteTables failed %v", err)
-						break
-					}
-					result, _ := resp.([]interface{})
-					for _, v := range result {
-						item := v.(map[string]interface{})
-						id := fmt.Sprint(item["TransitRouterRouteTableId"])
-						action := "DeleteTransitRouterRouteTable"
-						log.Printf("[DEBUG] %s %s", action, name)
-						request := map[string]interface{}{
-							"TransitRouterRouteTableId": id,
-						}
-						response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
-						if err != nil {
-							log.Printf("[ERROR] %s failed %v", action, err)
-						}
-					}
-					if len(result) < PageSizeLarge {
-						break
-					}
-					request["PageNumber"] = request["PageNumber"].(int) + 1
-				}
-
-				action = "DeleteTransitRouter"
-				log.Printf("[DEBUG] %s %s", action, id)
-
-				request = map[string]interface{}{
-					"TransitRouterId": id,
-				}
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-					response, err = client.RpcPost("Cbn", "2017-09-12", action, nil, request, false)
-					if err != nil {
-						if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
-							wait()
-							return retry.RetryableError(err)
-						}
-						return retry.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					log.Printf("[ERROR] %s failed %v", action, err)
-				}
-			}
-			if len(result) < PageSizeLarge {
-				break
-			}
-			request["PageNumber"] = request["PageNumber"].(int) + 1
-		}
+		// (c) Delete NON-system transit-router route tables, then
+		// (d) delete transit routers. System route tables cannot be deleted
+		// (OperationFailed.DeleteSystemRouteTable) and are skipped; route
+		// tables with residual associations/propagations/route entries are
+		// logged and left for the CEN delete to surface (there is no Force
+		// param on DeleteTransitRouterRouteTable).
+		sweepCenTransitRouterRouteTablesAndTRs(client, cenId, cenName, regionalClients)
+	}); err != nil {
+		return err
 	}
-	for _, cenId := range sweepCenInstanceIds {
 
+	// (e) DeleteCen. The API has no Force param; if custom route tables or
+	// route entries remain (OperationFailed.DeleteCenWithCustomRouteTable /
+	// DeleteCenWithRouteEntry), the CEN is logged as a leftover with the
+	// reason rather than force-deleted.
+	for _, cenId := range sweepCenInstanceIds {
 		log.Printf("[INFO] Deleting CEN Instance: %s ", cenId)
 		deleteCenRequest := cbn.CreateDeleteCenRequest()
 		deleteCenRequest.CenId = cenId
@@ -456,6 +115,367 @@ func testSweepCenInstances(region string) error {
 		}
 	}
 	return nil
+}
+
+// detachCenChildInstances detaches all basic child instances (VPC/VBR) from a
+// CEN via the DescribeCenAttachedChildInstances / DetachCenChildInstance APIs.
+// This is the basic child-instance model (not the enterprise TR attachment
+// model) and must run before TR/attachment cleanup so
+// InvalidOperation.AttachedChildInstanceExist is cleared on the TR. Non-fatal:
+// per-instance errors are logged and the loop continues.
+func detachCenChildInstances(client *connectivity.AliyunClient, cenId, cenName string) {
+	describeCenAttachedChildInstancesRequest := cbn.CreateDescribeCenAttachedChildInstancesRequest()
+	describeCenAttachedChildInstancesRequest.CenId = cenId
+	raw, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
+		return cenClient.DescribeCenAttachedChildInstances(describeCenAttachedChildInstancesRequest)
+	})
+	if err != nil {
+		log.Printf("[ERROR] Failed to Describe CEN Attached Instance (%s (%s)): %s", cenName, cenId, err)
+		return
+	}
+	describeCenAttachedChildInstancesResponse, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
+	for _, childInstance := range describeCenAttachedChildInstancesResponse.ChildInstances.ChildInstance {
+		instanceId := childInstance.ChildInstanceId
+		log.Printf("[INFO] Detaching CEN Child Instance: %s (%s %s)", cenName, cenId, instanceId)
+		detachCenChildInstanceRequest := cbn.CreateDetachCenChildInstanceRequest()
+		detachCenChildInstanceRequest.CenId = cenId
+		detachCenChildInstanceRequest.ChildInstanceId = instanceId
+		detachCenChildInstanceRequest.ChildInstanceType = childInstance.ChildInstanceType
+		detachCenChildInstanceRequest.ChildInstanceRegionId = childInstance.ChildInstanceRegionId
+		_, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
+			return cenClient.DetachCenChildInstance(detachCenChildInstanceRequest)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to Detach CEN Attached Instance (%s (%s %s)): %s", cenName, cenId, instanceId, err)
+			continue
+		}
+		cenService := CenService{client}
+		if err := cenService.WaitForCenInstanceAttachment(cenId+COLON_SEPARATED+instanceId, Deleted, DefaultCenTimeoutLong); err != nil {
+			log.Printf("[ERROR] Failed to WaitFor CEN Attached Instance Detached (%s (%s %s)): %s", cenName, cenId, instanceId, err)
+		}
+	}
+}
+
+// unrouteCenPrivateZones unroutes private-zone routes from a CEN (legacy
+// flow). Non-fatal: errors are logged and the loop continues.
+func unrouteCenPrivateZones(client *connectivity.AliyunClient, cenId string) {
+	describeCenPrivateZoneRoutesRequest := cbn.CreateDescribeCenPrivateZoneRoutesRequest()
+	describeCenPrivateZoneRoutesRequest.RegionId = client.RegionId
+	describeCenPrivateZoneRoutesRequest.AccessRegionId = client.RegionId
+	describeCenPrivateZoneRoutesRequest.CenId = cenId
+	raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+		return cbnClient.DescribeCenPrivateZoneRoutes(describeCenPrivateZoneRoutesRequest)
+	})
+	if err != nil {
+		return
+	}
+	response, _ := raw.(*cbn.DescribeCenPrivateZoneRoutesResponse)
+	for _, resp := range response.PrivateZoneInfos.PrivateZoneInfo {
+		request := cbn.CreateUnroutePrivateZoneInCenToVpcRequest()
+		request.AccessRegionId = resp.AccessRegionId
+		request.CenId = cenId
+		if _, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
+			return cbnClient.UnroutePrivateZoneInCenToVpc(request)
+		}); err != nil {
+			log.Printf("[ERROR] Failed to UnroutePrivateZoneInCenToVpc for CEN %s: %v", cenId, err)
+		}
+	}
+}
+
+// sweepCenTransitRouterRouteTablesAndTRs lists transit routers for a CEN across
+// all candidate regions, deletes non-system route tables under each TR, then
+// deletes the TRs. Transit routers are regional resources: a CEN with a
+// cn-beijing home region can have TRs in cn-shanghai, so the LIST must probe
+// each candidate region via a regional client. regionalClients caches
+// per-region AliyunClients so each endpoint is created only once.
+//
+// Force-order: route tables are deleted BEFORE the owning TR (otherwise
+// DeleteTransitRouter fails with InvalidOperation.AttachedChildInstanceExist /
+// residual route-table references). System route tables are skipped
+// (OperationFailed.DeleteSystemRouteTable). Route tables with residual
+// associations/propagations/route entries are logged and left for the CEN
+// delete to surface — DeleteTransitRouterRouteTable has no Force param.
+func sweepCenTransitRouterRouteTablesAndTRs(client *connectivity.AliyunClient, cenId, cenName string, regionalClients map[string]*connectivity.AliyunClient) {
+	seenTR := map[string]bool{}
+	for _, region := range cenSubSweepRegions(client.RegionId) {
+		listClient := client
+		if region != client.RegionId {
+			if rc, ok := regionalClients[region]; ok {
+				listClient = rc
+			} else {
+				raw, err := sharedClientForRegion(region)
+				if err != nil {
+					log.Printf("[ERROR] sharedClientForRegion(%s) for CEN %s (%s): %v", region, cenName, cenId, err)
+					continue
+				}
+				listClient = raw.(*connectivity.AliyunClient)
+				regionalClients[region] = listClient
+			}
+		}
+		// List transit routers in this region for this CEN. PageSize/PageNumber
+		// pagination (max 50 per page).
+		trReq := map[string]interface{}{
+			"CenId":      cenId,
+			"RegionId":   region,
+			"PageSize":   PageSizeLarge,
+			"PageNumber": 1,
+		}
+		for {
+			var trResp map[string]interface{}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := retry.Retry(2*time.Minute, func() *retry.RetryError {
+				resp, e := listClient.RpcPost("Cbn", "2017-09-12", "ListTransitRouters", nil, trReq, true)
+				trResp = resp
+				if e != nil {
+					if IsExpectedErrors(e, []string{"IllegalParam.CenIdOrRegionId", "IllegalParam.Region"}) {
+						return retry.NonRetryableError(e)
+					}
+					if NeedRetry(e) {
+						wait()
+						return retry.RetryableError(e)
+					}
+					return retry.NonRetryableError(e)
+				}
+				addDebug("ListTransitRouters", trResp, trReq)
+				return nil
+			})
+			if err != nil {
+				// Non-fatal: many regions have no TR for this CEN.
+				break
+			}
+			att, jerr := jsonpath.Get("$.TransitRouters", trResp)
+			if jerr != nil {
+				break
+			}
+			result, _ := att.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				trId := fmt.Sprint(item["TransitRouterId"])
+				if trId == "" || seenTR[trId] {
+					continue
+				}
+				seenTR[trId] = true
+				// (c) Delete non-system route tables, then (d) delete the TR.
+				sweepCenTransitRouterRouteTables(listClient, cenId, cenName, trId)
+				deleteTransitRouter(listClient, cenId, cenName, trId)
+			}
+			if len(result) < PageSizeLarge {
+				break
+			}
+			trReq["PageNumber"] = trReq["PageNumber"].(int) + 1
+		}
+	}
+}
+
+// sweepCenTransitRouterRouteTables lists route tables for a transit router and
+// deletes only Custom route tables — System route tables are not deletable
+// (OperationFailed.DeleteSystemRouteTable). Uses MaxResults/NextToken
+// pagination (the ListTransitRouterRouteTables API contract). Route tables with
+// residual associations/propagations/route entries are non-retryable and
+// logged (DeleteTransitRouterRouteTable has no Force param).
+func sweepCenTransitRouterRouteTables(listClient *connectivity.AliyunClient, cenId, cenName, trId string) {
+	rtReq := map[string]interface{}{
+		"TransitRouterId": trId,
+		"MaxResults":      100,
+	}
+	for {
+		var resp map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := retry.Retry(2*time.Minute, func() *retry.RetryError {
+			r, e := listClient.RpcPost("Cbn", "2017-09-12", "ListTransitRouterRouteTables", nil, rtReq, true)
+			resp = r
+			if e != nil {
+				if IsExpectedErrors(e, []string{"InvalidTransitRouterId.NotFound"}) {
+					return retry.NonRetryableError(e)
+				}
+				if NeedRetry(e) {
+					wait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			addDebug("ListTransitRouterRouteTables", resp, rtReq)
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] ListTransitRouterRouteTables failed for TR %s (CEN %s (%s)): %v", trId, cenName, cenId, err)
+			break
+		}
+		att, jerr := jsonpath.Get("$.TransitRouterRouteTables", resp)
+		if jerr != nil {
+			log.Printf("[ERROR] jsonpath.Get $.TransitRouterRouteTables failed for TR %s (CEN %s (%s)): %v", trId, cenName, cenId, jerr)
+			break
+		}
+		result, _ := att.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			rtId := fmt.Sprint(item["TransitRouterRouteTableId"])
+			rtType := fmt.Sprint(item["TransitRouterRouteTableType"])
+			if rtType == "System" {
+				log.Printf("[INFO] Skipping system route table (not deletable): %s (TR %s, CEN %s (%s))", rtId, trId, cenName, cenId)
+				continue
+			}
+			log.Printf("[INFO] Deleting CEN TR route table: %s (TR %s, CEN %s (%s))", rtId, trId, cenName, cenId)
+			delReq := map[string]interface{}{
+				"TransitRouterRouteTableId": rtId,
+				"ClientToken":               buildClientToken("DeleteTransitRouterRouteTable"),
+			}
+			var delResp map[string]interface{}
+			delWait := incrementalWait(3*time.Second, 5*time.Second)
+			delErr := retry.Retry(1*time.Minute, func() *retry.RetryError {
+				r, e := listClient.RpcPost("Cbn", "2017-09-12", "DeleteTransitRouterRouteTable", nil, delReq, false)
+				delResp = r
+				if e != nil {
+					// NotFound → already deleted, treat as success.
+					if IsExpectedErrors(e, []string{"InvalidTransitRouterRouteTableId.NotFound"}) {
+						return nil
+					}
+					// Residual associations/propagations/route entries are
+					// non-retryable (no Force param). Log + continue.
+					if IsExpectedErrors(e, []string{
+						"OperationFailed.DeleteRouteTableWithAssociation",
+						"OperationFailed.DeleteRouteTableWithPropagation",
+						"OperationFailed.DeleteRouteTableWithRouteEntry",
+						"OperationFailed.DeleteRouteTableWithRouteAggregation",
+						"IncorrectStatus.TransitRouterRouteTable",
+					}) {
+						return retry.NonRetryableError(e)
+					}
+					if NeedRetry(e) {
+						delWait()
+						return retry.RetryableError(e)
+					}
+					return retry.NonRetryableError(e)
+				}
+				return nil
+			})
+			addDebug("DeleteTransitRouterRouteTable", delResp, delReq)
+			if delErr != nil {
+				log.Printf("[ERROR] DeleteTransitRouterRouteTable failed for %s (TR %s, CEN %s (%s)): %v", rtId, trId, cenName, cenId, delErr)
+			}
+		}
+		// NextToken pagination (MaxResults/NextToken, not PageSize/PageNumber).
+		nextToken := ""
+		if v, ok := resp["NextToken"]; ok && v != nil {
+			if s := fmt.Sprint(v); s != "" {
+				nextToken = s
+			}
+		}
+		if nextToken == "" {
+			break
+		}
+		rtReq["NextToken"] = nextToken
+	}
+}
+
+// deleteTransitRouter force-deletes a transit router. Works cross-region by TR
+// ID from the regional client that owns the TR's region. Non-fatal: errors are
+// logged so the sweeper can continue to the next TR / CEN.
+func deleteTransitRouter(listClient *connectivity.AliyunClient, cenId, cenName, trId string) {
+	log.Printf("[INFO] Deleting CEN transit router: %s (CEN %s (%s))", trId, cenName, cenId)
+	req := map[string]interface{}{
+		"TransitRouterId": trId,
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := retry.Retry(1*time.Minute, func() *retry.RetryError {
+		resp, e := listClient.RpcPost("Cbn", "2017-09-12", "DeleteTransitRouter", nil, req, false)
+		if e != nil {
+			if IsExpectedErrors(e, []string{"InvalidTransitRouterId.NotFound"}) {
+				return nil
+			}
+			if IsExpectedErrors(e, []string{"Operation.Blocking", "InvalidCenInstanceStatusNotAvailableForTransitRouterOperation"}) || NeedRetry(e) {
+				wait()
+				return retry.RetryableError(e)
+			}
+			return retry.NonRetryableError(e)
+		}
+		addDebug("DeleteTransitRouter", resp, req)
+		return nil
+	})
+	if err != nil {
+		log.Printf("[ERROR] DeleteTransitRouter failed for %s (CEN %s (%s)): %v", trId, cenName, cenId, err)
+	}
+}
+
+// sweepCenOrphanedPeerAttachments queries DescribeCenInterRegionBandwidthLimits
+// and force-deletes any remaining TR Peer attachments by attachment ID. This is
+// a fallback for when ListTransitRouterPeerAttachments returns
+// IllegalParam.CenIdOrRegionId (which happens when the owning TR was already
+// deleted, leaving an orphaned Peer attachment with a DataTransfer bandwidth
+// allocation that blocks DeleteCen with InvalidOperation.AttachedChildInstanceExist).
+// Non-fatal: per-attachment errors are logged and the loop continues.
+func sweepCenOrphanedPeerAttachments(client *connectivity.AliyunClient, cenId, cenName string) {
+	req := map[string]interface{}{
+		"CenId":      cenId,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	for {
+		var resp map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := retry.Retry(2*time.Minute, func() *retry.RetryError {
+			r, e := client.RpcPost("Cbn", "2017-09-12", "DescribeCenInterRegionBandwidthLimits", nil, req, true)
+			resp = r
+			if e != nil {
+				if NeedRetry(e) {
+					wait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			addDebug("DescribeCenInterRegionBandwidthLimits", resp, req)
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] DescribeCenInterRegionBandwidthLimits failed for CEN %s (%s): %v", cenName, cenId, err)
+			return
+		}
+		att, jerr := jsonpath.Get("$.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit", resp)
+		if jerr != nil {
+			break
+		}
+		result, _ := att.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			attachId := fmt.Sprint(item["TransitRouterAttachmentId"])
+			if attachId == "" || attachId == "<nil>" {
+				continue
+			}
+			log.Printf("[INFO] Deleting orphaned TR Peer attachment: %s (CEN %s (%s))", attachId, cenName, cenId)
+			delReq := map[string]interface{}{
+				"TransitRouterAttachmentId": attachId,
+				"Force":                     true,
+			}
+			delWait := incrementalWait(3*time.Second, 5*time.Second)
+			delErr := retry.Retry(1*time.Minute, func() *retry.RetryError {
+				_, e := client.RpcPost("Cbn", "2017-09-12", "DeleteTransitRouterPeerAttachment", nil, delReq, false)
+				if e != nil {
+					if IsExpectedErrors(e, []string{"InvalidTransitRouterAttachment.NotFound"}) {
+						return nil
+					}
+					if IsExpectedErrors(e, []string{"Operation.Blocking"}) || NeedRetry(e) {
+						delWait()
+						return retry.RetryableError(e)
+					}
+					return retry.NonRetryableError(e)
+				}
+				return nil
+			})
+			if delErr != nil {
+				log.Printf("[ERROR] DeleteTransitRouterPeerAttachment failed for %s (CEN %s (%s)): %v", attachId, cenName, cenId, delErr)
+			}
+		}
+		totalCount := 0
+		if tc, ok := resp["TotalCount"]; ok && tc != nil {
+			if f, ok := tc.(float64); ok {
+				totalCount = int(f)
+			}
+		}
+		if len(result) < PageSizeLarge || totalCount <= len(result) {
+			break
+		}
+		req["PageNumber"] = req["PageNumber"].(int) + 1
+	}
 }
 
 func TestAccAliCloudCenInstance_basic0(t *testing.T) {

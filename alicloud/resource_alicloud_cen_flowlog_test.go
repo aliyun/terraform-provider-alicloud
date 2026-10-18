@@ -34,6 +34,11 @@ func testSweepCenFlowlog(region string) error {
 		"tf_testAcc",
 	}
 
+	// Build the set of protected parent-CEN IDs so flowlogs attached to a
+	// do-not-delete CEN are skipped even in SWEEP_ALL mode. Failures here are
+	// non-fatal: the sweeper falls back to name-based protection only.
+	protectedCenIds, _ := cenIdsProtectedFromSweep(client)
+
 	var insts []cbn.FlowLog
 	request := cbn.CreateDescribeFlowlogsRequest()
 	request.RegionId = client.RegionId
@@ -79,6 +84,16 @@ func testSweepCenFlowlog(region string) error {
 	for _, v := range insts {
 		name := v.FlowLogName
 		id := v.FlowLogId
+		// Red-line: skip flowlogs carrying an explicit do-not-delete marker,
+		// and flowlogs whose parent CEN is protected (even in SWEEP_ALL mode).
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping CEN flowlog (do-not-delete marker): %s (%s)", name, id)
+			continue
+		}
+		if protectedCenIds[v.CenId] {
+			log.Printf("[INFO] Skipping CEN flowlog (parent CEN %s protected): %s (%s)", v.CenId, name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
