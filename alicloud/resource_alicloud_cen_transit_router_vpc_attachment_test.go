@@ -1505,10 +1505,37 @@ func testSweepCenTransitRouterVpcAttachments(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
+	// Transit Router VPC attachments are regional to the VPC's region (e.g.
+	// cn-shanghai), not the CEN's home region (cn-beijing). The LIST must query
+	// each candidate region's endpoint; the DELETE works cross-region from the
+	// home region with Force=true. Regional clients are cached so each is created
+	// only once across all CENs.
+	regionalClients := map[string]*connectivity.AliyunClient{}
 	return forEachCenForSubSweep(client, func(cenId, cenName string) {
 		sweepCenTransitRouterAttachments(client, cenId, cenName,
-			"ListTransitRouterVpcAttachments", "DeleteTransitRouterVpcAttachment", "VPC")
+			"ListTransitRouterVpcAttachments", "DeleteTransitRouterVpcAttachment", "VPC",
+			cenSubSweepRegions(client.RegionId), regionalClients)
 	})
+}
+
+// cenSubSweepRegions returns the set of regions to probe for transit-router VPC
+// attachments. VPC attachments live in the VPC's region, so the sweeper must
+// query each region's endpoint. The CEN home region is always included; common
+// test VPC regions are added so cross-region enterprise attachments (e.g.
+// cn-shanghai VPCs under a cn-beijing CEN) are found.
+func cenSubSweepRegions(homeRegion string) []string {
+	return []string{
+		homeRegion,
+		"cn-shanghai",
+		"cn-hangzhou",
+		"cn-zhangjiakou",
+		"cn-shenzhen",
+		"cn-hongkong",
+		"cn-huhehaote",
+		"cn-chengdu",
+		"cn-heyuan",
+		"cn-guangzhou",
+	}
 }
 
 // forEachCenForSubSweep enumerates CEN instances in the region
@@ -1575,74 +1602,121 @@ func forEachCenForSubSweep(client *connectivity.AliyunClient, cb func(cenId, cen
 }
 
 // sweepCenTransitRouterAttachments lists transit-router attachments of the
-// given kind for a CEN and deletes each. listAction/deleteAction are the cbn
-// RPC action names. Mirrors the inline sub-resource cleanup already present in
-// testSweepCenInstances (ListTransitRouterVpcAttachments ->
-// DeleteTransitRouterVpcAttachment, ListTransitRouterPeerAttachments ->
-// DeleteTransitRouterPeerAttachment) so behaviour stays consistent.
-func sweepCenTransitRouterAttachments(client *connectivity.AliyunClient, cenId, cenName, listAction, deleteAction, kind string) {
-	request := map[string]interface{}{
-		"CenId":      cenId,
-		"RegionId":   client.RegionId,
-		"PageSize":   PageSizeLarge,
-		"PageNumber": 1,
-	}
-	for {
-		var response map[string]interface{}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := retry.Retry(2*time.Minute, func() *retry.RetryError {
-			resp, e := client.RpcPost("Cbn", "2017-09-12", listAction, nil, request, true)
-			response = resp
-			if e != nil {
-				if NeedRetry(e) {
-					wait()
-					return retry.RetryableError(e)
+// given kind for a CEN and force-deletes each. listAction/deleteAction are the
+// cbn RPC action names. regions is the set of regions to probe for the LIST:
+// VPC attachments live in the VPC's region (e.g. cn-shanghai) while peer
+// attachments live in the CEN's home region, so the caller passes a candidate
+// list for VPC and a single-element list for peer. regionalClients caches
+// per-region AliyunClients so each regional endpoint is created only once.
+//
+// Force=true is always set on the delete so route-table associations and other
+// dependencies are removed automatically (the API otherwise rejects with
+// OperationFailed.RouteTableAssociationExist). The delete is issued from the
+// home-region client; cross-region force-delete works by attachment ID.
+func sweepCenTransitRouterAttachments(client *connectivity.AliyunClient, cenId, cenName, listAction, deleteAction, kind string, regions []string, regionalClients map[string]*connectivity.AliyunClient) {
+	for _, region := range regions {
+		// Determine the client to use for LIST. VPC attachments are regional
+		// to the VPC's region, so a separate regional client (with its own
+		// endpoint) is required for each region. Peer attachments live in the
+		// CEN's home region, so the home client suffices.
+		listClient := client
+		if region != client.RegionId {
+			if rc, ok := regionalClients[region]; ok {
+				listClient = rc
+			} else {
+				raw, err := sharedClientForRegion(region)
+				if err != nil {
+					log.Printf("[ERROR] sharedClientForRegion(%s) failed for CEN %s (%s): %v", region, cenName, cenId, err)
+					continue
 				}
-				return retry.NonRetryableError(e)
+				listClient = raw.(*connectivity.AliyunClient)
+				regionalClients[region] = listClient
 			}
-			addDebug(listAction, response, request)
-			return nil
-		})
-		if err != nil {
-			log.Printf("[ERROR] %s failed for CEN %s (%s): %v", listAction, cenName, cenId, err)
-			return
 		}
-		att, err := jsonpath.Get("$.TransitRouterAttachments", response)
-		if err != nil {
-			log.Printf("[ERROR] jsonpath.Get $.TransitRouterAttachments failed for CEN %s (%s): %v", cenName, cenId, err)
-			return
+		request := map[string]interface{}{
+			"CenId":      cenId,
+			"RegionId":   region,
+			"MaxResults": 100,
 		}
-		result, _ := att.([]interface{})
-		for _, v := range result {
-			item := v.(map[string]interface{})
-			attName := fmt.Sprint(item["TransitRouterAttachmentName"])
-			id := fmt.Sprint(item["TransitRouterAttachmentId"])
-			log.Printf("[INFO] Deleting CEN TR %s attachment: %s (%s) parent CEN %s (%s)", kind, attName, id, cenName, cenId)
-			delReq := map[string]interface{}{
-				"TransitRouterAttachmentId": id,
-			}
-			var delResp map[string]interface{}
-			delWait := incrementalWait(3*time.Second, 5*time.Second)
-			delErr := retry.Retry(1*time.Minute, func() *retry.RetryError {
-				resp, e := client.RpcPost("Cbn", "2017-09-12", deleteAction, nil, delReq, false)
-				delResp = resp
+		for {
+			var response map[string]interface{}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := retry.Retry(2*time.Minute, func() *retry.RetryError {
+				resp, e := listClient.RpcPost("Cbn", "2017-09-12", listAction, nil, request, true)
+				response = resp
 				if e != nil {
-					if IsExpectedErrors(e, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status", "IncorrectStatus.Attachment"}) || NeedRetry(e) {
-						delWait()
+					// IllegalParam.CenIdOrRegionId means this region has no transit
+					// router for this CEN — non-fatal, just skip this region.
+					if IsExpectedErrors(e, []string{"IllegalParam.CenIdOrRegionId", "IllegalParam.Region"}) {
+						return retry.NonRetryableError(e)
+					}
+					if NeedRetry(e) {
+						wait()
 						return retry.RetryableError(e)
 					}
 					return retry.NonRetryableError(e)
 				}
+				addDebug(listAction, response, request)
 				return nil
 			})
-			addDebug(deleteAction, delResp, delReq)
-			if delErr != nil {
-				log.Printf("[ERROR] %s failed for attachment %s (%s): %v", deleteAction, attName, id, delErr)
+			if err != nil {
+				// Non-fatal: many regions will have no TR for this CEN.
+				log.Printf("[DEBUG] %s in %s for CEN %s (%s): %v", listAction, region, cenName, cenId, err)
+				break
 			}
+			att, jerr := jsonpath.Get("$.TransitRouterAttachments", response)
+			if jerr != nil {
+				log.Printf("[ERROR] jsonpath.Get $.TransitRouterAttachments failed for CEN %s (%s) in %s: %v", cenName, cenId, region, jerr)
+				break
+			}
+			result, _ := att.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				attName := fmt.Sprint(item["TransitRouterAttachmentName"])
+				id := fmt.Sprint(item["TransitRouterAttachmentId"])
+				log.Printf("[INFO] Deleting CEN TR %s attachment: %s (%s) parent CEN %s (%s) region %s", kind, attName, id, cenName, cenId, region)
+				delReq := map[string]interface{}{
+					"TransitRouterAttachmentId": id,
+					"Force":                     true,
+				}
+				var delResp map[string]interface{}
+				delWait := incrementalWait(3*time.Second, 5*time.Second)
+				delErr := retry.Retry(1*time.Minute, func() *retry.RetryError {
+					resp, e := client.RpcPost("Cbn", "2017-09-12", deleteAction, nil, delReq, false)
+					delResp = resp
+					if e != nil {
+						// NotFound means already deleted — treat as success.
+						if IsExpectedErrors(e, []string{"InvalidTransitRouterAttachmentId.NotFound"}) {
+							return nil
+						}
+						// NotSupportForceDelete is non-retryable.
+						if IsExpectedErrors(e, []string{"OperationFailed.NotSupportForceDelete"}) {
+							return retry.NonRetryableError(e)
+						}
+						if IsExpectedErrors(e, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status", "IncorrectStatus.Attachment"}) || NeedRetry(e) {
+							delWait()
+							return retry.RetryableError(e)
+						}
+						return retry.NonRetryableError(e)
+					}
+					return nil
+				})
+				addDebug(deleteAction, delResp, delReq)
+				if delErr != nil {
+					log.Printf("[ERROR] %s failed for attachment %s (%s): %v", deleteAction, attName, id, delErr)
+				}
+			}
+			// NextToken pagination (MaxResults/NextToken, not PageSize/PageNumber).
+			nextToken := ""
+			if v, ok := response["NextToken"]; ok && v != nil {
+				if s := fmt.Sprint(v); s != "" {
+					nextToken = s
+				}
+			}
+			if nextToken == "" {
+				break
+			}
+			request["NextToken"] = nextToken
 		}
-		if len(result) < PageSizeLarge {
-			break
-		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 }

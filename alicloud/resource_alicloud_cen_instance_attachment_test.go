@@ -58,15 +58,24 @@ func testSweepCenInstanceAttachment(region string) error {
 		response, _ := raw.(*cbn.DescribeCensResponse)
 
 		for _, v := range response.Cens.Cen {
+			// Red-line: skip CENs carrying a do-not-delete marker (e.g.
+			// "no-deleting-cen") even in SWEEP_ALL mode — their child-instance
+			// attachments are preserved. Mirrors testSweepCenInstances.
+			if protectedSweepVpcName(v.Name) {
+				log.Printf("[INFO] Skipping CEN instance attachment sweep (do-not-delete marker): %s (%s)", v.Name, v.CenId)
+				continue
+			}
 			skip := true
 			if !sweepAll() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(strings.ToLower(v.Name), strings.ToLower(prefix)) {
 						skip = false
+						break
 					}
 				}
 				if skip {
 					log.Printf("[INFO] Skipping cen instance: %s ", v.Name)
+					continue
 				}
 			}
 			cenIds = append(cenIds, v.CenId)

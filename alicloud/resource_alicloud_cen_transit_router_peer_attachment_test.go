@@ -1090,8 +1090,12 @@ func testSweepCenTransitRouterPeerAttachments(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
+	// Peer attachments live in the CEN's home region, so the home client
+	// suffices for both LIST and DELETE. Force=true is used so route-table
+	// dependencies are removed automatically.
 	return forEachCenForSubSweep(client, func(cenId, cenName string) {
 		sweepCenTransitRouterAttachments(client, cenId, cenName,
-			"ListTransitRouterPeerAttachments", "DeleteTransitRouterPeerAttachment", "peer")
+			"ListTransitRouterPeerAttachments", "DeleteTransitRouterPeerAttachment", "peer",
+			[]string{client.RegionId}, nil)
 	})
 }

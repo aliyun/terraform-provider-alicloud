@@ -75,6 +75,13 @@ func testSweepCenBandwidthLimit(region string) error {
 		}
 		name := fmt.Sprint(cen["Name"])
 		id := fmt.Sprint(cen["CenId"])
+		// Red-line: skip bandwidth limits on CENs carrying a do-not-delete
+		// marker (e.g. "no-deleting-cen") even in SWEEP_ALL mode. Mirrors
+		// testSweepCenInstances.
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping CEN bandwidth limit (do-not-delete marker): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {

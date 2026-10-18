@@ -242,6 +242,7 @@ func testSweepCenInstances(region string) error {
 
 				request := map[string]interface{}{
 					"TransitRouterAttachmentId": id,
+					"Force":                     true,
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
@@ -306,6 +307,7 @@ func testSweepCenInstances(region string) error {
 
 				request := map[string]interface{}{
 					"TransitRouterAttachmentId": id,
+					"Force":                     true,
 				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
