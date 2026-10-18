@@ -69,6 +69,12 @@ func testSweepMongoDBShardingInstances(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 
+			// NODELETING / do-not-delete marker guard — applies in ALL modes
+			// (including SWEEP_ALL) so named-protected instances are never swept.
+			if protectedSweepVpcName(fmt.Sprint(item["DBInstanceDescription"])) {
+				log.Printf("[INFO] Skipping Mongodb Sharding Instance (do-not-delete marker): %s", fmt.Sprint(item["DBInstanceDescription"]))
+				continue
+			}
 			skip := true
 			if !sweepAll() {
 				for _, prefix := range prefixes {
