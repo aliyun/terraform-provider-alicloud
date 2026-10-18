@@ -125,12 +125,14 @@ func TestAccAliCloudApiGatewayLogConfig_basic0(t *testing.T) {
 					"sls_project":   name,
 					"sls_log_store": name,
 					"log_type":      "PROVIDER",
+					"create_slr":    true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"sls_project":   name,
 						"sls_log_store": name,
 						"log_type":      "PROVIDER",
+						"create_slr":    "true",
 					}),
 				),
 			},
@@ -138,6 +140,7 @@ func TestAccAliCloudApiGatewayLogConfig_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"sls_project":   name + "-update",
 					"sls_log_store": name + "-update",
+					"create_slr":    true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -147,9 +150,24 @@ func TestAccAliCloudApiGatewayLogConfig_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"sls_project":   name + "-update",
+					"sls_log_store": name + "-update",
+					"create_slr":    false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sls_project":   name + "-update",
+						"sls_log_store": name + "-update",
+						"create_slr":    "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"create_slr"},
 			},
 		},
 	})
