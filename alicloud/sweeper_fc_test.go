@@ -33,21 +33,23 @@ var fcSweepPrefixes = []string{
 }
 
 // fcSweepShouldDelete decides whether to delete an FC resource by name.
-// NODELETING/do-not-delete protection always applies. The prefix filter is
-// bypassed when ALICLOUD_SWEEP_ALL_RESOURCES=true.
+// fcSweepShouldDelete decides whether to delete an FC resource by name.
+// NODELETING/do-not-delete protection always applies. The tf-testAcc prefix
+// filter ALWAYS applies too — FC resources are frequently real services (not
+// just test leftovers) and may lack NODELETING markers, so a SWEEP_ALL bypass
+// of the prefix check is unsafe for FC. This matches the canonical existing v1
+// FC sweepers (alicloud_fc_service/function/trigger/...), which always apply
+// their prefix list and never consult sweepAll().
 func fcSweepShouldDelete(name string) (bool, string) {
 	if protectedSweepVpcName(name) {
 		return false, "NODELETING/do-not-delete marker in name"
-	}
-	if sweepAll() {
-		return true, ""
 	}
 	for _, p := range fcSweepPrefixes {
 		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(p)) {
 			return true, ""
 		}
 	}
-	return false, "name does not match tf-testAcc prefix (non-SWEEP_ALL)"
+	return false, "name does not match tf-testAcc prefix"
 }
 
 // fcSweepDomainShouldDelete is the custom-domain variant. The tf- prefix filter
@@ -240,6 +242,16 @@ func testSweepFcLayerVersion(region string) error {
 // use $.<key> arrays, so a missing path just yields an empty list.
 func jsonpathGet(path string, object interface{}) (interface{}, error) {
 	return jsonpath.Get(path, object)
+}
+
+// keysOf returns the top-level keys of a RoaGet response map for debug logging
+// (e.g. diagnosing why an FC list endpoint yields an unexpected shape).
+func keysOf(m map[string]interface{}) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
 }
 
 // =============================================================================
@@ -670,8 +682,16 @@ func testSweepFcv3LayerVersion(region string) error {
 			log.Printf("[ERROR] Failed to list fcv3 layers: %s", err)
 			return nil
 		}
-		rawLayers, _ := jsonpathGet("$.layers", response)
-		layers, _ := rawLayers.([]interface{})
+		// Use direct map access (the RoaGet response is map[string]interface{});
+		// jsonpath is avoided here because $.layers was observed to yield nil on the
+		// /layers endpoint even when layers exist, whereas direct access is reliable.
+		layers := []interface{}{}
+		if raw, ok := response["layers"]; ok {
+			if arr, ok := raw.([]interface{}); ok {
+				layers = arr
+			}
+		}
+		log.Printf("[DEBUG] fcv3 layer list returned %d layer(s) (response keys: %v)", len(layers), keysOf(response))
 		for _, l := range layers {
 			item, _ := l.(map[string]interface{})
 			if item == nil {
@@ -696,6 +716,13 @@ func testSweepFcv3LayerVersion(region string) error {
 			}
 			rawVers, _ := jsonpathGet("$.versions", versionsResp)
 			versions, _ := rawVers.([]interface{})
+			if versions == nil {
+				if raw, ok := versionsResp["versions"]; ok {
+					if arr, ok := raw.([]interface{}); ok {
+						versions = arr
+					}
+				}
+			}
 			for _, vItem := range versions {
 				verMap, _ := vItem.(map[string]interface{})
 				if verMap == nil {
