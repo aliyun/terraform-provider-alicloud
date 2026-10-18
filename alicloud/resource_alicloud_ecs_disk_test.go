@@ -61,6 +61,10 @@ func testAliCloudEcsDisk(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			if protectedSweepVpcName(fmt.Sprint(item["DiskName"])) {
+				log.Printf("[INFO] Skipping Disk (NODELETING): %v", item["DiskName"])
+				continue
+			}
 			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(item["DiskName"].(string)), strings.ToLower(prefix)) {

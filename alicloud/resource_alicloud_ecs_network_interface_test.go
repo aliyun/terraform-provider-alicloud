@@ -66,6 +66,10 @@ func testAliCloudEcsNetworkInterface(region string) error {
 			if _, ok := item["NetworkInterfaceName"]; !ok {
 				continue
 			}
+			if protectedSweepVpcName(fmt.Sprint(item["NetworkInterfaceName"])) {
+				log.Printf("[INFO] Skipping NetworkInterface (NODELETING): %v", item["NetworkInterfaceName"])
+				continue
+			}
 			skip := true
 			if !sweepAll() {
 				for _, prefix := range prefixes {

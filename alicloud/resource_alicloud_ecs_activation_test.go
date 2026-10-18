@@ -82,6 +82,10 @@ func testSweepEcsActivations(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 
+			if protectedSweepVpcName(fmt.Sprint(item["InstanceName"])) {
+				log.Printf("[INFO] Skipping Ecs Activations (NODELETING): %v", item["InstanceName"])
+				continue
+			}
 			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(item["InstanceName"].(string)), strings.ToLower(prefix)) {

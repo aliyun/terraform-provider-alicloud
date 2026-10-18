@@ -73,6 +73,10 @@ func testSweepSecurityGroups(region string) error {
 	for _, v := range groups {
 		name := v.SecurityGroupName
 		id := v.SecurityGroupId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Security Group (NODELETING): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
