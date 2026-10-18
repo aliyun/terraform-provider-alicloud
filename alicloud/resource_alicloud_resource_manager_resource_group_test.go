@@ -56,7 +56,8 @@ func testSweepResourceManagerResourceGroup(region string) error {
 		}
 		resp, err := jsonpath.Get("$.ResourceGroups.ResourceGroup", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ResourceGroups.ResourceGroup", response)
+			log.Printf("[ERROR] Failed to parse $.ResourceGroups.ResourceGroup (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {

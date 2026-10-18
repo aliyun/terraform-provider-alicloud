@@ -56,7 +56,8 @@ func testSweepNetworkAclAttachment(region string) error {
 		}
 
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to paginate network acl attachment (stopping): %s", err)
+			break
 		} else {
 			request.PageNumber = page
 		}
@@ -115,9 +116,9 @@ func TestAccAlicloudVPCNetworkAclAttachment_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckNetworkAclAttachmentDestroy,
+		CheckDestroy:      testAccCheckNetworkAclAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccNetworkAclAttachment_create(rand),

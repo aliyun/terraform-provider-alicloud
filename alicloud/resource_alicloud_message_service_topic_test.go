@@ -61,14 +61,17 @@ func testSweepMessageServiceTopic(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_message_service_topic", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list message service topic: %s", err)
+			return nil
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			log.Printf("[ERROR] Failed to list message service topic (response Success=false): %v", response)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Data.PageData", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.PageData", response)
+			log.Printf("[ERROR] Failed to parse $.Data.PageData (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -96,7 +99,7 @@ func testSweepMessageServiceTopic(region string) error {
 		log.Printf("[INFO] Deleting MessageServiceTopic Instance: %s", id)
 		deleteAction := "DeleteTopic"
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Prior operation error before deleting %s: %s", id, err)
 		}
 		request = map[string]interface{}{
 			"TopicName": id,

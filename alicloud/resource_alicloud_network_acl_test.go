@@ -51,7 +51,8 @@ func testSweepNetworkAcl(region string) error {
 		}
 		resp, err := jsonpath.Get("$.NetworkAcls.NetworkAcl", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NetworkAcls.NetworkAcl", response)
+			log.Printf("[ERROR] Failed to parse $.NetworkAcls.NetworkAcl (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {

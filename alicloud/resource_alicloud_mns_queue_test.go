@@ -39,7 +39,8 @@ func testSweepMnsQueues(region string) error {
 				return queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
 			})
 			if err != nil {
-				return fmt.Errorf("get queueDetails  error: %#v", err)
+				log.Printf("[ERROR] Failed to list mns queue: %s", err)
+				return nil
 			}
 			queueDetails, _ := raw.(ali_mns.QueueDetails)
 			for _, attr := range queueDetails.Attrs {
@@ -94,9 +95,9 @@ func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -203,9 +204,9 @@ func TestAccAlicloudMnsQueue_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

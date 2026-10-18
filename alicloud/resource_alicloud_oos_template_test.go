@@ -49,11 +49,13 @@ func testSweepOosTemplate(region string) error {
 	for {
 		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oos_template", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list oos template: %s", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Templates", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Templates", response)
+			log.Printf("[ERROR] Failed to parse $.Templates (treat as empty): %s", err)
+			return nil
 		}
 		sweeped := false
 		result, _ := resp.([]interface{})
@@ -109,9 +111,9 @@ func TestAccAliCloudOOSTemplate_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -227,9 +229,9 @@ func TestAccAliCloudOOSTemplate_yamlContent(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

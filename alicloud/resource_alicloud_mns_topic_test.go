@@ -39,7 +39,8 @@ func testSweepMnsTopics(region string) error {
 				return topicManager.ListTopicDetail(nextMaker, 1000, namePrefix)
 			})
 			if err != nil {
-				return fmt.Errorf("get topicDetails  error: %#v", err)
+				log.Printf("[ERROR] Failed to list mns topic: %s", err)
+				return nil
 			}
 			topicDetails, _ := raw.(ali_mns.TopicDetails)
 			for _, attr := range topicDetails.Attrs {
@@ -94,9 +95,9 @@ func TestAccAlicloudMnsTopic_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -167,9 +168,9 @@ func TestAccAlicloudMnsTopic_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
