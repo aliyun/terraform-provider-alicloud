@@ -60,22 +60,29 @@ func testSweepOpenSearchAppGroup(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			name := fmt.Sprint(item["name"])
 			if convertOpenSearchAppGroupPaymentTypeResponse(item["chargeType"].(string)) == "Subscription" {
-				log.Printf("[INFO] Skipping AppGroup: %v (%v)", item["name"], item["id"])
+				log.Printf("[INFO] Skipping AppGroup (Subscription): %v (%v)", name, item["id"])
 				continue
 			}
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["name"])), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping AppGroup (do-not-delete): %v (%v)", name, item["id"])
+				continue
+			}
+			if !sweepAll() {
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping AppGroup (prefix mismatch): %v (%v)", name, item["id"])
+					continue
 				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping AppGroup: %v (%v)", item["name"], item["id"])
-				continue
-			}
-			ids = append(ids, fmt.Sprint(item["name"]))
+			ids = append(ids, name)
 		}
 		if len(result) < PageSizeLarge {
 			break
