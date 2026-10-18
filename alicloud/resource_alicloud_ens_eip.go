@@ -54,6 +54,10 @@ func resourceAliCloudEnsEip() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"95BandwidthByMonth"}, false),
 			},
+			"ip_address": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"isp": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -151,6 +155,7 @@ func resourceAliCloudEnsEipRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("eip_name", objectRaw["Name"])
 	d.Set("ens_region_id", objectRaw["EnsRegionId"])
 	d.Set("internet_charge_type", objectRaw["InternetChargeType"])
+	d.Set("ip_address", objectRaw["IpAddress"])
 	d.Set("isp", objectRaw["Isp"])
 	d.Set("payment_type", convertEnsEipAddressesEipAddressChargeTypeResponse(objectRaw["ChargeType"]))
 	d.Set("status", objectRaw["Status"])
