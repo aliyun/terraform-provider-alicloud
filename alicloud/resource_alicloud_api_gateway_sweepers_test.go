@@ -1,14 +1,15 @@
 package alicloud
 
 // Sweepers for the ApiGateway (CloudAPI) resources that previously had no
-// sweeper at all: instance, backend, plugin, access_control_list, stage_model
-// and model. Each mirrors the Delete path of the provider implementation and
+// sweeper at all: instance, backend, access_control_list, stage_model and
+// model. Each mirrors the Delete path of the provider implementation and
 // reuses the shared name-based protection (protectedSweepVpcName) so SWEEP_ALL
 // is safe.
 //
-// The remaining api_gateway resources (group, api, app, vpc_access, log_config)
-// already have sweepers registered in their own _test.go files; this file does
-// NOT re-register them, because AddTestSweepers panics on duplicate map keys.
+// The remaining api_gateway resources (group, api, app, plugin, vpc_access,
+// log_config) already have sweepers registered in their own _test.go files; this
+// file does NOT re-register them, because AddTestSweepers panics on duplicate
+// map keys.
 // alicloud_api_gateway_instance depends on alicloud_api_gateway_group, which is
 // registered elsewhere — the dependency resolves across files at runtime.
 //
@@ -170,11 +171,11 @@ func apiGatewayDelete(client *connectivity.AliyunClient, action string, query, b
 }
 
 func init() {
-	// These six resources previously had no sweeper at all. The remaining
-	// api_gateway resources (group, api, app, vpc_access, log_config) already
-	// have sweepers registered in their own _test.go files; re-registering them
-	// here would collide with the existing map keys (AddTestSweepers panics on
-	// duplicates).
+	// These five resources previously had no sweeper at all. The remaining
+	// api_gateway resources (group, api, app, plugin, vpc_access, log_config)
+	// already have sweepers registered in their own _test.go files;
+	// re-registering them here would collide with the existing map keys
+	// (AddTestSweepers panics on duplicates).
 	resource.AddTestSweepers("alicloud_api_gateway_instance", &resource.Sweeper{
 		Name: "alicloud_api_gateway_instance",
 		Dependencies: []string{
@@ -185,10 +186,6 @@ func init() {
 	resource.AddTestSweepers("alicloud_api_gateway_backend", &resource.Sweeper{
 		Name: "alicloud_api_gateway_backend",
 		F:   testSweepApiGatewayBackends,
-	})
-	resource.AddTestSweepers("alicloud_api_gateway_plugin", &resource.Sweeper{
-		Name: "alicloud_api_gateway_plugin",
-		F:   testSweepApiGatewayPlugins,
 	})
 	resource.AddTestSweepers("alicloud_api_gateway_access_control_list", &resource.Sweeper{
 		Name: "alicloud_api_gateway_access_control_list",
@@ -266,36 +263,6 @@ func testSweepApiGatewayBackends(region string) error {
 		log.Printf("[INFO] Deleting ApiGateway Backend: %s (%s)", name, id)
 		if err := apiGatewayDelete(client, "DeleteBackend", nil, map[string]interface{}{"BackendId": id}); err != nil {
 			log.Printf("[ERROR] Failed to delete ApiGateway Backend %s (%s): %v", name, id, err)
-			continue
-		}
-	}
-	return nil
-}
-
-// testSweepApiGatewayPlugins mirrors resourceAliCloudApiGatewayPluginDelete:
-// DescribePlugins -> DeletePlugin(PluginId).
-func testSweepApiGatewayPlugins(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	items, err := apiGatewayList(client, "DescribePlugins", "$.Plugins.PluginAttribute[*]", map[string]interface{}{})
-	if err != nil {
-		log.Printf("[ERROR] %s DescribePlugins failed: %v", apiGatewaySweepLog, err)
-		return nil
-	}
-	for _, item := range items {
-		id := fmt.Sprint(item["PluginId"])
-		name := fmt.Sprint(item["PluginName"])
-		if skip, reason := apiGatewaySweepNameSkip(name); skip {
-			log.Printf("[INFO] Skipping ApiGateway Plugin %s (%s): %s", name, id, reason)
-			continue
-		}
-		log.Printf("[INFO] Deleting ApiGateway Plugin: %s (%s)", name, id)
-		if err := apiGatewayDelete(client, "DeletePlugin", map[string]interface{}{"PluginId": id}, map[string]interface{}{}); err != nil {
-			log.Printf("[ERROR] Failed to delete ApiGateway Plugin %s (%s): %v", name, id, err)
 			continue
 		}
 	}
