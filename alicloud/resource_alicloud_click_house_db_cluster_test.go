@@ -49,7 +49,11 @@ func testSweepClickhouseDbCLuster(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			name := item["DBClusterDescription"].(string)
+			name := fmt.Sprint(item["DBClusterDescription"])
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping ClickHouse DBCluster (do-not-delete marker in name): %s (%s)", name, fmt.Sprint(item["DBClusterId"]))
+				continue
+			}
 			skip := true
 			if !sweepAll() {
 				for _, prefix := range prefixes {
@@ -59,7 +63,7 @@ func testSweepClickhouseDbCLuster(region string) error {
 					}
 				}
 				if skip {
-					log.Printf("[INFO] Skipping DBCluster Access Group: %s ", name)
+					log.Printf("[INFO] Skipping ClickHouse DBCluster: %s ", name)
 					continue
 				}
 			}

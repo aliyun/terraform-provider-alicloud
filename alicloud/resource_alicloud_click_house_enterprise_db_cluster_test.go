@@ -2,12 +2,100 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_click_house_enterprise_db_cluster", &resource.Sweeper{
+		Name: "alicloud_click_house_enterprise_db_cluster",
+		F:    testSweepClickHouseEnterpriseDbCluster,
+	})
+}
+
+// testSweepClickHouseEnterpriseDbCluster cleans up ClickHouse Enterprise (v2,
+// 2023-05-22) DB instances left by acceptance tests. Mirrors the Delete path in
+// resourceAliCloudClickHouseEnterpriseDbClusterDelete (DeleteDBInstance). Lists
+// via DescribeDBInstances. NODELETING/do-not-delete markers in the description
+// are always preserved; otherwise SWEEP_ALL bypasses the tf-testAcc prefix
+// filter.
+func testSweepClickHouseEnterpriseDbCluster(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting AliCloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	action := "DescribeDBInstances"
+	request := map[string]interface{}{
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+		"RegionId":   region,
+	}
+	var response map[string]interface{}
+	ids := make([]string, 0)
+	for {
+		response, err = client.RpcPost("clickhouse", "2023-05-22", action, nil, request, true)
+		if err != nil {
+			log.Printf("[ERROR] List ClickHouse Enterprise DBInstances failed: %s", err)
+			break
+		}
+		resp, err := jsonpath.Get("$.Data.DBInstances", response)
+		if err != nil {
+			log.Printf("[ERROR] Get $.Data.DBInstances failed: %s", err)
+			break
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			name := fmt.Sprint(item["Description"])
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping ClickHouse Enterprise DBInstance (do-not-delete marker in name): %s (%s)", name, fmt.Sprint(item["DBInstanceId"]))
+				continue
+			}
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(name, prefix) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping ClickHouse Enterprise DBInstance: %s (%s)", name, fmt.Sprint(item["DBInstanceId"]))
+					continue
+				}
+			}
+			ids = append(ids, fmt.Sprint(item["DBInstanceId"]))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	for _, id := range ids {
+		log.Printf("[INFO] Delete ClickHouse Enterprise DBInstance: %s", id)
+		action := "DeleteDBInstance"
+		request := map[string]interface{}{
+			"DBInstanceId": id,
+			"RegionId":     region,
+		}
+		if _, err := client.RpcPost("clickhouse", "2023-05-22", action, nil, request, false); err != nil {
+			log.Printf("[ERROR] Failed to delete ClickHouse Enterprise DBInstance (%s): %s", id, err)
+		}
+	}
+	return nil
+}
 
 // Test ClickHouse EnterpriseDBCluster. >>> Resource test cases, automatically generated.
 // Case CK企业版-基本资源-多可用区1-线上 10560
