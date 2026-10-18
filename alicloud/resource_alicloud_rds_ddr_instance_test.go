@@ -68,7 +68,8 @@ func testSweepDBDdrInstances(region string) error {
 		}
 		resp, err := jsonpath.Get("$.Items.DBInstance", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBInstance", response)
+			log.Printf("[ERROR] Failed to parse $.Items.DBInstance (treat as empty): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		objects = append(objects, result...)
