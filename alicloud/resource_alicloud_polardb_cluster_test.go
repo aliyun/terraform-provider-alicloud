@@ -284,18 +284,11 @@ func TestUnitPolarDBParameterModificationPendingStates(t *testing.T) {
 	}
 }
 
-func testSweepPolarDBClusters(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-
+// listPolarDBClustersForSweep enumerates every PolarDB cluster in the client's
+// region, paginating through DescribeDBClusters. The polardb sub-resource
+// sweepers (accounts, databases, endpoints) must walk every cluster to enumerate
+// its children, so the listing is shared instead of duplicated four times.
+func listPolarDBClustersForSweep(client *connectivity.AliyunClient) ([]polardb.DBCluster, error) {
 	var insts []polardb.DBCluster
 	req := polardb.CreateDescribeDBClustersRequest()
 	req.RegionId = client.RegionId
@@ -306,7 +299,7 @@ func testSweepPolarDBClusters(region string) error {
 			return polardbClient.DescribeDBClusters(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving Polardb Instances: %s", err)
+			return nil, fmt.Errorf("Error retrieving Polardb Instances: %s", err)
 		}
 		resp, _ := raw.(*polardb.DescribeDBClustersResponse)
 		if resp == nil || len(resp.Items.DBCluster) < 1 {
@@ -320,15 +313,40 @@ func testSweepPolarDBClusters(region string) error {
 
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		req.PageNumber = page
+	}
+	return insts, nil
+}
+
+func testSweepPolarDBClusters(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	insts, err := listPolarDBClustersForSweep(client)
+	if err != nil {
+		return err
 	}
 
 	vpcService := VpcService{client}
 	for _, v := range insts {
 		name := v.DBClusterDescription
 		id := v.DBClusterId
+		// NODELETING / do-not-delete name markers apply in every sweep mode
+		// (SWEEP_ALL included), so a name-protected cluster is never deleted.
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Polardb Instance (NODELETING): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
