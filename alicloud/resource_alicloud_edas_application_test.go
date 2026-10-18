@@ -42,6 +42,7 @@ func testSweepEdasApplication(region string) error {
 	})
 	if err != nil || raw == nil {
 		log.Printf("[ERROR] Failed to retrieve edas application in service list: %s", err)
+		return nil
 	}
 
 	listApplicationResponse, _ := raw.(*edas.ListApplicationResponse)
@@ -74,7 +75,8 @@ func testSweepEdasApplication(region string) error {
 			return edasClient.StopApplication(stopAppRequest)
 		})
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to stop edas application (%s): %s", name, err)
+			continue
 		}
 		addDebug(stopAppRequest.GetActionName(), raw, stopAppRequest.RoaRequest, stopAppRequest)
 		stopAppResponse, _ := raw.(*edas.StopApplicationResponse)
@@ -83,7 +85,8 @@ func testSweepEdasApplication(region string) error {
 		if len(changeOrderId) > 0 {
 			stateConf := BuildStateConf([]string{"0", "1"}, []string{"2"}, 5*time.Minute, 5*time.Second, edasService.EdasChangeOrderStatusRefreshFunc(changeOrderId, []string{"3", "6", "10"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return err
+				log.Printf("[ERROR] Failed to wait for edas application stop (%s): %s", name, err)
+				continue
 			}
 		}
 
