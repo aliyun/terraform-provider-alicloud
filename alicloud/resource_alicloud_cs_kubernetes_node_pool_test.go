@@ -50,7 +50,8 @@ func testSweepCSKubernetesNodePool(region string) error {
 		return csClient.DescribeClusters("")
 	})
 	if err != nil {
-		return fmt.Errorf("error retrieving CS Clusters: %s", err)
+		log.Printf("[ERROR] Failed to list CS Clusters: %s", err)
+		return nil
 	}
 	clusters, _ := raw.([]cs.ClusterType)
 
