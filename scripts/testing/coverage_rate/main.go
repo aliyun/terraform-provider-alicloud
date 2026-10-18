@@ -186,6 +186,21 @@ func checkSingleResource(fullName string) bool {
 	return checkResourceByName(resName, isResource, fileType, testPath, implPath)
 }
 
+// frameworkRegistered reports whether a type name is registered
+// framework-native in any service package. It defaults to
+// splitlayout.FrameworkRegistered but is a package-level variable so tests
+// can substitute a stub without touching the filesystem.
+var frameworkRegistered = splitlayout.FrameworkRegistered
+
+// frameworkNativeSkip reports whether a resource or data source that is
+// absent from the SDKv2 provider maps is registered framework-native. Such
+// types live in a Framework provider server and the SDKv2 attribute coverage
+// check does not apply. This is fail-open for framework resources (skip)
+// while still failing for genuinely unregistered names.
+func frameworkNativeSkip(resName string) bool {
+	return frameworkRegistered("alicloud_" + resName)
+}
+
 // checkResourceByName checks a resource by name and type. An empty testPath
 // or implPath keeps the flat-layout default; split-layout callers pass the
 // paths resolved from the product's register.go.
@@ -198,12 +213,20 @@ func checkResourceByName(resName string, isResource bool, fileType, testPath, im
 	if isResource {
 		resource, ok = alicloud.Provider().ResourcesMap["alicloud_"+resName]
 		if !ok || resource == nil {
+			if frameworkNativeSkip(resName) {
+				log.Infof("==> resource %s is registered framework-native; the SDKv2 attribute coverage check does not apply", resName)
+				return true
+			}
 			log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resName)
 			return false
 		}
 	} else {
 		resource, ok = alicloud.Provider().DataSourcesMap["alicloud_"+resName]
 		if !ok || resource == nil {
+			if frameworkNativeSkip(resName) {
+				log.Infof("==> data source %s is registered framework-native; the SDKv2 attribute coverage check does not apply", resName)
+				return true
+			}
 			log.Errorf("data source %s is not found in the provider DataSourcesMap\n\n", resName)
 			return false
 		}
