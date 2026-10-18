@@ -55,7 +55,8 @@ func testSweepScdnDomain(region string) error {
 		}
 		resp, err := jsonpath.Get("$.Domains.PageData", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Domains.PageData", response)
+			log.Printf("[ERROR] Failed to parse $.Domains.PageData (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
