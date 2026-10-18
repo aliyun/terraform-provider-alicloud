@@ -46,7 +46,8 @@ func testSweepTsdbInstance(region string) error {
 
 		resp, err := jsonpath.Get("$.InstanceList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList", response)
+			log.Printf("[ERROR] Failed to parse tsdb instance list response: %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
