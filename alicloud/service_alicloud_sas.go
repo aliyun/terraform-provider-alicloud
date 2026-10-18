@@ -410,3 +410,51 @@ func (s *SasService) ThreatDetectionHoneypotProbeStateRefreshFunc(d *schema.Reso
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *SasService) DescribeThreatDetectionClusterScannerYaml(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	request := map[string]interface{}{
+		"ClusterId": id,
+	}
+
+	var response map[string]interface{}
+	action := "GetClusterScannerYaml"
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if response == nil {
+		return nil, WrapErrorf(NotFoundErr("ThreatDetection:ClusterScannerYaml", id), NotFoundWithResponse, response)
+	}
+	// The scanner yaml config fields are returned at the response root (PascalCase)
+	// by the gateway (outputParamVersion: 2). Fall back to a nested "Data" object
+	// in case the gateway wraps the payload.
+	object = response
+	if _, ok := object["ClusterId"]; !ok {
+		if dataRaw, ok2 := object["Data"]; ok2 && dataRaw != nil {
+			if dataMap, ok3 := dataRaw.(map[string]interface{}); ok3 {
+				if _, ok4 := dataMap["ClusterId"]; ok4 {
+					object = dataMap
+				}
+			}
+		}
+	}
+	v, jsonErr := jsonpath.Get("$.ClusterId", object)
+	if jsonErr != nil || v == nil || fmt.Sprint(v) == "" {
+		return nil, WrapErrorf(NotFoundErr("ThreatDetection:ClusterScannerYaml", id), NotFoundWithResponse, response)
+	}
+	return object, nil
+}
