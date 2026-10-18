@@ -42,7 +42,8 @@ func testSweepCommonBandwidthPackageAttachment(region string) error {
 			return vpcClient.DescribeCommonBandwidthPackages(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving CommonBandwidthPackage: %s", err)
+			log.Printf("[ERROR] Failed to list CommonBandwidthPackages: %s", err)
+			break
 		}
 		resp, _ := raw.(*vpc.DescribeCommonBandwidthPackagesResponse)
 		if resp == nil || len(resp.CommonBandwidthPackages.CommonBandwidthPackage) < 1 {
@@ -56,7 +57,8 @@ func testSweepCommonBandwidthPackageAttachment(region string) error {
 
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to get next page number for CommonBandwidthPackages: %s", err)
+			break
 		}
 		req.PageNumber = page
 	}

@@ -46,12 +46,14 @@ func testSweepCommonBandwidthPackage(region string) error {
 	for {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
-			return fmt.Errorf("Error retrieving CommonBandwidthPackages: %s", err)
+			log.Printf("[ERROR] Failed to list CommonBandwidthPackages: %s", err)
+			break
 		}
 
 		resp, err := jsonpath.Get("$.CommonBandwidthPackages.CommonBandwidthPackage", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.CommonBandwidthPackages.CommonBandwidthPackage", response)
+			log.Printf("[ERROR] Failed to parse CommonBandwidthPackages response: %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
