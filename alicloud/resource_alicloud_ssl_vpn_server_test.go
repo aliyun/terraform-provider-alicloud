@@ -45,6 +45,7 @@ func testSweepSslVpnServers(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] %s", WrapError(err))
+			break
 		}
 		response, _ := raw.(*vpc.DescribeSslVpnServersResponse)
 		if len(response.SslVpnServers.SslVpnServer) < 1 {
