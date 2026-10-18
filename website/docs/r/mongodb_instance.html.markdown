@@ -49,7 +49,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
-  cidr_block   = "172.17.3.0/24"
+  cidr_block   = "172.17.3.0/25"
   vpc_id       = alicloud_vpc.default.id
   zone_id      = local.zone_id
 }
@@ -134,6 +134,19 @@ The following arguments are supported:
   - `Standard`: standard backup.
   - `Flash`: single-digit second backup.
 * `backup_interval` - (Optional, Available since v1.212.0) The frequency at which high-frequency backups are created. Valid values: `-1`, `15`, `30`, `60`, `120`, `180`, `240`, `360`, `480`, `720`.
+* `cross_backup_period` - (Optional, Set, Available since v2.2.0) The days of the week on which geo-redundant backups are performed. Valid values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`. The specified days must be a subset of `backup_period` for conventional backups.
+* `cross_backup_type` - (Optional, String, Available since v2.2.0) The policy for geo-redundant backups. Valid values:
+  - `update`: Modify the geo-redundancy policy.
+  - `delete`: Delete the geo-redundant policy.
+* `cross_retention_type` - (Optional, String, Available since v2.2.0) The retention policy for geo-redundant backups. Valid values: `delay`, `never`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
+* `cross_retention_value` - (Optional, Int, Available since v2.2.0) The number of days to retain geo-redundant backups. Valid values: `3` to `1825`. **NOTE:** This parameter is required when `cross_retention_type` is set to `delay`.
+* `cross_log_retention_type` - (Optional, String, Available since v2.2.0) The retention policy for cross-region log backups. Valid values: `delay`, `never`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
+* `cross_log_retention_value` - (Optional, Int, Available since v2.2.0) The number of days to retain cross-region log backups. Valid values: `3` to `1825`. The value must be less than or equal to `cross_retention_value`. **NOTE:** This parameter is required when `cross_log_retention_type` is set to `delay`.
+* `dest_region` - (Optional, String, Available since v2.2.0) The region ID of the geo-redundant backup destination. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
+* `enable_cross_log_backup` - (Optional, Int, Available since v2.2.0) Specifies whether to enable cross-region log backup. Valid values: `0`, `1`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`. Sharded cluster instances require `1`.
+* `high_frequency_backup_retention` - (Optional, Int, Available since v2.2.0) The number of days to retain high-frequency backups. **NOTE:** Requires a minute-level `backup_interval` (`15` or `30`) that is already in effect; when `backup_interval` is changed in the same configuration, apply that change first and set this parameter afterwards. Otherwise the service keeps the default retention of 1 day.
+* `preserve_one_each_hour` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable hourly sparse backup. Valid values: `true`, `false`. **NOTE:** Requires a minute-level `backup_interval` (`15` or `30`) that is already in effect; when `backup_interval` is changed in the same configuration, apply that change first and set this parameter afterwards. Otherwise the service reports `false`.
+* `src_region` - (Optional, String, Available since v2.2.0) The source region ID of the instance, used for geo-redundant backups.
 * `ssl_action` - (Optional, Available since v1.78.0) Actions performed on SSL functions. Valid values:
   - `Open`: turn on SSL encryption.
   - `Close`: turn off SSL encryption.
