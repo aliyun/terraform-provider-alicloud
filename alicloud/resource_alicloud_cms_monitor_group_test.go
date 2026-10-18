@@ -46,12 +46,14 @@ func testSweepCmsMonitorgroup(region string) error {
 	for {
 		response, err = client.RpcPost("Cms", "2019-01-01", action, nil, request, false)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cms_monitor_groups", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list cms monitor_group: %s", err)
+			return nil
 		}
 
 		resp, err := jsonpath.Get("$.Resources.Resource", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Resources.Resource", response)
+			log.Printf("[ERROR] Failed to parse cms monitor_group list: %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -106,9 +108,9 @@ func TestAccAlicloudCmsMonitorGroup_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -200,9 +202,9 @@ func TestAccAlicloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

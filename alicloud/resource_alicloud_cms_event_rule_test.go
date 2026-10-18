@@ -61,14 +61,17 @@ func testSweepCmsEventRules(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cms_event_rule", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list cms event_rule: %s", err)
+			return nil
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			log.Printf("[ERROR] Failed to list cms event_rule: success=false response: %v", response)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.EventRules.EventRule", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.EventRules.EventRule", response)
+			log.Printf("[ERROR] Failed to parse cms event_rule list: %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {

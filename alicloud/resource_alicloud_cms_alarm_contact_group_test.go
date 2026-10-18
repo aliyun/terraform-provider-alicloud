@@ -39,6 +39,7 @@ func testSweepCmsAlarmContactGroup(region string) error {
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve Cms Alarm Contact Group in service list: %s", err)
+		return nil
 	}
 
 	var response *cms.DescribeContactGroupListResponse
@@ -92,9 +93,9 @@ func TestAccAlicloudCmsAlarmContactGroup_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
