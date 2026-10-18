@@ -87,6 +87,18 @@ func TestAccAliCloudEsaTransportLayerApplication_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"keep_alive_protection": "on",
+					"static_ip":             "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"keep_alive_protection": "on",
+						"static_ip":             "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"rules": []map[string]interface{}{
 						{
 							"comment":                     name + "udp",
@@ -181,6 +193,8 @@ func TestAccAliCloudEsaTransportLayerApplication_basic0_twin(t *testing.T) {
 					"cross_border_optimization": "on",
 					"ip_access_rule":            "on",
 					"ipv6":                      "on",
+					"keep_alive_protection":     "on",
+					"static_ip":                 "on",
 					"rules": []map[string]interface{}{
 						{
 							"comment":                     name + "udp",
@@ -218,6 +232,8 @@ func TestAccAliCloudEsaTransportLayerApplication_basic0_twin(t *testing.T) {
 						"cross_border_optimization": "on",
 						"ip_access_rule":            "on",
 						"ipv6":                      "on",
+						"keep_alive_protection":     "on",
+						"static_ip":                 "on",
 
 						"rules.#": "3",
 					}),
@@ -238,6 +254,8 @@ var AliCloudEsaTransportLayerApplicationMap0 = map[string]string{
 	"cross_border_optimization": CHECKSET,
 	"ip_access_rule":            CHECKSET,
 	"ipv6":                      CHECKSET,
+	"keep_alive_protection":     CHECKSET,
+	"static_ip":                 CHECKSET,
 	"status":                    CHECKSET,
 }
 
@@ -252,6 +270,125 @@ data "alicloud_esa_sites" "default" {
   site_name           = "tftestacc.com"
 }
 `, name)
+}
+
+// TestAccAliCloudEsaTransportLayerApplication_memberOrder covers TypeList reorder convergence for `rules`.
+func TestAccAliCloudEsaTransportLayerApplication_memberOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_transport_layer_application.default"
+	ra := resourceAttrInit(resourceId, AliCloudEsaTransportLayerApplicationMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEsaTransportLayerApplication")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%stla%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEsaTransportLayerApplicationBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":               "${data.alicloud_esa_sites.default.sites.0.id}",
+					"record_name":           name + ".${data.alicloud_esa_sites.default.sites.0.site_name}",
+					"keep_alive_protection": "on",
+					"static_ip":             "on",
+					"rules": []map[string]interface{}{
+						{
+							"comment":                     name + "a",
+							"edge_port":                   "80",
+							"source_type":                 "ip",
+							"protocol":                    "TCP",
+							"source_port":                 "8080",
+							"client_ip_pass_through_mode": "off",
+							"source":                      "1.1.1.1",
+						},
+						{
+							"comment":                     name + "b",
+							"edge_port":                   "82",
+							"source_type":                 "ip",
+							"protocol":                    "UDP",
+							"source_port":                 "86",
+							"client_ip_pass_through_mode": "PPv1",
+							"source":                      "2.2.2.2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"rules.#": "2"}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":               "${data.alicloud_esa_sites.default.sites.0.id}",
+					"record_name":           name + ".${data.alicloud_esa_sites.default.sites.0.site_name}",
+					"keep_alive_protection": "on",
+					"static_ip":             "on",
+					"rules": []map[string]interface{}{
+						{
+							"comment":                     name + "b",
+							"edge_port":                   "82",
+							"source_type":                 "ip",
+							"protocol":                    "UDP",
+							"source_port":                 "86",
+							"client_ip_pass_through_mode": "PPv1",
+							"source":                      "2.2.2.2",
+						},
+						{
+							"comment":                     name + "a",
+							"edge_port":                   "80",
+							"source_type":                 "ip",
+							"protocol":                    "TCP",
+							"source_port":                 "8080",
+							"client_ip_pass_through_mode": "off",
+							"source":                      "1.1.1.1",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":               "${data.alicloud_esa_sites.default.sites.0.id}",
+					"record_name":           name + ".${data.alicloud_esa_sites.default.sites.0.site_name}",
+					"keep_alive_protection": "on",
+					"static_ip":             "on",
+					"rules": []map[string]interface{}{
+						{
+							"comment":                     name + "b",
+							"edge_port":                   "82",
+							"source_type":                 "ip",
+							"protocol":                    "UDP",
+							"source_port":                 "86",
+							"client_ip_pass_through_mode": "PPv1",
+							"source":                      "2.2.2.2",
+						},
+						{
+							"comment":                     name + "a",
+							"edge_port":                   "80",
+							"source_type":                 "ip",
+							"protocol":                    "TCP",
+							"source_port":                 "8080",
+							"client_ip_pass_through_mode": "off",
+							"source":                      "1.1.1.1",
+						},
+					},
+				}),
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"rules.#": "2"}),
+				),
+			},
+		},
+	})
 }
 
 // Test ESA TransportLayerApplication. <<< Resource test cases, automatically generated.
