@@ -46,13 +46,18 @@ func testSweepAlidnsDomain(region string) error {
 		response, _ := raw.(*alidns.DescribeDomainsResponse)
 		domains := response.Domains.Domain
 		for _, domain := range domains {
-			if !sweepAll() {
-				if strings.HasPrefix(domain.DomainName, "tf-testacc") {
-					allDomains = append(allDomains, domain)
-				} else {
-					log.Printf("Skip %#v", domain)
-				}
+			// RED LINE: alidns may hold real存 / ICP-backed production domains.
+			// Always prefix-guard (even when SWEEP_ALL=1) so production domains are
+			// never deleted. Skip any domain whose name carries a do-not-delete marker.
+			if protectedSweepVpcName(domain.DomainName) {
+				log.Printf("[INFO] Skipping DNS domain with do-not-delete marker: %s", domain.DomainName)
+				continue
 			}
+			if !isTestDnsName(domain.DomainName) {
+				log.Printf("[INFO] Skipping non-test DNS domain (real存 preserve): %s", domain.DomainName)
+				continue
+			}
+			allDomains = append(allDomains, domain)
 		}
 
 		if len(domains) < PageSizeLarge {
@@ -78,6 +83,28 @@ func testSweepAlidnsDomain(region string) error {
 		addDebug(removeRequest.GetActionName(), raw)
 	}
 	return nil
+}
+
+// isTestDnsName reports whether a DNS domain/record name looks like it was
+// created by the provider's acceptance tests. alidns may hold real存 / ICP-backed
+// production domains and records, so sweepers MUST only match test-prefixed
+// names EVEN when SWEEP_ALL=1 (sweepAll() bypasses the framework prefix filter).
+func isTestDnsName(name string) bool {
+	lower := strings.ToLower(name)
+	// Standard acceptance-test prefixes (see testSweepDBInstances).
+	for _, prefix := range []string{"tf-test", "tf_test", "test-"} {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+	// Marker emitted by the SSL certificates service acceptance tests, which
+	// create validation records such as "_pki-validation.tfaccsslcasXXX" under
+	// real存-style domains (e.g. aliterraform.com). The domain itself is preserved,
+	// but these stray test records must be swept.
+	if strings.Contains(lower, "tfaccssl") || strings.Contains(lower, "tfacc") {
+		return true
+	}
+	return false
 }
 
 func TestAccAliCloudAlidnsDomain_basic(t *testing.T) {

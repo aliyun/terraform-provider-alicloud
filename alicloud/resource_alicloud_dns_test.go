@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -45,11 +44,20 @@ func testSweepDns(region string) error {
 		response, _ := raw.(*alidns.DescribeDomainsResponse)
 		domains := response.Domains.Domain
 		for _, domain := range domains {
-			if strings.HasPrefix(domain.DomainName, "tf-testacc"+defaultRegionToTest) {
-				allDomains = append(allDomains, domain)
-			} else {
-				log.Printf("Skip %#v", domain)
+			// RED LINE: preserve real存 / production domains. Always prefix-guard
+			// (even when SWEEP_ALL=1) and skip do-not-delete markers. The previous
+			// region-suffixed prefix ("tf-testacc"+defaultRegionToTest) left
+			// cross-region test residue (e.g. tf-testacceu-central-1...); the
+			// shared isTestDnsName matcher covers all test prefixes.
+			if protectedSweepVpcName(domain.DomainName) {
+				log.Printf("[INFO] Skipping DNS domain with do-not-delete marker: %s", domain.DomainName)
+				continue
 			}
+			if !isTestDnsName(domain.DomainName) {
+				log.Printf("[INFO] Skipping non-test DNS domain (real存 preserve): %s", domain.DomainName)
+				continue
+			}
+			allDomains = append(allDomains, domain)
 		}
 
 		if len(domains) < PageSizeLarge {
