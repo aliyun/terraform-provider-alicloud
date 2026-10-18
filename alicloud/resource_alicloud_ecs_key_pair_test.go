@@ -79,10 +79,10 @@ func testSweepEcsKeyPairs(region string) error {
 						break
 					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping EcsKeyPair: %s", name)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping EcsKeyPair: %s", name)
+					continue
+				}
 			}
 			log.Printf("[INFO] Deleting EcsKeyPair: %s", name)
 			delReq := map[string]interface{}{

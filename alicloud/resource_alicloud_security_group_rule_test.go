@@ -92,10 +92,10 @@ func testSweepSecurityGroupRules(region string) error {
 					break
 				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping SG rules: %s (%s)", name, id)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping SG rules: %s (%s)", name, id)
+				continue
+			}
 		}
 
 		for _, direction := range []string{"ingress", "egress"} {

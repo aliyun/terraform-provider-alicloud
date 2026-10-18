@@ -76,10 +76,10 @@ func testSweepEcsCommands(region string) error {
 						break
 					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping EcsCommand: %s", name)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping EcsCommand: %s", name)
+					continue
+				}
 			}
 			cmdId := fmt.Sprint(item["CommandId"])
 			log.Printf("[INFO] Deleting EcsCommand: %s (%s)", name, cmdId)
