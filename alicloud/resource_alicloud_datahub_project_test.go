@@ -56,7 +56,11 @@ func testSweepDatahubProject(region string) error {
 			return dataHubClient.ListTopic(projectName)
 		})
 		if err != nil {
-			return fmt.Errorf("error listing Datahub topics: %s", err)
+			// Best-effort: a Forbidden.RAM list error for one project should not
+			// abort the whole fleet sweep. Skip the remaining projects and let
+			// the sweeper return nil so other sweepers continue.
+			log.Printf("[ERROR] Failed to list Datahub topics for project %s: %s", projectName, err)
+			break
 		}
 		topics, _ := raw.(*datahub.ListTopicResult)
 
@@ -69,7 +73,10 @@ func testSweepDatahubProject(region string) error {
 			})
 
 			if err != nil {
-				return fmt.Errorf("error listing Datahub subscriptions: %s", err)
+				// Best-effort: a Forbidden.RAM list error for one topic should not
+				// abort the whole fleet sweep. Skip this topic and try the next.
+				log.Printf("[ERROR] Failed to list Datahub subscriptions for topic %s/%s: %s", projectName, topicName, err)
+				continue
 			}
 			subscriptions, _ := raw.(*datahub.ListSubscriptionResult)
 
