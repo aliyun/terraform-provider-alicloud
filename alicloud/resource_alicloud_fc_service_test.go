@@ -75,10 +75,11 @@ func testSweepFCServices(region string) error {
 			})
 			if err != nil {
 				log.Printf("[ERROR] Failed to list functions of service (%s (%s)): %s", name, id, err)
+				break
 			}
 			resp, _ := raw.(*fc.ListFunctionsOutput)
 
-			if resp.Functions == nil || len(resp.Functions) < 1 {
+			if resp == nil || resp.Functions == nil || len(resp.Functions) < 1 {
 				break
 			}
 

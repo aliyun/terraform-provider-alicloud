@@ -74,11 +74,12 @@ func testSweepFcTrigger(region string) error {
 
 					if err != nil {
 						log.Printf("Error retrieving FC triggers: %s", err)
+						break
 					}
 
 					response, _ := raw.(*fc.ListTriggersOutput)
 
-					if len(response.Triggers) < 1 {
+					if response == nil || len(response.Triggers) < 1 {
 						break
 					}
 
