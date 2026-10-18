@@ -60,11 +60,13 @@ func testSweepEcsSnapshots(region string) error {
 	for {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_snapshot", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list ecs snapshot: %s", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Snapshots.Snapshot", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Snapshots.Snapshot", response)
+			log.Printf("[ERROR] Failed to parse $.Snapshots.Snapshot (treat as empty): %s", err)
+			return nil
 		}
 
 		result, _ := resp.([]interface{})
