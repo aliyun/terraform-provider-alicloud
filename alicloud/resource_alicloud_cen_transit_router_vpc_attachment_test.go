@@ -2,18 +2,25 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
@@ -1474,3 +1481,168 @@ resource "alicloud_cen_transit_router" "defaultrjuavE" {
 }
 
 // Test Cen TransitRouterVpcAttachment. <<< Resource test cases, automatically generated.
+
+// ---- Sub-resource sweepers (补齐) ----
+// DetachCenChildInstance (the legacy path used by alicloud_cen_instance_attachment)
+// returns Forbidden.TypeInvalid for enterprise-TR VPC children; the correct API
+// to detach them is DeleteTransitRouterVpcAttachment so the parent
+// alicloud_cen_instance sweeper can finally DeleteCen. Cross-region TR peers are
+// detached with DeleteTransitRouterPeerAttachment. These sub-resource sweepers
+// run BEFORE the parent (explicit ordered make sweep calls) and carry the same
+// name-based NODELETING guard as the parent (protectedSweepVpcName) so shared
+// infra CENs (e.g. "no-deleting-cen") and their children are never touched.
+
+func init() {
+	resource.AddTestSweepers("alicloud_cen_transit_router_vpc_attachment", &resource.Sweeper{
+		Name: "alicloud_cen_transit_router_vpc_attachment",
+		F:    testSweepCenTransitRouterVpcAttachments,
+	})
+}
+
+func testSweepCenTransitRouterVpcAttachments(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	return forEachCenForSubSweep(client, func(cenId, cenName string) {
+		sweepCenTransitRouterAttachments(client, cenId, cenName,
+			"ListTransitRouterVpcAttachments", "DeleteTransitRouterVpcAttachment", "VPC")
+	})
+}
+
+// forEachCenForSubSweep enumerates CEN instances in the region
+// forEachCenForSubSweep enumerates CEN instances in the region and invokes cb
+// for each CEN eligible for sub-resource sweeping: CENs carrying a do-not-delete
+// marker (protectedSweepVpcName) are always skipped (even in SWEEP_ALL mode),
+// and when SWEEP_ALL is not active only CENs whose name matches a test prefix
+// are visited. Mirrors the enumeration + guard in testSweepCenInstances.
+func forEachCenForSubSweep(client *connectivity.AliyunClient, cb func(cenId, cenName string)) error {
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_example",
+		"tf-example",
+		"terraform-example",
+	}
+	describeCensRequest := cbn.CreateDescribeCensRequest()
+	describeCensRequest.RegionId = client.RegionId
+	describeCensRequest.PageSize = requests.NewInteger(PageSizeLarge)
+	describeCensRequest.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithCbnClient(func(cenClient *cbn.Client) (interface{}, error) {
+			return cenClient.DescribeCens(describeCensRequest)
+		})
+		if err != nil {
+			return fmt.Errorf("Error retrieving CEN Instances: %s", err)
+		}
+		describeCensResponse, _ := raw.(*cbn.DescribeCensResponse)
+		if len(describeCensResponse.Cens.Cen) < 1 {
+			break
+		}
+		for _, cenInstance := range describeCensResponse.Cens.Cen {
+			name := cenInstance.Name
+			cenId := cenInstance.CenId
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping CEN sub-resource sweep (do-not-delete marker): %s (%s)", name, cenId)
+				continue
+			}
+			if !sweepAll() {
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping CEN sub-resource sweep (name does not match test prefixes): %s (%s)", name, cenId)
+					continue
+				}
+			}
+			cb(cenId, name)
+		}
+		if len(describeCensResponse.Cens.Cen) < PageSizeLarge {
+			break
+		}
+		page, err := getNextpageNumber(describeCensRequest.PageNumber)
+		if err != nil {
+			return err
+		}
+		describeCensRequest.PageNumber = page
+	}
+	return nil
+}
+
+// sweepCenTransitRouterAttachments lists transit-router attachments of the
+// given kind for a CEN and deletes each. listAction/deleteAction are the cbn
+// RPC action names. Mirrors the inline sub-resource cleanup already present in
+// testSweepCenInstances (ListTransitRouterVpcAttachments ->
+// DeleteTransitRouterVpcAttachment, ListTransitRouterPeerAttachments ->
+// DeleteTransitRouterPeerAttachment) so behaviour stays consistent.
+func sweepCenTransitRouterAttachments(client *connectivity.AliyunClient, cenId, cenName, listAction, deleteAction, kind string) {
+	request := map[string]interface{}{
+		"CenId":      cenId,
+		"RegionId":   client.RegionId,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	for {
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := retry.Retry(2*time.Minute, func() *retry.RetryError {
+			resp, e := client.RpcPost("Cbn", "2017-09-12", listAction, nil, request, true)
+			response = resp
+			if e != nil {
+				if NeedRetry(e) {
+					wait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			addDebug(listAction, response, request)
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s failed for CEN %s (%s): %v", listAction, cenName, cenId, err)
+			return
+		}
+		att, err := jsonpath.Get("$.TransitRouterAttachments", response)
+		if err != nil {
+			log.Printf("[ERROR] jsonpath.Get $.TransitRouterAttachments failed for CEN %s (%s): %v", cenName, cenId, err)
+			return
+		}
+		result, _ := att.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			attName := fmt.Sprint(item["TransitRouterAttachmentName"])
+			id := fmt.Sprint(item["TransitRouterAttachmentId"])
+			log.Printf("[INFO] Deleting CEN TR %s attachment: %s (%s) parent CEN %s (%s)", kind, attName, id, cenName, cenId)
+			delReq := map[string]interface{}{
+				"TransitRouterAttachmentId": id,
+			}
+			var delResp map[string]interface{}
+			delWait := incrementalWait(3*time.Second, 5*time.Second)
+			delErr := retry.Retry(1*time.Minute, func() *retry.RetryError {
+				resp, e := client.RpcPost("Cbn", "2017-09-12", deleteAction, nil, delReq, false)
+				delResp = resp
+				if e != nil {
+					if IsExpectedErrors(e, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status", "IncorrectStatus.Attachment"}) || NeedRetry(e) {
+						delWait()
+						return retry.RetryableError(e)
+					}
+					return retry.NonRetryableError(e)
+				}
+				return nil
+			})
+			addDebug(deleteAction, delResp, delReq)
+			if delErr != nil {
+				log.Printf("[ERROR] %s failed for attachment %s (%s): %v", deleteAction, attName, id, delErr)
+			}
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+}
