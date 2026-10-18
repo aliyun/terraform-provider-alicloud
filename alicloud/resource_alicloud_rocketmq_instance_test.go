@@ -102,10 +102,12 @@ func testSweepRocketMq(region string) error {
 	response, err = client.RoaGet("RocketMQ", "2022-08-01", action, query, nil, nil)
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve ons instance in service list: %s", err)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.data.list", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.data.list", response)
+		log.Printf("[ERROR] Failed to parse $.data.list (treat as empty): %s", err)
+		return nil
 	}
 
 	result, _ := resp.([]interface{})
