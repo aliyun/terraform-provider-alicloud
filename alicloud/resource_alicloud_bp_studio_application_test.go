@@ -52,11 +52,13 @@ func testSweepBpStudioApplication(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_bp_studio_application", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list bp studio applications: %s", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Data", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+			log.Printf("[ERROR] Failed to parse $.Data (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
