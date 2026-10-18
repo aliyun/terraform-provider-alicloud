@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -86,6 +87,51 @@ func TestAccAliCloudRamRolePolicyAttachment_basic9051(t *testing.T) {
 						"role_name":   CHECKSET,
 						"policy_name": "AliyunECSFullAccess",
 						"policy_type": "System",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRamRolePolicyAttachment_basic9052(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_role_policy_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamRolePolicyAttachmentMap9050)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamRolePolicyAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccram%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamRolePolicyAttachmentBasicDependence9050)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_name":         "${alicloud_ram_role.default.id}",
+					"policy_name":       "${alicloud_ram_policy.default.id}",
+					"policy_type":       "Custom",
+					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_name":   CHECKSET,
+						"policy_name": CHECKSET,
+						"policy_type": "Custom",
 					}),
 				),
 			},

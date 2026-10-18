@@ -94,12 +94,14 @@ The following arguments are supported:
 * `policy_type` - (Required, ForceNew) Policy type.
   - Custom: Custom policy.
   - System: System policy.
+* `resource_group_id` - (Optional, Computed, ForceNew) The ID of the resource group to which the role policy attachment belongs. If not specified, the default resource group is used.
 * `role_name` - (Required, ForceNew) The RAM role name.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above. The value is formulated as `role:<policy_name>:<policy_type>:<role_name>`.
+* `resource_group_id` - The ID of the resource group to which the role policy attachment belongs.
 
 ## Timeouts
 
