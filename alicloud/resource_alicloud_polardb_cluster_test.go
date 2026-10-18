@@ -334,7 +334,8 @@ func testSweepPolarDBClusters(region string) error {
 
 	insts, err := listPolarDBClustersForSweep(client)
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list PolarDB clusters: %s", err)
+		return nil
 	}
 
 	vpcService := VpcService{client}

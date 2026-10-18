@@ -38,7 +38,8 @@ func testSweepPolarDBDatabases(region string) error {
 
 	clusters, err := listPolarDBClustersForSweep(client)
 	if err != nil {
-		return err
+		log.Printf("[ERROR] Failed to list PolarDB clusters: %s", err)
+		return nil
 	}
 
 	for _, c := range clusters {
