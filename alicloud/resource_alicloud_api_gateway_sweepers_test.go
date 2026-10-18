@@ -1,13 +1,16 @@
 package alicloud
 
-// Consolidated sweepers for the ApiGateway (CloudAPI) product. These mirror
-// the Delete path of each resource's provider implementation and reuse the
-// shared name-based protection (protectedSweepVpcName) so SWEEP_ALL is safe.
+// Sweepers for the ApiGateway (CloudAPI) resources that previously had no
+// sweeper at all: instance, backend, plugin, access_control_list, stage_model
+// and model. Each mirrors the Delete path of the provider implementation and
+// reuses the shared name-based protection (protectedSweepVpcName) so SWEEP_ALL
+// is safe.
 //
-// Child resources are swept before parents:
-//   - alicloud_api_gateway_api / alicloud_api_gateway_model run before
-//     alicloud_api_gateway_group (group depends on them).
-//   - alicloud_api_gateway_group runs before alicloud_api_gateway_instance.
+// The remaining api_gateway resources (group, api, app, vpc_access, log_config)
+// already have sweepers registered in their own _test.go files; this file does
+// NOT re-register them, because AddTestSweepers panics on duplicate map keys.
+// alicloud_api_gateway_instance depends on alicloud_api_gateway_group, which is
+// registered elsewhere — the dependency resolves across files at runtime.
 //
 // Attachment resources (acl_entry_attachment, app_attachment, plugin_attachment,
 // group_plugin_attachment, instance_acl_attachment) and backend_model are
@@ -17,7 +20,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -94,23 +96,6 @@ func apiGatewaySweepNameSkip(name string) (bool, string) {
 	return false, ""
 }
 
-// apiGatewayAppIDString normalises the AppId field returned by DescribeAppAttributes
-// (a JSON number -> float64) into the canonical integer string used by DeleteApp.
-func apiGatewayAppIDString(v interface{}) string {
-	switch x := v.(type) {
-	case string:
-		return x
-	case float64:
-		return strconv.FormatInt(int64(x), 10)
-	case int:
-		return strconv.Itoa(x)
-	case int64:
-		return strconv.FormatInt(x, 10)
-	default:
-		return fmt.Sprint(v)
-	}
-}
-
 // apiGatewayList calls a CloudAPI list action with pagination and returns the
 // raw item slice at the given jsonpath. Per-page failures are logged and
 // return an error so callers can abort the list.
@@ -185,28 +170,17 @@ func apiGatewayDelete(client *connectivity.AliyunClient, action string, query, b
 }
 
 func init() {
+	// These six resources previously had no sweeper at all. The remaining
+	// api_gateway resources (group, api, app, vpc_access, log_config) already
+	// have sweepers registered in their own _test.go files; re-registering them
+	// here would collide with the existing map keys (AddTestSweepers panics on
+	// duplicates).
 	resource.AddTestSweepers("alicloud_api_gateway_instance", &resource.Sweeper{
 		Name: "alicloud_api_gateway_instance",
 		Dependencies: []string{
 			"alicloud_api_gateway_group",
 		},
 		F: testSweepApiGatewayInstances,
-	})
-	resource.AddTestSweepers("alicloud_api_gateway_group", &resource.Sweeper{
-		Name: "alicloud_api_gateway_group",
-		Dependencies: []string{
-			"alicloud_api_gateway_api",
-			"alicloud_api_gateway_model",
-		},
-		F: testSweepApiGatewayGroups,
-	})
-	resource.AddTestSweepers("alicloud_api_gateway_api", &resource.Sweeper{
-		Name: "alicloud_api_gateway_api",
-		F:   testSweepApiGatewayApis,
-	})
-	resource.AddTestSweepers("alicloud_api_gateway_app", &resource.Sweeper{
-		Name: "alicloud_api_gateway_app",
-		F:   testSweepApiGatewayApps,
 	})
 	resource.AddTestSweepers("alicloud_api_gateway_backend", &resource.Sweeper{
 		Name: "alicloud_api_gateway_backend",
@@ -216,17 +190,9 @@ func init() {
 		Name: "alicloud_api_gateway_plugin",
 		F:   testSweepApiGatewayPlugins,
 	})
-	resource.AddTestSweepers("alicloud_api_gateway_vpc_access", &resource.Sweeper{
-		Name: "alicloud_api_gateway_vpc_access",
-		F:   testSweepApiGatewayVpcAccesses,
-	})
 	resource.AddTestSweepers("alicloud_api_gateway_access_control_list", &resource.Sweeper{
 		Name: "alicloud_api_gateway_access_control_list",
 		F:   testSweepApiGatewayAccessControlLists,
-	})
-	resource.AddTestSweepers("alicloud_api_gateway_log_config", &resource.Sweeper{
-		Name: "alicloud_api_gateway_log_config",
-		F:   testSweepApiGatewayLogConfigs,
 	})
 	resource.AddTestSweepers("alicloud_api_gateway_stage_model", &resource.Sweeper{
 		Name: "alicloud_api_gateway_stage_model",
@@ -270,100 +236,6 @@ func testSweepApiGatewayInstances(region string) error {
 		log.Printf("[INFO] Deleting ApiGateway Instance: %s (%s)", name, id)
 		if err := apiGatewayDelete(client, "DeleteInstance", map[string]interface{}{"InstanceId": id}, map[string]interface{}{}); err != nil {
 			log.Printf("[ERROR] Failed to delete ApiGateway Instance %s (%s): %v", name, id, err)
-			continue
-		}
-	}
-	return nil
-}
-
-// testSweepApiGatewayGroups mirrors resourceAliyunApigatewayGroupDelete:
-// DescribeApiGroups -> DeleteApiGroup(GroupId).
-func testSweepApiGatewayGroups(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	items, err := apiGatewayList(client, "DescribeApiGroups", "$.ApiGroupAttributes.ApiGroupAttribute[*]", map[string]interface{}{})
-	if err != nil {
-		log.Printf("[ERROR] %s DescribeApiGroups failed: %v", apiGatewaySweepLog, err)
-		return nil
-	}
-	for _, item := range items {
-		id := fmt.Sprint(item["GroupId"])
-		name := fmt.Sprint(item["GroupName"])
-		if skip, reason := apiGatewaySweepNameSkip(name); skip {
-			log.Printf("[INFO] Skipping ApiGateway Group %s (%s): %s", name, id, reason)
-			continue
-		}
-		log.Printf("[INFO] Deleting ApiGateway Group: %s (%s)", name, id)
-		if err := apiGatewayDelete(client, "DeleteApiGroup", map[string]interface{}{"GroupId": id}, map[string]interface{}{}); err != nil {
-			log.Printf("[ERROR] Failed to delete ApiGateway Group %s (%s): %v", name, id, err)
-			continue
-		}
-	}
-	return nil
-}
-
-// testSweepApiGatewayApis mirrors resourceAliyunApigatewayApiDelete:
-// DescribeApis -> DeleteApi(ApiId, GroupId). The composite resource id is
-// group_id:api_id, but the list response carries both fields directly.
-func testSweepApiGatewayApis(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	items, err := apiGatewayList(client, "DescribeApis", "$.ApiSummarys.ApiSummary[*]", map[string]interface{}{})
-	if err != nil {
-		log.Printf("[ERROR] %s DescribeApis failed: %v", apiGatewaySweepLog, err)
-		return nil
-	}
-	for _, item := range items {
-		apiId := fmt.Sprint(item["ApiId"])
-		groupId := fmt.Sprint(item["GroupId"])
-		name := fmt.Sprint(item["ApiName"])
-		id := groupId + ":" + apiId
-		if skip, reason := apiGatewaySweepNameSkip(name); skip {
-			log.Printf("[INFO] Skipping ApiGateway Api %s (%s): %s", name, id, reason)
-			continue
-		}
-		log.Printf("[INFO] Deleting ApiGateway Api: %s (%s)", name, id)
-		if err := apiGatewayDelete(client, "DeleteApi", map[string]interface{}{"ApiId": apiId, "GroupId": groupId}, map[string]interface{}{}); err != nil {
-			log.Printf("[ERROR] Failed to delete ApiGateway Api %s (%s): %v", name, id, err)
-			continue
-		}
-	}
-	return nil
-}
-
-// testSweepApiGatewayApps mirrors resourceAliyunApigatewayAppDelete:
-// DescribeAppAttributes -> DeleteApp(AppId). AppId is a JSON number, so it is
-// normalised to the canonical integer string.
-func testSweepApiGatewayApps(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	items, err := apiGatewayList(client, "DescribeAppAttributes", "$.Apps.AppAttribute[*]", map[string]interface{}{})
-	if err != nil {
-		log.Printf("[ERROR] %s DescribeAppAttributes failed: %v", apiGatewaySweepLog, err)
-		return nil
-	}
-	for _, item := range items {
-		id := apiGatewayAppIDString(item["AppId"])
-		name := fmt.Sprint(item["AppName"])
-		if skip, reason := apiGatewaySweepNameSkip(name); skip {
-			log.Printf("[INFO] Skipping ApiGateway App %s (%s): %s", name, id, reason)
-			continue
-		}
-		log.Printf("[INFO] Deleting ApiGateway App: %s (%s)", name, id)
-		if err := apiGatewayDelete(client, "DeleteApp", map[string]interface{}{"AppId": id}, map[string]interface{}{}); err != nil {
-			log.Printf("[ERROR] Failed to delete ApiGateway App %s (%s): %v", name, id, err)
 			continue
 		}
 	}
@@ -430,47 +302,6 @@ func testSweepApiGatewayPlugins(region string) error {
 	return nil
 }
 
-// testSweepApiGatewayVpcAccesses mirrors resourceAliCloudApiGatewayVpcAccessDelete:
-// DescribeVpcAccesses -> RemoveVpcAccess(VpcId, InstanceId, Port, Name). The
-// composite resource id is name:vpc_id:instance_id:port, but the delete call
-// uses the individual fields carried by the list item.
-func testSweepApiGatewayVpcAccesses(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	items, err := apiGatewayList(client, "DescribeVpcAccesses", "$.VpcAccessAttributes.VpcAccessAttribute[*]", map[string]interface{}{})
-	if err != nil {
-		log.Printf("[ERROR] %s DescribeVpcAccesses failed: %v", apiGatewaySweepLog, err)
-		return nil
-	}
-	for _, item := range items {
-		name := fmt.Sprint(item["Name"])
-		vpcId := fmt.Sprint(item["VpcId"])
-		instanceId := fmt.Sprint(item["InstanceId"])
-		port := fmt.Sprint(item["Port"])
-		id := name + ":" + vpcId + ":" + instanceId + ":" + port
-		if skip, reason := apiGatewaySweepNameSkip(name); skip {
-			log.Printf("[INFO] Skipping ApiGateway VpcAccess %s (%s): %s", name, id, reason)
-			continue
-		}
-		log.Printf("[INFO] Deleting ApiGateway VpcAccess: %s (%s)", name, id)
-		body := map[string]interface{}{
-			"VpcId":      vpcId,
-			"InstanceId": instanceId,
-			"Port":       item["Port"],
-			"Name":       name,
-		}
-		if err := apiGatewayDelete(client, "RemoveVpcAccess", nil, body); err != nil {
-			log.Printf("[ERROR] Failed to delete ApiGateway VpcAccess %s (%s): %v", name, id, err)
-			continue
-		}
-	}
-	return nil
-}
-
 // testSweepApiGatewayAccessControlLists mirrors resourceAliCloudApiGatewayAccessControlListDelete:
 // DescribeAccessControlLists -> DeleteAccessControlList(AclId).
 func testSweepApiGatewayAccessControlLists(region string) error {
@@ -495,42 +326,6 @@ func testSweepApiGatewayAccessControlLists(region string) error {
 		log.Printf("[INFO] Deleting ApiGateway AccessControlList: %s (%s)", name, id)
 		if err := apiGatewayDelete(client, "DeleteAccessControlList", map[string]interface{}{"AclId": id}, map[string]interface{}{}); err != nil {
 			log.Printf("[ERROR] Failed to delete ApiGateway AccessControlList %s (%s): %v", name, id, err)
-			continue
-		}
-	}
-	return nil
-}
-
-// testSweepApiGatewayLogConfigs mirrors resourceAlicloudApiGatewayLogConfigDelete:
-// DescribeLogConfig -> DeleteLogConfig(LogType). The LogType value is both the
-// resource id and the only identifier exposed by the list API.
-func testSweepApiGatewayLogConfigs(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	// DescribeLogConfig lists all log configs when LogType is not supplied.
-	items, err := apiGatewayList(client, "DescribeLogConfig", "$.LogInfos.LogInfo", map[string]interface{}{})
-	if err != nil {
-		log.Printf("[ERROR] %s DescribeLogConfig failed: %v", apiGatewaySweepLog, err)
-		return nil
-	}
-	for _, item := range items {
-		logType := fmt.Sprint(item["LogType"])
-		if logType == "" {
-			continue
-		}
-		// LogType is an opaque hash, not a human name; only the NODELETING
-		// marker gate applies, plus the prefix gate in non-SWEEP_ALL mode.
-		if skip, reason := apiGatewaySweepNameSkip(logType); skip {
-			log.Printf("[INFO] Skipping ApiGateway LogConfig (%s): %s", logType, reason)
-			continue
-		}
-		log.Printf("[INFO] Deleting ApiGateway LogConfig: (%s)", logType)
-		if err := apiGatewayDelete(client, "DeleteLogConfig", nil, map[string]interface{}{"LogType": logType}); err != nil {
-			log.Printf("[ERROR] Failed to delete ApiGateway LogConfig (%s): %v", logType, err)
 			continue
 		}
 	}
