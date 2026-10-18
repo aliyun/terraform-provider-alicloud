@@ -52,11 +52,13 @@ func testSweepActiontrailTrail(region string) error {
 	action := "DescribeTrails"
 	response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_actiontrail_trails", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to list actiontrail trails: %s", err)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.TrailList", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TrailList", response)
+		log.Printf("[ERROR] Failed to parse $.TrailList (treat as empty): %s", err)
+		return nil
 	}
 	sweeped := false
 	result, _ := resp.([]interface{})
