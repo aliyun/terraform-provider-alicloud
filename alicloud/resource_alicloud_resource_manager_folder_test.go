@@ -59,7 +59,8 @@ func testSweepResourceManagerFolder(region string) error {
 
 		resp, err := jsonpath.Get("$.Folders.Folder", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Folders.Folder", response)
+			log.Printf("[ERROR] Failed to parse $.Folders.Folder (treat as empty): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
