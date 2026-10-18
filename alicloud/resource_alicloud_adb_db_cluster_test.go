@@ -15,8 +15,8 @@ import (
 )
 
 func init() {
-	resource.AddTestSweepers("alicloud_adb_db_instance", &resource.Sweeper{
-		Name: "alicloud_adb_db_instance",
+	resource.AddTestSweepers("alicloud_adb_db_cluster", &resource.Sweeper{
+		Name: "alicloud_adb_db_cluster",
 		F:    testSweepAdbDbInstances,
 	})
 }
@@ -56,6 +56,10 @@ func testSweepAdbDbInstances(region string) error {
 			item := v.(map[string]interface{})
 			name := fmt.Sprint(item["DBClusterDescription"])
 			id := fmt.Sprint(item["DBClusterId"])
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping ADB Instance (NODELETING): %s (%s)", name, id)
+				continue
+			}
 			skip := true
 			if !sweepAll() {
 				for _, prefix := range prefixes {
