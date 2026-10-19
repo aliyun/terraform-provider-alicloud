@@ -3,6 +3,8 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -12,6 +14,106 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cs_kubernetes_node_pool", &resource.Sweeper{
+		Name: "alicloud_cs_kubernetes_node_pool",
+		F:    testSweepCSKubernetesNodePool,
+	})
+}
+
+// testSweepCSKubernetesNodePool sweeps leftover CS Kubernetes node pools in
+// the region. Sub-resources inherit protection from their parent cluster's
+// name: NODELETING markers on the cluster name (or node pool name) always
+// skip, EVEN when SWEEP_ALL=1 is set (red-line #2). The prefix check on the
+// cluster name is bypassed by sweepAll() (standard pattern, playbook line
+// 55). ACK clusters that are prepaid (Subscription) cannot be deleted
+// themselves (ForbiddenRelease, red-line #4) but their node pools are safe
+// to delete here. NODELETING markers on either the cluster or node-pool name
+// are always honored.
+func testSweepCSKubernetesNodePool(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
+	}
+
+	raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+		return csClient.DescribeClusters("")
+	})
+	if err != nil {
+		log.Printf("[ERROR] Failed to list CS Clusters: %s", err)
+		return nil
+	}
+	clusters, _ := raw.([]cs.ClusterType)
+
+	for _, cluster := range clusters {
+		clusterName := cluster.Name
+		clusterId := cluster.ClusterID
+
+		// NODELETING guard on the parent cluster name (always-on, NOT bypassed
+		// by sweepAll — red-line #2).
+		if protectedSweepVpcName(clusterName) {
+			log.Printf("[INFO] Skipping CS node pools in protected cluster: %s (%s)", clusterName, clusterId)
+			continue
+		}
+
+		// Prefix check on the parent cluster name (bypassed by sweepAll —
+		// standard pattern, playbook line 55). Sub-resources of non-test
+		// clusters are spared unless sweepAll() forces it.
+		if !sweepAll() {
+			matched := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(clusterName), strings.ToLower(prefix)) {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				log.Printf("[INFO] Skipping CS node pools in non-test cluster: %s (%s)", clusterName, clusterId)
+				continue
+			}
+		}
+
+		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return csClient.DescribeClusterNodePools(clusterId)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to list node pools for cluster %s (%s): %s", clusterName, clusterId, err)
+			continue
+		}
+		nodePools, _ := raw.(*[]cs.NodePoolDetail)
+		if nodePools == nil {
+			continue
+		}
+		for _, np := range *nodePools {
+			npName := ""
+			if np.Name != nil {
+				npName = *np.Name
+			}
+			npId := np.NodePoolId
+			if protectedSweepVpcName(npName) {
+				log.Printf("[INFO] Skipping protected CS node pool: %s (%s) in cluster %s", npName, npId, clusterId)
+				continue
+			}
+			log.Printf("[INFO] Deleting CS node pool: %s (%s) in cluster %s", npName, npId, clusterId)
+			if _, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				return nil, csClient.DeleteNodePool(clusterId, npId)
+			}); err != nil {
+				log.Printf("[ERROR] Failed to delete CS node pool (%s (%s) in cluster %s): %s", npName, npId, clusterId, err)
+			}
+		}
+	}
+	return nil
+}
 
 func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 	var v *cs.NodePoolDetail
