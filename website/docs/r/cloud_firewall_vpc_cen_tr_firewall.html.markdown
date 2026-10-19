@@ -131,13 +131,6 @@ resource "alicloud_cen_transit_router_vpc_attachment" "tr-vpc1" {
   vpc_id            = alicloud_vpc.vpc1.id
   cen_id            = alicloud_cen_instance.cen.id
   transit_router_id = alicloud_cen_transit_router.tr.transit_router_id
-  depends_on        = [alicloud_route_table.foo]
-}
-
-resource "time_sleep" "wait_10_minutes" {
-  depends_on = [alicloud_cen_transit_router_vpc_attachment.tr-vpc1]
-
-  create_duration = "10m"
 }
 
 resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
@@ -151,8 +144,6 @@ resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
   firewall_vpc_cidr         = var.firewall_vpc_cidr
   transit_router_id         = alicloud_cen_transit_router.tr.transit_router_id
   route_mode                = "managed"
-
-  depends_on = [time_sleep.wait_10_minutes]
 }
 ```
 
@@ -164,10 +155,16 @@ resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
 
 The following arguments are supported:
 * `cen_id` - (Required, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
+* `firewall_attachment_zone` - (Optional, Computed, ForceNew) The zone ID used by the firewall connection. When omitted, the server selects one and the value is reflected in state.
 * `firewall_description` - (Optional, ForceNew) The description of the firewall.
 * `firewall_name` - (Required) The name of the Cloud Firewall instance.
+* `firewall_service_mode` - (Optional, Computed, ForceNew) The deployment mode of the firewall service. When omitted, the server auto-selects a mode based on the transit router capability and the value is reflected in state. Valid values: `PrimaryStandby`, `MultiPrimary`.
+* `firewall_service_zones` - (Optional, Computed, ForceNew) The list of zone IDs used by the firewall service. When omitted, the server selects zones and the value is reflected in state.
 * `firewall_subnet_cidr` - (Optional, ForceNew) The CIDR block of the subnet in the firewall VPC that hosts the firewall ENI in automatic mode.
 * `firewall_vpc_cidr` - (Required, ForceNew) The CIDR block of the firewall VPC in automatic mode.
+* `firewall_vpc_id` - (Optional, ForceNew) The VPC ID used to create the firewall ENI in manual mode.
+* `firewall_vswitch_id` - (Optional, ForceNew) The vSwitch ID used to create the firewall ENI in manual mode.
+* `lang` - (Optional) The language type of the message. Valid values: `zh`, `en`.
 * `region_no` - (Required, ForceNew) The region ID of transit router instance I.
 * `route_mode` - (Required, ForceNew) The routing mode. Valid values:
   - `managed`: indicates automatic mode.
@@ -185,6 +182,7 @@ The following arguments are supported:
 
  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
+* `tr_attachment_zones` - (Optional, Computed, ForceNew) The list of zone IDs used by the TR connection. When omitted, the server derives zones and the value is reflected in state.
 * `transit_router_id` - (Required, ForceNew) The ID of the transit router instance.
 
 ## Attributes Reference

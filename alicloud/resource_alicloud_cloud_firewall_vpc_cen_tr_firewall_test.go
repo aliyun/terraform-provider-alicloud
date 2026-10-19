@@ -28,9 +28,9 @@ func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic3609(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -233,9 +233,9 @@ func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic7158(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -251,6 +251,13 @@ func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic7158(t *testing.T) {
 					"tr_attachment_slave_cidr":  "${var.tr_attachment_slave_cidr}",
 					"tr_attachment_master_zone": "${var.zone1}",
 					"tr_attachment_slave_zone":  "${var.zone2}",
+					"firewall_vpc_id":           "${alicloud_vpc.vpc1.id}",
+					"firewall_vswitch_id":       "${alicloud_vswitch.vpc1vsw1.id}",
+					"firewall_attachment_zone":  "${var.zone1}",
+					"firewall_service_mode":     "PrimaryStandby",
+					"firewall_service_zones":    []interface{}{"${var.zone1}"},
+					"tr_attachment_zones":       []interface{}{"${var.zone1}"},
+					"lang":                      "zh",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -266,16 +273,25 @@ func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic7158(t *testing.T) {
 						"tr_attachment_slave_cidr":  CHECKSET,
 						"tr_attachment_master_zone": CHECKSET,
 						"tr_attachment_slave_zone":  CHECKSET,
+						"firewall_vpc_id":           CHECKSET,
+						"firewall_vswitch_id":       CHECKSET,
+						"firewall_attachment_zone":  CHECKSET,
+						"firewall_service_mode":     CHECKSET,
+						"firewall_service_zones":    CHECKSET,
+						"tr_attachment_zones":       CHECKSET,
+						"lang":                      CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"firewall_name": "${var.firewall_name_update}",
+					"lang":          "en",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"firewall_name": CHECKSET,
+						"lang":          CHECKSET,
 					}),
 				),
 			},
@@ -283,7 +299,7 @@ func TestAccAliCloudCloudFirewallVpcCenTrFirewall_basic7158(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"tr_attachment_master_zone", "tr_attachment_slave_zone"},
+				ImportStateVerifyIgnore: []string{"tr_attachment_master_zone", "tr_attachment_slave_zone", "firewall_vpc_id", "firewall_vswitch_id", "lang"},
 			},
 		},
 	})

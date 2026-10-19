@@ -4,6 +4,7 @@ ENHANCEMENTS:
 
 - resource/alicloud_nlb_server_group: support ip_version_affinity_mode. ([#10705](https://github.com/aliyun/terraform-provider-alicloud/issues/10705))
 - resource/alicloud_nas_file_system: support Agentic storage type; skip general-purpose NAS recycle bin/ACL calls on Agentic file systems. ([#10730](https://github.com/aliyun/terraform-provider-alicloud/issues/10730))
+- resource/alicloud_cloud_firewall_vpc_cen_tr_firewall: support firewall_vpc_id, firewall_vswitch_id, firewall_attachment_zone, firewall_service_mode, firewall_service_zones, tr_attachment_zones and lang.
 
 ## 1.294.0 (October 8, 2026)
 

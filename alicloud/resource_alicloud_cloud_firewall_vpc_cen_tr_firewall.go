@@ -31,6 +31,12 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"firewall_attachment_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"firewall_description": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -48,6 +54,20 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"firewall_service_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"PrimaryStandby", "MultiPrimary"}, false),
+			},
+			"firewall_service_zones": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"firewall_subnet_cidr": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -61,6 +81,21 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"firewall_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"firewall_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"lang": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"zh", "en"}, false),
 			},
 			"region_no": {
 				Type:     schema.TypeString,
@@ -94,6 +129,13 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 			"tr_attachment_slave_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"tr_attachment_zones": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"transit_router_id": {
 				Type:     schema.TypeString,
@@ -140,6 +182,27 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallCreate(d *schema.ResourceData,
 		request["TrAttachmentMasterZone"] = v
 	}
 	request["FirewallVpcCidr"] = d.Get("firewall_vpc_cidr")
+	if v, ok := d.GetOk("firewall_vpc_id"); ok {
+		request["FirewallVpcId"] = v
+	}
+	if v, ok := d.GetOk("firewall_vswitch_id"); ok {
+		request["FirewallVswitchId"] = v
+	}
+	if v, ok := d.GetOk("firewall_attachment_zone"); ok {
+		request["FirewallAttachmentZone"] = v
+	}
+	if v, ok := d.GetOk("firewall_service_mode"); ok {
+		request["FirewallServiceMode"] = v
+	}
+	if v, ok := d.GetOk("firewall_service_zones"); ok {
+		request["FirewallServiceZones"] = v
+	}
+	if v, ok := d.GetOk("tr_attachment_zones"); ok {
+		request["TrAttachmentZones"] = v
+	}
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
 	wait := incrementalWait(30*time.Second, 30*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
@@ -187,10 +250,12 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallRead(d *schema.ResourceData, m
 	}
 
 	d.Set("cen_id", objectRaw["CenId"])
+	d.Set("firewall_attachment_zone", objectRaw["FirewallAttachmentZone"])
 	d.Set("firewall_description", objectRaw["FirewallDescription"])
 	d.Set("firewall_eni_id", objectRaw["FirewallEniId"])
 	d.Set("firewall_eni_vpc_id", objectRaw["FirewallEniVpcId"])
 	d.Set("firewall_name", objectRaw["FirewallName"])
+	d.Set("firewall_service_mode", objectRaw["FirewallServiceMode"])
 	d.Set("firewall_subnet_cidr", objectRaw["FirewallSubnetCidr"])
 	d.Set("firewall_vpc_attachment_id", objectRaw["TrAttachmentId"])
 	d.Set("firewall_vpc_cidr", objectRaw["FirewallVpcCidr"])
@@ -200,6 +265,36 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallRead(d *schema.ResourceData, m
 	d.Set("tr_attachment_master_cidr", objectRaw["TrAttachmentMasterCidr"])
 	d.Set("tr_attachment_slave_cidr", objectRaw["TrAttachmentSlaveCidr"])
 	d.Set("transit_router_id", objectRaw["TransitRouterId"])
+
+	// FirewallServiceZones is echoed as array<string> by DescribeTrFirewallsV2Detail.
+	firewallServiceZonesRaw := make([]interface{}, 0)
+	if objectRaw["FirewallServiceZones"] != nil {
+		if v, ok := objectRaw["FirewallServiceZones"].([]interface{}); ok {
+			firewallServiceZonesRaw = v
+		}
+	}
+	d.Set("firewall_service_zones", firewallServiceZonesRaw)
+
+	// TrAttachmentZones is echoed by DescribeTrFirewallsV2Detail as array<struct>
+	// ({VSwitchCidr, VSwitchZoneId}), while the create request expects array<string> of
+	// zone IDs. Adapt the response shape back to the string list used in config.
+	trAttachmentZonesRaw := make([]interface{}, 0)
+	if objectRaw["TrAttachmentZones"] != nil {
+		if zones, ok := objectRaw["TrAttachmentZones"].([]interface{}); ok {
+			for _, zone := range zones {
+				if m, ok := zone.(map[string]interface{}); ok {
+					if vSwitchZoneId, ok := m["VSwitchZoneId"].(string); ok {
+						trAttachmentZonesRaw = append(trAttachmentZonesRaw, vSwitchZoneId)
+					}
+				}
+			}
+		}
+	}
+	d.Set("tr_attachment_zones", trAttachmentZonesRaw)
+
+	// firewall_vpc_id / firewall_vswitch_id / lang are create/update-only inputs and are
+	// not echoed by DescribeTrFirewallsV2Detail (the ENI vpc/vswitch are exposed via
+	// firewall_eni_vpc_id), so they are retained from config here.
 
 	return nil
 }
@@ -222,6 +317,12 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallUpdate(d *schema.ResourceData,
 		update = true
 	}
 	request["FirewallName"] = d.Get("firewall_name")
+	if d.HasChange("lang") {
+		update = true
+	}
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
