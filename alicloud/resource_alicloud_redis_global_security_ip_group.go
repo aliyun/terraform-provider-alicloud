@@ -50,9 +50,9 @@ func resourceAliCloudRedisGlobalSecurityIpGroupCreate(d *schema.ResourceData, me
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-
 	request["GIpList"] = d.Get("global_ip_list")
 	request["GlobalIgName"] = d.Get("global_ip_group_name")
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
@@ -72,6 +72,7 @@ func resourceAliCloudRedisGlobalSecurityIpGroupCreate(d *schema.ResourceData, me
 	}
 
 	id, _ := jsonpath.Get("$.GlobalSecurityIPGroup[0].GlobalSecurityGroupId", response)
+
 	d.SetId(fmt.Sprint(id))
 
 	return resourceAliCloudRedisGlobalSecurityIpGroupRead(d, meta)
@@ -108,16 +109,19 @@ func resourceAliCloudRedisGlobalSecurityIpGroupUpdate(d *schema.ResourceData, me
 	action := "ModifyGlobalSecurityIPGroup"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["GlobalSecurityGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
+	request["GlobalSecurityGroupId"] = d.Id()
+
 	if d.HasChange("global_ip_list") {
 		update = true
 	}
 	request["GIpList"] = d.Get("global_ip_list")
+
 	if d.HasChange("global_ip_group_name") {
 		update = true
 	}
 	request["GlobalIgName"] = d.Get("global_ip_group_name")
+
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
@@ -140,12 +144,14 @@ func resourceAliCloudRedisGlobalSecurityIpGroupUpdate(d *schema.ResourceData, me
 	action = "ModifyGlobalSecurityIPGroupName"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["GlobalSecurityGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
+	request["GlobalSecurityGroupId"] = d.Id()
+
 	if d.HasChange("global_ip_group_name") {
 		update = true
 	}
 	request["GlobalIgName"] = d.Get("global_ip_group_name")
+
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
@@ -160,6 +166,7 @@ func resourceAliCloudRedisGlobalSecurityIpGroupUpdate(d *schema.ResourceData, me
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -177,10 +184,10 @@ func resourceAliCloudRedisGlobalSecurityIpGroupDelete(d *schema.ResourceData, me
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["GlobalSecurityGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
-
+	request["GlobalSecurityGroupId"] = d.Id()
 	request["GlobalIgName"] = d.Get("global_ip_group_name")
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)

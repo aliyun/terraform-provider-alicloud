@@ -766,10 +766,10 @@ func (s *RedisServiceV2) DescribeRedisGlobalSecurityIpGroup(id string) (object m
 	request["RegionId"] = client.RegionId
 	action := "DescribeGlobalSecurityIPGroup"
 
+	idExist := false
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -780,23 +780,35 @@ func (s *RedisServiceV2) DescribeRedisGlobalSecurityIpGroup(id string) (object m
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"RequiredParam.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("GlobalSecurityIpGroup", id), NotFoundMsg, response)
+			return object, WrapErrorf(NotFoundErr("GlobalSecurityIpGroup", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.GlobalSecurityIPGroup[*]", response)
+	resp, err := jsonpath.Get("$.GlobalSecurityIPGroup", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GlobalSecurityIPGroup[*]", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GlobalSecurityIPGroup", response)
 	}
 
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("GlobalSecurityIpGroup", id), NotFoundMsg, response)
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(NotFoundErr("GlobalSecurityIpGroup", id), NotFoundWithResponse, response)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["GlobalSecurityGroupId"]) == id {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(NotFoundErr("GlobalSecurityIpGroup", id), NotFoundWithResponse, response)
+	}
+
+	return object, nil
 }
 
 func (s *RedisServiceV2) RedisGlobalSecurityIpGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
