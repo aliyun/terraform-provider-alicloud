@@ -82,6 +82,9 @@ resource "alicloud_eci_virtual_node" "default" {
 
 The following arguments are supported:
 
+* `cluster_dns` - (Optional) The cluster DNS.
+* `cluster_domain` - (Optional) The cluster domain.
+* `custom_resources` - (Optional) The custom resources.
 * `eip_instance_id` - (Optional, ForceNew) The Id of eip.
 * `enable_public_network` - (Optional, ForceNew) Whether to enable public network. **NOTE:** If `eip_instance_id` is not configured and `enable_public_network` is true, the system will create an elastic public network IP.
 * `kube_config` - (Required) The kube config for the k8s cluster. It needs to be connected after Base64 encoding.
@@ -89,6 +92,7 @@ The following arguments are supported:
 * `security_group_id` - (Required, ForceNew) The security group ID.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 * `taints` - (Optional) The taint. See [`taints`](#taints) below.
+* `tls_bootstrap_enabled` - (Optional, ForceNew) Whether to enable TLS bootstrap.
 * `virtual_node_name` - (Optional, ForceNew) The name of the virtual node. The length of the name is limited to `2` to `128` characters. It can contain uppercase and lowercase letters, Chinese characters, numbers, half-width colon (:), underscores (_), or hyphens (-), and must start with letters.
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
 * `zone_id` - (Optional, ForceNew) The Zone.
@@ -112,7 +116,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 5 mins) Used when create the Gateway File Share.
+* `create` - (Defaults to 5 mins) Used when creating the ECI Virtual Node.
+* `update` - (Defaults to 5 mins) Used when updating the ECI Virtual Node.
 
 ## Import
 

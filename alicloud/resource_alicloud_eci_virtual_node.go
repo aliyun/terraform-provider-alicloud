@@ -23,6 +23,7 @@ func resourceAlicloudEciVirtualNode() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"eip_instance_id": {
@@ -98,6 +99,28 @@ func resourceAlicloudEciVirtualNode() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"cluster_dns": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"cluster_domain": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"custom_resources": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"tls_bootstrap_enabled": {
+				Type:      schema.TypeBool,
+				Optional:  true,
+				Computed:  true,
+				ForceNew:  true,
+				Sensitive: true,
+			},
 		},
 	}
 }
@@ -117,6 +140,18 @@ func resourceAlicloudEciVirtualNodeCreate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOkExists("enable_public_network"); ok {
 		request["EnablePublicNetwork"] = v
+	}
+	if v, ok := d.GetOk("custom_resources"); ok {
+		request["CustomResources"] = v
+	}
+	if v, ok := d.GetOk("cluster_domain"); ok {
+		request["ClusterDomain"] = v
+	}
+	if v, ok := d.GetOk("cluster_dns"); ok {
+		request["ClusterDNS"] = v
+	}
+	if v, ok := d.GetOkExists("tls_bootstrap_enabled"); ok {
+		request["TlsBootstrapEnabled"] = v
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
@@ -193,7 +228,47 @@ func resourceAlicloudEciVirtualNodeRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 func resourceAlicloudEciVirtualNodeUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
+	client := meta.(*connectivity.AliyunClient)
+	if d.HasChange("custom_resources") || d.HasChange("cluster_domain") || d.HasChange("cluster_dns") {
+		action := "UpdateVirtualNode"
+		request := map[string]interface{}{
+			"VirtualNodeId": d.Id(),
+			"RegionId":      client.RegionId,
+		}
+		if d.HasChange("custom_resources") {
+			request["CustomResources"] = d.Get("custom_resources")
+		}
+		if d.HasChange("cluster_domain") {
+			request["ClusterDomain"] = d.Get("cluster_domain")
+		}
+		if d.HasChange("cluster_dns") {
+			request["ClusterDNS"] = d.Get("cluster_dns")
+		}
+		request["ClientToken"] = buildClientToken("UpdateVirtualNode")
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		var response map[string]interface{}
+		var err error
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		eciService := EciService{client}
+		stateConf := BuildStateConf([]string{}, []string{"Ready"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, eciService.EciVirtualNodeStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
 	return resourceAlicloudEciVirtualNodeRead(d, meta)
 }
 func resourceAlicloudEciVirtualNodeDelete(d *schema.ResourceData, meta interface{}) error {
