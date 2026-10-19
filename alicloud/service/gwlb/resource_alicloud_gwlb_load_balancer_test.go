@@ -1,10 +1,11 @@
-package alicloud
+package gwlb_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gwlb"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
@@ -16,8 +17,8 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 	resourceId := "alicloud_gwlb_load_balancer.default"
 	ra := resourceAttrInit(resourceId, AlicloudGwlbLoadBalancerMap7994)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbLoadBalancer")
+		return gwlb.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeLoadBalancer")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -28,9 +29,9 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -192,8 +193,8 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 	resourceId := "alicloud_gwlb_load_balancer.default"
 	ra := resourceAttrInit(resourceId, AlicloudGwlbLoadBalancerMap8565)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbLoadBalancer")
+		return gwlb.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeLoadBalancer")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -204,9 +205,9 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
