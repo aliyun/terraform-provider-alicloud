@@ -31,7 +31,6 @@ func testSweepCloudSsoDirectoryUser(region, directoryId string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"",
 	}
 	action := "ListUsers"
 	request := map[string]interface{}{}
@@ -66,15 +65,23 @@ func testSweepCloudSsoDirectoryUser(region, directoryId string) error {
 	for _, v := range result {
 		item := v.(map[string]interface{})
 
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(item["UserName"].(string)), strings.ToLower(prefix)) {
-				skip = false
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Cloud Sso User: %s", item["UserName"].(string))
+		userName, _ := item["UserName"].(string)
+		if protectedSweepVpcName(userName) {
+			log.Printf("[INFO] Skipping protected Cloud Sso User: %s", userName)
 			continue
+		}
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(userName), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Cloud Sso User: %s", userName)
+				continue
+			}
 		}
 		action := "DeleteUser"
 		req := map[string]interface{}{
@@ -83,9 +90,34 @@ func testSweepCloudSsoDirectoryUser(region, directoryId string) error {
 		}
 		_, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, req, false)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Cloud Sso User (%s): %s", item["UserName"].(string), err)
+			log.Printf("[ERROR] Failed to delete Cloud Sso User (%s): %s", userName, err)
+		} else {
+			log.Printf("[INFO] Delete Cloud Sso User success: %s ", userName)
 		}
-		log.Printf("[INFO] Delete Cloud Sso User success: %s ", item["UserName"].(string))
+	}
+	return nil
+}
+
+func init() {
+	resource.AddTestSweepers("alicloud_cloud_sso_user", &resource.Sweeper{
+		Name: "alicloud_cloud_sso_user",
+		F:    testSweepCloudSsoUser,
+	})
+}
+
+// testSweepCloudSsoUser is the registered sweeper entry point for
+// alicloud_cloud_sso_user. Users live inside a directory, so this wrapper
+// enumerates every directory in the region and delegates to
+// testSweepCloudSsoDirectoryUser for each one.
+func testSweepCloudSsoUser(region string) error {
+	directoryIds, err := testSweepCloudSsoDirectoryIds(region)
+	if err != nil {
+		return err
+	}
+	for _, directoryId := range directoryIds {
+		if err := testSweepCloudSsoDirectoryUser(region, directoryId); err != nil {
+			log.Printf("[ERROR] Failed to sweep Cloud Sso User in directory %s: %s", directoryId, err)
+		}
 	}
 	return nil
 }

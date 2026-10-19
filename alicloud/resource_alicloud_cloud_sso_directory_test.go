@@ -20,7 +20,77 @@ func init() {
 		&resource.Sweeper{
 			Name: "alicloud_cloud_sso_directory",
 			F:    testSweepCloudSsoDirectory,
+			Dependencies: []string{
+				"alicloud_cloud_sso_access_assignment",
+				"alicloud_cloud_sso_access_configuration",
+				"alicloud_cloud_sso_access_configuration_provisioning",
+				"alicloud_cloud_sso_user",
+				"alicloud_cloud_sso_group",
+				"alicloud_cloud_sso_scim_server_credential",
+			},
 		})
+}
+
+// testSweepCloudSsoDirectoryObjects lists every Cloud SSO directory object in
+// the region. It is shared by the per-directory sub-resource sweepers so they
+// can enumerate the directories they need to clean. A missing or empty
+// $.Directories key is treated as an empty list (returns nil, nil) so
+// sweepers do not fail on empty accounts.
+func testSweepCloudSsoDirectoryObjects(region string) ([]map[string]interface{}, error) {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return nil, fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	action := "ListDirectories"
+	request := map[string]interface{}{}
+
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		return nil, nil
+	}
+
+	resp, err := jsonpath.Get("$.Directories", response)
+	if formatInt(response["TotalCounts"]) != 0 && err != nil {
+		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Directories", action, err)
+		return nil, nil
+	}
+	result, _ := resp.([]interface{})
+	directories := make([]map[string]interface{}, 0, len(result))
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		directories = append(directories, item)
+	}
+	return directories, nil
+}
+
+// testSweepCloudSsoDirectoryIds is a thin helper that returns just the
+// directory ids, for sub-resource sweepers that match resources by their own
+// name (user, group, access configuration, access assignment, ...).
+func testSweepCloudSsoDirectoryIds(region string) ([]string, error) {
+	directories, err := testSweepCloudSsoDirectoryObjects(region)
+	if err != nil {
+		return nil, err
+	}
+	var directoryIds []string
+	for _, item := range directories {
+		directoryIds = append(directoryIds, fmt.Sprint(item["DirectoryId"]))
+	}
+	return directoryIds, nil
 }
 
 func testSweepCloudSsoDirectory(region string) error {
@@ -64,25 +134,51 @@ func testSweepCloudSsoDirectory(region string) error {
 	for _, v := range result {
 		item := v.(map[string]interface{})
 
+		directoryName, _ := item["DirectoryName"].(string)
+		if protectedSweepVpcName(directoryName) {
+			log.Printf("[INFO] Skipping protected Cloud Sso Directory: %s", directoryName)
+			continue
+		}
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(item["DirectoryName"].(string)), strings.ToLower(prefix)) {
-				skip = false
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(directoryName), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Cloud Sso Directory: %s", directoryName)
+				continue
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping Cloud Sso Directory: %s", item["DirectoryName"].(string))
-			continue
+		directoryId := fmt.Sprint(item["DirectoryId"])
+		// DeleteDirectory fails with
+		// DeletionConflict.Directory.ExternalSAMLIdentityProvider when an
+		// external SAML identity provider is still configured on the
+		// directory (a leftover from an interrupted acceptance test of the
+		// saml_identity_provider_configuration block). Clear it first as a
+		// best-effort pre-cleanup step; errors are logged at WARN because
+		// the call is expected to no-op (or return EntityNotExists) when no
+		// IdP is configured, and the authoritative failure, if any, comes
+		// from DeleteDirectory below.
+		clearAction := "ClearExternalSAMLIdentityProvider"
+		clearReq := map[string]interface{}{
+			"DirectoryId": directoryId,
+		}
+		if _, cerr := client.RpcPost("cloudsso", "2021-05-15", clearAction, nil, clearReq, false); cerr != nil {
+			log.Printf("[WARN] ClearExternalSAMLIdentityProvider for Cloud Sso Directory (%s) returned: %s", directoryName, cerr)
 		}
 		action := "DeleteDirectory"
 		request := map[string]interface{}{
-			"DirectoryId": item["DirectoryId"],
+			"DirectoryId": directoryId,
 		}
 		_, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, false)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Cloud Sso Directory (%s): %s", item["DirectoryName"].(string), err)
+			log.Printf("[ERROR] Failed to delete Cloud Sso Directory (%s): %s", directoryName, err)
+		} else {
+			log.Printf("[INFO] Delete Cloud Sso Directory success: %s ", directoryName)
 		}
-		log.Printf("[INFO] Delete Cloud Sso Directory success: %s ", item["DirectoryName"].(string))
 	}
 	return nil
 }

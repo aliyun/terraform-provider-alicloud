@@ -5,8 +5,11 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,9 +17,111 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cloud_sso_scim_server_credential", &resource.Sweeper{
+		Name: "alicloud_cloud_sso_scim_server_credential",
+		F:    testSweepCloudSsoScimServerCredential,
+	})
+}
+
+// testSweepCloudSsoScimServerCredential is the registered sweeper entry point
+// for alicloud_cloud_sso_scim_server_credential. SCIM server credentials carry
+// no human-readable name, so they are matched by their parent directory name:
+// in normal mode only credentials inside tf-testAcc directories are swept,
+// while SWEEP_ALL mode sweeps every directory that is not do-not-delete
+// protected.
+func testSweepCloudSsoScimServerCredential(region string) error {
+	directories, err := testSweepCloudSsoDirectoryObjects(region)
+	if err != nil {
+		return err
+	}
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	for _, directory := range directories {
+		directoryName, _ := directory["DirectoryName"].(string)
+		if protectedSweepVpcName(directoryName) {
+			log.Printf("[INFO] Skipping protected Cloud Sso Directory for SCIM credentials: %s", directoryName)
+			continue
+		}
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(directoryName), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Cloud Sso Directory for SCIM credentials: %s", directoryName)
+				continue
+			}
+		}
+		if err := testSweepCloudSsoDirectoryScimServerCredential(region, fmt.Sprint(directory["DirectoryId"])); err != nil {
+			log.Printf("[ERROR] Failed to sweep Cloud Sso SCIMServerCredential in directory %s: %s", directoryName, err)
+		}
+	}
+	return nil
+}
+
+func testSweepCloudSsoDirectoryScimServerCredential(region, directoryId string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting AliCloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	action := "ListSCIMServerCredentials"
+	request := map[string]interface{}{
+		"DirectoryId": directoryId,
+	}
+
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		return nil
+	}
+
+	resp, err := jsonpath.Get("$.SCIMServerCredentials", response)
+	if formatInt(response["TotalCounts"]) != 0 && err != nil {
+		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.SCIMServerCredentials", action, err)
+		return nil
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		action := "DeleteSCIMServerCredential"
+		req := map[string]interface{}{
+			"DirectoryId":  directoryId,
+			"CredentialId": item["CredentialId"],
+		}
+		_, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, req, false)
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Cloud Sso SCIMServerCredential (%v): %s", item["CredentialId"], err)
+		} else {
+			log.Printf("[INFO] Delete Cloud Sso SCIMServerCredential success: %v ", item["CredentialId"])
+		}
+	}
+	return nil
+}
 
 func TestAccAliCloudCloudSSOSCIMServerCredential_basic0(t *testing.T) {
 	var v map[string]interface{}

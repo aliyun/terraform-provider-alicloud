@@ -5,8 +5,11 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,9 +17,110 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cloud_sso_group", &resource.Sweeper{
+		Name: "alicloud_cloud_sso_group",
+		F:    testSweepCloudSsoGroup,
+	})
+}
+
+// testSweepCloudSsoGroup is the registered sweeper entry point for
+// alicloud_cloud_sso_group. Groups live inside a directory, so this wrapper
+// enumerates every directory in the region and delegates to
+// testSweepCloudSsoDirectoryGroup for each one.
+func testSweepCloudSsoGroup(region string) error {
+	directoryIds, err := testSweepCloudSsoDirectoryIds(region)
+	if err != nil {
+		return err
+	}
+	for _, directoryId := range directoryIds {
+		if err := testSweepCloudSsoDirectoryGroup(region, directoryId); err != nil {
+			log.Printf("[ERROR] Failed to sweep Cloud Sso Group in directory %s: %s", directoryId, err)
+		}
+	}
+	return nil
+}
+
+func testSweepCloudSsoDirectoryGroup(region, directoryId string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting AliCloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	action := "ListGroups"
+	request := map[string]interface{}{
+		"DirectoryId": directoryId,
+	}
+
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		return nil
+	}
+
+	resp, err := jsonpath.Get("$.Groups", response)
+	if formatInt(response["TotalCounts"]) != 0 && err != nil {
+		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Groups", action, err)
+		return nil
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+
+		groupName, _ := item["GroupName"].(string)
+		if protectedSweepVpcName(groupName) {
+			log.Printf("[INFO] Skipping protected Cloud Sso Group: %s", groupName)
+			continue
+		}
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(groupName), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Cloud Sso Group: %s", groupName)
+				continue
+			}
+		}
+		action := "DeleteGroup"
+		req := map[string]interface{}{
+			"DirectoryId": directoryId,
+			"GroupId":     item["GroupId"],
+		}
+		_, err = client.RpcPost("cloudsso", "2021-05-15", action, nil, req, false)
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Cloud Sso Group (%s): %s", groupName, err)
+		} else {
+			log.Printf("[INFO] Delete Cloud Sso Group success: %s ", groupName)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudCloudSSOGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
