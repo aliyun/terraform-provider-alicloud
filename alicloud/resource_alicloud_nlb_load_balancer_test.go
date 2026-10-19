@@ -99,7 +99,7 @@ func testSweepNlbLoadBalancer(region string) error {
 
 			action = "UpdateLoadBalancerProtection"
 			if err != nil {
-				return WrapError(err)
+				log.Printf("[ERROR] Prior operation error before UpdateLoadBalancerProtection for %s: %s", lbName, err)
 			}
 			request = make(map[string]interface{})
 			request["LoadBalancerId"] = item["LoadBalancerId"]
