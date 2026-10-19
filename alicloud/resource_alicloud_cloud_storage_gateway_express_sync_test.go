@@ -29,10 +29,6 @@ func testSweepCloudStorageGatewayExpressSync(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
 	action := "DescribeExpressSyncs"
 	request := map[string]interface{}{}
 
@@ -71,14 +67,24 @@ func testSweepCloudStorageGatewayExpressSync(region string) error {
 		if _, ok := item["Name"]; !ok {
 			continue
 		}
+		name := fmt.Sprint(item["Name"])
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping CloudStorageGateway ExpressSync (NODELETING): %s (%s)", name, item["ExpressSyncId"])
+			continue
+		}
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(item["Name"].(string)), strings.ToLower(prefix)) {
-				skip = false
+		if sweepAll() {
+			skip = false
+		} else {
+			for _, prefix := range []string{"tf-testAcc", "tf_testAcc"} {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping CloudStorageGateway ExpressSync: %s", item["Name"].(string))
+			log.Printf("[INFO] Skipping CloudStorageGateway ExpressSync: %s (%s)", name, item["ExpressSyncId"])
 			continue
 		}
 		action := "DeleteExpressSync"
@@ -89,6 +95,7 @@ func testSweepCloudStorageGatewayExpressSync(region string) error {
 		_, err = client.RpcPost("sgw", "2018-05-11", action, nil, request, false)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete CloudStorageGateway ExpressSync (%s): %s", item["ExpressSyncId"].(string), err)
+			continue
 		}
 		log.Printf("[INFO] Delete CloudStorageGateway ExpressSync success: %s ", item["ExpressSyncId"].(string))
 	}
