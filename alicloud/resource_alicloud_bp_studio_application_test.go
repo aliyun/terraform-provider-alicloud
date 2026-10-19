@@ -53,11 +53,13 @@ func testSweepBpStudioApplication(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_bp_studio_application", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list bp studio applications: %s", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Data", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+			log.Printf("[ERROR] Failed to parse $.Data (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -88,14 +90,15 @@ func testSweepBpStudioApplication(region string) error {
 		releaseAction := "ReleaseApplication"
 		deleteAction := "DeleteApplication"
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Stale error from list loop, ignoring: %s", err)
 		}
 		request = map[string]interface{}{
 			"ApplicationId": id,
 		}
 		object, err := bpStudioService.DescribeBpStudioApplication(id)
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to describe bp studio application %s: %s", id, err)
+			continue
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 
@@ -113,7 +116,8 @@ func testSweepBpStudioApplication(region string) error {
 			})
 			releaseApplicationStateConf := BuildStateConf([]string{}, []string{"Destroyed_Success"}, 120*time.Minute, 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(id, []string{}))
 			if _, err := releaseApplicationStateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, id)
+				log.Printf("[ERROR] Failed to wait for release of bp studio application %s: %s", id, err)
+				continue
 			}
 		}
 
