@@ -46,12 +46,14 @@ func testSweepEciContainerGroup(region string) error {
 	}
 	response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_eci_container_group", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to list ECI container groups: %s", err)
+		return nil
 	}
 	addDebug(action, response, request)
 	resp, err := jsonpath.Get("$.ContainerGroups", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ContainerGroups", response)
+		log.Printf("[ERROR] Failed to parse $.ContainerGroups (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {

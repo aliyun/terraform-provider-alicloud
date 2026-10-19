@@ -62,7 +62,8 @@ func testSweepInstances(region string) error {
 			return ecsClient.DescribeInstances(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving Instances: %s", err)
+			log.Printf("[ERROR] Failed to list Instances (stopping): %s", err)
+			break
 		}
 		resp, _ := raw.(*ecs.DescribeInstancesResponse)
 		if resp == nil || len(resp.Instances.Instance) < 1 {
@@ -76,7 +77,8 @@ func testSweepInstances(region string) error {
 
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to paginate Instances (stopping): %s", err)
+			break
 		}
 		req.PageNumber = page
 	}

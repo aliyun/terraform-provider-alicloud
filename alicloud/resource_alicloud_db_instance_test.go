@@ -65,11 +65,12 @@ func testSweepDBInstances(region string) error {
 		addDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %v", action, err)
-			continue
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Items.DBInstance", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBInstance", response)
+			log.Printf("[ERROR] Failed to parse $.Items.DBInstance (treat as empty, stopping): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		objects = append(objects, result...)

@@ -46,7 +46,8 @@ func testSweepEmrCluster(region string) error {
 		})
 
 		if err != nil {
-			return fmt.Errorf("Error retrieving EMR Cluster: %s", err)
+			log.Printf("[ERROR] Failed to list EMR Cluster (stopping): %s", err)
+			break
 		}
 
 		resp, _ := raw.(*emr.ListClustersResponse)
@@ -89,7 +90,8 @@ func testSweepEmrCluster(region string) error {
 		}
 
 		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
+			log.Printf("[ERROR] Failed to paginate EMR Cluster (stopping): %s", err)
+			break
 		} else {
 			req.PageNumber = page
 		}
@@ -116,7 +118,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -208,7 +210,7 @@ func TestAccAlicloudEmrCluster_hadoop_cluster(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -318,7 +320,7 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -410,7 +412,7 @@ func TestAccAlicloudEmrCluster_gateway(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -478,9 +480,9 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

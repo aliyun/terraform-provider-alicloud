@@ -63,7 +63,8 @@ func testSweepEventBridgeEventBus(region string) error {
 	}
 	resp, err := jsonpath.Get("$.Data.EventBuses", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.EventBuses", response)
+		log.Printf("[ERROR] Failed to parse $.Data.EventBuses (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {

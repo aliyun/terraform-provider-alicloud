@@ -56,12 +56,14 @@ func testSweepFnfSchedule(region string) error {
 	var response map[string]interface{}
 	response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_flows", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to list FNF Flows: %s", err)
+		return nil
 	}
 	addDebug(action, response, request)
 	resp, err := jsonpath.Get("$.Flows", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Flows", response)
+		log.Printf("[ERROR] Failed to parse $.Flows (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -76,13 +78,15 @@ func testSweepFnfSchedule(region string) error {
 		var response map[string]interface{}
 		response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_schedules", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list FNF Schedules (%s): %s", name, err)
+			continue
 		}
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Schedules", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Schedules", response)
+			log.Printf("[ERROR] Failed to parse $.Schedules (treat as empty, %s): %s", name, err)
+			continue
 		}
 
 		result, _ := resp.([]interface{})
@@ -134,9 +138,9 @@ func TestAccAlicloudFnfSchedule_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.FnfSupportRegions)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

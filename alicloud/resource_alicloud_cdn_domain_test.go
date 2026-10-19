@@ -42,7 +42,8 @@ func testSweepCdnDomains(region string) error {
 			return cdnClient.DescribeUserDomains(args)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving cdn domains: %s", err)
+			log.Printf("[ERROR] Failed to list CDN domains (stopping): %s", err)
+			break
 		}
 		resp, _ := raw.(*cdn.DomainsResponse)
 		if resp == nil || len(resp.Domains.PageData) < 1 {
@@ -94,7 +95,7 @@ func SkipTestAccAlicloudCDNDomain_basic(t *testing.T) {
 		IDRefreshName: "alicloud_cdn_domain.domain",
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckCdnDomainDestroy,
+		CheckDestroy:      testAccCheckCdnDomainDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCdnDomainConfig(rand),
@@ -126,7 +127,7 @@ func SkipTestAccAlicloudCDNDomain_https(t *testing.T) {
 		IDRefreshName: "alicloud_cdn_domain.domain",
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckCdnDomainDestroy,
+		CheckDestroy:      testAccCheckCdnDomainDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCdnDomainHttpsConfig(rand),
@@ -156,7 +157,7 @@ func SkipTestAccAlicloudCDNDomain_domestic(t *testing.T) {
 		IDRefreshName: "alicloud_cdn_domain.domain",
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckCdnDomainDestroy,
+		CheckDestroy:      testAccCheckCdnDomainDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCdnDomainDomestic(rand),
