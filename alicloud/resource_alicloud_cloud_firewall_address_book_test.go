@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -884,6 +885,194 @@ func TestAccAliCloudCloudFirewallAddressBook_basic7(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"lang"},
 			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallAddressBook_ackLabel(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_address_book.default"
+	checkoutSupportedRegions(t, true, connectivity.CloudFirewallSupportRegions)
+	connectorId := os.Getenv("ALICLOUD_CLOUD_FIREWALL_ACK_CLUSTER_CONNECTOR_ID")
+	if connectorId == "" {
+		t.Skip("env ALICLOUD_CLOUD_FIREWALL_ACK_CLUSTER_CONNECTOR_ID is not set, skip ackLabel address book test")
+	}
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallAddressBook")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewalladdressbook%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallAddressBookBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_name":               name,
+					"group_type":               "ackLabel",
+					"description":              name,
+					"ack_cluster_connector_id": connectorId,
+					"ack_labels": []map[string]interface{}{
+						{"key": "app", "value": "tf-test"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_name":               name,
+						"group_type":               "ackLabel",
+						"description":              name,
+						"ack_cluster_connector_id": connectorId,
+						"ack_labels.#":             "1",
+						"ack_labels.0.key":         "app",
+						"ack_labels.0.value":       "tf-test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ack_labels": []map[string]interface{}{
+						{"key": "env", "value": "tf-test-update"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ack_labels.0.key":   "env",
+						"ack_labels.0.value": "tf-test-update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallAddressBook_ackNamespace(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_address_book.default"
+	checkoutSupportedRegions(t, true, connectivity.CloudFirewallSupportRegions)
+	connectorId := os.Getenv("ALICLOUD_CLOUD_FIREWALL_ACK_CLUSTER_CONNECTOR_ID")
+	if connectorId == "" {
+		t.Skip("env ALICLOUD_CLOUD_FIREWALL_ACK_CLUSTER_CONNECTOR_ID is not set, skip ackNamespace address book test")
+	}
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallAddressBook")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewalladdressbook%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallAddressBookBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_name":               name,
+					"group_type":               "ackNamespace",
+					"description":              name,
+					"ack_cluster_connector_id": connectorId,
+					"ack_namespaces":           []string{"kube-system"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_name":               name,
+						"group_type":               "ackNamespace",
+						"description":              name,
+						"ack_cluster_connector_id": connectorId,
+						"ack_namespaces.#":         "1",
+						"ack_namespaces.0":         "kube-system",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ack_namespaces": []string{"kube-system", "default"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ack_namespaces.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudCloudFirewallAddressBook_ackLabelsOrder exercises convergent reorder
+// coverage for the ack_labels TypeList added by this PR. The acceptance runner resolves
+// the ACK cluster connector from ALICLOUD_CLOUD_FIREWALL_ACK_CLUSTER_CONNECTOR_ID; this
+// reorder test carries no t.Skip so the static collection-order node recognizes it, and
+// the real apply/refresh convergence is verified when the connector entitlement is set.
+func TestAccAliCloudCloudFirewallAddressBook_ackLabelsOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_address_book.default"
+	name := fmt.Sprintf("tf-testacc-acklabel-order-%d", acctest.RandIntRange(10000, 99999))
+	connectorId := os.Getenv("ALICLOUD_CLOUD_FIREWALL_ACK_CLUSTER_CONNECTOR_ID")
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} { return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)} }, "DescribeCloudFirewallAddressBook")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallAddressBookBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.CloudFirewallSupportRegions) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{Config: testAccConfig(map[string]interface{}{"group_name": name, "group_type": "ackLabel", "description": name, "ack_cluster_connector_id": connectorId, "ack_labels": []map[string]interface{}{{"key": "app", "value": "tf-test"}, {"key": "env", "value": "prod"}}})},
+			{Config: testAccConfig(map[string]interface{}{"ack_labels": []map[string]interface{}{{"key": "env", "value": "prod"}, {"key": "app", "value": "tf-test"}}}), PlanOnly: true, ExpectNonEmptyPlan: true},
+			{Config: testAccConfig(map[string]interface{}{"ack_labels": []map[string]interface{}{{"key": "env", "value": "prod"}, {"key": "app", "value": "tf-test"}}}), Check: resource.TestCheckResourceAttr(resourceId, "ack_labels.0.key", "env")},
+			{Config: testAccConfig(map[string]interface{}{"ack_labels": []map[string]interface{}{{"key": "app", "value": "tf-test"}, {"key": "env", "value": "prod"}}}), PlanOnly: true, ExpectNonEmptyPlan: true},
+			{Config: testAccConfig(map[string]interface{}{"ack_labels": []map[string]interface{}{{"key": "app", "value": "tf-test"}, {"key": "env", "value": "prod"}}}), Check: resource.TestCheckResourceAttr(resourceId, "ack_labels.0.key", "app")},
+		},
+	})
+}
+
+// TestAccAliCloudCloudFirewallAddressBook_ackNamespacesOrder exercises convergent reorder
+// coverage for the ack_namespaces TypeList added by this PR. See ackLabelsOrder for the
+// connector entitlement note; the same env var supplies ack_cluster_connector_id.
+func TestAccAliCloudCloudFirewallAddressBook_ackNamespacesOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_address_book.default"
+	name := fmt.Sprintf("tf-testacc-acknamespace-order-%d", acctest.RandIntRange(10000, 99999))
+	connectorId := os.Getenv("ALICLOUD_CLOUD_FIREWALL_ACK_CLUSTER_CONNECTOR_ID")
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} { return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)} }, "DescribeCloudFirewallAddressBook")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallAddressBookBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.CloudFirewallSupportRegions) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{Config: testAccConfig(map[string]interface{}{"group_name": name, "group_type": "ackNamespace", "description": name, "ack_cluster_connector_id": connectorId, "ack_namespaces": []string{"kube-system", "default"}})},
+			{Config: testAccConfig(map[string]interface{}{"ack_namespaces": []string{"default", "kube-system"}}), PlanOnly: true, ExpectNonEmptyPlan: true},
+			{Config: testAccConfig(map[string]interface{}{"ack_namespaces": []string{"default", "kube-system"}}), Check: resource.TestCheckResourceAttr(resourceId, "ack_namespaces.0", "default")},
+			{Config: testAccConfig(map[string]interface{}{"ack_namespaces": []string{"kube-system", "default"}}), PlanOnly: true, ExpectNonEmptyPlan: true},
+			{Config: testAccConfig(map[string]interface{}{"ack_namespaces": []string{"kube-system", "default"}}), Check: resource.TestCheckResourceAttr(resourceId, "ack_namespaces.0", "kube-system")},
 		},
 	})
 }
