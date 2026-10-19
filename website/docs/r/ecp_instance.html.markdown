@@ -113,7 +113,8 @@ The following arguments are supported:
 * `force` - (Optional, Bool) Specifies whether to forcefully stop and release the instance. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
--> **NOTE:** If you want to destroy `alicloud_ecp_instance`, `force` must be set to `true`, and if `force` set to `true`, when `status` is set to `Stopped`， cache data that is not written to storage in the instance will be lost, which is similar to the effect of a power-off action.
+
+  -> **NOTE:** If you want to destroy `alicloud_ecp_instance`, `force` must be set to `true`, and if `force` set to `true`, when `status` is set to `Stopped`， cache data that is not written to storage in the instance will be lost, which is similar to the effect of a power-off action.
 * `status` - (Optional) The status of the Instance. Valid values: `Running`, `Stopped`.
 
 ## Attributes Reference

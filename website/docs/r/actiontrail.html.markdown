@@ -42,7 +42,7 @@ The following arguments are supported:
 * `sls_project_arn` - (Optional) The unique ARN of the Log Service project.
 * `sls_write_role_arn` - (Optional) The unique ARN of the Log Service role.
 
--> **NOTE:** `sls_project_arn` and `sls_write_role_arn` should be set or not set at the same time when actiontrail delivers logs.
+  -> **NOTE:** `sls_project_arn` and `sls_write_role_arn` should be set or not set at the same time when actiontrail delivers logs.
 
 ## Attributes Reference
 

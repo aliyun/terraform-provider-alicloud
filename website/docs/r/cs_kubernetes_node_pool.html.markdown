@@ -796,11 +796,11 @@ The following arguments are supported:
 * `desired_size` - (Optional) Number of expected nodes in the node pool.
 * `eflo_node_group` - (Optional, Set, Available since v1.252.0) Lingjun node pool configuration. See [`eflo_node_group`](#eflo_node_group) below.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `force_delete` - (Optional) Whether to force deletion.
 
--> **NOTE:** This parameter only takes effect when deletion is triggered.
+  -> **NOTE:** This parameter only takes effect when deletion is triggered.
 
 * `image_id` - (Optional, Computed) The custom image ID. The system-provided image is used by default.
 * `image_type` - (Optional, Computed, Available since v1.236.0) The operating system image type and the `platform` parameter can be selected from the following values:
@@ -859,13 +859,13 @@ The following arguments are supported:
 * If it is empty, the default Worker RAM role created in the cluster will be used.
 * If the specified RAM role is not empty, the specified RAM role must be a **Common Service role**, and its **trusted service** configuration must be **cloud server**. For more information, see [Create a common service role](https://help.aliyun.com/document_detail/116800.html). If the specified RAM role is not the default Worker RAM role created in the cluster, the role name cannot start with 'KubernetesMasterRole-'or 'KubernetesWorkerRole.
 
--> **NOTE:**  This parameter is only supported for ACK-managed clusters of 1.22 or later versions.
+  -> **NOTE:**  This parameter is only supported for ACK-managed clusters of 1.22 or later versions.
 
 * `rds_instances` - (Optional, List) The list of RDS instances.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `rolling_policy` - (Optional, Set) Rotary configuration. See [`rolling_policy`](#rolling_policy) below.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `runtime_name` - (Optional, Computed) The runtime name of containers. If not set, the cluster runtime will be used as the node pool runtime. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm).
 * `runtime_version` - (Optional, Computed) The runtime version of containers. If not set, the cluster runtime will be used as the node pool runtime.
@@ -880,7 +880,7 @@ The following arguments are supported:
   -`false`: does not enable Alibaba Cloud OS security reinforcement.
 * `soc_enabled` - (Optional, ForceNew) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [SOC Reinforcement](https://help.aliyun.com/document_detail/196148.html).
 
--> **NOTE:**  It is forbidden to set both `security_hardening_os` and `soc_enabled` to `true` at the same time.
+  -> **NOTE:**  It is forbidden to set both `security_hardening_os` and `soc_enabled` to `true` at the same time.
 
 * `spot_instance_pools` - (Optional, Int) The number of instance types that are available. Auto Scaling creates preemptible instances of multiple instance types that are available at the lowest cost. Valid values: 1 to 10.
 * `spot_instance_remedy` - (Optional) Specifies whether to supplement preemptible instances when the number of preemptible instances drops below the specified minimum number. If you set the value to true, Auto Scaling attempts to create a new preemptible instance when the system notifies that an existing preemptible instance is about to be reclaimed. Valid values: `true`: enables the supplementation of preemptible instances. `false`: disables the supplementation of preemptible instances.
@@ -922,11 +922,11 @@ The following arguments are supported:
 * `unschedulable` - (Optional) Whether the node after expansion can be scheduled.
 * `update_nodes` - (Optional) Synchronously update node labels and taints.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `upgrade_policy` - (Optional, Set, Available since v1.269.0) Configuration block for node pool upgrade operations. This is a transient parameter that triggers node pool upgrades when specified. Once the upgrade completes, this block should be removed from your configuration to prevent unintended re-upgrades on subsequent applies. See [`upgrade_policy`](#upgrade_policy) below.
 
--> **NOTE:** This parameter only applies during resource update. 
+  -> **NOTE:** This parameter only applies during resource update.
 
 * `user_data` - (Optional) Node custom data, base64-encoded.
 * `vswitch_ids` - (Optional, List) The vswitches used by node pool workers.
@@ -949,7 +949,7 @@ The auto_mode supports the following:
   - `true`: enables Smart Managed Configuration. 
   - `false`: disables Smart Managed Configuration.
 
--> **NOTE:** When `auto_mode.enable` is set to `true`, the system will automatically manage the node pool with optimized default configurations. **All parameters except the following can be specified or modified:**
+  -> **NOTE:** When `auto_mode.enable` is set to `true`, the system will automatically manage the node pool with optimized default configurations. **All parameters except the following can be specified or modified:**
 
 **Parameters That Can Be Specified or Modified:**
 - `scaling_config.max_size`: default `50`, can be specified during creation and modified afterward

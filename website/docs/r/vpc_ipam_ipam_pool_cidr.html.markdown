@@ -63,7 +63,7 @@ The following arguments are supported:
 * `ipam_pool_id` - (Required, ForceNew) The ID of the IPAM pool instance.
 * `netmask_length` - (Optional, Int, Available since v1.272.0) Preset Cidr for an address pool by using a mask, supporting sub-pools and public top pools
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 
 ## Attributes Reference

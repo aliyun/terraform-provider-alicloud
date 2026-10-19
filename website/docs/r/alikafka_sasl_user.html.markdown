@@ -90,7 +90,8 @@ The following arguments are supported:
 * `mechanism` - (Optional, ForceNew, Available since v1.266.0) The encryption method. Valid values:
   - SCRAM-SHA-512. This is the default value.
   - SCRAM-SHA-256
--> **NOTE:**   This parameter is available only for serverless ApsaraMQ for Kafka instances.
+
+  -> **NOTE:**   This parameter is available only for serverless ApsaraMQ for Kafka instances.
 * `username` - (Required, ForceNew) The name of the SASL user. The length should between `1` to `64` characters. The characters can only contain `a`-`z`, `A`-`Z`, `0`-`9`, `_` and `-`.
 * `type` - (Optional, ForceNew, Available since v1.159.0) The authentication mechanism. Default value: `plain`. Valid values:
   - `plain`: A simple user name and password verification mechanism. Kafka optimizes the PLAIN mechanism and supports the dynamic addition of SASL users without restarting the instance.

@@ -77,14 +77,17 @@ The following arguments are supported:
 * `data_level1_backup_frequency` - (Optional, Available in 1.207.0+) The Id of cluster that can run database.The backup frequency. Valid values are `Normal`, `2/24H`, `3/24H`, `4/24H`.Default to `Normal`.
 * `data_level1_backup_time` - (Optional, Available in 1.207.0+) The time period during which automatic backup is performed. The format is HH: MMZ HH: MMZ (UTC time), and the entered value must be an hour apart, such as 14:00z-15:00z.
 * `data_level1_backup_period` - (Optional, Available in 1.207.0+) PolarDB Cluster of level-1 backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].
+
   -> **NOTE:** Note Select at least two values. Separate multiple values with commas (,).
 * `data_level2_backup_period` - (Optional, Available in 1.207.0+) PolarDB Cluster of level-2 backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].
+
   -> **NOTE:** Note Select at least two values. Separate multiple values with commas (,).
 * `data_level2_backup_another_region_region` - (Optional, Available in 1.207.0+) PolarDB Cluster of level-2 backup is a cross regional backup area.
 * `data_level2_backup_another_region_retention_period` - (Optional, Available in 1.207.0+) PolarDB Cluster of level-2 backup cross region backup retention period. Valid values are `0`, `30 to 7300`, `-1`. Default to `0`.
 * `log_backup_retention_period` - (Optional, Available in 1.207.0+) The retention period of the log backups. Valid values are `3 to 7300`, `-1`.
 * `log_backup_another_region_region` - (Optional, Available in 1.207.0+) The region in which you want to store cross-region log backups. For information about regions that support the cross-region backup feature, see [Overview.](https://www.alibabacloud.com/help/en/polardb/latest/backup-and-restoration-overview)
 * `log_backup_another_region_retention_period` - (Optional, Available in 1.207.0+) The retention period of cross-region log backups. Default value: OFF. Valid values are `0`, `30 to 7300`, `-1`.
+
   -> **NOTE:** Note When you create a cluster, the default value of this parameter is 0.
 * `backup_retention_period` - (Optional) Cluster backup retention days, Fixed for 7 days, not modified.
 

@@ -56,7 +56,8 @@ resource "alicloud_config_aggregator" "default" {
 
 The following arguments are supported:
 * `aggregator_accounts` - (Optional, Set) The member accounts of the account group. See [`aggregator_accounts`](#aggregator_accounts) below.
--> **NOTE:** If `aggregator_type` is set to `CUSTOM`, `aggregator_accounts` is required.
+
+  -> **NOTE:** If `aggregator_type` is set to `CUSTOM`, `aggregator_accounts` is required.
 * `aggregator_name` - (Required) The name of the account group.
 * `aggregator_type` - (Optional, ForceNew) The type of the account group. Default value: `CUSTOM`. Valid values:
   - `RD`: Global account group.

@@ -69,9 +69,9 @@ The following arguments are supported:
 * `tags` - (Optional, Map, Available since v1.241.0) A mapping of tags to assign to the resource.
 * `visibility_timeout` - (Optional, Int) The duration for which a message stays in the Inactive state after the message is received from the queue. Valid values: `1` to `43200`. Unit: seconds. Default value: `30`.
 
--> **NOTE:** Server-side encryption (SSE) is available only after the feature is enabled for your account. To enable the feature, submit a ticket. Before you set `sse_type` to `KMS`, make sure that a symmetric key of the AES-256 key spec is created in KMS in the same region and within the same account as the queue, and that the service-linked role `AliyunMNSAccessingKMSRole` is authorized.
+  -> **NOTE:** Server-side encryption (SSE) is available only after the feature is enabled for your account. To enable the feature, submit a ticket. Before you set `sse_type` to `KMS`, make sure that a symmetric key of the AES-256 key spec is created in KMS in the same region and within the same account as the queue, and that the service-linked role `AliyunMNSAccessingKMSRole` is authorized.
 
--> **NOTE:** To disable SSE, you must set `enable_sse` to `false` and remove `sse_type`, `sse_algorithm`, and `kms_key_id` from the configuration at the same time. SSE takes effect only on the messages that are sent after SSE is enabled or disabled, and existing messages are not encrypted or decrypted again.
+  -> **NOTE:** To disable SSE, you must set `enable_sse` to `false` and remove `sse_type`, `sse_algorithm`, and `kms_key_id` from the configuration at the same time. SSE takes effect only on the messages that are sent after SSE is enabled or disabled, and existing messages are not encrypted or decrypted again.
 
 ### `dlq_policy`
 

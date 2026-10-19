@@ -76,11 +76,11 @@ The following arguments are supported:
   - `true`: Yes
   - `false`: No
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `primary_db_instance_name` - (Optional, Available since v1.268.0) If the instance is a read-only instance, you must specify the primary instance.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `primary_zone` - (Required, ForceNew) Primary Availability Zone.
 * `resource_group_id` - (Optional, Computed) The resource group ID can be empty. This parameter is not supported for the time being.
@@ -95,7 +95,7 @@ The following arguments are supported:
   - `0`: apply immediately;
   - `1`: apply in the maintenance window.
 
--> **NOTE:** `specified_dn_scale`, `specified_dn_spec_map_json`, `switch_time_mode` and `switch_time` are auxiliary parameters attached to a class change. They only take effect when one of `cn_class`, `dn_class` or `dn_storage_space` also changes; modifying only these four fields in isolation is silently ignored on Update.
+  -> **NOTE:** `specified_dn_scale`, `specified_dn_spec_map_json`, `switch_time_mode` and `switch_time` are auxiliary parameters attached to a class change. They only take effect when one of `cn_class`, `dn_class` or `dn_storage_space` also changes; modifying only these four fields in isolation is silently ignored on Update.
 
 * `tertiary_zone` - (Optional, ForceNew) Third Availability Zone.
 * `topology_type` - (Required, ForceNew) Topology type:

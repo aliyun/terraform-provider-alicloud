@@ -89,7 +89,7 @@ which take the following arguments:
 * `operator` - (Required) The operator of the field to filter. Valid values: `EQUAL`, `NOT_EQUAL`, `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`, `BETWEEN`, `IN`.
 * `values`   - (Required) Set of values that are accepted for the given field.
 
--> **NOTE:** Numeric types such as `CompleteTime` do not support `IN` operations for the time being.
+  -> **NOTE:** Numeric types such as `CompleteTime` do not support `IN` operations for the time being.
 
 ## Argument Reference
 

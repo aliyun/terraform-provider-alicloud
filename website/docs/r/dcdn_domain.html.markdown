@@ -62,7 +62,7 @@ The following arguments are supported:
   * `upload`: a user-uploaded SSL certificate.
   * `cas`: a certificate that is acquired through Certificate Management Service.
 
--> **NOTE:**  If the value of the `cert_type` parameter is `cas`, the `ssl_pri` parameter is not required.
+  -> **NOTE:**  If the value of the `cert_type` parameter is `cas`, the `ssl_pri` parameter is not required.
 
 * `check_url` - (Optional) The URL that is used for health checks. 
 * `domain_name` - (Required, ForceNew) The accelerated domain name. You can specify multiple domain names and separate them with commas (,). You can specify up to 500 domain names in each request. The query results of multiple domain names are aggregated. If you do not specify this parameter, data of all accelerated domain names under your account is queried. 

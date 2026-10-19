@@ -55,7 +55,7 @@ The following arguments are supported:
   - The name must be 2 to 120 characters in length.
 * `global_ip_list` - (Required) The IP address in the whitelist template.
 
--> **NOTE:**   Multiple IP addresses are separated by commas (,). You can create up to 1,000 IP addresses or CIDR blocks for all IP whitelists.
+  -> **NOTE:**   Multiple IP addresses are separated by commas (,). You can create up to 1,000 IP addresses or CIDR blocks for all IP whitelists.
 
 
 ## Attributes Reference

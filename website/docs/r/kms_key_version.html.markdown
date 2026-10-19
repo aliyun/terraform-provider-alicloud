@@ -40,7 +40,7 @@ The following arguments are supported:
 
 * `key_id` - (Required, ForceNew) The id of the master key (CMK).
 
--> **NOTE:** The minimum interval for creating a Alikms key version is 7 days.
+  -> **NOTE:** The minimum interval for creating a Alikms key version is 7 days.
 
 
 ## Attributes Reference

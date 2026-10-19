@@ -114,11 +114,11 @@ The following arguments are supported:
 * `is_outdated` - (Optional) Whether to use outdated instance type. **Note: The parameter is immutable after resource creation.** It only controls the I/O optimization option sent when creating the instance.
 * `network_interface_id` - (Optional, ForceNew, Available since v1.284.0) The ID of the Primary ENI.
   
--> **NOTE:** From version 1.284.0, `network_interface_id` can be set.
+  -> **NOTE:** From version 1.284.0, `network_interface_id` can be set.
 
 * `security_groups` - (Optional) A list of security group ids to associate with.
 
--> **NOTE:** If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
+  -> **NOTE:** If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
 
 * `availability_zone` - (Optional, ForceNew) The Zone to start the instance in. It is ignored and will be computed when set `vswitch_id`.
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://. **NOTE:** From version 1.243.0, the default value `ECS-Instance` will be removed.
@@ -159,7 +159,7 @@ The following arguments are supported:
   - [1-9, 12, 24, 36, 48, 60] when `period_unit` in "Month"
   - [1-3] when `period_unit` in "Week"
 
--> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+  -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 
 * `renewal_status` - (Optional) Whether to renew an ECS instance automatically or not. It is valid when `instance_charge_type` is `PrePaid`. Default to "Normal". Valid values:
   - `AutoRenewal`: Enable auto renewal.
@@ -183,7 +183,8 @@ The following arguments are supported:
   From version 1.60.0, it can be updated in-place. If updated, the instance will reboot to make the change take effect.
   Note: Not all changes will take effect, and it depends on [cloud-init module type](https://cloudinit.readthedocs.io/en/latest/topics/modules.html).
 * `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid. **NOTE:** From version 1.268.0, `key_name` can be modified. If you want to use `key_name`, We recommend you to use the resource [alicloud_ecs_key_pair_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_key_pair_attachment).
--> **NOTE:** When modifying `key_name`, if the instance status is `Running`, the ECS instance will be rebooted; If the instance status is `Stopped`, the ECS instance status will be changed to `Running`.
+
+  -> **NOTE:** When modifying `key_name`, if the instance status is `Running`, the ECS instance will be rebooted; If the instance status is `Stopped`, the ECS instance status will be changed to `Running`.
 * `include_data_disks` - (Optional) Whether to change instance disks charge type when changing instance charge type.
 * `dry_run` - (Optional) Specifies whether to send a dry-run request. Default to false.
   - true: Only a dry-run request is sent and no instance is created. The system checks whether the required parameters are set, and validates the request format, service permissions, and available ECS instances. If the validation fails, the corresponding error code is returned. If the validation succeeds, the `DryRunOperation` error code is returned.
@@ -193,7 +194,8 @@ The following arguments are supported:
   -> **NOTE:** The provider always merges its five default attributes into every `DescribeInstances` query and the API accepts at most `10` values, so at most `5` additional values can be set here. `MANAGED_HOST_ID` is requested only when configured here and makes the API return the managed host ID inside `AdditionalInfo`; the state value of `managed_host_id` is refreshed from the response only when `managed_host_id` is configured.
 * `private_ip` - (Optional) Instance private IP address can be specified when you creating new instance. It is valid when `vswitch_id` is specified. When it is changed, the instance will reboot to make the change take effect.
 * `credit_specification` - (Optional, Available since v1.57.1) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
--> **NOTE:** `credit_specification` is only supported by burstable instance families (e.g. `t5`, `t6`). For an existing or imported instance whose instance type does not support credit specification, this field is empty in the state and configuring it does not take effect; no change will be applied, which avoids the `Credit.NotFound` error from the API.
+
+  -> **NOTE:** `credit_specification` is only supported by burstable instance families (e.g. `t5`, `t6`). For an existing or imported instance whose instance type does not support credit specification, this field is empty in the state and configuring it does not take effect; no change will be applied, which avoids the `Credit.NotFound` error from the API.
 * `spot_strategy` - (Optional, ForceNew) The spot strategy of a Pay-As-You-Go instance, and it takes effect only when parameter `instance_charge_type` is 'PostPaid'. Value range:
   - NoSpot: A regular Pay-As-You-Go instance.
   - SpotWithPriceLimit: A price threshold for a spot instance
@@ -204,7 +206,8 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, Bool) Whether enable the deletion protection or not. It does not work when the instance is spot. Default value: `false`.
   - `true`: Enable deletion protection.
   - `false`: Disable deletion protection.
--> **NOTE:** `deletion_protection` is valid only when `instance_charge_type` is set to `PostPaid`.
+
+  -> **NOTE:** `deletion_protection` is valid only when `instance_charge_type` is set to `PostPaid`.
 * `force_delete` - (Optional, Available since v1.18.0) If it is true, the `PrePaid` instance will be change to `PostPaid` and then deleted forcibly.
   However, because of changing instance charge type has CPU core count quota limitation, so strongly recommand that "Don't modify instance charge type frequentlly in one month".
 * `auto_release_time` - (Optional, Available since v1.70.0) The automatic release time of the `PostPaid` instance.
@@ -215,7 +218,7 @@ The following arguments are supported:
   - Active: Enable security enhancement strategy, it only works on system images.
   - Deactive: Disable security enhancement strategy, it works on all images.
 
--> **NOTE:** The ECS API does not return `security_enhancement_strategy`, so the provider cannot read it back into the state. For an imported instance (or an instance created without this field), the state value is empty; in this case, configuring or changing `security_enhancement_strategy` is ignored and will not force the instance to be recreated.
+  -> **NOTE:** The ECS API does not return `security_enhancement_strategy`, so the provider cannot read it back into the state. For an imported instance (or an instance created without this field), the state value is empty; in this case, configuring or changing `security_enhancement_strategy` is ignored and will not force the instance to be recreated.
 * `data_disks` - (Optional, ForceNew, Available since v1.23.1) The list of data disks created with instance. **Note: The parameter is immutable after resource creation.** This resource only configures these disks during instance creation; it does not update or refresh the inline disk settings. See [`data_disks`](#data_disks) below.
 * `network_interfaces` - (Optional, ForceNew, Available since v1.212.0) The list of network interfaces created with instance. **Note: The parameter is immutable after resource creation.** See [`network_interfaces`](#network_interfaces) below.
 * `status` - (Optional 1.85.0) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
@@ -272,7 +275,8 @@ The following arguments are supported:
 * `password_inherit` - (Optional, Bool, Available since v1.232.0) Specifies whether to use the password preset in the image. Default value: `false`. Valid values:
   - `true`: Uses the preset password.
   - `false`: Does not use the preset password.
--> **NOTE:** If you set `password_inherit` to `true`, make sure that you have not specified `password` or `kms_encrypted_password` and the selected image has a preset password.
+
+  -> **NOTE:** If you set `password_inherit` to `true`, make sure that you have not specified `password` or `kms_encrypted_password` and the selected image has a preset password.
 * `private_pool_options_match_criteria` - (Optional, Available since v1.253.0) The type of the private pool. Default value: `None`. Valid values:
   - `Open`: Open private pool.
   - `Target`: Specified private pool. **NOTE:** If `private_pool_options_match_criteria` is set to `Target`, `private_pool_options_id` is required.
@@ -285,19 +289,19 @@ The following arguments are supported:
 * `internet_max_bandwidth_in` - (Optional, Int, Deprecated since v1.121.2) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
 * `role_name` - (Optional, Deprecated since v1.275.0) The name of the Resource Access Management (RAM) role. **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment). Field `role_name` has been deprecated from provider version 1.275.0. New resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment) instead. From version 1.276.0, `role_name` can be modified.
 
--> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
+  -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
--> **NOTE:** From version 1.5.0, instance's charge type can be changed to `PrePaid` by specifying `period` and `period_unit`, but it is irreversible.
+  -> **NOTE:** From version 1.5.0, instance's charge type can be changed to `PrePaid` by specifying `period` and `period_unit`, but it is irreversible.
 
--> **NOTE:** From version 1.5.0, instance's private IP address can be specified when creating VPC network instance.
+  -> **NOTE:** From version 1.5.0, instance's private IP address can be specified when creating VPC network instance.
 
--> **NOTE:** From version 1.5.0, instance's vswitch and private IP can be changed in the same availability zone. When they are changed, the instance will reboot to make the change take effect.
+  -> **NOTE:** From version 1.5.0, instance's vswitch and private IP can be changed in the same availability zone. When they are changed, the instance will reboot to make the change take effect.
 
--> **NOTE:** From version 1.7.0, setting "internet_max_bandwidth_out" larger than 0 can allocate a public IP for an instance.
-Setting "internet_max_bandwidth_out" to 0 can release allocated public IP for VPC instance(For Classic instnace, its public IP cannot be release once it allocated, even thougth its bandwidth out is 0).
-However, at present, 'PrePaid' instance cannot narrow its max bandwidth out when its 'internet_charge_type' is "PayByBandwidth".
+  -> **NOTE:** From version 1.7.0, setting "internet_max_bandwidth_out" larger than 0 can allocate a public IP for an instance.
+  Setting "internet_max_bandwidth_out" to 0 can release allocated public IP for VPC instance(For Classic instnace, its public IP cannot be release once it allocated, even thougth its bandwidth out is 0).
+  However, at present, 'PrePaid' instance cannot narrow its max bandwidth out when its 'internet_charge_type' is "PayByBandwidth".
 
--> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
+  -> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
 
 ### `data_disks`
 

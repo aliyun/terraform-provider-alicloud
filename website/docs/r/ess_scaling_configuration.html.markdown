@@ -180,11 +180,11 @@ The following arguments are supported:
   - `PublicPoolFirst`: Public pool first. The system prioritizes the public pool to create instances. If the public pool has insufficient resources, the system uses private pool resources as a supplement. The system first tries to automatically match an open private pool. If no suitable private pool is found, the system uses the Target-type private pool specified by ResourcePoolOptions.PrivatePoolIds or a Target-type private pool that meets the conditions of PrivatePoolTags.
   - `None`: Does not use a resource pool policy.
 
--> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
+  -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
--> **NOTE:** If the number of attached ECS instances by `instance_ids` is smaller than MinSize, the Auto Scaling Service will automatically create ECS Pay-As-You-Go instance to cater to MinSize. For example, MinSize=5 and 2 existing ECS instances has been attached to the scaling group. When the scaling group is enabled, it will create 3 instnaces automatically based on its current active scaling configuration.
+  -> **NOTE:** If the number of attached ECS instances by `instance_ids` is smaller than MinSize, the Auto Scaling Service will automatically create ECS Pay-As-You-Go instance to cater to MinSize. For example, MinSize=5 and 2 existing ECS instances has been attached to the scaling group. When the scaling group is enabled, it will create 3 instnaces automatically based on its current active scaling configuration.
 
--> **NOTE:** Restrictions on attaching ECS instances:
+  -> **NOTE:** Restrictions on attaching ECS instances:
 
    - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
    - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
@@ -192,7 +192,7 @@ The following arguments are supported:
    - The attached ECS instances has not been attached to other scaling groups.
    - The attached ECS instances supports Subscription and Pay-As-You-Go payment methods.
 
--> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
+  -> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
 
 
 ### `data_disk`

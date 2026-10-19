@@ -56,7 +56,7 @@ The following arguments are supported:
   - `true`
   - `false`(default)
 
--> **NOTE:** When `is_default` is `true`, a region can contain only one default VPC and concurrent default VPC creation in the same region is not supported. After a default VPC is created, its CIDR block cannot be modified, but secondary IPv4 CIDR blocks can be added. A default VPC provides 300,000 private IP addresses for cloud resources and this quota cannot be increased. A router and route table are automatically created with the default VPC. Each default VPC supports up to three user CIDR blocks; if multiple user CIDR blocks overlap, the CIDR block with the shorter mask takes effect.
+  -> **NOTE:** When `is_default` is `true`, a region can contain only one default VPC and concurrent default VPC creation in the same region is not supported. After a default VPC is created, its CIDR block cannot be modified, but secondary IPv4 CIDR blocks can be added. A default VPC provides 300,000 private IP addresses for cloud resources and this quota cannot be increased. A router and route table are automatically created with the default VPC. Each default VPC supports up to three user CIDR blocks; if multiple user CIDR blocks overlap, the CIDR block with the shorter mask takes effect.
 
 * `cidr_block` - (Optional, Computed) The CIDR block of the VPC.
 
@@ -73,17 +73,17 @@ The description must be 1 to 256 characters in length, and cannot start with `ht
   - `false` (default): Not enabled.
   - `true`: enabled.
 
--> **NOTE:** If you use the `alicloud_vpc_ipv6_cidr_block` resource to add an IPv6 CIDR block to the VPC, you do not need to set `enable_ipv6`.
+  -> **NOTE:** If you use the `alicloud_vpc_ipv6_cidr_block` resource to add an IPv6 CIDR block to the VPC, you do not need to set `enable_ipv6`.
 
 * `force_delete` - (Optional, Available since v1.248.0) Force delete vpc or not.
 * `ipv4_cidr_mask` - (Optional, Int, Available since v1.240.0) Allocate VPC from The IPAM address pool by entering a mask.
 
--> **NOTE:**  when you specify the IPAM address pool to create a VPC, enter at least one of the CidrBlock or Ipv4CidrMask parameters.
+  -> **NOTE:**  when you specify the IPAM address pool to create a VPC, enter at least one of the CidrBlock or Ipv4CidrMask parameters.
 
 * `ipv4_ipam_pool_id` - (Optional) The ID of the IP Address Manager (IPAM) pool that contains IPv4 addresses.
 * `ipv6_cidr_block` - (Optional, ForceNew, Computed, Deprecated since v1.280.0) The IPv6 CIDR block of the default VPC. Please use the new resource `alicloud_vpc_ipv6_cidr_block`.
 
--> **NOTE:**  When `EnableIpv6` is set to `true`, this parameter is required.
+  -> **NOTE:**  When `EnableIpv6` is set to `true`, this parameter is required.
 
 * `ipv6_isp` - (Optional, Computed, Deprecated since v1.280.0) The IPv6 address segment type of the VPC. Please use the new resource `alicloud_vpc_ipv6_cidr_block`. Value:
   - `BGP` (default): Alibaba Cloud BGP IPv6.
@@ -91,11 +91,11 @@ The description must be 1 to 256 characters in length, and cannot start with `ht
   - `ChinaUnicom`: China Unicom (single line).
   - `ChinaTelecom`: China Telecom (single line).
 
--> **NOTE:**  If a single-line bandwidth whitelist is enabled, this field can be set to `ChinaTelecom` (China Telecom), `ChinaUnicom` (China Unicom), or `ChinaMobile` (China Mobile).
+  -> **NOTE:**  If a single-line bandwidth whitelist is enabled, this field can be set to `ChinaTelecom` (China Telecom), `ChinaUnicom` (China Unicom), or `ChinaMobile` (China Mobile).
 
 * `resource_group_id` - (Optional, Computed, Available since v1.115) The ID of the resource group to which you want to move the resource.
 
--> **NOTE:**   You can use resource groups to facilitate resource grouping and permission management for an Alibaba Cloud. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
+  -> **NOTE:**   You can use resource groups to facilitate resource grouping and permission management for an Alibaba Cloud. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
 
 * `secondary_cidr_blocks` - (Optional, Computed, List, Deprecated since v1.185.0) Field 'secondary_cidr_blocks' has been deprecated from provider version 1.185.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_ipv4_cidr_block'. `secondary_cidr_blocks` attributes and `alicloud_vpc_ipv4_cidr_block` resource cannot be used at the same time.
 * `system_route_table_description` - (Optional) The description of the route table.

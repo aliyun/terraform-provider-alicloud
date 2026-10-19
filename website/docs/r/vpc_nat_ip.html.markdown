@@ -78,7 +78,7 @@ The following arguments are supported:
   - `true`: Sends a dry-run request without creating the NAT IP address. The check includes verifying the validity of the AccessKey, RAM user permissions, and whether all required parameters are provided. If the check fails, an error is returned. If the check passes, the error code `DryRunOperation` is returned.
   - `false` (default): Sends a normal request. If the check passes, a 2xx HTTP status code is returned and the NAT IP address is created.
 
--> **NOTE:** This parameter is only evaluated during resource creation, update and deletion. Modifying it in isolation will not trigger any action.
+  -> **NOTE:** This parameter is only evaluated during resource creation, update and deletion. Modifying it in isolation will not trigger any action.
 
 * `nat_gateway_id` - (Required, ForceNew) The ID of the Virtual Private Cloud (VPC) NAT gateway for which you want to create the NAT IP address.
 * `nat_ip` - (Optional, ForceNew) The NAT IP address to be created.

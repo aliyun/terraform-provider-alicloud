@@ -43,7 +43,7 @@ The following arguments are supported:
   - `AssociatedWithDisk`: The automatic snapshot policy is applied to disks.
   - `AssociatedWithInstanceTag`: The automatic snapshot policy is associated with ECS instances that have the specified `target_tags`. Changing this parameter creates a new resource.
 
--> **NOTE:** Before you can set `association_type` to `AssociatedWithInstanceTag`, you must contact the ECS product team to add your Alibaba Cloud account to the `AssociatedWithInstanceTag` whitelist. If your account is not on the whitelist, `CreateAutoSnapshotPolicy` returns the `InvalidOperation.UserNotInWhiteList` error. You can submit a ticket to apply for the whitelist.
+  -> **NOTE:** Before you can set `association_type` to `AssociatedWithInstanceTag`, you must contact the ECS product team to add your Alibaba Cloud account to the `AssociatedWithInstanceTag` whitelist. If your account is not on the whitelist, `CreateAutoSnapshotPolicy` returns the `InvalidOperation.UserNotInWhiteList` error. You can submit a ticket to apply for the whitelist.
 
 * `auto_snapshot_policy_name` - (Optional, Available since v1.236.0) The name of the automatic snapshot policy. The name must be 2 to 128 characters in length. The name must start with a letter and cannot start with http:// or https://. The name can contain letters, digits, colons (:), underscores (_), and hyphens (-).
 * `copied_snapshots_retention_days` - (Optional, Int) The retention period of the snapshot copy in the destination region. Unit: days. Valid values:

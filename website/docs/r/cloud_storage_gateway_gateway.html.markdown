@@ -87,7 +87,8 @@ The following arguments are supported:
 * `release_after_expiration` - (Optional, Bool, ForceNew) Specifies whether to release the gateway after the subscription expires. Valid values:
   - `true`: The gateway is released after it expires. The gateway becomes unavailable seven days after the gateway expires.
   - `false`: The gateway is not released after it expires. After the gateway expires, its billing method is changed to `PayAsYouGo`.
--> **NOTE:** `release_after_expiration` is only valid when `payment_type` is `Subscription`.
+
+  -> **NOTE:** `release_after_expiration` is only valid when `payment_type` is `Subscription`.
 * `reason_type` - (Optional) The type of the reason why you want to delete the gateway.
 * `reason_detail` - (Optional) The detailed reason why you want to delete the gateway.
 

@@ -89,7 +89,7 @@ The following arguments are supported:
   - true: Yes  
   - false (default): No.
 
--> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
+  -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
 * `instance_category` - (Optional, ForceNew, Computed, Available since v1.267.0) Edition type:  
   - x-pack: Creates a commercial edition instance, or a kernel-enhanced edition instance without Indexing Service or OpenStore enabled.  
@@ -103,7 +103,7 @@ The following arguments are supported:
   - upgrade (default): Upgrade configuration
   - downgrade: Downgrade configuration.
 
--> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
+  -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
 * `password` - (Optional) The access password for the instance. It must be 8 to 32 characters in length and contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters (!@#$%^&*()_+-=).  
 * `payment_type` - (Optional, Computed, Available since v1.267.0) The billing method of the instance. Supported values:
@@ -122,7 +122,7 @@ The following arguments are supported:
   - M: Month.  
   - Y: Year.  
 
--> **NOTE:**  This parameter is required when RenewalStatus is set to AutoRenewal.  
+  -> **NOTE:**  This parameter is required when RenewalStatus is set to AutoRenewal.
 
 * `resource_group_id` - (Optional, ForceNew, Computed, Available since v1.86.0) The ID of the resource group to which the instance belongs.
 * `setting_config` - (Optional, Computed, Map, Available since v1.125.0) YML configuration file settings for the instance.
@@ -132,7 +132,7 @@ The following arguments are supported:
   - normal: In-place update, which applies changes directly in the current environment (for example, upgrades or scaling) without requiring additional resources.
   - intelligent: Intelligent update, where the system automatically analyzes the update type and environment status to dynamically select the optimal strategy (either blue-green or in-place).
 
--> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
+  -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
 * `version` - (Required, ForceNew) The instance version. Valid values:
   - 8.5.1_with_X-Pack
@@ -144,7 +144,7 @@ The following arguments are supported:
   - 5.6_with_X-Pack
   - 5.5.3_with_X-Pack
 
--> **NOTE:**  The versions listed above might not include all versions supported by Elasticsearch instances. You can call the [GetRegionConfiguration](https://help.aliyun.com/document_detail/254099.html) operation to view the actual supported versions.
+  -> **NOTE:**  The versions listed above might not include all versions supported by Elasticsearch instances. You can call the [GetRegionConfiguration](https://help.aliyun.com/document_detail/254099.html) operation to view the actual supported versions.
 
 * `warm_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Cold data node configuration for the Elasticsearch cluster. See [`warm_node_configuration`](#warm_node_configuration) below.
 * `zone_count` - (Optional, ForceNew, Computed, Int) The number of zones for the instance. Valid values: 1, 2, and 3. Default value: 1.  

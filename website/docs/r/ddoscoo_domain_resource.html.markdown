@@ -89,15 +89,15 @@ The following arguments are supported:
   - 1: Enabled
 * `cert` - (Optional, Available since v1.231.0) The private key of the certificate that you want to associate. This parameter must be used together with the CertName and Cert parameters.
 
--> **NOTE:**   If you specify a value for the CertName, Cert, and Key parameters, you do not need to specify a value for the CertId parameter.
+  -> **NOTE:**   If you specify a value for the CertName, Cert, and Key parameters, you do not need to specify a value for the CertId parameter.
 
 * `cert_identifier` - (Optional, Available since v1.231.0) The name of the certificate.
 
--> **NOTE:**   You can specify the name of the certificate that you want to associate. From version 1.249.0, `cert_identifier` is in the "CertificateID-RegionId" format. For example, if the ID of the certificateId is `123`, and the region ID is `cn-hangzhou`, the value of the `cert_identifier` is `123-cn-hangzhou`.
+  -> **NOTE:**   You can specify the name of the certificate that you want to associate. From version 1.249.0, `cert_identifier` is in the "CertificateID-RegionId" format. For example, if the ID of the certificateId is `123`, and the region ID is `cn-hangzhou`, the value of the `cert_identifier` is `123-cn-hangzhou`.
 
 * `cert_name` - (Optional, Computed, Available since v1.231.0) The public key of the certificate that you want to associate. This parameter must be used together with the CertName and Key parameters.
 
--> **NOTE:**   If you specify a value for the CertName, Cert, and Key parameters, you do not need to specify a value for the CertId parameter.
+  -> **NOTE:**   If you specify a value for the CertName, Cert, and Key parameters, you do not need to specify a value for the CertId parameter.
 
 * `cert_region` - (Optional, Available since v1.231.0) The region of the certificate. `cn-hangzhou` and `ap-southeast-1` are supported. The default value is `cn-hangzhou`. 
 * `custom_ciphers` - (Optional, List, Available since v1.281.0) A custom list of cipher suites for TLS 1.2 and earlier versions.
@@ -110,7 +110,7 @@ The following arguments are supported:
   - Do not use standard HTTP headers or specific widely used custom HTTP headers. The standard HTTP headers include Host, User-Agent, Connection, and Upgrade, and the widely used custom HTTP headers include X-Real-IP, X-True-IP, X-Client-IP, Web-Server-Type, WL-Proxy-Client-IP, eEagleEye-RpcID, EagleEye-TraceID, X-Forwarded-Cluster, and X-Forwarded-Proto. If the preceding headers are used, the original content of the headers is overwritten.
 * `domain` - (Required, ForceNew) The domain name for which you want to configure the Static Page Caching policy.
 
--> **NOTE:**  You can call the [DescribeDomains](https://www.alibabacloud.com/help/en/doc-detail/91724.html) operation to query all the domain names that are added to Anti-DDoS Pro or Anti-DDoS Premium.
+  -> **NOTE:**  You can call the [DescribeDomains](https://www.alibabacloud.com/help/en/doc-detail/91724.html) operation to query all the domain names that are added to Anti-DDoS Pro or Anti-DDoS Premium.
 
 * `https_ext` - (Optional, Computed, JsonString) The advanced HTTPS settings. This parameter takes effect only when the value of the `ProxyType` parameter includes `https`. The value is a string that consists of a JSON struct. The JSON struct contains the following fields:
 
@@ -128,7 +128,7 @@ The following arguments are supported:
 * `instance_ids` - (Required, Set) InstanceIds
 * `key` - (Optional) The globally unique ID of the certificate. The value is in the "Certificate ID-cn-hangzhou" format. For example, if the ID of the certificate is 123, the value of the CertIdentifier parameter is 123-cn-hangzhou.
 
--> **NOTE:**   You can specify only one of this parameter and the CertId parameter.
+  -> **NOTE:**   You can specify only one of this parameter and the CertId parameter.
 
 * `ocsp_enabled` - (Optional, Bool, Available since v1.208.0) Specifies whether to enable the OCSP feature. Valid values:
   - `true`: Opened

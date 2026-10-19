@@ -150,7 +150,7 @@ The following arguments are supported:
   - `Internet`: The NLB instance uses a public IP address. The domain name of the NLB instance is resolved to the public IP address. Therefore, the NLB instance can be accessed over the Internet.
   - `Intranet`: The NLB instance uses a private IP address. The domain name of the NLB instance is resolved to the private IP address. Therefore, the NLB instance can be accessed over the virtual private cloud (VPC) where the NLB instance is deployed.
 
--> **NOTE:**   To enable a public IPv6 address for an NLB instance, call the [EnableLoadBalancerIpv6Internet](https://www.alibabacloud.com/help/en/doc-detail/445878.html) operation.
+  -> **NOTE:**   To enable a public IPv6 address for an NLB instance, call the [EnableLoadBalancerIpv6Internet](https://www.alibabacloud.com/help/en/doc-detail/445878.html) operation.
 
 * `bandwidth_package_id` - (Optional, ForceNew, Computed) The ID of the EIP bandwidth plan that is associated with the Internet-facing NLB instance.
 * `cps` - (Optional, Int, Available since v1.245.0) The speed limit of new connections per second processed by NLB instances in each VIP. Value range: `0` to `1000000`.
@@ -193,7 +193,7 @@ The deletion_protection_config supports the following:
 * `reason` - (Optional, Computed) The reason why deletion protection is enabled. The reason must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The reason must start with a letter.
 
 
--> **NOTE:**  This parameter takes effect only when `DeletionProtectionEnabled` is set to `true`.
+  -> **NOTE:**  This parameter takes effect only when `DeletionProtectionEnabled` is set to `true`.
 
 
 ### `modification_protection_config`
@@ -201,13 +201,13 @@ The deletion_protection_config supports the following:
 The modification_protection_config supports the following:
 * `reason` - (Optional) The reason why the configuration read-only mode is enabled. The value must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The value must start with a letter.
 
--> **NOTE:**   This parameter takes effect only if the `status` parameter is set to `ConsoleProtection`.
+  -> **NOTE:**   This parameter takes effect only if the `status` parameter is set to `ConsoleProtection`.
 
 * `status` - (Optional, Computed) Specifies whether to enable the configuration read-only mode. Valid values:
   - `NonProtection`: disables the configuration read-only mode. In this case, you cannot set the `ModificationProtectionReason` parameter. If you specify `ModificationProtectionReason`, the value is cleared.
   - `ConsoleProtection`: enables the configuration read-only mode. In this case, you can specify `ModificationProtectionReason`.
 
--> **NOTE:**  If you set this parameter to `ConsoleProtection`, you cannot use the NLB console to modify instance configurations. However, you can call API operations to modify instance configurations.
+  -> **NOTE:**  If you set this parameter to `ConsoleProtection`, you cannot use the NLB console to modify instance configurations. However, you can call API operations to modify instance configurations.
 
 
 ### `zone_mappings`

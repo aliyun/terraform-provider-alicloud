@@ -133,7 +133,7 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter takes effect only on instances that run SQL Server with cloud disks. This parameter takes effect only when BackupPolicyMode is set to DataBackupPolicy.
 
--> **NOTE:** Currently, the SQLServer instance does not support to modify `log_backup_retention_period`.
+  -> **NOTE:** Currently, the SQLServer instance does not support to modify `log_backup_retention_period`.
 
 ## Attributes Reference
 

@@ -107,7 +107,7 @@ The following arguments are supported:
   - `DataTransfer`: bandwidth is billed based on the pay-by-data-transfer metering method.
 * `cen_bandwidth_package_id` - (Optional) The ID of the bandwidth plan that is used to allocate bandwidth to the inter-region connection.
 
--> **NOTE:**   If you set `BandwidthType` to `DataTransfer`, you do not need to set this parameter.
+  -> **NOTE:**   If you set `BandwidthType` to `DataTransfer`, you do not need to set this parameter.
 
 * `cen_id` - (Optional, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
 * `default_link_type` - (Optional, Available since v1.223.1) The default line type.

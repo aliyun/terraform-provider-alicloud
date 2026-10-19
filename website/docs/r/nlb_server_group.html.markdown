@@ -77,7 +77,7 @@ The following arguments are supported:
   - `NonAffinity` (default): forwards requests to healthy backends regardless of IP version.
   - `Affinity`: IPv4 requests are forwarded only to IPv4 backends; IPv6 requests are forwarded only to IPv6 backends.
 
--> **NOTE:** This parameter takes effect only when `address_ip_version` is set to `DualStack`.
+  -> **NOTE:** This parameter takes effect only when `address_ip_version` is set to `DualStack`.
 
 * `any_port_enabled` - (Optional, ForceNew, Computed) Specifies whether to enable all-port forwarding. Valid values:
 
@@ -116,7 +116,7 @@ The name must be 2 to 128 characters in length, and can contain letters, digits,
 * `tags` - (Optional, Map) Label.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) to which the server group belongs.
 
--> **NOTE:**  If `ServerGroupType` is set to `Instance`, only servers in the specified VPC can be added to the server group.
+  -> **NOTE:**  If `ServerGroupType` is set to `Instance`, only servers in the specified VPC can be added to the server group.
 
 
 The following arguments will be discarded. Please use new fields as soon as possible:
@@ -133,7 +133,7 @@ Default value: `0`. If you set the value to 0, the port of the backend server is
   - `$SERVER_IP`: the private IP address of a backend server.
   - `domain`: a specified domain name. The domain name must be 1 to 80 characters in length, and can contain lowercase letters, digits, hyphens (-), and periods (.).
 
--> **NOTE:**  This parameter takes effect only when `HealthCheckType` is set to `HTTP`.
+  -> **NOTE:**  This parameter takes effect only when `HealthCheckType` is set to `HTTP`.
 
 * `health_check_enabled` - (Optional, Computed) Specifies whether to enable the health check feature. Valid values:
 
@@ -142,7 +142,7 @@ Default value: `0`. If you set the value to 0, the port of the backend server is
 * `health_check_exp` - (Optional, Available since v1.243.0) health check response character string. The value contains a maximum of 512 characters
 * `health_check_http_code` - (Optional, Computed, List) The HTTP status codes to return for health checks. Separate multiple HTTP status codes with commas (,). Valid values: `http\_2xx` (default), `http\_3xx`, `http\_4xx`, and `http\_5xx`.
 
--> **NOTE:**  This parameter takes effect only when `HealthCheckType` is set to `HTTP`.
+  -> **NOTE:**  This parameter takes effect only when `HealthCheckType` is set to `HTTP`.
 
 * `health_check_interval` - (Optional, Computed, Int) The interval at which health checks are performed. Unit: seconds.
 Valid values: `5` to `50`.
@@ -151,7 +151,7 @@ Default value: `10`.
 * `health_check_type` - (Optional, Computed) The protocol that you want to use for health checks. Valid values: `TCP` (default) and `HTTP`.
 * `health_check_http_version` - (Optional, Computed, Available since v1.274.0) The HTTP protocol version for health checks. Valid values: `HTTP1.0` (default) and `HTTP1.1`.
 
--> **NOTE:**  This parameter takes effect only when `HealthCheckType` is set to `HTTP`.
+  -> **NOTE:**  This parameter takes effect only when `HealthCheckType` is set to `HTTP`.
 
 * `health_check_url` - (Optional, Computed) The path to which health check requests are sent.
 
@@ -164,7 +164,7 @@ Valid values: `2` to `10`.
 Default value: `2`.
 * `http_check_method` - (Optional) The HTTP method that is used for health checks. Valid values: `GET` (default) and `HEAD`.
 
--> **NOTE:**  This parameter takes effect only when `HealthCheckType` is set to `HTTP`.
+  -> **NOTE:**  This parameter takes effect only when `HealthCheckType` is set to `HTTP`.
 
 * `unhealthy_threshold` - (Optional, Computed, Int) The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy. In this case, the health status changes from `success` to `fail`.
 Valid values: `2` to `10`.

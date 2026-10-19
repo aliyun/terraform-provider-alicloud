@@ -69,7 +69,7 @@ The following arguments are supported:
 * `resource_groups` - (Optional, Set, Available since v1.263.0) The name of the protected object group. After a protection template resource is created, you can modify the bound protection object group.
 * `resource_manager_resource_group_id` - (Optional) The ID of the Alibaba Cloud resource group.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `resources` - (Optional, Set, Available since v1.257.0) The list of protected objects to be bound. After a protection template resource is created, you can modify the bound protected objects.
 * `status` - (Required) The status of the protection rule template. Valid values:

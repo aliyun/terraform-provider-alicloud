@@ -105,19 +105,19 @@ The following arguments are supported:
 * `db_instance_class` - (Required) The instance type of the new instance. For information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/help/en/rds/product-overview/primary-apsaradb-rds-instance-types).
 * `db_instance_storage` - (Required) The storage capacity of the new instance. Unit: GB. The storage capacity increases in increments of 5 GB. For more information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/help/en/rds/product-overview/primary-apsaradb-rds-instance-types).
 
--> **NOTE:** The default value of this parameter is the storage capacity of the original instance.
+  -> **NOTE:** The default value of this parameter is the storage capacity of the original instance.
 * `vpc_id` - (Optional, Computed) The ID of the VPC to which the new instance belongs.
 
--> **NOTE:** Make sure that the VPC resides in the specified region.
+  -> **NOTE:** Make sure that the VPC resides in the specified region.
 * `vswitch_id` - (Optional, Computed) The ID of the vSwitch associated with the specified VPC.
 
--> **NOTE:** Make sure that the vSwitch belongs to the specified VPC and region.
+  -> **NOTE:** Make sure that the vSwitch belongs to the specified VPC and region.
 * `private_ip_address` - (Optional, Computed) The intranet IP address of the new instance must be within the specified vSwitch IP address range. By default, the system automatically allocates by using **VPCId** and **VSwitchId**.
 * `deletion_protection` - (Optional, Available since v1.167.0) The switch of delete protection. Valid values:
   - true: delete protect.
   - false: no delete protect.
 
--> **NOTE:** `deletion_protection` is valid only when attribute `payment_type` is set to `PayAsYouGo`, supported engine type: **MySQL**, **PostgreSQL**, **MariaDB**, **MSSQL**.
+  -> **NOTE:** `deletion_protection` is valid only when attribute `payment_type` is set to `PayAsYouGo`, supported engine type: **MySQL**, **PostgreSQL**, **MariaDB**, **MSSQL**.
 * `acl` - (Optional, Computed) This parameter is only supported by the RDS PostgreSQL cloud disk version. This parameter indicates the authentication method. It is allowed only when the public key of the client certificate authority is enabled. Valid values: `cert` and `perfer` and `verify-ca` and `verify-full (supported by RDS PostgreSQL above 12)`.
 * `auto_upgrade_minor_version` - (Optional, Computed) How to upgrade the minor version of the instance. Valid values:
   * **Auto**: automatically upgrade the minor version.
@@ -134,13 +134,13 @@ The following arguments are supported:
 * `db_instance_description` - (Optional, Computed) The db instance description.
 * `db_name` - (Optional) The name of the database for which you want to enable TDE. Up to 50 names can be entered in a single request. If you specify multiple names, separate these names with commas (,).
 
--> **NOTE:** This parameter is available and must be specified only when the instance runs SQL Server 2019 SE or an Enterprise Edition of SQL Server.
+  -> **NOTE:** This parameter is available and must be specified only when the instance runs SQL Server 2019 SE or an Enterprise Edition of SQL Server.
 * `dedicated_host_group_id` - (Optional) The ID of the dedicated cluster to which the new instance belongs. This parameter takes effect only when you create the new instance in a dedicated cluster.
 * `direction` - (Optional) The direction. Valid values: `Auto`, `Down`, `TempUpgrade`, `Up`.
 * `effective_time` - (Optional) The effective time.
 * `encryption_key` - (Optional) The ID of the private key.
 
--> **NOTE:** This parameter is available only when the instance runs MySQL.
+  -> **NOTE:** This parameter is available only when the instance runs MySQL.
 * `engine_version` - (Optional, Computed, ForceNew) Database version. Value:
   * MySQL: **5.5/5.6/5.7/8.0/8.4**.
   * SQL Server: **2008r2/08r2_ent_ha/2012/2012_ent_ha/2012_std_ha/2012_web/2014_std_ha/2016_ent_ha/2016_std_ha/2016_web/2017_std_ha/2017_ent/2019_std_ha/2019_ent/2022_web/2022_std_ha/2022_ent/2025_std/2025_ent**.
@@ -152,7 +152,7 @@ The following arguments are supported:
 * `maintain_time` - (Optional, Computed) The maintainable time period of the instance. Format: <I> HH:mm</I> Z-<I> HH:mm</I> Z(UTC time).
 * `password` - (Optional) The password of the certificate. 
 
--> **NOTE:** This parameter is available only when the instance runs SQL Server 2019 SE or an Enterprise Edition of SQL Server.
+  -> **NOTE:** This parameter is available only when the instance runs SQL Server 2019 SE or an Enterprise Edition of SQL Server.
 * `port` - (Optional, Computed) The port.
 * `private_key` - (Optional) The file that contains the private key used for TDE.
 * `released_keep_policy` - (Optional) The released keep policy.
@@ -160,12 +160,12 @@ The following arguments are supported:
 * `resource_group_id` - (Optional) The resource group id.
 * `role_arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of a RAM role. A RAM role is a virtual RAM identity that you can create within your Alibaba Cloud account. For more information, see [RAM role overview](https://www.alibabacloud.com/help/en/ram/user-guide/ram-role-overview).
 
--> **NOTE:** This parameter is available only when the instance runs MySQL.
+  -> **NOTE:** This parameter is available only when the instance runs MySQL.
 * `security_ips` - (Optional, Computed) The IP address whitelist of the instance. Separate multiple IP addresses with commas (,) and cannot be repeated. The following two formats are supported:
   * IP address form, for example: 10.23.12.24.
   * CIDR format, for example, 10.23.12.0/24 (no Inter-Domain Routing, 24 indicates the length of the prefix in the address, ranging from 1 to 32).
 
--> **NOTE:** each instance can add up to 1000 IP addresses or IP segments, that is, the total number of IP addresses or IP segments in all IP whitelist groups cannot exceed 1000. When there are more IP addresses, it is recommended to merge them into IP segments, for example, 10.23.12.0/24.
+  -> **NOTE:** each instance can add up to 1000 IP addresses or IP segments, that is, the total number of IP addresses or IP segments in all IP whitelist groups cannot exceed 1000. When there are more IP addresses, it is recommended to merge them into IP segments, for example, 10.23.12.0/24.
 * `server_cert` - (Optional, Computed) This parameter is only supported by the RDS PostgreSQL cloud disk version. It indicates the content of the server certificate. If the CAType value is custom, this parameter must be configured.
 * `server_key` - (Optional, Computed) This parameter is only supported by the RDS PostgreSQL cloud disk version. It indicates the private key of the server certificate. If the value of CAType is custom, this parameter must be configured.
 * `source_biz` - (Optional) The source biz.
@@ -179,11 +179,11 @@ The following arguments are supported:
   * **Semi-sync**: Semi-synchronous.
   * **Async**: asynchronous.
 
--> **NOTE:** SQL Server 2017 cluster version is currently not supported.
+  -> **NOTE:** SQL Server 2017 cluster version is currently not supported.
 * `tde_status` - (Optional) Specifies whether to enable TDE. Valid values: `Enabled` and `Disabled`.
 * `zone_id` - (Optional, Computed, ForceNew) The ID of the zone to which the new instance belongs. You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-describeregions) operation to query the most recent region list.
 
--> **NOTE:** The default value of this parameter is the ID of the zone to which the original instance belongs.
+  -> **NOTE:** The default value of this parameter is the ID of the zone to which the original instance belongs.
 * `zone_id_slave_1` - (Optional, Computed, ForceNew) The ID of the zone to which the secondary instance of the new instance belongs. You can specify this parameter only when the original instance runs RDS High-availability Edition. You can select a zone that belongs to the region where the original instance resides. You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-describeregions) operation to query zone IDs.
 * `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL.
 * `parameters` - (Optional, Computed) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm). See [`parameters`](#parameters) below.
@@ -203,10 +203,10 @@ The following arguments are supported:
   * **Before**: ApsaraDB RDS collects the statistics of the new instance before the switchover to ensure service stability. If the original instance contains a large amount of data, the upgrade may require a long period of time.
   * **After**: ApsaraDB RDS collects the statistics of the new instance after the switchover to accelerate the upgrade. If you access tables for which no statistics are generated, the query plans that you specify may be inaccurately executed. In addition, your database service may be unavailable during peak hours.
   
--> **NOTE** If you set the SwitchOver parameter to false, the value Before specifies that ApsaraDB RDS collects the statistics of the new instance before the new instance starts to process read and write requests, and the value After specifies that ApsaraDB RDS collects the statistics of the new instance after the new instance starts to process read and write requests.
+  -> **NOTE** If you set the SwitchOver parameter to false, the value Before specifies that ApsaraDB RDS collects the statistics of the new instance before the new instance starts to process read and write requests, and the value After specifies that ApsaraDB RDS collects the statistics of the new instance after the new instance starts to process read and write requests.
 * `target_major_version` - (Required, ForceNew) The major engine version of the new instance. The value of this parameter must be the major engine version on which an upgrade check is performed.
 
--> **NOTE** You can call the [UpgradeDBInstanceMajorVersionPrecheck](https://www.alibabacloud.com/help/doc-detail/330050.htm) operation to perform an upgrade check on a major engine version.
+  -> **NOTE** You can call the [UpgradeDBInstanceMajorVersionPrecheck](https://www.alibabacloud.com/help/doc-detail/330050.htm) operation to perform an upgrade check on a major engine version.
 * `tcp_connection_type` - (Optional, Available since v1.171.0) The availability check method of the instance. Valid values:
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
@@ -228,7 +228,7 @@ The pg_hba_conf mapping supports the following:
   * **hostssl**: specifies to verify only TCP/IP connections that are established over SSL connections.
   * **hostnossl**: specifies to verify only TCP/IP connections that are established over non-SSL connections.
 
--> **NOTE:** You can set this parameter to hostssl only when SSL encryption is enabled for the instance. For more information, see [Configure SSL encryption for an ApsaraDB RDS for PostgreSQL instance](https://www.alibabacloud.com/help/en/doc-detail/229518.htm).
+  -> **NOTE:** You can set this parameter to hostssl only when SSL encryption is enabled for the instance. For more information, see [Configure SSL encryption for an ApsaraDB RDS for PostgreSQL instance](https://www.alibabacloud.com/help/en/doc-detail/229518.htm).
 * `mask` - (Optional) The mask of the instance. If the value of the `Address` parameter is an IP address, you can use this parameter to specify the mask of the IP address.
 * `database` - (Required) The name of the database that the specified users are allowed to access. If you set this parameter to all, the specified users are allowed to access all databases in the instance. If you specify multiple databases, separate the database names with commas (,).
 * `priority_id` - (Required) The priority of an AD domain. If you set this parameter to 0, the AD domain has the highest priority. Valid values: 0 to 10000. This parameter is used to identify each AD domain. When you add an AD domain, the value of the PriorityId parameter of the new AD domain cannot be the same as the value of the PriorityId parameter for any existing AD domain. When you modify or delete an AD domain, you must also modify or delete the value of the PriorityId parameter for this AD domain.

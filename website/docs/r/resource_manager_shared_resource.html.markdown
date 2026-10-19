@@ -71,13 +71,13 @@ resource "alicloud_resource_manager_shared_resource" "default" {
 The following arguments are supported:
 * `permission_name` - (Optional, Available since v1.268.0) The name of a permission. If you do not configure this parameter, the system automatically associates the default permission for the specified resource type with the resource share.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `properties_resource_arn` - (Optional, Available since v1.274.0) The ARN of the resource.
 
 * `resource_arn` - (Optional, ForceNew, Available since v1.268.0) Associated resource ARN.
 
--> **NOTE:**  This parameter is not available when the association type 'AssociationType' is the resource consumer 'Target'.
+  -> **NOTE:**  This parameter is not available when the association type 'AssociationType' is the resource consumer 'Target'.
 
 * `resource_id` - (Optional, ForceNew, Computed) The ID of the shared resource.
 * `resource_property` - (Optional, ForceNew, Available since v1.274.0) The property of the resource.

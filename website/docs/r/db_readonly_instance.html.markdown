@@ -99,7 +99,7 @@ The following arguments are supported:
   - SpecifyTime: The minor engine version is updated at the point in time you specify.
 * `switch_time` - (Optional, Available since v1.128.0) The specific point in time when you want to perform the update. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. It is valid only when `upgrade_db_instance_kernel_version = true`. The time must be in UTC.
 
--> **NOTE:** This parameter takes effect only when you set the UpgradeTime parameter to SpecifyTime.
+  -> **NOTE:** This parameter takes effect only when you set the UpgradeTime parameter to SpecifyTime.
 * `target_minor_version` - (Optional, Available since v1.128.0) The minor engine version to which you want to update the instance. If you do not specify this parameter, the instance is updated to the latest minor engine version. It is valid only when `upgrade_db_instance_kernel_version = true`. You must specify the minor engine version in one of the following formats:
   - PostgreSQL: rds_postgres_<Major engine version>00_<Minor engine version>. Example: rds_postgres_1200_20200830.
   - MySQL: <RDS edition>_<Minor engine version>. Examples: rds_20200229, xcluster_20200229, and xcluster80_20200229. The following RDS editions are supported:
@@ -108,7 +108,7 @@ The following arguments are supported:
     - xcluster80: The instance runs MySQL 8.0 on RDS Enterprise Edition.
   - SQLServer: <Minor engine version>. Example: 15.0.4073.23.
   
--> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
+  -> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
 * `ssl_enabled` - (Optional, Available since v1.124.4) Specifies whether to enable or disable SSL encryption. Valid values:
   - 1: enables SSL encryption
   - 0: disables SSL encryption
@@ -135,21 +135,23 @@ The following arguments are supported:
   - perfer
   - verify-ca
   - verify-full (supported only when the instance runs PostgreSQL 12 or later)
--> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
+
+  -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 
 * `security_ips` - (Optional, Available since v1.196.0) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `db_instance_ip_array_name` - (Optional, Available since v1.196.0) The name of the IP address whitelist. Default value: Default.
 
--> **NOTE:** A maximum of 200 IP address whitelists can be configured for each instance.
+  -> **NOTE:** A maximum of 200 IP address whitelists can be configured for each instance.
 * `db_instance_ip_array_attribute` - (Optional, Available since v1.196.0) The attribute of the IP address whitelist. By default, this parameter is empty.
 
--> **NOTE:** The IP address whitelists that have the hidden attribute are not displayed in the ApsaraDB RDS console. These IP address whitelists are used to access Alibaba Cloud services, such as Data Transmission Service (DTS).
+  -> **NOTE:** The IP address whitelists that have the hidden attribute are not displayed in the ApsaraDB RDS console. These IP address whitelists are used to access Alibaba Cloud services, such as Data Transmission Service (DTS).
 * `security_ip_type` - (Optional, Available since v1.196.0) The type of IP address in the IP address whitelist.
 * `whitelist_network_type` - (Optional, Available since v1.196.0) The network type of the IP address whitelist. Default value: MIX. Valid values:
   - Classic: classic network in enhanced whitelist mode
   - VPC: virtual private cloud (VPC) in enhanced whitelist mode
   - MIX: standard whitelist mode
-    -> **NOTE:** In standard whitelist mode, IP addresses and CIDR blocks can be added only to the default IP address whitelist. In enhanced whitelist mode, IP addresses and CIDR blocks can be added to both IP address whitelists of the classic network type and those of the VPC network type.
+
+  -> **NOTE:** In standard whitelist mode, IP addresses and CIDR blocks can be added only to the default IP address whitelist. In enhanced whitelist mode, IP addresses and CIDR blocks can be added to both IP address whitelists of the classic network type and those of the VPC network type.
 * `modify_mode` - (Optional, Available since v1.196.0) The method that is used to modify the IP address whitelist. Default value: Cover. Valid values:
   - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
   - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.

@@ -231,7 +231,7 @@ The following arguments are supported:
   - `false`: disables deletion protection.
 * `force_delete_without_backup` - (Optional, Available since v1.223.2) Whether to force deletion even without backup.
 
--> **NOTE:** This parameter only takes effect when deletion is triggered.
+  -> **NOTE:** This parameter only takes effect when deletion is triggered.
 
 * `instance_name` - (Optional, Computed) The name of the resource
 * `key_num` - (Optional, Int) Maximum number of stored keys. The attribute is valid when the attribute `payment_type` is `Subscription`.
@@ -243,15 +243,15 @@ The following arguments are supported:
   - PayAsYouGo: the pay-as-you-go billing method.
 * `period` - (Optional, Int) The subscription duration. Unit: month. The value must be an integral multiple of 12.
 
--> **NOTE:**   This parameter is required if you create a subscription instance.
+  -> **NOTE:**   This parameter is required if you create a subscription instance.
 
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `product_version` - (Optional, Computed) KMS Instance commodity type (software/hardware)
 * `renew_period` - (Optional, Int) The auto-renewal period. Unit: month.
 
--> **NOTE:**   This parameter is required if the `RenewalStatus` parameter is set to `AutoRenewal`.
+  -> **NOTE:**   This parameter is required if the `RenewalStatus` parameter is set to `AutoRenewal`.
 
 * `renew_status` - (Optional, Computed) The renewal status of the specified instance. Valid values:
 
@@ -262,7 +262,7 @@ The following arguments are supported:
   - M: Month.
   - Y: Year.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `secret_num` - (Optional, Int) Maximum number of Secrets. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `spec` - (Optional, Int) The computation performance level of the KMS instance. Valid values: `0`, `200`, `1000`, `2000` and `4000`. The attribute is valid when the attribute `payment_type` is `Subscription`. Valid values `1000` and above require a KMS 3.0 instance (`product_version` = `3`): a legacy instance with `spec` = `200` cannot be directly upgraded to a higher spec, and the instance must be upgraded to KMS 3.0 first. For more information, see [How to enable, view, upgrade, and renew KMS instances](https://www.alibabacloud.com/help/en/kms/key-management-service/user-guide/manage-kms-instances).

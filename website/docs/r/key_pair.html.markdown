@@ -47,7 +47,8 @@ The following arguments are supported:
 * `key_file` - (ForceNew) The name of file to save your new key pair's private key. Strongly suggest you to specified it when you creating key pair, otherwise, you wouldn't get its private key ever.
 * `resource_group_id` - (Optional, Available in 1.57.0+, Modifiable in 1.115.0+) The Id of resource group which the key pair belongs.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
--> **NOTE:** If `key_name` and `key_name_prefix` are not set, terraform will produce a specified ID to replace.
+
+  -> **NOTE:** If `key_name` and `key_name_prefix` are not set, terraform will produce a specified ID to replace.
 
 ## Attributes Reference
 

@@ -60,7 +60,7 @@ The following arguments are supported:
 * `cluster_id` - (Optional, Available since v1.267.0) Cluster ID
 * `data_disk` - (Optional, List, Available since v1.267.0) List of disk information of attaching to each sub computing node.  See [`data_disk`](#data_disk) below.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `hostname` - (Optional, Available since v1.267.0) The host name prefix of the sub computing node
 * `hpn_zone` - (Optional, ForceNew) Number of the cluster to which the hyper computing node belongs
@@ -69,7 +69,7 @@ The following arguments are supported:
 * `node_group_id` - (Optional) Node group ID
 * `payment_duration` - (Optional, Int) The duration of the instance purchase, in units.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `payment_type` - (Required, ForceNew) The payment type of the resource
 * `renewal_duration` - (Optional, Int) Number of auto-renewal cycles
@@ -78,7 +78,7 @@ The following arguments are supported:
 * `server_arch` - (Optional, ForceNew) Hyper Node Architecture
 * `stage_num` - (Optional) The number of installments of the hyper computing node of the fixed fee installment.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `tags` - (Optional, Map) The tag of the resource
 * `user_data` - (Optional, Available since v1.267.0) Custom user data for the sub computing node

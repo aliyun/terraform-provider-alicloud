@@ -89,7 +89,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The resource ID in terraform of Snat Entry. It formats as `<snat_table_id>:<snat_entry_id>`.
--> **NOTE:** Before provider version 1.37.0, it formats as `<snat_entry_id>`
+
+  -> **NOTE:** Before provider version 1.37.0, it formats as `<snat_entry_id>`
 * `snat_entry_id` - The id of the snat entry on the server.
 * `status` - (Available since v1.119.1) The ID of the SNAT entry.
 

@@ -194,7 +194,7 @@ The `chain_config` block supports the following:
 * `routers` - (Optional) Execution sequence relationship between delivery chain nodes. See [`routers`](#chain_config-routers) below. 
 * `nodes` - (Optional) Each node in the delivery chain. See [`nodes`](#chain_config-nodes) below.
 
--> **NOTE:** The `from` and `to` fields are all fixed, and their structure and the value of `node_name` are fixed. You can refer to the template given in the example for configuration.
+  -> **NOTE:** The `from` and `to` fields are all fixed, and their structure and the value of `node_name` are fixed. You can refer to the template given in the example for configuration.
 
 ### `chain_config-routers`
 

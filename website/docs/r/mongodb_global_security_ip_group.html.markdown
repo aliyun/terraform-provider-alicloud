@@ -44,7 +44,7 @@ resource "alicloud_mongodb_global_security_ip_group" "default" {
 The following arguments are supported:
 * `global_security_ip_list` - (Required) The IP address in the whitelist template.
 
--> **NOTE:** Separate multiple IP addresses with commas (,). You can create up to 1000 IP addresses or CIDR blocks for all IP address whitelists.
+  -> **NOTE:** Separate multiple IP addresses with commas (,). You can create up to 1000 IP addresses or CIDR blocks for all IP address whitelists.
 
 * `global_ig_name` - (Required) The name of the IP whitelist template.
 

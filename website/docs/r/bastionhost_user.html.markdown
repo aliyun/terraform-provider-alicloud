@@ -122,7 +122,8 @@ The following arguments are supported:
   * Ram: Ram User
   * AD: AD-authenticated User
   * LDAP: LDAP-authenticated User
--> **NOTE:** From version 1.199.0, `source` can be set to `AD`, `LDAP`.
+
+  -> **NOTE:** From version 1.199.0, `source` can be set to `AD`, `LDAP`.
 * `source_user_id` - (Optional, ForceNew) Specify the Newly Created User Is Uniquely Identified. Indicates That the Parameter Is a Bastion Host Corresponding to the User with the Ram User's Unique Identifier. The Newly Created User Source Grant Permission to a RAM User (That Is, Source Used as a Ram), this Parameter Is Required. You Can Call Access Control of Listusers Interface from the Return Data Userid to Obtain the Parameters.
 * `status` - (Optional) The status of the resource. Valid values: `Frozen`, `Normal`, `RemoteDNChanged`.
 

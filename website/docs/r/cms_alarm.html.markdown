@@ -127,7 +127,7 @@ The following arguments are supported:
 * `start_time` - (Optional, Int, Deprecated since v1.50.0) Field `start_time` has been deprecated from provider version 1.50.0. New field `effective_interval` instead.
 * `end_time` - (Optional, Int, Deprecated since v1.50.0) Field `end_time` has been deprecated from provider version 1.50.0. New field `effective_interval` instead.
 
--> **NOTE:** Each resource supports the creation of one of the following three levels.
+  -> **NOTE:** Each resource supports the creation of one of the following three levels.
 
 ### `escalations_critical`
 

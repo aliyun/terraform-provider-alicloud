@@ -174,13 +174,13 @@ The following arguments are supported:
 
 * `key_pair_name` - (Optional) The SSH public-key content. This field is accepted only for create and is never returned. This parameter is mutually exclusive with the `password` parameter. This parameter takes effect when the cluster authentication method is set to key (not recommended).
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `cluster_id` - (Required, ForceNew) The cluster ID.
 * `group` - (Required) The user group. Valid values: `users`, `wheel`.
 * `password` - (Optional) The user password. This parameter is mutually exclusive with the `key_pair_name` parameter. This parameter takes effect when the cluster authentication method is set to password (recommended).
 
--> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
+  -> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
 
 * `user_name` - (Required, ForceNew) The username.
 

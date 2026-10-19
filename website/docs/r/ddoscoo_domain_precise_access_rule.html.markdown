@@ -79,7 +79,8 @@ The following arguments are supported:
   - `challenge`: Challenge
 * `condition` - (Required, List) List of matching conditions. See [`condition`](#condition) below.
 * `domain` - (Required, ForceNew) Domain name of the website service.
--> **NOTE:**  The domain name must already have a website service forwarding rule configured. You can call [DescribeDomains](https://help.aliyun.com/document_detail/91724.html) to query all domain names.
+
+  -> **NOTE:**  The domain name must already have a website service forwarding rule configured. You can call [DescribeDomains](https://help.aliyun.com/document_detail/91724.html) to query all domain names.
 * `expires` - (Optional, Int) Rule validity period, in seconds. This parameter takes effect only when the rule's matching action is set to block (`action` is `block`), blocking access requests during the validity period. If this parameter is not specified, the rule remains effective permanently.
 * `name` - (Required, ForceNew) Rule name.
 
@@ -90,7 +91,7 @@ The condition supports the following:
 * `field` - (Required) Matching field.
 * `header_name` - (Optional) Custom HTTP header field name.
 
--> **NOTE:**  Valid only when `Field` is `header`.
+  -> **NOTE:**  Valid only when `Field` is `header`.
 
 * `match_method` - (Required) Matching method.
 

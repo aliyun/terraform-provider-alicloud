@@ -121,7 +121,7 @@ resource "alicloud_fcv3_function" "default" {
 The following arguments are supported:
 * `code` - (Optional, List) Function code ZIP package. code and customContainerConfig. See [`code`](#code) below.
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `cpu` - (Optional, Computed, Float) The CPU specification of the function. The unit is vCPU, which is a multiple of the 0.05 vCPU.
 * `custom_container_config` - (Optional, List) The configuration of the custom container runtime. After the configuration is successful, the function can use the custom container image to execute the function. code and customContainerConfig. See [`custom_container_config`](#custom_container_config) below.

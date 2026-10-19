@@ -64,7 +64,7 @@ The following arguments are supported:
   - `true`: Enable.
   - `false`: Disable.
 
--> **NOTE:** This parameter configures deletion behavior and is only evaluated when Terraform attempts to destroy the resource. Changes to this parameter during updates are stored but have no immediate effect.
+  -> **NOTE:** This parameter configures deletion behavior and is only evaluated when Terraform attempts to destroy the resource. Changes to this parameter during updates are stored but have no immediate effect.
 
 * `integration_policy_name` - (Required) The policy name.
 * `policy_type` - (Required, ForceNew) The policy type.

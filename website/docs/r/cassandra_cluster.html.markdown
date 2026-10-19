@@ -72,7 +72,7 @@ The following arguments are supported:
 * `ip_white` - (Optional) Set the instance's IP whitelist in VPC network.
 * `security_groups` - (Optional)  A list of security group ids to associate with.
 
--> **NOTE:** Now cluster_name,data_center_name,instance_type,node_count,disk_type,disk_size,maintain_start_time,maintain_end_time,tags,ip_white,security_groups can be change. The others(auto_renew, auto_renew_period and so on) will be supported in the furture.
+  -> **NOTE:** Now cluster_name,data_center_name,instance_type,node_count,disk_type,disk_size,maintain_start_time,maintain_end_time,tags,ip_white,security_groups can be change. The others(auto_renew, auto_renew_period and so on) will be supported in the furture.
 
 ## Attributes Reference
 

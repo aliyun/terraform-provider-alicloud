@@ -173,17 +173,17 @@ The following arguments are supported:
   - `managed`: indicates automatic mode.
   - `manual`: indicates manual mode.
 
- -> **NOTE:**  If this parameter is not specified, VPC border firewalls in all routing modes are queried.
+  -> **NOTE:**  If this parameter is not specified, VPC border firewalls in all routing modes are queried.
 
 * `tr_attachment_master_cidr` - (Optional, ForceNew) The primary CIDR block of the subnet in the firewall VPC used to connect to the transit router (TR) in automatic mode.
 * `tr_attachment_master_zone` - (Optional) The primary zone of the vSwitch.
 
- -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `tr_attachment_slave_cidr` - (Optional, ForceNew) The secondary CIDR block of the subnet in the firewall VPC used to connect to the transit router (TR) in automatic mode.
 * `tr_attachment_slave_zone` - (Optional) The secondary zone of the vSwitch.
 
- -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `transit_router_id` - (Required, ForceNew) The ID of the transit router instance.
 

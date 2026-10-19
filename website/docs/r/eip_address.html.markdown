@@ -64,7 +64,7 @@ The following arguments are supported:
 
   The name must be 1 to 128 characters in length and start with a letter, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-).
 
--> **NOTE:**   You cannot specify this parameter if you create a subscription EIP.
+  -> **NOTE:**   You cannot specify this parameter if you create a subscription EIP.
 
 * `allocation_id` - (Optional, ForceNew, Computed, Available since v1.225.1) The ID of the EIP instance.
 * `auto_pay` - (Optional) Specifies whether to enable automatic payment. Valid values:
@@ -88,7 +88,7 @@ The following arguments are supported:
 
   The description must be 2 to 256 characters in length. The description must start with a letter but cannot start with `http://` or `https://`.
 
--> **NOTE:**   You cannot specify this parameter if you create a subscription EIP.
+  -> **NOTE:**   You cannot specify this parameter if you create a subscription EIP.
 
 * `high_definition_monitor_log_status` - (Optional, ForceNew, Computed) The status of fine-grained monitoring. Valid values:
   - `ON`
@@ -143,7 +143,7 @@ The following arguments are supported:
 * `public_ip_address_pool_id` - (Optional, ForceNew) The ID of the IP address pool. The EIP is allocated from the IP address pool. By default, the IP address pool feature is unavailable. To use the IP address pool, apply for the privilege in the Quota Center console. For more information, see the "Request a quota increase in the Quota Center console" section in [Manage EIP quotas](https://www.alibabacloud.com/help/en/doc-detail/108213.html). 
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which you want to move the resource.
 
--> **NOTE:**   You can use resource groups to facilitate resource grouping and permission management for an Alibaba Cloud. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
+  -> **NOTE:**   You can use resource groups to facilitate resource grouping and permission management for an Alibaba Cloud. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
 
 * `security_protection_types` - (Optional, ForceNew) Security protection level.
   - When the return is empty, the basic DDoS protection is specified.

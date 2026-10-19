@@ -66,7 +66,7 @@ The following arguments are supported:
 * `cidr` - (Optional, ForceNew) The allocated address segment.
 * `cidr_mask` - (Optional, Int) Create a custom reserved network segment from The IPAM address pool by entering a mask.
 
--> **NOTE:**  Enter at least one of `Cidr` or **CidrMask.
+  -> **NOTE:**  Enter at least one of `Cidr` or **CidrMask.
 
 * `ipam_pool_allocation_description` - (Optional) The description of the ipam pool alloctaion.
 It must be 1 to 256 characters in length and must start with an English letter or Chinese character, but cannot start with 'http:// 'or 'https. If it is not filled in, it is empty. The default value is empty.

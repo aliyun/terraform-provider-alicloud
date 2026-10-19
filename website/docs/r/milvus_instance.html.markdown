@@ -93,7 +93,7 @@ The following arguments are supported:
 * `auto_backup` - (Optional, Computed) Whether to enable automatic backup
 * `auto_pay` - (Optional, Available since v1.282.0) Whether to pay automatically.
 
--> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
+  -> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
 
 * `auto_renew` - (Optional, ForceNew, Available since v1.294.0) Whether auto-renewal is enabled when the instance is created.
 * `components` - (Optional, Set) Instance component information. Includes Starter Edition/Standard Edition.
@@ -115,13 +115,13 @@ The following arguments are supported:
   - Two: Dual Availability Zones.
 * `payment_duration` - (Optional, Int) Instance Payment Duration
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `payment_duration_unit` - (Optional) Paid unit , Enumeration value:
   - Month: Month
   - Year: Year
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `payment_type` - (Required, ForceNew) Payment Type ,Enumeration value:
   - PayAsYouGo: Pay by volume

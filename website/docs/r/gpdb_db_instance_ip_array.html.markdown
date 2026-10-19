@@ -84,11 +84,11 @@ The following arguments are supported:
 * `db_instance_ip_array_attribute` - (Optional, ForceNew) The default is empty. To distinguish between different attribute values, the console does not display groups with the 'hidden' attribute.
 * `db_instance_ip_array_name` - (Required, ForceNew) The name of the IP address whitelist. If you do not specify this parameter, the default whitelist is queried.
 
--> **NOTE:**   Each instance supports up to 50 IP address whitelists.
+  -> **NOTE:**   Each instance supports up to 50 IP address whitelists.
 
 * `db_instance_id` - (Required, ForceNew) The instance ID.
 
--> **NOTE:**  You can call the [DescribeDBInstances](https://www.alibabacloud.com/help/en/doc-detail/86911.html) operation to query details about all AnalyticDB for PostgreSQL instances within a region, including instance IDs.
+  -> **NOTE:**  You can call the [DescribeDBInstances](https://www.alibabacloud.com/help/en/doc-detail/86911.html) operation to query details about all AnalyticDB for PostgreSQL instances within a region, including instance IDs.
 
 * `modify_mode` - (Optional) The method of modification. Valid values:
 

@@ -159,7 +159,7 @@ resource "alicloud_alb_listener" "default" {
 The following arguments are supported:
 * `access_log_record_customized_headers_enabled` - (Optional) Access Log Whether to Enable Carry Custom Header Field. Valid values: `true`, `false`. Default Value: `false`.
 
--> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the `true`.
+  -> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the `true`.
 
 * `access_log_tracing_config` - (Optional, List) Xtrace Configuration Information. See [`access_log_tracing_config`](#access_log_tracing_config) below.
 * `ca_certificates` - (Optional, List, Available since v1.242.0) The list of certificates. See [`ca_certificates`](#ca_certificates) below.
@@ -192,12 +192,12 @@ The following arguments are supported:
 The access_log_tracing_config supports the following:
 * `tracing_enabled` - (Required) Xtrace Function. Valid values: `true`, `false`. Default Value: `false`.
 
--> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the value `true`.
+  -> **NOTE:**  Only Instances outside the Security Group to Access the Log Switch `accesslogenabled` Open, in Order to Set This Parameter to the value `true`.
 
 * `tracing_sample` - (Optional, Int) Xtrace Sampling Rate. Value: 1~10000. `tracingenabled` valued True When Effective.
 * `tracing_type` - (Optional) Xtrace Type Value Is `Zipkin`.
 
--> **NOTE:**  `tracingenabled` valued True When Effective.
+  -> **NOTE:**  `tracingenabled` valued True When Effective.
 
 
 ### `ca_certificates`
@@ -247,7 +247,7 @@ The x_forwarded_for_config supports the following:
   - `true`: Yes.
   - `false` (default): No.
 
--> **NOTE:** HTTP, HTTPS, and QUIC listeners support this parameter. The function corresponding to this parameter is not open by default. Please contact the account manager if you need to use it.
+  -> **NOTE:** HTTP, HTTPS, and QUIC listeners support this parameter. The function corresponding to this parameter is not open by default. Please contact the account manager if you need to use it.
 
 * `x_forwarded_for_client_source_ips_trusted` - (Optional) Specify the trusted proxy IP. Application-oriented load balancing ALB will traverse the X-Forwarded-For from back to front, and select the first IP that is not in the trusted IP list as the real client IP, which will be used for the source IP speed limit.
 * `x_forwarded_for_client_src_port_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Client-Port Header Field Is Used to Obtain Access to Server Load Balancer Instances to the Client, and Those of the Ports.
@@ -256,7 +256,7 @@ The x_forwarded_for_config supports the following:
   - `true`: Yes.
   - `false` (default): No.
 
--> **NOTE:** HTTP, HTTPS, and QUIC listeners support this parameter.
+  -> **NOTE:** HTTP, HTTPS, and QUIC listeners support this parameter.
 
 * `x_forwarded_for_processing_mode` - (Optional, Computed, Available since v1.242.0) Schema for processing X-Forwarded-For header fields. This value takes effect only when XForwardedForEnabled is true. Value:
 

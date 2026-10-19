@@ -111,7 +111,7 @@ The description must be 1 to 256 characters in length, and cannot start with `ht
 The name must be 1 to 128 characters in length, and cannot start with `http://` or `https://`.
 * `resource_group_id` - (Optional, Computed) The ID of the new resource group.
 
--> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
+  -> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
 
 
 ## Attributes Reference

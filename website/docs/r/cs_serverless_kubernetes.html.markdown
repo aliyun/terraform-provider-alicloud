@@ -115,7 +115,8 @@ The following arguments are supported:
     - ack.standard: Standard serverless clusters.
     - ack.pro.small: Professional serverless clusters.
 * `custom_san` - (Optional, Available since v1.229.1) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
--> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
+
+  -> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
 * `encryption_provider_key` - (Optional, Available since v1.286.0) The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.
   -> **Note:** To enable encryption, you must specify both `encryption_provider_key` and `disable_encryption = false`. When `disable_encryption` is set to `true`, changes to `encryption_provider_key` will be ignored.
 * `disable_encryption` - (Optional, Computed, Available since v1.286.0) Whether to disable encryption for Kubernetes Secrets. Default value is `false`. Set to `true` to disable encryption.

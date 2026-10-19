@@ -32,7 +32,7 @@ The following arguments are supported:
 
 * `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: `On` or `Off`. Default to `Off`.
 
--> **NOTE:** Setting `enable = "On"` to open the Brain Industrial service. The service can not closed once it is opened.
+  -> **NOTE:** Setting `enable = "On"` to open the Brain Industrial service. The service can not closed once it is opened.
 
 ## Attributes Reference
 

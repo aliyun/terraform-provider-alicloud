@@ -138,9 +138,9 @@ The following arguments are supported:
 * `lifecycle_hook` - (Optional, Available since v1.220.0, ForceNew) Specifies whether to trigger a lifecycle hook for the scaling group to which instances are being added.
 * `load_balancer_weights` - (Optional, Available since v1.220.0, ForceNew) The weight of ECS instance N or elastic container instance N as a backend server of the associated Server Load Balancer (SLB) instance. Valid values of N: 1 to 20. Valid values of this parameter: 1 to 100.
 
--> **NOTE:** "AutoCreated" ECS instance will be deleted after it is removed from scaling group, but "Attached" will be not.
+  -> **NOTE:** "AutoCreated" ECS instance will be deleted after it is removed from scaling group, but "Attached" will be not.
 
--> **NOTE:** Restrictions on attaching ECS instances:
+  -> **NOTE:** Restrictions on attaching ECS instances:
 
    - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
    - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
