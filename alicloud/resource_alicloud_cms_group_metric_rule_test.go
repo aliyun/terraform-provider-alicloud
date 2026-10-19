@@ -1,11 +1,16 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -13,6 +18,7 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -105,9 +111,9 @@ func TestAccAliCloudCmsGroupMetricRule_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -252,6 +258,26 @@ func TestAccAliCloudCmsGroupMetricRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"interval": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"interval": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"interval": "90",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"interval": "90",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"targets": []map[string]interface{}{
 						{
 							"id":          "1",
@@ -357,9 +383,9 @@ func TestAccAliCloudCmsGroupMetricRule_basic0_twin(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -445,6 +471,103 @@ func TestAccAliCloudCmsGroupMetricRule_basic0_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCmsGroupMetricRule_interval_update(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_group_metric_rule.default"
+	ra := resourceAttrInit(resourceId, resourceAliCloudCmsGroupMetricRuleMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCmsGroupMetricRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	ruleId := fmt.Sprintf("4a9a8978-a9cc-55ca-aa7c-%012d", rand)
+	name := fmt.Sprintf("tf-testAcc%sCmsGroupMetricRuleInterval%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAliCloudCmsGroupMetricRuleIntervalDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		// ID-only refresh excludes contact_groups for this fixture; step checks
+		// only require it in Terraform state and do not verify its API readback.
+		IDRefreshIgnore:   []string{"contact_groups"},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_id":                ruleId,
+					"group_id":               "${alicloud_cms_monitor_group.default.id}",
+					"group_metric_rule_name": name,
+					"metric_name":            "disk_writebytes",
+					"namespace":              "acs_ecs_dashboard",
+					"contact_groups":         "${alicloud_cms_alarm_contact_group.default.id}",
+					"interval":               "60",
+					"escalations": []map[string]interface{}{
+						{
+							"critical": []map[string]interface{}{
+								{
+									"comparison_operator": "GreaterThanOrEqualToThreshold",
+									"statistics":          "Average",
+									"threshold":           "90",
+									"times":               "1",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_id":                ruleId,
+						"group_id":               CHECKSET,
+						"group_metric_rule_name": name,
+						"metric_name":            "disk_writebytes",
+						"namespace":              "acs_ecs_dashboard",
+						"contact_groups":         CHECKSET,
+						"escalations.#":          "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"interval": "90",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_id":                ruleId,
+						"group_id":               CHECKSET,
+						"group_metric_rule_name": name,
+						"metric_name":            "disk_writebytes",
+						"contact_groups":         CHECKSET,
+						"escalations.#":          "1",
+						"interval":               "90",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// This interval regression does not verify contact_groups on import.
+				ImportStateVerifyIgnore: []string{"category", "interval", "contact_groups"},
+			},
+		},
+	})
+}
+
+func resourceAliCloudCmsGroupMetricRuleIntervalDependence(name string) string {
+	return fmt.Sprintf(`
+resource "alicloud_cms_monitor_group" "default" {
+  monitor_group_name = "%s-mg"
+}
+
+resource "alicloud_cms_alarm_contact_group" "default" {
+  alarm_contact_group_name = "%s-acg"
+  enable_subscribed        = false
+}`, name, name)
+}
+
 var resourceAliCloudCmsGroupMetricRuleMap = map[string]string{
 	"contact_groups": CHECKSET,
 	"dimensions":     CHECKSET,
@@ -482,6 +605,111 @@ func resourceAliCloudCmsGroupMetricRuleBasicDependence(name string) string {
   		contact_groups     = [alicloud_cms_alarm_contact_group.update.id]
 	}
 `, name)
+}
+
+// lintignore: R001
+func TestUnitAliCloudCmsGroupMetricRuleIntervalUpdate(t *testing.T) {
+	for _, interval := range []string{"90", "60"} {
+		t.Run(interval, func(t *testing.T) {
+			r := resourceAliCloudCmsGroupMetricRule()
+			d, err := schema.InternalMap(r.Schema).Data(nil, nil)
+			if !assert.NoError(t, err) {
+				return
+			}
+			attributes := map[string]interface{}{
+				"rule_id": "existing-rule", "group_id": "123", "group_metric_rule_name": "existing-rule",
+				"metric_name": "cpu_total", "namespace": "acs_ecs_dashboard", "interval": "60",
+			}
+			for key, value := range attributes {
+				if !assert.NoError(t, d.Set(key, value)) {
+					return
+				}
+			}
+			d.SetId("existing-rule")
+			state := d.State()
+			diff, err := newInstanceDiff("alicloud_cms_group_metric_rule", attributes, map[string]interface{}{"interval": interval}, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			d, err = schema.InternalMap(r.Schema).Data(state, diff)
+			if !assert.NoError(t, err) {
+				return
+			}
+			for key := range diff.Attributes {
+				assert.Equal(t, "interval", key, "the regression must change only interval")
+			}
+			assert.False(t, d.IsNewResource())
+			// Observe the real wire request on an in-process CMS endpoint: gomonkey
+			// cannot reliably intercept RpcPost because the one-line wrapper is
+			// inlined at its call sites, as the inlined GetRetryTimeout already proved.
+			var putCalls int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Error(err)
+					return
+				}
+				switch r.Form.Get("Action") {
+				case "PutGroupMetricRule":
+					atomic.AddInt32(&putCalls, 1)
+					assert.Equal(t, "existing-rule", r.Form.Get("RuleId"))
+					assert.Equal(t, interval, r.Form.Get("Interval"))
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(map[string]interface{}{"Code": "200", "Success": true})
+				case "DescribeMetricRuleList":
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(map[string]interface{}{
+						"Code":    "200",
+						"Success": true,
+						"Alarms": map[string]interface{}{
+							"Alarm": []interface{}{
+								map[string]interface{}{"RuleId": "existing-rule", "Dimensions": "[]"},
+							},
+						},
+					})
+				case "DescribeMetricRuleTargets":
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(map[string]interface{}{
+						"Code":    "200",
+						"Success": true,
+						"Targets": map[string]interface{}{"Target": []interface{}{}},
+					})
+				default:
+					t.Errorf("unexpected RPC action: %s", r.Form.Get("Action"))
+					w.WriteHeader(http.StatusBadRequest)
+				}
+			}))
+			defer server.Close()
+			credential, err := credentials.NewCredential(new(credentials.Config).SetType("access_key").SetAccessKeyId("mock-access-key").SetAccessKeySecret("mock-secret-key"))
+			if !assert.NoError(t, err) {
+				return
+			}
+			endpoint := strings.TrimPrefix(server.URL, "http://")
+			t.Setenv("NO_PROXY", endpoint)
+			conf := connectivity.Config{
+				RegionId:             "cn-hangzhou",
+				AccessKey:            "mock-access-key",
+				SecretKey:            "mock-secret-key",
+				Credential:           credential,
+				AccountType:          "Domestic",
+				SkipRegionValidation: true,
+				Protocol:             "http",
+				Endpoints:            new(sync.Map),
+				SignVersion:          new(sync.Map),
+			}
+			aliyunClient, err := conf.Client()
+			if !assert.NoError(t, err) {
+				return
+			}
+			conf.Endpoints.Store("cms", endpoint)
+			assert.NoError(t, resourceAliCloudCmsGroupMetricRuleUpdate(d, aliyunClient))
+			wantCalls := int32(0)
+			if interval == "90" {
+				wantCalls = 1
+			}
+			assert.Equal(t, wantCalls, atomic.LoadInt32(&putCalls))
+			assert.Equal(t, "existing-rule", d.Id())
+		})
+	}
 }
 
 // lintignore: R001
