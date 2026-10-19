@@ -38,6 +38,12 @@ func testSweepCenBandwidthPackage(region string) error {
 		"tf_testAcc",
 	}
 
+	// Build the set of protected parent-CEN IDs so bandwidth packages
+	// associated with a do-not-delete CEN are skipped even in SWEEP_ALL mode.
+	// Failures here are non-fatal: the sweeper falls back to name-based
+	// protection only.
+	protectedCenIds, _ := cenIdsProtectedFromSweep(client)
+
 	var insts []cbn.CenBandwidthPackage
 	request := cbn.CreateDescribeCenBandwidthPackagesRequest()
 	request.RegionId = client.RegionId
@@ -83,6 +89,24 @@ func testSweepCenBandwidthPackage(region string) error {
 	for _, v := range insts {
 		name := v.Name
 		id := v.CenBandwidthPackageId
+		// Red-line: skip bandwidth packages carrying an explicit do-not-delete
+		// marker, and packages whose parent CEN is protected (even in
+		// SWEEP_ALL mode).
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping CEN bandwidth package (do-not-delete marker): %s (%s)", name, id)
+			continue
+		}
+		parentProtected := false
+		for _, cenId := range v.CenIds.CenId {
+			if protectedCenIds[cenId] {
+				parentProtected = true
+				break
+			}
+		}
+		if parentProtected {
+			log.Printf("[INFO] Skipping CEN bandwidth package (parent CEN protected): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {

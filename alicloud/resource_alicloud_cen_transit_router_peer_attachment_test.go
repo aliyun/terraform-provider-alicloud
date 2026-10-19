@@ -1066,3 +1066,36 @@ func SkipTestAccAliCloudCenTransitRouterPeerAttachment_basic6600_twin(t *testing
 }
 
 // Test Cen TransitRouterPeerAttachment. <<< Resource test cases, automatically generated.
+
+// ---- Sub-resource sweeper (补齐) ----
+// Detaches cross-region TR peer attachments so the parent alicloud_cen_instance
+// sweeper can finally DeleteCen. Uses DeleteTransitRouterPeerAttachment (NOT
+// the legacy DetachCenChildInstance, which returns Forbidden.TypeInvalid for
+// TR-based children). Carries the same name-based NODELETING guard as the
+// parent so shared infra CENs (e.g. "no-deleting-cen") and their children are
+// never touched. Shares the enumeration + delete helpers
+// (forEachCenForSubSweep / sweepCenTransitRouterAttachments) defined alongside
+// the VPC-attachment sweeper in the same package.
+
+func init() {
+	resource.AddTestSweepers("alicloud_cen_transit_router_peer_attachment", &resource.Sweeper{
+		Name: "alicloud_cen_transit_router_peer_attachment",
+		F:    testSweepCenTransitRouterPeerAttachments,
+	})
+}
+
+func testSweepCenTransitRouterPeerAttachments(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	// Peer attachments live in the CEN's home region, so the home client
+	// suffices for both LIST and DELETE. Force=true is used so route-table
+	// dependencies are removed automatically.
+	return forEachCenForSubSweep(client, func(cenId, cenName string) {
+		sweepCenTransitRouterAttachments(client, cenId, cenName,
+			"ListTransitRouterPeerAttachments", "DeleteTransitRouterPeerAttachment", "peer",
+			[]string{client.RegionId}, nil)
+	})
+}
