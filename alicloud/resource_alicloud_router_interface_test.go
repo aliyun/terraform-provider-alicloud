@@ -1,13 +1,19 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -146,7 +152,7 @@ func testAccCheckRouterInterfaceDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudVPCRouterInterfaceBasic(t *testing.T) {
+func TestAccAliCloudVPCRouterInterfaceBasic(t *testing.T) {
 	var v vpc.RouterInterfaceType
 	resourceId := "alicloud_router_interface.default"
 	ra := resourceAttrInit(resourceId, testAccRouterInterfaceCheckMap)
@@ -160,9 +166,9 @@ func TestAccAlicloudVPCRouterInterfaceBasic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckRouterInterfaceDestroy,
+		CheckDestroy:      testAccCheckRouterInterfaceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRouterInterfaceConfigBasic(rand),
@@ -234,7 +240,7 @@ func TestAccAlicloudVPCRouterInterfaceBasic(t *testing.T) {
 
 }
 
-func TestAccAlicloudVPCRouterInterfaceMulti(t *testing.T) {
+func TestAccAliCloudVPCRouterInterfaceMulti(t *testing.T) {
 	var v vpc.RouterInterfaceType
 	resourceId := "alicloud_router_interface.default.2"
 	ra := resourceAttrInit(resourceId, testAccRouterInterfaceCheckMap)
@@ -248,9 +254,9 @@ func TestAccAlicloudVPCRouterInterfaceMulti(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckRouterInterfaceDestroy,
+		CheckDestroy:      testAccCheckRouterInterfaceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRouterInterfaceConfig_multi(rand),
@@ -457,4 +463,296 @@ var testAccRouterInterfaceCheckMap = map[string]string{
 	"health_check_source_ip": "",
 	"health_check_target_ip": "",
 	"instance_charge_type":   string(PostPaid),
+}
+
+func TestAccAliCloudRouterInterface_crossRegionDelete(t *testing.T) {
+	resourceId := "alicloud_router_interface.default"
+	name := fmt.Sprintf("tf-testAccRouterInterface%d", acctest.RandIntRange(10000, 99999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, routerInterfaceCrossRegionDeleteDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		ProviderFactories: testAccProviderFactoriesAlternate(),
+		CheckDestroy:      testAccCheckCrossRegionRouterInterfaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"opposite_region":      "cn-beijing",
+					"router_type":          "VRouter",
+					"router_id":            "${alicloud_vpc.local.router_id}",
+					"role":                 "InitiatingSide",
+					"instance_charge_type": "PostPaid",
+					"specification":        "Mini.2",
+					"name":                 name,
+					"description":          "cross region deletion test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "opposite_region", "cn-beijing"),
+					resource.TestCheckResourceAttr("alicloud_router_interface.remote", "opposite_region", "cn-hangzhou"),
+					testAccCheckCrossRegionRouterInterfacesActive,
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name + "-updated",
+					"description": "updated cross region deletion test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "name", name+"-updated"),
+					testAccCheckCrossRegionRouterInterfacesActive,
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
+			},
+		},
+	})
+}
+
+func routerInterfaceCrossRegionDeleteDependence(name string) string {
+	return fmt.Sprintf(`
+provider "alicloud" {
+ region = "cn-hangzhou"
+}
+provider "alicloudalt" {
+ region = "cn-beijing"
+}
+resource "alicloud_vpc" "local" {
+ vpc_name = "%[1]s-local"
+ cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vpc" "remote" {
+ provider = alicloudalt
+ vpc_name = "%[1]s-remote"
+ cidr_block = "172.17.0.0/16"
+}
+resource "alicloud_router_interface" "remote" {
+ provider = alicloudalt
+ router_id = alicloud_vpc.remote.router_id
+ router_type = "VRouter"
+ role = "AcceptingSide"
+ specification = "Negative"
+ instance_charge_type = "PostPaid"
+ opposite_region = "cn-hangzhou"
+ name = "%[1]s-remote"
+}
+resource "alicloud_router_interface_connection" "local" {
+ interface_id = alicloud_router_interface.default.id
+ opposite_interface_id = alicloud_router_interface.remote.id
+ depends_on = [alicloud_router_interface_connection.remote]
+}
+resource "alicloud_router_interface_connection" "remote" {
+ provider = alicloudalt
+ interface_id = alicloud_router_interface.remote.id
+ opposite_interface_id = alicloud_router_interface.default.id
+}
+`, name)
+}
+
+// Verify both regions explicitly; querying the default region for an aliased
+// resource would report NotFound even if the remote resource leaked.
+func testAccCheckCrossRegionRouterInterfaceDestroy(s *terraform.State) error {
+	for address, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_router_interface" && rs.Type != "alicloud_express_connect_router_interface" && rs.Type != "alicloud_vpc" {
+			continue
+		}
+		region := "cn-hangzhou"
+		if strings.HasSuffix(address, ".remote") {
+			region = "cn-beijing"
+		}
+		rawClient, err := sharedClientForRegion(region)
+		if err != nil {
+			return err
+		}
+		client := rawClient.(*connectivity.AliyunClient)
+		switch rs.Type {
+		case "alicloud_router_interface":
+			service := VpcService{client}
+			_, err = service.DescribeRouterInterface(rs.Primary.ID, region)
+		case "alicloud_express_connect_router_interface":
+			service := ExpressConnectServiceV2{client}
+			_, err = service.DescribeExpressConnectRouterInterface(rs.Primary.ID)
+		case "alicloud_vpc":
+			service := VpcServiceV2{client}
+			_, err = service.DescribeVpcVpc(rs.Primary.ID)
+		}
+		if err == nil {
+			return fmt.Errorf("resource %s still exists in %s", address, region)
+		}
+		if !NotFoundError(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+func testAccCheckCrossRegionRouterInterfacesActive(s *terraform.State) error {
+	for address, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_router_interface" && rs.Type != "alicloud_express_connect_router_interface" {
+			continue
+		}
+		region := "cn-hangzhou"
+		if strings.HasSuffix(address, ".remote") {
+			region = "cn-beijing"
+		}
+		rawClient, err := sharedClientForRegion(region)
+		if err != nil {
+			return err
+		}
+		service := VpcService{rawClient.(*connectivity.AliyunClient)}
+		if err := service.WaitForRouterInterface(rs.Primary.ID, region, Active, DefaultTimeout); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func routerInterfaceDeleteTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if r.Form.Get("RegionId") != "cn-hangzhou" {
+			t.Errorf("unexpected region: %q", r.Form.Get("RegionId"))
+		}
+		handler(w, r)
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{AccessKey: "test-key", SecretKey: "test-secret", Credential: credential, RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http", Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("vpc", endpoint)
+	return client
+}
+
+func routerInterfaceDeleteTestResponse(t *testing.T, w http.ResponseWriter, response interface{}) {
+	t.Helper()
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		t.Error(err)
+	}
+}
+
+func routerInterfaceDeleteTestError(t *testing.T, w http.ResponseWriter, code string) {
+	t.Helper()
+	if strings.HasSuffix(code, ".NotFound") {
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	routerInterfaceDeleteTestResponse(t, w, map[string]interface{}{"Code": code, "Message": "test operation failed"})
+}
+
+func TestUnitRouterInterfaceDeleteError(t *testing.T) {
+	for _, code := range []string{"Forbidden", "InvalidInstanceId.NotFound"} {
+		t.Run(code, func(t *testing.T) {
+			describes := 0
+			client := routerInterfaceDeleteTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				switch r.Form.Get("Action") {
+				case "DescribeRouterInterfaces":
+					describes++
+					interfaces := []interface{}{}
+					if describes == 1 {
+						interfaces = append(interfaces, map[string]interface{}{"RouterInterfaceId": "ri-test", "Status": "Inactive"})
+					}
+					routerInterfaceDeleteTestResponse(t, w, map[string]interface{}{"RouterInterfaceSet": map[string]interface{}{"RouterInterfaceType": interfaces}})
+				case "DeleteRouterInterface":
+					if r.Form.Get("RouterInterfaceId") != "ri-test" {
+						t.Error("wrong router interface")
+					}
+					routerInterfaceDeleteTestError(t, w, code)
+				default:
+					t.Errorf("unexpected action %q", r.Form.Get("Action"))
+				}
+			})
+			d := resourceAlicloudRouterInterface().Data(nil)
+			d.SetId("ri-test")
+			err := resourceAlicloudRouterInterfaceDelete(d, client)
+			if code == "Forbidden" && (err == nil || !strings.Contains(err.Error(), code)) {
+				t.Errorf("expected original delete error %s, got %v", code, err)
+			}
+			if code == "InvalidInstanceId.NotFound" && err != nil {
+				t.Errorf("already deleted must succeed: %v", err)
+			}
+			if describes != 1 {
+				t.Errorf("delete error must not fall through to the waiter: got %d reads", describes)
+			}
+		})
+	}
+}
+
+func TestUnitRouterInterfaceRegionalEndpoints(t *testing.T) {
+	regions := []string{"unit-test-router-interface-a", "unit-test-router-interface-b"}
+	caches := []*sync.Map{sharedEndpointCacheForRegion(regions[0]), sharedEndpointCacheForRegion(regions[1])}
+	if caches[0] == caches[1] {
+		t.Fatal("different regions share an endpoint cache")
+	}
+	for i, region := range regions {
+		if sharedEndpointCacheForRegion(region) != caches[i] {
+			t.Fatal("same region does not reuse its endpoint cache")
+		}
+		t.Cleanup(func() { regionalEndpoints.Delete(region) })
+	}
+	calls := []int32{0, 0}
+	servers := make([]*httptest.Server, len(regions))
+	for i, region := range regions {
+		i, region := i, region
+		servers[i] = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := r.ParseForm(); err != nil {
+				t.Error(err)
+			}
+			if r.Form.Get("RegionId") != region || r.Form.Get("Action") != "DescribeRouterInterfaces" {
+				t.Errorf("region %s received action %s for region %s", region, r.Form.Get("Action"), r.Form.Get("RegionId"))
+			}
+			atomic.AddInt32(&calls[i], 1)
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"TotalCount":1,"RouterInterfaceSet":{"RouterInterfaceType":[{"RouterInterfaceId":"ri-%s","Status":"Active"}]}}`, region)
+		}))
+		t.Cleanup(servers[i].Close)
+		caches[i].Store("vpc", strings.TrimPrefix(servers[i].URL, "http://"))
+	}
+	t.Setenv("NO_PROXY", "*")
+	credential, err := credentials.NewCredential(new(credentials.Config).SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Rebuild A after B as well: a new regional client must not inherit B's endpoint.
+	for _, i := range []int{0, 1, 0, 1} {
+		region := regions[i]
+		config := &connectivity.Config{Region: connectivity.Region(region), RegionId: region,
+			AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+			AccountType: "test", Protocol: "http", SkipRegionValidation: true,
+			Endpoints: sharedEndpointCacheForRegion(region), SignVersion: new(sync.Map)}
+		client, err := config.Client()
+		if err != nil {
+			t.Fatal(err)
+		}
+		service := VpcService{client}
+		result, err := service.DescribeRouterInterface("ri-"+region, region)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.Status != "Active" {
+			t.Fatalf("region %s returned status %s", region, result.Status)
+		}
+	}
+	if atomic.LoadInt32(&calls[0]) != 2 || atomic.LoadInt32(&calls[1]) != 2 {
+		t.Fatalf("requests reached the wrong regional servers: %v", calls)
+	}
 }

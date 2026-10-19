@@ -2,11 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // Test ExpressConnect RouterInterface. >>> Resource test cases, automatically generated.
@@ -28,9 +32,9 @@ func TestAccAliCloudExpressConnectRouterInterface_basic11729(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -163,9 +167,9 @@ func TestAccAliCloudExpressConnectRouterInterface_basic11648(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -345,9 +349,9 @@ func TestAccAliCloudExpressConnectRouterInterface_basic5930(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -550,3 +554,179 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
 }
 
 // Test ExpressConnect RouterInterface. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudExpressConnectRouterInterface_crossRegionDelete(t *testing.T) {
+	resourceId := "alicloud_express_connect_router_interface.default"
+	name := fmt.Sprintf("tf-testAccExpressConnect%d", acctest.RandIntRange(10000, 99999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, expressConnectRouterInterfaceCrossRegionDeleteDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		},
+		ProviderFactories: testAccProviderFactoriesAlternate(),
+		CheckDestroy:      testAccCheckCrossRegionRouterInterfaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"fast_link_mode":              "false",
+					"payment_type":                "PayAsYouGo",
+					"opposite_region_id":          "cn-beijing",
+					"opposite_router_type":        "VRouter",
+					"opposite_router_id":          "${alicloud_vpc.remote.router_id}",
+					"opposite_interface_owner_id": "${data.alicloud_account.cross_region.id}",
+					"router_type":                 "VRouter",
+					"router_id":                   "${alicloud_vpc.local.router_id}",
+					"role":                        "InitiatingSide",
+					"spec":                        "Mini.2",
+					"router_interface_name":       name,
+					"description":                 "cross region deletion test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "opposite_region_id", "cn-beijing"),
+					resource.TestCheckResourceAttr("alicloud_express_connect_router_interface.remote", "opposite_region_id", "cn-hangzhou"),
+					testAccCheckCrossRegionRouterInterfacesActive,
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"router_interface_name": name + "-updated",
+					"description":           "updated cross region deletion test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "router_interface_name", name+"-updated"),
+					testAccCheckCrossRegionRouterInterfacesActive,
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "delete_health_check_ip", "period", "pricing_cycle"},
+			},
+		},
+	})
+}
+
+func expressConnectRouterInterfaceCrossRegionDeleteDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_account" "cross_region" {}
+provider "alicloud" {
+ region = "cn-hangzhou"
+}
+provider "alicloudalt" {
+ region = "cn-beijing"
+}
+resource "alicloud_vpc" "local" {
+ vpc_name = "%[1]s-local"
+ cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vpc" "remote" {
+ provider = alicloudalt
+ vpc_name = "%[1]s-remote"
+ cidr_block = "172.17.0.0/16"
+}
+resource "alicloud_express_connect_router_interface" "remote" {
+ provider = alicloudalt
+ router_id = alicloud_vpc.remote.router_id
+ router_type = "VRouter"
+ role = "AcceptingSide"
+ spec = "Negative"
+ fast_link_mode = false
+ payment_type = "PayAsYouGo"
+ opposite_router_type = "VRouter"
+ opposite_router_id = alicloud_vpc.local.router_id
+ opposite_interface_owner_id = data.alicloud_account.cross_region.id
+ opposite_region_id = "cn-hangzhou"
+ router_interface_name = "%[1]s-remote"
+}
+resource "alicloud_router_interface_connection" "local" {
+ interface_id = alicloud_express_connect_router_interface.default.id
+ opposite_interface_id = alicloud_express_connect_router_interface.remote.id
+ depends_on = [alicloud_router_interface_connection.remote]
+}
+resource "alicloud_router_interface_connection" "remote" {
+ provider = alicloudalt
+ interface_id = alicloud_express_connect_router_interface.remote.id
+ opposite_interface_id = alicloud_express_connect_router_interface.default.id
+}
+`, name)
+}
+
+func TestUnitExpressConnectRouterInterfaceDeleteWait(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		status      string
+		queryError  string
+		deleteError string
+		timeout     time.Duration
+		wantError   string
+		wantReads   int
+	}{
+		{name: "wait_for_absence", status: "Inactive", timeout: 20 * time.Second, wantReads: 2},
+		{name: "idle_is_not_deleted", status: "Idle", timeout: 6 * time.Second, wantError: "timeout", wantReads: 1},
+		{name: "query_error", queryError: "Forbidden", timeout: 10 * time.Second, wantError: "Forbidden", wantReads: 1},
+		{name: "query_not_found", queryError: "InvalidInstanceId.NotFound", timeout: 10 * time.Second, wantReads: 1},
+		{name: "delete_not_found", deleteError: "InvalidInstanceId.NotFound", timeout: 10 * time.Second, wantReads: 0},
+		{name: "delete_error", deleteError: "Forbidden", timeout: 10 * time.Second, wantError: "Forbidden", wantReads: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			reads := 0
+			client := routerInterfaceDeleteTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				switch r.Form.Get("Action") {
+				case "DeleteRouterInterface":
+					if r.Form.Get("RouterInterfaceId") != "ri-test" {
+						t.Error("wrong router interface")
+					}
+					if tc.deleteError != "" {
+						routerInterfaceDeleteTestError(t, w, tc.deleteError)
+						return
+					}
+					routerInterfaceDeleteTestResponse(t, w, map[string]interface{}{})
+				case "DescribeRouterInterfaceAttribute":
+					reads++
+					if r.Form.Get("InstanceId") != "ri-test" {
+						t.Error("wrong waiter instance")
+					}
+					if tc.queryError != "" {
+						routerInterfaceDeleteTestError(t, w, tc.queryError)
+						return
+					}
+					if reads == 1 || tc.name == "idle_is_not_deleted" {
+						routerInterfaceDeleteTestResponse(t, w, map[string]interface{}{"RouterInterfaceId": "ri-test", "Status": tc.status, "ChargeType": "AfterPay"})
+						return
+					}
+					routerInterfaceDeleteTestError(t, w, "InvalidInstanceId.NotFound")
+				default:
+					t.Errorf("unexpected action %q", r.Form.Get("Action"))
+				}
+			})
+			res := resourceAliCloudExpressConnectRouterInterface()
+			res.Timeouts = &schema.ResourceTimeout{Delete: schema.DefaultTimeout(tc.timeout)}
+			d := res.Data(nil)
+			d.SetId("ri-test")
+			if err := d.Set("fast_link_mode", false); err != nil {
+				t.Fatal(err)
+			}
+			if err := d.Set("payment_type", "PayAsYouGo"); err != nil {
+				t.Fatal(err)
+			}
+			err := res.Delete(d, client)
+			if tc.wantError != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantError) {
+					t.Errorf("wanted %s, got %v", tc.wantError, err)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if tc.name == "idle_is_not_deleted" {
+				if reads < 1 || reads > 3 {
+					t.Errorf("expected bounded polling of persistent Idle, got %d reads", reads)
+				}
+			} else if reads != tc.wantReads {
+				t.Errorf("expected %d reads before Delete returns, got %d", tc.wantReads, reads)
+			}
+		})
+	}
+}

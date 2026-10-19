@@ -70,6 +70,14 @@ func sharedClientForRegionWithBackendRegions(region string, supported bool, regi
 
 var endpoints sync.Map
 var signVersion sync.Map
+var regionalEndpoints sync.Map
+
+// SDK endpoint caches are keyed by product. Sharing one across regions can route
+// a Hangzhou request to a previously cached Beijing endpoint.
+func sharedEndpointCacheForRegion(region string) *sync.Map {
+	cache, _ := regionalEndpoints.LoadOrStore(region, new(sync.Map))
+	return cache.(*sync.Map)
+}
 
 // sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
 // functions for a give n region
@@ -91,7 +99,7 @@ func sharedClientForRegion(region string) (interface{}, error) {
 		AccessKey:   accessKey,
 		SecretKey:   secretKey,
 		Protocol:    "HTTPS",
-		Endpoints:   &endpoints,
+		Endpoints:   sharedEndpointCacheForRegion(region),
 		SignVersion: &signVersion,
 	}
 	if securityToken != "" {

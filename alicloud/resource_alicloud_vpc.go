@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -790,7 +791,14 @@ func resourceAliCloudVpcVpcDelete(d *schema.ResourceData, meta interface{}) erro
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"DependencyViolation.VSwitch", "DependencyViolation.SecurityGroup", "IncorrectVpcStatus"}) || NeedRetry(err) {
+			// A deleted router interface can remain attached to its VPC briefly.
+			// Match the new retry code exactly, without the legacy helper's
+			// prefix/message matching broadening it to unrelated dependencies.
+			interfaceDependency := false
+			if sdkError, ok := err.(*tea.SDKError); ok {
+				interfaceDependency = tea.StringValue(sdkError.Code) == "DependencyViolation.RouterInterface"
+			}
+			if interfaceDependency || IsExpectedErrors(err, []string{"DependencyViolation.VSwitch", "DependencyViolation.SecurityGroup", "IncorrectVpcStatus"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
