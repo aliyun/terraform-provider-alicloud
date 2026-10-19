@@ -70,14 +70,26 @@ func testSweepDtsSubscriptionJob(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 
+			if _, ok := item["DtsJobName"]; !ok {
+				continue
+			}
+			name := fmt.Sprint(item["DtsJobName"])
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping Dts SubscriptionJob (NODELETING): %s", name)
+				continue
+			}
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["DtsJobName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if sweepAll() {
+				skip = false
+			} else {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping Dts SubscriptionJob: %s", item["DtsJobName"].(string))
+				log.Printf("[INFO] Skipping Dts SubscriptionJob: %s", name)
 				continue
 			}
 
@@ -89,9 +101,10 @@ func testSweepDtsSubscriptionJob(region string) error {
 			request["RegionId"] = client.RegionId
 			_, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Dts SubscriptionJob (%s): %s", item["DtsJobName"].(string), err)
+				log.Printf("[ERROR] Failed to delete Dts SubscriptionJob (%s): %s", name, err)
+				continue
 			}
-			log.Printf("[INFO] Delete Dts SubscriptionJob success: %s ", item["DtsJobName"].(string))
+			log.Printf("[INFO] Delete Dts SubscriptionJob success: %s ", name)
 		}
 		if len(result) < PageSizeLarge {
 			break
