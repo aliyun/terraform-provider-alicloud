@@ -5,8 +5,11 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,9 +17,107 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_mongodb_serverless_instance", &resource.Sweeper{
+		Name: "alicloud_mongodb_serverless_instance",
+		F:    testSweepMongoDBServerlessInstances,
+	})
+}
+
+// testSweepMongoDBServerlessInstances sweeps PostPaid Serverless MongoDB
+// instances (DBInstanceType=serverless). DescribeDBInstances defaults to
+// DBInstanceType=replicate, so serverless instances are NOT covered by the
+// regular alicloud_mongodb_instance / alicloud_mongodb_sharding_instance
+// sweepers — this sweeper closes that gap. NODELETING/do-not-delete markers
+// are honored in ALL modes (including SWEEP_ALL) via protectedSweepVpcName.
+func testSweepMongoDBServerlessInstances(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	action := "DescribeDBInstances"
+	request := map[string]interface{}{}
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	request["DBInstanceType"] = "serverless"
+	request["ChargeType"] = "PostPaid"
+
+	var response map[string]interface{}
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			return nil
+		}
+
+		resp, err := jsonpath.Get("$.DBInstances.DBInstance", response)
+		if err != nil {
+			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.DBInstances.DBInstance", action, err)
+			return nil
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+
+			// NODELETING / do-not-delete marker guard — applies in ALL modes
+			// (including SWEEP_ALL) so named-protected instances are never swept.
+			if protectedSweepVpcName(fmt.Sprint(item["DBInstanceDescription"])) {
+				log.Printf("[INFO] Skipping Mongodb Serverless Instance (do-not-delete marker): %s", fmt.Sprint(item["DBInstanceDescription"]))
+				continue
+			}
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["DBInstanceDescription"])), strings.ToLower(prefix)) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping Mongodb Serverless Instance: %s", fmt.Sprint(item["DBInstanceDescription"]))
+					continue
+				}
+			}
+			delAction := "DeleteDBInstance"
+			delRequest := map[string]interface{}{
+				"DBInstanceId": item["DBInstanceId"],
+				"RegionId":     client.RegionId,
+			}
+			_, err = client.RpcPost("Dds", "2015-12-01", delAction, nil, delRequest, false)
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Mongodb Serverless Instance (%s): %s", fmt.Sprint(item["DBInstanceDescription"]), err)
+			}
+			log.Printf("[INFO] Delete Mongodb Serverless Instance success: %s ", fmt.Sprint(item["DBInstanceDescription"]))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return nil
+}
 
 // lintignore: AT001
 func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
