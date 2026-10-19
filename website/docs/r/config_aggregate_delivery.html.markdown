@@ -77,6 +77,9 @@ resource "alicloud_config_aggregate_delivery" "default" {
 
 The following arguments are supported:
 * `aggregator_id` - (Required, ForceNew) Aggregator ID.
+* `compliant_snapshot` - (Optional) Indicates whether to deliver compliant snapshots. Valid values:
+  - true: Compliant snapshots are delivered.
+  - false: Compliant snapshots are not delivered.
 * `configuration_item_change_notification` - (Optional) Indicates whether the specified destination receives resource change logs. If the value of this parameter is true, Cloud Config delivers the resource change logs to OSS, Log Service, or MNS when the configurations of the resources change. Valid values:  
   - true: The specified destination receives resource change logs.  
   - false: The specified destination does not receive resource change logs.  
@@ -103,6 +106,7 @@ The following arguments are supported:
   - OSS: Object Storage Service (OSS)
   - MNS: Message Service (MNS)
   - SLS: Log Service
+* `delivery_snapshot_time` - (Optional, Computed) The delivery snapshot time. The time is displayed in UTC. Format: HH:mmZ. If you do not specify this parameter, the system delivers snapshots at 04:00Z and 16:00Z every day.
 * `description` - (Optional) The description of the delivery method.
 * `non_compliant_notification` - (Optional) Indicates whether the specified destination receives resource non-compliance events. If the value of this parameter is true, Cloud Config delivers resource non-compliance events to Log Service or MNS when resources are evaluated as non-compliant. Valid values:  
   - true: The specified destination receives resource non-compliance events.  
