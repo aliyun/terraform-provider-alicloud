@@ -68,6 +68,10 @@ func testSweepGaAccelerator(region string) error {
 			accelerator := v.(map[string]interface{})
 			acceleratorName := fmt.Sprint(accelerator["Name"])
 			acceleratorId := fmt.Sprint(accelerator["AcceleratorId"])
+			if protectedSweepVpcName(acceleratorName) {
+				log.Printf("[INFO] Skipping Ga accelerator (NODELETING): %s(%s) ", acceleratorId, acceleratorName)
+				continue
+			}
 			skip := true
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(acceleratorName, prefix) {
@@ -75,7 +79,7 @@ func testSweepGaAccelerator(region string) error {
 					break
 				}
 			}
-			if skip {
+			if skip && !sweepAll() {
 				log.Printf("[INFO] Skipping Ga accelerator: %s(%s) ", acceleratorId, acceleratorName)
 				continue
 			}
@@ -105,9 +109,16 @@ func testSweepGaAccelerator(region string) error {
 				})
 
 				for _, v := range resp.([]interface{}) {
+					ipSet := v.(map[string]interface{})
+					ipSetId := fmt.Sprint(ipSet["IpSetId"])
+					// DeleteIpSets requires IpSetIds as a repeatList (array),
+					// passed as "IpSetIds.1" in the RpcPost map — mirrors
+					// resourceAliCloudGaIpSetDelete and testSweepGaIpSet.
+					// Using the singular "IpSetId" key returns 400
+					// MissingIpSetIds.
 					request := map[string]interface{}{
-						"IpSetId":  v.(map[string]interface{})["IpSetId"],
-						"RegionId": client.RegionId,
+						"IpSetIds.1": ipSetId,
+						"RegionId":   client.RegionId,
 					}
 					action := "DeleteIpSets"
 					wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -115,17 +126,17 @@ func testSweepGaAccelerator(region string) error {
 						request["ClientToken"] = buildClientToken("DeleteIpSet")
 						response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 						if err != nil {
-							if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
+							if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "NotActive.Listener"}) {
 								wait()
 								return retry.RetryableError(err)
 							}
 							return retry.NonRetryableError(err)
 						}
-						addDebug(action, resp, request)
+						addDebug(action, response, request)
 						return nil
 					})
 					if err != nil {
-						log.Printf("[ERROR] Deleting ip set %s got an error: %s", request["IpSetId"], err)
+						log.Printf("[ERROR] Deleting ip set %s got an error: %s", ipSetId, err)
 					}
 				}
 				break
@@ -218,6 +229,38 @@ func testSweepGaAccelerator(region string) error {
 				if err != nil {
 					log.Printf("[ERROR] Deleting bandwidth package %s got an error: %s", bandwidthPackageId, err)
 				}
+			}
+
+			// Finally delete the accelerator itself. PREPAY (Subscription)
+			// accelerators cannot be destroyed via API — record as leftover and
+			// continue (mirrors resourceAliCloudGaAcceleratorDelete behavior).
+			if fmt.Sprint(accelerator["InstanceChargeType"]) == "PREPAY" {
+				log.Printf("[INFO] Skipping PREPAY Ga accelerator (cannot destroy; wait for expiry): %s(%s) ", acceleratorId, acceleratorName)
+				continue
+			}
+			action := "DeleteAccelerator"
+			deleteRequest := map[string]interface{}{
+				"RegionId":      client.RegionId,
+				"AcceleratorId": acceleratorId,
+			}
+			deleteRequest["ClientToken"] = buildClientToken("DeleteAccelerator")
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+				response, err = client.RpcPost("Ga", "2019-11-20", action, nil, deleteRequest, true)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, deleteRequest)
+			if err != nil {
+				log.Printf("[ERROR] Deleting Ga accelerator %s got an error: %s", acceleratorId, err)
+			} else {
+				log.Printf("[INFO] Delete Ga accelerator success: %s(%s) ", acceleratorId, acceleratorName)
 			}
 
 		}

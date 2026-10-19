@@ -75,7 +75,11 @@ func testSweepGaAcl(region string) error {
 					skip = false
 				}
 			}
-			if skip {
+			if protectedSweepVpcName(item["AclName"].(string)) {
+				log.Printf("[INFO] Skipping Ga Acl (NODELETING): %s", item["AclName"].(string))
+				continue
+			}
+			if skip && !sweepAll() {
 				log.Printf("[INFO] Skipping Ga Acl: %s", item["AclName"].(string))
 				continue
 			}
