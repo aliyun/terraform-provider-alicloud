@@ -663,6 +663,93 @@ func (s *EcsServiceV2) EcsSnapshotStateRefreshFunc(id string, field string, fail
 
 // DescribeEcsSnapshot >>> Encapsulated.
 
+// DescribeEcsSnapshotLock <<< Encapsulated get interface for Ecs Snapshot lock info.
+
+func (s *EcsServiceV2) DescribeEcsSnapshotLock(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeLockedSnapshots"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SnapshotIds"] = convertListToJsonString([]interface{}{id})
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidSnapshotLock.NotFound"}) {
+			return nil, nil
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	// DescribeLockedSnapshots returns LockedSnapshotsInfo as a direct JSON array
+	// (e.g. {"LockedSnapshotsInfo":[{"LockStatus":"compliance",...}]}). Per the
+	// OpenAPI contract the field is optional/omitempty, so an unlocked snapshot
+	// may respond HTTP 200 with the key absent (a legal empty-success envelope,
+	// observed on the real cloud) or with an empty array; both mean "not locked".
+	// A present-but-non-array value (string/null/number) violates the contract
+	// (type=array, not nullable) and is treated as a malformed response (state
+	// indeterminate, fail-closed) so a real lock is never masked. This must NOT
+	// panic on a malformed response, must NOT treat a malformed response as
+	// unlocked, and must NOT attribute a foreign snapshot's lock info to this
+	// resource.
+	rawVal, present := response["LockedSnapshotsInfo"]
+	if !present {
+		// Legal omitempty envelope: 200 with no LockedSnapshotsInfo key.
+		return nil, nil
+	}
+	arr, ok := rawVal.([]interface{})
+	if !ok {
+		// Key present but not a JSON array (string/null/number/etc.). The
+		// contract requires an array; fail closed rather than guessing.
+		return object, WrapErrorf(nil, FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo", response)
+	}
+	if len(arr) == 0 {
+		// Empty array: genuinely not locked.
+		return nil, nil
+	}
+	// Non-empty array: validate each element is an object whose SnapshotId is a
+	// string equal to the requested id. A malformed element, a missing/typed
+	// SnapshotId, or an entry belonging to a different snapshot must NOT be
+	// returned as this resource's lock info and must NOT be silently treated as
+	// "no lock"; fail closed so the caller surfaces an indeterminate state
+	// instead of mis-attributing a foreign lock.
+	for _, elem := range arr {
+		entry, ok := elem.(map[string]interface{})
+		if !ok {
+			return object, WrapErrorf(nil, FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo[*]", response)
+		}
+		sid, ok := entry["SnapshotId"].(string)
+		if !ok || sid == "" {
+			return object, WrapErrorf(nil, FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo[*].SnapshotId", response)
+		}
+		if sid == id {
+			return entry, nil
+		}
+	}
+	// No entry matches the requested snapshot id. The request was scoped to
+	// SnapshotIds=[id]; a well-formed response either contains that entry or is
+	// empty. Foreign entries indicate a malformed response — fail closed rather
+	// than guessing unlocked.
+	return object, WrapErrorf(nil, FailedGetAttributeMsg, id, "$.LockedSnapshotsInfo[*] (no matching SnapshotId)", response)
+}
+
+// DescribeEcsSnapshotLock >>> Encapsulated.
+
 // DescribeEcsRamRoleAttachment <<< Encapsulated get interface for Ecs RamRoleAttachment.
 
 func (s *EcsServiceV2) DescribeEcsRamRoleAttachment(id string) (object map[string]interface{}, err error) {
