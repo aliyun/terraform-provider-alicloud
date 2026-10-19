@@ -209,6 +209,42 @@ func resourceAliCloudEfloNodeGroup() *schema.Resource {
 							Optional:  true,
 							Sensitive: true,
 						},
+						"security_group_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"data_disk": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"delete_with_node": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"category": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"size": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"performance_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"provisioned_iops": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"bursting_enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -227,6 +263,121 @@ func resourceAliCloudEfloNodeGroup() *schema.Resource {
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"file_system_mount_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"hyper_nodes": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Set: func(v interface{}) int {
+					var buf bytes.Buffer
+					m := v.(map[string]interface{})
+					if v, ok := m["hyper_node_id"]; ok {
+						buf.WriteString(fmt.Sprint(v))
+					}
+					return helper.Hashcode(buf.String())
+				},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"hostname": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"hyper_node_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"login_password": {
+							Type:      schema.TypeString,
+							Optional:  true,
+							Sensitive: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"security_group_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"data_disk": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"delete_with_node": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"category": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"size": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"performance_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"provisioned_iops": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"bursting_enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"node_unit": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"ram_role_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"savings_plan_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"system_disk": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"category": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"size": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"performance_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"virtual_gpu_enabled": {
+				Type:     schema.TypeBool,
 				Optional: true,
 			},
 		},
@@ -278,11 +429,50 @@ func resourceAliCloudEfloNodeGroupCreate(d *schema.ResourceData, meta interface{
 		objectDataLocalMap["NodeGroupName"] = v
 	}
 
+	if v, ok := d.GetOk("ram_role_name"); ok {
+		objectDataLocalMap["RamRoleName"] = v
+	}
+	if v, ok := d.GetOk("virtual_gpu_enabled"); ok {
+		objectDataLocalMap["VirtualGpuEnabled"] = v
+	}
+	if v, ok := d.GetOk("file_system_mount_enabled"); ok {
+		objectDataLocalMap["FileSystemMountEnabled"] = v
+	}
+	if v, ok := d.GetOk("system_disk"); ok {
+		if disks, ok := v.([]interface{}); ok && len(disks) > 0 && disks[0] != nil {
+			if raw, ok := disks[0].(map[string]interface{}); ok {
+				systemDiskMap := make(map[string]interface{})
+				if val, ok := raw["category"].(string); ok && val != "" {
+					systemDiskMap["Category"] = val
+				}
+				if val, ok := raw["performance_level"].(string); ok && val != "" {
+					systemDiskMap["PerformanceLevel"] = val
+				}
+				if val, ok := raw["size"].(int); ok && val > 0 {
+					systemDiskMap["Size"] = val
+				}
+				if len(systemDiskMap) > 0 {
+					objectDataLocalMap["SystemDisk"] = systemDiskMap
+				}
+			}
+		}
+	}
+
 	objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 	if err != nil {
 		return WrapError(err)
 	}
 	request["NodeGroup"] = string(objectDataLocalMapJson)
+
+	if v, ok := d.GetOk("node_unit"); ok {
+		if nodeUnit, ok := v.(map[string]interface{}); ok && len(nodeUnit) > 0 {
+			nodeUnitJson, uerr := json.Marshal(nodeUnit)
+			if uerr != nil {
+				return WrapError(uerr)
+			}
+			request["NodeUnit"] = string(nodeUnitJson)
+		}
+	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -329,6 +519,8 @@ func resourceAliCloudEfloNodeGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("node_group_name", objectRaw["GroupName"])
 	d.Set("cluster_id", objectRaw["ClusterId"])
 	d.Set("node_group_id", objectRaw["GroupId"])
+	d.Set("file_system_mount_enabled", objectRaw["FileSystemMountEnabled"])
+	d.Set("virtual_gpu_enabled", objectRaw["VirtualGpuEnabled"])
 
 	objectRaw, err = efloServiceV2.DescribeNodeGroupListClusterNodes(d.Id())
 	if err != nil && !NotFoundError(err) {
@@ -374,6 +566,50 @@ func resourceAliCloudEfloNodeGroupRead(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
+	hyperNodesObject, err := efloServiceV2.DescribeNodeGroupListClusterHyperNodes(d.Id())
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	hyperPasswordMap := make(map[string]interface{})
+	if v := d.Get("hyper_nodes"); !IsNil(v) {
+		if v, ok := d.GetOk("hyper_nodes"); ok {
+			localData, err := jsonpath.Get("$", v)
+			if err != nil {
+				localData = make([]interface{}, 0)
+			}
+			for _, dataLoop := range localData.(*schema.Set).List() {
+				dataLoopTmp := make(map[string]interface{})
+				if dataLoop != nil {
+					dataLoopTmp = dataLoop.(map[string]interface{})
+				}
+				hyperPasswordMap[fmt.Sprint(dataLoopTmp["hyper_node_id"])] = dataLoopTmp["login_password"]
+			}
+		}
+	}
+
+	hyperNodesRaw, _ := jsonpath.Get("$.HyperNodes", hyperNodesObject)
+
+	hyperNodesMaps := make([]map[string]interface{}, 0)
+	if hyperNodesRaw != nil {
+		for _, hyperNodeRaw := range hyperNodesRaw.([]interface{}) {
+			hyperNodeMap := make(map[string]interface{})
+			hyperNodeRaw := hyperNodeRaw.(map[string]interface{})
+			hyperNodeMap["hostname"] = hyperNodeRaw["Hostname"]
+			hyperNodeMap["hyper_node_id"] = hyperNodeRaw["HyperNodeId"]
+			hyperNodeMap["vswitch_id"] = hyperNodeRaw["VSwitchId"]
+			hyperNodeMap["vpc_id"] = hyperNodeRaw["VpcId"]
+			if password, ok := hyperPasswordMap[fmt.Sprint(hyperNodeMap["hyper_node_id"])]; ok {
+				hyperNodeMap["login_password"] = password
+			}
+
+			hyperNodesMaps = append(hyperNodesMaps, hyperNodeMap)
+		}
+	}
+	if err := d.Set("hyper_nodes", hyperNodesMaps); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -410,6 +646,14 @@ func resourceAliCloudEfloNodeGroupUpdate(d *schema.ResourceData, meta interface{
 		update = true
 	}
 	request["NewNodeGroupName"] = d.Get("node_group_name")
+	if !d.IsNewResource() && d.HasChange("ram_role_name") {
+		update = true
+		request["RamRoleName"] = d.Get("ram_role_name")
+	}
+	if !d.IsNewResource() && d.HasChange("file_system_mount_enabled") {
+		update = true
+		request["FileSystemMountEnabled"] = d.Get("file_system_mount_enabled")
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
@@ -521,9 +765,73 @@ func resourceAliCloudEfloNodeGroupUpdate(d *schema.ResourceData, meta interface{
 				dataLoopMap["LoginPassword"] = dataLoopTmp["login_password"]
 				dataLoopMap["VpcId"] = dataLoopTmp["vpc_id"]
 				dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
+				dataLoopMap["SecurityGroupId"] = dataLoopTmp["security_group_id"]
+				dataDisks := make([]interface{}, 0)
+				if dd, ok := dataLoopTmp["data_disk"].([]interface{}); ok {
+					for _, ddLoop := range dd {
+						ddTmp := make(map[string]interface{})
+						if ddLoop != nil {
+							ddTmp = ddLoop.(map[string]interface{})
+						}
+						ddMap := make(map[string]interface{})
+						ddMap["Category"] = ddTmp["category"]
+						ddMap["DeleteWithNode"] = ddTmp["delete_with_node"]
+						ddMap["PerformanceLevel"] = ddTmp["performance_level"]
+						ddMap["Size"] = ddTmp["size"]
+						ddMap["ProvisionedIops"] = ddTmp["provisioned_iops"]
+						ddMap["BurstingEnabled"] = ddTmp["bursting_enabled"]
+						dataDisks = append(dataDisks, ddMap)
+					}
+				}
+				dataLoopMap["DataDisk"] = dataDisks
 				localMaps = append(localMaps, dataLoopMap)
 			}
 			objectDataLocalMap["Nodes"] = localMaps
+
+			hyperNodesList := make([]interface{}, 0)
+			if v, ok := d.GetOk("hyper_nodes"); ok {
+				localHyperData, hErr := jsonpath.Get("$", v)
+				if hErr != nil {
+					localHyperData = make([]interface{}, 0)
+				}
+				for _, dataLoop := range localHyperData.(*schema.Set).List() {
+					dataLoopTmp := make(map[string]interface{})
+					if dataLoop != nil {
+						dataLoopTmp = dataLoop.(map[string]interface{})
+					}
+					hyperNodeMap := make(map[string]interface{})
+					hyperNodeMap["Hostname"] = dataLoopTmp["hostname"]
+					hyperNodeMap["HyperNodeId"] = dataLoopTmp["hyper_node_id"]
+					hyperNodeMap["LoginPassword"] = dataLoopTmp["login_password"]
+					hyperNodeMap["VpcId"] = dataLoopTmp["vpc_id"]
+					hyperNodeMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
+					hyperNodeMap["SecurityGroupId"] = dataLoopTmp["security_group_id"]
+					hyperDataDisks := make([]interface{}, 0)
+					if dd, ok := dataLoopTmp["data_disk"].([]interface{}); ok {
+						for _, ddLoop := range dd {
+							ddTmp := make(map[string]interface{})
+							if ddLoop != nil {
+								ddTmp = ddLoop.(map[string]interface{})
+							}
+							ddMap := make(map[string]interface{})
+							ddMap["Category"] = ddTmp["category"]
+							ddMap["DeleteWithNode"] = ddTmp["delete_with_node"]
+							ddMap["PerformanceLevel"] = ddTmp["performance_level"]
+							ddMap["Size"] = ddTmp["size"]
+							ddMap["ProvisionedIops"] = ddTmp["provisioned_iops"]
+							ddMap["BurstingEnabled"] = ddTmp["bursting_enabled"]
+							hyperDataDisks = append(hyperDataDisks, ddMap)
+						}
+					}
+					hyperNodeMap["DataDisk"] = hyperDataDisks
+					hyperNodesList = append(hyperNodesList, hyperNodeMap)
+				}
+			}
+			objectDataLocalMap["HyperNodes"] = hyperNodesList
+
+			if v, ok := d.GetOk("savings_plan_id"); ok {
+				objectDataLocalMap["SavingsPlanId"] = v
+			}
 
 			if v, ok := d.GetOk("node_group_id"); ok {
 				objectDataLocalMap["NodeGroupId"] = v
