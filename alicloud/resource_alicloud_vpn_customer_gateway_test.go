@@ -47,7 +47,8 @@ func testSweepVPNCustomerGateways(region string) error {
 			return vpcClient.DescribeCustomerGateways(request)
 		})
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to list VPN Customer Gateways: %s", err)
+			break
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeCustomerGatewaysResponse)
@@ -62,7 +63,8 @@ func testSweepVPNCustomerGateways(region string) error {
 
 		page, err := getNextpageNumber(request.PageNumber)
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to get next page number for VPN Customer Gateways: %s", err)
+			break
 		}
 		request.PageNumber = page
 	}
@@ -71,6 +73,10 @@ func testSweepVPNCustomerGateways(region string) error {
 	for _, v := range gws {
 		name := v.Name
 		id := v.CustomerGatewayId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping VPN Customer Gateway (do-not-delete): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
@@ -142,9 +148,9 @@ func TestAccAliCloudVPNCustomerGatewayBasic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckVpnCustomerGatewayDestroy,
+		CheckDestroy:      testAccCheckVpnCustomerGatewayDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccVpnCustomerGatewayConfigBasic(rand),
@@ -209,9 +215,9 @@ func TestAccAliCloudVPNCustomerGatewayMulti(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckVpnCustomerGatewayDestroy,
+		CheckDestroy:      testAccCheckVpnCustomerGatewayDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccVpnCustomerGatewayConfig_multi(rand),
@@ -292,9 +298,9 @@ func TestAccAliCloudVPNCustomerGateway_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -356,9 +362,9 @@ func TestAccAliCloudVPNGatewayCustomerGateway_basic3650(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -511,9 +517,9 @@ func TestAccAliCloudVPNGatewayCustomerGateway_basic3650_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -2,15 +2,113 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_vpn_connection", &resource.Sweeper{
+		Name: "alicloud_vpn_connection",
+		F:    testSweepVpnConnections,
+	})
+}
+
+// testSweepVpnConnections sweeps IPsec VPN connections (created via
+// CreateVpnConnection). It lists with DescribeVpnConnections and deletes with
+// DeleteVpnConnection, mirroring the provider Delete. VPN attachments
+// (CreateVpnAttachment) share the same list response but are deleted by the
+// alicloud_vpn_gateway_vpn_attachment sweeper; DeleteVpnConnection is a no-op
+// on those IDs and the error is logged and skipped (non-fatal).
+func testSweepVpnConnections(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	var conns []vpc.VpnConnectionInDescribeVpnConnections
+	request := vpc.CreateDescribeVpnConnectionsRequest()
+	request.RegionId = client.RegionId
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVpnConnections(request)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Error retrieving VPN Connections: %s", err)
+			break
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*vpc.DescribeVpnConnectionsResponse)
+		if response == nil || len(response.VpnConnections.VpnConnection) < 1 {
+			break
+		}
+		conns = append(conns, response.VpnConnections.VpnConnection...)
+		if len(response.VpnConnections.VpnConnection) < PageSizeLarge {
+			break
+		}
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
+			return WrapError(err)
+		}
+		request.PageNumber = page
+	}
+
+	sweeped := false
+	for _, v := range conns {
+		name := v.Name
+		id := v.VpnConnectionId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping VPN Connection (do-not-delete): %s (%s)", name, id)
+			continue
+		}
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping VPN Connection: %s (%s)", name, id)
+				continue
+			}
+		}
+		sweeped = true
+		log.Printf("[INFO] Deleting VPN Connection: %s (%s)", name, id)
+		req := vpc.CreateDeleteVpnConnectionRequest()
+		req.VpnConnectionId = id
+		_, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DeleteVpnConnection(req)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete VPN Connection (%s (%s)): %s", name, id, err)
+		}
+	}
+	if sweeped {
+		time.Sleep(5 * time.Second)
+	}
+	return nil
+}
 
 func equalSubnet(astr string, bstr string) bool {
 	aArray := strings.Split(astr, ",")
