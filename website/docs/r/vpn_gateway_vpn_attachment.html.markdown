@@ -217,7 +217,7 @@ Specifies whether to enable NAT traversal. Valid values:
   - false: disables NAT traversal.
 * `enable_tunnels_bgp` - (Optional, Computed, Available since v1.246.0) You can configure this parameter when you create a vpn attachment in dual-tunnel mode.Whether to enable the BGP function for the tunnel. Value: `true` or `false` (default). When enabling BGP in-place (`false` to `true`), the `tunnel_bgp_config` blocks in `tunnel_options_specification` are submitted together so the API receives the required BGP configuration.
 
--> **NOTE:**  before adding BGP configuration, we recommend that you understand the working mechanism and usage restrictions of the BGP dynamic routing function.
+  -> **NOTE:**  before adding BGP configuration, we recommend that you understand the working mechanism and usage restrictions of the BGP dynamic routing function.
 
 * `tunnel_bandwidth` - (Optional, Computed, ForceNew) The bandwidth specification of a single VPN tunnel. Valid values:
   - `Standard` (default): 1 Gbps.
@@ -300,7 +300,7 @@ The API can omit the `psk` value in read responses. In that case the provider re
 The tunnel_options_specification supports the following:
 * `customer_gateway_id` - (Required, Available since v1.246.0) The ID of the user gateway associated with the tunnel.
 
--> **NOTE:**  This parameter is required when creating a dual-tunnel mode IPsec-VPN connection.
+  -> **NOTE:**  This parameter is required when creating a dual-tunnel mode IPsec-VPN connection.
 
 * `enable_dpd` - (Optional, Computed, Available since v1.246.0) Whether the DPD (peer alive detection) function is enabled for the tunnel. Value:
   - `true` (default): enable the DPD function. IPsec initiator will send DPD message to check whether the peer device is alive. If the peer device does not receive a correct response within the set time, it is considered that the peer has been disconnected. IPsec will delete ISAKMP SA and the corresponding IPsec SA, and the security tunnel will also be deleted.
@@ -311,8 +311,8 @@ The tunnel_options_specification supports the following:
 * `role` - (Optional, Computed, Available since v1.276.0) The role reported by the service. The attachment create and update APIs do not accept this field. Configuration is accepted for backward compatibility but is ignored: it does not affect tunnel identity or trigger an update. State always reflects the role returned by the service.
 * `tunnel_bgp_config` - (Optional, Computed, List, Available since v1.246.0) Add the BGP configuration for the tunnel.
 
--> **NOTE:**  After you enable the BGP function for IPsec connections (that is, specify `EnableTunnelsBgp` as `true`), you must configure this parameter.
- See [`tunnel_bgp_config`](#tunnel_options_specification-tunnel_bgp_config) below.
+  -> **NOTE:**  After you enable the BGP function for IPsec connections (that is, specify `EnableTunnelsBgp` as `true`), you must configure this parameter.
+  See [`tunnel_bgp_config`](#tunnel_options_specification-tunnel_bgp_config) below.
 * `tunnel_ike_config` - (Optional, Computed, List, Available since v1.246.0) Configuration information for the first phase negotiation. See [`tunnel_ike_config`](#tunnel_options_specification-tunnel_ike_config) below.
 * `tunnel_index` - (Required, Int, Available since v1.246.0) The logical index identifying the tunnel. Each tunnel must have a unique index; configuration block order does not determine the index.
   - `1`: First tunnel.
@@ -324,12 +324,12 @@ The tunnel_options_specification supports the following:
 The tunnel_options_specification-tunnel_bgp_config supports the following:
 * `local_asn` - (Optional, Computed, Int, Available since v1.246.0) The number of the local (Alibaba Cloud) autonomous system of the tunnel. The value range of the autonomous system number is `1` to `4294967295`. Default value: `45104`.
 
--> **NOTE:**  We recommend that you use the private number of the autonomous system number to establish a BGP connection with Alibaba Cloud. The private number range of the autonomous system number please consult the document yourself.
+  -> **NOTE:**  We recommend that you use the private number of the autonomous system number to establish a BGP connection with Alibaba Cloud. The private number range of the autonomous system number please consult the document yourself.
 
 * `local_bgp_ip` - (Optional, Computed, Available since v1.246.0) The local BGP address of the tunnel (on the Alibaba Cloud side). This address is an IP address in the BGP network segment.
 * `tunnel_cidr` - (Optional, Computed, Available since v1.246.0) The BGP network segment of the tunnel. The network segment must be a network segment with a mask length of 30 in 169.254.0.0/16, and cannot be 169.254.0.0/30, 169.254.1.0/30, 169.254.2.0/30, 169.254.3.0/30, 169.254.4.0/30, 169.254.5.0/30, 169.254.6.0/30, and 169.254.169.252/30.
 
--> **NOTE:**  the network segments of two tunnels under an IPsec connection cannot be the same.
+  -> **NOTE:**  the network segments of two tunnels under an IPsec connection cannot be the same.
 
 
 ### `tunnel_options_specification-tunnel_ike_config`
@@ -353,7 +353,7 @@ Compared with IKEv1, IKEv2 simplifies the SA negotiation process and provides be
   - The key can be 1 to 100 characters in length. It supports numbers, upper and lower case English letters, and characters on the right. It cannot contain spaces. '''~! \'@#$%^& *()_-+ ={}[]|;:',./? '''
   - If you do not specify a pre-shared key, the system randomly generates a 16-bit string as the pre-shared key. 
 
--> **NOTE:**  The pre-shared key of the tunnel and the tunnel peer must be the same, otherwise the system cannot establish the tunnel normally.
+  -> **NOTE:**  The pre-shared key of the tunnel and the tunnel peer must be the same, otherwise the system cannot establish the tunnel normally.
 
 * `remote_id` - (Optional, Computed, Available since v1.246.0) Identifier of the tunnel peer, which is used for the first-stage negotiation. The length is limited to 100 characters and cannot contain spaces. The default value is the IP address of the user gateway associated with the tunnel.
   - `RemoteId` supports the FQDN format. If you use the FQDN format, we recommend that you select `aggressive` (barbaric mode) as the negotiation mode.

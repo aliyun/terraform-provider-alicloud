@@ -46,4 +46,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `entry` - The CIDR-formatted IP address range that is allowed to access.
   * `comment` - The comment of the entry.
 
--> **NOTE:** The system-managed loopback ACL policy (entry `127.0.0.1/32`, comment `default`) is filtered out of `entries` on Read; the data source only returns user-managed entries.
+  -> **NOTE:** The system-managed loopback ACL policy (entry `127.0.0.1/32`, comment `default`) is filtered out of `entries` on Read; the data source only returns user-managed entries.

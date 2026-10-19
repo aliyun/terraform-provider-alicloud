@@ -63,7 +63,7 @@ The following arguments are supported:
 * `oss_object_name` - (Optional, ForceNew) The name of the OSS object (ZIP package) that contains the function code.
 * `zip_file` - (Optional, ForceNew) The ZIP package of the function code that is encoded in the Base64 format.
 
--> **NOTE:** `zip_file` and `oss_bucket_name`, `oss_object_name` cannot be used together.
+  -> **NOTE:** `zip_file` and `oss_bucket_name`, `oss_object_name` cannot be used together.
 
 ## Attributes Reference
 

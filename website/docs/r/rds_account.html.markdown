@@ -89,7 +89,7 @@ The following arguments are supported:
 * `db_instance_id` - (Optional, ForceNew) The ID of the instance.
 * `account_description` - (Optional) The description of the account. The value must be 2 to 256 characters in length. The value can contain letters, digits, underscores (_), and hyphens (-), and must start with a letter.
 
--> **NOTE:** The name cannot start with http:// or https://.
+  -> **NOTE:** The name cannot start with http:// or https://.
 * `account_name` - (Optional, ForceNew) The name of the database account.
   * The name must be unique.
   * The name can contain lowercase letters, digits, and underscores (_). For MySQL databases, the name can contain uppercase letters.
@@ -115,7 +115,7 @@ The following arguments are supported:
   * Super: privileged account.
   * Sysadmin: system admin account. The account type is available only for ApsaraDB RDS for SQL Server instances.
 
--> **NOTE:** Before you create a system admin account, check whether the RDS instance meets all prerequisites. For more information, See [Create a system admin account](https://help.aliyun.com/zh/rds/apsaradb-rds-for-sql-server/create-a-system-admin-account-for-an-apsaradb-rds-for-sql-server-instance?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
+  -> **NOTE:** Before you create a system admin account, check whether the RDS instance meets all prerequisites. For more information, See [Create a system admin account](https://help.aliyun.com/zh/rds/apsaradb-rds-for-sql-server/create-a-system-admin-account-for-an-apsaradb-rds-for-sql-server-instance?spm=api-workbench.API%20Document.0.0.529e2defHKoZ3o).
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. It conflicts with `account_password`, `password` and `account_password_wo`, and one of the four password sources must be set.
 * `kms_encryption_context` - (Optional, MapString) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `description` - (Optional, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_description` instead.
@@ -124,7 +124,7 @@ The following arguments are supported:
 * `password` - (Optional, Sensitive, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_password` instead. It conflicts with `account_password`, `kms_encrypted_password` and `account_password_wo`, and one of the four password sources must be set.
 * `type` - (Optional, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_type` instead.
 
--> **NOTE**: Only MySQL engine is supported resets permissions of the privileged account.
+  -> **NOTE**: Only MySQL engine is supported resets permissions of the privileged account.
 * `reset_permission_flag` - (Optional, Available in v1.198.0+) Resets permissions flag of the privileged account. Default to `false`. Set it to `true` can resets permissions of the privileged account.
 * `check_policy` - (Optional, Available since v1.266.0) Whether to apply password policy
 * `status` - (Optional, Computed) The status of the resource. Valid values: `Available`, `Unavailable`.

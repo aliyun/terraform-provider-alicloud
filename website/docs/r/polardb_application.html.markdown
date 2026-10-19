@@ -97,6 +97,7 @@ The following arguments are supported:
 * `pay_type` - (Optional, ForceNew) The billing method. Valid values are `PrePaid`, `PostPaid`. Default to `PostPaid`.
 * `auto_renew` - (Optional, ForceNew) Whether to enable auto-renewal. Valid values are `true`, `false`.
 * `period` - (Optional, ForceNew) The subscription duration in months. It is valid when `pay_type` is `PrePaid`. Valid values: `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `12`, `24`, `36`.
+
   -> **NOTE:** The attribute `period` is only used to create Subscription instance. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `model_from` - (Optional, ForceNew) The source of the model. Valid values are `bailian`,`custom`,`maas`.

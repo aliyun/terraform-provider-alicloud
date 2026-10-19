@@ -71,7 +71,7 @@ The following arguments are supported:
 * `host_region_id` - (Required, ForceNew) The region of the cloud service.
 * `host_vpc_id` - (Required, ForceNew) The VPC associated with the cloud service.
 
--> **NOTE:** The values of `host_region_id` and `access_region_id` must be consistent.
+  -> **NOTE:** The values of `host_region_id` and `access_region_id` must be consistent.
 
 ## Attributes Reference
 

@@ -101,13 +101,13 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `instance_charge_type` - (Optional, V1.193.0+) Support `PayBySpec` (default) and `PayByCLCU`, This parameter takes effect when the value of **payment_type** (instance payment mode) is **PayAsYouGo** (pay-as-you-go).
 * `specification` - (Optional, Deprecated from v1.123.1) Field `specification` has been deprecated from provider version 1.123.1 New field `load_balancer_spec` instead.
 
--> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
+  -> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
 
--> **NOTE:** To change a "Shared-Performance" instance to a "Performance-guaranteed" instance, the SLB will have a short probability of business interruption (10 seconds-30 seconds). Advise to change it during the business downturn, or migrate business to other SLB Instances by using GSLB before changing.
+  -> **NOTE:** To change a "Shared-Performance" instance to a "Performance-guaranteed" instance, the SLB will have a short probability of business interruption (10 seconds-30 seconds). Advise to change it during the business downturn, or migrate business to other SLB Instances by using GSLB before changing.
 
--> **NOTE:** Currently, the alibaba cloud international account does not support creating a `Subscription` SLB instance.
+  -> **NOTE:** Currently, the alibaba cloud international account does not support creating a `Subscription` SLB instance.
 
--> **NOTE:** This parameter `instance_charge_type` is only valid for China sites and only if the `payment_type` value is `PayAsYouGo`.
+  -> **NOTE:** This parameter `instance_charge_type` is only valid for China sites and only if the `payment_type` value is `PayAsYouGo`.
 
 ## Attributes Reference
 

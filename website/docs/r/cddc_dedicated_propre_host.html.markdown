@@ -172,7 +172,8 @@ When the HostName or InstanceName is set according to the specified sorting form
   - **mssql**
 Must be consistent with the parent resource cluster engine attributes.
 * `image_id` - (Optional, ForceNew) The ID of the custom image.
--> **NOTE:**  If you need to use the default image, you do not need to fill it in.
+
+  -> **NOTE:**  If you need to use the default image, you do not need to fill it in.
 * `internet_charge_type` - (Optional, Available since v1.215.0) Network billing type. Value range: PayByBandwidth: Billing based on fixed bandwidth. PayByTraffic: charges by using the flow meter.
 * `internet_max_bandwidth_out` - (Optional, Available since v1.215.0) The maximum outbound bandwidth of the public network, in Mbit/s. Value range: 0~100.  Default value: 0. When set to greater than 0, a public IP is automatically created.
 * `key_pair_name` - (Optional, ForceNew) The key pair name.
@@ -180,11 +181,13 @@ Must be consistent with the parent resource cluster engine attributes.
   - Length is 8~30 characters.
   - Must contain at least three items: uppercase letters, lowercase letters, numbers, and special characters.
   - Special symbol '()\' ~! @#$%^& *-_+ =|{}[]:;',.? /'
--> **NOTE:** - If you need to set the host login password later, fill in an empty string for this parameter. If you need to set a host login password, we recommend that you use the HTTPS protocol to send requests to avoid password leakage.
+
+  -> **NOTE:** - If you need to set the host login password later, fill in an empty string for this parameter. If you need to set a host login password, we recommend that you use the HTTPS protocol to send requests to avoid password leakage.
 * `password_inherit` - (Optional) Whether to use the default password of the image.
   - **false**: (default)Do not use
   - **true**: Use
--> **NOTE:**  If the default password of the image is used, the **OSPassword** parameter is not required.
+
+  -> **NOTE:**  If the default password of the image is used, the **OSPassword** parameter is not required.
 * `payment_type` - (Required, ForceNew) The Payment type. Currently, only **Subscription** is supported.
 * `period` - (Optional) Duration of purchase.
 * `period_type` - (Optional) The subscription type. Currently, only **Monthly** (subscription) is supported.

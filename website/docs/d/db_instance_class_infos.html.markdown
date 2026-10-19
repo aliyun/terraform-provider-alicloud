@@ -47,7 +47,7 @@ The following arguments are supported:
   * **CONVERT**: specifies the query orders that are used to change the billing methods of instances.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform apply`).
 
--> **NOTE**: If you use the CommodityCode parameter to query the instance types that are available to read-only instances, you must specify the DBInstanceId parameter.
+  -> **NOTE**: If you use the CommodityCode parameter to query the instance types that are available to read-only instances, you must specify the DBInstanceId parameter.
 * `db_instance_id` - (Optional) The ID of the primary instance.
 
 
@@ -64,10 +64,11 @@ The following attributes are exported in addition to the arguments listed above:
   * `max_iombps` - The maximum I/O bandwidth that is supported by the instance type. Unit: Mbit/s.
   * `max_iops` - The maximum input/output operations per second (IOPS) that is supported by the instance type. Unit: operations per second.
   * `memory_class` - The memory capacity that is supported by the instance type. Unit: GB.
-  
-  -> **NOTE**: <br>If you set the CommodityCode parameter to a value that indicates the pay-as-you-go billing method, the ReferencePrice parameter specifies the hourly fee that you must pay.<br>If you set the CommodityCode parameter to a value that indicates the subscription billing method, the ReferencePrice parameter specifies the monthly fee that you must pay.
   * `reference_price` - The fee that you must pay for the instance type. Unit: cent (USD).
-  
-  -> **NOTE**: If the architecture of the instance type is x86, an empty string is returned by default. If the architecture of the instance type is ARM, arm is returned.
+
+    -> **NOTE**: <br>If you set the CommodityCode parameter to a value that indicates the pay-as-you-go billing method, the ReferencePrice parameter specifies the hourly fee that you must pay.<br>If you set the CommodityCode parameter to a value that indicates the subscription billing method, the ReferencePrice parameter specifies the monthly fee that you must pay.
+
   * `instruction_set_arch` - The architecture of the instance type.
+
+    -> **NOTE**: If the architecture of the instance type is x86, an empty string is returned by default. If the architecture of the instance type is ARM, arm is returned.
     

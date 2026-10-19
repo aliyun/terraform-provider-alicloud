@@ -61,7 +61,8 @@ The following arguments are supported:
 * `enable_micro_registration` - (Optional, Available since v1.206.0) Specifies whether to enable the SAE built-in registry. If you do not use the built-in registry, you can set `enable_micro_registration` to `false` to accelerate the creation of the namespace. Default value: `true`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
--> **NOTE:** From version 1.206.0, You should specify one of the `namespace_id` and `namespace_short_id`, and `namespace_short_id` is recommended.
+
+  -> **NOTE:** From version 1.206.0, You should specify one of the `namespace_id` and `namespace_short_id`, and `namespace_short_id` is recommended.
 
 ## Attributes Reference
 

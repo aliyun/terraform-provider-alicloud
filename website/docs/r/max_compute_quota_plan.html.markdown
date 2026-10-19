@@ -89,8 +89,8 @@ The quota supports the following:
 * `parameter` - (Optional, ForceNew, List) The parameters of level-1 quota. See [`parameter`](#quota-parameter) below.
 * `sub_quota_info_list` - (Optional, ForceNew, Set) Secondary Quota list
 
--> **NOTE:** need to list all secondary Quota
- See [`sub_quota_info_list`](#quota-sub_quota_info_list) below.
+  -> **NOTE:** need to list all secondary Quota
+  See [`sub_quota_info_list`](#quota-sub_quota_info_list) below.
 
 ### `quota-parameter`
 
@@ -108,15 +108,15 @@ The quota-sub_quota_info_list supports the following:
 The quota-sub_quota_info_list-parameter supports the following:
 * `elastic_reserved_cu` - (Required, Int) The value of elastic Reserved CUs.
 
--> **NOTE:**  The total number of elastically reserved CUs in all the level-2 quotas is equal to the number of elastically reserved CUs in the level-1 quota..
+  -> **NOTE:**  The total number of elastically reserved CUs in all the level-2 quotas is equal to the number of elastically reserved CUs in the level-1 quota..
 
 * `max_cu` - (Required, Int) The value of maxCU in Reserved CUs.
 
--> **NOTE:**  The value of maxCU must be less than or equal to the value of maxCU in the level-1 quota that you purchased.
+  -> **NOTE:**  The value of maxCU must be less than or equal to the value of maxCU in the level-1 quota that you purchased.
 
 * `min_cu` - (Required, Int) The value of minCU in Reserved CUs.
 
--> **NOTE:**  -- The total value of minCU in all the level-2 quotas is equal to the value of minCU in the level-1 quota.    -- The value of minCU must be less than or equal to the value of maxCU in the level-2 quota and less than or equal to the value of minCU in the level-1 quota that you purchased.
+  -> **NOTE:**  -- The total value of minCU in all the level-2 quotas is equal to the value of minCU in the level-1 quota.    -- The value of minCU must be less than or equal to the value of maxCU in the level-2 quota and less than or equal to the value of minCU in the level-1 quota that you purchased.
 
 
 ## Attributes Reference

@@ -66,23 +66,23 @@ The following arguments are supported:
 
 
 
--> **NOTE:**  The default value is true. If the balance of your payment method is insufficient, you can set the AutoPay parameter to false. In this case, unpaid orders will be generated. You can log on to the RDS management console to pay by yourself.
+  -> **NOTE:**  The default value is true. If the balance of your payment method is insufficient, you can set the AutoPay parameter to false. In this case, unpaid orders will be generated. You can log on to the RDS management console to pay by yourself.
 
--> **NOTE:** >
+  -> **NOTE:** >
 
 * `auto_renew` - (Optional) Whether to automatically renew. This parameter is passed in only when you create a data disk. Valid values:
   - `true`: Yes
   - `false`: No
 
--> **NOTE:**  When purchasing by month, the automatic renewal period is 1 month.
-When purchasing by year, the automatic renewal period is 1 year.
+  -> **NOTE:**  When purchasing by month, the automatic renewal period is 1 month.
+  When purchasing by year, the automatic renewal period is 1 year.
 * `bursting_enabled` - (Optional, Bool, Available since v1.283.0) Whether to enable this function for disks that support Burst (performance Burst). Valid values: `true`, `false`.
 * `delete_with_instance` - (Optional, Bool, Available since v1.283.0) Specifies whether to release the disk together with the instance. Valid values:
   - `true`: The disk is released together with the instance when the instance is released.
   - `false`: The disk is retained when the instance is released.
 * `description` - (Optional) The disk description. It must be 2 to 256 characters in length and cannot start with 'http:// 'or 'https.
 
--> **NOTE:** From version 1.281.0, `description` can be modified.
+  -> **NOTE:** From version 1.281.0, `description` can be modified.
 
 * `disk_category` - (Required) The type of the data disk. Value range:
   - `cloud` (default): a normal cloud disk.
@@ -95,7 +95,7 @@ When purchasing by year, the automatic renewal period is 1 year.
   - `Elastic_ephemeral_disk_premium`: Elastic temporary disk-Pro version.
 * `disk_name` - (Optional) The disk name. It can be 2 to 128 characters in length. It supports letters in Unicode (including English, Chinese, and numbers). Can contain a colon (:), an underscore (_), a period (.), or a dash (-).
 
--> **NOTE:** From version 1.281.0, `disk_name` can be modified.
+  -> **NOTE:** From version 1.281.0, `disk_name` can be modified.
 
 * `dry_run` - (Optional) Whether to pre-check the instance creation operation. Valid values:
   - `true`: The PreCheck operation is performed without creating an instance. Check items include request parameters, request formats, business restrictions, and inventory.
@@ -110,7 +110,7 @@ When purchasing by year, the automatic renewal period is 1 year.
   - `PL2`: maximum random read/write IOPS 100000 for a single disk.
   - `PL3`: The maximum random read/write IOPS 1 million for a single disk.
 
--> **NOTE:** From version 1.283.0, `performance_level` can be modified.
+  -> **NOTE:** From version 1.283.0, `performance_level` can be modified.
 
 For more information about how to select an ESSD performance level, see [ESSD cloud disk](~~ 122389 ~~).
 * `resource_group_id` - (Optional, Available since v1.283.0) The ID of the resource group to which the disk belongs.

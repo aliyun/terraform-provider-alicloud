@@ -60,20 +60,20 @@ resource "alicloud_cr_ee_instance" "default" {
 The following arguments are supported:
 * `custom_oss_bucket` - (Optional) Custom OSS Bucket name
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `default_oss_bucket` - (Optional, Available since v1.235.0) Whether to use the default OSS Bucket. Value:
   - `true`: Use the default OSS Bucket.
   - `false`: Use a custom OSS Bucket.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `image_scanner` - (Optional, Available since v1.235.0) The security scan engine used by the Enterprise Edition of Container Image Service. Value:
   - `ACR`: Uses the Trivy scan engine provided by default.
   - `SAS`: uses the enhanced cloud security scan engine.
   - `DISABLE`: Disables the image security scan engine.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `instance_name` - (Required, ForceNew) InstanceName
 * `instance_type` - (Required) The Value configuration of the Group 1 attribute of Container Mirror Service Enterprise Edition. Valid values:
@@ -82,25 +82,25 @@ The following arguments are supported:
   - `Advanced`: Advanced Edition Instance
   - `Economy`: Economy instance
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `namespace_quota` - (Optional, Int, Available since v1.268.0) The number of additional namespaces to purchase. The value is an integral multiple of `5`.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `password` - (Optional) Login password, 8-32 digits, must contain at least two letters, symbols, or numbers
 * `payment_type` - (Required, ForceNew) Payment type, value:
   - Subscription: Prepaid.
 * `period` - (Optional, Int) Prepaid cycle. The unit is Monthly, please enter an integer multiple of 12 for annual paid products.
 
--> **NOTE:**  must be set when creating a prepaid instance.
+  -> **NOTE:**  must be set when creating a prepaid instance.
 
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `renew_period` - (Optional, ForceNew, Int) Automatic renewal cycle, in months.
 
--> **NOTE:**  When `RenewalStatus` is set to `AutoRenewal`, it must be set.
+  -> **NOTE:**  When `RenewalStatus` is set to `AutoRenewal`, it must be set.
 
 * `renewal_status` - (Optional, ForceNew, Computed) Automatic renewal status, value:
   - AutoRenewal: automatic renewal.
@@ -109,13 +109,13 @@ The following arguments are supported:
   Default ManualRenewal.
 * `repo_quota` - (Optional, Int, Available since v1.268.0) The number of additional repositories to purchase. The value is an integral multiple of `1000`.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.235.0) The ID of the resource group
 * `tags` - (Optional, Map, Available since v1.288.0) A mapping of tags to assign to the resource.
 * `vpc_quota` - (Optional, Int, Available since v1.268.0) The number of VPC access controls.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 
 The following arguments will be discarded. Please use new fields as soon as possible:

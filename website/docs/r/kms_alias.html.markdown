@@ -43,11 +43,11 @@ The following arguments are supported:
 * `alias_name` - (Required, ForceNew) The alias of CMK. `Encrypt`、`GenerateDataKey`、`DescribeKey` can be called using aliases. Length of characters other than prefixes: minimum length of 1 character and maximum length of 255 characters. Must contain prefix `alias/`.
 * `key_id` - (Required) The id of the key.
 
--> **NOTE:** Each alias represents only one master key(CMK).
+  -> **NOTE:** Each alias represents only one master key(CMK).
 
--> **NOTE:** Within an area of the same user, alias is not reproducible.
+  -> **NOTE:** Within an area of the same user, alias is not reproducible.
 
--> **NOTE:** UpdateAlias can be used to update the mapping relationship between alias and master key(CMK).
+  -> **NOTE:** UpdateAlias can be used to update the mapping relationship between alias and master key(CMK).
 
 
 ## Attributes Reference

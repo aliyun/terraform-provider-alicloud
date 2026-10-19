@@ -69,11 +69,11 @@ The following arguments are supported:
 * `key_state` - (Deprecated since v1.123.1) Field `key_state` has been deprecated from provider version 1.123.1. New field `status` instead.
 * `is_enabled` - (Optional, Bool, Deprecated since v1.85.0) Field `is_enabled` has been deprecated from provider version 1.85.0. New field `status` instead.
 
--> **NOTE:** If you set the origin parameter to EXTERNAL or the key_spec parameter to an asymmetric CMK type, automatic key rotation is unavailable.
+  -> **NOTE:** If you set the origin parameter to EXTERNAL or the key_spec parameter to an asymmetric CMK type, automatic key rotation is unavailable.
 
--> **NOTE:** The default type of the CMK is `Aliyun_AES_256`. Only keys in KMS instances support `Aliyun_AES_128` and `Aliyun_AES_192`.
+  -> **NOTE:** The default type of the CMK is `Aliyun_AES_256`. Only keys in KMS instances support `Aliyun_AES_128` and `Aliyun_AES_192`.
 
--> **NOTE:** When the pre-deletion days elapses, the key is permanently deleted and cannot be recovered.
+  -> **NOTE:** When the pre-deletion days elapses, the key is permanently deleted and cannot be recovered.
 
 ## Attributes Reference
 

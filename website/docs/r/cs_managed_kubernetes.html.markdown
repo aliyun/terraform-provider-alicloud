@@ -505,8 +505,8 @@ Supported only for clusters running Kubernetes 1.35 or later. The Kubernetes com
   * `ipv4`: IPv4 stack.
   * `dual`: IPv4/IPv6 dual stack. IPv4 addresses are used for communication between worker nodes and the control plane. The VPC used by the cluster must support IPv4 and IPv6 dual-stack. This feature is only supported for Kubernetes version 1.22 and later, and you must select `Terway` as CNI network plugin. If you use the shared ENI mode of `Terway`, the ECS instance type must support IPv6 addresses and the number of IPv4 addresses supported by the ECS instance type must be the same as the number of IPv6 addresses, for more information about ECS instance types, see [Overview of instance families](https://www.alibabacloud.com/help/zh/ecs/user-guide/overview-of-instance-families#concept-sx4-lxv-tdb). Dual stack is not supported if you want to use [Elastic Remote Direct Memory Access (eRDMA)](https://www.alibabacloud.com/help/zh/ack/ack-managed-and-ack-dedicated/user-guide/use-erdma-in-ack-clusters) in the cluster.
 
--> **NOTE:** If you want to use `Terway` as CNI network plugin, You need to specify the `pod_vswitch_ids` field and addons with `terway-eniip`.
-If you want to use `Flannel` as CNI network plugin, You need to specify the `pod_cidr` field and addons with `flannel`.
+  -> **NOTE:** If you want to use `Terway` as CNI network plugin, You need to specify the `pod_vswitch_ids` field and addons with `terway-eniip`.
+  If you want to use `Flannel` as CNI network plugin, You need to specify the `pod_cidr` field and addons with `flannel`.
 
 *Computed params*
 

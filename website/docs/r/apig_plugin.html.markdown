@@ -89,11 +89,11 @@ resource "alicloud_apig_plugin" "default" {
 The following arguments are supported:
 * `gateway_id` - (Required, ForceNew) The filter parameter for the gateway instance ID.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `plugin_class_id` - (Required, ForceNew) The plugin class ID.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 
 ## Attributes Reference

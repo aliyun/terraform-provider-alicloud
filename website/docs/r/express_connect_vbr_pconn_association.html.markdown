@@ -91,7 +91,7 @@ The two IP addresses must be in the same subnet.
 * `vbr_id` - (Required, ForceNew) The ID of the VBR instance.
 * `vlan_id` - (Required, ForceNew) VLAN ID of the VBR. Valid values: **0 to 2999**.
 
--> **NOTE:**  only the owner of the physical connection can specify this parameter. The VLAN ID of two VBRs under the same physical connection cannot be the same.
+  -> **NOTE:**  only the owner of the physical connection can specify this parameter. The VLAN ID of two VBRs under the same physical connection cannot be the same.
 
 
 ## Attributes Reference

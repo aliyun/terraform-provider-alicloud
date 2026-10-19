@@ -91,7 +91,8 @@ The EgressRules supports the following:
   - drop: No network traffic is collected.
 * `destination_cidr_block` - (Optional, ForceNew) DestinationCidrBlock.
 * `destination_port_range` - (Optional, ForceNew) The destination port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
--> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+
+  -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
 * `priority` - (Optional, ForceNew) Priority.
 * `protocol` - (Required, ForceNew) The type of protocol used by the outbound network traffic to be mirrored. Value:
   - ALL: ALL agreements.
@@ -100,7 +101,8 @@ The EgressRules supports the following:
   - UDP: User Datagram Protocol.
 * `source_cidr_block` - (Optional, ForceNew) The source address of the outbound rule network traffic.
 * `source_port_range` - (Optional, ForceNew) The source port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
--> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+
+  -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
 
 #### Block IngressRules
 
@@ -110,7 +112,8 @@ The IngressRules supports the following:
   - drop: No network traffic is collected.
 * `destination_cidr_block` - (Optional, ForceNew) The destination address of the outbound rule network traffic.
 * `destination_port_range` - (Optional, ForceNew) The destination port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
--> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+
+  -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
 * `priority` - (Optional, ForceNew) The priority of the outbound rule. The smaller the number, the higher the priority. The maximum value of N is 10, that is, a maximum of 10 Outbound rules can be configured for a filter condition.
 * `protocol` - (Required, ForceNew) The type of protocol used by the outbound network traffic to be mirrored. Value:
   - ALL: ALL agreements.
@@ -119,7 +122,8 @@ The IngressRules supports the following:
   - UDP: User Datagram Protocol.
 * `source_cidr_block` - (Optional, ForceNew) The source address of the outbound rule network traffic.
 * `source_port_range` - (Optional, ForceNew) The source port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
--> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+
+  -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
 
 
 ## Attributes Reference

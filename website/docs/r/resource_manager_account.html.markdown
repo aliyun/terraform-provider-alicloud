@@ -68,7 +68,7 @@ The account name must be unique in the resource directory.
   - resell: The member is an account for a reseller. This is the default value. A relationship is automatically established between the member and the reseller. The management account of the resource directory must be used as the billing account of the member.
   - non_resell: The member is not an account for a reseller. The member is an account that is not associated with a reseller. You can directly use the account to purchase Alibaba Cloud resources. The member is used as its own billing account.
 
--> **NOTE:**  This parameter is available only for resellers at the international site (alibabacloud.com).
+  -> **NOTE:**  This parameter is available only for resellers at the international site (alibabacloud.com).
 
 * `tags` - (Optional, Map) The tag of the resource
 * `force_delete` - (Optional, Available since v1.249.0) Whether to force delete the account.

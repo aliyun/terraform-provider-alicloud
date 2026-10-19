@@ -82,11 +82,11 @@ resource "alicloud_express_connect_traffic_qos_rule" "default" {
 The following arguments are supported:
 * `dst_cidr` - (Optional) The traffic of the QoS rule matches the Destination IPv4 network segment.
 
--> **NOTE:**  If this parameter is not supported, enter `SrcIPv6Cidr` or **DstIPv6Cidr * *.
+  -> **NOTE:**  If this parameter is not supported, enter `SrcIPv6Cidr` or **DstIPv6Cidr * *.
 
 * `dst_ipv6_cidr` - (Optional) The QoS rule traffic matches the Destination IPv6 network segment.
 
--> **NOTE:**  If this parameter is not supported, enter `SrcCidr` or **DstCidr * *.
+  -> **NOTE:**  If this parameter is not supported, enter `SrcCidr` or **DstCidr * *.
 
 * `dst_port_range` - (Optional, Computed) QoS rule traffic matches the destination port number range. Value range: `0` to `65535`. If not, the value is - 1. Currently, only a single port number is supported, and the start and end of the port number must be the same. The corresponding destination port number range is fixed for different protocol types. The values are as follows:
   - `ALL`:-1/-1, not editable.
@@ -133,11 +133,11 @@ The length is 0 to 256 characters and cannot start with 'http:// 'or 'https.
 The length is 0 to 128 characters and cannot start with 'http:// 'or 'https.
 * `src_cidr` - (Optional) The QoS rule traffic matches the source IPv4 CIDR block.
 
--> **NOTE:**  If this parameter is not supported, enter `SrcIPv6Cidr` or **DstIPv6Cidr * *.
+  -> **NOTE:**  If this parameter is not supported, enter `SrcIPv6Cidr` or **DstIPv6Cidr * *.
 
 * `src_ipv6_cidr` - (Optional) The QoS rule traffic matches the source IPv6 network segment.
 
--> **NOTE:**  If this parameter is not supported, enter `SrcCidr` or **DstCidr * *.
+  -> **NOTE:**  If this parameter is not supported, enter `SrcCidr` or **DstCidr * *.
 
 * `src_port_range` - (Optional, Computed) The source port number of the QoS rule traffic matching. The value range is `0` to `65535`. If the traffic does not match, the value is - 1. Currently, only a single port number is supported, and the start and end of the port number must be the same.
 

@@ -82,9 +82,11 @@ The following arguments are supported:
 * `auto_pay` - (Optional) Whether to pay automatically. The default value is true. Value:
   - true: automatic payment
   - false: only generate orders, not pay
--> **NOTE:**  The default value is true. If the balance of your payment method is insufficient, you can set the parameter AutoPay to false, and an unpaid order will be generated. You can log in to the user Center to pay by yourself.
+
+  -> **NOTE:**  The default value is true. If the balance of your payment method is insufficient, you can set the parameter AutoPay to false, and an unpaid order will be generated. You can log in to the user Center to pay by yourself.
 * `cold_storage_size` - (Optional) Instance low-frequency storage space. Unit: GB.
--> **NOTE:**  PayAsYouGo (PostPaid) instances ignore this parameter.
+
+  -> **NOTE:**  PayAsYouGo (PostPaid) instances ignore this parameter.
 * `cpu` - (Optional) Instance specifications. Value:
   - 8 cores 32 GB (number of compute nodes: 1)
   - 16 cores 64 GB (number of compute nodes: 1)
@@ -92,7 +94,8 @@ The following arguments are supported:
   - 64 core 256 GB (number of compute nodes: 4)
   - 96 core 384 GB (number of computing nodes: 6)
   - 128 core 512 GB (number of compute nodes: 8)
--> **NOTE:** Just fill in the audit number. Please submit a work order application for purchasing 1024 or above specifications. Shared instance types do not need to specify specifications. The specification of - 8 core 32GB (number of computing nodes: 1) is only for experience use and cannot be used for production.
+
+  -> **NOTE:** Just fill in the audit number. Please submit a work order application for purchasing 1024 or above specifications. Shared instance types do not need to specify specifications. The specification of - 8 core 32GB (number of computing nodes: 1) is only for experience use and cannot be used for production.
 * `duration` - (Optional) The buying cycle. Buy for 2 months. If the Payment type is PayAsYouGo (PostPaid), you do not need to specify it.
 * `enable_ssl` - (Optional, Available since v1.266.0) Specifies whether to enable SSL encryption. Default Value: `false`. Valid values: `true`, `false`.
 * `endpoints` - (Optional) List of domain names. See [`endpoints`](#endpoints) below.
@@ -110,15 +113,18 @@ The following arguments are supported:
 * `pricing_cycle` - (Optional) Billing cycle. Value:
   - Month: monthly billing
   - Hour: hourly billing
--> **NOTE:**  Subscription instances (PrePaid) only supports Month. PayAsYouGo instances (PostPaid) only supports Hour. The Shared type is automatically set to Hour without specifying it.
+
+  -> **NOTE:**  Subscription instances (PrePaid) only supports Month. PayAsYouGo instances (PostPaid) only supports Hour. The Shared type is automatically set to Hour without specifying it.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
 * `scale_type` - (Optional) Change matching type. Value:
   - UPGRADE: UPGRADE
   - DOWNGRADE: Downgrading
--> **NOTE:** The upgrade specification cannot be less than the original specification. A blank field indicates that the original specification remains unchanged. On this basis, at least one specification is larger than the original specification. The downgrading specification cannot be greater than the original specification. A blank field indicates that the original specification remains unchanged. On this basis, at least one specification is smaller than the original specification.
+
+  -> **NOTE:** The upgrade specification cannot be less than the original specification. A blank field indicates that the original specification remains unchanged. On this basis, at least one specification is larger than the original specification. The downgrading specification cannot be greater than the original specification. A blank field indicates that the original specification remains unchanged. On this basis, at least one specification is smaller than the original specification.
 * `status` - (Optional, Computed) The status of the resource.
 * `storage_size` - (Optional) The standard storage space of the instance. Unit: GB.
--> **NOTE:**  PayAsYouGo instances (PostPaid) ignore this parameter.
+
+  -> **NOTE:**  PayAsYouGo instances (PostPaid) ignore this parameter.
 * `tags` - (Optional, Map) Instance tag.
 * `zone_id` - (Required, ForceNew) The zone Id. Refer to "Instructions for Use".
 

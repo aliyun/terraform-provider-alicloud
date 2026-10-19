@@ -108,7 +108,7 @@ The following arguments are supported:
 * `outlier_detection_config` - (Optional, Set) Outlier detection configuration See [`outlier_detection_config`](#outlier_detection_config) below.
 * `protocol` - (Optional) Service protocol.
 
--> **NOTE:** The parameter `protocol` is immutable after resource creation. Changing it after creation has no effect.
+  -> **NOTE:** The parameter `protocol` is immutable after resource creation. Changing it after creation has no effect.
 
 * `qualifier` - (Optional, ForceNew) The function version or alias. Used when `source_type` is `FC3`.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.

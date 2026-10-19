@@ -90,9 +90,9 @@ The following arguments are supported:
 * `image_id` - (Required, ForceNew) The image ID. 
 * `instance_group_name` - (Optional) The instance group name
 
--> **NOTE:** >
+  -> **NOTE:** >
 
--> **NOTE:** - The instance group name must be no more than 30 characters in length. Start with an uppercase/lowercase letter or Chinese. It cannot start with http:// or https://. Only Chinese, English, numbers, half-width colons (:), underscores (_), periods (.), or hyphens (-) are supported.
+  -> **NOTE:** - The instance group name must be no more than 30 characters in length. Start with an uppercase/lowercase letter or Chinese. It cannot start with http:// or https://. Only Chinese, English, numbers, half-width colons (:), underscores (_), periods (.), or hyphens (-) are supported.
 
 * `instance_group_spec` - (Required, ForceNew) Instance group specifications. 
 * `number_of_instances` - (Optional, ForceNew, Int) The number of instances in the instance group. The maximum value is 100.

@@ -76,7 +76,7 @@ The following arguments are supported:
   - delete_all: delete all backup sets;
   - receive_last: Keep the last backup set.
 
--> **NOTE:**   The default value is delete_all.
+  -> **NOTE:**   The default value is delete_all.
 * `cpu` - (Optional, ForceNew, Computed, Int, Available since v1.230.0) The number of CPU cores of the cluster.
 * `cpu_arch` - (Optional, ForceNew, Available since v1.230.0) Cpu architecture, x86, arm. If no, the default value is x86
 

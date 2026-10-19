@@ -118,7 +118,7 @@ The param_list supports the following:
 * `template` - (Optional) The template of the event target parameter.
 * `value` - (Optional) The value of the event target parameter.
 
--> **NOTE:** There exists a potential diff error that the backend service will return a default param as following:
+  -> **NOTE:** There exists a potential diff error that the backend service will return a default param as following:
 
 ```
 param_list {

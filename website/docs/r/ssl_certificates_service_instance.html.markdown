@@ -72,7 +72,7 @@ disable: Disabled
 
 * `company_id` - (Optional, Computed) The company information ID. Required for OV and EV certificates — without it the certificate application cannot be submitted for this instance.
 
-~> **NOTE:** The address recorded on the instance — `city` and `province` — comes from the company referenced by `company_id`, and from a server-side default when no company is referenced. Certificate authorities reject non-standard addresses, so the address is taken from the company record rather than accepted per instance; set it on `alicloud_ssl_certificates_service_company` instead. Both attributes are read-only here.
+  ~> **NOTE:** The address recorded on the instance — `city` and `province` — comes from the company referenced by `company_id`, and from a server-side default when no company is referenced. Certificate authorities reject non-standard addresses, so the address is taken from the company record rather than accepted per instance; set it on `alicloud_ssl_certificates_service_company` instead. Both attributes are read-only here.
 
 * `contact_id_list` - (Optional, Set) The list of contact IDs. At least one contact ID is required, otherwise the certificate application cannot be submitted for this instance.
 * `country_code` - (Optional, Computed) The code of the country or region where the certificate organization is located. For example, CN indicates China and US indicates the United States. This field is required when a Certificate Signing Request (CSR) is generated for a DV certificate. The default value is CN.
@@ -81,9 +81,9 @@ disable: Disabled
   - You can specify a single domain name or a wildcard domain name (such as `*.aliyundoc.com`).
   - You can specify multiple domain names. Separate multiple domain names with commas (,). Whether free domain names are provided is determined based on the first domain name.
 
--> **NOTE:** When you bind multiple domain names to a certificate, this parameter is required. This parameter and `csr` cannot both be empty.
+  -> **NOTE:** When you bind multiple domain names to a certificate, this parameter is required. This parameter and `csr` cannot both be empty.
 
-~> **NOTE:** Which of `domain` and `csr` is authoritative depends on `generate_csr_method`:
+  ~> **NOTE:** Which of `domain` and `csr` is authoritative depends on `generate_csr_method`:
 
 | `generate_csr_method` | Which value wins |
 | --- | --- |
@@ -102,11 +102,11 @@ upload: You upload the CSR. In this case, the Csr parameter is required.
   - `SM2`
 * `parameter` - (Optional, ForceNew, List) The list of modules. See [`parameter`](#parameter) below.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `period` - (Optional, ForceNew, Int) The subscription period. Unit: months. For products billed on a yearly basis, enter an integer multiple of 12.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `pricing_cycle` - (Optional, ForceNew, Int) The unit of the subscription period.
   - PricingCycle=1: The unit of the subscription period is year.
@@ -121,7 +121,7 @@ This parameter applies only to specific product types (ProductType is ddos_origi
 
 * `product_type` - (Optional, ForceNew, Computed) The product type. Valid values: `cas` (China site) and `cas_intl` (international site). Defaults to `cas_intl` for international accounts and `cas` otherwise.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group.
 * `tags` - (Optional, Map) The list of tags.

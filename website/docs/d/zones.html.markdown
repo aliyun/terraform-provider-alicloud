@@ -45,7 +45,7 @@ If you want to fetch the available zones for RDS instance, you can use datasourc
 * `available_slb_address_type` - (Available since 1.45.0) Filter the results by a slb instance address type. Can be either `Vpc`, `classic_internet` or `classic_intranet`
 * `available_slb_address_ip_version` - (Available since 1.45.0) Filter the results by a slb instance address version. Can be either `ipv4`, or `ipv6`.
 
--> **NOTE:** The disk category `cloud` has been outdated and can only be used by non-I/O Optimized ECS instances. Many availability zones don't support it. It is recommended to use `cloud_efficiency` or `cloud_ssd`.
+  -> **NOTE:** The disk category `cloud` has been outdated and can only be used by non-I/O Optimized ECS instances. Many availability zones don't support it. It is recommended to use `cloud_efficiency` or `cloud_ssd`.
 
 ## Attributes Reference
 

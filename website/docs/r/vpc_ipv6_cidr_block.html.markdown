@@ -72,18 +72,18 @@ resource "alicloud_vpc_ipv6_cidr_block" "default" {
 The following arguments are supported:
 * `ipv6_cidr_block` - (Optional, ForceNew, Computed) The additional IPv6 CIDR block. Both `ipv6_cidr_block` and `ipv6_cidr_mask` are optional and can be left empty. If neither is specified, the system automatically allocates a `/56` IPv6 CIDR block to the VPC from the Alibaba Cloud GUA address pool.
 
--> **NOTE:**  If you specify `ipv6_cidr_block`, the CIDR block must be reserved beforehand by calling the AllocateVpcIpv6Cidr operation, or you can specify `ipv6_ipam_pool_id` instead. If you specify `ipv6_cidr_mask`, you must also specify `ipv6_ipam_pool_id`.
+  -> **NOTE:**  If you specify `ipv6_cidr_block`, the CIDR block must be reserved beforehand by calling the AllocateVpcIpv6Cidr operation, or you can specify `ipv6_ipam_pool_id` instead. If you specify `ipv6_cidr_mask`, you must also specify `ipv6_ipam_pool_id`.
 
 * `ipv6_cidr_mask` - (Optional, Int) The IPv6 CIDR mask used to allocate an IPv6 CIDR block from the IPAM address pool to the VPC.
 
--> **NOTE:**  When assigning an additional IPv6 CIDR block from an IPAM address pool to a VPC, you must specify at least one of the `Ipv6CidrBlock` or `Ipv6CidrMask` properties.
+  -> **NOTE:**  When assigning an additional IPv6 CIDR block from an IPAM address pool to a VPC, you must specify at least one of the `Ipv6CidrBlock` or `Ipv6CidrMask` properties.
 
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `ipv6_ipam_pool_id` - (Optional) The ID of the IPAM IPv6 address pool instance.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `vpc_id` - (Required, ForceNew) The ID of the VPC.
 You can specify up to 20 VPC IDs, separated by commas (,).

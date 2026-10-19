@@ -88,7 +88,8 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `tags` - (Optional) A mapping of tags to assign to the resource. The `tags` can have a maximum of 10 tag for every load balancer instance.
 * `instance_charge_type` - (Optional, Available since v1.34.0) The billing method of the load balancer. Valid values are "PrePaid" and "PostPaid". Default to "PostPaid".
 * `period` - (Optional, Available since v1.34.0) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Valid values: [1-9, 12, 24, 36].
--> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+
+  -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `master_zone_id` - (Optional, ForceNew, Available since v1.36.0) The primary zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
 * `slave_zone_id` - (Optional, ForceNew, Available since v1.36.0) The standby zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
 * `delete_protection` - (Optional, Available since v1.51.0) Whether enable the deletion protection or not. on: Enable deletion protection. off: Disable deletion protection. Default to off. Only postpaid instance support this function.   
@@ -101,11 +102,11 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `payment_type` - (Optional) The billing method of the load balancer. Valid values are `PayAsYouGo` and `Subscription`. Default to `PayAsYouGo`.
 * `status` - (Optional) The status of slb load balancer. Valid values: `active` and `inactice`. The system default value is `active`.
 
--> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
+  -> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
 
--> **NOTE:** To change a "Shared-Performance" instance to a "Performance-guaranteed" instance, the SLB will have a short probability of business interruption (10 seconds-30 seconds). Advise to change it during the business downturn, or migrate business to other SLB Instances by using GSLB before changing.
+  -> **NOTE:** To change a "Shared-Performance" instance to a "Performance-guaranteed" instance, the SLB will have a short probability of business interruption (10 seconds-30 seconds). Advise to change it during the business downturn, or migrate business to other SLB Instances by using GSLB before changing.
 
--> **NOTE:** Currently, the alibaba cloud international account does not support creating a PrePaid SLB instance.
+  -> **NOTE:** Currently, the alibaba cloud international account does not support creating a PrePaid SLB instance.
 
 ## Attributes Reference
 

@@ -97,7 +97,8 @@ The following arguments are supported:
 * `port_break` - (Optional) Specifies whether to enable port break. Valid values:
   - `true`: Enables port break.
   - `false` (default): Disables port break.
--> **NOTE:**  If a DNAT entry and an SNAT entry share the same public IP address and you need to configure a port number greater than 1024, you must set `port_break` to `true`. `port_break` is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
+
+  -> **NOTE:**  If a DNAT entry and an SNAT entry share the same public IP address and you need to configure a port number greater than 1024, you must set `port_break` to `true`. `port_break` is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
 * `name` - (Optional, Deprecated since v1.119.1) Field `name` has been deprecated from provider version 1.119.1. New field `forward_entry_name` instead.
 
 ## Attributes Reference

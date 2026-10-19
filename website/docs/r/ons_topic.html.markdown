@@ -69,7 +69,7 @@ The following arguments are supported:
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 
--> **NOTE:** At least one of `topic_name` and `topic` should be set.
+  -> **NOTE:** At least one of `topic_name` and `topic` should be set.
 
 ## Attributes Reference
 

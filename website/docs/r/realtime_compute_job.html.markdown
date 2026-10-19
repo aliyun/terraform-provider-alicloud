@@ -121,13 +121,13 @@ The following arguments are supported:
 * `resource_id` - (Required, ForceNew) workspace
 * `resource_queue_name` - (Optional) Resource Queue for Job Run
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `restore_strategy` - (Optional, ForceNew, List) Restore strategy See [`restore_strategy`](#restore_strategy) below.
 * `status` - (Optional, Computed, List) job status See [`status`](#status) below.
 * `stop_strategy` - (Optional) Job Stop Policy
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 
 ### `local_variables`

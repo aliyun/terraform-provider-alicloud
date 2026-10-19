@@ -70,7 +70,7 @@ The following arguments are supported:
   - `true`: Sends a dry-run request without creating the NAT IP CIDR block. The system checks whether required parameters are specified, whether the request format is valid, and whether the request complies with service limits. If the check fails, an error is returned. If the check passes, the error code `DryRunOperation` is returned.
   - `false` (default): Sends a normal request. If the check passes, an HTTP 2xx status code is returned and the operation is performed.* `nat_gateway_id` - (Required, ForceNew) The ID of the Virtual Private Cloud (VPC) NAT gateway where you want to create the NAT CIDR block.
 
--> **NOTE:** This parameter only applies during resource creation, update or deletion. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update or deletion. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `nat_gateway_id` - (Required, ForceNew) The ID of the VPC NAT gateway instance to which the NAT IP address block belongs.
 * `nat_ip_cidr` - (Required, ForceNew) The NAT IP CIDR block to create.

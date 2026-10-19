@@ -60,20 +60,20 @@ Default value: `Physical`.
 
 * `backup_retention_period` - (Optional, Int, Available since v1.273.0) When the database engine is SQL Server, `BackupStrategy` is set to `db`, `BackupMethod` is `Physical`, and `BackupType` is `FullBackup`, you can specify the retention period for the backup set. Valid values: 7 to 730 days, or - 1 (permanent retention).  
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `backup_strategy` - (Optional) The backup strategy. Valid values:
 * `db`: Single-database backup
 * `instance`: Instance-level backup
 
--> **NOTE:** This parameter takes effect only under the following conditions:
+  -> **NOTE:** This parameter takes effect only under the following conditions:
 
--> **NOTE:**  - MySQL: The `BackupMethod` parameter is specified and set to `Logical`.
+  -> **NOTE:**  - MySQL: The `BackupMethod` parameter is specified and set to `Logical`.
 
--> **NOTE:**  - SQL Server: The `BackupType` parameter is specified and set to `FullBackup`.
+  -> **NOTE:**  - SQL Server: The `BackupType` parameter is specified and set to `FullBackup`.
 
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `backup_type` - (Optional, ForceNew, Computed) The backup type. Valid values:  
   - FullBackup: full backup  
@@ -81,10 +81,10 @@ Default value: `Physical`.
 * `db_instance_id` - (Required, ForceNew) The instance ID. You can call DescribeDBInstances to obtain it.
 * `db_name` - (Optional) A list of databases, separated by commas (,).  
 
--> **NOTE:**  This parameter takes effect only when the `BackupStrategy` parameter is specified and its value is `db`.  
+  -> **NOTE:**  This parameter takes effect only when the `BackupStrategy` parameter is specified and its value is `db`.
 
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `remove_from_state` - (Optional) Remove form state when resource cannot be deleted. Valid values: `true` and `false`.
 

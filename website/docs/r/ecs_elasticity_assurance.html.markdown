@@ -72,7 +72,7 @@ Default value: `false`.
   - Default value when `PeriodUnit` is set to Month: 1.
   - Default value when `PeriodUnit` is set to Year: 12.
 
--> **NOTE:**  If you set `AutoRenew` to true, you must specify this parameter.
+  -> **NOTE:**  If you set `AutoRenew` to true, you must specify this parameter.
 * `auto_renew_period_unit` - (Optional, Available since v1.261.0) Unit of duration. Value range:
   - Month: Month
   - Year: Year

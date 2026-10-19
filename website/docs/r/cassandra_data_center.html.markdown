@@ -80,7 +80,7 @@ The following arguments are supported:
 * `auto_renew_period` - (Optional, ForceNew) Period of dataCenter-2 auto renew, if auto renew is `true`, one of `1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 60`, valid when pay_type = Subscription. Unit: month.
 * `vswitch_id` - (Optional, ForceNew) The vswitch_id of dataCenter-2, mast different of vswitch_id(dc-1), can not empty.
 
--> **NOTE:** Now data_center_name,instance_type,node_count,disk_type,disk_size can be change. The others(auto_renew, auto_renew_period and so on) will be supported in the furture.
+  -> **NOTE:** Now data_center_name,instance_type,node_count,disk_type,disk_size can be change. The others(auto_renew, auto_renew_period and so on) will be supported in the furture.
 
 ## Attributes Reference
 

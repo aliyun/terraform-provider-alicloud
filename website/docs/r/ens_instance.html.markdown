@@ -123,7 +123,7 @@ The following arguments are supported:
   - ipv4Andipv6:IPv4 and IPv6
 * `key_pair_name` - (Optional, ForceNew, Available since v1.230.0) The key pair name.
 
--> **NOTE:**  At least one of `Password`, `KeyPairName`, and **PasswordInherit.
+  -> **NOTE:**  At least one of `Password`, `KeyPairName`, and **PasswordInherit.
 * `net_district_code` - (Optional, Available since v1.208.0) The area code. Example value: 350000. Required for regional-level scheduling, invalid for node-level scheduling
 * `net_work_id` - (Optional, ForceNew) The network ID of the instance. Can only be used in node-level scheduling
 * `password` - (Optional, Available since v1.208.0) The instance password. At least one of Password, KeyPairName, and PasswordInherit

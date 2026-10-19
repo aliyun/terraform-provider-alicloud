@@ -132,7 +132,7 @@ The option_json supports the following:
   - ANY:DNS response and the alias or IP address expected to be resolved have an intersection.
 * `dns_server` - (Optional, Available since v1.262.0) The IP address of the DNS server.
 
--> **NOTE:**  only applicable to DNS probe types.
+  -> **NOTE:**  only applicable to DNS probe types.
 
 * `dns_type` - (Optional, Available since v1.262.0) DNS resolution type. Only applicable to DNS probe types. Value:
   - A (default): specifies the IP address corresponding to the host name or domain name.
@@ -142,11 +142,11 @@ The option_json supports the following:
   - TXT: Description of host name or domain name. The text length is limited to 512 bytes, which is usually used as SPF(Sender Policy Framework) record, that is, anti-spam.
 * `expect_value` - (Optional, Available since v1.262.0) The alias or address to be resolved.
 
--> **NOTE:**  This parameter applies only to DNS probe types.
+  -> **NOTE:**  This parameter applies only to DNS probe types.
 
 * `failure_rate` - (Optional, Available since v1.262.0) Packet loss rate.
 
--> **NOTE:**  This parameter only applies to PING probe types.
+  -> **NOTE:**  This parameter only applies to PING probe types.
 
 * `header` - (Optional, Available since v1.262.0) HTTP request header.
 * `http_method` - (Optional, Available since v1.262.0) HTTP request method. Value:

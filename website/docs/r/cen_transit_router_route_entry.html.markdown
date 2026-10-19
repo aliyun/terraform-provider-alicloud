@@ -96,8 +96,8 @@ The following arguments are supported:
 * `transit_router_route_entry_next_hop_id` - (Optional, ForceNew) The ID of the transit router route entry next hop.
 * `dry_run` - (Optional) The dry run.
 
--> **NOTE:** If transit_router_route_entry_next_hop_type is `Attachment`, transit_router_route_entry_next_hop_id is required.
-             If transit_router_route_entry_next_hop_type is `BlackHole`, transit_router_route_entry_next_hop_id cannot be filled.
+  -> **NOTE:** If transit_router_route_entry_next_hop_type is `Attachment`, transit_router_route_entry_next_hop_id is required.
+  If transit_router_route_entry_next_hop_type is `BlackHole`, transit_router_route_entry_next_hop_id cannot be filled.
 
 ## Attributes Reference
 

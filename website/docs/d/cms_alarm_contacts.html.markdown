@@ -36,7 +36,7 @@ The following arguments are supported:
 * `chanel_value` - (Optional, ForceNew)  The alarm notification target.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`). 
 
--> **NOTE:** Specify at least one of the following alarm notification targets: phone number, email address, webhook URL of the DingTalk chatbot, and TradeManager ID.
+  -> **NOTE:** Specify at least one of the following alarm notification targets: phone number, email address, webhook URL of the DingTalk chatbot, and TradeManager ID.
 
 ## Attributes Reference
 

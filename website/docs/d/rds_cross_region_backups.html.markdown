@@ -36,7 +36,7 @@ The following arguments are supported:
 * `db_instance_id` - (Required, ForceNew) The db instance id.
 * `cross_backup_region` - (Optional, ForceNew) The ID of the destination region where the cross-region data backup file is stored.
 
--> **NOTE:** Note You must specify the `cross_backup_id` parameter. Alternatively, you must specify the `start_time` and `end_time` parameters.
+  -> **NOTE:** Note You must specify the `cross_backup_id` parameter. Alternatively, you must specify the `start_time` and `end_time` parameters.
 
 * `start_time` - (Optional, ForceNew) The beginning of the time range to query. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `end_time` - (Optional, ForceNew) The end of the time range to query. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.

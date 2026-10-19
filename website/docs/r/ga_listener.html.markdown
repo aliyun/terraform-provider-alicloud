@@ -86,22 +86,26 @@ The following arguments are supported:
   - `Standard`: intelligent routing.
   - `CustomRouting`: custom routing.
 * `http_version` - (Optional, Available since v1.220.0) The maximum version of the HTTP protocol. Default Value: `http2`. Valid values: `http1.1`, `http2`, `http3`.
--> **NOTE:** `http_version` is only valid when `protocol` is `HTTPS`.
+
+  -> **NOTE:** `http_version` is only valid when `protocol` is `HTTPS`.
 * `idle_timeout` - (Optional, Int, Available since v1.227.0) The timeout period of idle connections. Unit: seconds. Valid values:
   - If you set `protocol` to `TCP`. Default Value: `900`. Valid values: `10` to `900`.
   - If you set `protocol` to `UDP`. Default Value: `20`. Valid values: `10` to `20`.
   - If you set `protocol` to `HTTP` or `HTTPS`. Default Value: `15`. Valid values: `1` to `60`.
 * `request_timeout` - (Optional, Int, Available since v1.227.0) The timeout period for HTTP or HTTPS requests. Unit: seconds. Default Value: `60`. Valid values: `1` to `180`.
--> **NOTE:** `request_timeout` is only valid when `protocol` is `HTTP` or `HTTPS`.
+
+  -> **NOTE:** `request_timeout` is only valid when `protocol` is `HTTP` or `HTTPS`.
 * `client_affinity` - (Optional) The clientAffinity of the listener. Default value: `NONE`. Valid values:
   - `NONE`: client affinity is not maintained, that is, connection requests from the same client cannot always be directed to the same terminal node.
   - `SOURCE_IP`: maintain client affinity. When a client accesses a stateful application, all requests from the same client can be directed to the same terminal node, regardless of the source port and protocol.
 * `name` - (Optional) The name of the listener. The length of the name is 2-128 characters. It starts with uppercase and lowercase letters or Chinese characters. It can contain numbers and underscores and dashes.
 * `description` - (Optional) The description of the listener.
 * `certificates` - (Optional, Set) The certificates of the listener. See [`certificates`](#certificates) below.
--> **NOTE:** This parameter needs to be configured only for monitoring of the `HTTPS` protocol.
+
+  -> **NOTE:** This parameter needs to be configured only for monitoring of the `HTTPS` protocol.
 * `port_ranges` - (Required, Set) The portRanges of the listener. See [`port_ranges`](#port_ranges) below.
--> **NOTE:** For `HTTP` or `HTTPS` protocol monitoring, only one monitoring port can be configured, that is, the start monitoring port and end monitoring port should be the same.
+
+  -> **NOTE:** For `HTTP` or `HTTPS` protocol monitoring, only one monitoring port can be configured, that is, the start monitoring port and end monitoring port should be the same.
 * `forwarded_for_config` - (Optional, Set, Available since v1.207.0) The XForward headers. See [`forwarded_for_config`](#forwarded_for_config) below.
 
 ### `certificates`
@@ -136,7 +140,8 @@ The forwarded_for_config supports the following:
 * `real_ip_enabled` - (Optional, Bool) Specifies whether to use the X-Real-IP header to retrieve client IP addresses. Default value: `false`. Valid values:
   - `true`: yes.
   - `false `: no.
--> **NOTE:** These `forwarded_for_ga_id_enabled`, `forwarded_for_ga_ap_enabled`, `forwarded_for_proto_enabled`, `forwarded_for_port_enabled`, `real_ip_enabled` are available only when you create an `HTTPS` or `HTTP` listener.
+
+  -> **NOTE:** These `forwarded_for_ga_id_enabled`, `forwarded_for_ga_ap_enabled`, `forwarded_for_proto_enabled`, `forwarded_for_port_enabled`, `real_ip_enabled` are available only when you create an `HTTPS` or `HTTP` listener.
 
 ## Attributes Reference
 

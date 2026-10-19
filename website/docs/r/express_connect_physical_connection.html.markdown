@@ -84,7 +84,8 @@ The following arguments are supported:
   - `10GBase-LR`: 10000 Mbit/s single-mode optical port (10 km).
   - `40GBase-LR`: 40000 Mbit/s single-mode optical port.
   - `100GBase-LR`: 100000 Mbit/s single-mode optical port.
--> **NOTE:** From version 1.185.0, `port_type` can be set to `40GBase-LR`, `100GBase-LR`. From version 1.230.1, `port_type` cannot be modified.
+
+  -> **NOTE:** From version 1.185.0, `port_type` can be set to `40GBase-LR`, `100GBase-LR`. From version 1.230.1, `port_type` cannot be modified.
 * `bandwidth` - (Optional) The maximum bandwidth of the hosted connection.
 * `circuit_code` - (Optional) The circuit code of the Express Connect circuit.
 * `peer_location` - (Optional) The geographical location of the data center.
@@ -96,7 +97,8 @@ The following arguments are supported:
   - If `pricing_cycle` is set to `Month`. Valid values: `1` to `9`.
   - If `pricing_cycle` is set to `Year`. Valid values: `1` to `5`.
 * `pricing_cycle` - (Optional, Available since v1.230.1) The billing cycle of the subscription. Default value: `Month`. Valid values: `Month`, `Year`.
--> **NOTE:** `period` and `pricing_cycle` are valid only when `status` is set to `Enabled`.
+
+  -> **NOTE:** `period` and `pricing_cycle` are valid only when `status` is set to `Enabled`.
 
 ## Attributes Reference
 

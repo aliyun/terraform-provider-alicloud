@@ -69,26 +69,26 @@ resource "alicloud_cloud_monitor_service_metric_alarm_rule" "default" {
 The following arguments are supported:
 * `composite_expression` - (Optional, Set) Alert condition for multiple metrics.
 
--> **NOTE:**  Single-metric and multi-metric conditions are mutually exclusive and cannot be configured simultaneously.
- See [`composite_expression`](#composite_expression) below.
+  -> **NOTE:**  Single-metric and multi-metric conditions are mutually exclusive and cannot be configured simultaneously.
+  See [`composite_expression`](#composite_expression) below.
 * `contact_groups` - (Required, ForceNew) Alarm contact groups. Alarm notifications are sent to the contacts in these groups.
 
--> **NOTE:**  An alarm contact group is a collection of one or more alarm contacts. For information about how to create alarm contacts and alarm contact groups, see [PutContact](https://help.aliyun.com/document_detail/114923.html) and [PutContactGroup](https://help.aliyun.com/document_detail/114929.html).
+  -> **NOTE:**  An alarm contact group is a collection of one or more alarm contacts. For information about how to create alarm contacts and alarm contact groups, see [PutContact](https://help.aliyun.com/document_detail/114923.html) and [PutContactGroup](https://help.aliyun.com/document_detail/114929.html).
 
 * `effective_interval` - (Optional) The time range during which the alert rule is effective.
 * `email_subject` - (Optional) Subject of alert emails.
 * `escalations` - (Optional, Set) The trigger conditions for alert levels. See [`escalations`](#escalations) below.
 * `interval` - (Optional) The trigger interval of the alarm rule. Unit: seconds.
 
--> **NOTE:** For information about how to query the statistical period of a metric, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+  -> **NOTE:** For information about how to query the statistical period of a metric, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
 
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
+  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `labels` - (Optional, Set) When a metric meets the alert condition and an alert is triggered, the labels are written to the metric and displayed in the alert notification.
 
--> **NOTE:**  This feature is equivalent to the Label in Prometheus alerts.
- See [`labels`](#labels) below.
+  -> **NOTE:**  This feature is equivalent to the Label in Prometheus alerts.
+  See [`labels`](#labels) below.
 * `metric_alarm_rule_id` - (Required, ForceNew) The ID of the alarm rule.
 
 You can specify a new alarm rule ID or use an existing alarm rule ID from CloudMonitor. For information about how to query alarm rule IDs, see [DescribeMetricRuleList](https://help.aliyun.com/document_detail/114941.html).
@@ -97,11 +97,11 @@ You can specify a new alarm rule ID or use an existing alarm rule ID from CloudM
 
 * `metric_name` - (Required, ForceNew) The name of the metric. For information about how to query metric names, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
 
--> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter specifies the metric store name. For information about how to obtain the metric store name, see [DescribeHybridMonitorNamespaceList](https://help.aliyun.com/document_detail/428880.html).
+  -> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter specifies the metric store name. For information about how to obtain the metric store name, see [DescribeHybridMonitorNamespaceList](https://help.aliyun.com/document_detail/428880.html).
 
 * `namespace` - (Required, ForceNew) The namespace of the cloud service metric data. For information about how to query the namespace of a cloud service, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
 
--> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter must be set to `acs_prometheus`.
+  -> **NOTE:**  When you create a Prometheus alert rule for Enterprise Cloud Monitoring, this parameter must be set to `acs_prometheus`.
 
 * `no_data_policy` - (Optional, Computed) The policy to apply when no monitoring data is available. Valid values:
   - KEEP_LAST_STATE (default): No action is taken.
@@ -110,12 +110,12 @@ You can specify a new alarm rule ID or use an existing alarm rule ID from CloudM
 * `no_effective_interval` - (Optional) The time range during which the alarm rule is inactive.
 * `period` - (Optional) The statistical period of the metric. Unit: seconds. By default, this is the original reporting period of the metric.
 
--> **NOTE:**  For information about how to query the statistical period of a metric, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+  -> **NOTE:**  For information about how to query the statistical period of a metric, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
 
 * `prometheus` - (Optional, Set) Prometheus alert.
 
--> **NOTE:**  You must specify this parameter only when you create a Prometheus alert rule for Enterprise Cloud Monitor.
- See [`prometheus`](#prometheus) below.
+  -> **NOTE:**  You must specify this parameter only when you create a Prometheus alert rule for Enterprise Cloud Monitor.
+  See [`prometheus`](#prometheus) below.
 * `resources` - (Required) Resource information, for example: `[{"instanceId":"i-uf6j91r34rnwawoo****"}]`, `[{"userId":"100931896542****"}]`.
 For dimensions supported in resource information, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
 * `rule_name` - (Required, ForceNew) Alert rule name.
@@ -127,7 +127,7 @@ You can enter a new alert rule name or use an existing alert rule name in CloudM
 * `send_ok` - (Optional, Computed) Specifies whether to send recovery notifications.
 * `silence_time` - (Optional) Channel silence period. Unit: seconds. Default value: 86400.
 
--> **NOTE:**  The channel silence period specifies how long to wait before resending an alarm notification if the alarm condition has not returned to normal after the initial alarm.
+  -> **NOTE:**  The channel silence period specifies how long to wait before resending an alarm notification if the alarm condition has not returned to normal after the initial alarm.
 
 * `status` - (Optional, Computed) The enabled status of the alarm rule. Valid values:
   - true: enabled.
@@ -176,7 +176,7 @@ Unit: seconds.
   - $Average: average value.
   - $Availability: availability rate (typically used for site monitoring).
 
--> **NOTE:**  `$` is the unified prefix symbol for metrics. For supported cloud services, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
+  -> **NOTE:**  `$` is the unified prefix symbol for metrics. For supported cloud services, see [Cloud Service Metrics](https://help.aliyun.com/document_detail/163515.html).
 
 * `threshold` - (Optional) Alert threshold.
 
@@ -250,7 +250,7 @@ The labels supports the following:
 * `key` - (Optional) The tag key.
 * `value` - (Optional) Label value.
 
--> **NOTE:**  The label value supports template parameters, which are replaced with actual label values.
+  -> **NOTE:**  The label value supports template parameters, which are replaced with actual label values.
 
 
 ### `prometheus`
@@ -258,15 +258,15 @@ The labels supports the following:
 The prometheus supports the following:
 * `annotations` - (Optional, Set) When a Prometheus alert is triggered, the key-value pairs of annotations are rendered to help you better understand the metric or alert rule.
 
--> **NOTE:**  This feature is equivalent to Annotations in Prometheus.
- See [`annotations`](#prometheus-annotations) below.
+  -> **NOTE:**  This feature is equivalent to Annotations in Prometheus.
+  See [`annotations`](#prometheus-annotations) below.
 * `level` - (Optional) Alert severity level. Valid values:
   - CRITICAL: Critical
   - WARN: Warning
   - INFO: Information
 * `prom_ql` - (Optional) The PromQL query statement.
 
--> **NOTE:**  The data retrieved by the PromQL query statement is used as alert data. Include the alert threshold in this statement.
+  -> **NOTE:**  The data retrieved by the PromQL query statement is used as alert data. Include the alert threshold in this statement.
 
 * `times` - (Optional, Int) The number of times the alert condition must be met before an alert notification is sent.
 

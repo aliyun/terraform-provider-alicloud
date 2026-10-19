@@ -65,7 +65,7 @@ The encryption algorithm of the root CA certificate must match the **certificate
 
 * `alias_name` - (Optional, Available since v1.266.0) A custom alias for the certificate, used to define a user-friendly name.
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `common_name` - (Required, ForceNew) The common name or short name of the organization. Chinese characters, English letters, and other characters are supported.
 * `country_code` - (Optional, ForceNew) The two-letter uppercase alphabetic code representing the country or region where the organization is located. For example, `CN` represents China and `US` represents the United States.
@@ -73,11 +73,11 @@ For country codes, see the **International Codes** section in [Managing Company 
 * `crl_day` - (Optional, ForceNew, Int, Available since v1.269.0) The interval (in days) for updating the Certificate Revocation List (CRL).
 * `enable_crl` - (Optional, Available since v1.269.0) Specifies whether to enable CRL.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `extended_key_usages` - (Optional, List, Available since v1.269.0) Extended attributes of the certificate, used to define extended key usages.  
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `locality` - (Required, ForceNew) The name of the city where the organization is located.  
 * `organization` - (Required, ForceNew) The name of the organization associated with the CA certificate.
@@ -85,14 +85,14 @@ For country codes, see the **International Codes** section in [Managing Company 
 * `parent_identifier` - (Optional, ForceNew, Available since v1.269.0) Parent node identifier.  
 * `path_len_constraint` - (Optional, Int, Available since v1.269.0) The maximum depth of subordinate CA levels allowed under this CA.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.266.0) A resource property field representing the resource group.
 * `state` - (Required, ForceNew) The name of the province, municipality directly under the central government, or autonomous region where the organization is located
 * `tags` - (Optional, Map, Available since v1.266.0) Tags
 * `years` - (Required, ForceNew, Int) The validity period of the root CA certificate, in years.
 
--> **NOTE:**  We recommend setting it to 5–10 years.
+  -> **NOTE:**  We recommend setting it to 5–10 years.
 
 * `certificate_type` - (Optional, ForceNew, Available since v1.269.0) The type of the CA certificate. Default value: `ROOT`. Valid values:
   - `ROOT`: A root CA certificate.

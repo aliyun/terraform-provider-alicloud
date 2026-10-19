@@ -46,16 +46,16 @@ resource "alicloud_esa_client_certificate" "default" {
 The following arguments are supported:
 * `csr` - (Optional) Certificate signing request content.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `pkey_type` - (Optional) The private key algorithm type.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `site_id` - (Required, ForceNew) Site Id
 * `validity_days` - (Required) Certificate validity period.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `status` - (Optional) The certificate status. Valid values: `revoked`, `active`.
 

@@ -62,7 +62,7 @@ The following arguments are supported:
   - `25`: applies for 128 contiguous EIPs in each call.
   - `24`: applies for 256 contiguous EIPs in each call.
 
--> **NOTE:**   Some IP address are reserved for specific purposes. Therefore, the actual number of the contiguous EIPs may be one, three, or four less than the expected number.
+  -> **NOTE:**   Some IP address are reserved for specific purposes. Therefore, the actual number of the contiguous EIPs may be one, three, or four less than the expected number.
 
 * `internet_charge_type` - (Optional, Available since v1.207.0) The metering method of the contiguous EIP group. Valid values:
   - `PayByBandwidth` (default)

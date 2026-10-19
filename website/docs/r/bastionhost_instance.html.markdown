@@ -163,7 +163,8 @@ The following arguments are supported:
   - If [International-Site Account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account#sign-up-for-an-alibaba-cloud-international-site-account), its valid values: `0` to `200`. Unit: Mbit/s. The value must be a multiple of 10.
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
 * `period` - (Optional) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. At present, the provider does not support modify "period".
--> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+
+  -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `vswitch_id` - (Required, ForceNew) VSwitch ID configured to Bastionhost.
 * `security_group_ids` - (Required, List) security group IDs configured to Bastionhost. 
   **NOTE:** There is a potential diff error because of the order of `security_group_ids` values indefinite.
@@ -182,7 +183,7 @@ The following arguments are supported:
   - `Y`: years.
 * `public_white_list` - (Optional, Available since 1.199.0) The public IP address that you want to add to the whitelist.
 
--> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
+  -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
 ```
   # ... ignore the change about ad_auth_server.0.password and ldap_auth_server.0.password in alicloud_bastionhost_instance
   lifecycle {

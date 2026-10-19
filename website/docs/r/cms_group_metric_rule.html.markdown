@@ -101,7 +101,8 @@ The targets supports the following:
 * `json_params` - (Optional) The parameters of the alert callback. The parameters are in the JSON format.
 * `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
 * `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource.
--> **NOTE:** Currently, the Alibaba Cloud Resource Name (ARN) of the resource. To use, please [submit an application](https://www.alibabacloud.com/help/en/cloudmonitor/latest/describemetricruletargets).
+
+  -> **NOTE:** Currently, the Alibaba Cloud Resource Name (ARN) of the resource. To use, please [submit an application](https://www.alibabacloud.com/help/en/cloudmonitor/latest/describemetricruletargets).
 
 ### `escalations`
 

@@ -78,7 +78,7 @@ The length is 0 to 128 characters and cannot start with 'http:// 'or 'https.
   - `Medium`: Normal priority queue.
   - `Default`: the Default priority queue.
 
--> **NOTE:**  Default priority queue cannot be created.
+  -> **NOTE:**  Default priority queue cannot be created.
 
 
 ## Attributes Reference

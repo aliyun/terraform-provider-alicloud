@@ -187,7 +187,7 @@ The schedule_list supports the following:
 * `plan` - (Required) The name of the quota plan.
 * `type` - (Required, ForceNew) The type of the quota plan. Valid values: daily 
 
--> **NOTE:** Currently, only daily is supported.
+  -> **NOTE:** Currently, only daily is supported.
 
 
 ### `schedule_list-condition`
@@ -195,7 +195,7 @@ The schedule_list supports the following:
 The schedule_list-condition supports the following:
 * `at` - (Required) Effective time. The format is HH:mm, sample value: 00:00
 
--> **NOTE:** The configuration must start from the effective time of 00:00. The input time must be either a whole hour or a half hour, and the minimum interval between each schedule is 30 minutes.
+  -> **NOTE:** The configuration must start from the effective time of 00:00. The input time must be either a whole hour or a half hour, and the minimum interval between each schedule is 30 minutes.
 
 
 ## Attributes Reference

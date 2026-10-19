@@ -47,7 +47,7 @@ The following arguments are supported:
   -`true`: yes
   -`false`: no
 
--> **NOTE:**   If no defense rule is created for a server, the default rule is applied to the server.
+  -> **NOTE:**   If no defense rule is created for a server, the default rule is applied to the server.
 
 * `fail_count` - (Required, Int) FailCount
 * `forbidden_time` - (Required, Int) The period of time during which logons from an account are not allowed. Unit: minutes. Valid values:
@@ -71,7 +71,7 @@ The following arguments are supported:
   -`10`
   -`15`
 
--> **NOTE:**   To configure a defense rule, you must specify the Span, FailCount, and ForbiddenTime parameters. If the number of failed logon attempts from an account within the minutes specified by Span exceeds the value specified by FailCount, the account cannot be used for logons within the minutes specified by ForbiddenTime.
+  -> **NOTE:**   To configure a defense rule, you must specify the Span, FailCount, and ForbiddenTime parameters. If the number of failed logon attempts from an account within the minutes specified by Span exceeds the value specified by FailCount, the account cannot be used for logons within the minutes specified by ForbiddenTime.
 
 * `uuid_list` - (Required, Set) The UUIDs of the servers to which you want to apply the defense rule.
 

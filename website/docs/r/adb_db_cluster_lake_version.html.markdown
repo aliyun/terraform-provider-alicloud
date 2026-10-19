@@ -75,7 +75,8 @@ The following arguments are supported:
 * `product_version` - (Optional, ForceNew, Available since v1.245.0) The edition of the cluster. Valid values:
   - `BasicVersion`: Basic Edition.
   - `EnterpriseVersion`: Enterprise Edition.
--> **NOTE:** `product_version` must be specified only when `product_form` is set to `IntegrationForm`.
+
+  -> **NOTE:** `product_version` must be specified only when `product_form` is set to `IntegrationForm`.
 * `compute_resource` - (Optional) The computing resources of the cluster.
 * `storage_resource` - (Optional) The storage resources of the cluster.
 * `reserved_node_size` - (Optional, Available since v1.245.0) The specifications of reserved resource nodes.

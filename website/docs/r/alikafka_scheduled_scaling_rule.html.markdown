@@ -92,7 +92,7 @@ resource "alicloud_alikafka_scheduled_scaling_rule" "default" {
 The following arguments are supported:
 * `duration_minutes` - (Required, ForceNew, Int) The duration (unit: minutes) of a scheduled elastic task.
 
--> **NOTE:** The parameter value must be at least 15 minutes.
+  -> **NOTE:** The parameter value must be at least 15 minutes.
 
 * `enable` - (Optional, Bool) Enables or disables the scheduled task policy. Valid values:
   -`true`: Enables the policy.

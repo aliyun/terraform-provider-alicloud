@@ -95,13 +95,13 @@ The following arguments are supported:
   - `false` (default): disabled.
   - `true`: enabled.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `delete_health_check_ip` - (Optional) Whether to delete the health check IP address configured on the router interface. Value:
   - `true`: deletes the health check IP address.
   - `false` (default): does not delete the health check IP address.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `description` - (Optional) The router interface description. It must be 2 to 256 characters in length and must start with a letter or a Chinese character, but cannot start with http:// or https.
 * `fast_link_mode` - (Optional, ForceNew) Whether the VBR router interface is created by using the fast connection mode. The fast connection mode can automatically complete the connection after the VBR and the router interfaces at both ends of the VPC are created. Value:
@@ -109,7 +109,7 @@ The following arguments are supported:
   - `false`(default) : No.
 
 
--> **NOTE:** - This parameter takes effect only when the value of `RouterType` is `VBR` and the value of `OppositeRouterType` is **VRouter.
+  -> **NOTE:** - This parameter takes effect only when the value of `RouterType` is `VBR` and the value of `OppositeRouterType` is **VRouter.
   - When the `FastLinkMode` parameter is set to `true`, the `Role` parameter must be set to `InitiatingSide`,`AccessPointId`,`OppositeRouterType`,`opppiterouterid`, and `OppositeInterfaceOwnerId` are required.
 * `hc_rate` - (Optional, Int) Health check rate. Unit: milliseconds. The recommend value is 2000. Indicates the time interval for sending continuous detection packets during a specified health check.
 * `hc_threshold` - (Optional) Health check threshold. Unit: One. The recommend value is 8. Indicates the number of detection packets sent during the specified health check.
@@ -129,20 +129,20 @@ The following arguments are supported:
   - When you choose to pay on a monthly basis, the value range is **1 to 9**.
   - When you choose to pay per year, the value range is **1 to 3**.
 
--> **NOTE:**  `period` is required when the value of the parameter `payment_type` is `Subscription`.
+  -> **NOTE:**  `period` is required when the value of the parameter `payment_type` is `Subscription`.
 
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `pricing_cycle` - (Optional) The billing cycle of the prepaid fee. Valid values:
   - `Month` (default): monthly payment.
   - `Year`: Pay per Year.
 
 
--> **NOTE:**  `period` is required when the value of the parameter `payment_type` is `Subscription`.
+  -> **NOTE:**  `period` is required when the value of the parameter `payment_type` is `Subscription`.
 
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
 * `role` - (Required, ForceNew) The role of the router interface. Valid values:

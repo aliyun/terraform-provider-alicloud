@@ -65,7 +65,7 @@ The following arguments are supported:
 * `event_source_name` - (Required, ForceNew) The code name of event source
 * `linked_external_source` - (Optional, Bool) Whether to connect to an external data source
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `source_http_event_parameters` - (Optional, Set) The request parameter SourceHttpEventParameters. See [`source_http_event_parameters`](#source_http_event_parameters) below.
 * `source_kafka_parameters` - (Optional, Set) Kafka event source parameter. See [`source_kafka_parameters`](#source_kafka_parameters) below.
