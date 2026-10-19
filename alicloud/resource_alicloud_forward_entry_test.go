@@ -2,11 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,6 +18,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
@@ -808,3 +813,130 @@ resource "alicloud_vpc_nat_ip" "NatIp2" {
 }
 
 // Test NatGateway ForwardEntry. <<< Resource test cases, automatically generated.
+
+func init() {
+	resource.AddTestSweepers("alicloud_forward_entry", &resource.Sweeper{
+		Name: "alicloud_forward_entry",
+		F:    testSweepForwardEntries,
+	})
+}
+
+func testSweepForwardEntries(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf-test-",
+		"tf_test_",
+		"tf-example",
+		"tf_example",
+	}
+
+	natGateways, err := sweepListNatGateways(client)
+	if err != nil {
+		log.Printf("[ERROR] %s", err)
+		return nil
+	}
+
+	for _, nat := range natGateways {
+		natName := fmt.Sprint(nat["Name"])
+		natID := fmt.Sprint(nat["NatGatewayId"])
+		// If the parent NAT gateway is explicitly do-not-delete, protect its entries too.
+		if protectedSweepVpcName(natName) {
+			log.Printf("[INFO] Skipping ForwardEntries of NAT Gateway %s (%s): do-not-delete parent", natName, natID)
+			continue
+		}
+		for _, forwardTableId := range sweepNatTableIds(nat, "ForwardTableIds", "ForwardTableId") {
+			entries, err := sweepListForwardEntries(client, forwardTableId)
+			if err != nil {
+				log.Printf("[ERROR] Failed to list ForwardEntries for table %s: %s", forwardTableId, err)
+				continue
+			}
+			for _, entry := range entries {
+				name := fmt.Sprint(entry["ForwardEntryName"])
+				forwardEntryId := fmt.Sprint(entry["ForwardEntryId"])
+				if protectedSweepVpcName(name) {
+					log.Printf("[INFO] Skipping ForwardEntry %s (%s): do-not-delete name", name, forwardEntryId)
+					continue
+				}
+				if !sweepAll() {
+					skip := true
+					for _, prefix := range prefixes {
+						if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+							skip = false
+							break
+						}
+					}
+					if skip {
+						log.Printf("[INFO] Skipping ForwardEntry: %s (%s)", name, forwardEntryId)
+						continue
+					}
+				}
+				log.Printf("[INFO] Deleting ForwardEntry: %s (%s) in table %s", name, forwardEntryId, forwardTableId)
+				action := "DeleteForwardEntry"
+				request := map[string]interface{}{
+					"ForwardTableId": forwardTableId,
+					"ForwardEntryId": forwardEntryId,
+					"RegionId":       client.RegionId,
+					"ClientToken":    buildClientToken(action),
+				}
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+					_, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
+					if err != nil {
+						if IsExpectedErrors(err, []string{"IncorrectStatus.NATGW", "OperationConflict", "UnknownError"}) || NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				if err != nil {
+					if NotFoundError(err) {
+						continue
+					}
+					log.Printf("[ERROR] Failed to delete ForwardEntry %s (%s): %s", name, forwardEntryId, err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func sweepListForwardEntries(client *connectivity.AliyunClient, forwardTableId string) ([]map[string]interface{}, error) {
+	items := make([]map[string]interface{}, 0)
+	action := "DescribeForwardTableEntries"
+	request := map[string]interface{}{
+		"ForwardTableId": forwardTableId,
+		"RegionId":       client.RegionId,
+		"PageSize":       PageSizeLarge,
+		"PageNumber":     1,
+	}
+	for {
+		response, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := jsonpath.Get("$.ForwardTableEntries.ForwardTableEntry", response)
+		if err != nil {
+			return nil, err
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			if item, ok := v.(map[string]interface{}); ok {
+				items = append(items, item)
+			}
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return items, nil
+}
