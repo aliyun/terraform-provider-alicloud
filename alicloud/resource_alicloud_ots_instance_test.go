@@ -106,11 +106,20 @@ func testSweepOtsInstances(region string) error {
 			time.Sleep(30 * time.Second)
 		}
 		log.Printf("[INFO] Deleting OTS Instance: %s", name)
-		req := ots.CreateDeleteInstanceRequest()
-		req.InstanceName = name
-		_, err = client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-			return otsClient.DeleteInstance(req)
-		})
+		// The ots SDK's DeleteInstance targets API version 2016-06-20, where
+		// that action does not exist server-side, so the call comes back as
+		// InvalidAction.NotFound ("Specified api is not found, please check
+		// your url and method") and the instance is never removed. The
+		// provider's own delete path (resourceAliyunOtsInstanceDelete) deletes
+		// instances through the v2 openapi via OtsRestApiPostWithRetry with
+		// product "tablestore", version "2020-12-09" and actionPath
+		// "/v2/openapi/deleteinstance". Mirror that here so the sweeper actually
+		// deletes the instance instead of no-op-logging InvalidAction.NotFound.
+		actionPath := "/v2/openapi/deleteinstance"
+		delReq := make(map[string]interface{})
+		delReq["RegionId"] = StringPointer(client.RegionId)
+		delReq["InstanceName"] = StringPointer(name)
+		_, err = OtsRestApiPostWithRetry(client, "tablestore", "2020-12-09", actionPath, delReq)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete OTS Instance (%s): %s", name, err)
 		}
