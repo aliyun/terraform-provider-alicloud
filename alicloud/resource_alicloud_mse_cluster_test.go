@@ -23,67 +23,115 @@ import (
 
 func init() {
 	resource.AddTestSweepers("alicloud_mse_cluster", &resource.Sweeper{
-		Name: "alicloud_mse_cluster",
-		F:    testSweepMSECluster,
+		Name:         "alicloud_mse_cluster",
+		Dependencies: []string{"alicloud_mse_engine_namespace", "alicloud_mse_nacos_config", "alicloud_mse_znode"},
+		F:            testSweepMSECluster,
 	})
 }
 
-func testSweepMSECluster(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf-test",
-	}
-	request := make(map[string]interface{})
-	var response map[string]interface{}
+// listMseSweepClusters lists every MSE cluster in the region. It is shared by
+// the child-resource sweepers (engine_namespace, nacos_config, znode) so they
+// can enumerate the clusters they need to walk. List/parse failures are logged
+// and treated as an empty result (sweepers must remain non-fatal); callers may
+// still guard the returned error defensively.
+func listMseSweepClusters(client *connectivity.AliyunClient) ([]map[string]interface{}, error) {
 	action := "ListClusters"
-	request["PageSize"] = PageSizeLarge
-	request["PageNum"] = 1
+	request := map[string]interface{}{
+		"PageSize": PageSizeLarge,
+		"PageNum":  1,
+	}
+	var clusters []map[string]interface{}
+	var response map[string]interface{}
+	var err error
 	for {
 		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mse_clusters", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list mse clusters: %s", err)
+			return nil, nil
 		}
 		resp, err := jsonpath.Get("$.Data", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+			log.Printf("[ERROR] Failed to parse $.Data (treat as empty): %s", err)
+			return nil, nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
-			item := v.(map[string]interface{})
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["ClusterAliasName"].(string)), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Mse Clusters: %s (%s)", item["ClusterAliasName"], item["InstanceId"])
-				continue
-			}
-			action = "DeleteCluster"
-			request := map[string]interface{}{
-				"InstanceId": item["InstanceId"],
-			}
-			_, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete Mse Clusters (%s (%s)): %s", item["ClusterAliasName"].(string), item["InstanceId"].(string), err)
-			}
-
-			// Waiting 30 seconds to ensure these Mse Clusters have been deleted.
-			time.Sleep(30 * time.Second)
-
-			log.Printf("[INFO] Delete mse cluster success: %s ", item["InstanceId"].(string))
+			clusters = append(clusters, v.(map[string]interface{}))
 		}
 		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNum"] = request["PageNum"].(int) + 1
+	}
+	return clusters, nil
+}
+
+// mseSweepPrefixes is the name-prefix allow-list used by the MSE child sweepers
+// when ALICLOUD_SWEEP_ALL_RESOURCES is not set. When SWEEP_ALL is set the prefix
+// filter is bypassed and only protectedSweepVpcName (NODELETING markers) guards
+// deletion, matching the canonical sweeper contract.
+var mseSweepPrefixes = []string{"tf-testAcc", "tf-test", "tf_testAcc"}
+
+// mseSweepNameAllowed reports whether a resource name should be processed by an
+// MSE child sweeper. It applies the NODELETING name-protection guard first
+// (always, even under SWEEP_ALL) and then, only when SWEEP_ALL is off, the
+// test-prefix allow-list.
+func mseSweepNameAllowed(name string) bool {
+	if protectedSweepVpcName(name) {
+		return false
+	}
+	if sweepAll() {
+		return true
+	}
+	for _, prefix := range mseSweepPrefixes {
+		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+			return true
+		}
+	}
+	return false
+}
+
+// testSweepMSECluster sweeps leftover MSE clusters in the region. The cluster
+// is the expensive parent resource for engine_namespace / nacos_config / znode,
+// so those child sweepers are registered as Dependencies and run first. Each
+// cluster is listed via ListClusters (the same API the provider Read uses),
+// guarded by mseSweepNameAllowed (NODELETING name-protection always; tf-test
+// prefix when ALICLOUD_SWEEP_ALL_RESOURCES is off; bypass-prefix under
+// SWEEP_ALL). Deletion uses DeleteCluster mirroring resourceAlicloudMseCluster
+// Delete. Per-cluster errors are logged and skipped; the sweeper always returns
+// nil so siblings still run.
+func testSweepMSECluster(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	clusters, err := listMseSweepClusters(client)
+	if err != nil {
+		log.Printf("[ERROR] ListClusters for mse_cluster sweep failed: %s", err)
+		return nil
+	}
+
+	for _, cluster := range clusters {
+		name := fmt.Sprint(cluster["ClusterAliasName"])
+		instanceId := fmt.Sprint(cluster["InstanceId"])
+		if !mseSweepNameAllowed(name) {
+			log.Printf("[INFO] Skipping mse cluster: %s (%s)", name, instanceId)
+			continue
+		}
+		deleteAction := "DeleteCluster"
+		deleteRequest := map[string]interface{}{
+			"InstanceId": instanceId,
+		}
+		if _, derr := client.RpcPost("mse", "2019-05-31", deleteAction, nil, deleteRequest, false); derr != nil {
+			log.Printf("[ERROR] Failed to delete mse cluster %s (%s): %s", name, instanceId, derr)
+			continue
+		}
+		// DeleteCluster is asynchronous; wait briefly so the next sweep pass
+		// does not race a still-destroying cluster's child APIs.
+		time.Sleep(30 * time.Second)
+		log.Printf("[INFO] Delete mse cluster success: %s (%s)", name, instanceId)
 	}
 	return nil
 }
@@ -106,9 +154,9 @@ func TestAccAliCloudMSECluster_basic0(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -231,9 +279,9 @@ func TestAccAliCloudMSECluster_changeNetwork(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -307,9 +355,9 @@ func TestAccAliCloudMSECluster_basic1(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -398,9 +446,9 @@ func TestAccAliCloudMSECluster_pro(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -485,9 +533,9 @@ func TestAccAliCloudMSECluster_serverless(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -540,9 +588,9 @@ func TestAccAliCloudMSECluster_VpcId(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -654,9 +702,9 @@ func TestAccAliCloudMSECluster_PrePaid(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheckWithTime(t, []int{22})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -757,9 +805,9 @@ func TestAccAliCloudMSECluster_single_eni(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
