@@ -43,6 +43,11 @@ func resourceAliCloudLiveCaster() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"caster_template": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -54,6 +59,11 @@ func resourceAliCloudLiveCaster() *schema.Resource {
 			"domain_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"expire_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"norm_type": {
 				Type:     schema.TypeInt,
@@ -73,6 +83,11 @@ func resourceAliCloudLiveCaster() *schema.Resource {
 			"program_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"purchase_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"record_config": {
 				Type:     schema.TypeString,
@@ -145,6 +160,15 @@ func resourceAliCloudLiveCasterCreate(d *schema.ResourceData, meta interface{}) 
 		request["ResourceGroupId"] = v
 	}
 	request["ChargeType"] = convertLiveCasterChargeTypeRequest(d.Get("payment_type").(string))
+	if v, ok := d.GetOk("caster_template"); ok {
+		request["CasterTemplate"] = v
+	}
+	if v, ok := d.GetOk("expire_time"); ok {
+		request["ExpireTime"] = v
+	}
+	if v, ok := d.GetOk("purchase_time"); ok {
+		request["PurchaseTime"] = v
+	}
 	if v, ok := d.GetOk("tags"); ok {
 		tagsMap := ConvertTags(v.(map[string]interface{}))
 		request = expandTagsToMap(request, tagsMap)
@@ -198,6 +222,15 @@ func resourceAliCloudLiveCasterRead(d *schema.ResourceData, meta interface{}) er
 	}
 	if objectRaw["ChargeType"] != nil {
 		d.Set("payment_type", convertLiveCasterCasterListCasterChargeTypeResponse(objectRaw["ChargeType"]))
+	}
+	if objectRaw["CasterTemplate"] != nil {
+		d.Set("caster_template", objectRaw["CasterTemplate"])
+	}
+	if objectRaw["ExpireTime"] != nil {
+		d.Set("expire_time", objectRaw["ExpireTime"])
+	}
+	if objectRaw["PurchaseTime"] != nil {
+		d.Set("purchase_time", objectRaw["PurchaseTime"])
 	}
 	if objectRaw["ResourceGroupId"] != nil {
 		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
