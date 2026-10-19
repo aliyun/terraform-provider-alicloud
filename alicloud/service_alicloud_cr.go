@@ -279,11 +279,20 @@ func (c *CrService) InstanceStatusRefreshFunc(id string, failStates []string) re
 	}
 }
 
+// DescribeCrEndpointAclPolicy reads the full GetInstanceEndpoint response and
+// returns it so the caller (Read) can map the whole AclEntries array into the
+// entries set. The resource identity is the (instance, endpoint) pair, so
+// presence is decided by whether AclEntries is non-empty: an enabled endpoint
+// with no ACL entries means no policy exists. ACL entry propagation after
+// CreateInstanceEndpointAclPolicy is awaited in the Create path
+// (WaitCrEndpointRunning then WaitCrEndpointAclEntriesPropagate), not here;
+// this Read only retries transient API errors and lets steady-state absence
+// (empty AclEntries) fall through to the NotFound path below.
 func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "GetInstanceEndpoint"
-	parts, err := ParseResourceId(id, 3)
+	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
@@ -292,7 +301,6 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 		"EndpointType": convertCrEndpointType(parts[1]),
 		"InstanceId":   parts[0],
 	}
-	idExist := false
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, true)
@@ -303,11 +311,6 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 			}
 			return retry.NonRetryableError(err)
 		}
-		// ACL entry propagation after CreateInstanceEndpointAclPolicy is awaited
-		// in the Create path (WaitCrEndpointRunning then
-		// WaitCrEndpointAclEntryPropagate), not here. This Read only retries
-		// transient API errors and lets steady-state absence (empty AclEntries or
-		// a missing entry) fall through to the NotFound paths below.
 		return nil
 	})
 	addDebug(action, response, request)
@@ -323,38 +326,45 @@ func (s *CrService) DescribeCrEndpointAclPolicy(id string) (object map[string]in
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntries", response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, response)
-	}
-	for _, v := range v.([]interface{}) {
-		if fmt.Sprint(v.(map[string]interface{})["Entry"]) == parts[2] {
-			idExist = true
-			return v.(map[string]interface{}), nil
+	// Existence is based on user-managed entries, not raw AclEntries length:
+	// the system loopback ACL (127.0.0.1/32 + "default") always remains once
+	// the endpoint is enabled and cannot be removed via the ACL policy APIs,
+	// so an AclEntries list containing only it means the user's ACL policy is
+	// gone. Treating that as not-found lets Read reconcile the resource to
+	// absent and lets destroy succeed.
+	userEntryCount := 0
+	for _, e := range v.([]interface{}) {
+		if em, ok := e.(map[string]interface{}); ok {
+			if fmt.Sprint(em["Entry"]) == "127.0.0.1/32" && fmt.Sprint(em["Comment"]) == "default" {
+				continue
+			}
+			userEntryCount++
 		}
 	}
-	if !idExist {
+	if userEntryCount < 1 {
 		return object, WrapErrorf(NotFoundErr("CR", id), NotFoundWithResponse, response)
 	}
-	return object, nil
+	return response, nil
 }
 
-// WaitCrEndpointAclEntryPropagate polls GetInstanceEndpoint until the ACL entry
-// created by CreateInstanceEndpointAclPolicy appears in AclEntries. The CR
-// service propagates ACL entries asynchronously, so a Read issued right after
-// Create can race the propagation and see an empty AclEntries, misreading the
-// just-created resource as absent ("was present, but now absent"). The ACL
-// creation is gated on the endpoint reaching RUNNING first
-// (WaitCrEndpointRunning) so the entry is reliably accepted; this wait then
-// confirms propagation by matching the entry by its value. Steady-state
-// absence (entry deleted but endpoint remains) is handled by the Read path's
-// NotFound logic, not by this propagation wait.
-func (s *CrService) WaitCrEndpointAclEntryPropagate(instanceId, endpointType, entry string, timeout time.Duration) error {
+// WaitCrEndpointAclEntriesPropagate polls GetInstanceEndpoint until every
+// expected ACL entry (matched by value) appears in AclEntries. The CR service
+// propagates ACL entries asynchronously, so a Read issued right after
+// CreateInstanceEndpointAclPolicy can race the propagation and see an empty or
+// partial AclEntries, misreading the just-created resource as absent ("was
+// present, but now absent"). The ACL creation is gated on the endpoint reaching
+// RUNNING first (WaitCrEndpointRunning) so the entries are reliably accepted;
+// this wait then confirms propagation by matching each created entry by value.
+// Steady-state absence (entries deleted but endpoint remains) is handled by the
+// Read path's NotFound logic (empty AclEntries), not by this propagation wait.
+func (s *CrService) WaitCrEndpointAclEntriesPropagate(instanceId, endpointType string, expected []string, timeout time.Duration) error {
 	client := s.client
 	action := "GetInstanceEndpoint"
 	request := map[string]interface{}{
 		"EndpointType": convertCrEndpointType(endpointType),
 		"InstanceId":   instanceId,
 	}
+	resourceId := fmt.Sprint(instanceId, ":", endpointType)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	return retry.Retry(timeout, func() *retry.RetryError {
 		response, err := client.RpcPost("cr", "2018-12-01", action, nil, request, true)
@@ -368,20 +378,30 @@ func (s *CrService) WaitCrEndpointAclEntryPropagate(instanceId, endpointType, en
 		addDebug(action, response, request)
 		rawEntries, jerr := jsonpath.Get("$.AclEntries", response)
 		if jerr != nil {
-			return retry.NonRetryableError(WrapErrorf(jerr, FailedGetAttributeMsg, fmt.Sprint(instanceId, ":", endpointType), "$.AclEntries", response))
+			return retry.NonRetryableError(WrapErrorf(jerr, FailedGetAttributeMsg, resourceId, "$.AclEntries", response))
 		}
 		entries, ok := rawEntries.([]interface{})
-		if !ok || len(entries) < 1 {
+		if !ok {
 			wait()
-			return retry.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entry %q to propagate", entry))
+			return retry.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entries %v to propagate", expected))
 		}
+		present := make(map[string]bool, len(entries))
 		for _, e := range entries {
-			if em, ok := e.(map[string]interface{}); ok && fmt.Sprint(em["Entry"]) == entry {
-				return nil
+			if em, ok := e.(map[string]interface{}); ok {
+				present[fmt.Sprint(em["Entry"])] = true
 			}
 		}
-		wait()
-		return retry.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entry %q to propagate", entry))
+		missing := make([]string, 0, len(expected))
+		for _, want := range expected {
+			if !present[want] {
+				missing = append(missing, want)
+			}
+		}
+		if len(missing) > 0 {
+			wait()
+			return retry.RetryableError(fmt.Errorf("waiting for CR endpoint ACL entries %v to propagate (still missing %v)", expected, missing))
+		}
+		return nil
 	})
 }
 
@@ -390,13 +410,14 @@ func (s *CrService) WaitCrEndpointAclEntryPropagate(instanceId, endpointType, en
 // enabled; CreateInstanceEndpointAclPolicy issued while the endpoint is still
 // CREATING is silently dropped by the server (the ACL entry never propagates
 // into AclEntries), so ACL creation must wait for RUNNING first. This
-// complements WaitCrEndpointAclEntryPropagate, which waits for the entry to
-// appear after the (now reliably accepted) create. A missing or non-RUNNING
-// Status (including the brief window before the endpoint is enabled, where
-// GetInstanceEndpoint returns no Status) keeps retrying; transient API errors
-// are retried via NeedRetry. The ACL policy resource depends on the CR EE
-// instance, so by the time this runs the instance already exists and
-// GetInstanceEndpoint returns CREATING/RUNNING rather than INSTANCE_NOT_EXIST.
+// complements WaitCrEndpointAclEntriesPropagate, which waits for the created
+// entries to appear after the (now reliably accepted) create. A missing or
+// non-RUNNING Status (including the brief window before the endpoint is
+// enabled, where GetInstanceEndpoint returns no Status) keeps retrying;
+// transient API errors are retried via NeedRetry. The ACL policy resource
+// depends on the CR EE instance, so by the time this runs the instance already
+// exists and GetInstanceEndpoint returns CREATING/RUNNING rather than
+// INSTANCE_NOT_EXIST.
 func (s *CrService) WaitCrEndpointRunning(instanceId, endpointType string, timeout time.Duration) error {
 	client := s.client
 	action := "GetInstanceEndpoint"
