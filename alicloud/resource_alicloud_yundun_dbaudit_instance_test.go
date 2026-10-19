@@ -46,7 +46,8 @@ func testSweepDbauditInstances(region string) error {
 			return dbauditClient.DescribeInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_dbaudit", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list Dbaudit Instances: %s", err)
+			break
 		}
 
 		addDebug(request.GetActionName(), raw)
@@ -63,11 +64,13 @@ func testSweepDbauditInstances(region string) error {
 
 		currentPageNo := request.CurrentPage
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_dbaudit", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to parse Dbaudit Instances pagination: %s", err)
+			break
 		}
 
 		if page, err := getNextpageNumber(currentPageNo); err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to get next page number for Dbaudit Instances: %s", err)
+			break
 		} else {
 			request.CurrentPage = page
 		}
