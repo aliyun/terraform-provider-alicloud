@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"strings"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -45,11 +44,17 @@ func testSweepDnsGroup(region string) error {
 		response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
 		groups := response.DomainGroups.DomainGroup
 		for _, domainGroup := range groups {
-			if strings.HasPrefix(domainGroup.GroupName, "tf-testacc") {
-				allGroups = append(allGroups, domainGroup)
-			} else {
-				log.Printf("Skip %#v.", domainGroup)
+			// RED LINE: skip do-not-delete markers; always prefix-guard (even
+			// when SWEEP_ALL=1) so manually-created DNS groups are preserved.
+			if protectedSweepVpcName(domainGroup.GroupName) {
+				log.Printf("[INFO] Skipping DNS group with do-not-delete marker: %s", domainGroup.GroupName)
+				continue
 			}
+			if !isTestDnsName(domainGroup.GroupName) {
+				log.Printf("[INFO] Skipping non-test DNS group: %s", domainGroup.GroupName)
+				continue
+			}
+			allGroups = append(allGroups, domainGroup)
 		}
 		if len(groups) < PageSizeLarge {
 			break
