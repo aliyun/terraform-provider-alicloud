@@ -53,6 +53,12 @@ resource "alicloud_esa_image_transform" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_avif` - (Optional) Adaptive avif. Value range:
+  -   `on`: On
+  -   `off`: Off
+* `auto_webp` - (Optional) Adaptive webp. Value range:
+  -   `on`: On
+  -   `off`: Off
 * `enable` - (Optional) Indicates whether the image transformations feature is enabled. Valid values:
   -   `on`: on
   -   `off`: off

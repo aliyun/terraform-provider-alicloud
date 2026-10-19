@@ -27,6 +27,16 @@ func resourceAliCloudEsaImageTransform() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_avif": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
+			"auto_webp": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
 			"config_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -100,6 +110,12 @@ func resourceAliCloudEsaImageTransformCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("enable"); ok {
 		request["Enable"] = v
 	}
+	if v, ok := d.GetOk("auto_avif"); ok {
+		request["AutoAvif"] = v
+	}
+	if v, ok := d.GetOk("auto_webp"); ok {
+		request["AutoWebp"] = v
+	}
 	wait := incrementalWait(5*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
@@ -138,6 +154,8 @@ func resourceAliCloudEsaImageTransformRead(d *schema.ResourceData, meta interfac
 	}
 
 	d.Set("enable", objectRaw["Enable"])
+	d.Set("auto_avif", objectRaw["AutoAvif"])
+	d.Set("auto_webp", objectRaw["AutoWebp"])
 	d.Set("rule", objectRaw["Rule"])
 	d.Set("rule_enable", objectRaw["RuleEnable"])
 	d.Set("rule_name", objectRaw["RuleName"])
@@ -189,6 +207,16 @@ func resourceAliCloudEsaImageTransformUpdate(d *schema.ResourceData, meta interf
 	if !d.IsNewResource() && d.HasChange("enable") {
 		update = true
 		request["Enable"] = d.Get("enable")
+	}
+
+	if !d.IsNewResource() && d.HasChange("auto_avif") {
+		update = true
+		request["AutoAvif"] = d.Get("auto_avif")
+	}
+
+	if !d.IsNewResource() && d.HasChange("auto_webp") {
+		update = true
+		request["AutoWebp"] = d.Get("auto_webp")
 	}
 
 	if update {
