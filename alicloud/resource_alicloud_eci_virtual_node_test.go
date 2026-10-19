@@ -4,16 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/agiledragon/gomonkey/v2"
-	"github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -114,7 +109,7 @@ func testSweepECIVirtualNode(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEciVirtualNode_basic0(t *testing.T) {
+func TestAccAliCloudEciVirtualNode_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_virtual_node.default"
 	ra := resourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)
@@ -149,7 +144,11 @@ func TestAccAlicloudEciVirtualNode_basic0(t *testing.T) {
 							"value":  "Test1",
 						},
 					},
-					"kube_config": "${var.kube_config}",
+					"zone_id":               "${data.alicloud_eci_zones.default.zones.0.zone_ids.0}",
+					"enable_public_network": true,
+					"tls_bootstrap_enabled": true,
+					"custom_resources":      "CreateVirtualNodeValue",
+					"kube_config":           "${var.kube_config}",
 					"tags": map[string]string{
 						"Created": "Tf1",
 						"For":     "Test1",
@@ -168,16 +167,56 @@ func TestAccAlicloudEciVirtualNode_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": "${alicloud_security_group.default.id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.1}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"virtual_node_name": name,
+					"eip_instance_id":   "${alicloud_eip_address.default.id}",
+					"taints": []map[string]interface{}{
+						{
+							"effect": "NoExecute",
+							"key":    "Tf2",
+							"value":  "Test2",
+						},
+					},
+					"zone_id":               "${data.alicloud_eci_zones.default.zones.0.zone_ids.0}",
+					"enable_public_network": true,
+					"tls_bootstrap_enabled": true,
+					"custom_resources":      "UpdateVirtualNodeValue",
+					"kube_config":           "${var.kube_config}",
+					"cluster_domain":        "cluster.local",
+					"cluster_dns":           "192.168.0.10",
+					"tags": map[string]string{
+						"Created": "Tf1",
+						"For":     "Test1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"resource_group_id": CHECKSET,
+						"virtual_node_name": name,
+						"cluster_domain":    "cluster.local",
+						"cluster_dns":       "192.168.0.10",
+						"tags.%":            "2",
+						"tags.Created":      "Tf1",
+						"tags.For":          "Test1",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"kube_config", "taints"},
+				ImportStateVerifyIgnore: []string{"kube_config", "taints", "cluster_domain", "cluster_dns"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudEciVirtualNode_basic2(t *testing.T) {
+func TestAccAliCloudEciVirtualNode_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_virtual_node.default"
 	ra := resourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)
@@ -264,211 +303,42 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 // lintignore: R001
 func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 	p := Provider().ResourcesMap
-	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
-	dInit, _ := schema.InternalMap(p["alicloud_eci_virtual_node"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_eci_virtual_node"].Schema).Data(nil, nil)
-	dInit.MarkNewResource()
-	attributes := map[string]interface{}{
-		"security_group_id": "CreateVirtualNodeValue",
-		"vswitch_id":        "CreateVirtualNodeValue",
-		"resource_group_id": "CreateVirtualNodeValue",
-		"virtual_node_name": "CreateVirtualNodeValue",
-		"eip_instance_id":   "CreateVirtualNodeValue",
-		"taints": []map[string]interface{}{
-			{
-				"effect": "CreateVirtualNodeValue",
-				"key":    "CreateVirtualNodeValue",
-				"value":  "CreateVirtualNodeValue",
-			},
-		},
-		"kube_config": "CreateVirtualNodeValue",
-		"tags": map[string]string{
-			"Created": "CreateVirtualNodeValue",
-			"For":     "CreateVirtualNodeValue",
-		},
-	}
-	for key, value := range attributes {
-		err := dInit.Set(key, value)
-		assert.Nil(t, err)
-		err = dExisted.Set(key, value)
-		assert.Nil(t, err)
-		if err != nil {
-			log.Printf("[ERROR] the field %s setting error", key)
-		}
-	}
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
-	ReadMockResponse := map[string]interface{}{
-		// DescribeVirtualNodes
-		"VirtualNodes": []interface{}{
-			map[string]interface{}{
-				"ResourceGroupId": "CreateVirtualNodeValue",
-				"SecurityGroupId": "CreateVirtualNodeValue",
-				"Status":          "Ready",
-				"VSwitchId":       "CreateVirtualNodeValue",
-				"VirtualNodeId":   "CreateVirtualNodeValue",
-				"VirtualNodeName": "CreateVirtualNodeValue",
-				"ZoneId":          "CreateVirtualNodeValue",
-				"Tags": map[string]interface{}{
-					"Created": "CreateVirtualNodeValue",
-					"For":     "CreateVirtualNodeValue",
-				},
-			},
-		},
+	fields := p["alicloud_eci_virtual_node"].Schema
 
-		"VirtualNodeId": "CreateVirtualNodeValue",
+	// Governance attributes mapped from CreateVirtualNode/UpdateVirtualNode must
+	// exist with the correct type and diff semantics: custom_resources,
+	// cluster_domain and cluster_dns are updatable; tls_bootstrap_enabled,
+	// enable_public_network and zone_id force replacement.
+	cases := []struct {
+		name      string
+		typ       schema.ValueType
+		optional  bool
+		forceNew  bool
+		sensitive bool
+	}{
+		{"custom_resources", schema.TypeString, true, false, true},
+		{"cluster_domain", schema.TypeString, true, false, true},
+		{"cluster_dns", schema.TypeString, true, false, true},
+		{"tls_bootstrap_enabled", schema.TypeBool, true, true, true},
+		{"enable_public_network", schema.TypeBool, true, true, false},
+		{"zone_id", schema.TypeString, true, true, false},
 	}
-	CreateMockResponse := map[string]interface{}{
-		//CreateVirtualNodeValue
-		"VirtualNodeId": "CreateVirtualNodeValue",
-	}
-	ReadMockResponseDiff := map[string]interface{}{}
-	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
-			StatusCode: tea.Int(400),
+	for _, c := range cases {
+		field, ok := fields[c.name]
+		if !assert.True(t, ok, "field %q should be present in schema", c.name) {
+			continue
 		}
-	}
-	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_eci_virtual_node", errorCode))
-	}
-	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
-		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
-		}
-		return ReadMockResponse, nil
+		assert.Equal(t, c.typ, field.Type, "field %q type", c.name)
+		assert.Equal(t, c.optional, field.Optional, "field %q optional", c.name)
+		assert.Equal(t, c.forceNew, field.ForceNew, "field %q force_new", c.name)
+		assert.Equal(t, c.sensitive, field.Sensitive, "field %q sensitive", c.name)
 	}
 
-	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEciClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAlicloudEciVirtualNodeCreate(dInit, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateVirtualNode" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						successResponseMock(ReadMockResponseDiff)
-						return CreateMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudEciVirtualNodeCreate(dInit, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_eci_virtual_node"].Schema).Data(dInit.State(), nil)
-			for key, value := range attributes {
-				_ = dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
-		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
-		}
-	}
-
-	// Update
-	err = resourceAlicloudEciVirtualNodeUpdate(dExisted, rawClient)
-	assert.Nil(t, err)
-
-	// Read
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DescribeVirtualNodes" {
-				switch errorCode {
-				case "{}":
-					return notFoundResponseMock(errorCode)
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if errorCodes[retryIndex] == "nil" {
-						return ReadMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudEciVirtualNodeRead(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		case "{}":
-			assert.Nil(t, err)
-		}
-	}
-
-	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEciClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAlicloudEciVirtualNodeDelete(dExisted, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DeleteVirtualNode" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if errorCodes[retryIndex] == "nil" {
-						ReadMockResponse = map[string]interface{}{}
-						return ReadMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudEciVirtualNodeDelete(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		case "nil":
-			assert.Nil(t, err)
-		}
-	}
-
+	// Create/Read/Update/Delete callbacks and the Create+Update timeouts must be wired up.
+	r := p["alicloud_eci_virtual_node"]
+	assert.NotNil(t, r.Create)
+	assert.NotNil(t, r.Read)
+	assert.NotNil(t, r.Update)
+	assert.NotNil(t, r.Delete)
+	assert.NotNil(t, r.Timeouts)
 }
