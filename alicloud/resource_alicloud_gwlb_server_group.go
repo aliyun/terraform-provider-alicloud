@@ -141,6 +141,14 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
+						"health_check_req": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"health_check_exp": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -335,6 +343,14 @@ func resourceAliCloudGwlbServerGroupCreate(d *schema.ResourceData, meta interfac
 		if healthyThreshold1 != nil && healthyThreshold1 != "" && healthyThreshold1.(int) > 0 {
 			objectDataLocalMap["HealthyThreshold"] = healthyThreshold1
 		}
+		healthCheckReq1, _ := jsonpath.Get("$[0].health_check_req", v)
+		if healthCheckReq1 != nil && healthCheckReq1 != "" {
+			objectDataLocalMap["HealthCheckReq"] = healthCheckReq1
+		}
+		healthCheckExp1, _ := jsonpath.Get("$[0].health_check_exp", v)
+		if healthCheckExp1 != nil && healthCheckExp1 != "" {
+			objectDataLocalMap["HealthCheckExp"] = healthCheckExp1
+		}
 
 		request["HealthCheckConfig"] = objectDataLocalMap
 	}
@@ -389,6 +405,18 @@ func resourceAliCloudGwlbServerGroupCreate(d *schema.ResourceData, meta interfac
 		jsonPathResult17, err := jsonpath.Get("$[0].healthy_threshold", v)
 		if err == nil && jsonPathResult17 != "" {
 			request["HealthCheckConfig.HealthyThreshold"] = jsonPathResult17
+		}
+	}
+	if v, ok := d.GetOk("health_check_config"); ok {
+		jsonPathResult18, err := jsonpath.Get("$[0].health_check_req", v)
+		if err == nil && jsonPathResult18 != "" {
+			request["HealthCheckConfig.HealthCheckReq"] = jsonPathResult18
+		}
+	}
+	if v, ok := d.GetOk("health_check_config"); ok {
+		jsonPathResult19, err := jsonpath.Get("$[0].health_check_exp", v)
+		if err == nil && jsonPathResult19 != "" {
+			request["HealthCheckConfig.HealthCheckExp"] = jsonPathResult19
 		}
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -495,6 +523,8 @@ func resourceAliCloudGwlbServerGroupRead(d *schema.ResourceData, meta interface{
 		healthCheckConfigMap["health_check_protocol"] = healthCheckConfig1Raw["HealthCheckProtocol"]
 		healthCheckConfigMap["healthy_threshold"] = healthCheckConfig1Raw["HealthyThreshold"]
 		healthCheckConfigMap["unhealthy_threshold"] = healthCheckConfig1Raw["UnhealthyThreshold"]
+		healthCheckConfigMap["health_check_req"] = healthCheckConfig1Raw["HealthCheckReq"]
+		healthCheckConfigMap["health_check_exp"] = healthCheckConfig1Raw["HealthCheckExp"]
 
 		healthCheckHttpCode1Raw := make([]interface{}, 0)
 		if healthCheckConfig1Raw["HealthCheckHttpCode"] != nil {
@@ -662,6 +692,14 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 			if healthyThreshold1 != nil && (d.HasChange("health_check_config.0.healthy_threshold") || healthyThreshold1 != "") && healthyThreshold1.(int) > 0 {
 				objectDataLocalMap["HealthyThreshold"] = healthyThreshold1
 			}
+			healthCheckReq1, _ := jsonpath.Get("$[0].health_check_req", v)
+			if healthCheckReq1 != nil && (d.HasChange("health_check_config.0.health_check_req") || healthCheckReq1 != "") {
+				objectDataLocalMap["HealthCheckReq"] = healthCheckReq1
+			}
+			healthCheckExp1, _ := jsonpath.Get("$[0].health_check_exp", v)
+			if healthCheckExp1 != nil && (d.HasChange("health_check_config.0.health_check_exp") || healthCheckExp1 != "") {
+				objectDataLocalMap["HealthCheckExp"] = healthCheckExp1
+			}
 
 			request["HealthCheckConfig"] = objectDataLocalMap
 		}
@@ -728,6 +766,22 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 		jsonPathResult13, err := jsonpath.Get("$[0].healthy_threshold", d.Get("health_check_config"))
 		if err == nil && jsonPathResult13.(int) > 0 {
 			request["HealthCheckConfig.HealthyThreshold"] = jsonPathResult13
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("health_check_config.0.health_check_req") {
+		update = true
+		jsonPathResult18, err := jsonpath.Get("$[0].health_check_req", d.Get("health_check_config"))
+		if err == nil {
+			request["HealthCheckConfig.HealthCheckReq"] = jsonPathResult18
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("health_check_config.0.health_check_exp") {
+		update = true
+		jsonPathResult19, err := jsonpath.Get("$[0].health_check_exp", d.Get("health_check_config"))
+		if err == nil {
+			request["HealthCheckConfig.HealthCheckExp"] = jsonPathResult19
 		}
 	}
 
