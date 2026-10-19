@@ -44,8 +44,8 @@ func testSweepSslVpnClientCerts(region string) error {
 			return vpcClient.DescribeSslVpnClientCerts(request)
 		})
 		if err != nil {
-			log.Printf("[ERROR] %s", WrapError(err))
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to list ssl vpn client certs: %s", err)
+			return nil
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeSslVpnClientCertsResponse)
@@ -121,9 +121,9 @@ func TestAccAlicloudSslVpnClientCert_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSslVpnClientCertConfigBasic(rand),

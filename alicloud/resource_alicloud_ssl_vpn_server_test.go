@@ -44,7 +44,8 @@ func testSweepSslVpnServers(region string) error {
 			return vpcClient.DescribeSslVpnServers(request)
 		})
 		if err != nil {
-			log.Printf("[ERROR] %s", WrapError(err))
+			log.Printf("[ERROR] Failed to list ssl vpn servers: %s", err)
+			return nil
 		}
 		response, _ := raw.(*vpc.DescribeSslVpnServersResponse)
 		if len(response.SslVpnServers.SslVpnServer) < 1 {
@@ -139,9 +140,9 @@ func TestAccAlicloudSslVpnServerBasic(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSslVpnServerDestroy,
+		CheckDestroy:      testAccCheckSslVpnServerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSslVpnServerConfigBasic(rand),
@@ -255,9 +256,9 @@ func TestAccAlicloudSslVpnServerMulti(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSslVpnServerDestroy,
+		CheckDestroy:      testAccCheckSslVpnServerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSslVpnServerConfig_mulit(rand),
