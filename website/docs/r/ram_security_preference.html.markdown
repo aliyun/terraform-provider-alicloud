@@ -52,6 +52,9 @@ The following arguments are supported:
 * `allow_user_to_manage_access_keys` - (Optional, Computed) Whether to allow RAM users to manage their own access keys. Value:
   - true: Allow.
   - false (default): Not allowed.
+* `allow_user_to_manage_service_credentials` - (Optional, Computed) Whether to allow RAM users to manage their own service credentials. Value:
+  - true: Allow.
+  - false (default): Not allowed.
 * `allow_user_to_manage_mfa_devices` - (Optional, Computed) Whether to allow RAM users to manage multi-factor authentication devices. Value:
   - true (default): Allowed.
   - false: not allowed.
