@@ -54,11 +54,13 @@ func testSweepBrainIndustrialPidOrganization(region string) error {
 	action := "ListPidOrganizations"
 	response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 	if err != nil {
-		return WrapError(err)
+		log.Printf("[ERROR] Failed to list brain industrial pid organizations: %s", err)
+		return nil
 	}
 	resp, err := jsonpath.Get("$.OrganizationList", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.OrganizationList", response)
+		log.Printf("[ERROR] Failed to parse $.OrganizationList (treat as empty): %s", err)
+		return nil
 	}
 	sweeped := false
 	result, _ := resp.([]interface{})

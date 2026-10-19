@@ -53,11 +53,13 @@ func testSweepBrainIndustrialPidProject(region string) error {
 	for {
 		response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to list brain industrial pid projects: %s", err)
+			break
 		}
 		resp, err := jsonpath.Get("$.PidProjectList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PidProjectList", response)
+			log.Printf("[ERROR] Failed to parse $.PidProjectList (treat as empty): %s", err)
+			break
 		}
 		for _, v := range resp.([]interface{}) {
 			item := v.(map[string]interface{})
