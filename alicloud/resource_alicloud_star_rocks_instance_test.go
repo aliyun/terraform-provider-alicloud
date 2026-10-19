@@ -3,12 +3,123 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+// testSweepStarRocksInstance <<< Sweeper for StarRocks Instance.
+// StarRocks instances are cluster roots; node_groups are cluster-scoped children,
+// so this sweeper declares a dependency on alicloud_star_rocks_node_group to make
+// the framework delete children before parents. describeInstances with InstanceId
+// omitted lists every instance in the region. The NODELETING guard
+// (protectedSweepVpcName) is always active; in NORMAL mode a tftestacc prefix
+// filter is applied on top, in SWEEP_ALL mode every non-NODELETING instance is
+// released.
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_star_rocks_instance",
+		&resource.Sweeper{
+			Name:         "alicloud_star_rocks_instance",
+			F:            testSweepStarRocksInstance,
+			Dependencies: []string{"alicloud_star_rocks_node_group"},
+		})
+}
+
+func testSweepStarRocksInstance(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	// describeInstances without an InstanceId filter lists all instances in the region.
+	action := "/webapi/starrocks/describeInstances"
+	query := map[string]*string{
+		"RegionId": StringPointer(client.RegionId),
+	}
+	body := make(map[string]interface{})
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
+		resp, e := client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
+		response = resp
+		if e != nil {
+			if NeedRetry(e) {
+				wait()
+				return retry.RetryableError(e)
+			}
+			return retry.NonRetryableError(e)
+		}
+		return nil
+	})
+	addDebug(action, response, body)
+	if err != nil {
+		log.Printf("[ERROR] Failed to fetch StarRocks Instances: %s", WrapErrorf(err, DataDefaultErrorMsg, "alicloud_star_rocks_instance", action, AlibabaCloudSdkGoERROR))
+		return nil
+	}
+	v, err := jsonpath.Get("$.Data[*]", response)
+	if err != nil {
+		// empty region: the API may omit Data when there are no instances → treat as empty.
+		log.Printf("[WARN] StarRocks describeInstances returned no Data (empty region?): %v", err)
+		return nil
+	}
+	result, ok := v.([]interface{})
+	if !ok || len(result) == 0 {
+		log.Printf("[INFO] StarRocks describeInstances: 0 instances in region %s", client.RegionId)
+		return nil
+	}
+	for _, item := range result {
+		instance := item.(map[string]interface{})
+		instanceId := fmt.Sprint(instance["InstanceId"])
+		name := fmt.Sprint(instance["InstanceName"])
+
+		// NODELETING guard — always active (both NORMAL and SWEEP_ALL modes).
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping StarRocks Instance (NODELETING): %s (%s)", name, instanceId)
+			continue
+		}
+		// NORMAL mode: only clean resources carrying the tftestacc prefix.
+		if !sweepAll() {
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping StarRocks Instance (no prefix): %s (%s)", name, instanceId)
+				continue
+			}
+		}
+		log.Printf("[INFO] Deleting StarRocks Instance: %s (%s)", name, instanceId)
+		deleteAction := "/webapi/cluster/release"
+		deleteQuery := map[string]*string{
+			"InstanceId": StringPointer(instanceId),
+			"RegionId":   StringPointer(client.RegionId),
+		}
+		deleteBody := make(map[string]interface{})
+		if _, e := client.RoaPost("starrocks", "2022-10-19", deleteAction, deleteQuery, nil, deleteBody, true); e != nil {
+			log.Printf("[ERROR] Failed to delete StarRocks Instance (%s): %s", name, e)
+			continue
+		}
+		log.Printf("[INFO] Delete StarRocks Instance success: %s (%s)", name, instanceId)
+	}
+	return nil
+}
+
+// testSweepStarRocksInstance >>> Sweeper.
 
 // Test StarRocks Instance. >>> Resource test cases, automatically generated.
 // Case Instance 11073
