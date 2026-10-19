@@ -52,12 +52,14 @@ func testSweepOnsInstance(region string) error {
 	var response map[string]interface{}
 	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 	if err != nil {
-		log.Printf("[ERROR] Failed to retrieve ONS instance in service list: %s", err)
+		log.Printf("[ERROR] Failed to list ONS instance in service: %s", err)
+		return nil
 	}
 
 	resp, err := jsonpath.Get("$.Data.InstanceVO", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
+		log.Printf("[ERROR] Failed to parse $.Data.InstanceVO (treat as empty): %s", err)
+		return nil
 	}
 
 	result, _ := resp.([]interface{})
@@ -109,9 +111,9 @@ func TestAccAlicloudOnsInstance_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
