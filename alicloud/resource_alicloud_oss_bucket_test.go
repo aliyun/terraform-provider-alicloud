@@ -93,7 +93,8 @@ func testSweepOSSBuckets(region string) error {
 				return bucket.ListObjects(options...)
 			})
 			if err != nil {
-				continue
+				log.Printf("[ERROR] testSweepOSSBuckets list objects failed for bucket %s: %s", name, err)
+				break
 			}
 			response, _ := raw.(oss.ListObjectsResult)
 
