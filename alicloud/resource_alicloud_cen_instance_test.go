@@ -87,6 +87,14 @@ func testSweepCenInstances(region string) error {
 	for _, cenInstance := range insts {
 		name := cenInstance.Name
 		cenId := cenInstance.CenId
+		// Red-line: skip CEN instances carrying an explicit do-not-delete
+		// marker (e.g. "no-deleting-cen") even in SWEEP_ALL mode. CEN is a
+		// shared parent; protected instances are never detached or deleted.
+		// Mirrors the VPC sweeper's name-based protection (protectedSweepVpcName).
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping CEN Instance (do-not-delete marker): %s (%s)", name, cenId)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
