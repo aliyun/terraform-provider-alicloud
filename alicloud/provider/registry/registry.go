@@ -12,6 +12,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudauth"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
@@ -34,6 +35,7 @@ const (
 var servicePackages = []conns.ServicePackage{
 	ims.ServicePackage(),
 	cas.ServicePackage(),
+	cms.ServicePackage(),
 	cloudauth.ServicePackage(),
 	alicloudfunction.ServicePackage(),
 	kms.ServicePackage(),
