@@ -84,6 +84,12 @@ func resourceAlicloudOosExecution() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"safety_check": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -157,6 +163,9 @@ func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	if v, ok := d.GetOk("safety_check"); ok {
 		request["SafetyCheck"] = v
 	}
@@ -216,8 +225,13 @@ func resourceAlicloudOosExecutionRead(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
-	d.Set("counters", object["Counters"])
 	d.Set("create_date", object["CreateDate"])
+	if v, ok := object["Counters"].(map[string]interface{}); ok {
+		counters, _ := convertMaptoJsonString(v)
+		d.Set("counters", counters)
+	} else {
+		d.Set("counters", object["Counters"])
+	}
 	d.Set("description", object["Description"])
 	d.Set("end_date", object["EndDate"])
 	d.Set("executed_by", object["ExecutedBy"])
@@ -233,6 +247,7 @@ func resourceAlicloudOosExecutionRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("parent_execution_id", object["ParentExecutionId"])
 	d.Set("ram_role", object["RamRole"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("safety_check", object["SafetyCheck"])
 	d.Set("start_date", object["StartDate"])
 	d.Set("status", object["Status"])

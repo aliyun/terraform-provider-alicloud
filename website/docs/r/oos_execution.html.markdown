@@ -84,6 +84,7 @@ The following arguments are supported:
 * `mode` - (Optional, ForceNew) The mode of OOS Execution. Valid: `Automatic`, `Debug`. Default to `Automatic`.
 * `parameters` - (Optional, ForceNew) The parameters required by the template. Default to `{}`.
 * `parent_execution_id` - (Optional, ForceNew) The id of parent execution.
+* `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group. The resource group to which the execution belongs.
 * `safety_check` - (Optional, ForceNew) The mode of safety check.
 * `template_name` - (Required, ForceNew) The name of execution template.
 * `template_version` - (Optional, ForceNew) The version of execution template.
