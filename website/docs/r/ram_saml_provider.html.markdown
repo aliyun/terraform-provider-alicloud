@@ -41,6 +41,7 @@ resource "alicloud_ram_saml_provider" "example" {
 ## Argument Reference
 
 The following arguments are supported:
+* `authn_sign_algo` - (Optional) The signature algorithm. Valid values: `rsa-sha256`, `rsa-sha1`.
 * `description` - (Optional) The description.
 * `encodedsaml_metadata_document` - (Required) The metadata file which is Base64-encoded.
 The file is provided by an IdP that supports Security Assertion Markup Language (SAML) 2.0.
