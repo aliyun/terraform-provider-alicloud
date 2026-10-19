@@ -2,12 +2,143 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_ocean_base_instance", &resource.Sweeper{
+		Name: "alicloud_ocean_base_instance",
+		F:    testSweepOceanBaseInstances,
+	})
+}
+
+// testSweepOceanBaseInstances cleans up OceanBase instances created by acceptance tests.
+// Subscription (PrePay) instances cannot be destroyed via the OpenAPI and are skipped
+// (recorded as leftover). Name-based NODELETING protection is always applied, even under
+// SWEEP_ALL, by reusing protectedSweepVpcName from the VPC sweeper helpers.
+func testSweepOceanBaseInstances(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf-testacc",
+		"tf_testAcc",
+	}
+
+	action := "DescribeInstances"
+	request := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	objects := make([]interface{}, 0)
+	var response map[string]interface{}
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			resp, err := client.RpcPost("OceanBasePro", "2019-09-01", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			response = resp
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] %s got an error: %v", action, err)
+			break
+		}
+		resp, jsonErr := jsonpath.Get("$.Instances", response)
+		if jsonErr != nil {
+			log.Printf("[ERROR] DescribeInstances parse $.Instances failed: %v", jsonErr)
+			break
+		}
+		result, _ := resp.([]interface{})
+		objects = append(objects, result...)
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	for _, v := range objects {
+		item := v.(map[string]interface{})
+		id := fmt.Sprint(item["InstanceId"])
+		name := fmt.Sprint(item["InstanceName"])
+		payType := fmt.Sprint(item["PayType"])
+
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping OceanBase Instance (NODELETING marker): %s (%s)", name, id)
+			continue
+		}
+
+		if !sweepAll() {
+			matched := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				log.Printf("[INFO] Skipping OceanBase Instance (prefix mismatch): %s (%s)", name, id)
+				continue
+			}
+		}
+
+		// Subscription (PrePay) instances cannot be destroyed via DeleteInstances; the
+		// resource Delete path refuses them as well. Skip and record as leftover.
+		if payType == "PrePay" || payType == "PREPAY" {
+			log.Printf("[INFO] Skipping OceanBase Instance (Subscription cannot be destroyed): %s (%s)", name, id)
+			continue
+		}
+
+		log.Printf("[INFO] Deleting OceanBase Instance: %s (%s)", name, id)
+		deleteAction := "DeleteInstances"
+		deleteRequest := map[string]interface{}{
+			"InstanceIds":       fmt.Sprintf("[\"%s\"]", id),
+			"BackupRetainMode":  "delete_all",
+		}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		deleteErr := retry.Retry(10*time.Minute, func() *retry.RetryError {
+			resp, err := client.RpcPost("OceanBasePro", "2019-09-01", deleteAction, nil, deleteRequest, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				if IsExpectedErrors(err, []string{"UnknownError", "IllegalOperation.Resource"}) {
+					return nil
+				}
+				return retry.NonRetryableError(err)
+			}
+			addDebug(deleteAction, resp, deleteRequest)
+			return nil
+		})
+		if deleteErr != nil {
+			log.Printf("[ERROR] Failed to delete OceanBase Instance (%s (%s)): %s", name, id, deleteErr)
+		}
+	}
+
+	return nil
+}
 
 func TestAccAliCloudOceanBaseInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
