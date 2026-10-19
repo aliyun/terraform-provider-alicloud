@@ -129,21 +129,27 @@ func testSweepKVStoreInstances(region string) error {
 			}
 			resp, err := jsonpath.Get("$.Instances.KVStoreInstance", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Instances.KVStoreInstance", response)
+				log.Printf("[ERROR] Failed to parse $.Instances.KVStoreInstance (treat as empty): %s", err)
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
-				skip := true
 				item := v.(map[string]interface{})
+				instanceName := fmt.Sprint(item["InstanceName"])
+				if protectedSweepVpcName(instanceName) {
+					log.Printf("[INFO] Skipping KVStore Instance (NODELETING): %s (%s)", instanceName, item["InstanceId"])
+					continue
+				}
+				skip := true
 				if !sweepAll() {
 					for _, prefix := range prefixes {
-						if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["InstanceName"])), strings.ToLower(prefix)) {
+						if strings.HasPrefix(strings.ToLower(instanceName), strings.ToLower(prefix)) {
 							skip = false
 							break
 						}
 					}
 					if skip {
-						log.Printf("[INFO] Skipping KVStore Instance: %v (%v)", item["InstanceName"], item["InstanceId"])
+						log.Printf("[INFO] Skipping KVStore Instance: %s (%s)", instanceName, item["InstanceId"])
 						continue
 					}
 				}
