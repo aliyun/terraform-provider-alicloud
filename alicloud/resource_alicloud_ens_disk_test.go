@@ -27,23 +27,25 @@ func TestAccAliCloudEnsDisk_basic5178(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":      "cloud_efficiency",
-					"payment_type":  "PayAsYouGo",
-					"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
-					"size":          "20",
+					"category":               "cloud_efficiency",
+					"payment_type":           "PayAsYouGo",
+					"ens_region_id":          "cn-chenzhou-telecom_unicom_cmcc",
+					"size":                   "20",
+					"instance_billing_cycle": "Hour",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":      "cloud_efficiency",
-						"payment_type":  "PayAsYouGo",
-						"ens_region_id": "cn-chenzhou-telecom_unicom_cmcc",
-						"size":          "20",
+						"category":               "cloud_efficiency",
+						"payment_type":           "PayAsYouGo",
+						"ens_region_id":          "cn-chenzhou-telecom_unicom_cmcc",
+						"size":                   "20",
+						"instance_billing_cycle": "Hour",
 					}),
 				),
 			},
@@ -113,7 +115,7 @@ func TestAccAliCloudEnsDisk_basic5178(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"instance_billing_cycle"},
 			},
 		},
 	})
@@ -151,9 +153,9 @@ func TestAccAliCloudEnsDisk_basic5179(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -290,9 +292,9 @@ func TestAccAliCloudEnsDisk_basic5178_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -346,9 +348,9 @@ func TestAccAliCloudEnsDisk_basic5179_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

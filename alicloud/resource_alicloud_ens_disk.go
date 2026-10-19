@@ -52,6 +52,12 @@ func resourceAliCloudEnsDisk() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"instance_billing_cycle": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Hour", "Day", "Month"}, false),
+			},
 			"kms_key_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -94,6 +100,9 @@ func resourceAliCloudEnsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	request = make(map[string]interface{})
 
 	request["InstanceChargeType"] = convertEnsInstanceInstanceChargeTypeRequest(d.Get("payment_type").(string))
+	if v, ok := d.GetOk("instance_billing_cycle"); ok {
+		request["InstanceBillingCycle"] = v
+	}
 	request["EnsRegionId"] = d.Get("ens_region_id")
 	request["Category"] = d.Get("category")
 	if v, ok := d.GetOkExists("size"); ok {
