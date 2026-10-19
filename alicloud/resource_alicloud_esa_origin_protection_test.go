@@ -29,39 +29,53 @@ func TestAccAliCloudESAOriginProtectionresource_OriginProtection_test(t *testing
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
+				// origin_converge=on and auto_confirm_ip_list=on are mutually
+				// exclusive (FunctionArgConflict.OriginProtection), so each step
+				// keeps at most one of them enabled.
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":         "${alicloud_esa_site.resource_Site_OriginClientCertificate_test.id}",
-					"origin_converge": "on",
+					"site_id":              "${alicloud_esa_site.resource_Site_OriginClientCertificate_test.id}",
+					"origin_converge":      "on",
+					"auto_confirm_ip_list": "off",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"auto_confirm_ip_list": "off",
+					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"origin_converge": "on",
+					"origin_converge":      "off",
+					"auto_confirm_ip_list": "on",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"auto_confirm_ip_list": "on",
+					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"origin_converge": "off",
+					"origin_converge":      "off",
+					"auto_confirm_ip_list": "off",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"auto_confirm_ip_list": "off",
+					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"auto_confirm_ip_list": "off",
+					}),
 				),
 			},
 			{
@@ -93,6 +107,7 @@ resource "alicloud_esa_site" "resource_Site_OriginClientCertificate_test" {
   instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
   coverage    = "overseas"
   access_type = "NS"
+  flatten_mode = "flatten_at_root"
 }
 `, name)
 }

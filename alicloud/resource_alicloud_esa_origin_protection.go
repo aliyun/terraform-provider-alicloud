@@ -30,6 +30,11 @@ func resourceAliCloudEsaOriginProtection() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"auto_confirm_ip_list": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "off",
+			},
 			"site_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -52,6 +57,7 @@ func resourceAliCloudEsaOriginProtectionCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("site_id"); ok {
 		request["SiteId"] = v
 	}
+	request["AutoConfirmIPList"] = d.Get("auto_confirm_ip_list")
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -91,6 +97,7 @@ func resourceAliCloudEsaOriginProtectionRead(d *schema.ResourceData, meta interf
 	}
 
 	d.Set("origin_converge", objectRaw["OriginConverge"])
+	d.Set("auto_confirm_ip_list", objectRaw["AutoConfirmIPList"])
 	if v, ok := objectRaw["SiteId"]; ok {
 		d.Set("site_id", v)
 	}
@@ -116,7 +123,11 @@ func resourceAliCloudEsaOriginProtectionUpdate(d *schema.ResourceData, meta inte
 	if d.HasChange("origin_converge") {
 		update = true
 	}
+	if d.HasChange("auto_confirm_ip_list") {
+		update = true
+	}
 	request["OriginConverge"] = d.Get("origin_converge")
+	request["AutoConfirmIPList"] = d.Get("auto_confirm_ip_list")
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
