@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -10,14 +11,184 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_rds_account", &resource.Sweeper{
+		Name: "alicloud_rds_account",
+		F:    testSweepRdsAccounts,
+	})
+}
+
+// listSweepRdsDbInstances enumerates RDS DB instances in the region. It is a
+// shared helper for RDS sub-resource sweepers (accounts, backups, ...) that
+// must walk the parent DB instance list before listing their child resources.
+func listSweepRdsDbInstances(client *connectivity.AliyunClient) ([]map[string]interface{}, error) {
+	action := "DescribeDBInstances"
+	request := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+	objects := make([]map[string]interface{}, 0)
+	var response map[string]interface{}
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
+			resp, e := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+			response = resp
+			if e != nil {
+				if NeedRetry(e) {
+					wait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return objects, err
+		}
+		resp, e := jsonpath.Get("$.Items.DBInstance", response)
+		if e != nil {
+			return objects, WrapErrorf(e, FailedGetAttributeMsg, action, "$.Items.DBInstance", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			objects = append(objects, v.(map[string]interface{}))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return objects, nil
+}
+
+// testSweepRdsAccounts sweeps leftover test RDS accounts. RDS accounts are
+// sub-resources that live on a DB instance, so the sweeper enumerates DB
+// instances first, then the accounts on each. Accounts whose name (or parent
+// instance name) carries a do-not-delete marker are preserved. Accounts on
+// blocked instances fail deletion and are recorded as leftover (non-fatal).
+func testSweepRdsAccounts(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{"tf-testAcc", "tf_testAcc"}
+
+	instances, err := listSweepRdsDbInstances(client)
+	if err != nil {
+		log.Printf("[ERROR] DescribeDBInstances got an error: %v", err)
+		return nil
+	}
+
+	for _, inst := range instances {
+		instanceId := fmt.Sprint(inst["DBInstanceId"])
+		instanceName := fmt.Sprint(inst["DBInstanceDescription"])
+		if protectedSweepVpcName(instanceName) {
+			log.Printf("[INFO] Skipping RDS Accounts on do-not-delete instance: %s (%s)", instanceName, instanceId)
+			continue
+		}
+
+		action := "DescribeAccounts"
+		req := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": instanceId,
+			"SourceIp":     client.SourceIp,
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		if e := retry.Retry(5*time.Minute, func() *retry.RetryError {
+			resp, e := client.RpcPost("Rds", "2014-08-15", action, nil, req, true)
+			response = resp
+			if e != nil {
+				if rdsErrorHasCode(e, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound") || NotFoundError(e) {
+					return nil
+				}
+				if NeedRetry(e) || IsExpectedErrors(e, dbInstanceStatusErrorCodes) {
+					wait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			return nil
+		}); e != nil {
+			log.Printf("[ERROR] DescribeAccounts for %s got an error: %v", instanceId, e)
+			continue
+		}
+		addDebug(action, response, req)
+
+		accResp, e := jsonpath.Get("$.Accounts.DBInstanceAccount", response)
+		if e != nil {
+			log.Printf("[ERROR] DescribeAccounts parse for %s: %v", instanceId, e)
+			continue
+		}
+		accounts, _ := accResp.([]interface{})
+		for _, a := range accounts {
+			acc := a.(map[string]interface{})
+			accName := fmt.Sprint(acc["AccountName"])
+			if protectedSweepVpcName(accName) {
+				log.Printf("[INFO] Skipping RDS Account (do-not-delete marker): %s/%s", instanceId, accName)
+				continue
+			}
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(accName), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+			} else {
+				skip = false
+			}
+			if skip {
+				log.Printf("[INFO] Skipping RDS Account: %s/%s", instanceId, accName)
+				continue
+			}
+
+			log.Printf("[INFO] Deleting RDS Account: %s/%s", instanceId, accName)
+			delAction := "DeleteAccount"
+			delReq := map[string]interface{}{
+				"DBInstanceId": instanceId,
+				"AccountName":  accName,
+				"SourceIp":     client.SourceIp,
+			}
+			if e := retry.Retry(2*time.Minute, func() *retry.RetryError {
+				resp, e := client.RpcPost("Rds", "2014-08-15", delAction, nil, delReq, false)
+				if e != nil {
+					if rdsErrorHasCode(e, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound", "InvalidAccountName.NotFound") {
+						return nil
+					}
+					if NeedRetry(e) || IsExpectedErrors(e, dbInstanceStatusErrorCodes) || IsExpectedErrors(e, []string{"InternalError", "AccountActionForbidden", "IncorrectDBInstanceState"}) {
+						return retry.RetryableError(e)
+					}
+					return retry.NonRetryableError(e)
+				}
+				addDebug(delAction, resp, delReq)
+				return nil
+			}); e != nil {
+				log.Printf("[ERROR] Failed to delete RDS Account %s/%s: %s", instanceId, accName, e)
+			}
+		}
+	}
+
+	return nil
+}
 
 func TestAccAliCloudRdsAccount_basic(t *testing.T) {
 	var v map[string]interface{}

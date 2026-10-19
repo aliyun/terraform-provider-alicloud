@@ -2,10 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -13,10 +17,141 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_rds_backup", &resource.Sweeper{
+		Name: "alicloud_rds_backup",
+		F:    testSweepRdsBackups,
+	})
+}
+
+// testSweepRdsBackups sweeps leftover test RDS manual backups. Backups are
+// sub-resources that live on a DB instance, so the sweeper enumerates DB
+// instances first, then the backups on each. Only manual backups
+// (BackupMode=Manual, created by tests) are deleted; automated backups are
+// managed by the backup policy and auto-expire. Instances carrying a
+// do-not-delete marker (or, in non-SWEEP_ALL mode, an instance name that
+// does not match test prefixes) are skipped.
+func testSweepRdsBackups(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{"tf-testAcc", "tf_testAcc"}
+
+	instances, err := listSweepRdsDbInstances(client)
+	if err != nil {
+		log.Printf("[ERROR] DescribeDBInstances got an error: %v", err)
+		return nil
+	}
+
+	for _, inst := range instances {
+		instanceId := fmt.Sprint(inst["DBInstanceId"])
+		instanceName := fmt.Sprint(inst["DBInstanceDescription"])
+		if protectedSweepVpcName(instanceName) {
+			log.Printf("[INFO] Skipping RDS Backups on do-not-delete instance: %s (%s)", instanceName, instanceId)
+			continue
+		}
+		if !sweepAll() {
+			match := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(instanceName), strings.ToLower(prefix)) {
+					match = true
+					break
+				}
+			}
+			if !match {
+				log.Printf("[INFO] Skipping RDS Backups (instance %s does not match test prefixes): %s", instanceName, instanceId)
+				continue
+			}
+		}
+
+		action := "DescribeBackups"
+		req := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": instanceId,
+			"SourceIp":     client.SourceIp,
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		if e := retry.Retry(5*time.Minute, func() *retry.RetryError {
+			resp, e := client.RpcPost("Rds", "2014-08-15", action, nil, req, true)
+			response = resp
+			if e != nil {
+				if rdsErrorHasCode(e, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound") || NotFoundError(e) {
+					return nil
+				}
+				if NeedRetry(e) || IsExpectedErrors(e, dbInstanceStatusErrorCodes) {
+					wait()
+					return retry.RetryableError(e)
+				}
+				return retry.NonRetryableError(e)
+			}
+			return nil
+		}); e != nil {
+			log.Printf("[ERROR] DescribeBackups for %s got an error: %v", instanceId, e)
+			continue
+		}
+		addDebug(action, response, req)
+
+		bkResp, e := jsonpath.Get("$.Items.Backup", response)
+		if e != nil {
+			log.Printf("[ERROR] DescribeBackups parse for %s: %v", instanceId, e)
+			continue
+		}
+		backups, _ := bkResp.([]interface{})
+		for _, b := range backups {
+			bk := b.(map[string]interface{})
+			backupId := fmt.Sprint(bk["BackupId"])
+			backupMode := fmt.Sprint(bk["BackupMode"])
+			backupStatus := fmt.Sprint(bk["BackupStatus"])
+			// Only manual backups created by tests are deletable; automated
+			// backups are managed by the backup policy and auto-expire.
+			if !strings.EqualFold(backupMode, "manual") {
+				log.Printf("[INFO] Skipping RDS Backup (non-manual mode %s): %s/%s", backupMode, instanceId, backupId)
+				continue
+			}
+			// Only delete finished backups; an in-progress backup cannot be removed.
+			if backupStatus != "" && !strings.EqualFold(backupStatus, "success") && !strings.EqualFold(backupStatus, "finished") {
+				log.Printf("[INFO] Skipping RDS Backup (status %s): %s/%s", backupStatus, instanceId, backupId)
+				continue
+			}
+
+			log.Printf("[INFO] Deleting RDS Backup: %s/%s", instanceId, backupId)
+			delAction := "DeleteBackup"
+			delReq := map[string]interface{}{
+				"DBInstanceId": instanceId,
+				"BackupId":     backupId,
+				"RegionId":     client.RegionId,
+			}
+			if e := retry.Retry(2*time.Minute, func() *retry.RetryError {
+				resp, e := client.RpcPost("Rds", "2014-08-15", delAction, nil, delReq, true)
+				if e != nil {
+					if NotFoundError(e) || rdsErrorHasCode(e, "InvalidDBInstanceId.NotFound", "InvalidDBInstanceName.NotFound", "InvalidBackupId.NotFound") {
+						return nil
+					}
+					if NeedRetry(e) || IsExpectedErrors(e, dbInstanceStatusErrorCodes) {
+						return retry.RetryableError(e)
+					}
+					return retry.NonRetryableError(e)
+				}
+				addDebug(delAction, resp, delReq)
+				return nil
+			}); e != nil {
+				log.Printf("[ERROR] Failed to delete RDS Backup %s/%s: %s", instanceId, backupId, e)
+			}
+		}
+	}
+
+	return nil
+}
 
 func TestAccAliCloudRdsBackup_MySQL(t *testing.T) {
 	var v map[string]interface{}
