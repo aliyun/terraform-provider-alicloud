@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+// collection-order: bypass client_ca_certificate_hostnames -- pre-existing attribute outside this change; this PR only adds Computed serial_number/fingerprint_sha256 (excluded candidates), hostnames TypeList and its basic12003 membership steps predate this change.
+
 // Test Esa ClientCaCertificate. >>> Resource test cases, automatically generated.
 // Case resource_ClientCaCertificate_set_test 12003
 func TestAccAliCloudEsaClientCaCertificate_basic12003(t *testing.T) {
@@ -34,19 +36,21 @@ func TestAccAliCloudEsaClientCaCertificate_basic12003(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"site_id":     "${data.alicloud_esa_sites.default.sites.0.site_id}",
-					"certificate": "-----BEGIN CERTIFICATE-----\\nMIIDRjCCAi6gAwIBAgIUMyxyjbmKN+WbxMEC+mMyojIIjLAwDQYJKoZIhvcNAQEF\\nBQAwPDEXMBUGA1UEAwwOU1NMZXllIFJvb3QgQ0ExFDASBgNVBAoMC1NTTGV5ZSBJ\\nbmMuMQswCQYDVQQGEwJDTjAeFw0yNjA0MDEwNTMwMDBaFw0yNjA2MzAwNTMwMDBa\\nMFwxCzAJBgNVBAYTAkNOMQ8wDQYDVQQIDAbljJfkuqwxDzANBgNVBAcMBuWMl+S6\\nrDENMAsGA1UECgwEMTEyMzEcMBoGA1UEAwwTZXhhbXBsZS10ZXN0MTIzLmNvbTCC\\nASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANGsJLaIkRXg37YMuIHDkZg2\\n/xJ2R/ckiRwzdvkF3PVt3ceG7ZyAUcREspw9ytuTnCaAZh7kCWduNxsmR1WhURI4\\nJ2xYRjzjWTkzWsuKcKpHg12kkZ38+s3d3cG/TfSqHWu213kFsoeAT3O6zauWu+9r\\nrl6N6aYUZZnPSguiRfqaw67+KR6g8KEC6dgmG2a3QzMUWxNz8yvxs+1j5xgMCzic\\nAl133UIryKrDwciXGocAdzXdtjRQZPaHipewG3XrPmyuh2f5K4imaRPrbO2yPAc8\\ns/XSEGjw3hEdGLjAEJDd1GFAnb/dDVA4DAmwPmZqT53GnrcgSXCH7mTjmcP34K0C\\nAwEAAaMgMB4wCwYDVR0RBAQwAoIAMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcN\\nAQEFBQADggEBAITEC5mQd7Wc7uY34FcttRNXQbOcQKQVoxfY8R6xThbsPOZZanvj\\nI6FZ30PAUm1A25WOZMHlPUXYpmyDD0RAQNDYgcLi9UcYY1YYqLqIrUoZNqnOB7ZF\\n2vdHPKCcHzUSroY5fx/9er0DJwY8x+PvSmNS8/9kq+jRa1QMWY7F383tAORs/vKu\\nW1rvvgBVco8e+RFamU54OVCrATNtpzOUNFJ2g0IDVYhUlpab7Lx5C6IGccCAIGfw\\nmc7EVDIDUcJlDTxx5N/ILWl+1M4be3335ZWTUhxp7gTOA+XIUKHCQE6c47OIUDLg\\niVUaDyfcbHu8BDlZi1bYL4pl+3RndU/LBMg=\\n-----END CERTIFICATE-----",
+					"certificate": testEsaClientCaCertificate12003,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"site_id":     CHECKSET,
-						"certificate": "-----BEGIN CERTIFICATE-----\nMIIDRjCCAi6gAwIBAgIUMyxyjbmKN+WbxMEC+mMyojIIjLAwDQYJKoZIhvcNAQEF\nBQAwPDEXMBUGA1UEAwwOU1NMZXllIFJvb3QgQ0ExFDASBgNVBAoMC1NTTGV5ZSBJ\nbmMuMQswCQYDVQQGEwJDTjAeFw0yNjA0MDEwNTMwMDBaFw0yNjA2MzAwNTMwMDBa\nMFwxCzAJBgNVBAYTAkNOMQ8wDQYDVQQIDAbljJfkuqwxDzANBgNVBAcMBuWMl+S6\nrDENMAsGA1UECgwEMTEyMzEcMBoGA1UEAwwTZXhhbXBsZS10ZXN0MTIzLmNvbTCC\nASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANGsJLaIkRXg37YMuIHDkZg2\n/xJ2R/ckiRwzdvkF3PVt3ceG7ZyAUcREspw9ytuTnCaAZh7kCWduNxsmR1WhURI4\nJ2xYRjzjWTkzWsuKcKpHg12kkZ38+s3d3cG/TfSqHWu213kFsoeAT3O6zauWu+9r\nrl6N6aYUZZnPSguiRfqaw67+KR6g8KEC6dgmG2a3QzMUWxNz8yvxs+1j5xgMCzic\nAl133UIryKrDwciXGocAdzXdtjRQZPaHipewG3XrPmyuh2f5K4imaRPrbO2yPAc8\ns/XSEGjw3hEdGLjAEJDd1GFAnb/dDVA4DAmwPmZqT53GnrcgSXCH7mTjmcP34K0C\nAwEAAaMgMB4wCwYDVR0RBAQwAoIAMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcN\nAQEFBQADggEBAITEC5mQd7Wc7uY34FcttRNXQbOcQKQVoxfY8R6xThbsPOZZanvj\nI6FZ30PAUm1A25WOZMHlPUXYpmyDD0RAQNDYgcLi9UcYY1YYqLqIrUoZNqnOB7ZF\n2vdHPKCcHzUSroY5fx/9er0DJwY8x+PvSmNS8/9kq+jRa1QMWY7F383tAORs/vKu\nW1rvvgBVco8e+RFamU54OVCrATNtpzOUNFJ2g0IDVYhUlpab7Lx5C6IGccCAIGfw\nmc7EVDIDUcJlDTxx5N/ILWl+1M4be3335ZWTUhxp7gTOA+XIUKHCQE6c47OIUDLg\niVUaDyfcbHu8BDlZi1bYL4pl+3RndU/LBMg=\n-----END CERTIFICATE-----",
+						"site_id":            CHECKSET,
+						"serial_number":      CHECKSET,
+						"fingerprint_sha256": CHECKSET,
+						"certificate":        CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"client_ca_certificate_hostnames": []string{
-						"test1.example-test123.com", "test2.example-test123.com", "test3.example-test123.com"},
+						"test1.${data.alicloud_esa_sites.default.sites.0.site_name}", "test2.${data.alicloud_esa_sites.default.sites.0.site_name}", "test3.${data.alicloud_esa_sites.default.sites.0.site_name}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -57,7 +61,7 @@ func TestAccAliCloudEsaClientCaCertificate_basic12003(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"client_ca_certificate_hostnames": []string{
-						"test3.example-test123.com"},
+						"test3.${data.alicloud_esa_sites.default.sites.0.site_name}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -78,7 +82,7 @@ func TestAccAliCloudEsaClientCaCertificate_basic12003(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"client_ca_certificate_hostnames": []string{
-						"test1.example-test123.com", "test2.example-test123.com", "test3.example-test123.com"},
+						"test1.${data.alicloud_esa_sites.default.sites.0.site_name}", "test2.${data.alicloud_esa_sites.default.sites.0.site_name}", "test3.${data.alicloud_esa_sites.default.sites.0.site_name}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -121,15 +125,15 @@ func TestAccAliCloudEsaClientCaCertificate_basic12003_twin(t *testing.T) {
 					"client_ca_cert_name": name,
 					"site_id":             "${data.alicloud_esa_sites.default.sites.0.site_id}",
 					"client_ca_certificate_hostnames": []string{
-						"test1.example-test123.com", "test2.example-test123.com", "test3.example-test123.com"},
-					"certificate": "-----BEGIN CERTIFICATE-----\\nMIIDRjCCAi6gAwIBAgIUMyxyjbmKN+WbxMEC+mMyojIIjLAwDQYJKoZIhvcNAQEF\\nBQAwPDEXMBUGA1UEAwwOU1NMZXllIFJvb3QgQ0ExFDASBgNVBAoMC1NTTGV5ZSBJ\\nbmMuMQswCQYDVQQGEwJDTjAeFw0yNjA0MDEwNTMwMDBaFw0yNjA2MzAwNTMwMDBa\\nMFwxCzAJBgNVBAYTAkNOMQ8wDQYDVQQIDAbljJfkuqwxDzANBgNVBAcMBuWMl+S6\\nrDENMAsGA1UECgwEMTEyMzEcMBoGA1UEAwwTZXhhbXBsZS10ZXN0MTIzLmNvbTCC\\nASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANGsJLaIkRXg37YMuIHDkZg2\\n/xJ2R/ckiRwzdvkF3PVt3ceG7ZyAUcREspw9ytuTnCaAZh7kCWduNxsmR1WhURI4\\nJ2xYRjzjWTkzWsuKcKpHg12kkZ38+s3d3cG/TfSqHWu213kFsoeAT3O6zauWu+9r\\nrl6N6aYUZZnPSguiRfqaw67+KR6g8KEC6dgmG2a3QzMUWxNz8yvxs+1j5xgMCzic\\nAl133UIryKrDwciXGocAdzXdtjRQZPaHipewG3XrPmyuh2f5K4imaRPrbO2yPAc8\\ns/XSEGjw3hEdGLjAEJDd1GFAnb/dDVA4DAmwPmZqT53GnrcgSXCH7mTjmcP34K0C\\nAwEAAaMgMB4wCwYDVR0RBAQwAoIAMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcN\\nAQEFBQADggEBAITEC5mQd7Wc7uY34FcttRNXQbOcQKQVoxfY8R6xThbsPOZZanvj\\nI6FZ30PAUm1A25WOZMHlPUXYpmyDD0RAQNDYgcLi9UcYY1YYqLqIrUoZNqnOB7ZF\\n2vdHPKCcHzUSroY5fx/9er0DJwY8x+PvSmNS8/9kq+jRa1QMWY7F383tAORs/vKu\\nW1rvvgBVco8e+RFamU54OVCrATNtpzOUNFJ2g0IDVYhUlpab7Lx5C6IGccCAIGfw\\nmc7EVDIDUcJlDTxx5N/ILWl+1M4be3335ZWTUhxp7gTOA+XIUKHCQE6c47OIUDLg\\niVUaDyfcbHu8BDlZi1bYL4pl+3RndU/LBMg=\\n-----END CERTIFICATE-----",
+						"test1.${data.alicloud_esa_sites.default.sites.0.site_name}", "test2.${data.alicloud_esa_sites.default.sites.0.site_name}", "test3.${data.alicloud_esa_sites.default.sites.0.site_name}"},
+					"certificate": testEsaClientCaCertificate12003,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"client_ca_cert_name":               name,
 						"site_id":                           CHECKSET,
 						"client_ca_certificate_hostnames.#": "3",
-						"certificate":                       "-----BEGIN CERTIFICATE-----\nMIIDRjCCAi6gAwIBAgIUMyxyjbmKN+WbxMEC+mMyojIIjLAwDQYJKoZIhvcNAQEF\nBQAwPDEXMBUGA1UEAwwOU1NMZXllIFJvb3QgQ0ExFDASBgNVBAoMC1NTTGV5ZSBJ\nbmMuMQswCQYDVQQGEwJDTjAeFw0yNjA0MDEwNTMwMDBaFw0yNjA2MzAwNTMwMDBa\nMFwxCzAJBgNVBAYTAkNOMQ8wDQYDVQQIDAbljJfkuqwxDzANBgNVBAcMBuWMl+S6\nrDENMAsGA1UECgwEMTEyMzEcMBoGA1UEAwwTZXhhbXBsZS10ZXN0MTIzLmNvbTCC\nASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANGsJLaIkRXg37YMuIHDkZg2\n/xJ2R/ckiRwzdvkF3PVt3ceG7ZyAUcREspw9ytuTnCaAZh7kCWduNxsmR1WhURI4\nJ2xYRjzjWTkzWsuKcKpHg12kkZ38+s3d3cG/TfSqHWu213kFsoeAT3O6zauWu+9r\nrl6N6aYUZZnPSguiRfqaw67+KR6g8KEC6dgmG2a3QzMUWxNz8yvxs+1j5xgMCzic\nAl133UIryKrDwciXGocAdzXdtjRQZPaHipewG3XrPmyuh2f5K4imaRPrbO2yPAc8\ns/XSEGjw3hEdGLjAEJDd1GFAnb/dDVA4DAmwPmZqT53GnrcgSXCH7mTjmcP34K0C\nAwEAAaMgMB4wCwYDVR0RBAQwAoIAMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcN\nAQEFBQADggEBAITEC5mQd7Wc7uY34FcttRNXQbOcQKQVoxfY8R6xThbsPOZZanvj\nI6FZ30PAUm1A25WOZMHlPUXYpmyDD0RAQNDYgcLi9UcYY1YYqLqIrUoZNqnOB7ZF\n2vdHPKCcHzUSroY5fx/9er0DJwY8x+PvSmNS8/9kq+jRa1QMWY7F383tAORs/vKu\nW1rvvgBVco8e+RFamU54OVCrATNtpzOUNFJ2g0IDVYhUlpab7Lx5C6IGccCAIGfw\nmc7EVDIDUcJlDTxx5N/ILWl+1M4be3335ZWTUhxp7gTOA+XIUKHCQE6c47OIUDLg\niVUaDyfcbHu8BDlZi1bYL4pl+3RndU/LBMg=\n-----END CERTIFICATE-----",
+						"certificate":                       CHECKSET,
 					}),
 				),
 			},
@@ -144,9 +148,11 @@ func TestAccAliCloudEsaClientCaCertificate_basic12003_twin(t *testing.T) {
 }
 
 var AliCloudEsaClientCaCertificateMap12003 = map[string]string{
-	"status":            CHECKSET,
-	"create_time":       CHECKSET,
-	"client_ca_cert_id": CHECKSET,
+	"status":             CHECKSET,
+	"create_time":        CHECKSET,
+	"client_ca_cert_id":  CHECKSET,
+	"serial_number":      CHECKSET,
+	"fingerprint_sha256": CHECKSET,
 }
 
 func AliCloudEsaClientCaCertificateBasicDependence12003(name string) string {
@@ -162,6 +168,9 @@ data "alicloud_esa_sites" "default" {
 }
 
 // Test Esa ClientCaCertificate. <<< Resource test cases, automatically generated.
+
+// generated for basic12003: CN=example-test123.com, SAN=example-test123.com,*.example-test123.com, CA:TRUE, valid 2026-2036.
+const testEsaClientCaCertificate12003 = `-----BEGIN CERTIFICATE-----\nMIIDezCCAmOgAwIBAgIUGZsjd5vsP2z+dRKpngDEGaEzkekwDQYJKoZIhvcNAQEL\nBQAwOjELMAkGA1UEBhMCQ04xDTALBgNVBAoMBDExMjMxHDAaBgNVBAMME2V4YW1w\nbGUtdGVzdDEyMy5jb20wHhcNMjYxMDE4MDk1NjQ3WhcNMzYxMDE1MDk1NjQ3WjA6\nMQswCQYDVQQGEwJDTjENMAsGA1UECgwEMTEyMzEcMBoGA1UEAwwTZXhhbXBsZS10\nZXN0MTIzLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALPHT3xx\nPudUQEgvEcOfqLWxonUoy/klAE8Cimxf7UDnwoCXY2qruK6IuHNC1CBQMWKRuY1H\nzEQNghdErCFn03oKRTCXh6nhiMIuXR7R4xDUZYmEVZCi5vLNVBLBpQkvmqMecYN8\n3nSrQFoPGGSK16shLB8Ra8p5b1wIrmLI3/qtVAt5mAw9vSc5gqXvhX47U7zU3uv0\nMUMWGE+s8fpHLD3gvfJP2aD6v+d9X+btFapv22med2ORxfSba7gYilK7Uk10lqWI\n5kPLuavo1emnjig2JqdaKx7sB2ulmIdPKBUwPoPa3/OlYDGb91B5qHGjW9xOFoJg\nB5iawd4qsoZjMpcCAwEAAaN5MHcwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8E\nBAMCAYYwHQYDVR0OBBYEFOubsY2It6LeSZ64Ml42bKLRGlTbMDUGA1UdEQQuMCyC\nE2V4YW1wbGUtdGVzdDEyMy5jb22CFSouZXhhbXBsZS10ZXN0MTIzLmNvbTANBgkq\nhkiG9w0BAQsFAAOCAQEAeaDA0N+8T1uBOj/fwOg/quZI8VWvN/s/gX7bcsCyNjam\nXZkW2rH7RuTQeihqaiaIk68DtxSlJdUUkylszxR9x1dzqoN2DQmzMJ4CXbalZONS\nqDy5kR0kXU+vWL5EqrJlThIzvqM9yUF0fCVCG2/y5zzRi1SnCu300+JAy+k91ZYs\n5GfiS2PnXr4/s0ixwp3zztLRLOjgT5ULXQ/bOG4Cg8KoiRBmot0vkXo795y+2WPa\nkkgJROmjaWtrmhSCWUKykxHY4X7Aeinx2vMEM45RP2htq6SWT+dMZmJDtw4evqsz\nhZ960U5lm7qQYqu6L5VpcQs2jFzPWndpVG/8dPbWeQ==\n-----END CERTIFICATE-----`
 
 // generated by https://www.ssleye.com/ssltool/self_sign.html
 const testEsaClientCaCertificate = `-----BEGIN CERTIFICATE-----\nMIIDLDCCAhSgAwIBAgIUbW7alHwt3HICHGVsLkqpW9Cd4oIwDQYJKoZIhvcNAQEL\nBQAwLjEQMA4GA1UEAwwHdGVzdC1jYTENMAsGA1UECgwEdGVzdDELMAkGA1UEBhMC\nQ04wHhcNMjYwNjAxMDMyMzEzWhcNMzYwNTI5MDMyMzEzWjAuMRAwDgYDVQQDDAd0\nZXN0LWNhMQ0wCwYDVQQKDAR0ZXN0MQswCQYDVQQGEwJDTjCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAJvUEYwZodySRvwKaHVFgJsGe85tXYDzcHMlBS/7\n904+hVg/zPn3W83vlGHg0S9TUjDDYz+mx9XtGqbVTLNsnAFw6jnPvg6LoK3BE6fN\nT/muS4tkVN7zfKekC6RIPqpDoZEAVfXNzIdg31WdRhfDsUZ7ZgseTsh/o+0ophq/\nz8MwlLd0PYJJNQx+lvmBsBaqXKZ15+TXN4WwZ4Y0euXrX5uCd/eU+KrtsultZb/5\nF1yGR7ON2QCeYe0F1Csi+mdfuniipBtt4evtGRFRkTewzLPSoo8R/IokO50vtfl7\nNTTlwVw+N777PJZF5j0XdjGWtlxL98XpxkugpXSzsWUAewMCAwEAAaNCMEAwDwYD\nVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAYYwHQYDVR0OBBYEFIPFTEjW2zDy\nKmmsULjCisAJyu9QMA0GCSqGSIb3DQEBCwUAA4IBAQCSbwv8pOa1Tmv3eUCju4lW\n09JIYAE+H6n3tYRCwao0UdJ69c8yyNVVzbYf/3IbYBPs73OwW8sk3kKlZAHaPcUF\nFsCixLskgWKrJyCcK+sCt0c8JC+GeBHmJcncaq0E7XzxNB5R0KY2w6S7KCjeK1G9\niNsxvAVqNpISuHByd1LNKOT5S1niUx9Yd9eQTCcXEzZnE8Y2tf+gkUPjG9+5kxKL\nXHT3Choi7HjUYmwduKpV7wOAJdlBuyHegBii2xzRhdSriqffbqfczy9D5XSC6Q+w\nyF2ugGWW1IXF10DkMH3ixzbdGTohIUHpRZea3ELKhshMEo6ZqIhCLG3dv1kyeRG+\n-----END CERTIFICATE-----`

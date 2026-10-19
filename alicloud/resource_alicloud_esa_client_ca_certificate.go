@@ -51,6 +51,14 @@ func resourceAliCloudEsaClientCaCertificate() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"fingerprint_sha256": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"serial_number": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"site_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -133,6 +141,8 @@ func resourceAliCloudEsaClientCaCertificateRead(d *schema.ResourceData, meta int
 	d.Set("create_time", resultRaw["CreateTime"])
 	d.Set("status", resultRaw["Status"])
 	d.Set("client_ca_cert_id", resultRaw["Id"])
+	d.Set("serial_number", resultRaw["SerialNumber"])
+	d.Set("fingerprint_sha256", resultRaw["FingerprintSha256"])
 
 	objectRaw, err = esaServiceV2.DescribeClientCaCertificateGetClientCaCertificateHostnames(d.Id())
 	if err != nil && !NotFoundError(err) {
