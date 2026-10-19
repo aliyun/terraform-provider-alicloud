@@ -49,11 +49,13 @@ func testSweepOosTemplate(region string) error {
 	for {
 		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oos_template", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list OOS Templates: %s", err)
+			break
 		}
 		resp, err := jsonpath.Get("$.Templates", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Templates", response)
+			log.Printf("[ERROR] Failed to parse OOS Templates: %s", err)
+			break
 		}
 		sweeped := false
 		result, _ := resp.([]interface{})
