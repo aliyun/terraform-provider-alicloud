@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -19,6 +20,138 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_security_group_rule", &resource.Sweeper{
+		Name: "alicloud_security_group_rule",
+		F:    testSweepSecurityGroupRules,
+	})
+}
+
+// testSweepSecurityGroupRules sweeps orphaned security group rules from
+// prefix-named SGs. For each SG that passes the NODELETING + prefix filter,
+// fetch all ingress and egress rules and revoke them by SecurityGroupRuleId.
+// In prefix-only mode (no SWEEP_ALL), only tf-*/tf-testAcc* prefixed SGs are
+// touched — infra-managed SGs (sg-default, system SGs, SGs attached to real
+// instances) are skipped because their names lack test prefixes.
+func testSweepSecurityGroupRules(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting AliCloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf-example",
+		"tf-test",
+	}
+
+	// 1. List SGs (paginated).
+	var groups []ecs.SecurityGroup
+	listReq := ecs.CreateDescribeSecurityGroupsRequest()
+	listReq.RegionId = client.RegionId
+	listReq.PageSize = requests.NewInteger(PageSizeLarge)
+	listReq.PageNumber = requests.NewInteger(1)
+	for {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.DescribeSecurityGroups(listReq)
+		})
+		if err != nil {
+			log.Printf("[ERROR] DescribeSecurityGroups failed: %s", err)
+			return nil
+		}
+		resp, _ := raw.(*ecs.DescribeSecurityGroupsResponse)
+		if resp == nil || len(resp.SecurityGroups.SecurityGroup) < 1 {
+			break
+		}
+		groups = append(groups, resp.SecurityGroups.SecurityGroup...)
+		if len(resp.SecurityGroups.SecurityGroup) < PageSizeLarge {
+			break
+		}
+		page, err := getNextpageNumber(listReq.PageNumber)
+		if err != nil {
+			return err
+		}
+		listReq.PageNumber = page
+	}
+
+	// 2. For each SG (filtered), revoke ingress + egress rules by SecurityGroupRuleId.
+	for _, sg := range groups {
+		name := sg.SecurityGroupName
+		id := sg.SecurityGroupId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping SG rules (NODELETING): %s (%s)", name, id)
+			continue
+		}
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping SG rules: %s (%s)", name, id)
+				continue
+			}
+		}
+
+		for _, direction := range []string{"ingress", "egress"} {
+			attrReq := ecs.CreateDescribeSecurityGroupAttributeRequest()
+			attrReq.RegionId = client.RegionId
+			attrReq.SecurityGroupId = id
+			attrReq.Direction = direction
+			attrReq.MaxResults = requests.NewInteger(1000)
+			for {
+				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+					return ecsClient.DescribeSecurityGroupAttribute(attrReq)
+				})
+				if err != nil {
+					log.Printf("[ERROR] DescribeSecurityGroupAttribute(%s, %s) failed: %s", id, direction, err)
+					break
+				}
+				attrResp, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
+				if attrResp == nil {
+					break
+				}
+				var ruleIds []string
+				for _, perm := range attrResp.Permissions.Permission {
+					if perm.SecurityGroupRuleId != "" {
+						ruleIds = append(ruleIds, perm.SecurityGroupRuleId)
+					}
+				}
+				if len(ruleIds) > 0 {
+					log.Printf("[INFO] Revoking %d %s rules from SG %s (%s)", len(ruleIds), direction, name, id)
+					if direction == "ingress" {
+						revokeReq := ecs.CreateRevokeSecurityGroupRequest()
+						revokeReq.SecurityGroupId = id
+						revokeReq.SecurityGroupRuleId = &ruleIds
+						_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+							return ecsClient.RevokeSecurityGroup(revokeReq)
+						})
+					} else {
+						revokeReq := ecs.CreateRevokeSecurityGroupEgressRequest()
+						revokeReq.SecurityGroupId = id
+						revokeReq.SecurityGroupRuleId = &ruleIds
+						_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+							return ecsClient.RevokeSecurityGroupEgress(revokeReq)
+						})
+					}
+					if err != nil {
+						log.Printf("[ERROR] Revoke %s rules on SG %s (%s) failed: %s", direction, name, id, err)
+					}
+				}
+				if attrResp.NextToken == "" {
+					break
+				}
+				attrReq.NextToken = attrResp.NextToken
+			}
+		}
+	}
+	return nil
+}
 
 func TestAccAliCloudECSSecurityGroupRuleBasic(t *testing.T) {
 	var v ecs.Permission

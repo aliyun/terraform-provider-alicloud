@@ -21,7 +21,6 @@ func init() {
 		Dependencies: []string{
 			"alicloud_instance",
 			"alicloud_ecs_network_interface",
-			"alicloud_bastionhost_instance",
 			"alicloud_cs_kubernetes",
 		},
 	})
@@ -73,6 +72,10 @@ func testSweepSecurityGroups(region string) error {
 	for _, v := range groups {
 		name := v.SecurityGroupName
 		id := v.SecurityGroupId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Security Group (NODELETING): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
