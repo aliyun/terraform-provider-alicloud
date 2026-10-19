@@ -64,7 +64,7 @@ func testSweepDBDdrInstances(region string) error {
 		addDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %v", action, err)
-			continue
+			break
 		}
 		resp, err := jsonpath.Get("$.Items.DBInstance", response)
 		if err != nil {
