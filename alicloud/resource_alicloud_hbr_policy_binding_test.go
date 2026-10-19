@@ -2,11 +2,16 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 // Test Hbr PolicyBinding. >>> Resource test cases, automatically generated.
@@ -1888,4 +1893,173 @@ resource "alicloud_oss_bucket" "defaultKtt2XY" {
   storage_class = "Standard"
   bucket        = format("%%s2%%s", var.name, count.index)
 }`, name)
+}
+
+func init() {
+	resource.AddTestSweepers("alicloud_hbr_policy_binding", &resource.Sweeper{
+		Name: "alicloud_hbr_policy_binding",
+		F:    testSweepHbrPolicyBindings,
+	})
+}
+
+// testSweepHbrPolicyBindings cleans HBR policy bindings (the policy->datasource
+// link). Bindings are nameless, so the sweeper cross-references the policy name
+// via a DescribePoliciesV2 map: it only deletes bindings whose referenced
+// policy is tf-prefix (NORMAL mode) or any non-NODELETING policy (SWEEP_ALL
+// fleet-wipe). DeletePolicyBinding takes PolicyId + SourceType + DataSourceIds
+// (a JSON-array string with one id). This sweeper is a Dependency of
+// alicloud_hbr_policy and must run first, since DeletePolicyV2 fails with
+// Code 38006 "PolicyBinding exists, cannot delete policy" while bindings remain.
+func testSweepHbrPolicyBindings(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf-example",
+		"tf_example",
+		"terraform-example",
+		"tftestacc",
+	}
+
+	// Build a PolicyId -> PolicyName map so nameless bindings can be filtered
+	// by the referenced policy's name and skipped when NODELETING.
+	policyName := make(map[string]string)
+	listAction := "DescribePoliciesV2"
+	listRequest := map[string]interface{}{
+		"MaxResults": 100,
+	}
+	for {
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("hbr", "2017-09-08", listAction, nil, listRequest, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve HBR Policies for binding cross-reference: %s", err)
+			break
+		}
+		resp, err := jsonpath.Get("$.Policies", response)
+		if err != nil {
+			break
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			if item, ok := v.(map[string]interface{}); ok {
+				pid := fmt.Sprint(item["PolicyId"])
+				pname := fmt.Sprint(item["PolicyName"])
+				if pid != "" {
+					policyName[pid] = pname
+				}
+			}
+		}
+		nextTokenRaw, _ := jsonpath.Get("$.NextToken", response)
+		nextToken := fmt.Sprint(nextTokenRaw)
+		if nextToken == "" {
+			break
+		}
+		listRequest["NextToken"] = nextToken
+	}
+
+	action := "DescribePolicyBindings"
+	request := map[string]interface{}{
+		"MaxResults": 100,
+	}
+	bindings := make([]map[string]interface{}, 0)
+	for {
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to retrieve HBR Policy Bindings: %s", err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.PolicyBindings", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PolicyBindings", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			if item, ok := v.(map[string]interface{}); ok {
+				bindings = append(bindings, item)
+			}
+		}
+		nextTokenRaw, _ := jsonpath.Get("$.NextToken", response)
+		nextToken := fmt.Sprint(nextTokenRaw)
+		if nextToken == "" {
+			break
+		}
+		request["NextToken"] = nextToken
+	}
+
+	if len(bindings) == 0 {
+		log.Printf("[INFO] HBR Policy Binding: 0 bindings in region %s", region)
+		return nil
+	}
+
+	for _, binding := range bindings {
+		policyId := fmt.Sprint(binding["PolicyId"])
+		dataSourceId := fmt.Sprint(binding["DataSourceId"])
+		sourceType := fmt.Sprint(binding["SourceType"])
+		if policyId == "" || dataSourceId == "" || sourceType == "" {
+			continue
+		}
+		name := policyName[policyId] // may be "" if policy already gone
+		// NODELETING guard on the referenced policy name -- always-active.
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping HBR Policy Binding (policy NODELETING): %s (%s/%s)", name, policyId, dataSourceId)
+			continue
+		}
+		// Fleet-wipe: SWEEP_ALL bypasses the tf-prefix filter; otherwise only
+		// delete bindings whose referenced policy is tf-prefix.
+		if !sweepAll() {
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping HBR Policy Binding (policy no prefix): %s (%s/%s)", name, policyId, dataSourceId)
+				continue
+			}
+		}
+		log.Printf("[INFO] Deleting HBR Policy Binding: %s (%s/%s)", name, policyId, dataSourceId)
+		deleteAction := "DeletePolicyBinding"
+		deleteRequest := map[string]interface{}{
+			"PolicyId":      policyId,
+			"SourceType":    sourceType,
+			"DataSourceIds": "[\"" + dataSourceId + "\"]",
+		}
+		_, e := client.RpcPost("hbr", "2017-09-08", deleteAction, nil, deleteRequest, false)
+		if e != nil {
+			log.Printf("[ERROR] Failed to delete HBR Policy Binding (%s (%s/%s)): %s", name, policyId, dataSourceId, e)
+			continue
+		}
+		log.Printf("[INFO] Delete HBR Policy Binding success: %s (%s/%s)", name, policyId, dataSourceId)
+	}
+	return nil
 }
