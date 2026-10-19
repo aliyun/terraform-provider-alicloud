@@ -69,6 +69,10 @@ The following arguments are supported:
 
   -> **NOTE:**  For the valid range of the new priority, see the [API for querying the effective priority range](https://help.aliyun.com/document_detail/474145.html).
 
+* `old_order` - (Optional, Deprecated) The original priority of the access control policy before modification.
+
+  -> **NOTE:** `old_order` is deprecated. Use `acl_uuid` to identify the target access control policy. This parameter is only sent as the OldOrder request parameter and is not persisted.
+
 * `vpc_firewall_id` - (Required, ForceNew) The ID of the access control policy group for the VPC border firewall. You can obtain this ID by calling the [DescribeVpcFirewallAclGroupList](https://help.aliyun.com/document_detail/159760.html) API.  
 
     Valid values:  
