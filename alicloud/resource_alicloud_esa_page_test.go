@@ -29,9 +29,9 @@ func TestAccAliCloudESAPageresource_Page_test_html(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -134,9 +134,9 @@ func TestAccAliCloudESAPageresource_Page_test_json(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -206,6 +206,89 @@ func AliCloudESAPageresource_Page_test_jsonBasicDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
+}
+
+
+`, name)
+}
+
+// Case resource_Page_test_site_ids
+func TestAccAliCloudEsaPage_siteIds(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_page.default"
+	ra := resourceAttrInit(resourceId, AliCloudESAPage_siteIdsMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEsaPage")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sESAPage%d", defaultRegionToTest, rand)
+
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudESAPage_siteIdsBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":  "test resource page with site ids",
+					"content_type": "text/html",
+					"content":      "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9InpoLUNOIj4KICA8aGVhZD4KICAgIDx0aXRsZT40MDMgRm9yYmlkZGVuPC90aXRsZT4KICA8L2hlYWQ+CiAgPGJvZHk+CiAgICA8aDE+NDAzIEZvcmJpZGRlbjwvaDE+CiAgPC9ib2R5Pgo8L2h0bWw+",
+					"page_name":    "resource_test_site_ids_page",
+					"site_ids":     []string{"${data.alicloud_esa_sites.default.sites.0.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test modify resource page with site ids",
+					"page_name":   "resource_test_site_ids_page_1",
+					"site_ids": []string{
+						"${data.alicloud_esa_sites.default.sites.0.id}",
+						"${data.alicloud_esa_sites.default.sites.1.id}",
+						"${data.alicloud_esa_sites.default.sites.2.id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AliCloudESAPage_siteIdsMap = map[string]string{
+	"id": CHECKSET,
+}
+
+func AliCloudESAPage_siteIdsBasicDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_esa_sites" "default" {
+  plan_subscribe_type = "enterpriseplan"
 }
 
 

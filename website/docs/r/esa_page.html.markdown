@@ -52,6 +52,7 @@ The following arguments are supported:
 * `content_type` - (Required) The Content-Type field in the HTTP header.
 * `description` - (Optional) The description of the custom error page.
 * `page_name` - (Required) The name of the custom response page.
+* `site_ids` - (Optional) The list of site IDs bound to the custom page.
 
 ## Attributes Reference
 

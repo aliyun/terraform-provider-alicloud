@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -42,6 +43,11 @@ func resourceAliCloudEsaPage() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"site_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeInt},
+			},
 		},
 	}
 }
@@ -65,6 +71,14 @@ func resourceAliCloudEsaPageCreate(d *schema.ResourceData, meta interface{}) err
 	request["ContentType"] = d.Get("content_type")
 	if v, ok := d.GetOk("content"); ok {
 		request["Content"] = v
+	}
+	if v, ok := d.GetOk("site_ids"); ok {
+		siteIdsArray := convertToInterfaceArray(v)
+		siteIdsJson, err := json.Marshal(siteIdsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["SiteIds"] = string(siteIdsJson)
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -115,6 +129,11 @@ func resourceAliCloudEsaPageRead(d *schema.ResourceData, meta interface{}) error
 	if objectRaw["Name"] != nil {
 		d.Set("page_name", objectRaw["Name"])
 	}
+	siteIdsRaw := make([]interface{}, 0)
+	if objectRaw["SiteIds"] != nil {
+		siteIdsRaw = convertToInterfaceArray(objectRaw["SiteIds"])
+	}
+	d.Set("site_ids", siteIdsRaw)
 
 	return nil
 }
@@ -148,6 +167,17 @@ func resourceAliCloudEsaPageUpdate(d *schema.ResourceData, meta interface{}) err
 		update = true
 	}
 	request["Content"] = d.Get("content")
+	if d.HasChange("site_ids") {
+		update = true
+	}
+	if v, ok := d.GetOk("site_ids"); ok {
+		siteIdsArray := convertToInterfaceArray(v)
+		siteIdsJson, err := json.Marshal(siteIdsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["SiteIds"] = string(siteIdsJson)
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
