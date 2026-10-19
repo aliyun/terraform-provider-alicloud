@@ -36,6 +36,10 @@ resource "alicloud_api_gateway_model" "default" {
   model_name  = "example_value"
   schema      = "{\"type\":\"object\",\"properties\":{\"id\":{\"format\":\"int64\",\"maximum\":100,\"exclusiveMaximum\":true,\"type\":\"integer\"},\"name\":{\"maxLength\":10,\"type\":\"string\"}}}"
   description = "example_value"
+  tags = {
+    Created = "example_value"
+    Env     = "example_value"
+  }
 }
 ```
 
@@ -46,9 +50,10 @@ resource "alicloud_api_gateway_model" "default" {
 The following arguments are supported:
 
 * `group_id` - (Required, ForceNew) The group of the model belongs to.
-* `model_name` - (Required, ForceNew) The name of the model.
+* `model_name` - (Required) The name of the model. It can be modified to a new name, which renames the model in place.
 * `schema` - (Required) The schema of the model.
 * `description` - (Optional) The description of the model.
+* `tags` - (Optional, ForceNew) The tags of the model. Modifying tags will trigger a rebuild of the resource.
 
 ## Attributes Reference
 
