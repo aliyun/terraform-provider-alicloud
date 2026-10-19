@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -53,6 +54,11 @@ func resourceAlicloudRosChangeSet() *schema.Resource {
 				},
 				ForceNew: true,
 			},
+			"parallelism": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"parameters": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -81,6 +87,36 @@ func resourceAlicloudRosChangeSet() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"resources_to_import": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_identifier": {
+							Type:     schema.TypeMap,
+							Optional: true,
+							ForceNew: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"logical_resource_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"resource_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			"stack_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -90,6 +126,7 @@ func resourceAlicloudRosChangeSet() *schema.Resource {
 			"stack_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"stack_policy_body": {
@@ -121,9 +158,19 @@ func resourceAlicloudRosChangeSet() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchemaForceNewWithElements(),
+			"taint_resources": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"template_body": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
@@ -131,7 +178,22 @@ func resourceAlicloudRosChangeSet() *schema.Resource {
 					return equal
 				},
 			},
+			"template_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"template_scratch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"template_url": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"template_version": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -175,8 +237,22 @@ func resourceAlicloudRosChangeSetCreate(d *schema.ResourceData, meta interface{}
 		request["NotificationURLs"] = v.(*schema.Set).List()
 	}
 
+	if v, ok := d.GetOk("parallelism"); ok {
+		request["Parallelism"] = v
+	}
+
 	if v, ok := d.GetOk("parameters"); ok {
-		request["Parameters"] = v.(*schema.Set).List()
+		parametersList := make([]map[string]interface{}, 0, len(v.(*schema.Set).List()))
+		for _, item := range v.(*schema.Set).List() {
+			parameter := item.(map[string]interface{})
+			// The repeatList API element expects PascalCase keys; snake_case
+			// keys from the state set are silently dropped by the gateway.
+			parametersList = append(parametersList, map[string]interface{}{
+				"ParameterKey":   parameter["parameter_key"],
+				"ParameterValue": parameter["parameter_value"],
+			})
+		}
+		request["Parameters"] = parametersList
 	}
 
 	if v, ok := d.GetOk("ram_role_name"); ok {
@@ -188,8 +264,27 @@ func resourceAlicloudRosChangeSetCreate(d *schema.ResourceData, meta interface{}
 		request["ReplacementOption"] = v
 	}
 
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+
 	if v, ok := d.GetOk("resources_to_import"); ok {
-		request["ResourcesToImport"] = v.(*schema.Set).List()
+		resourcesToImport := make([]map[string]interface{}, len(v.(*schema.Set).List()))
+		for i, j := range v.(*schema.Set).List() {
+			item := j.(map[string]interface{})
+			// ResourceIdentifier is a string-to-string map serialized as a JSON
+			// string; the API rejects a plain resource id value.
+			identifier, err := convertMaptoJsonString(item["resource_identifier"].(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			resourcesToImport[i] = map[string]interface{}{
+				"ResourceIdentifier": identifier,
+				"LogicalResourceId":  item["logical_resource_id"],
+				"ResourceType":       item["resource_type"],
+			}
+		}
+		request["ResourcesToImport"] = resourcesToImport
 	}
 
 	if v, ok := d.GetOk("stack_id"); ok {
@@ -216,12 +311,39 @@ func resourceAlicloudRosChangeSetCreate(d *schema.ResourceData, meta interface{}
 		request["StackPolicyURL"] = v
 	}
 
+	if v, ok := d.GetOk("tags"); ok {
+		tagsList := make([]map[string]interface{}, 0)
+		for key, val := range v.(map[string]interface{}) {
+			tagsList = append(tagsList, map[string]interface{}{
+				"Key":   key,
+				"Value": fmt.Sprint(val),
+			})
+		}
+		request["Tags"] = tagsList
+	}
+
+	if v, ok := d.GetOk("taint_resources"); ok {
+		request["TaintResources"] = v.(*schema.Set).List()
+	}
+
 	if v, ok := d.GetOk("template_body"); ok {
 		request["TemplateBody"] = v
 	}
 
+	if v, ok := d.GetOk("template_id"); ok {
+		request["TemplateId"] = v
+	}
+
+	if v, ok := d.GetOk("template_scratch_id"); ok {
+		request["TemplateScratchId"] = v
+	}
+
 	if v, ok := d.GetOk("template_url"); ok {
 		request["TemplateURL"] = v
+	}
+
+	if v, ok := d.GetOk("template_version"); ok {
+		request["TemplateVersion"] = v
 	}
 
 	if v, ok := d.GetOk("timeout_in_minutes"); ok {
@@ -277,12 +399,33 @@ func resourceAlicloudRosChangeSetRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("description", object["Description"])
 	d.Set("disable_rollback", object["DisableRollback"])
 
-	Parameters := object["Parameters"].([]interface{})
-	parameters := make([]map[string]interface{}, len(Parameters))
-	for i, v := range Parameters {
-		parameters[i] = make(map[string]interface{})
-		parameters[i]["parameter_key"] = v.(map[string]interface{})["ParameterKey"]
-		parameters[i]["parameter_value"] = v.(map[string]interface{})["ParameterValue"]
+	// GetChangeSet always echoes the ALIYUN::* pseudo-parameters injected by
+	// ROS and, with use_previous_parameters, parameters resolved from the
+	// previous stack. Neither belongs to the user-declared parameters: keep
+	// pseudo-parameters out of state, and when the config declares parameters
+	// echo only those keys so the state converges with the plan.
+	Parameters, _ := object["Parameters"].([]interface{})
+	configKeys := make(map[string]bool)
+	if v, ok := d.GetOk("parameters"); ok {
+		for _, item := range v.(*schema.Set).List() {
+			m := item.(map[string]interface{})
+			configKeys[fmt.Sprint(m["parameter_key"])] = true
+		}
+	}
+	parameters := make([]map[string]interface{}, 0, len(Parameters))
+	for _, v := range Parameters {
+		p, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		key := fmt.Sprint(p["ParameterKey"])
+		if strings.HasPrefix(key, "ALIYUN::") || (len(configKeys) > 0 && !configKeys[key]) {
+			continue
+		}
+		parameters = append(parameters, map[string]interface{}{
+			"parameter_key":   key,
+			"parameter_value": fmt.Sprint(p["ParameterValue"]),
+		})
 	}
 	if err := d.Set("parameters", parameters); err != nil {
 		return WrapError(err)
@@ -290,6 +433,7 @@ func resourceAlicloudRosChangeSetRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("stack_id", object["StackId"])
 	d.Set("stack_name", object["StackName"])
 	d.Set("status", object["Status"])
+	d.Set("tags", tagsToMap(object["Tags"]))
 	d.Set("template_body", object["TemplateBody"])
 	d.Set("timeout_in_minutes", formatInt(object["TimeoutInMinutes"]))
 	return nil

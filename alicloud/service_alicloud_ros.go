@@ -38,6 +38,11 @@ func (s *RosService) DescribeRosChangeSet(id string) (object map[string]interfac
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
+	// Deleted change sets remain queryable via GetChangeSet with status
+	// DELETE_COMPLETE; they are not existing resources for Read/destroy checks.
+	if fmt.Sprint(object["Status"]) == "DELETE_COMPLETE" {
+		return object, WrapErrorf(NotFoundErr("RosChangeSet", id), NotFoundMsg, ProviderERROR)
+	}
 	return object, nil
 }
 
