@@ -3,10 +3,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/build"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"io"
@@ -15,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -72,9 +75,207 @@ func unitNames(file string) ([]string, error) {
 	return names, nil
 }
 
+// registrationMaps finds the two literal registration maps in Provider. Anything
+// outside this known shape uses the shared-code fallback instead of guessing.
+func registrationMaps(f *ast.File) (map[string]*ast.CompositeLit, bool) {
+	maps := map[string]*ast.CompositeLit{}
+	providers := 0
+	for _, decl := range f.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Recv != nil || fn.Name.Name != "Provider" {
+			continue
+		}
+		ast.Inspect(fn.Body, func(n ast.Node) bool {
+			lit, ok := n.(*ast.CompositeLit)
+			if !ok || nodeText(lit.Type) != "schema.Provider" {
+				return true
+			}
+			providers++
+			for _, elt := range lit.Elts {
+				kv, ok := elt.(*ast.KeyValueExpr)
+				if !ok {
+					continue
+				}
+				key, ok := kv.Key.(*ast.Ident)
+				if !ok || (key.Name != "ResourcesMap" && key.Name != "DataSourcesMap") {
+					continue
+				}
+				value, ok := kv.Value.(*ast.CompositeLit)
+				if !ok || nodeText(value.Type) != "map[string]*schema.Resource" || maps[key.Name] != nil {
+					providers += 2 // invalidate dynamic maps and duplicate fields
+					continue
+				}
+				maps[key.Name] = value
+			}
+			return true
+		})
+	}
+	return maps, providers == 1 && len(maps) == 2
+}
+
+func nodeText(n ast.Node) string {
+	var b bytes.Buffer
+	if err := format.Node(&b, token.NewFileSet(), n); err != nil {
+		return ""
+	}
+	return b.String()
+}
+
+func registrationEntries(lit *ast.CompositeLit) (map[string]ast.Expr, bool) {
+	entries := map[string]ast.Expr{}
+	for _, elt := range lit.Elts {
+		kv, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			return nil, false
+		}
+		key, ok := kv.Key.(*ast.BasicLit)
+		if !ok || key.Kind != token.STRING {
+			return nil, false
+		}
+		name, err := strconv.Unquote(key.Value)
+		if err != nil || entries[name] != nil {
+			return nil, false
+		}
+		entries[name] = kv.Value
+	}
+	return entries, true
+}
+
+// registrationChanges proves that the entire file differs only by added/removed
+// registrations. Replacing an existing key's factory is deliberately shared code.
+func registrationChanges(before, after []byte) ([]ast.Expr, bool) {
+	// Compiler/build directives affect execution even though ordinary comments do not.
+	var directives [2][]string
+	for i, source := range [][]byte{before, after} {
+		for _, line := range strings.Split(string(source), "\n") {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "//go:") || strings.HasPrefix(line, "// +build") {
+				directives[i] = append(directives[i], line)
+			}
+		}
+	}
+	if strings.Join(directives[0], "\n") != strings.Join(directives[1], "\n") {
+		return nil, false
+	}
+	oldFile, err := parser.ParseFile(token.NewFileSet(), "provider.go", before, 0)
+	if err != nil {
+		return nil, false
+	}
+	newFile, err := parser.ParseFile(token.NewFileSet(), "provider.go", after, 0)
+	if err != nil {
+		return nil, false
+	}
+	oldMaps, ok := registrationMaps(oldFile)
+	if !ok {
+		return nil, false
+	}
+	newMaps, ok := registrationMaps(newFile)
+	if !ok {
+		return nil, false
+	}
+	var changed []ast.Expr
+	for _, name := range []string{"ResourcesMap", "DataSourcesMap"} {
+		oldEntries, ok := registrationEntries(oldMaps[name])
+		if !ok {
+			return nil, false
+		}
+		newEntries, ok := registrationEntries(newMaps[name])
+		if !ok {
+			return nil, false
+		}
+		for key, oldValue := range oldEntries {
+			if newValue, exists := newEntries[key]; exists {
+				if nodeText(oldValue) != nodeText(newValue) {
+					return nil, false
+				}
+			} else {
+				changed = append(changed, oldValue)
+			}
+		}
+		for key, value := range newEntries {
+			if _, exists := oldEntries[key]; !exists {
+				changed = append(changed, value)
+			}
+		}
+		oldMaps[name].Elts = nil
+		newMaps[name].Elts = nil
+	}
+	return changed, nodeText(oldFile) == nodeText(newFile)
+}
+
+func registrationTests(base, file string) ([]string, bool) {
+	before, err := exec.Command("git", "show", base+":"+filepath.ToSlash(file)).Output()
+	if err != nil {
+		return nil, false
+	}
+	after, err := os.ReadFile(file)
+	if err != nil {
+		return nil, false
+	}
+	changed, ok := registrationChanges(before, after)
+	if !ok {
+		return nil, false
+	}
+	// Resolve actual factory declarations, so aliases select the implementation's
+	// companion rather than guessing a filename from the registration key.
+	factories := map[string]bool{}
+	for _, expr := range changed {
+		call, ok := expr.(*ast.CallExpr)
+		if !ok || len(call.Args) != 0 || call.Ellipsis.IsValid() {
+			return nil, false
+		}
+		fn, ok := call.Fun.(*ast.Ident)
+		if !ok { // qualified/dynamic factories retain package-wide coverage
+			return nil, false
+		}
+		factories[fn.Name] = true
+	}
+	if len(factories) == 0 {
+		return nil, true
+	}
+	paths, err := filepath.Glob(filepath.Join(filepath.Dir(file), "*.go"))
+	if err != nil {
+		return nil, false
+	}
+	matches := map[string][]string{}
+	for _, path := range paths {
+		name := filepath.Base(path)
+		if strings.HasSuffix(name, "_test.go") || (!strings.HasPrefix(name, "resource_") && !strings.HasPrefix(name, "data_source_")) {
+			continue
+		}
+		active, err := build.Default.MatchFile(filepath.Dir(path), name)
+		if err != nil || !active {
+			continue
+		}
+		f, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
+		if err != nil {
+			return nil, false
+		}
+		for _, decl := range f.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if ok && fn.Recv == nil && factories[fn.Name.Name] {
+				matches[fn.Name.Name] = append(matches[fn.Name.Name], strings.TrimSuffix(path, ".go")+"_test.go")
+			}
+		}
+	}
+	var tests []string
+	for factory := range factories {
+		if len(matches[factory]) != 1 {
+			return nil, false
+		}
+		test := matches[factory][0]
+		if _, err := os.Stat(test); err != nil {
+			return nil, false
+		}
+		tests = append(tests, test)
+	}
+	sort.Strings(tests)
+	return tests, true
+}
+
 // Resource/data-source implementations have companion tests. Every other source
 // file is shared helper/service code and broadens to all TestUnit* in its package.
-func selectCases(files []string) ([]unitCase, []string, error) {
+func selectCases(files []string, bases ...string) ([]unitCase, []string, error) {
 	selected := map[string]map[string]bool{}
 	broad := map[string]bool{}
 	allPackages := false
@@ -88,6 +289,14 @@ func selectCases(files []string) ([]unitCase, []string, error) {
 		dir := filepath.Dir(file)
 		if selected[dir] == nil {
 			selected[dir] = map[string]bool{}
+		}
+		if file == "alicloud/provider.go" && len(bases) == 1 {
+			if tests, ok := registrationTests(bases[0], file); ok {
+				for _, test := range tests {
+					selected[dir][test] = true
+				}
+				continue
+			}
 		}
 		name := filepath.Base(file)
 		if strings.HasSuffix(name, "_test.go") {
@@ -243,7 +452,7 @@ func main() {
 	}
 	if err == nil {
 		s.Base = strings.TrimSpace(string(mustGitBase(s.Base)))
-		s.Cases, s.BroadenedPackages, err = selectCases(s.ChangedFiles)
+		s.Cases, s.BroadenedPackages, err = selectCases(s.ChangedFiles, s.Base)
 	}
 	if s.Cases == nil {
 		s.Cases = []unitCase{}
