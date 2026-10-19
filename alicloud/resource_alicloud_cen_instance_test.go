@@ -64,7 +64,8 @@ func testSweepCenInstances(region string) error {
 			return cenClient.DescribeCens(describeCensRequest)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving CEN Instances: %s", err)
+			log.Printf("[ERROR] Failed to list cen instances: %s", err)
+			break
 		}
 		describeCensResponse, _ := raw.(*cbn.DescribeCensResponse)
 		if len(describeCensResponse.Cens.Cen) < 1 {
@@ -78,7 +79,8 @@ func testSweepCenInstances(region string) error {
 
 		page, err := getNextpageNumber(describeCensRequest.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to paginate cen instances (stopping): %s", err)
+			break
 		}
 		describeCensRequest.PageNumber = page
 	}
@@ -108,6 +110,7 @@ func testSweepCenInstances(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to Describe CEN Attached Instance (%s (%s)): %s", name, cenId, err)
+			continue
 		}
 		describeCenAttachedChildInstancesResponse, _ := raw.(*cbn.DescribeCenAttachedChildInstancesResponse)
 		for _, childInstance := range describeCenAttachedChildInstancesResponse.ChildInstances.ChildInstance {
@@ -158,7 +161,8 @@ func testSweepCenInstances(region string) error {
 			}
 			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+				log.Printf("[ERROR] Failed to parse $.TransitRouterAttachments (treat as empty): %s", err)
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
@@ -222,7 +226,8 @@ func testSweepCenInstances(region string) error {
 			}
 			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+				log.Printf("[ERROR] Failed to parse $.TransitRouterAttachments (treat as empty): %s", err)
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
@@ -286,7 +291,8 @@ func testSweepCenInstances(region string) error {
 			}
 			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+				log.Printf("[ERROR] Failed to parse $.TransitRouterAttachments (treat as empty): %s", err)
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
@@ -360,7 +366,8 @@ func testSweepCenInstances(region string) error {
 			}
 			resp, err := jsonpath.Get("$.TransitRouters", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouters", response)
+				log.Printf("[ERROR] Failed to parse $.TransitRouters (treat as empty): %s", err)
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
