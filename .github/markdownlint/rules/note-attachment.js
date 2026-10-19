@@ -9,12 +9,17 @@
 //   2. no blank line + indented: lazy continuation, the NOTE renders as
 //      literal text merged into the attribute line.
 //
-// For a NOTE whose previous non-blank line belongs to an attribute bullet
-// block, BOTH conditions are required (AND, not either):
+// For a NOTE whose preceding block contains an attribute bullet, BOTH
+// conditions are required (AND, not either):
 //   1. a blank line immediately before the NOTE line;
-//   2. indentation at the parent content column (shallowest bullet indent
-//      of the block + 2 spaces; nested sub-items such as `  - zh:` count as
-//      part of their parent attribute block).
+//   2. alignment with the attribute the NOTE follows — indentation at the
+//      content column of the NEAREST preceding attribute bullet (its indent
+//      + 2), at every nesting level. Plain sub-bullets (value lists such as
+//      `  - true`) elaborate the owning attribute and never own the NOTE,
+//      so the walk skips over them to the attribute above.
+// When no bullet continues the list after the NOTE (end of block), the
+// block column (shallowest bullet indent + 2) is equally legal: the NOTE
+// may close the block's content or attach to the nearest attribute.
 // A NOTE following section-level prose, headings, or code fences is a
 // resource-level NOTE and passes.
 //
@@ -24,7 +29,7 @@
 module.exports = {
   names: ["alicloud-note-attachment", "ALICLOUD100"],
   description:
-    "NOTE after an attribute bullet needs a blank line before AND the parent content column indent",
+    "NOTE after an attribute bullet needs a blank line before AND alignment with the attribute it follows (nearest attribute bullet content column)",
   tags: ["alicloud"],
   function: function noteAttachment(params, onError) {
     const lines = params.lines;
@@ -66,7 +71,7 @@ module.exports = {
         j--;
       }
       let shallowest = null;
-      const shallowestLines = [];
+      let nearestAttr = null;
       let k = j;
       while (k >= 0) {
         const line = lines[k];
@@ -78,10 +83,9 @@ module.exports = {
           const bulletIndent = m[1].length;
           if (shallowest === null || bulletIndent < shallowest) {
             shallowest = bulletIndent;
-            shallowestLines.length = 0;
           }
-          if (bulletIndent === shallowest) {
-            shallowestLines.push(line);
+          if (nearestAttr === null && attrBulletRe.test(line)) {
+            nearestAttr = bulletIndent;
           }
           k--;
           while (k >= 0 && isBlank(lines[k])) {
@@ -101,36 +105,52 @@ module.exports = {
         break;
       }
 
-      if (shallowest === null) {
-        // Resource-level NOTE (preceded by prose/heading/fence): flush-left
-        // is the legal form; not this rule's concern.
-        continue;
-      }
-      if (!shallowestLines.some((line) => attrBulletRe.test(line))) {
-        // Bullet block, but not attribute bullets (e.g. a plain list in
-        // prose): pass conservatively.
+      if (nearestAttr === null) {
+        // Resource-level NOTE (no attribute bullet in the preceding block:
+        // prose/heading/fence, or a plain list): flush-left is the legal
+        // form; not this rule's concern.
         continue;
       }
 
-      const parentColumn = shallowest + 2;
+      // Forward: does a bullet continue the list after the NOTE? A NOTE
+      // between bullets interrupts the list and must align with the
+      // attribute it follows; a NOTE closing the block may also sit at the
+      // block column (shallowest bullet indent + 2).
+      let c = i + 1;
+      while (c < lines.length && isBlank(lines[c])) {
+        c++;
+      }
+      let nextBullet = null;
+      if (c < lines.length) {
+        const m2 = lines[c].match(listRe);
+        if (m2) {
+          nextBullet = m2[1].length;
+        }
+      }
+      const interrupting = nextBullet !== null && nextBullet >= nearestAttr;
+      const legal = interrupting
+        ? [nearestAttr + 2]
+        : Array.from(new Set([shallowest + 2, nearestAttr + 2]));
+      const legalText =
+        legal.length === 1 ? String(legal[0]) : legal.join(" or ");
       if (!blankBefore) {
         onError({
           lineNumber: i + 1,
           detail:
             "no blank line before NOTE: CommonMark absorbs it as a lazy continuation of the attribute text; " +
             "expected a blank line before AND indent " +
-            parentColumn +
-            " (parent content column)",
+            legalText +
+            " (aligned with the attribute it follows)",
           context: lines[i].trim().slice(0, 40),
         });
-      } else if (indent !== parentColumn) {
+      } else if (!legal.includes(indent)) {
         onError({
           lineNumber: i + 1,
           detail:
-            "NOTE detached from the preceding attribute bullet: indent " +
+            "NOTE not aligned with the attribute it follows: indent " +
             indent +
             ", expected " +
-            parentColumn +
+            legalText +
             " (parent content column)",
           context: lines[i].trim().slice(0, 40),
         });
