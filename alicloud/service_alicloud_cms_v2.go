@@ -132,6 +132,49 @@ func (s *CmsServiceV2) DescribeCmsDataset(id string) (object map[string]interfac
 
 // DescribeCmsWorkspace >>> Encapsulated.
 
+// DescribeCmsContextStore <<< Encapsulated get interface for Cms ContextStore.
+
+func (s *CmsServiceV2) DescribeCmsContextStore(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return object, WrapErrorf(Error("Invalid ContextStore resource id: %s. Expected format <workspace>:<context_store_name>.", id), "DescribeCmsContextStore %s", id)
+	}
+	workspace, contextStoreName := parts[0], parts[1]
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+
+	action := fmt.Sprintf("/workspace/%s/contextstore/%s", workspace, contextStoreName)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ContextStoreNotExist"}) {
+			return object, WrapErrorf(NotFoundErr("ContextStore", id), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+// DescribeCmsContextStore >>> Encapsulated.
+
 // DescribeCmsIntegrationPolicy <<< Encapsulated get interface for Cms IntegrationPolicy.
 
 func (s *CmsServiceV2) DescribeCmsIntegrationPolicy(id string) (object map[string]interface{}, err error) {
