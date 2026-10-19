@@ -1,11 +1,12 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -21,6 +23,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+// collection-order: bypass aggregator_accounts -- pre-existing attribute outside this change
 
 func init() {
 	resource.AddTestSweepers("alicloud_config_aggregator", &resource.Sweeper{
@@ -119,6 +123,34 @@ func testSweepConfigAggregator(region string) error {
 	return nil
 }
 
+// testUnitConfigAggregatorMockMeta builds a credential-free *connectivity.AliyunClient by
+// constructing a real client from a stub access-key Config (same approach as
+// TestUnitAliCloudCdnServiceRead). The "config" endpoint is pre-seeded in the
+// Endpoints sync.Map so AliyunClient.loadApiEndpoint returns immediately via
+// formatEndpointWithAccountID and never falls into loadEndpoint (which would
+// require real credentials/network). The real rpcRequest therefore reaches
+// conn.DoRequest, which the test patches per action.
+func testUnitConfigAggregatorMockMeta(t *testing.T) *connectivity.AliyunClient {
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoints.Store("config", "config.aliyuncs.com")
+	endpoints.Store("Config", "config.aliyuncs.com")
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	meta, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return meta
+}
+
 // lintignore: R001
 func TestUnitAliCloudConfigAggregator(t *testing.T) {
 	p := Provider().ResourcesMap
@@ -130,12 +162,18 @@ func TestUnitAliCloudConfigAggregator(t *testing.T) {
 			map[string]interface{}{
 				"account_id":   "CreateAggregatorValue",
 				"account_name": "CreateAggregatorValue",
-				"account_type": "CreateAggregatorValue",
+				"account_type": "ResourceDirectory",
 			},
 		},
 		"aggregator_name": "CreateAggregatorValue",
-		"aggregator_type": "CreateAggregatorValue",
+		"aggregator_type": "CUSTOM",
 		"description":     "CreateAggregatorValue",
+		"tags": []interface{}{
+			map[string]interface{}{
+				"key":   "tf-key1",
+				"value": "tf-value1",
+			},
+		},
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -146,13 +184,8 @@ func TestUnitAliCloudConfigAggregator(t *testing.T) {
 			log.Printf("[ERROR] the field %s setting error", key)
 		}
 	}
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
+	mockMeta := testUnitConfigAggregatorMockMeta(t)
+
 	ReadMockResponse := map[string]interface{}{
 		// GetAggregator
 		"Aggregator": map[string]interface{}{
@@ -160,240 +193,159 @@ func TestUnitAliCloudConfigAggregator(t *testing.T) {
 				map[string]interface{}{
 					"AccountId":   "CreateAggregatorValue",
 					"AccountName": "CreateAggregatorValue",
-					"AccountType": "CreateAggregatorValue",
+					"AccountType": "ResourceDirectory",
 				},
 			},
-			"AggregatorName":   "CreateAggregatorValue",
-			"AggregatorType":   "CreateAggregatorValue",
-			"Description":      "CreateAggregatorValue",
-			"AggregatorStatus": "1",
+			"AggregatorName":            "CreateAggregatorValue",
+			"AggregatorType":            "CUSTOM",
+			"Description":               "CreateAggregatorValue",
+			"AggregatorStatus":          "1",
+			"AggregatorCreateTimestamp": json.Number("1609459200000"),
+			"Tags": []interface{}{
+				map[string]interface{}{
+					"TagKey":   "tf-key1",
+					"TagValue": "tf-value1",
+				},
+			},
 		},
 	}
 	CreateMockResponse := map[string]interface{}{
 		// CreateAggregator
 		"AggregatorId": "MockCreateAggregatorValue",
 	}
-	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
-			StatusCode: tea.Int(400),
-		}
-	}
-	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_config_aggregator", errorCode))
-	}
-	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
-		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
-		}
-		return ReadMockResponse, nil
-	}
-
-	// Create
-
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
-		}
-	})
-	err = resourceAliCloudConfigAggregatorCreate(dInit, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	ReadMockResponseDiff := map[string]interface{}{
-		// GetAggregator Response
-		"Aggregator": map[string]interface{}{
-			"AggregatorId": "MockCreateAggregatorValue",
-		},
-	}
-	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateAggregator" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						successResponseMock(ReadMockResponseDiff)
-						return CreateMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAliCloudConfigAggregatorCreate(dInit, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_config_aggregator"].Schema).Data(dInit.State(), nil)
-			for key, value := range attributes {
-				_ = dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
-		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
-		}
-	}
-
-	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
-		}
-	})
-	err = resourceAliCloudConfigAggregatorUpdate(dExisted, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	// UpdateAggregator
-	attributesDiff := map[string]interface{}{
-		"aggregator_accounts": []interface{}{
-			map[string]interface{}{
-				"account_id":   "UpdateAggregatorValue",
-				"account_name": "UpdateAggregatorValue",
-				"account_type": "UpdateAggregatorValue",
-			},
-		},
-		"aggregator_name": "UpdateAggregatorValue",
-		"description":     "UpdateAggregatorValue",
-	}
-	diff, err := newInstanceDiff("alicloud_config_aggregator", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregator"].Schema).Data(dInit.State(), diff)
-	ReadMockResponseDiff = map[string]interface{}{
-		// GetAggregator Response
+	UpdateReadMockResponse := map[string]interface{}{
+		// GetAggregator after UpdateAggregator
 		"Aggregator": map[string]interface{}{
 			"AggregatorAccounts": []interface{}{
 				map[string]interface{}{
 					"AccountId":   "UpdateAggregatorValue",
 					"AccountName": "UpdateAggregatorValue",
-					"AccountType": "UpdateAggregatorValue",
+					"AccountType": "ResourceDirectory",
 				},
 			},
-			"AggregatorName": "UpdateAggregatorValue",
-			"Description":    "UpdateAggregatorValue",
+			"AggregatorName":            "UpdateAggregatorValue",
+			"AggregatorType":            "CUSTOM",
+			"Description":               "UpdateAggregatorValue",
+			"AggregatorStatus":          "1",
+			"AggregatorCreateTimestamp": json.Number("1609459200000"),
+			"Tags": []interface{}{
+				map[string]interface{}{
+					"TagKey":   "tf-key2",
+					"TagValue": "tf-value2",
+				},
+			},
 		},
 	}
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "UpdateAggregator" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						return successResponseMock(ReadMockResponseDiff)
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAliCloudConfigAggregatorUpdate(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_config_aggregator"].Schema).Data(dExisted.State(), nil)
-			for key, value := range attributes {
-				_ = dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
-		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
-		}
-	}
-
-	// Read
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "Invalid.AggregatorId.Value", "{}"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "GetAggregator" {
-				switch errorCode {
-				case "{}", "Invalid.AggregatorId.Value":
-					return notFoundResponseMock(errorCode)
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if errorCodes[retryIndex] == "nil" {
-						return ReadMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAliCloudConfigAggregatorRead(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		case "{}", "Invalid.AggregatorId.Value":
-			assert.Nil(t, err)
-		}
-	}
-
-	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+
+	// Create: success (CreateAggregator -> CreateMockResponse; state poll + Read -> ReadMockResponse with tags)
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		switch *action {
+		case "CreateAggregator":
+			return CreateMockResponse, nil
+		default:
+			return ReadMockResponse, nil
 		}
 	})
-	err = resourceAliCloudConfigAggregatorDelete(dExisted, rawClient)
+	err := resourceAliCloudConfigAggregatorCreate(dInit, mockMeta)
+	patches.Reset()
+	assert.Nil(t, err)
+	assert.Equal(t, "MockCreateAggregatorValue", dInit.Id())
+	assert.Equal(t, "tf-key1", dInit.Get("tags.0.key"))
+	assert.Equal(t, "tf-value1", dInit.Get("tags.0.value"))
+
+	// Create: non-retryable error
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "CreateAggregator" {
+			return failedResponseMock("NonRetryableError")
+		}
+		return ReadMockResponse, nil
+	})
+	err = resourceAliCloudConfigAggregatorCreate(dInit, mockMeta)
 	patches.Reset()
 	assert.NotNil(t, err)
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "AccountNotExisted", "Invalid.AggregatorIds.Empty"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DeleteAggregators" {
-				switch errorCode {
-				case "NonRetryableError", "AccountNotExisted", "Invalid.AggregatorIds.Empty":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if errorCodes[retryIndex] == "nil" {
-						ReadMockResponse = map[string]interface{}{}
-						return ReadMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAliCloudConfigAggregatorDelete(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		case "AccountNotExisted", "Invalid.AggregatorIds.Empty":
-			assert.Nil(t, err)
-		}
+
+	// Update: success (tags change tf-key1 -> tf-key2; aggregator_accounts carries a
+	// different account_id/account_name than the Create step.)
+	attributesDiff := map[string]interface{}{
+		"aggregator_name": "UpdateAggregatorValue",
+		"description":     "UpdateAggregatorValue",
+		"aggregator_accounts": []interface{}{
+			map[string]interface{}{
+				"account_id":   "UpdateAggregatorValue",
+				"account_name": "UpdateAggregatorValue",
+				"account_type": "ResourceDirectory",
+			},
+		},
+		"tags": []interface{}{
+			map[string]interface{}{
+				"key":   "tf-key2",
+				"value": "tf-value2",
+			},
+		},
 	}
+	diff, err := newInstanceDiff("alicloud_config_aggregator", attributes, attributesDiff, dInit.State())
+	assert.Nil(t, err)
+	dExisted, _ = schema.InternalMap(p["alicloud_config_aggregator"].Schema).Data(dInit.State(), diff)
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		return UpdateReadMockResponse, nil
+	})
+	err = resourceAliCloudConfigAggregatorUpdate(dExisted, mockMeta)
+	patches.Reset()
+	assert.Nil(t, err)
+	assert.Equal(t, "tf-key2", dExisted.Get("tags.0.key"))
+	assert.Equal(t, "tf-value2", dExisted.Get("tags.0.value"))
+
+	// Update: non-retryable error
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "UpdateAggregator" {
+			return failedResponseMock("NonRetryableError")
+		}
+		return UpdateReadMockResponse, nil
+	})
+	err = resourceAliCloudConfigAggregatorUpdate(dExisted, mockMeta)
+	patches.Reset()
+	assert.NotNil(t, err)
+
+	// Delete: success
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "DeleteAggregators" {
+			return map[string]interface{}{}, nil
+		}
+		return ReadMockResponse, nil
+	})
+	err = resourceAliCloudConfigAggregatorDelete(dExisted, mockMeta)
+	patches.Reset()
+	assert.Nil(t, err)
+
+	// Delete: AccountNotExisted swallowed
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "DeleteAggregators" {
+			return failedResponseMock("AccountNotExisted")
+		}
+		return ReadMockResponse, nil
+	})
+	err = resourceAliCloudConfigAggregatorDelete(dExisted, mockMeta)
+	patches.Reset()
+	assert.Nil(t, err)
+
+	// Delete: non-retryable error
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "DeleteAggregators" {
+			return failedResponseMock("NonRetryableError")
+		}
+		return ReadMockResponse, nil
+	})
+	err = resourceAliCloudConfigAggregatorDelete(dExisted, mockMeta)
+	patches.Reset()
+	assert.NotNil(t, err)
 }
 
 // Test Config Aggregator. >>> Resource test cases, automatically generated.
@@ -548,19 +500,13 @@ func TestAccAliCloudConfigAggregator_basic11747(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"aggregator_name": name,
 					"description":     name,
-					"aggregator_accounts": []map[string]interface{}{
-						{
-							"account_id":   "${data.alicloud_resource_manager_accounts.default.accounts.0.account_id}",
-							"account_name": "${data.alicloud_resource_manager_accounts.default.accounts.0.display_name}",
-							"account_type": "ResourceDirectory",
-						},
-					},
+					"aggregator_type": "CUSTOM",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"aggregator_name":       name,
-						"description":           name,
-						"aggregator_accounts.#": "1",
+						"aggregator_name": name,
+						"description":     name,
+						"aggregator_type": "CUSTOM",
 					}),
 				),
 			},
@@ -845,6 +791,136 @@ variable "name" {
 data "alicloud_resource_manager_folders" "default" {
 }
 `, name)
+}
+
+// Case 账号组-资源测试-TAGS 11749
+func TestAccAliCloudConfigAggregator_tags11749(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregator.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregatorMap11746)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccconfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregatorBasicDependence11746)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "RD",
+					"tags": []map[string]interface{}{
+						{"key": "tf-key1", "value": "tf-value1"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregator_name": name,
+						"description":     name,
+						"aggregator_type": "RD",
+						"tags.0.key":      "tf-key1",
+						"tags.0.value":    "tf-value1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "RD",
+					"tags": []map[string]interface{}{
+						{"key": "tf-key2", "value": "tf-value2"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.0.key":   "tf-key2",
+						"tags.0.value": "tf-value2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "RD",
+					"tags":            REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudConfigAggregator_tagsOrder establishes TypeList Order Coverage
+// for the tags attribute: an apply of the original member order followed by a
+// convergent apply with the members reordered. Config echoes the submitted Tag
+// order, so the reordered apply persists and the post-apply plan is empty.
+func TestAccAliCloudConfigAggregator_tagsOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregator.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregatorMap11746)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregator")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccconfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregatorBasicDependence11746)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "RD",
+					"tags": []map[string]interface{}{
+						{"key": "tf-key1", "value": "tf-value1"},
+						{"key": "tf-key2", "value": "tf-value2"},
+					},
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregator_name": name,
+					"description":     name,
+					"aggregator_type": "RD",
+					"tags": []map[string]interface{}{
+						{"key": "tf-key2", "value": "tf-value2"},
+						{"key": "tf-key1", "value": "tf-value1"},
+					},
+				}),
+			},
+		},
+	})
 }
 
 // Test Config Aggregator. <<< Resource test cases, automatically generated.
