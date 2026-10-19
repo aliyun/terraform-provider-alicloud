@@ -49,6 +49,10 @@ func testSweepSaeApplication(region string) error {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
 	}
 	namespace, _ := resp.([]interface{})
+	if len(namespace) == 0 {
+		log.Printf("[INFO] Sae Application: 0 namespaces in region %s", region)
+		return nil
+	}
 
 	for _, v := range namespace {
 		// item namespace
@@ -65,25 +69,38 @@ func testSweepSaeApplication(region string) error {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Applications", response)
 		}
 		result, _ := resp.([]interface{})
+		if len(result) == 0 {
+			log.Printf("[INFO] Sae Application: 0 applications in namespace %s", item["NamespaceId"])
+			continue
+		}
 		for _, v := range result {
-			item := v.(map[string]interface{})
-			skip := true
-			for _, prefix := range prefixes {
-				app_name := ""
-				if val, exist := item["AppName"]; exist {
-					app_name = val.(string)
-				}
-				if strings.Contains(strings.ToLower(app_name), strings.ToLower(prefix)) {
-					skip = false
-				}
+			app := v.(map[string]interface{})
+			app_name := ""
+			if val, exist := app["AppName"]; exist {
+				app_name = fmt.Sprint(val)
 			}
-			if skip {
-				log.Printf("[INFO] Skipping Sae Application: %s (%s)", item["AppName"], item["AppId"])
+			// NODELETING guard — always-active (both NORMAL and SWEEP_ALL).
+			if protectedSweepVpcName(app_name) {
+				log.Printf("[INFO] Skipping Sae Application (NODELETING): %s (%s)", app_name, app["AppId"])
 				continue
 			}
+			if !sweepAll() {
+				skip := true
+				for _, prefix := range prefixes {
+					if strings.Contains(strings.ToLower(app_name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping Sae Application (no prefix): %s (%s)", app_name, app["AppId"])
+					continue
+				}
+			}
+			log.Printf("[INFO] Deleting Sae Application: %s (%s)", app_name, app["AppId"])
 			action := "/pop/v1/sam/app/deleteApplication"
 			request = map[string]*string{
-				"AppId": StringPointer(item["AppId"].(string)),
+				"AppId": StringPointer(fmt.Sprint(app["AppId"])),
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(10*time.Minute, func() *retry.RetryError {
@@ -101,7 +118,7 @@ func testSweepSaeApplication(region string) error {
 			if err != nil && !IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) {
 				return WrapError(err)
 			}
-			log.Printf("[INFO] Delete Sae Application  success: %v ", item["AppId"])
+			log.Printf("[INFO] Delete Sae Application success: %s (%s)", app_name, app["AppId"])
 		}
 	}
 	return nil
