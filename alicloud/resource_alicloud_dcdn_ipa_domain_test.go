@@ -33,19 +33,21 @@ func init() {
 		})
 }
 func testSweepDcdnIpaDomain(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.DCDNSupportRegions) {
-		log.Printf("[INFO] Skipping Dcdn Ipa Domain unsupported region: %s", region)
-		return nil
-	}
-
+	// DCDN is a global/account-scoped service — no region gate (cn-beijing must run).
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
+	// RED LINE #5: prefix guard is ALWAYS applied (even under SWEEP_ALL=1) so that
+	// real存 / ICP-backed IPA domains are never deleted.
 	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
+		"tf-",
+		"tf-testacc",
+		"tf_testacc",
+		"test-",
+		"testacc",
+		"test_acc",
 	}
 	action := "DescribeDcdnIpaUserDomains"
 	request := map[string]interface{}{}
@@ -70,37 +72,49 @@ func testSweepDcdnIpaDomain(region string) error {
 		addDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
+			break
 		}
 
 		resp, err := jsonpath.Get("$.Domains.PageData", response)
 		if err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Domains.PageData", action, err)
-			return nil
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			name := fmt.Sprint(item["DomainName"])
 
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["DomainName"].(string)), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Dcdn Ipa Domain: %s", item["DomainName"].(string))
+			// RED LINE #2: NODELETING / do-not-delete marker protection.
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping Dcdn Ipa Domain (NODELETING): %s", name)
 				continue
 			}
-			action := "DeleteDcdnIpaDomain"
-			request := map[string]interface{}{
-				"DomainName": item["DomainName"],
+			// RED LINE #5: prefix guard always applied (even under SWEEP_ALL=1)
+			// so real存 / ICP-backed IPA domains are never deleted.
+			matches := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), prefix) {
+					matches = true
+					break
+				}
 			}
-			_, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
+			if !matches {
+				log.Printf("[INFO] Skipping Dcdn Ipa Domain (no test prefix): %s", name)
+				continue
+			}
+
+			deleteAction := "DeleteDcdnIpaDomain"
+			deleteRequest := map[string]interface{}{
+				"DomainName": name,
+			}
+			log.Printf("[INFO] Deleting Dcdn Ipa Domain: %s", name)
+			_, err = client.RpcPost("dcdn", "2018-01-15", deleteAction, nil, deleteRequest, true)
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Dcdn Ipa Domain (%s): %s", item["DomainName"].(string), err)
+				log.Printf("[ERROR] Failed to delete Dcdn Ipa Domain (%s): %v", name, err)
+				continue
 			}
-			log.Printf("[INFO] Delete Dcdn Ipa Domain success: %s ", item["DomainName"].(string))
+			log.Printf("[INFO] Deleted Dcdn Ipa Domain: %s", name)
 		}
 		if len(result) < PageSizeLarge {
 			break

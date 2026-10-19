@@ -32,19 +32,20 @@ func init() {
 }
 
 func testSweepDcdnWafPolicy(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.DCDNSupportRegions) {
-		log.Printf("[INFO] Skipping Dcdn Waf Policy unsupported region: %s", region)
-		return nil
-	}
-
+	// DCDN is a global/account-scoped service — no region gate (cn-beijing must run).
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
+	// RED LINE #5: prefix guard is ALWAYS applied (even under SWEEP_ALL=1).
 	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
+		"tf-",
+		"tf-testacc",
+		"tf_testacc",
+		"test-",
+		"testacc",
+		"test_acc",
 	}
 	action := "DescribeDcdnWafPolicies"
 	request := map[string]interface{}{}
@@ -72,37 +73,48 @@ func testSweepDcdnWafPolicy(region string) error {
 		addDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
+			break
 		}
 
 		resp, err := jsonpath.Get("$.Policies", response)
 		if err != nil {
 			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Policies", action, err)
-			return nil
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			name := fmt.Sprint(item["PolicyName"])
 
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["PolicyName"].(string)), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Dcdn Waf Policy: %s", item["PolicyName"].(string))
+			// RED LINE #2: NODELETING / do-not-delete marker protection.
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping Dcdn Waf Policy (NODELETING): %s", name)
 				continue
 			}
-			action := "DeleteDcdnWafPolicy"
-			request := map[string]interface{}{
+			// RED LINE #5: prefix guard always applied (even under SWEEP_ALL=1).
+			matches := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), prefix) {
+					matches = true
+					break
+				}
+			}
+			if !matches {
+				log.Printf("[INFO] Skipping Dcdn Waf Policy (no test prefix): %s", name)
+				continue
+			}
+
+			deleteAction := "DeleteDcdnWafPolicy"
+			deleteRequest := map[string]interface{}{
 				"PolicyId": item["PolicyId"],
 			}
-			_, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
+			log.Printf("[INFO] Deleting Dcdn Waf Policy: %s", name)
+			_, err = client.RpcPost("dcdn", "2018-01-15", deleteAction, nil, deleteRequest, true)
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Dcdn Waf Policy (%s): %s", item["PolicyName"].(string), err)
+				log.Printf("[ERROR] Failed to delete Dcdn Waf Policy (%s): %v", name, err)
+				continue
 			}
-			log.Printf("[INFO] Delete Dcdn Waf Policy success: %s ", item["PolicyName"].(string))
+			log.Printf("[INFO] Deleted Dcdn Waf Policy: %s", name)
 		}
 		if len(result) < PageSizeLarge {
 			break

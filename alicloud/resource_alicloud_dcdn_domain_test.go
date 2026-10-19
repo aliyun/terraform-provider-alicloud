@@ -27,66 +27,94 @@ func init() {
 func testSweepDcdnDomain(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapError(err)
+		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	action := "DescribeDcdnUserDomains"
-	request := make(map[string]interface{})
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
+	// DCDN is a global/account-scoped service — no region gate (cn-beijing must run).
+	// RED LINE #5: prefix guard is ALWAYS applied (even under SWEEP_ALL=1) so that
+	// real存 / ICP-backed domains (e.g. *.xiaozhu.com) are never deleted.
+	prefixes := []string{
+		"tf-",
+		"tf-testacc",
+		"tf_testacc",
+		"test-",
+		"testacc",
+		"test_acc",
+	}
 
-	var allDomains []string
+	action := "DescribeDcdnUserDomains"
+	request := map[string]interface{}{
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+
 	var response map[string]interface{}
 	for {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dcdn_domains", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] %s got an error: %v", action, err)
+			break
 		}
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Domains.PageData", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Domains.PageData", response)
+			log.Printf("[ERROR] Getting %s attribute by path %s failed: %v", action, "$.Domains.PageData", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if strings.HasPrefix(item["DomainName"].(string), "tf-testacc") {
-				allDomains = append(allDomains, item["DomainName"].(string))
-			} else {
-				log.Printf("Skip %#v", item["DomainName"].(string))
+			name := fmt.Sprint(item["DomainName"])
+
+			// RED LINE #2: NODELETING / do-not-delete marker protection.
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping Dcdn Domain (NODELETING): %s", name)
+				continue
 			}
+			// RED LINE #5: real存 / ICP-backed domain preservation — prefix guard
+			// is ALWAYS applied, even under SWEEP_ALL=1.
+			matches := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), prefix) {
+					matches = true
+					break
+				}
+			}
+			if !matches {
+				log.Printf("[INFO] Skipping Dcdn Domain (no test prefix): %s", name)
+				continue
+			}
+
+			deleteAction := "DeleteDcdnDomain"
+			query := map[string]interface{}{
+				"DomainName": name,
+			}
+			log.Printf("[INFO] Deleting Dcdn Domain: %s", name)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+				response, err = client.RpcPost("dcdn", "2018-01-15", deleteAction, query, nil, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				addDebug(deleteAction, response, query)
+				return nil
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Dcdn Domain (%s): %v", name, err)
+				continue
+			}
+			log.Printf("[INFO] Deleted Dcdn Domain: %s", name)
 		}
 		if len(result) < PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
-	}
-
-	action = "DeleteDcdnDomain"
-	for _, domain := range allDomains {
-		query := make(map[string]interface{})
-		request = make(map[string]interface{})
-		query["DomainName"] = domain
-
-		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-			response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			addDebug(action, response, request)
-			return nil
-		})
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, domain, action, AlibabaCloudSdkGoERROR)
-		}
 	}
 
 	return nil
