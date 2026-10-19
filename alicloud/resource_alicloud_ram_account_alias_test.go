@@ -38,7 +38,8 @@ func testSweepAccountAliases(region string) error {
 		return ramClient.GetAccountAlias(request)
 	})
 	if err != nil {
-		return WrapError(err)
+		log.Printf("[ERROR] ram GetAccountAlias: %s", err)
+		return nil
 	}
 	sweeped := false
 	resp, _ := raw.(*ram.GetAccountAliasResponse)
