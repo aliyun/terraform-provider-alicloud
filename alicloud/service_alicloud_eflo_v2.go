@@ -546,6 +546,43 @@ func (s *EfloServiceV2) DescribeNodeGroupListClusterNodes(id string) (object map
 	return response, nil
 }
 
+func (s *EfloServiceV2) DescribeNodeGroupListClusterHyperNodes(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ClusterId"] = parts[0]
+	request["NodeGroupId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	action := "ListClusterHyperNodes"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("eflo-controller", "2022-12-15", action, query, request, true)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
 func (s *EfloServiceV2) EfloNodeGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEfloNodeGroup(id)
