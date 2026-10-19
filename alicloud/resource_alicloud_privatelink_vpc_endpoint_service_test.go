@@ -33,12 +33,20 @@ func init() {
 		"alicloud_privatelink_vpc_endpoint_service",
 		&resource.Sweeper{
 			Name: "alicloud_privatelink_vpc_endpoint_service",
-			F:    testSweepPrivatelinkVpcEndpointService,
+			// Child resources (service resources, service users and endpoint
+			// connections) must be detached before the service itself is deleted,
+			// otherwise DeleteVpcEndpointService fails with resources attached.
+			Dependencies: []string{
+				"alicloud_privatelink_vpc_endpoint_service_resource",
+				"alicloud_privatelink_vpc_endpoint_service_user",
+				"alicloud_privatelink_vpc_endpoint_connection",
+			},
+			F: testSweepPrivatelinkVpcEndpointService,
 		})
 }
 
 func testSweepPrivatelinkVpcEndpointService(region string) error {
-	if !testSweepPreCheckWithRegions(region, false, connectivity.PrivateLinkRegions) {
+	if testSweepPreCheckWithRegions(region, false, connectivity.PrivateLinkRegions) {
 		log.Printf("[INFO] Skipping privatelink unsupported region: %s", region)
 		return nil
 	}
@@ -48,10 +56,6 @@ func testSweepPrivatelinkVpcEndpointService(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
-	prefixes := []string{
-		"tf-testAcc",
-		"tf-testacc",
-	}
 	request := map[string]interface{}{
 		"MaxResults": PageSizeLarge,
 	}
@@ -62,40 +66,46 @@ func testSweepPrivatelinkVpcEndpointService(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list privatelink vpc endpoint services: %s", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Services", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Services", response)
+			log.Printf("[ERROR] Failed to parse $.Services (treat as empty): %s", err)
+			return nil
 		}
 		sweeped := false
 		result, _ := resp.([]interface{})
 		for _, v := range result {
-			item := v.(map[string]interface{})
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["ServiceDescription"].(string)), strings.ToLower(prefix)) {
-					skip = false
-				}
+			item, ok := v.(map[string]interface{})
+			if !ok {
+				continue
 			}
-			if skip {
-				log.Printf("[INFO] Skipping Privatelink VpcEndpoint Service: %s", item["ServiceId"].(string))
+			serviceId := fmt.Sprint(item["ServiceId"])
+			// privatelinkServiceSweepName returns the user-set ServiceDescription
+			// (the field tests use for tf-testAcc naming). protectedSweepVpcName
+			// guards NODELETING markers; sweepAll() bypasses the prefix filter so
+			// SWEEP_ALL actually clears leftovers (safe because the name guard
+			// still skips protected resources).
+			if !privatelinkSweepParentShouldDelete(privatelinkServiceSweepName(item)) {
+				log.Printf("[INFO] Skipping Privatelink VpcEndpoint Service: %s", serviceId)
 				continue
 			}
 			sweeped = true
-			action = "DeleteVpcEndpointService"
-			request := map[string]interface{}{
+			deleteAction := "DeleteVpcEndpointService"
+			deleteReq := map[string]interface{}{
 				"ServiceId": item["ServiceId"],
 			}
-			_, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
+			_, err = client.RpcPost("Privatelink", "2020-04-15", deleteAction, nil, deleteReq, true)
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Privatelink VpcEndpoint Service (%s): %s", item["ServiceId"].(string), err)
+				log.Printf("[ERROR] Failed to delete Privatelink VpcEndpoint Service (%s): %s", serviceId, err)
+				continue
 			}
-			if sweeped {
-				// Waiting 5 seconds to ensure Privatelink VpcEndpoint Service  have been deleted.
-				time.Sleep(5 * time.Second)
-			}
-			log.Printf("[INFO] Delete Privatelink VpcEndpoint Service  success: %s ", item["ServiceId"].(string))
+			log.Printf("[INFO] Delete Privatelink VpcEndpoint Service  success: %s ", serviceId)
+		}
+		if sweeped {
+			// Waiting 5 seconds to ensure Privatelink VpcEndpoint Service have been deleted.
+			time.Sleep(5 * time.Second)
 		}
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
@@ -104,6 +114,90 @@ func testSweepPrivatelinkVpcEndpointService(region string) error {
 		}
 	}
 	return nil
+}
+
+// listAllPrivatelinkVpcEndpointServices paginates ListVpcEndpointServices and
+// returns every endpoint service in the calling region. Child sweepers
+// (service resource / service user / endpoint connection) reuse it to enumerate
+// a service's dependent resources before the parent service sweeper deletes it.
+func listAllPrivatelinkVpcEndpointServices(client *connectivity.AliyunClient) ([]map[string]interface{}, error) {
+	services := make([]map[string]interface{}, 0)
+	action := "ListVpcEndpointServices"
+	request := map[string]interface{}{"MaxResults": PageSizeLarge}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err := client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
+		if err != nil {
+			return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Services", response)
+		if err != nil {
+			return nil, WrapErrorf(err, FailedGetAttributeMsg, action, "$.Services", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			if item, ok := v.(map[string]interface{}); ok {
+				services = append(services, item)
+			}
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	return services, nil
+}
+
+// privatelinkServiceSweepName returns the user-controlled identifier of a
+// service for sweeper matching. ServiceDescription is the only user-settable
+// name field (the original service sweeper matched on it); ServiceName is
+// server-generated (Computed) and therefore unsuitable for tf-testAcc prefix
+// matching. ServiceDescription is preferred, falling back to ServiceName only
+// when the description is absent, and finally to ServiceId.
+func privatelinkServiceSweepName(svc map[string]interface{}) string {
+	if desc, ok := svc["ServiceDescription"].(string); ok && desc != "" {
+		return desc
+	}
+	if name, ok := svc["ServiceName"].(string); ok && name != "" {
+		return name
+	}
+	return fmt.Sprint(svc["ServiceId"])
+}
+
+// privatelinkSweepParentShouldDelete reports whether a parent (endpoint service
+// or endpoint) named <name> should have its dependent child resources swept. It
+// honours the shared NODELETING name guard and, outside SWEEP_ALL, the same
+// tf-testAcc prefix the original parent sweepers use.
+func privatelinkSweepParentShouldDelete(name string) bool {
+	if protectedSweepVpcName(name) {
+		return false
+	}
+	if sweepAll() {
+		return true
+	}
+	for _, prefix := range []string{"tf-testAcc", "tf-testacc"} {
+		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+			return true
+		}
+	}
+	return false
+}
+
+// privatelinkParentIsManagedProtected reports whether a parent endpoint carries
+// the server-side ProtectedEnabled flag (infra-managed). Such endpoints are left
+// untouched even under SWEEP_ALL: DeleteVpcEndpoint denies them, and detaching
+// their child zones/connections would disrupt live infra-managed services
+// (e.g. ADB cluster endpoints). This is the name-agnostic complement to
+// protectedSweepVpcName and upholds red-line #4 (no bypass of managed
+// protection). Only VPC endpoints expose ProtectedEnabled; endpoint services do
+// not, so the service-side sweepers do not consult this guard.
+func privatelinkParentIsManagedProtected(item map[string]interface{}) bool {
+	if v, ok := item["ProtectedEnabled"].(bool); ok && v {
+		return true
+	}
+	return false
 }
 
 func TestAccAliCloudPrivatelinkVpcEndpointService_base(t *testing.T) {

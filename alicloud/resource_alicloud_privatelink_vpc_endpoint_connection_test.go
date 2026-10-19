@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -17,6 +18,96 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_privatelink_vpc_endpoint_connection",
+		&resource.Sweeper{
+			Name: "alicloud_privatelink_vpc_endpoint_connection",
+			F:    testSweepPrivatelinkVpcEndpointConnection,
+		})
+}
+
+// testSweepPrivatelinkVpcEndpointConnection disables every endpoint connection
+// belonging to test-owned VPC endpoint services so that both the service sweeper
+// and the endpoint sweeper can delete their parents cleanly. The disable mirrors
+// resourceAliCloudPrivateLinkVpcEndpointConnectionDelete
+// (DisableVpcEndpointConnection).
+func testSweepPrivatelinkVpcEndpointConnection(region string) error {
+	if testSweepPreCheckWithRegions(region, false, connectivity.PrivateLinkRegions) {
+		log.Printf("[INFO] Skipping privatelink unsupported region: %s", region)
+		return nil
+	}
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	services, err := listAllPrivatelinkVpcEndpointServices(client)
+	if err != nil {
+		log.Printf("[ERROR] Failed to list privatelink vpc endpoint services: %s", err)
+		return nil
+	}
+	for _, svc := range services {
+		serviceId := fmt.Sprint(svc["ServiceId"])
+		if !privatelinkSweepParentShouldDelete(privatelinkServiceSweepName(svc)) {
+			log.Printf("[INFO] Skipping privatelink vpc endpoint connection under protected service: %s", serviceId)
+			continue
+		}
+		listAction := "ListVpcEndpointConnections"
+		listReq := map[string]interface{}{
+			"ServiceId":  serviceId,
+			"MaxResults": PageSizeLarge,
+		}
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			response, err := client.RpcPost("Privatelink", "2020-04-15", listAction, nil, listReq, true)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
+					break
+				}
+				log.Printf("[ERROR] Failed to list privatelink vpc endpoint connections for service %s: %s", serviceId, err)
+				break
+			}
+			resp, err := jsonpath.Get("$.Connections", response)
+			if err != nil {
+				log.Printf("[ERROR] Failed to parse $.Connections for service %s: %s", serviceId, err)
+				break
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item, ok := v.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				endpointId := fmt.Sprint(item["EndpointId"])
+				deleteAction := "DisableVpcEndpointConnection"
+				deleteReq := map[string]interface{}{
+					"ServiceId":   serviceId,
+					"EndpointId":  endpointId,
+					"RegionId":    client.RegionId,
+					"ClientToken": buildClientToken(deleteAction),
+				}
+				if _, err := client.RpcPost("Privatelink", "2020-04-15", deleteAction, nil, deleteReq, true); err != nil {
+					if IsExpectedErrors(err, []string{"EndpointServiceNotFound", "EndpointNotFound"}) {
+						continue
+					}
+					log.Printf("[ERROR] Failed to disable privatelink vpc endpoint connection %s:%s: %s", serviceId, endpointId, err)
+					continue
+				}
+				log.Printf("[INFO] Delete privatelink vpc endpoint connection success: %s:%s", serviceId, endpointId)
+			}
+			if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+				listReq["NextToken"] = nextToken
+			} else {
+				break
+			}
+		}
+	}
+	return nil
+}
 
 func TestAccAliCloudPrivatelinkVpcEndpointConnection_basic(t *testing.T) {
 	var v map[string]interface{}
@@ -33,9 +124,9 @@ func TestAccAliCloudPrivatelinkVpcEndpointConnection_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -380,9 +471,9 @@ func TestAccAliCloudPrivateLinkVpcEndpointConnection_basic4902(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -510,9 +601,9 @@ func TestAccAliCloudPrivateLinkVpcEndpointConnection_basic4902_twin(t *testing.T
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

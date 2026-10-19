@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -17,6 +18,103 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_privatelink_vpc_endpoint_zone",
+		&resource.Sweeper{
+			Name: "alicloud_privatelink_vpc_endpoint_zone",
+			F:    testSweepPrivatelinkVpcEndpointZone,
+		})
+}
+
+// testSweepPrivatelinkVpcEndpointZone removes every zone added to test-owned
+// VPC endpoints so the parent endpoint sweeper can delete the endpoint. The
+// remove mirrors resourceAliCloudPrivateLinkVpcEndpointZoneDelete
+// (RemoveZoneFromVpcEndpoint).
+func testSweepPrivatelinkVpcEndpointZone(region string) error {
+	if testSweepPreCheckWithRegions(region, false, connectivity.PrivateLinkRegions) {
+		log.Printf("[INFO] Skipping privatelink unsupported region: %s", region)
+		return nil
+	}
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	endpoints, err := listAllPrivatelinkVpcEndpoints(client)
+	if err != nil {
+		log.Printf("[ERROR] Failed to list privatelink vpc endpoints: %s", err)
+		return nil
+	}
+	for _, ep := range endpoints {
+		endpointId := fmt.Sprint(ep["EndpointId"])
+		endpointName := fmt.Sprint(ep["EndpointName"])
+		// Red-line #4: skip zones under infra-managed endpoints
+		// (ProtectedEnabled=true) even under SWEEP_ALL — RemoveZoneFromVpcEndpoint
+		// may succeed on a protected endpoint and would disrupt live
+		// infra-managed services (e.g. ADB cluster endpoints).
+		if privatelinkParentIsManagedProtected(ep) {
+			log.Printf("[INFO] Skipping privatelink vpc endpoint zone under managed-protected endpoint: %s", endpointId)
+			continue
+		}
+		if !privatelinkSweepParentShouldDelete(endpointName) {
+			log.Printf("[INFO] Skipping privatelink vpc endpoint zone under protected endpoint: %s", endpointId)
+			continue
+		}
+		listAction := "ListVpcEndpointZones"
+		listReq := map[string]interface{}{
+			"EndpointId": endpointId,
+		}
+		for {
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			response, err := client.RpcPost("Privatelink", "2020-04-15", listAction, nil, listReq, true)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
+					break
+				}
+				log.Printf("[ERROR] Failed to list privatelink vpc endpoint zones for endpoint %s: %s", endpointId, err)
+				break
+			}
+			resp, err := jsonpath.Get("$.Zones", response)
+			if err != nil {
+				log.Printf("[ERROR] Failed to parse $.Zones for endpoint %s: %s", endpointId, err)
+				break
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item, ok := v.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				zoneId := fmt.Sprint(item["ZoneId"])
+				deleteAction := "RemoveZoneFromVpcEndpoint"
+				deleteReq := map[string]interface{}{
+					"EndpointId":  endpointId,
+					"ZoneId":      zoneId,
+					"RegionId":    client.RegionId,
+					"ClientToken": buildClientToken(deleteAction),
+				}
+				if _, err := client.RpcPost("Privatelink", "2020-04-15", deleteAction, nil, deleteReq, true); err != nil {
+					if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
+						continue
+					}
+					log.Printf("[ERROR] Failed to remove privatelink vpc endpoint zone %s:%s: %s", endpointId, zoneId, err)
+					continue
+				}
+				log.Printf("[INFO] Delete privatelink vpc endpoint zone success: %s:%s", endpointId, zoneId)
+			}
+			if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+				listReq["NextToken"] = nextToken
+			} else {
+				break
+			}
+		}
+	}
+	return nil
+}
 
 // Currently, Private network slb can only be created through the console.
 func TestAccAliCloudPrivatelinkVpcEndpointZone_basic(t *testing.T) {
@@ -37,9 +135,9 @@ func TestAccAliCloudPrivatelinkVpcEndpointZone_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.SlbPrivateNetSupportRegions)
 		},
 
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -343,9 +441,9 @@ func TestAccAliCloudPrivateLinkVpcEndpointZone_basic_without_zoneid(t *testing.T
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -388,9 +486,9 @@ func TestAccAliCloudPrivateLinkVpcEndpointZone_basic4898(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
