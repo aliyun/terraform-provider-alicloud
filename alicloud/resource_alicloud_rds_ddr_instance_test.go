@@ -64,11 +64,12 @@ func testSweepDBDdrInstances(region string) error {
 		addDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %v", action, err)
-			continue
+			break
 		}
 		resp, err := jsonpath.Get("$.Items.DBInstance", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBInstance", response)
+			log.Printf("[ERROR] testSweepDBDdrInstances parse failed: %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		objects = append(objects, result...)
