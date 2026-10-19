@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -91,17 +92,17 @@ func TestAccAliCloudDdosCooSchedulerRule_basic(t *testing.T) {
 					"rules": []map[string]string{
 						{
 							"priority":   "100",
-							"region_id":  "cn-hangzhou",
-							"type":       "A",
-							"value":      "170.33.2.125",
-							"value_type": "1",
+							"region_id":  "cn-shanghai",
+							"type":       "CNAME",
+							"value":      "tf-testacc-ddoscoo-scheduler-rule.example.com",
+							"value_type": "6",
 						},
 						{
 							"priority":   "50",
-							"region_id":  "cn-hangzhou",
+							"region_id":  "cn-shanghai",
 							"type":       "A",
-							"value":      "170.33.14.193",
-							"value_type": "6",
+							"value":      "170.33.2.125",
+							"value_type": "1",
 						},
 					},
 				}),
@@ -111,6 +112,58 @@ func TestAccAliCloudDdosCooSchedulerRule_basic(t *testing.T) {
 						"rules.#":   "2",
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudDdosCooSchedulerRule_basic1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	var v map[string]interface{}
+	resourceId := "alicloud_ddoscoo_scheduler_rule.default"
+	ra := resourceAttrInit(resourceId, DdosCooSchedulerRuleMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdoscooSchedulerRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccDdoscooSchedulerRule%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, DdosCooSchedulerRuleBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_name": name,
+					"rule_type": "5",
+					"param":     "{\\\"ParamType\\\":\\\"cdn\\\",\\\"ParamData\\\":{\\\"Domain\\\":\\\"tf-testacc-ddoscoo-scheduler-rule.example.com\\\",\\\"Cname\\\":\\\"tf-testacc-ddoscoo-scheduler-rule.example.com\\\",\\\"AccessQps\\\":1000,\\\"UpstreamQps\\\":100}}",
+					"rules": []map[string]string{
+						{
+							"priority":   "100",
+							"region_id":  "cn-shanghai",
+							"type":       "CNAME",
+							"value":      "tf-testacc-ddoscoo-scheduler-rule.example.com",
+							"value_type": "5",
+						},
+						{
+							"priority":   "50",
+							"region_id":  "cn-shanghai",
+							"type":       "A",
+							"value":      "203.107.54.136",
+							"value_type": "1",
+						},
+					},
+				}),
+				// The test account owns no CDN accelerated domain, so the CDN linkage
+				// (rule_type=5) create is rejected by the API privilege gate. This step
+				// locks the behavior that rule_type/param/value_type=5 are passed
+				// through to the API correctly.
+				ExpectError: regexp.MustCompile("NoPrivilegeAccessResource"),
 			},
 		},
 	})
@@ -172,11 +225,12 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 				"RuleType": 6,
 				"Rules": []interface{}{
 					map[string]interface{}{
-						"Priority":  "50",
-						"RegionId":  "cn-shanghai",
-						"Type":      "A",
-						"Value":     "1.1.1.1",
-						"ValueType": "6",
+						"Priority":     "50",
+						"RegionId":     "cn-shanghai",
+						"Type":         "A",
+						"Value":        "1.1.1.1",
+						"ValueType":    "6",
+						"RestoreDelay": 60,
 					},
 				},
 			},
@@ -294,11 +348,12 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 				"RuleType": 6,
 				"Rules": []interface{}{
 					map[string]interface{}{
-						"Priority":  100,
-						"RegionId":  "cn-hangzhou",
-						"Type":      "A",
-						"Value":     "170.33.2.125",
-						"ValueType": 1,
+						"Priority":     100,
+						"RegionId":     "cn-hangzhou",
+						"Type":         "A",
+						"Value":        "170.33.2.125",
+						"ValueType":    1,
+						"RestoreDelay": 60,
 					},
 				},
 			},

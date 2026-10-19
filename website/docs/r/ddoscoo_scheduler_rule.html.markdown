@@ -58,11 +58,18 @@ resource "alicloud_ddoscoo_scheduler_rule" "example" {
 The following arguments are supported:
 
 * `rule_name` - (Required, ForceNew) The name of the rule.
-* `param` - (Optional) The scheduling rule for the Global Accelerator instance that interacts with Anti-DDoS Pro or Anti-DDoS Premium.
+* `param` - (Optional) The details of the CDN linkage rule, expressed as a JSON formatted string. This parameter takes effect only when `rule_type` is set to `5`. The JSON string contains the following fields:
+    `ParamType`: (Required) The CDN linkage type. Only `cdn` is supported.
+    `ParamData`: (Required) The CDN linkage parameters, which contain the following fields:
+        `Domain`: (Required) The CDN accelerated domain name.
+        `Cname`: (Required) The CNAME address of the CDN accelerated domain name.
+        `AccessQps`: (Required) The access QPS threshold. Traffic is switched to Anti-DDoS Pro or Anti-DDoS Premium when the threshold is exceeded.
+        `UpstreamQps`: (Optional) The origin QPS threshold. Traffic is switched back to CDN when it drops below the threshold.
 * `resource_group_id` - (Optional) The ID of the resource group to which the anti-DDoS pro instance belongs in resource management. By default, no value is specified, indicating that the domains in the default resource group are listed.
-* `rule_type` - (Required) The rule type. Valid values:
+* `rule_type` - (Required) The rule type. **Note: The parameter is immutable after resource creation.** The API does not support changing the rule type of an existing rule; modifying it returns an API error. Valid values:
     `2`: tiered protection.
     `3`: globalization acceleration.
+    `5`: CDN linkage.
     `6`: Cloud product interaction.
 * `rules` - (Required) The information about the scheduling rules. See [`rules`](#rules) below.
 
@@ -79,9 +86,11 @@ The rules supports the following:
     `1`: The IP address of Anti-DDoS Pro or Anti-DDoS Premium
     `2`: the IP address of the interaction resource (in the tiered protection scenario)
     `3`: the IP address used to accelerate access (in the network acceleration scenario)
+    `5`: the accelerated domain name (in the CDN linkage scenario)
     `6` the IP address of the interaction resource (in the cloud service interaction scenario)
 * `region_id` - (Optional) The region where the interaction resource that is used in the scheduling rule is deployed. **NOTE:** This parameter is returned only if the RuleType parameter is set to 2.
 * `status` - (Optional) The status of the scheduling rule.
+* `restore_delay` - (Computed) The restore delay in minutes for the scheduling rule.
 
 ## Attributes Reference
 
