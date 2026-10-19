@@ -88,3 +88,37 @@ func (s *DataworksPublicService) GetFolder(id string) (object map[string]interfa
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
+func (s *DataworksPublicService) DescribeDataWorksRemind(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "GetRemind"
+	request := map[string]interface{}{
+		"RemindId": id,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("dataworks-public", "2020-05-18", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+	object = v.(map[string]interface{})
+	if len(object) < 1 {
+		return object, WrapErrorf(NotFoundErr("dataworks", id), NotFoundWithResponse, response)
+	}
+	return object, nil
+}
