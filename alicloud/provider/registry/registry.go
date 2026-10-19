@@ -17,6 +17,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oos"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/rocketmq"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sts"
 )
 
@@ -41,6 +42,7 @@ var servicePackages = []conns.ServicePackage{
 	cs.ServicePackage(),
 	cr.ServicePackage(),
 	sts.ServicePackage(),
+	rocketmq.ServicePackage(),
 }
 
 var validateOnce sync.Once
