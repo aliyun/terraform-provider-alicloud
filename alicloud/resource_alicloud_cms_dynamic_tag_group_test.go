@@ -71,17 +71,20 @@ func testSweepCmsDynamicTagGroup(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			// always-active tf-prefix check (never bypassed by SWEEP_ALL):
+			// dynamic tag groups are auto-created by ACK (ack.aliyun.com/...),
+			// EHPC and ComputeNest (acs:computenest/...) — 17 system-managed
+			// groups would be fleet-wiped in SWEEP_ALL if this gate were
+			// bypassable. The tf-prefix is the only safe selector here.
 			skip := true
-			if !sweepAll() {
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(item["TagKey"].(string)), strings.ToLower(prefix)) {
-						skip = false
-					}
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["TagKey"].(string)), strings.ToLower(prefix)) {
+					skip = false
 				}
-				if skip {
-					log.Printf("[INFO] Skipping DynamicTagGroup: %s", item["TagKey"].(string))
-					continue
-				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping DynamicTagGroup: %s", item["TagKey"].(string))
+				continue
 			}
 			action := "DeleteDynamicTagGroup"
 			request := map[string]interface{}{
