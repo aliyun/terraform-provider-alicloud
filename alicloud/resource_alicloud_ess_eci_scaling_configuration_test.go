@@ -32,7 +32,7 @@ func testSweepEciScalingConfiguration(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf_testAcc`",
+		"tf_testAcc",
 	}
 	var response map[string]interface{}
 	action := "DescribeEciScalingConfigurations"
@@ -41,22 +41,30 @@ func testSweepEciScalingConfiguration(region string) error {
 	}
 	response, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_eci_scaling_configuration", action, AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to list ess eci scaling configurations: %s", err)
+		return nil
 	}
 	addDebug(action, response, request)
 	resp, err := jsonpath.Get("$.ScalingConfigurations", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ScalingConfigurations", response)
+		log.Printf("[ERROR] Failed to parse $.ScalingConfigurations (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
 		name := item["ScalingConfigurationName"].(string)
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Eci configuration (NODELETING): %s ", name)
+			continue
+		}
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
 		}
 		if skip {

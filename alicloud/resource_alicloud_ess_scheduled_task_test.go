@@ -44,7 +44,8 @@ func testSweepEssSchedules(region string) error {
 			return essClient.DescribeScheduledTasks(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving Scheduled Tasks: %s", err)
+			log.Printf("[ERROR] Failed to list scheduled tasks: %s", err)
+			break
 		}
 		resp, _ := raw.(*ess.DescribeScheduledTasksResponse)
 		if resp == nil || len(resp.ScheduledTasks.ScheduledTask) < 1 {
@@ -56,21 +57,28 @@ func testSweepEssSchedules(region string) error {
 			break
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
-		} else {
-			req.PageNumber = page
+		page, err := getNextpageNumber(req.PageNumber)
+		if err != nil {
+			log.Printf("[ERROR] Failed to parse next page number for scheduled tasks: %s", err)
+			break
 		}
+		req.PageNumber = page
 	}
 
 	for _, v := range groups {
 		name := v.ScheduledTaskName
 		id := v.ScheduledTaskId
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping Scheduled Task (NODELETING): %s (%s)", name, id)
+			continue
+		}
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
 		}
 		if skip {
@@ -114,7 +122,7 @@ func TestAccAliCloudEssScheduledTask_basic(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
+		CheckDestroy:      testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -245,7 +253,7 @@ func TestAccAliCloudEssScheduledTask_basic_2(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
+		CheckDestroy:      testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -347,7 +355,7 @@ func TestAccAliCloudEssScheduledTask_basic_3(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
+		CheckDestroy:      testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -445,7 +453,7 @@ func TestAccAliCloudEssScheduledTask_basic4(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
+		CheckDestroy:      testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -510,7 +518,7 @@ func TestAccAliCloudEssScheduledTask_multi(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
+		CheckDestroy:      testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -555,7 +563,7 @@ func TestAccAliCloudEssScheduledTask_max_min_supportZero(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssScheduledTaskDestroy,
+		CheckDestroy:      testAccCheckEssScheduledTaskDestroy,
 		Steps: []resource.TestStep{
 			{
 
