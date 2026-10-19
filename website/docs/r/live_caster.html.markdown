@@ -55,6 +55,7 @@ The following arguments are supported:
   false: closed.
 * `callback_url` - (Optional) The callback address of the user. To receive Callback Notifications, enter an available address and accept the HTTP protocol. If this parameter is set to null, the callback notification from the director Station is canceled by default.
 * `caster_name` - (Optional) Guide station name.
+* `caster_template` - (Optional, ForceNew) The director template. This parameter takes effect only when ChargeType is set to PrePaid. In the PostPaid scenario, call SetCasterConfig to set the director template.
 * `delay` - (Optional, Float) Delayed playback. Time unit: seconds.
   - `0` (default): Disables the delay.
   - `Greater than 0`: Enable latency.
@@ -62,6 +63,7 @@ The following arguments are supported:
 
   The maximum supported setting is 300 seconds.
 * `domain_name` - (Optional) Master play domain name.
+* `expire_time` - (Optional, ForceNew) The expiration time. This parameter can be set only when ChargeType is set to PrePaid. PostPaid scenarios do not support this parameter.
 * `norm_type` - (Required, ForceNew, Int) Guide station specification type. Value:
   - 0: Broadcast single type.
   - 1: General purpose.
@@ -72,6 +74,7 @@ The following arguments are supported:
 
   1: Entry into force.
 * `program_name` - (Optional) The carousel station name, which can be configured when using the carousel function.
+* `purchase_time` - (Optional, ForceNew) The purchase period. This parameter can be set only when ChargeType is set to PrePaid. PostPaid scenarios do not support this parameter.
 * `record_config` - (Optional) Record configuration information. The format is JSON. The configuration element information is as follows:
   - `endpoint`: the API server address of the Alibaba Cloud service.
   - `ossBucket`: The name of the ossBucket.

@@ -28,9 +28,9 @@ func TestAccAliCloudLiveCaster_basic9293(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -155,6 +155,54 @@ func TestAccAliCloudLiveCaster_basic9293(t *testing.T) {
 }
 
 var AlicloudLiveCasterMap9293 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+// Case 导播测试_Terraform 9293 prepaid-only params
+func TestAccAliCloudLiveCaster_prepaidOnlyParams9293(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_live_caster.default"
+	ra := resourceAttrInit(resourceId, AlicloudLiveCasterPrepaidOnlyParamsMap9293)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &LiveServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeLiveCaster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLiveCasterBasicDependence9293)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"caster_name":       name,
+					"payment_type":      "PayAsYouGo",
+					"norm_type":         "1",
+					"caster_template":   "",
+					"expire_time":       "",
+					"purchase_time":     "",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"caster_name":  name,
+						"payment_type": "PayAsYouGo",
+						"norm_type":    "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudLiveCasterPrepaidOnlyParamsMap9293 = map[string]string{
 	"create_time": CHECKSET,
 }
 
