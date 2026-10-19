@@ -30,9 +30,9 @@ func TestAccAliCloudDdosCooDomainPreciseAccessRule_basic12326(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -58,11 +58,13 @@ func TestAccAliCloudDdosCooDomainPreciseAccessRule_basic12326(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"action": "block",
+					"action":            "block",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"action": "block",
+						"action":            "block",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -107,7 +109,7 @@ func TestAccAliCloudDdosCooDomainPreciseAccessRule_basic12326(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
 			},
 		},
 	})
@@ -131,9 +133,9 @@ func TestAccAliCloudDdosCooDomainPreciseAccessRule_basic12326_twin(t *testing.T)
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -189,6 +191,9 @@ variable "name" {
 }
 
 data "alicloud_ddoscoo_instances" "default" {
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_ddoscoo_domain_resource" "default" {
