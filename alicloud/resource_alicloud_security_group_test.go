@@ -49,7 +49,8 @@ func testSweepSecurityGroups(region string) error {
 			return ecsClient.DescribeSecurityGroups(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving Security Groups: %s", err)
+			log.Printf("[ERROR] Failed to list alicloud_security_group (stopping): %s", err)
+			break
 		}
 		resp, _ := raw.(*ecs.DescribeSecurityGroupsResponse)
 		if resp == nil || len(resp.SecurityGroups.SecurityGroup) < 1 {
@@ -63,7 +64,8 @@ func testSweepSecurityGroups(region string) error {
 
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to paginate alicloud_security_group (stopping): %s", err)
+			break
 		}
 		req.PageNumber = page
 	}

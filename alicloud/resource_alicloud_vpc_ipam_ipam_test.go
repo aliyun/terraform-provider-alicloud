@@ -56,7 +56,8 @@ func testSweepVpcIpamIpam(region string) error {
 		}
 		resp, err := jsonpath.Get("$.Ipams", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Ipams", response)
+			log.Printf("[ERROR] Failed to parse $.Ipams (treat as empty): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {

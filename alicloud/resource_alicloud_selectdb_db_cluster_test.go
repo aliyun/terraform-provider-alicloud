@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"testing"
 
@@ -31,7 +32,8 @@ func testSweepSelectDBDbClusterAndDbInstance(region string) error {
 	selectDBService := SelectDBService{client}
 	instanceResp, err := selectDBService.DescribeSelectDBDbInstances("", nil)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_selectdb_db_instances", AlibabaCloudSdkGoERROR)
+		log.Printf("[ERROR] Failed to list alicloud_selectdb_db_instances (treat as empty): %s", err)
+		return nil
 	}
 
 	var objects []map[string]interface{}

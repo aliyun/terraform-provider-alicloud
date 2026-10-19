@@ -47,7 +47,8 @@ func testSweepTagPolicyAttachment(region string) error {
 		}
 		resp, err := jsonpath.Get("$.Data", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+			log.Printf("[ERROR] Failed to parse $.Data (treat as empty): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -64,7 +65,8 @@ func testSweepTagPolicyAttachment(region string) error {
 			}
 			resp1, err := jsonpath.Get("$.Targets", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+				log.Printf("[ERROR] Failed to parse $.Targets for policy %v (skipping): %s", item["PolicyId"], err)
+				continue
 			}
 			result1, _ := resp1.([]interface{})
 			for _, w := range result1 {
