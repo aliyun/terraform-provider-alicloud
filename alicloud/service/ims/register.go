@@ -13,11 +13,19 @@ func ServicePackage() conns.ServicePackage {
 				TypeName: "alicloud_ims_default_domain",
 				Factory:  NewDefaultDomainDataSource,
 			},
+			{
+				TypeName: "alicloud_ram_mfa_devices",
+				Factory:  NewMfaDevicesDataSource,
+			},
 		},
 		Resources: []conns.Resource{
 			{
 				TypeName: "alicloud_ims_user",
 				Factory:  NewUserResource,
+			},
+			{
+				TypeName: "alicloud_ram_mfa_device",
+				Factory:  NewMFADeviceResource,
 			},
 		},
 	}
