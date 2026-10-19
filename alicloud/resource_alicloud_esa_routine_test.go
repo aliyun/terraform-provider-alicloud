@@ -36,6 +36,7 @@ func TestAccAliCloudESARoutine_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":             name,
 					"description":      "tf-test-routine",
+					"has_assets":       true,
 					"code":             "addEventListener('fetch', e => e.respondWith(new Response('v1')))",
 					"code_description": "version 1",
 					"deploy_env":       "staging",
@@ -74,6 +75,7 @@ var AliCloudESARoutineMap = map[string]string{
 	"id":                  CHECKSET,
 	"create_time":         CHECKSET,
 	"latest_code_version": CHECKSET,
+	"has_assets":          CHECKSET,
 }
 
 func AliCloudESARoutineBasicDependence(name string) string {
