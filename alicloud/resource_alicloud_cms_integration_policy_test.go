@@ -27,10 +27,11 @@ func TestAccAliCloudCmsIntegrationPolicy_basic8635(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -87,18 +88,22 @@ func TestAccAliCloudCmsIntegrationPolicy_basic8635_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"policy_type": "CS",
 					"entity_group": []map[string]interface{}{
 						{
-							"cluster_id":          "${data.alicloud_cs_clusters.default.ids.0}",
-							"cluster_entity_type": "acs.ack.cluster",
+							"cluster_id":           "${data.alicloud_cs_clusters.default.ids.0}",
+							"cluster_entity_type":  "acs.ack.cluster",
+							"entity_user_id":       "${data.alicloud_account.default.id}",
+							"disable_policy_share": "true",
+							"cluster_namespace":    "arms-prom",
 						},
 					},
 					"integration_policy_name": name,
@@ -118,7 +123,7 @@ func TestAccAliCloudCmsIntegrationPolicy_basic8635_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force"},
+				ImportStateVerifyIgnore: []string{"force", "entity_group"},
 			},
 		},
 	})
@@ -132,6 +137,9 @@ func AliCloudCmsIntegrationPolicyBasicDependence8635(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
+}
+
+data "alicloud_account" "default" {
 }
 
 data "alicloud_cs_clusters" "default" {
@@ -164,10 +172,11 @@ func TestAccAliCloudCmsIntegrationPolicy_basic8626(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -218,10 +227,11 @@ func TestAccAliCloudCmsIntegrationPolicy_basic8626_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
