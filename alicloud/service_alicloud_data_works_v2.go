@@ -725,3 +725,76 @@ func (s *DataWorksServiceV2) DataWorksDwResourceGroupStateRefreshFunc(id string,
 }
 
 // DescribeDataWorksDwResourceGroup >>> Encapsulated.
+
+// DescribeDataWorksTenantResourceGroup <<< Encapsulated get interface for DataWorks TenantResourceGroup.
+
+func (s *DataWorksServiceV2) DescribeDataWorksTenantResourceGroup(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "GetResourceGroup"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["Id"] = id
+	query["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcGet("dataworks-public", "2020-05-18", action, query, nil)
+
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990040003"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	rg, ok := response["ResourceGroup"].(map[string]interface{})
+	if !ok {
+		return object, WrapErrorf(NotFoundErr("TenantResourceGroup", id), NotFoundMsg, response)
+	}
+	if rg["Id"] == nil || fmt.Sprint(rg["Id"]) == "" {
+		return object, WrapErrorf(NotFoundErr("TenantResourceGroup", id), NotFoundMsg, response)
+	}
+
+	return rg, nil
+}
+
+func (s *DataWorksServiceV2) DataWorksTenantResourceGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeDataWorksTenantResourceGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeDataWorksTenantResourceGroup >>> Encapsulated.
