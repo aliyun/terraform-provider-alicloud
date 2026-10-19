@@ -40,7 +40,8 @@ func testSweepFCCustomDomain(region string) error {
 		return fcClient.ListServices(fc.NewListServicesInput())
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving FC services: %s", err)
+		log.Printf("[ERROR] Failed to list FC services: %s", err)
+		return nil
 	}
 
 	// Delete FC function and services.
@@ -72,10 +73,11 @@ func testSweepFCCustomDomain(region string) error {
 			})
 			if err != nil {
 				log.Printf("[ERROR] Failed to list functions of service (%s (%s)): %s", name, id, err)
+				break
 			}
 			resp, _ := raw.(*fc.ListFunctionsOutput)
 
-			if resp.Functions == nil || len(resp.Functions) < 1 {
+			if resp == nil || resp.Functions == nil || len(resp.Functions) < 1 {
 				break
 			}
 
@@ -162,19 +164,38 @@ func testSweepFCCustomDomain(region string) error {
 			return fcClient.ListCustomDomains(fc.NewListCustomDomainsInput().WithNextToken(nextToken))
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving FC custom domains: %s", err)
+			log.Printf("[ERROR] Failed to list FC custom domains: %s", err)
+			return nil
 		}
 		response := raw.(*fc.ListCustomDomainsOutput)
 		if response == nil {
 			return nil
 		}
 		for _, domain := range response.CustomDomains {
-			log.Printf("[INFO] Deleting FC custom domain: %s", *domain.DomainName)
+			// FC custom domains may back real存 ICP-bound domains; the tf- prefix
+			// filter ALWAYS applies (even under SWEEP_ALL) to preserve them.
+			domainName := *domain.DomainName
+			if protectedSweepVpcName(domainName) {
+				log.Printf("[INFO] Skipping FC custom domain (NODELETING): %s", domainName)
+				continue
+			}
+			matches := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(domainName), strings.ToLower(prefix)) {
+					matches = true
+					break
+				}
+			}
+			if !matches {
+				log.Printf("[INFO] Skipping FC custom domain (no tf- prefix, real存 preserve): %s", domainName)
+				continue
+			}
+			log.Printf("[INFO] Deleting FC custom domain: %s", domainName)
 			_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
-				return fcClient.DeleteCustomDomain(fc.NewDeleteCustomDomainInput(*domain.DomainName))
+				return fcClient.DeleteCustomDomain(fc.NewDeleteCustomDomainInput(domainName))
 			})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete FC custom domains(%s): %s", *domain.DomainName, err)
+				log.Printf("[ERROR] Failed to delete FC custom domains(%s): %s", domainName, err)
 			}
 		}
 		if response.NextToken == nil || *response.NextToken == "" {
@@ -207,9 +228,9 @@ func TestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcCustomDomainConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

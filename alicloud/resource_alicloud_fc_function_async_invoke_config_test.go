@@ -49,7 +49,8 @@ func testSweepFCFunctionAsyncInvokeConfig(region string) error {
 		return fcClient.ListServices(fc.NewListServicesInput())
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving FC services: %s", err)
+		log.Printf("[ERROR] Failed to list FC services: %s", err)
+		return nil
 	}
 	services, _ := raw.(*fc.ListServicesOutput)
 	for _, v := range services.Services {
@@ -79,10 +80,11 @@ func testSweepFCFunctionAsyncInvokeConfig(region string) error {
 			})
 			if err != nil {
 				log.Printf("[ERROR] Failed to list functions of service (%s (%s)): %s", name, id, err)
+				break
 			}
 			resp, _ := raw.(*fc.ListFunctionsOutput)
 
-			if resp.Functions == nil || len(resp.Functions) < 1 {
+			if resp == nil || resp.Functions == nil || len(resp.Functions) < 1 {
 				break
 			}
 
@@ -223,9 +225,9 @@ func TestAccAlicloudFCFunctionAsyncInvokeConfigUpdate(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcFunctionAsyncInvokeConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -318,9 +320,9 @@ func TestAccAlicloudFCFunctionAsyncInvokeStatefulInvocationUpdate(t *testing.T) 
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcFunctionAsyncInvokeConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
