@@ -2,11 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,10 +17,131 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_cr_endpoint_acl_policy", &resource.Sweeper{
+		Name: "alicloud_cr_endpoint_acl_policy",
+		F:    testSweepCrEndpointAclPolicy,
+	})
+}
+
+// testSweepCrEndpointAclPolicy cleans up Container Registry internet-endpoint
+// ACL entries left on CR EE instances by acceptance tests. ACL entries are
+// enumerated via GetInstanceEndpoint(EndpointType=internet) and deleted with
+// DeleteInstanceEndpointAclPolicy (mirroring the resource Delete). Instances
+// marked NODELETING are preserved; in non-SWEEP_ALL mode only entries on tf-*
+// named instances are removed.
+func testSweepCrEndpointAclPolicy(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	crService := &CrService{client}
+
+	prefixes := []string{"tf-testAcc", "tf_testAcc", "tftestAcc"}
+
+	pageNo, pageSize := 1, PageSizeLarge
+	for {
+		resp, lerr := crService.ListCrEEInstances(pageNo, pageSize)
+		if lerr != nil {
+			log.Printf("[ERROR] Failed to ListCrEEInstances: %s", lerr)
+			return nil
+		}
+		for _, inst := range resp.Instances {
+			if protectedSweepVpcName(inst.InstanceName) {
+				log.Printf("[INFO] Skipping CR endpoint ACL policy on instance %s (%s): protected (NODELETING)", inst.InstanceId, inst.InstanceName)
+				continue
+			}
+			if !sweepAll() {
+				match := false
+				for _, p := range prefixes {
+					if strings.HasPrefix(strings.ToLower(inst.InstanceName), strings.ToLower(p)) {
+						match = true
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
+			listAction := "GetInstanceEndpoint"
+			listReq := map[string]interface{}{
+				"RegionId":     client.RegionId,
+				"InstanceId":   inst.InstanceId,
+				"EndpointType": "Internet",
+				"ModuleName":   "Registry",
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			var response map[string]interface{}
+			rerr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+				response, err = client.RpcPost("cr", "2018-12-01", listAction, nil, listReq, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			if rerr != nil {
+				log.Printf("[ERROR] Failed to GetInstanceEndpoint for instance %s: %s", inst.InstanceId, rerr)
+				continue
+			}
+			raw, jerr := jsonpath.Get("$.AclEntries", response)
+			if jerr != nil {
+				// No AclEntries path → internet endpoint has no ACL entries; skip.
+				continue
+			}
+			result, _ := raw.([]interface{})
+			for _, v := range result {
+				item := v.(map[string]interface{})
+				entry := fmt.Sprint(item["Entry"])
+				if protectedSweepVpcName(entry) {
+					log.Printf("[INFO] Skipping CR endpoint ACL policy %s:%s: protected (NODELETING)", inst.InstanceId, entry)
+					continue
+				}
+				log.Printf("[INFO] Deleting CR endpoint ACL policy: %s:%s", inst.InstanceId, entry)
+				delReq := map[string]interface{}{
+					"RegionId":     client.RegionId,
+					"InstanceId":   inst.InstanceId,
+					"EndpointType": "Internet",
+					"Entry":        entry,
+					"ModuleName":   "Registry",
+				}
+				dwait := incrementalWait(3*time.Second, 3*time.Second)
+				if derr := retry.Retry(5*time.Minute, func() *retry.RetryError {
+					_, e := client.RpcPost("cr", "2018-12-01", "DeleteInstanceEndpointAclPolicy", nil, delReq, false)
+					if e != nil {
+						if IsExpectedErrors(e, []string{"SLB_SERVICE_ERROR"}) || NeedRetry(e) {
+							dwait()
+							return retry.RetryableError(e)
+						}
+						if NotFoundError(e) {
+							return nil
+						}
+						return retry.NonRetryableError(e)
+					}
+					return nil
+				}); derr != nil {
+					log.Printf("[ERROR] Failed to delete CR endpoint ACL policy %s:%s: %s", inst.InstanceId, entry, derr)
+					continue
+				}
+			}
+		}
+		if len(resp.Instances) < pageSize {
+			break
+		}
+		pageNo++
+	}
+	return nil
+}
 
 func TestAccAliCloudCREndpointAclPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}

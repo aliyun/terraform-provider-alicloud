@@ -96,18 +96,24 @@ func testSweepCRChain(region string) error {
 			})
 			if err != nil {
 				log.Printf("[ERROR] Failed To List CR Chains : %s", err)
+				break
 			}
 			resp, err := jsonpath.Get("$.Chains", response)
 			if err != nil {
 				log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", action, "$.Chains", response)
-				return nil
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
-				skip := true
 				item := v.(map[string]interface{})
+				chainName := fmt.Sprint(item["Name"])
+				if protectedSweepVpcName(chainName) {
+					log.Printf("[INFO] Skipping CR Chain (NODELETING): %s (%v)", chainName, item["ChainId"])
+					continue
+				}
+				skip := true
 				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["Name"])), strings.ToLower(prefix)) {
+					if strings.HasPrefix(strings.ToLower(chainName), strings.ToLower(prefix)) {
 						skip = false
 						break
 					}
@@ -132,7 +138,7 @@ func testSweepCRChain(region string) error {
 				parts, err := ParseResourceId(chainId, 2)
 				if err != nil {
 					log.Printf("[ERROR] Failed to parse ResourceId %s, %s", parts, err)
-					return nil
+					continue
 				}
 				deleteRequest := map[string]interface{}{
 					"ChainId":    parts[1],
