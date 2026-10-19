@@ -5,8 +5,11 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,9 +17,99 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_adb_db_cluster_lake_version", &resource.Sweeper{
+		Name: "alicloud_adb_db_cluster_lake_version",
+		F:    testSweepAdbDbClusterLakeVersions,
+	})
+}
+
+func testSweepAdbDbClusterLakeVersions(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting AliCloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	action := "DescribeDBClusters"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var response map[string]interface{}
+	for {
+		response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, true)
+		if err != nil {
+			log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_adb_db_cluster_lake_versions", action, AlibabaCloudSdkGoERROR))
+			break
+		}
+
+		resp, err := jsonpath.Get("$.Items.DBCluster", response)
+		if err != nil {
+			log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBCluster", response))
+			break
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			name := fmt.Sprint(item["DBClusterDescription"])
+			id := fmt.Sprint(item["DBClusterId"])
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping ADB LakeVersion (NODELETING): %s (%s)", name, id)
+				continue
+			}
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping ADB LakeVersion: %s (%s)", name, id)
+					continue
+				}
+			}
+			log.Printf("[INFO] Deleting adb LakeVersion: %s (%s)", name, id)
+			deleteAction := "DeleteDBCluster"
+			deleteRequest := map[string]interface{}{
+				"DBClusterId": id,
+				"RegionId":    client.RegionId,
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+				_, err = client.RpcPost("adb", "2021-12-01", deleteAction, nil, deleteRequest, true)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			if err != nil {
+				log.Printf("[ERROR] Deleting ADB LakeVersion %s (%s) failed: %#v", name, id, err)
+			}
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return nil
+}
 
 func TestAccAliCloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 	var v map[string]interface{}
