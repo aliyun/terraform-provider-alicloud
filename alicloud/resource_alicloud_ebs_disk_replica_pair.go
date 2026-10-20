@@ -29,7 +29,6 @@ func resourceAliCloudEbsDiskReplicaPair() *schema.Resource {
 			"bandwidth": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: IntInSlice([]int{0, 10240, 20480, 51200, 102400}),
 			},
 			"create_time": {
@@ -92,7 +91,10 @@ func resourceAliCloudEbsDiskReplicaPair() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
+			},
+			"enable_rtc": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"region_id": {
 				Type:     schema.TypeString,
@@ -160,9 +162,9 @@ func resourceAliCloudEbsDiskReplicaPairCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOkExists("bandwidth"); ok {
 		request["Bandwidth"] = v
 	}
-	if v, ok := d.GetOkExists("rpo"); ok {
-		request["RPO"] = v
-	}
+	// EnableRtc and RPO are Modify-only parameters at runtime; the Create API
+	// rejects them with InvalidParameter even though POP metadata lists them as
+	// Create inputs. They are sent via ModifyDiskReplicaPair in Update instead.
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -231,6 +233,7 @@ func resourceAliCloudEbsDiskReplicaPairRead(d *schema.ResourceData, meta interfa
 	d.Set("disk_replica_pair_name", objectRaw["PairName"])
 	d.Set("payment_type", convertEbsDiskReplicaPairReplicaPairsChargeTypeResponse(objectRaw["ChargeType"]))
 	d.Set("rpo", objectRaw["RPO"])
+	d.Set("enable_rtc", objectRaw["EnableRtc"])
 	d.Set("region_id", objectRaw["SourceRegion"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("source_zone_id", objectRaw["SourceZoneId"])
@@ -379,6 +382,21 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 	if !d.IsNewResource() && d.HasChange("disk_replica_pair_name") {
 		update = true
 		request["PairName"] = d.Get("disk_replica_pair_name")
+	}
+
+	if !d.IsNewResource() && d.HasChange("bandwidth") {
+		update = true
+		request["Bandwidth"] = d.Get("bandwidth")
+	}
+
+	if !d.IsNewResource() && d.HasChange("rpo") {
+		update = true
+		request["RPO"] = d.Get("rpo")
+	}
+
+	if !d.IsNewResource() && d.HasChange("enable_rtc") {
+		update = true
+		request["EnableRtc"] = d.Get("enable_rtc")
 	}
 
 	if update {

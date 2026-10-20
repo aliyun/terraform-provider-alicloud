@@ -11,7 +11,7 @@ description: |-
 
 This data source provides Ebs Disk Replica Pair available to the user.
 
--> **NOTE:** Available in 1.196.0+
+-> **NOTE:** Available since v1.196.0.
 
 ## Example Usage
 
@@ -41,7 +41,9 @@ The following attributes are exported in addition to the arguments listed above:
 * `pairs` - A list of Disk Replica Pair Entries. Each element contains the following attributes:
   * `bandwidth` - The bandwidth for asynchronous data replication between cloud disks. The unit is Kbps. Value range:-10240 Kbps: equal to 10 Mbps.-20480 Kbps: equal to 20 Mbps.-51200 Kbps: equal to 50 Mbps.-102400 Kbps: equal to 100 Mbps.Default value: 10240.This parameter cannot be specified when the ChargeType value is POSTPAY. The system value is 0, which indicates that the disk is dynamically allocated according to data write changes during asynchronous replication.
   * `description` - The description of the asynchronous replication relationship. 2 to 256 English or Chinese characters in length and cannot start with' http:// 'or' https.
+  * `enable_rtc` - Whether RTC is enabled.
   * `rpo` - The RPO value set by the consistency group in seconds. Currently only 900 seconds are supported.
+  * `id` - The ID of the Disk Replica Pair.
   * `replica_pair_id` - The first ID of the resource
   * `resource_group_id` - The ID of the resource group
   * `destination_disk_id` - The ID of the standby disk.
