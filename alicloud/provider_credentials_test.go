@@ -2248,10 +2248,10 @@ func TestGetConfigFromProfile_EmptySharedCredentialsFile(t *testing.T) {
 	}
 }
 
-// TestUnitGetConfigFromProfile_InvalidJSON verifies that a truncated or otherwise
-// invalid credentials file surfaces a parse error carrying the file path, the
-// profile name and the parse reason, instead of degrading to an empty config
-// that later reports a misleading missing-credential error.
+// TestUnitGetConfigFromProfile_InvalidJSON verifies that an empty, truncated or
+// otherwise invalid credentials file surfaces a parse error carrying the file
+// path, the profile name and the parse reason, instead of degrading to an empty
+// config that later reports a misleading missing-credential error.
 func TestUnitGetConfigFromProfile_InvalidJSON(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "alicloud-test-invalid-json-*")
 	if err != nil {
@@ -2259,32 +2259,46 @@ func TestUnitGetConfigFromProfile_InvalidJSON(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	configPath := filepath.Join(tmpDir, "config.json")
-	// Truncated JSON, as produced when the file is cut off mid-write.
-	if err := os.WriteFile(configPath, []byte(`{"profiles": [{"name": "broken-profile", "mode": "AK"`), 0644); err != nil {
-		t.Fatal(err)
+	cases := []struct {
+		name    string
+		content string
+	}{
+		// Truncated JSON, as produced when the file is cut off mid-write.
+		{"Truncated", `{"profiles": [{"name": "broken-profile", "mode": "AK"`},
+		// A zero-byte file, as produced when the file is created before any
+		// content is written.
+		{"EmptyFile", ``},
 	}
 
-	raw := map[string]interface{}{
-		"profile":                 "broken-profile",
-		"shared_credentials_file": configPath,
-		"region":                  "cn-beijing",
-	}
-	resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			configPath := filepath.Join(tmpDir, tc.name+".json")
+			if err := os.WriteFile(configPath, []byte(tc.content), 0644); err != nil {
+				t.Fatal(err)
+			}
 
-	profileConfig, err := loadProfileConfig(resourceData)
-	if err == nil {
-		t.Fatalf("Expected an error for a truncated JSON credentials file, got value %v", profileConfig)
-	}
-	errMsg := err.Error()
-	if !strings.Contains(errMsg, configPath) {
-		t.Errorf("Expected error to contain the file path %s, got: %s", configPath, errMsg)
-	}
-	if !strings.Contains(errMsg, "broken-profile") {
-		t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
-	}
-	if !strings.Contains(errMsg, "invalid JSON") {
-		t.Errorf("Expected error to contain the parse reason, got: %s", errMsg)
+			raw := map[string]interface{}{
+				"profile":                 "broken-profile",
+				"shared_credentials_file": configPath,
+				"region":                  "cn-beijing",
+			}
+			resourceData := schema.TestResourceDataRaw(t, Provider().Schema, raw)
+
+			profileConfig, err := loadProfileConfig(resourceData)
+			if err == nil {
+				t.Fatalf("Expected an error for an unparsable JSON credentials file (%s), got value %v", tc.name, profileConfig)
+			}
+			errMsg := err.Error()
+			if !strings.Contains(errMsg, configPath) {
+				t.Errorf("Expected error to contain the file path %s, got: %s", configPath, errMsg)
+			}
+			if !strings.Contains(errMsg, "broken-profile") {
+				t.Errorf("Expected error to contain the profile name, got: %s", errMsg)
+			}
+			if !strings.Contains(errMsg, "invalid JSON") {
+				t.Errorf("Expected error to contain the parse reason, got: %s", errMsg)
+			}
+		})
 	}
 }
 
@@ -2304,9 +2318,12 @@ func TestUnitGetConfigFromProfile_StructureMismatch(t *testing.T) {
 		content string
 	}{
 		{"MissingProfilesField", `{"current": "p1"}`},
+		{"EmptyObject", `{}`},
 		{"ProfilesNotArray", `{"profiles": "not-an-array", "current": "p1"}`},
+		{"ProfilesObject", `{"profiles": {}, "current": "p1"}`},
 		{"ProfileEntryNotObject", `{"profiles": ["just-a-string"], "current": "p1"}`},
 		{"ProfileEntryNotObjectNumber", `{"profiles": [42], "current": "p1"}`},
+		{"ProfileEntryNull", `{"profiles": [null], "current": "p1"}`},
 		{"ModeNotString", `{"profiles": [{"name": "p1", "mode": 123}], "current": "p1"}`},
 	}
 
