@@ -513,6 +513,8 @@ func valueConvert(indentation int, val reflect.Value) interface{} {
 		return val.Int()
 	case reflect.Int64:
 		return val.Int()
+	case reflect.Float32, reflect.Float64:
+		return val.Float()
 	default:
 		log.Panicf("invalid attribute value type: %#v", val)
 	}
@@ -553,6 +555,8 @@ func mapValue(indentation int, val reflect.Value) string {
 			line = fmt.Sprintf(`%s%s = %d`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
 		case int64:
 			line = fmt.Sprintf(`%s%s = %d`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
+		case float64:
+			line = fmt.Sprintf(`%s%s = %v`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
 		default:
 			line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
 		}

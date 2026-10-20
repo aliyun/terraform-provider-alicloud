@@ -1782,6 +1782,42 @@ func (s *EcsService) EcsDedicatedHostStateRefreshFunc(id string, failStates []st
 	}
 }
 
+func (s *EcsService) DescribeDedicatedHostAutoRenewAttribute(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "DescribeDedicatedHostAutoRenew"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"DedicatedHostIds": convertListToJsonString([]interface{}{id}),
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.DedicatedHostRenewAttributes.DedicatedHostRenewAttribute", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DedicatedHostRenewAttributes.DedicatedHostRenewAttribute", response)
+	}
+	items, ok := v.([]interface{})
+	if !ok || len(items) < 1 {
+		return object, WrapErrorf(NotFoundErr("ECS:DedicatedHostAutoRenewAttribute", id), NotFoundWithResponse, response)
+	}
+	object = items[0].(map[string]interface{})
+	return object, nil
+}
+
 func (s *EcsService) WaitForAutoProvisioningGroup(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
