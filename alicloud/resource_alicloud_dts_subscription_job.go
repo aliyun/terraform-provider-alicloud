@@ -155,6 +155,12 @@ func resourceAliCloudDtsSubscriptionJob() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"source_endpoint_ssl": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -296,6 +302,9 @@ func resourceAliCloudDtsSubscriptionJobRead(d *schema.ResourceData, meta interfa
 	d.Set("source_endpoint_region", object["SourceEndpoint"].(map[string]interface{})["Region"])
 	d.Set("source_endpoint_role", object["SourceEndpoint"].(map[string]interface{})["RoleName"])
 	d.Set("source_endpoint_user_name", object["SourceEndpoint"].(map[string]interface{})["UserName"])
+	if ssl := convertDtsEndpointSslResponse(object["SourceEndpoint"].(map[string]interface{})["SslSolutionEnum"]); ssl != nil {
+		d.Set("source_endpoint_ssl", ssl)
+	}
 	d.Set("status", object["Status"])
 	d.Set("subscription_data_type_ddl", object["SubscriptionDataType"].(map[string]interface{})["Ddl"])
 	d.Set("subscription_data_type_dml", object["SubscriptionDataType"].(map[string]interface{})["Dml"])
@@ -508,6 +517,9 @@ func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("source_endpoint_user_name"); ok {
 		configureSubscriptionReq["SourceEndpointUserName"] = v
 	}
+	if d.HasChange("source_endpoint_ssl") {
+		update = true
+	}
 	if d.HasChange("subscription_data_type_ddl") || d.IsNewResource() {
 		update = true
 	}
@@ -551,6 +563,11 @@ func resourceAliCloudDtsSubscriptionJobUpdate(d *schema.ResourceData, meta inter
 		}
 		if v, ok := d.GetOk("reserve"); ok {
 			configureSubscriptionReq["Reserve"] = v
+		}
+		if d.HasChange("source_endpoint_ssl") {
+			if err := setDtsEndpointSSL(d, configureSubscriptionReq); err != nil {
+				return WrapError(err)
+			}
 		}
 		action := "ConfigureSubscription"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -684,7 +701,7 @@ func resourceAliCloudDtsSubscriptionJobStatusFlow(d *schema.ResourceData, meta i
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, dtsService.DtsSubscriptionJobStateRefreshFunc(d.Id(), []string{}))
+			stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, dtsService.DtsSubscriptionJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed"}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
@@ -714,7 +731,7 @@ func resourceAliCloudDtsSubscriptionJobStatusFlow(d *schema.ResourceData, meta i
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Abnormal"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, dtsService.DtsSubscriptionJobStateRefreshFunc(d.Id(), []string{}))
+			stateConf := BuildStateConf([]string{}, []string{"Abnormal"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, dtsService.DtsSubscriptionJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed"}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
