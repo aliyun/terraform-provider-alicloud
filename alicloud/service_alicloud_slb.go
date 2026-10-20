@@ -1129,6 +1129,66 @@ func (s *SlbService) DescribeSlbAclEntryAttachment(id string) (object map[string
 	return object, nil
 }
 
+// ListSlbAclEntries lists all entries of an acl through DescribeAccessControlListAttribute.
+// It is the batch-mode read path for alicloud_slb_acl_entry_attachment.
+func (s *SlbService) ListSlbAclEntries(aclId string) (entries []map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "DescribeAccessControlListAttribute"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"AclId":    aclId,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Slb", "2014-05-15", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"AclNotExist"}) {
+			return entries, WrapErrorf(NotFoundErr("SLB:Acl", aclId), NotFoundWithResponse, response)
+		}
+		return entries, WrapErrorf(err, DefaultErrorMsg, aclId, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.AclEntrys.AclEntry", response)
+	if err != nil {
+		return entries, WrapErrorf(err, FailedGetAttributeMsg, aclId, "$.AclEntrys.AclEntry", response)
+	}
+	list, ok := v.([]interface{})
+	if !ok || len(list) == 0 {
+		return entries, nil
+	}
+	entries = make([]map[string]interface{}, 0, len(list))
+	for _, item := range list {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		entries = append(entries, map[string]interface{}{
+			"entry":   fmt.Sprint(m["AclEntryIP"]),
+			"comment": slbAclEntryComment(m["AclEntryComment"]),
+		})
+	}
+	return entries, nil
+}
+
+// slbAclEntryComment coerces the AclEntryComment field of a DescribeAccessControlListAttribute
+// entry into a string, returning "" when the field is absent or not a string.
+func slbAclEntryComment(v interface{}) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
+}
+
 func (s *SlbService) DescribeSlbServerGroupServerAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
