@@ -589,7 +589,7 @@ func (s *DdosCooServiceV2) DdosCooInstanceStateRefreshFunc(id string, field stri
 
 // SetResourceTags <<< Encapsulated tag function for DdosCoo.
 func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-	if d.HasChange("tags") {
+	if d.HasChange("tags") || d.HasChange("resource_group_id") {
 		var action string
 		var err error
 		client := s.client
@@ -611,6 +611,9 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			request["ResourceIds.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
+			if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+				request["ResourceGroupId"] = v
+			}
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
@@ -641,6 +644,9 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			request["ResourceIds.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
+			if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
+				request["ResourceGroupId"] = v
+			}
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tags.%d.Key", count)] = key
