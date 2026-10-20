@@ -65,7 +65,34 @@ jobs:
       - name: Test compact Go cache round trip
         env:
           PYTHONDONTWRITEBYTECODE: '1'
-        run: python3 -m unittest discover -s scripts/ci -p test_go_cache.py
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          set -euo pipefail
+          test_root="$GITHUB_WORKSPACE"
+          if [[ ! -f scripts/ci/test_go_cache.py ]]; then
+            if [[ "$GITHUB_EVENT_NAME" != pull_request ]]; then
+              echo "::error::The Go cache regression test is missing."
+              exit 1
+            fi
+            cache_inputs=(
+              scripts/ci/test_go_cache.py
+              .github/workflows/consistency-check.yml
+              .github/workflows/testing-coverage-rate.yml
+              .github/workflows/collection-order-coverage.yml
+              .github/workflows/acctest-terraform-lint.yml
+            )
+            if ! git diff --quiet "$DIFF_BASE" "$DIFF_HEAD" -- "${cache_inputs[@]}"; then
+              echo "::error::This PR changes cache validation inputs but lacks test_go_cache.py; update the branch from master."
+              exit 1
+            fi
+            test_root="$(mktemp -d "$RUNNER_TEMP/go-cache-tests.XXXXXX")"
+            trap 'rm -rf "$test_root"' EXIT
+            echo "Using the PR base cache regression fixture for this older branch."
+            git archive "$PR_BASE_SHA" -- "${cache_inputs[@]}" | tar -x -C "$test_root"
+          fi
+          python3 -m unittest discover -s "$test_root/scripts/ci" -p test_go_cache.py
       - name: Resolve Go cache paths
         id: go-cache
         shell: bash

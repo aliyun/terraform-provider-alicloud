@@ -26,3 +26,8 @@ offline module rehydration, changed-source rebuilding, compact archive size, and
 the shared-cache publication boundary. Performance comparisons should measure
 download, extraction, and check execution separately on equivalent runners;
 the fixture's byte reduction is not a Provider benchmark.
+
+For PR branches that predate the cache tests, Consistency runs the regression
+suite and its four workflow fixtures from the event's exact PR base SHA in a
+temporary directory. The PR checkout stays unchanged. A missing suite on master,
+an explicit deletion, or cache workflow changes without the suite fail clearly.
