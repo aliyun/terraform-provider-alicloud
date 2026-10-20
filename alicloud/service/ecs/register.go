@@ -14,5 +14,16 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  NewSnapshotLockResource,
 			},
 		},
+		SDKResources: []conns.SDKResource{
+			{
+				TypeName: "alicloud_ecs_disk",
+				Factory:  ResourceDisk,
+			},
+			{
+				// Deprecated alias kept on the same factory and schema.
+				TypeName: "alicloud_disk",
+				Factory:  ResourceDisk,
+			},
+		},
 	}
 }
