@@ -63,6 +63,10 @@ func resourceAliCloudEcsSecurityGroup() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"normal", "enterprise"}, false),
 			},
+			"service_managed": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 			"tags": tagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -175,6 +179,9 @@ func resourceAliCloudEcsSecurityGroupRead(d *schema.ResourceData, meta interface
 	}
 	if objectRaw["SecurityGroupType"] != nil {
 		d.Set("security_group_type", objectRaw["SecurityGroupType"])
+	}
+	if objectRaw["ServiceManaged"] != nil {
+		d.Set("service_managed", objectRaw["ServiceManaged"])
 	}
 	if objectRaw["VpcId"] != nil {
 		d.Set("vpc_id", objectRaw["VpcId"])
