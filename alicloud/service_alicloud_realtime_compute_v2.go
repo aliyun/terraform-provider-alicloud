@@ -84,6 +84,44 @@ func (s *RealtimeComputeServiceV2) RealtimeComputeVvpInstanceStateRefreshFunc(id
 
 // DescribeRealtimeComputeVvpInstance >>> Encapsulated.
 
+// RenewRealtimeComputeVvpInstance <<< Encapsulated renew function for RealtimeCompute VvpInstance.
+func (s *RealtimeComputeServiceV2) RenewRealtimeComputeVvpInstance(instanceId string, duration int, pricingCycle string) error {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "RenewInstance"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["RenewInstanceRequest.InstanceId"] = instanceId
+	request["RenewInstanceRequest.Region"] = s.client.RegionId
+	request["RenewInstanceRequest.Duration"] = duration
+	request["RenewInstanceRequest.PricingCycle"] = pricingCycle
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var err error
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"998001"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
+
+// RenewRealtimeComputeVvpInstance >>> Encapsulated.
+
 // SetResourceTags <<< Encapsulated tag function for RealtimeCompute.
 func (s *RealtimeComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
