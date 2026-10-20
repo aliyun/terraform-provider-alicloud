@@ -12,11 +12,15 @@ on:
     branches:
       - master
     paths:
+      - scripts/ci/check_scope.py
+      - scripts/ci/run-provider-check.py
+      - scripts/ci/test_check_scope.py
+      - scripts/internal/**
+      - go.mod
+      - go.sum
       - .github/workflows/collection-order-coverage.yml
       - scripts/collection-order/**
       - scripts/ci/resolve-change-range.sh
-      - go.mod
-      - go.sum
       - .go-version
       - alicloud/*.go
       - alicloud/service/**/*.go
@@ -108,4 +112,9 @@ jobs:
         env:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
-        run: go run ./scripts/collection-order -base="$DIFF_BASE" -head="$DIFF_HEAD"
+        run: |
+          if [[ -f scripts/ci/run-provider-check.py && -f scripts/ci/check_scope.py ]]; then
+            python3 scripts/ci/run-provider-check.py collection
+          else
+            go run ./scripts/collection-order -base="$DIFF_BASE" -head="$DIFF_HEAD"
+          fi

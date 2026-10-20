@@ -5,6 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
 import subprocess
+import shlex
+from check_scope import changed_paths
 import tempfile
 import time
 
@@ -54,6 +56,47 @@ COMMANDS = {'markdown-link': "find website/docs -type f -name '*.md' -print0 |\n
              "'*.markdown'\n"}
 
 
+def file_loop(files, command):
+    if not files:
+        return 'echo "No matching documentation files changed."'
+    # Git paths never become shell syntax, including spaces and metacharacters.
+    return 'for doc in ' + ' '.join(shlex.quote('./' + p) for p in files) + '; do\n' + command + '\ndone'
+
+
+def scoped_commands(paths, full=False):
+    full = full or any(p in {'.go-version', 'go.mod', 'go.sum', '.markdown-link-check.json'}
+                       or p.startswith(('.github/markdownlint/', 'scripts/ci/',
+                                        'scripts/document/', 'scripts/basic-check.sh',
+                                        '.github/workflows/document-check.yml')) for p in paths)
+    # Content and Markdown lint were already diff-based; do not newly enforce
+    # historical findings in unchanged pages when global checks fall back.
+    docs = [p for p in paths if p.startswith('website/docs/') and Path(p).is_file()]
+    markdown = [p for p in docs if p.endswith(('.md', '.markdown'))]
+    commands = dict(COMMANDS)
+    # Retain the existing global .md link check: a changed/deleted target may
+    # break links in an unchanged source. Also check changed .markdown files,
+    # which the old '*.md' glob did not include.
+    commands['markdown-link'] += file_loop(
+        [p for p in paths if p.startswith('website/docs/') and p.endswith('.markdown') and Path(p).is_file()],
+        'npx --yes markdown-link-check@3.14.2 --quiet --verbose --config .markdown-link-check.json "$doc"') + '\n'
+    commands['markdown-lint'] = ('git diff --check "$DIFF_BASE" "$DIFF_HEAD" -- website/docs\n' +
+        file_loop(markdown, 'npx --yes markdownlint-cli@0.47.0 --config .github/markdownlint/website-docs.json '
+                  '--rules .github/markdownlint/rules/note-attachment.js -- "$doc"'))
+    if docs:
+        commands['Content'] = ('checker="$RUNNER_TEMP/document-check"\n'
+            'go build -o "$checker" scripts/document/document_check.go\n' +
+            file_loop(docs, '"$checker" "$doc"'))
+    else:
+        commands['Content'] = 'echo "No documentation files changed."'
+    if not full:
+        commands['misspell'] = file_loop(docs,
+            '\"$HOME/.cache/terraform-doc-tools/misspell\" -error '
+            "-i 'bussiness,protocal,attemps,alltime,transfering' \"$doc\"")
+        commands['terrafmt'] = file_loop([p for p in docs if p.endswith('.markdown')],
+            '\"$HOME/.cache/terraform-doc-tools/terrafmt\" diff \"$doc\" --check --pattern \"*.markdown\"')
+    return commands
+
+
 def run_checks(checks, summary_path=None):
     """Wait for all checks even when one fails, then return a combined exit code."""
     with tempfile.TemporaryDirectory(prefix="document-checks-") as directory:
@@ -86,8 +129,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--group", choices=GROUPS, required=True)
     args = parser.parse_args()
+    paths = changed_paths()
+    commands = scoped_commands(paths, full=os.environ.get('DOCUMENT_CHECK_FULL') == 'true')
     return run_checks(
-        {name: COMMANDS[name] for name in GROUPS[args.group]},
+        {name: commands[name] for name in GROUPS[args.group]},
         os.environ.get("GITHUB_STEP_SUMMARY"),
     )
 
