@@ -1,4 +1,4 @@
-package gwlb_test
+package alicloud
 
 import (
 	"fmt"
