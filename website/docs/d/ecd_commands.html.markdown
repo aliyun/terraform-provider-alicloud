@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ecd Commands of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
 
@@ -73,13 +73,13 @@ output "ecd_command_id_1" {
 The following arguments are supported:
 
 * `command_type` - (Optional, ForceNew) The Script Type. Valid values: `RunBatScript`, `RunPowerShellScript`.
-* `content_encoding` - (Optional, ForceNew) That Returns the Data Encoding Method. Valid values: `Base64`, `PlainText`.
+* `content_encoding` - (Optional, ForceNew) The encoding mode of the script content. Valid values: `Base64`, `PlainText`.
 * `ids` - (Optional, ForceNew, Computed)  A list of Command IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `desktop_id` - (Optional, ForceNew) The desktop id of the Desktop.
 * `status` - (Optional, ForceNew) Script Is Executed in the Overall Implementation of the State. Valid values: `Pending`, `Failed`, `PartialFailed`, `Running`, `Stopped`, `Stopping`, `Finished`, `Success`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
