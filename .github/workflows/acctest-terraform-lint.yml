@@ -10,7 +10,14 @@ on:
       - master
     paths:
       - .github/workflows/acctest-terraform-lint.yml
-      - alicloud/**/*.go
+      - '**/*.go'
+      - go.mod
+      - go.sum
+      - .go-version
+      - .golangci.yml
+      - .golangci.yaml
+      - scripts/ci/check_scope.py
+      - scripts/ci/test_check_scope.py
       - scripts/run-tflint.sh
       - scripts/ci/resolve-change-range.sh
       - scripts/ci/resolve-change-range_test.sh
@@ -51,12 +58,33 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Select errcheck packages
+        id: scope
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          if [[ -f scripts/ci/check_scope.py ]]; then
+            python3 scripts/ci/check_scope.py --errcheck-output >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "packages=./..." >> "$GITHUB_OUTPUT"
+          fi
       - name: errcheck
+        if: steps.scope.outputs.needed == 'true'
         uses: reviewdog/action-golangci-lint@284129a3ac23bc5d8ac1522e0b6511df74a8836d # v2.10.2
         with:
           go_version_file: .go-version
           cache: false
-          golangci_lint_flags: '--tests=false --timeout=25m --default=none -E errcheck'
+          golangci_lint_flags: '--tests=false --timeout=25m --default=none -E errcheck --new-from-rev=${{ steps.change-range.outputs.diff_base }} ${{ steps.scope.outputs.packages }}'
           tool_name: errcheck
           level: info
           reviewdog_version: 'v0.21.0'

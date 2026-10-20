@@ -12,6 +12,13 @@ on:
     branches:
       - master
     paths:
+      - scripts/testing/**
+      - scripts/ci/check_scope.py
+      - scripts/ci/run-provider-check.py
+      - scripts/ci/test_check_scope.py
+      - scripts/internal/**
+      - go.mod
+      - go.sum
       - .github/workflows/testing-coverage-rate.yml
       - .go-version
       - alicloud/*.go
@@ -86,5 +93,9 @@ jobs:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
-          go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"
+          if [[ -f scripts/ci/run-provider-check.py && -f scripts/ci/check_scope.py ]]; then
+            python3 scripts/ci/run-provider-check.py testing
+          else
+            git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
+            go run scripts/testing/testing_coverage_rate_check.go -fileNames="diff.out"
+          fi

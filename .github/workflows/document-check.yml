@@ -15,6 +15,11 @@ name: Documentation Checks
       - .github/markdownlint/**
       - .github/workflows/document-check.yml
       - .go-version
+      - go.mod
+      - go.sum
+      - .markdown-link-check.json
+      - scripts/ci/check_scope.py
+      - scripts/ci/test_check_scope.py
       - website/docs/**
       - scripts/ci/run-document-checks.py
       - scripts/ci/test_document_checks.py
@@ -70,6 +75,7 @@ jobs:
           node-version: '20'
       - name: Run documentation checks in parallel
         env:
+          DOCUMENT_CHECK_FULL: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: python3 scripts/ci/run-document-checks.py --group node
@@ -132,6 +138,7 @@ jobs:
           cp "$GOBIN/terrafmt" "$HOME/.cache/terraform-doc-tools/terrafmt"
       - name: Run documentation checks in parallel
         env:
+          DOCUMENT_CHECK_FULL: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: python3 scripts/ci/run-document-checks.py --group go

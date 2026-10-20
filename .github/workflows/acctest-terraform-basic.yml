@@ -222,16 +222,30 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           # Checkout as many commits as needed for the diff
-          fetch-depth: 2
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .go-version
           cache: false
       - name: Attribute Breaking Change Check
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          git diff HEAD^ HEAD > diff.out
-          go run scripts/compatibility/breaking_change_check.go -fileNames="diff.out"
+          if [[ -f scripts/ci/run-provider-check.py && -f scripts/ci/check_scope.py ]]; then
+            python3 scripts/ci/run-provider-check.py breaking
+          else
+            git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
+            go run scripts/compatibility/breaking_change_check.go -fileNames="diff.out"
+          fi
 
   Formatter:
     needs: route
@@ -246,47 +260,44 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           # Checkout as many commits as needed for the diff
-          fetch-depth: 2
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .go-version
           cache: false
 
-      - name: Get dependencies
-        run: |
-          go install golang.org/x/tools/cmd/goimports@v0.24.0
-          go mod tidy
+      - name: Install formatter
+        run: go install golang.org/x/tools/cmd/goimports@v0.24.0
       - name: Golang Formatter Check
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          if [[ $(git diff --name-only HEAD^ HEAD | grep -c "^alicloud/") -lt 1 ]]; then
-            echo -e "\033[33m[WARNING]\033[0m there are no go files were changed, skipped."
-            exit 0
+          if [[ -f scripts/ci/run-format-check.py && -f scripts/ci/check_scope.py ]]; then
+            python3 scripts/ci/run-format-check.py
+          else
+            status=0
+            git diff --name-only -z --no-renames --diff-filter=ACM "$DIFF_BASE" "$DIFF_HEAD" -- 'alicloud/*.go' 'alicloud/**/*.go' > "$RUNNER_TEMP/format-files"
+            while IFS= read -r -d '' path; do
+              [[ -f "$path" ]] || continue
+              for tool in gofmt goimports; do
+                output="$("$tool" -l "$path")"
+                if [[ -n "$output" ]]; then
+                  "$tool" -d "$path"
+                  status=1
+                fi
+              done
+            done < "$RUNNER_TEMP/format-files"
+            exit "$status"
           fi
-          exitCode=0
-          echo "==> Checking that code complies with gofmt and goimports requirements..."
-          diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/")
-          for fileName in ${diffFiles[@]};
-          do
-              if [[ ! -f ${filename} ]]; then
-                  continue
-              fi
-              goimpFile=$(goimports -l ${fileName})
-              if [[ -n ${goimpFile} ]]; then
-                goimports -d ${fileName}
-                exitCode=1
-              fi
-              gofmtFile=$(gofmt -l ${fileName})
-              if [[ -n ${gofmtFile} ]]; then
-                gofmt -d ${fileName}
-                exitCode=1
-              fi
-          done
-          if [[ ${exitCode} -gt 0 ]]; then
-              echo -e "\n\033[31m[Error]\033[0m==> gofmt or goimports needs running on the above files. You can use the command: \`make fmt\` to reformat code. \033[0m"
-              exit 1
-          fi
-          echo -e "==> PASS"
 
 
   Compile:
@@ -302,12 +313,26 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           # Checkout as many commits as needed for the diff
-          fetch-depth: 2
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .go-version
           cache: false
       - name: vet
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          ./scripts/vetcheck.sh
+          if [[ -f scripts/ci/run-vet-check.py && -f scripts/ci/check_scope.py ]]; then
+            python3 scripts/ci/run-vet-check.py
+          else
+            CI_CHECK_BASE="$DIFF_BASE" ./scripts/vetcheck.sh
+          fi

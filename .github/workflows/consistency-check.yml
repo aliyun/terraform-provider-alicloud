@@ -57,6 +57,13 @@ jobs:
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
           CI_BASE_REF: ${{ github.ref_name }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Test CI change scopes
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          if [[ -f scripts/ci/test_check_scope.py && -f scripts/ci/check_scope.py ]]; then
+            python3 -m unittest discover -s scripts/ci -p test_check_scope.py
+          fi
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -115,8 +122,12 @@ jobs:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
-          go run scripts/consistency/consistency_check.go -fileNames="diff.out"
+          if [[ -f scripts/ci/run-provider-check.py && -f scripts/ci/check_scope.py ]]; then
+            python3 scripts/ci/run-provider-check.py consistency
+          else
+            git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
+            go run scripts/consistency/consistency_check.go -fileNames="diff.out"
+          fi
       - name: Save master Go cache
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.cache-restore.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
