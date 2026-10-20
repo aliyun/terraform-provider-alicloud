@@ -62,11 +62,17 @@ jobs:
         with:
           go-version-file: .go-version
           cache: false
+      - name: Test compact Go cache round trip
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 -m unittest discover -s scripts/ci -p test_go_cache.py
       - name: Resolve Go cache paths
         id: go-cache
         shell: bash
         run: |
-          echo "module=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+          # Go rehydrates module sources from these verified downloads.
+          # Do not transfer both the zip files and their expanded copies.
+          echo "module=$(go env GOMODCACHE)/cache/download" >> "$GITHUB_OUTPUT"
           echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
       - name: Restore trusted Go cache
         if: ${{ needs.route.outputs.classification == 'trusted' }}
@@ -76,7 +82,7 @@ jobs:
           path: |
             ${{ steps.go-cache.outputs.module }}
             ${{ steps.go-cache.outputs.build }}
-          key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
+          key: provider-go-download-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('go.mod', 'go.sum') }}
       - name: Run consistency check
         env:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
@@ -91,4 +97,27 @@ jobs:
           path: |
             ${{ steps.go-cache.outputs.module }}
             ${{ steps.go-cache.outputs.build }}
-          key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
+          key: provider-go-download-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('go.mod', 'go.sum') }}
+      - name: Restore master tfproviderlint binary
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' }}
+        id: tfproviderlint-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/terraform-ci-tools/tfproviderlint
+          key: tfproviderlint-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-v0.31.0
+      - name: Build master tfproviderlint binary
+        id: tfproviderlint-build
+        continue-on-error: true
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.tfproviderlint-cache.outputs.cache-hit != 'true' }}
+        env:
+          GOBIN: ${{ runner.temp }}/tfproviderlint-bin
+        run: |
+          mkdir -p "$GOBIN" "$HOME/.cache/terraform-ci-tools"
+          go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
+          cp "$GOBIN/tfproviderlint" "$HOME/.cache/terraform-ci-tools/tfproviderlint"
+      - name: Save master tfproviderlint binary
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.tfproviderlint-cache.outputs.cache-hit != 'true' && steps.tfproviderlint-build.outcome == 'success' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/terraform-ci-tools/tfproviderlint
+          key: tfproviderlint-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-v0.31.0

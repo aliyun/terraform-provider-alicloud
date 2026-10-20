@@ -69,7 +69,9 @@ jobs:
         id: go-cache
         shell: bash
         run: |
-          echo "module=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+          # Go rehydrates module sources from these verified downloads.
+          # Do not transfer both the zip files and their expanded copies.
+          echo "module=$(go env GOMODCACHE)/cache/download" >> "$GITHUB_OUTPUT"
           echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
       - name: Restore trusted Go cache
         if: ${{ needs.route.outputs.classification == 'trusted' }}
@@ -78,7 +80,7 @@ jobs:
           path: |
             ${{ steps.go-cache.outputs.module }}
             ${{ steps.go-cache.outputs.build }}
-          key: provider-go-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('**/go.sum') }}
+          key: provider-go-download-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('go.mod', 'go.sum') }}
       - name: Checking testing coverage rate
         env:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
