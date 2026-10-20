@@ -3,15 +3,16 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -48,6 +49,7 @@ func TestAccAliCloudConfigDelivery_OSS(t *testing.T) {
 					"description":                            "${var.name}",
 					"configuration_snapshot":                 "true",
 					"configuration_item_change_notification": "true",
+					"delivery_snapshot_time":                 "04:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -57,6 +59,7 @@ func TestAccAliCloudConfigDelivery_OSS(t *testing.T) {
 						"description":                            name,
 						"configuration_snapshot":                 "true",
 						"configuration_item_change_notification": "true",
+						"delivery_snapshot_time":                 "04:00Z",
 					}),
 				),
 			},
@@ -124,11 +127,22 @@ func TestAccAliCloudConfigDelivery_OSS(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"delivery_snapshot_time": "16:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_snapshot_time": "16:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"delivery_channel_name":                  "${var.name}",
 					"delivery_channel_target_arn":            "${local.bucket}",
 					"description":                            "${var.name}",
 					"configuration_snapshot":                 "true",
 					"configuration_item_change_notification": "true",
+					"delivery_snapshot_time":                 "04:00Z",
 					"status":                                 "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -138,6 +152,7 @@ func TestAccAliCloudConfigDelivery_OSS(t *testing.T) {
 						"description":                            name,
 						"configuration_snapshot":                 "true",
 						"configuration_item_change_notification": "true",
+						"delivery_snapshot_time":                 "04:00Z",
 						"status":                                 "1",
 					}),
 				),
@@ -313,6 +328,7 @@ func TestAccAliCloudConfigDelivery_SLS(t *testing.T) {
 					"delivery_channel_target_arn":            "${local.sls}",
 					"description":                            "${var.name}",
 					"non_compliant_notification":             "true",
+					"compliant_snapshot":                     "true",
 					"configuration_item_change_notification": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -322,6 +338,7 @@ func TestAccAliCloudConfigDelivery_SLS(t *testing.T) {
 						"delivery_channel_target_arn":            CHECKSET,
 						"description":                            name,
 						"non_compliant_notification":             "true",
+						"compliant_snapshot":                     "true",
 						"configuration_item_change_notification": "true",
 					}),
 				),
@@ -385,6 +402,16 @@ func TestAccAliCloudConfigDelivery_SLS(t *testing.T) {
 					testAccCheck(map[string]string{
 						"non_compliant_notification":             "true",
 						"configuration_item_change_notification": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compliant_snapshot": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compliant_snapshot": "false",
 					}),
 				),
 			},
@@ -485,6 +512,35 @@ resource "alicloud_log_store" "change" {
 
 const configDeliveryChannelCondition = `[\n{\n\"filterType\":\"ResourceType\",\n\"values\":[\n\"ACS::CEN::CenInstance\",\n],\n\"multiple\":true\n}\n]\n`
 
+// testUnitConfigDeliveryMockMeta builds a hermetic AliyunClient with a static
+// access_key credential, SkipRegionValidation and AccountType="test" so
+// config.Client() performs no network call and no real cloud credential is
+// required. The "config" product endpoint is pre-loaded into the sync.Map so
+// loadApiEndpoint returns immediately. RPCs are intercepted at the DoRequest
+// leaf (the non-inlined *tea_rpc.Client method) by the test's gomonkey mocks,
+// mirroring the existing TestUnitAliCloudCdnServiceRead hermetic pattern; any
+// unmocked RPC fails at the network boundary instead of contacting the cloud.
+func testUnitConfigDeliveryMockMeta(t *testing.T) *connectivity.AliyunClient {
+	t.Helper()
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	meta, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("config", "config.aliyuncs.com")
+	return meta
+}
+
 // lintignore: R001
 func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	p := Provider().ResourcesMap
@@ -501,6 +557,8 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 		"configuration_snapshot":                 true,
 		"configuration_item_change_notification": true,
 		"non_compliant_notification":             true,
+		"compliant_snapshot":                     true,
+		"delivery_snapshot_time":                 "04:00Z",
 		"status":                                 1,
 	}
 	for key, value := range attributes {
@@ -512,14 +570,15 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			log.Printf("[ERROR] the field %s setting error", key)
 		}
 	}
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-
-	rawClient = rawClient.(*connectivity.AliyunClient)
+	// Hermetic client built with a static access_key credential and
+	// SkipRegionValidation + AccountType="test" so config.Client() performs no
+	// network call and no real cloud credential is needed. The "config" product
+	// endpoint is pre-loaded into the sync.Map so loadApiEndpoint returns
+	// immediately. Every RPC is intercepted by a DoRequest mock at the RPC leaf
+	// (the non-inlined *tea_rpc.Client method); any unmocked RPC fails at the
+	// network boundary instead of contacting the real cloud.
+	rawClient := testUnitConfigDeliveryMockMeta(t)
+	var err error
 	ReadMockResponse := map[string]interface{}{
 		"DeliveryChannel": map[string]interface{}{
 			"Status":                              1,
@@ -534,6 +593,8 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			"DeliveryChannelCondition":            "CreateConfigDeliveryValue",
 			"NonCompliantNotification":            true,
 			"ConfigurationItemChangeNotification": true,
+			"CompliantSnapshot":                   true,
+			"DeliverySnapshotTime":                "04:00Z",
 		},
 	}
 	CreateMockResponse := map[string]interface{}{
@@ -557,7 +618,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 		return ReadMockResponse, nil
 	}
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -569,11 +630,13 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
+	var createBody map[string]interface{}
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if *action == "CreateConfigDeliveryChannel" {
+				createBody = body
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -600,6 +663,9 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 				_ = dCompare.Set(key, value)
 			}
 			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+			// Verify the real request values sent to CreateConfigDeliveryChannel.
+			assert.Equal(t, true, createBody["CompliantSnapshot"], "Create must send CompliantSnapshot=true")
+			assert.Equal(t, "04:00Z", createBody["DeliverySnapshotTime"], "Create must send DeliverySnapshotTime=04:00Z")
 		}
 		if retryIndex >= len(errorCodes)-1 {
 			break
@@ -607,7 +673,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	}
 
 	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -627,6 +693,8 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 		"configuration_snapshot":                 false,
 		"configuration_item_change_notification": false,
 		"non_compliant_notification":             false,
+		"compliant_snapshot":                     false,
+		"delivery_snapshot_time":                 "16:00Z",
 		"status":                                 0,
 	}
 	diff, err := newInstanceDiff("alicloud_config_delivery", attributes, attributesDiff, dInit.State())
@@ -634,6 +702,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 		t.Error(err)
 	}
 	dExisted, _ = schema.InternalMap(p["alicloud_config_delivery"].Schema).Data(dInit.State(), diff)
+	var updateBody map[string]interface{}
 	ReadMockResponseDiff = map[string]interface{}{
 		"DeliveryChannel": map[string]interface{}{
 			"Status":                              0,
@@ -646,13 +715,16 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 			"DeliveryChannelCondition":            "UpdateConfigDeliveryValue",
 			"NonCompliantNotification":            false,
 			"ConfigurationItemChangeNotification": false,
+			"CompliantSnapshot":                   false,
+			"DeliverySnapshotTime":                "16:00Z",
 		},
 	}
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
-		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if *action == "UpdateConfigDeliveryChannel" {
+				updateBody = body
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -678,6 +750,9 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 				_ = dCompare.Set(key, value)
 			}
 			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+			// Verify the real request values sent to UpdateConfigDeliveryChannel.
+			assert.Equal(t, false, updateBody["CompliantSnapshot"], "Update must send CompliantSnapshot=false")
+			assert.Equal(t, "16:00Z", updateBody["DeliverySnapshotTime"], "Update must send DeliverySnapshotTime=16:00Z")
 		}
 		if retryIndex >= len(errorCodes)-1 {
 			break
@@ -693,7 +768,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
-		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if *action == "GetConfigDeliveryChannel" {
 				switch errorCode {
 				case "{}":
@@ -721,7 +796,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	}
 
 	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewConfigClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -741,7 +816,7 @@ func TestUnitAlicloudConfigDelivery(t *testing.T) {
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if *action == "DeleteConfigDeliveryChannel" {
 				switch errorCode {
 				case "NonRetryableError":

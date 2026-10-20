@@ -34,6 +34,14 @@ func resourceAliCloudConfigDelivery() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"compliant_snapshot": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"delivery_snapshot_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"delivery_channel_condition": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -97,6 +105,12 @@ func resourceAliCloudConfigDeliveryCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("configuration_snapshot"); ok {
 		request["ConfigurationSnapshot"] = v
 	}
+	if v, ok := d.GetOk("compliant_snapshot"); ok {
+		request["CompliantSnapshot"] = v
+	}
+	if v, ok := d.GetOk("delivery_snapshot_time"); ok {
+		request["DeliverySnapshotTime"] = v
+	}
 	if v, ok := d.GetOk("delivery_channel_condition"); ok {
 		request["DeliveryChannelCondition"] = v
 	}
@@ -158,6 +172,12 @@ func resourceAliCloudConfigDeliveryRead(d *schema.ResourceData, meta interface{}
 	if objectRaw["ConfigurationSnapshot"] != nil {
 		d.Set("configuration_snapshot", objectRaw["ConfigurationSnapshot"])
 	}
+	if objectRaw["CompliantSnapshot"] != nil {
+		d.Set("compliant_snapshot", objectRaw["CompliantSnapshot"])
+	}
+	if objectRaw["DeliverySnapshotTime"] != nil {
+		d.Set("delivery_snapshot_time", objectRaw["DeliverySnapshotTime"])
+	}
 	if objectRaw["DeliveryChannelCondition"] != nil {
 		d.Set("delivery_channel_condition", objectRaw["DeliveryChannelCondition"])
 	}
@@ -212,6 +232,16 @@ func resourceAliCloudConfigDeliveryUpdate(d *schema.ResourceData, meta interface
 	if !d.IsNewResource() && d.HasChange("configuration_snapshot") {
 		update = true
 		request["ConfigurationSnapshot"] = d.Get("configuration_snapshot")
+	}
+
+	if !d.IsNewResource() && d.HasChange("compliant_snapshot") {
+		update = true
+		request["CompliantSnapshot"] = d.Get("compliant_snapshot")
+	}
+
+	if !d.IsNewResource() && d.HasChange("delivery_snapshot_time") {
+		update = true
+		request["DeliverySnapshotTime"] = d.Get("delivery_snapshot_time")
 	}
 
 	if !d.IsNewResource() && d.HasChange("delivery_channel_condition") {
