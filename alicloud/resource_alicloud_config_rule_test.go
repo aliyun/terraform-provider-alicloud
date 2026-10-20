@@ -1405,3 +1405,146 @@ func TestUnitAliCloudConfigRule(t *testing.T) {
 	}
 
 }
+
+// collection-order: bypass resource_types_scope -- stock attribute not touched by this change; the Config managed rule (source_identifier ecs-instances-in-vpc) rejects a second resource type with Invalid.ResourceTypesScope.Value (remote ACC task 16169), so no apply of at least two distinct valid members can be constructed
+func TestAccAliCloudConfigRule_scope(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_rule.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigRuleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccConfigRuleScope%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigRuleBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create with two distinct members per tag scope so a convergent
+				// member permutation can be applied in the following steps.
+				Config: testAccConfig(map[string]interface{}{
+					"rule_name":                        name,
+					"risk_level":                       "1",
+					"resource_types_scope":             []string{"ACS::ECS::Instance"},
+					"config_rule_trigger_types":        "ConfigurationItemChangeNotification",
+					"source_identifier":                "ecs-instances-in-vpc",
+					"source_owner":                     "ALIYUN",
+					"exclude_region_ids_scope":         "cn-hangzhou",
+					"exclude_resource_group_ids_scope": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"extend_content":                   "{\\\"fixedHour\\\":\\\"13\\\"}",
+					"tag_key_logic_scope":              "AND",
+					"tags_scope": []map[string]interface{}{
+						{"tag_key": "tfTestTagKeyA", "tag_value": "tfTestTagValA"},
+						{"tag_key": "tfTestTagKeyB", "tag_value": "tfTestTagValB"},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{"tag_key": "tfTestExclKeyA", "tag_value": "tfTestExclValA"},
+						{"tag_key": "tfTestExclKeyB", "tag_value": "tfTestExclValB"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_name":                        name,
+						"resource_types_scope.#":           "1",
+						"config_rule_trigger_types":        "ConfigurationItemChangeNotification",
+						"exclude_region_ids_scope":         "cn-hangzhou",
+						"exclude_resource_group_ids_scope": CHECKSET,
+						"extend_content":                   CHECKSET,
+						"tag_key_logic_scope":              "AND",
+						"tags_scope.#":                     "2",
+						"tags_scope.0.tag_key":             "tfTestTagKeyA",
+						"tags_scope.0.tag_value":           "tfTestTagValA",
+						"tags_scope.1.tag_key":             "tfTestTagKeyB",
+						"tags_scope.1.tag_value":           "tfTestTagValB",
+						"exclude_tags_scope.#":             "2",
+						"exclude_tags_scope.0.tag_key":     "tfTestExclKeyA",
+						"exclude_tags_scope.0.tag_value":   "tfTestExclValA",
+						"exclude_tags_scope.1.tag_key":     "tfTestExclKeyB",
+						"exclude_tags_scope.1.tag_value":   "tfTestExclValB",
+					}),
+				),
+			},
+			{
+				// Convergent apply reordering tags_scope members only; an empty
+				// post-apply plan proves the resource converged on the reordered
+				// members (TypeList reorder coverage).
+				Config: testAccConfig(map[string]interface{}{
+					"tags_scope": []map[string]interface{}{
+						{"tag_key": "tfTestTagKeyB", "tag_value": "tfTestTagValB"},
+						{"tag_key": "tfTestTagKeyA", "tag_value": "tfTestTagValA"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags_scope.#":                 "2",
+						"tags_scope.0.tag_key":         "tfTestTagKeyB",
+						"tags_scope.0.tag_value":       "tfTestTagValB",
+						"tags_scope.1.tag_key":         "tfTestTagKeyA",
+						"tags_scope.1.tag_value":       "tfTestTagValA",
+						"exclude_tags_scope.#":         "2",
+						"exclude_tags_scope.0.tag_key": "tfTestExclKeyA",
+						"exclude_tags_scope.1.tag_key": "tfTestExclKeyB",
+					}),
+				),
+			},
+			{
+				// Convergent apply reordering exclude_tags_scope members only.
+				Config: testAccConfig(map[string]interface{}{
+					"exclude_tags_scope": []map[string]interface{}{
+						{"tag_key": "tfTestExclKeyB", "tag_value": "tfTestExclValB"},
+						{"tag_key": "tfTestExclKeyA", "tag_value": "tfTestExclValA"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"exclude_tags_scope.#":           "2",
+						"exclude_tags_scope.0.tag_key":   "tfTestExclKeyB",
+						"exclude_tags_scope.0.tag_value": "tfTestExclValB",
+						"exclude_tags_scope.1.tag_key":   "tfTestExclKeyA",
+						"exclude_tags_scope.1.tag_value": "tfTestExclValA",
+						"tags_scope.#":                   "2",
+						"tags_scope.0.tag_key":           "tfTestTagKeyB",
+						"tags_scope.1.tag_key":           "tfTestTagKeyA",
+					}),
+				),
+			},
+			{
+				// Update the non-tag scope attributes; the reordered tag scopes
+				// persist unchanged from the prior step.
+				Config: testAccConfig(map[string]interface{}{
+					"config_rule_trigger_types":        "ScheduledNotification",
+					"resource_ids_scope":               "${alicloud_instance.default.id}",
+					"exclude_region_ids_scope":         "cn-beijing",
+					"exclude_resource_group_ids_scope": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"extend_content":                   "{\\\"fixedHour\\\":\\\"14\\\"}",
+					"tag_key_logic_scope":              "OR",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config_rule_trigger_types":        "ScheduledNotification",
+						"resource_ids_scope":               CHECKSET,
+						"exclude_region_ids_scope":         "cn-beijing",
+						"exclude_resource_group_ids_scope": CHECKSET,
+						"extend_content":                   CHECKSET,
+						"tag_key_logic_scope":              "OR",
+						"tags_scope.#":                     "2",
+						"exclude_tags_scope.#":             "2",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
