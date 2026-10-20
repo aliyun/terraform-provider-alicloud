@@ -40,10 +40,10 @@ func resourceAliCloudAlikafkaTopic() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.StringIsJSON,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
-					return equal
-				},
+				// The service reports server-managed keys the configuration never declares, so the
+				// generated whole-document comparison never converges. The subset comparator lives in
+				// diff_suppress_funcs.go to keep the generated file's diff minimal.
+				DiffSuppressFunc: alikafkaTopicConfigsDiffSuppressFunc,
 			},
 			"create_time": {
 				Type:     schema.TypeInt,
