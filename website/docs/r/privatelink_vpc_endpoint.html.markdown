@@ -71,6 +71,55 @@ resource "alicloud_privatelink_vpc_endpoint" "default" {
 }
 ```
 
+### Endpoint Zone
+
+`alicloud_privatelink_vpc_endpoint` and `alicloud_privatelink_vpc_endpoint_zone` are separate resources. Create the endpoint first, then add a zone to it with `alicloud_privatelink_vpc_endpoint_zone`, referencing the endpoint through `endpoint_id`. The vSwitch must be in the same zone that is added to the endpoint.
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "ap-southeast-5"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "172.16.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_privatelink_vpc_endpoint" "default" {
+  vpc_id             = alicloud_vpc.default.id
+  vpc_endpoint_name  = var.name
+  endpoint_type      = "Interface"
+  service_name       = "com.aliyuncs.privatelink.ap-southeast-5.oss"
+  security_group_ids = [alicloud_security_group.default.id]
+}
+
+resource "alicloud_privatelink_vpc_endpoint_zone" "default" {
+  endpoint_id = alicloud_privatelink_vpc_endpoint.default.id
+  vswitch_id  = alicloud_vswitch.default.id
+  zone_id     = data.alicloud_zones.default.zones.0.id
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_privatelink_vpc_endpoint&spm=docs.r.privatelink_vpc_endpoint.example&intl_lang=EN_US)
 
 ## Argument Reference
