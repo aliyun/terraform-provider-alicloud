@@ -142,6 +142,12 @@ When the value of> ChargeType is **PrePaid**, this parameter is available and mu
 * `ingress_vpc_id` - (Optional, Available since v1.246.0) The VpcID which the client at.
 * `ingress_vpc_owner_id` - (Optional, Available since v1.246.0) The user ID that the VpcID of `ingress_vpc_id` belongs to.
 * `ingress_vswitch_id` - (Optional, Available since v1.246.0) The VSwitch ID that belongs to the Vpc of `ingress_vpc_id`. Required when `ingress_vpc_id` is set.
+* `auto_pay` - (Optional) Specifies whether to automatically pay for the instance. This parameter takes effect only when the payment type is Subscription and the instance spec is modified.
+* `delete_vpc_access` - (Optional) Specifies whether to delete the instance client VPC. Set to `true` to delete the client VPC access; set to `false` to set or modify the client VPC.
+* `maintain_start_time` - (Optional) The start time of the maintenance window of the instance.
+* `maintain_end_time` - (Optional) The end time of the maintenance window of the instance.
+* `intranet_segments` - (Optional) The intranet CIDR segments of the instance.
+* `tags` - (Optional, ForceNew) The tags of the resource.
 
 ### `zone_vswitch_security_group`
 
