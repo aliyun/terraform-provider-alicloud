@@ -2,13 +2,117 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
+	"strings"
 	"testing"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_polardb_account", &resource.Sweeper{
+		Name: "alicloud_polardb_account",
+		F:    testSweepPolarDBAccounts,
+	})
+}
+
+// testSweepPolarDBAccounts walks every PolarDB cluster in the region and
+// deletes the accounts on it. A cluster whose description carries a
+// do-not-delete marker (protectedSweepVpcName) is skipped entirely, as is any
+// account whose name carries such a marker; both checks run in every mode so
+// SWEEP_ALL cannot bypass them. When SWEEP_ALL is unset, only accounts on
+// clusters (and with names) matching the standard test prefixes are touched.
+// DynamoDB-type accounts are skipped because DeleteAccount does not support
+// them (see resourceAlicloudPolarDbAccountDelete). Per-instance failures are
+// logged and non-fatal so one bad cluster cannot block the rest of the sweep.
+func testSweepPolarDBAccounts(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{"tf-testAcc", "tf_testAcc"}
+
+	clusters, err := listPolarDBClustersForSweep(client)
+	if err != nil {
+		log.Printf("[ERROR] Failed to list PolarDB clusters: %s", err)
+		return nil
+	}
+
+	for _, c := range clusters {
+		clusterName := c.DBClusterDescription
+		clusterId := c.DBClusterId
+		if protectedSweepVpcName(clusterName) {
+			log.Printf("[INFO] Skipping PolarDB accounts on NODELETING cluster: %s (%s)", clusterName, clusterId)
+			continue
+		}
+		if !sweepAll() {
+			match := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(clusterName), strings.ToLower(prefix)) {
+					match = true
+					break
+				}
+			}
+			if !match {
+				continue
+			}
+		}
+
+		areq := polardb.CreateDescribeAccountsRequest()
+		areq.RegionId = client.RegionId
+		areq.DBClusterId = clusterId
+		raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+			return polardbClient.DescribeAccounts(areq)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to list PolarDB accounts on cluster %s: %s", clusterId, err)
+			continue
+		}
+		aresp, _ := raw.(*polardb.DescribeAccountsResponse)
+		if aresp == nil {
+			continue
+		}
+		for _, acc := range aresp.Accounts {
+			// DynamoDB-type accounts cannot be deleted via DeleteAccount.
+			if acc.AccountType == "DynamoDB" {
+				continue
+			}
+			if protectedSweepVpcName(acc.AccountName) {
+				log.Printf("[INFO] Skipping PolarDB account (NODELETING): %s on %s", acc.AccountName, clusterId)
+				continue
+			}
+			if !sweepAll() {
+				match := false
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(acc.AccountName), strings.ToLower(prefix)) {
+						match = true
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
+			log.Printf("[INFO] Deleting PolarDB account: %s on cluster %s", acc.AccountName, clusterId)
+			dreq := polardb.CreateDeleteAccountRequest()
+			dreq.RegionId = client.RegionId
+			dreq.DBClusterId = clusterId
+			dreq.AccountName = acc.AccountName
+			if _, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+				return polardbClient.DeleteAccount(dreq)
+			}); err != nil {
+				log.Printf("[ERROR] Failed to delete PolarDB account %s on %s: %s", acc.AccountName, clusterId, err)
+			}
+		}
+	}
+	return nil
+}
 
 // Test PolarDb Account. >>> Resource test cases, automatically generated.
 // Case  Account用例_PG_高权限账号 11819
