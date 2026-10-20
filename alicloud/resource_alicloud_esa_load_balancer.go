@@ -40,6 +40,10 @@ func resourceAliCloudEsaLoadBalancer() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"origin_level_retry": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -405,6 +409,10 @@ func resourceAliCloudEsaLoadBalancerCreate(d *schema.ResourceData, meta interfac
 		if failoverAcrossPools1 != nil && failoverAcrossPools1 != "" {
 			dataList2["FailoverAcrossPools"] = failoverAcrossPools1
 		}
+		originLevelRetry1, _ := jsonpath.Get("$[0].origin_level_retry", v)
+		if originLevelRetry1 != nil && originLevelRetry1 != "" {
+			dataList2["OriginLevelRetry"] = originLevelRetry1
+		}
 
 		dataList2Json, err := json.Marshal(dataList2)
 		if err != nil {
@@ -486,6 +494,7 @@ func resourceAliCloudEsaLoadBalancerRead(d *schema.ResourceData, meta interface{
 	}
 	if len(adaptiveRoutingRaw) > 0 {
 		adaptiveRoutingMap["failover_across_pools"] = adaptiveRoutingRaw["FailoverAcrossPools"]
+		adaptiveRoutingMap["origin_level_retry"] = adaptiveRoutingRaw["OriginLevelRetry"]
 
 		adaptiveRoutingMaps = append(adaptiveRoutingMaps, adaptiveRoutingMap)
 	}
@@ -771,6 +780,10 @@ func resourceAliCloudEsaLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			failoverAcrossPools1, _ := jsonpath.Get("$[0].failover_across_pools", v)
 			if failoverAcrossPools1 != nil && (d.HasChange("adaptive_routing.0.failover_across_pools") || failoverAcrossPools1 != "") {
 				dataList2["FailoverAcrossPools"] = failoverAcrossPools1
+			}
+			originLevelRetry1, _ := jsonpath.Get("$[0].origin_level_retry", v)
+			if originLevelRetry1 != nil && (d.HasChange("adaptive_routing.0.origin_level_retry") || originLevelRetry1 != "") {
+				dataList2["OriginLevelRetry"] = originLevelRetry1
 			}
 
 			dataList2Json, err := json.Marshal(dataList2)
