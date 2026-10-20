@@ -902,7 +902,9 @@ func AliCloudCloudFirewallAddressBookBasicDependence0(name string) string {
 }
 
 // Exercise the real Read and SDK diff together: API response order must not
-// create changes, while membership, multiplicity and complete values still do.
+// create changes, while membership and complete values still do. An address
+// book is a set, so duplicate multiplicity in either side is non-semantic and
+// must not produce a change.
 func TestUnitCloudFirewallAddressBookRefreshDiff(t *testing.T) {
 	a, b, c := "192.0.2.1/32", "198.51.100.1/32", "203.0.113.1/32"
 	for _, tc := range []struct {
@@ -917,7 +919,7 @@ func TestUnitCloudFirewallAddressBookRefreshDiff(t *testing.T) {
 		{"added", []interface{}{a, b}, []interface{}{c, b, a}, true},
 		{"removed", []interface{}{a, b, c}, []interface{}{c, a}, true},
 		{"replaced", []interface{}{a, b}, []interface{}{a, c}, true},
-		{"duplicate count", []interface{}{a, a, b}, []interface{}{a, b, b}, true},
+		{"duplicate multiplicity", []interface{}{a, a, b}, []interface{}{a, b, b}, false},
 		{"description", []interface{}{a + " web", b}, []interface{}{b, a + " database"}, true},
 		{"whitespace", []interface{}{a + " web", b}, []interface{}{b, a + "  web"}, true},
 		{"case", []interface{}{"example.com Web", b}, []interface{}{b, "example.com web"}, true},
@@ -1075,6 +1077,93 @@ func TestUnitCloudFirewallAddressBookApplyOrder(t *testing.T) {
 	}
 }
 
+// A configuration that repeats an IP must converge against the de-duplicated
+// remote: the plan shows no duplicate addition (AC1) and, because the plan is
+// empty, no ModifyAddressBook call reaches the API.
+func TestUnitCloudFirewallAddressBookDuplicateConfig(t *testing.T) {
+	r := resourceAliCloudCloudFirewallAddressBook()
+	a, b := "192.0.2.1/32", "198.51.100.1/32"
+	config := map[string]interface{}{"group_name": "test", "group_type": "ip", "description": "test", "address_list": []interface{}{a, b, a}}
+	d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{"group_name": "test", "group_type": "ip", "description": "test", "address_list": []interface{}{a, b}})
+	d.SetId("address-book")
+
+	sentAddressList := ""
+	client := cloudFirewallAddressBookTestClient(t, []interface{}{a, b}, func(req *http.Request) {
+		if err := req.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		if req.Form.Get("Action") == "ModifyAddressBook" {
+			sentAddressList = req.Form.Get("AddressList")
+		}
+	})
+
+	diff, err := r.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(config), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff != nil && !diff.Empty() {
+		t.Fatalf("duplicate configuration must not produce a plan: %#v", diff)
+	}
+	if _, diags := r.Apply(context.Background(), d.State(), diff, client); diags.HasError() {
+		t.Fatalf("apply duplicate configuration: %v", diags)
+	}
+	if sentAddressList != "" {
+		t.Fatalf("no-op duplicate plan must not call ModifyAddressBook, got AddressList=%q", sentAddressList)
+	}
+}
+
+// When membership genuinely changes, duplicate entries in the configuration
+// must be de-duplicated before reaching the API and before entering state, and
+// the configuration must converge after apply so no perpetual diff remains.
+func TestUnitCloudFirewallAddressBookDuplicateApply(t *testing.T) {
+	r := resourceAliCloudCloudFirewallAddressBook()
+	a, b := "192.0.2.1/32", "198.51.100.1/32"
+	d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{"group_name": "test", "group_type": "ip", "description": "test", "address_list": []interface{}{a}})
+	d.SetId("address-book")
+	// Add b twice: membership changes, but the duplicate is non-semantic.
+	config := map[string]interface{}{"group_name": "test", "group_type": "ip", "description": "test", "address_list": []interface{}{a, b, b}}
+
+	sentAddressList := ""
+	client := cloudFirewallAddressBookTestClient(t, []interface{}{a, b}, func(req *http.Request) {
+		if err := req.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		if req.Form.Get("Action") == "ModifyAddressBook" {
+			sentAddressList = req.Form.Get("AddressList")
+		}
+	})
+
+	diff, err := r.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(config), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff == nil || diff.Empty() {
+		t.Fatal("membership change must produce a plan")
+	}
+	applied, diags := r.Apply(context.Background(), d.State(), diff, client)
+	if diags.HasError() {
+		t.Fatalf("apply: %v", diags)
+	}
+	if want := strings.Join([]string{a, b}, ","); sentAddressList != want {
+		t.Fatalf("API received AddressList %q, want de-duplicated %q", sentAddressList, want)
+	}
+	if applied.Attributes["address_list.#"] != "2" || applied.Attributes["address_list.0"] != a || applied.Attributes["address_list.1"] != b {
+		t.Fatalf("state must keep one occurrence per address: %#v", applied.Attributes)
+	}
+	// After refresh the plan must be empty: no perpetual diff from the duplicate.
+	refreshed, diags := r.RefreshWithoutUpgrade(context.Background(), applied, client)
+	if diags.HasError() {
+		t.Fatalf("%v", diags)
+	}
+	diff, err = r.Diff(context.Background(), refreshed, terraform.NewResourceConfigRaw(config), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff != nil && !diff.Empty() {
+		t.Fatalf("duplicate configuration must converge after apply: %#v", diff)
+	}
+}
+
 func TestAccAliCloudCloudFirewallAddressBook_addressListOrder(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_address_book.default"
@@ -1211,7 +1300,9 @@ func TestUnitCloudFirewallAddressBookImportOrder(t *testing.T) {
 	if diags.HasError() {
 		t.Fatalf("%v", diags)
 	}
-	for key, want := range map[string]string{"address_list.#": "3", "address_list.0": "198.51.100.1/32", "address_list.1": "192.0.2.1/32", "address_list.2": "192.0.2.1/32"} {
+	// The API returned a duplicate 192.0.2.1/32; the state keeps one of each,
+	// preserving the remote order observed on import.
+	for key, want := range map[string]string{"address_list.#": "2", "address_list.0": "198.51.100.1/32", "address_list.1": "192.0.2.1/32"} {
 		if got := refreshed.Attributes[key]; got != want {
 			t.Fatalf("%s=%q want %q", key, got, want)
 		}
@@ -1227,7 +1318,9 @@ func TestUnitCloudFirewallAddressBookNewOccurrencesOrder(t *testing.T) {
 	if diags.HasError() {
 		t.Fatalf("%v", diags)
 	}
-	for key, want := range map[string]string{"address_list.#": "3", "address_list.0": "192.0.2.1/32", "address_list.1": "198.51.100.1/32", "address_list.2": "192.0.2.1/32"} {
+	// The API returned a duplicate 192.0.2.1/32; the surviving address keeps its
+	// configured position and the new address follows, with no duplicate in state.
+	for key, want := range map[string]string{"address_list.#": "2", "address_list.0": "192.0.2.1/32", "address_list.1": "198.51.100.1/32"} {
 		if got := refreshed.Attributes[key]; got != want {
 			t.Fatalf("%s=%q want %q", key, got, want)
 		}
