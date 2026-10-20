@@ -1,25 +1,33 @@
-package alicloud
+package cloudfirewall
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudCloudFirewallInstanceV2() *schema.Resource {
+const cloudFirewallInstancePaymentTypeChangeError = "cannot change payment_type of Cloud Firewall instance %s from %s to %s: converting the billing method of an existing instance is not supported by the API. Convert it in the Cloud Firewall console (Overview -> More -> Convert Pay-As-You-Go to Subscription, or Convert Subscription to Pay-As-You-Go) by following https://help.aliyun.com/cloud-firewall/cloudfirewall/product-overview/smoothly-change-the-billing-method-between-pay-as-you-go-and-subscription, then align payment_type, product_type and spec in the configuration or import the converted instance. The existing instance is kept unchanged (no destroy or recreate)."
+
+func ResourceCloudFirewallInstanceV2() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudCloudFirewallInstanceV2Create,
-		Read:   resourceAliCloudCloudFirewallInstanceV2Read,
-		Update: resourceAliCloudCloudFirewallInstanceV2Update,
-		Delete: resourceAliCloudCloudFirewallInstanceV2Delete,
+		Create: resourceInstanceV2Create,
+		Read:   resourceInstanceV2Read,
+		Update: resourceInstanceV2Update,
+		Delete: resourceInstanceV2Delete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: resourceInstanceV2CustomizeDiff,
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
@@ -42,13 +50,12 @@ func resourceAliCloudCloudFirewallInstanceV2() *schema.Resource {
 			"modify_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Upgrade", "Downgrade"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Upgrade", "Downgrade"}, false),
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"period": {
 				Type:     schema.TypeInt,
@@ -58,13 +65,13 @@ func resourceAliCloudCloudFirewallInstanceV2() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"cfw"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"cfw"}, false),
 			},
 			"product_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"cfw_elasticity_public_cn", "cfw_elasticity_public_intl", "cfw_sub_public_cn", "cfw_sub_public_intl"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"cfw_elasticity_public_cn", "cfw_elasticity_public_intl", "cfw_sub_public_cn", "cfw_sub_public_intl"}, false),
 			},
 			"release_time": {
 				Type:     schema.TypeString,
@@ -92,7 +99,7 @@ func resourceAliCloudCloudFirewallInstanceV2() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"payg_version", "premium_version", "enterprise_version", "ultimate_version"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"payg_version", "premium_version", "enterprise_version", "ultimate_version"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -106,7 +113,23 @@ func resourceAliCloudCloudFirewallInstanceV2() *schema.Resource {
 	}
 }
 
-func resourceAliCloudCloudFirewallInstanceV2Create(d *schema.ResourceData, meta interface{}) error {
+// resourceInstanceV2CustomizeDiff rejects a billing change at plan time when
+// product_type or spec (both ForceNew) change in the same plan. Such a
+// combination requires a replacement, which would release the existing
+// instance and bypass the Update guard instead of failing with the console
+// conversion guidance.
+func resourceInstanceV2CustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+	if d.Id() == "" || !d.HasChange("payment_type") {
+		return nil
+	}
+	if !d.HasChange("product_type") && !d.HasChange("spec") {
+		return nil
+	}
+	oldPaymentType, newPaymentType := d.GetChange("payment_type")
+	return errs.Error(cloudFirewallInstancePaymentTypeChangeError, d.Id(), oldPaymentType, newPaymentType)
+}
+
+func resourceInstanceV2Create(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -117,7 +140,7 @@ func resourceAliCloudCloudFirewallInstanceV2Create(d *schema.ResourceData, meta 
 	var err error
 	request = make(map[string]interface{})
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	parameterMapList := make([]map[string]interface{}, 0)
 	if v, ok := d.GetOkExists("sdl"); ok {
@@ -168,15 +191,15 @@ func resourceAliCloudCloudFirewallInstanceV2Create(d *schema.ResourceData, meta 
 		request["Period"] = v
 	}
 	var endpoint string
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable", NotFoundArticle}) {
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable", errs.NotFoundArticle}) {
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return retry.RetryableError(err)
 			}
@@ -184,36 +207,36 @@ func resourceAliCloudCloudFirewallInstanceV2Create(d *schema.ResourceData, meta 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_firewall_instance_v2", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cloud_firewall_instance_v2", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
-	cloudFirewallServiceV2 := CloudFirewallServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"normal"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cloudFirewallServiceV2.CloudFirewallInstanceStateRefreshFuncWithApi(d.Id(), "$.InstanceStatus", []string{}, cloudFirewallServiceV2.DescribeInstanceDescribeUserBuyVersion))
+	cloudFirewallServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"normal"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cloudFirewallServiceV2.InstanceStateRefreshFuncWithApi(d.Id(), "$.InstanceStatus", []string{}, cloudFirewallServiceV2.DescribeInstanceDescribeUserBuyVersion))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudCloudFirewallInstanceV2Update(d, meta)
+	return resourceInstanceV2Update(d, meta)
 }
 
-func resourceAliCloudCloudFirewallInstanceV2Read(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceV2Read(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudFirewallServiceV2 := CloudFirewallServiceV2{client}
+	cloudFirewallServiceV2 := NewService(client)
 
-	objectRaw, err := cloudFirewallServiceV2.DescribeCloudFirewallInstance(d.Id())
+	objectRaw, err := cloudFirewallServiceV2.DescribeInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cloud_firewall_instance_v2 DescribeCloudFirewallInstance Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cloud_firewall_instance_v2 DescribeInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
@@ -227,8 +250,8 @@ func resourceAliCloudCloudFirewallInstanceV2Read(d *schema.ResourceData, meta in
 	d.Set("renewal_status", objectRaw["RenewStatus"])
 
 	objectRaw, err = cloudFirewallServiceV2.DescribeInstanceDescribeUserBuyVersion(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("cfw_log", objectRaw["LogStatus"])
@@ -240,9 +263,27 @@ func resourceAliCloudCloudFirewallInstanceV2Read(d *schema.ResourceData, meta in
 	return nil
 }
 
-func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceV2Update(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudFirewallServiceV2 := CloudFirewallServiceV2{client}
+	cloudFirewallServiceV2 := NewService(client)
+
+	// The billing method of an existing instance cannot be changed through the
+	// API: the console conversion is the only supported path. Reconcile against
+	// the actual billing status so a stale state converges without any mutation,
+	// and reject the change deterministically otherwise. Creating an instance
+	// passes through this function too, hence the IsNewResource guard.
+	if !d.IsNewResource() && d.HasChange("payment_type") {
+		objectRaw, err := cloudFirewallServiceV2.DescribeInstance(d.Id())
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		actualPaymentType := fmt.Sprint(objectRaw["SubscriptionType"])
+		expectedPaymentType := d.Get("payment_type").(string)
+		if actualPaymentType != expectedPaymentType {
+			return errs.Error(cloudFirewallInstancePaymentTypeChangeError, d.Id(), actualPaymentType, expectedPaymentType)
+		}
+	}
+
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
@@ -259,7 +300,7 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 
 	objectRaw, err := cloudFirewallServiceV2.DescribeInstanceDescribeUserBuyVersion(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if fmt.Sprint(convertCloudFirewallInstanceSdlResponse(objectRaw["Sdl"])) != fmt.Sprint(d.Get("sdl")) {
@@ -275,11 +316,11 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 	request["UpdateList"] = updateList
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Cloudfw", "2017-12-07", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -287,9 +328,9 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -300,7 +341,7 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 
 	request["InstanceId"] = d.Id()
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	request["ProductType"] = d.Get("product_type")
 	request["ProductCode"] = d.Get("product_code")
 	request["SubscriptionType"] = d.Get("payment_type")
@@ -324,15 +365,15 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 	request["Parameter"] = parameterMapList
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
-				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return retry.RetryableError(err)
 				}
@@ -346,22 +387,21 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		cloudFirewallServiceV2 := CloudFirewallServiceV2{client}
 		if d.HasChange("cfw_log") {
-			stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("cfw_log"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cloudFirewallServiceV2.CloudFirewallInstanceStateRefreshFuncWithApi(d.Id(), "LogStatus", []string{}, cloudFirewallServiceV2.DescribeInstanceDescribeUserBuyVersion))
+			stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("cfw_log"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cloudFirewallServiceV2.InstanceStateRefreshFuncWithApi(d.Id(), "LogStatus", []string{}, cloudFirewallServiceV2.DescribeInstanceDescribeUserBuyVersion))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		}
 
-		bssOpenApiService := BssOpenApiService{client}
-		stateConf := BuildStateConf([]string{}, []string{"Paid"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, bssOpenApiService.CloudFirewallInstanceOrderDetailStateRefreshFunc(fmt.Sprint(response["Data"].(map[string]interface{})["OrderId"]), []string{}))
+		bssOpenApiService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Paid"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, bssOpenApiService.InstanceOrderDetailStateRefreshFunc(fmt.Sprint(response["Data"].(map[string]interface{})["OrderId"]), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -396,15 +436,15 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
-				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return retry.RetryableError(err)
 				}
@@ -412,47 +452,61 @@ func resourceAliCloudCloudFirewallInstanceV2Update(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	d.Partial(false)
-	return resourceAliCloudCloudFirewallInstanceV2Read(d, meta)
+	return resourceInstanceV2Read(d, meta)
 }
 
-func resourceAliCloudCloudFirewallInstanceV2Delete(d *schema.ResourceData, meta interface{}) error {
-	if d.Get("payment_type").(string) == "Subscription" {
-		log.Printf("[WARN] Cannot destroy resourceAliCloudCloudFirewallInstance. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
-	}
-
+func resourceInstanceV2Delete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	enableDelete := false
-	if v, ok := d.GetOkExists("payment_type"); ok {
-		if InArray(fmt.Sprint(v), []string{"PayAsYouGo"}) {
-			enableDelete = true
-		}
-	}
-	if enableDelete {
-		action := "ReleasePostInstance"
-		var request map[string]interface{}
-		var response map[string]interface{}
-		query := make(map[string]interface{})
-		var err error
-		var endpoint string
-		request = make(map[string]interface{})
-		request["InstanceId"] = d.Id()
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+	var action string
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	var endpoint string
+	request = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	if d.Get("payment_type").(string) == "Subscription" {
+		// A prepaid instance is released by refunding the subscription through
+		// BSS; the Cloud Firewall release API only handles pay-as-you-go ones.
+		action = "RefundInstance"
+		request["ClientToken"] = helper.BuildClientToken(action)
+		request["ImmediatelyRelease"] = "1"
+		request["ProductCode"] = d.Get("product_code")
+		request["ProductType"] = d.Get("product_type")
+		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+	} else {
+		action = "ReleasePostInstance"
 		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, true, endpoint)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
-				} else if IsExpectedErrors(err, []string{"not buy user"}) {
+				} else if errs.IsExpectedErrors(err, []string{"not buy user"}) {
 					endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 					return retry.RetryableError(err)
 				}
@@ -460,22 +514,24 @@ func resourceAliCloudCloudFirewallInstanceV2Delete(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
-
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-
-		cloudFirewallServiceV2 := CloudFirewallServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cloudFirewallServiceV2.CloudFirewallInstanceStateRefreshFunc(d.Id(), "#$.Status", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-
 	}
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		// ResourceNotExists and ExistRefundingOrderError both mean the instance is
+		// already released or being refunded; the wait below still has to confirm
+		// that the instance is gone instead of dropping it from the state blindly.
+		if !errs.NotFoundError(err) && !errs.IsExpectedErrors(err, []string{"ResourceNotExists", "ExistRefundingOrderError"}) {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	cloudFirewallServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cloudFirewallServiceV2.InstanceStateRefreshFunc(d.Id(), "#$.Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
 	return nil
 }
 
@@ -490,6 +546,21 @@ func convertCloudFirewallInstanceVersionResponse(source interface{}) interface{}
 		return "ultimate_version"
 	case "10":
 		return "payg_version"
+	}
+
+	return source
+}
+
+func convertCloudFirewallInstanceSpecRequest(source interface{}) interface{} {
+	switch source {
+	case "premium_version":
+		return 2
+	case "enterprise_version":
+		return 3
+	case "ultimate_version":
+		return 4
+	case "payg_version":
+		return 10
 	}
 
 	return source
