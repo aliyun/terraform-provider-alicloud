@@ -60,26 +60,31 @@ Terraform cannot destroy resource `alicloud_ram_password_policy`. Terraform will
 ## Argument Reference
 
 The following arguments are supported:
-* `hard_expiry` - (Optional) Whether to restrict logon after the password expires. Value:
-  - true: After the password expires, you cannot log in to the console. You must reset the password of the RAM user through the main account or a RAM user with administrator permissions to log on normally.
-  - false (default): After the password expires, the RAM user can change the password and log on normally.
-* `max_login_attemps` - (Optional, Int) Password retry constraint. After entering the wrong password continuously for the set number of times, the account will be locked for one hour.
-Value range: 0~32.
-Default value: 0, which means that the password retry constraint is not enabled.
-* `max_password_age` - (Optional, Int) Password validity period.
-Value range: 0~1095. Unit: days.
-Default value: 0, which means never expires.
+* `hard_expiry` - (Optional) Specifies whether to disable logon after the password expires. Valid values:
+  - true: After the password expires, you cannot use the password to log on to the console. You can log on to the console only after you reset the password by using your Alibaba Cloud account or as a RAM user that has administrative rights.
+  - false: After the password expires, you can change the password to log on to the console. This is the default value.
+* `initial_password_age` - (Optional, Int) The initial password age in days.
+Valid values: 0 to 90. Default value: 14.
+* `intercept_risk_password_on_api` - (Optional) Whether to intercept risk passwords on API calls. Valid values:
+  - true
+  - false (default)
+* `max_login_attemps` - (Optional, Int) The maximum number of password retries. If you enter the wrong passwords for the specified consecutive times, the account is locked for one hour.
+Valid values: 0 to 32.
+The default value is 0, which indicates that the password retries are not limited.
+* `max_password_age` - (Optional, Int) The validity period of the password.
+Valid values: 0 to 1095. Unit: days.
+The default value is 0, which indicates that the password never expires.
 * `minimum_password_different_character` - (Optional, Int) The minimum number of unique characters in the password.
 Valid values: 0 to 8.
 The default value is 0, which indicates that no limits are imposed on the number of unique characters in a password.
 * `minimum_password_length` - (Optional, Computed, Int) The minimum number of characters in the password.
 Valid values: 8 to 32. Default value: 8.
-* `password_not_contain_user_name` - (Optional) Whether the user name is not allowed in the password. Value:
-  - true: The password cannot contain the user name.
-  - false (default): The user name can be included in the password.
-* `password_reuse_prevention` - (Optional, Int) Historical password check policy.
-Do not use the previous N Passwords. The value range of N is 0 to 24.
-Default value: 0, indicating that the historical password check policy is not enabled.
+* `password_not_contain_user_name` - (Optional) Specifies whether to exclude the username from the password. Valid values:
+  - true: A password cannot contain the username.
+  - false: A password can contain the username. This is the default value.
+* `password_reuse_prevention` - (Optional, Int) The policy for password history check.
+The previous N passwords cannot be reused. Valid values of N: 0 to 24.
+The default value is 0, which indicates that RAM users can reuse previous passwords.
 * `require_lowercase_characters` - (Optional) Specifies whether the password must contain lowercase letters. Valid values:
   - true
   - false (default)

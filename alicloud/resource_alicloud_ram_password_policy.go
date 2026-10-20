@@ -29,6 +29,14 @@ func resourceAliCloudRamPasswordPolicy() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"initial_password_age": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"intercept_risk_password_on_api": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"max_login_attemps": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -118,6 +126,12 @@ func resourceAliCloudRamPasswordPolicyCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOkExists("password_not_contain_user_name"); ok {
 		request["PasswordNotContainUserName"] = v
 	}
+	if v, ok := d.GetOkExists("initial_password_age"); ok {
+		request["InitialPasswordAge"] = v
+	}
+	if v, ok := d.GetOkExists("intercept_risk_password_on_api"); ok {
+		request["InterceptRiskPasswordOnApi"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
@@ -167,6 +181,8 @@ func resourceAliCloudRamPasswordPolicyRead(d *schema.ResourceData, meta interfac
 	d.Set("require_numbers", objectRaw["RequireNumbers"])
 	d.Set("require_symbols", objectRaw["RequireSymbols"])
 	d.Set("require_uppercase_characters", objectRaw["RequireUppercaseCharacters"])
+	d.Set("initial_password_age", objectRaw["InitialPasswordAge"])
+	d.Set("intercept_risk_password_on_api", objectRaw["InterceptRiskPasswordOnApi"])
 
 	return nil
 }
@@ -236,6 +252,16 @@ func resourceAliCloudRamPasswordPolicyUpdate(d *schema.ResourceData, meta interf
 	if d.HasChange("password_not_contain_user_name") {
 		update = true
 		request["PasswordNotContainUserName"] = d.Get("password_not_contain_user_name")
+	}
+
+	if d.HasChange("initial_password_age") {
+		update = true
+		request["InitialPasswordAge"] = d.Get("initial_password_age")
+	}
+
+	if d.HasChange("intercept_risk_password_on_api") {
+		update = true
+		request["InterceptRiskPasswordOnApi"] = d.Get("intercept_risk_password_on_api")
 	}
 
 	if update {
