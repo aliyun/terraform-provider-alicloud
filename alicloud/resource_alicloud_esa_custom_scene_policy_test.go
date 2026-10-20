@@ -37,6 +37,7 @@ func TestAccAliCloudEsaCustomScenePolicy_basic0(t *testing.T) {
 					"custom_scene_policy_name": name,
 					"end_time":                 "2025-09-08T18:00:00Z",
 					"site_ids":                 "${data.alicloud_esa_sites.default.sites.0.id}",
+					"objects":                  "${data.alicloud_esa_sites.default.sites.0.id}",
 					"start_time":               "2025-08-08T18:00:00Z",
 					"template":                 "promotion",
 				}),
@@ -45,6 +46,7 @@ func TestAccAliCloudEsaCustomScenePolicy_basic0(t *testing.T) {
 						"custom_scene_policy_name": name,
 						"end_time":                 "2025-09-08T18:00:00Z",
 						"site_ids":                 CHECKSET,
+						"objects":                  CHECKSET,
 						"start_time":               "2025-08-08T18:00:00Z",
 						"template":                 "promotion",
 					}),
@@ -77,6 +79,16 @@ func TestAccAliCloudEsaCustomScenePolicy_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"site_ids": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"objects": "${data.alicloud_esa_sites.default.sites.0.id},${data.alicloud_esa_sites.default.sites.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"objects": CHECKSET,
 					}),
 				),
 			},
