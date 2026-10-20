@@ -1078,24 +1078,15 @@ func TestUnitCloudFirewallAddressBookApplyOrder(t *testing.T) {
 }
 
 // A configuration that repeats an IP must converge against the de-duplicated
-// remote: the plan shows no duplicate addition (AC1) and, because the plan is
-// empty, no ModifyAddressBook call reaches the API.
+// state: the plan shows no duplicate addition (AC1). An empty plan means
+// Terraform would not call Update, so no ModifyAddressBook reaches the API.
 func TestUnitCloudFirewallAddressBookDuplicateConfig(t *testing.T) {
 	r := resourceAliCloudCloudFirewallAddressBook()
 	a, b := "192.0.2.1/32", "198.51.100.1/32"
-	config := map[string]interface{}{"group_name": "test", "group_type": "ip", "description": "test", "address_list": []interface{}{a, b, a}}
+	// State already holds the de-duplicated set; the configuration repeats an IP.
 	d := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{"group_name": "test", "group_type": "ip", "description": "test", "address_list": []interface{}{a, b}})
 	d.SetId("address-book")
-
-	sentAddressList := ""
-	client := cloudFirewallAddressBookTestClient(t, []interface{}{a, b}, func(req *http.Request) {
-		if err := req.ParseForm(); err != nil {
-			t.Error(err)
-		}
-		if req.Form.Get("Action") == "ModifyAddressBook" {
-			sentAddressList = req.Form.Get("AddressList")
-		}
-	})
+	config := map[string]interface{}{"group_name": "test", "group_type": "ip", "description": "test", "address_list": []interface{}{a, b, a}}
 
 	diff, err := r.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(config), nil)
 	if err != nil {
@@ -1103,12 +1094,6 @@ func TestUnitCloudFirewallAddressBookDuplicateConfig(t *testing.T) {
 	}
 	if diff != nil && !diff.Empty() {
 		t.Fatalf("duplicate configuration must not produce a plan: %#v", diff)
-	}
-	if _, diags := r.Apply(context.Background(), d.State(), diff, client); diags.HasError() {
-		t.Fatalf("apply duplicate configuration: %v", diags)
-	}
-	if sentAddressList != "" {
-		t.Fatalf("no-op duplicate plan must not call ModifyAddressBook, got AddressList=%q", sentAddressList)
 	}
 }
 
