@@ -40,33 +40,74 @@ resource "alicloud_disk" "ecs_disk" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `availability_zone` - (Required, ForceNew) The Zone to create the disk in.
-* `name` - (Optional) Name of the ECS disk. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Default value is null.
-* `description` - (Optional) Description of the disk. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
-* `category` - (Optional, ForceNew) Category of the disk. Valid values are `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_essd_entry`. Default is `cloud_efficiency`.
-* `size` - (Required) The size of the disk in GiBs. When resize the disk, the new size must be greater than the former value, or you would get an error `InvalidDiskSize.TooSmall`.
-* `snapshot_id` - (Optional, ForceNew) A snapshot to base the disk off of. If the disk size required by snapshot is greater than `size`, the `size` will be ignored, conflict with `encrypted`.
-* `kms_key_id` - (Optional, Available in 1.89.0+, ForceNew) The ID of the KMS key corresponding to the data disk, The specified parameter `Encrypted` must be `true` when KmsKeyId is not empty.
-* `performance_level` - (Optional, Available in 1.95.0+) Specifies the performance level of an ESSD when you create the ESSD. Default value: `PL1`. Valid values:                                                       
-    * `PL1`: A single ESSD delivers up to 50,000 random read/write IOPS.
-    * `PL2`: A single ESSD delivers up to 100,000 random read/write IOPS.
-    * `PL3`: A single ESSD delivers up to 1,000,000 random read/write IOPS.
+* `advanced_features` - (Optional) The advanced features configured for the disk.
+* `bursting_enabled` - (Optional, Bool, Available since v1.237.0) Specifies whether to enable the performance burst feature. Valid values: `true`, `false`. **NOTE:** `bursting_enabled` is only valid when `category` is `cloud_auto`; specifying it for other categories is rejected by the API. When `category` is changed to `cloud_auto` in the same apply (for example from `cloud_essd`), the provider defers the `BurstingEnabled` update until the disk category has been confirmed as `cloud_auto` by `ModifyDiskSpec` and `WaitForState`, because the API rejects `BurstingEnabled` on a non-`cloud_auto` disk.
+* `category` - (Optional) The category of the data disk. Default value: `cloud_efficiency`. Valid Values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`, `elastic_ephemeral_disk_standard`, `elastic_ephemeral_disk_premium`. **NOTE:** When `category` is `cloud_auto`, the `bursting_enabled` and `provisioned_iops` parameters become applicable; they are rejected by the API for other categories. **NOTE:** Category conversion (for example from `cloud_essd` to `cloud_auto`) is applied asynchronously by the API: the disk may report the transitional status `Modifying` while the conversion runs, and even after the status returns to `Available` the category may still report the previous value for some time. The provider therefore waits within a single `DescribeDisks` response until the status is `Available`/`In_use` and the category already equals the requested value before completing the update, and this wait is bounded by the `update` timeout (default 30 mins). Conversion duration depends on the disk (throughput, capacity and the previous category) and has no completion guarantee; set `timeouts.update` explicitly for large disks whose conversion may take longer.
+* `delete_auto_snapshot` - (Optional, Bool) Specifies whether to delete the automatic snapshots of the disk when the disk is released. Default value: `false`.
+* `delete_with_instance` - (Optional, Bool) Specifies whether to release the disk along with its associated instance. Default value: `false`.
+* `description` - (Optional) The description of the disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
+* `disk_name` - (Optional) The name of the data disk. The name must be 2 to 128 characters in length and can contain letters, digits, colons (:), underscores (_), periods (.), and hyphens (-). The name must start with a letter.
+* `dry_run` - (Optional, Bool) Specifies whether to check the validity of the request without actually making the request.request Default value: `false`. Valid values:
+  - `true`: The validity of the request is checked, but the request is not made. Check items include the required parameters, request format, service limits, and available ECS resources. If the check fails, the corresponding error message is returned. If the check succeeds, the DryRunOperation error code is returned.
+  - `false`: The validity of the request is checked. If the check succeeds, a 2xx HTTP status code is returned and the request is made.
+* `enable_auto_snapshot` - (Deprecated, Optional, Bool) Specifies whether the automatic snapshot policy feature is enabled for the cloud disk. Valid values: `true` and `false`. The default value is empty, which indicates that the current value is not changed. **NOTE:** This parameter is deprecated. The automatic snapshot policy feature is enabled by default for a cloud disk after it is created. To use the automatic snapshot policy, apply one to the cloud disk.
+* `encrypt_algorithm` - (Optional) The encryption algorithm used to encrypt the disk. **NOTE:** `encrypt_algorithm` is only valid when `encrypted` is `true`.
+* `encrypted` - (Optional, ForceNew, Bool) Specifies whether to encrypt the disk. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `instance_id` - (Optional, Computed) The ID of the instance to which the created subscription disk is automatically attached.
+  * After you specify the instance ID, the specified `resource_group_id`, `tags`, and `kms_key_id` parameters are ignored.
+  * One of the `zone_id` and `instance_id` must be set but can not be set at the same time.
+* `kms_key_id` - (Optional, ForceNew) The ID of the Key Management Service (KMS) key that is used for the disk. **NOTE:** `kms_key_id` is only valid when `encrypted` is `true`.
+* `multi_attach` - (Optional, ForceNew, Available since v1.237.0) Specifies whether to enable the multi-attach feature for the disk. Default value: `Disabled`. Valid values: `Enabled`, `Disabled`. **NOTE:** Currently, `multi_attach` can only be set to `Enabled` when `category` is set to `cloud_essd`.
+* `payment_type` - (Optional) The payment type of the disk. Default to `PayAsYouGo`. Valid values: `PayAsYouGo`, `Subscription`. If you want to change the disk payment type, the `instance_id` is required.
+* `performance_level` - (Optional) Specifies the performance level of an ESSD when you create the ESSD. Valid values:
+  - `PL0`: A single ESSD delivers up to 10,000 random read/write IOPS.
+  - `PL1`: A single ESSD delivers up to 50,000 random read/write IOPS.
+  - `PL2`: A single ESSD delivers up to 100,000 random read/write IOPS.
+  - `PL3`: A single ESSD delivers up to 1,000,000 random read/write IOPS.
+* `provisioned_iops` - (Optional, Int, Available since v1.237.0) The provisioned read/write IOPS of the ESSD AutoPL disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS}. **NOTE:** `provisioned_iops` is only valid when `category` is `cloud_auto`.
+* `resource_group_id` - (Optional) The ID of the resource group to which to add the disk.
+* `size` - (Optional, Int) The size of the disk. Unit: GiB. This parameter is required. Valid values:
+  - If `category` is set to `cloud`. Valid values: `5` to `2000`.
+  - If `category` is set to `cloud_efficiency`. Valid values: `20` to `32768`.
+  - If `category` is set to `cloud_ssd`. Valid values: `20` to `32768`.
+  - If `category` is set to `cloud_auto`. Valid values: `1` to `65536`.
+  - If `category` is set to `cloud_essd_entry`. Valid values: `10` to `32768`.
+  - If `category` is set to `elastic_ephemeral_disk_standard`. Valid values: `64` to `8192`.
+  - If `category` is set to `elastic_ephemeral_disk_premium`. Valid values: `64` to `8192`.
+  - If `category` is set to `cloud_essd`, the valid values are related to `performance_level`. Valid values:
+    - If `performance_level` is set to `PL0`. Valid values: `1` to `65536`.
+    - If `performance_level` is set to `PL1`. Valid values: `20` to `65536`.
+    - If `performance_level` is set to `PL2`. Valid values: `461` to `65536`.
+    - If `performance_level` is set to `PL3`. Valid values: `1261` to `65536`.
+* `snapshot_id` - (Optional, ForceNew) The ID of the snapshot to use to create the disk. **NOTE:** If the size of the snapshot specified by `snapshot_id` is larger than the value of `size`, the size of the created disk is equal to the specified snapshot size. If the size of the snapshot specified by `snapshot_id` is smaller than the value of `size`, the size of the created disk is equal to the value of `size`.
+* `storage_set_id` - (Optional, ForceNew) The ID of the storage set.
+* `storage_set_partition_number` - (Optional, ForceNew) The number of partitions in the storage set.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `encrypted` - (Optional, ForceNew) If true, the disk will be encrypted, conflict with `snapshot_id`.
-* `delete_auto_snapshot` - (Optional, Available in 1.53.0+) Indicates whether the automatic snapshot is deleted when the disk is released. Default value: false.
-* `delete_with_instance` - (Optional, Available in 1.53.0+) Indicates whether the disk is released together with the instance: Default value: false.
-* `enable_auto_snapshot` - (Optional, Available in 1.53.0+) Indicates whether to apply a created automatic snapshot policy to the disk. Default value: false.
-* `resource_group_id` - (Optional, Available in 1.57.0+, Modifiable in 1.115.0+) The Id of resource group which the disk belongs.
+* `type` - (Optional, Available since v1.122.0) The type to expand cloud disks. Valid Values: `online`, `offline`. Default to `offline`.
+  - `offline`: After you resize a disk offline, you must restart the instance by using the console or by calling the RebootInstance operation for the resizing operation to take effect. For more information, see Restart the instance and RebootInstance.
+  - `online`: After you resize a disk online, the resizing operation takes effect immediately and you do not need to restart the instance. You can resize ultra disks, standard SSDs, and ESSDs online.
+* `zone_id` - (Optional, ForceNew) ID of the free zone to which the disk belongs. One of the `zone_id` and `instance_id` must be set but can not be set at the same time.
+* `availability_zone` - (Deprecated since v1.122.0) Field `availability_zone` has been deprecated from provider version 1.122.0. New field `zone_id` instead.
+* `name` - (Optional, Deprecated since v1.122.0) Field `name` has been deprecated from provider version 1.122.0. New field `disk_name` instead.
 
-  -> **NOTE:** Disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
+  -> **NOTE:** Disk category `cloud` has been outdated, and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The resource ID in terraform of Disk.
+* `create_time` - (Available since v1.237.0) The time when the disk was created.
+* `region_id` - (Available since v1.237.0) The ID of the region to which the disk belongs.
+* `status` - The status of the disk.
 
-* `id` - The ID of the disk.
-* `status` - The disk status.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Disk.
+* `delete` - (Defaults to 5 mins) Used when delete the Disk.
+* `update` - (Defaults to 30 mins) Used when update the Disk.
 
 ## Import
 

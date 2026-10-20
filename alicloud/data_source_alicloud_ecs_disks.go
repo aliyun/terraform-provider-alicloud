@@ -649,3 +649,23 @@ func dataSourceAliCloudEcsDisksRead(d *schema.ResourceData, meta interface{}) er
 
 	return nil
 }
+
+func convertEcsDiskPaymentTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "PostPaid":
+		return "PayAsYouGo"
+	case "PrePaid":
+		return "Subscription"
+	}
+	return source
+}
+
+func convertEcsDiskPaymentTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PayAsYouGo":
+		return "PostPaid"
+	case "Subscription":
+		return "PrePaid"
+	}
+	return source
+}

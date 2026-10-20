@@ -5,24 +5,12 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
-
-// Service serves the Snapshot Lock resources in this package. The root
-// alicloud package cannot be imported from a service package, so the
-// encapsulated Describe call moved here with the resource.
-type Service struct {
-	client *connectivity.AliyunClient
-}
-
-func NewService(client *connectivity.AliyunClient) *Service {
-	return &Service{client: client}
-}
 
 // DescribeSnapshotLock <<< Encapsulated get interface for Ecs SnapshotLock.
 
