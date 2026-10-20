@@ -68,6 +68,117 @@ func (s *VodService) VodStateRefreshFunc(id string, failStates []string) retry.S
 	}
 }
 
+func (s *VodService) DescribeVodDomainCertificateInfo(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "DescribeVodDomainCertificateInfo"
+	request := map[string]interface{}{
+		"DomainName": id,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, e := jsonpath.Get("$.CertInfos.CertInfo", response)
+	if e != nil || v == nil {
+		return object, WrapErrorf(e, FailedGetAttributeMsg, id, "$.CertInfos.CertInfo", response)
+	}
+	certs, ok := v.([]interface{})
+	if !ok || len(certs) == 0 {
+		return nil, nil
+	}
+	object = certs[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *VodService) SetVodDomainSSLCertificate(d *schema.ResourceData) error {
+	client := s.client
+	var response map[string]interface{}
+	var err error
+	action := "SetVodDomainSSLCertificate"
+	request := map[string]interface{}{
+		"DomainName":  d.Id(),
+		"SSLProtocol": d.Get("ssl_protocol"),
+	}
+	if v, ok := d.GetOk("cert_name"); ok {
+		request["CertName"] = v
+	}
+	if v, ok := d.GetOk("cert_type"); ok {
+		request["CertType"] = v
+	}
+	if v, ok := d.GetOk("env"); ok {
+		request["Env"] = v
+	}
+	certType := d.Get("cert_type").(string)
+	if certType == "upload" {
+		sslPub, pubOk := d.GetOk("ssl_pub")
+		sslPri, priOk := d.GetOk("ssl_pri")
+		if d.Get("ssl_protocol").(string) != "off" {
+			if !pubOk {
+				return WrapError(fmt.Errorf("ssl_pub must be set when cert_type is \"upload\" and ssl_protocol is not \"off\""))
+			}
+			if !priOk {
+				return WrapError(fmt.Errorf("ssl_pri must be set when cert_type is \"upload\" and ssl_protocol is not \"off\""))
+			}
+		}
+		if pubOk {
+			request["SSLPub"] = sslPub
+		}
+		if priOk {
+			request["SSLPri"] = sslPri
+		}
+	} else if certType == "cas" {
+		if v, ok := d.GetOk("cert_id"); ok {
+			request["CertId"] = v
+		}
+		if v, ok := d.GetOk("cert_region"); ok {
+			request["CertRegion"] = v
+		}
+	} else {
+		if v, ok := d.GetOk("cert_id"); ok {
+			request["CertId"] = v
+		}
+		if v, ok := d.GetOk("cert_region"); ok {
+			request["CertRegion"] = v
+		}
+		if v, ok := d.GetOk("ssl_pub"); ok {
+			request["SSLPub"] = v
+		}
+		if v, ok := d.GetOk("ssl_pri"); ok {
+			request["SSLPri"] = v
+		}
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, false)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDomain.notOnline", "CreateCertificateFailed"}) || NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
 func (s *VodService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 
 	if d.HasChange("tags") {

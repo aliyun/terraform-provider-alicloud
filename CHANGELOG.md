@@ -2,6 +2,7 @@
 
 ENHANCEMENTS:
 
+- resource/alicloud_vod_domain: support SSL certificate configuration. ([#10196](https://github.com/aliyun/terraform-provider-alicloud/issues/10196))
 - resource/alicloud_nlb_server_group: support ip_version_affinity_mode. ([#10705](https://github.com/aliyun/terraform-provider-alicloud/issues/10705))
 - resource/alicloud_nas_file_system: support Agentic storage type; skip general-purpose NAS recycle bin/ACL calls on Agentic file systems. ([#10730](https://github.com/aliyun/terraform-provider-alicloud/issues/10730))
 
