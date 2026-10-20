@@ -7,7 +7,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-LINT_TARGET='./alicloud/...'
 LINT_PATHSPEC=':(glob)alicloud/**/*.go'
 
 ANALYZERS=(
@@ -64,7 +63,7 @@ validate_change_range() {
 load_changed_go_files() {
 	local changed_list
 	changed_list="$(mktemp "${TMPDIR:-/tmp}/tfproviderlint-changed.XXXXXX")"
-	if ! git diff --name-only -z --diff-filter=ACMR \
+	if ! git diff --name-only -z --no-renames --diff-filter=ACMD \
 		"$DIFF_BASE" "$DIFF_HEAD" -- "$LINT_PATHSPEC" >"$changed_list"; then
 		rm -f "$changed_list"
 		die "could not determine changed Go files"
@@ -77,6 +76,31 @@ load_changed_go_files() {
 		CHANGED_GO_FILES+=("$changed_file")
 	done <"$changed_list"
 	rm -f "$changed_list"
+}
+
+# Analyze complete packages so cross-file types remain available, but do not
+# schedule analyzers for unrelated packages. Go still loads required imports.
+load_lint_targets() {
+	LINT_TARGETS=('__NO_LINT_TARGETS__')
+	local changed_file target existing found package_file has_go_files
+	for changed_file in "${CHANGED_GO_FILES[@]}"; do
+		[[ "$changed_file" == '__NO_CHANGED_GO_FILES__' ]] && continue
+		target="./${changed_file%/*}"
+		# Deleted files and rename sources still require analysis when their
+		# package survives. Entirely removed packages cannot be loaded.
+		has_go_files=false
+		for package_file in "$target"/*.go; do
+			[[ -f "$package_file" ]] && has_go_files=true
+		done
+		[[ "$has_go_files" == true ]] || continue
+		found=false
+		for existing in "${LINT_TARGETS[@]}"; do
+			[[ "$existing" == "$target" ]] && found=true
+		done
+		if [[ "$found" == false ]]; then
+			LINT_TARGETS+=("$target")
+		fi
+	done
 }
 
 is_changed_go_file() {
@@ -99,10 +123,14 @@ fail_with_output() {
 run_lint() {
 	echo -e "==> ${GREEN}Checking source code against tfproviderlint...${NC}"
 
+	printf 'Lint target: %s\n' "${LINT_TARGETS[@]:1}"
+	local started=$SECONDS
 	local full_output=''
 	local lint_exit=0
-	full_output="$(tfproviderlint "${ANALYZERS[@]}" "$LINT_TARGET" 2>&1)" ||
+	full_output="$(tfproviderlint "${ANALYZERS[@]}" "${LINT_TARGETS[@]:1}" 2>&1)" ||
 		lint_exit=$?
+
+	printf 'tfproviderlint finished in %s seconds (exit %s).\n' "$((SECONDS - started))" "$lint_exit"
 
 	if [[ "$lint_exit" -eq 0 ]]; then
 		echo -e "${GREEN}tfproviderlint: No issues found.${NC}"
@@ -163,9 +191,14 @@ run_lint() {
 }
 
 main() {
-	ensure_tfproviderlint
 	validate_change_range
 	load_changed_go_files
+	load_lint_targets
+	if [[ "${#LINT_TARGETS[@]}" -eq 1 ]]; then
+		echo "tfproviderlint: No changed Go files; skipping analysis."
+		return 0
+	fi
+	ensure_tfproviderlint
 	run_lint
 }
 

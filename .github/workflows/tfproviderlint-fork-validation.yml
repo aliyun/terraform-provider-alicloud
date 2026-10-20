@@ -1,0 +1,39 @@
+name: tfproviderlint fork validation
+on:
+  push:
+    branches: ['codex/scope-tfproviderlint-packages']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scoped-lint:
+    if: github.repository != 'aliyun/terraform-provider-alicloud'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Run shell regression tests
+        run: |
+          bash scripts/ci/resolve-change-range_test.sh
+          bash scripts/ci/run-tflint_test.sh
+      - name: Install tfproviderlint
+        run: |
+          go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Verify real package loading and failure handling
+        run: bash scripts/ci/run-tflint_smoke_test.sh
+      - name: Verify scoped analysis on a repository package
+        shell: bash
+        run: |
+          base_sha="$(git rev-parse HEAD)"
+          printf '\n// Scoped lint validation.\n' >> alicloud/errs/errors.go
+          git add alicloud/errs/errors.go
+          git -c core.hooksPath=/dev/null -c user.name='CI Lint Test' -c user.email='ci-lint-test@example.invalid' commit -m 'test: select errs package'
+          DIFF_BASE="$base_sha" DIFF_HEAD="$(git rev-parse HEAD)" ./scripts/run-tflint.sh
