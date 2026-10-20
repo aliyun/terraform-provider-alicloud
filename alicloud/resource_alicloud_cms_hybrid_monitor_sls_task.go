@@ -312,7 +312,11 @@ func resourceAlicloudCmsHybridMonitorSlsTaskRead(d *schema.ResourceData, meta in
 	}
 
 	if v, ok := object["CollectInterval"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("collect_interval", formatInt(v))
+		collect_intervalVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("collect_interval", collect_intervalVal)
 	}
 	d.Set("collect_target_type", object["CollectTargetType"])
 	d.Set("description", object["Description"])

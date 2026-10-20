@@ -300,11 +300,19 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 			"RegionId":           client.RegionId,
 		}
 		if v, ok := d.GetOk("auto_renew_period"); ok {
-			if formatInt(v) == 1 {
+			autoRenewPeriod, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			if autoRenewPeriod == 1 {
 				request["Period"] = v
 				request["PeriodUnit"] = "Month"
 			} else {
-				request["Period"] = formatInt(v) / 12
+				autoRenewPeriodMonths, err := formatInt(v)
+				if err != nil {
+					return err
+				}
+				request["Period"] = autoRenewPeriodMonths / 12
 				request["PeriodUnit"] = "Year"
 			}
 		}
@@ -356,7 +364,7 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("name", reservedInstances.ReservedInstanceName)
 	d.Set("reserved_instance_name", reservedInstances.ReservedInstanceName)
 	d.Set("description", reservedInstances.Description)
-	d.Set("resource_group_id", reservedInstances.ReservedInstanceId)
+	d.Set("resource_group_id", reservedInstances.ResourceGroupId)
 	d.Set("status", reservedInstances.Status)
 	d.Set("create_time", reservedInstances.CreationTime)
 	d.Set("expired_time", reservedInstances.ExpiredTime)
@@ -381,12 +389,17 @@ func resourceAliCloudReservedInstanceRead(d *schema.ResourceData, meta interface
 	}
 	d.Set("renewal_status", object["RenewalStatus"])
 
-	if v, ok := object["Duration"]; ok && formatInt(v) != 0 {
-		renewPeriod := formatInt(v)
-		if object["PeriodUnit"] == string(Year) {
-			renewPeriod = renewPeriod * 12
+	if v, ok := object["Duration"]; ok {
+		renewPeriod, renewPeriodErr := formatInt(v)
+		if renewPeriodErr != nil {
+			return renewPeriodErr
 		}
-		d.Set("auto_renew_period", renewPeriod)
+		if renewPeriod != 0 {
+			if object["PeriodUnit"] == string(Year) {
+				renewPeriod = renewPeriod * 12
+			}
+			d.Set("auto_renew_period", renewPeriod)
+		}
 	}
 
 	return nil

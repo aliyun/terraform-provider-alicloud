@@ -215,6 +215,11 @@ func dataSourceAlicloudArmsPrometheusAlertRulesRead(d *schema.ResourceData, meta
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		statusVal, err := formatInt(object["Status"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"cluster_id":                 object["ClusterId"],
 			"dispatch_rule_id":           fmt.Sprint(object["DispatchRuleId"]),
@@ -225,7 +230,7 @@ func dataSourceAlicloudArmsPrometheusAlertRulesRead(d *schema.ResourceData, meta
 			"id":                         fmt.Sprint(object["ClusterId"], ":", object["AlertId"]),
 			"prometheus_alert_rule_id":   fmt.Sprint(object["AlertId"]),
 			"prometheus_alert_rule_name": object["AlertName"],
-			"status":                     formatInt(object["Status"]),
+			"status":                     statusVal,
 			"type":                       object["Type"],
 		}
 		if v, ok := object["Annotations"].([]interface{}); ok {

@@ -58,7 +58,11 @@ func testSweepAlbLoadBalancer(region string) error {
 
 	resp, err := jsonpath.Get("$.LoadBalancers", response)
 
-	if formatInt(response["TotalCount"]) != 0 && err != nil {
+	totalCount, formatErr := formatInt(response["TotalCount"])
+	if formatErr != nil {
+		return formatErr
+	}
+	if totalCount != 0 && err != nil {
 		log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.LoadBalancers", action, err)
 		return nil
 	}
@@ -316,10 +320,12 @@ func TestAccAliCloudAlbLoadBalancer_basic0(t *testing.T) {
 						{
 							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
 							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
+							"eip_type":   "Common",
 						},
 						{
 							"vswitch_id": "${alicloud_vswitch.zone_c.id}",
 							"zone_id":    "${alicloud_vswitch.zone_c.zone_id}",
+							"eip_type":   "Common",
 						},
 					},
 				}),

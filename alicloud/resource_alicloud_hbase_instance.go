@@ -354,7 +354,15 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	d.Set("master_instance_quantity", instance["MasterNodeCount"])
 	d.Set("core_instance_type", instance["CoreInstanceType"])
 	d.Set("core_instance_quantity", instance["CoreNodeCount"])
-	d.Set("core_disk_size", formatInt(instance["CoreDiskCount"])*formatInt(instance["CoreDiskSize"]))
+	coreDiskSize, err := formatInt(instance["CoreDiskCount"])
+	if err != nil {
+		return err
+	}
+	instanceCoreDiskSize, err := formatInt(instance["CoreDiskSize"])
+	if err != nil {
+		return err
+	}
+	d.Set("core_disk_size", coreDiskSize*instanceCoreDiskSize)
 	d.Set("core_disk_type", instance["CoreDiskType"])
 	// Postpaid -> PostPaid
 	d.Set("pay_type", convertHbaseInstancePayTypeResponse(instance["PayType"]))

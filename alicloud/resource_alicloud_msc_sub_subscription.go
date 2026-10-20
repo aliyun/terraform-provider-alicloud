@@ -124,28 +124,56 @@ func resourceAlicloudMscSubSubscriptionRead(d *schema.ResourceData, meta interfa
 	d.Set("channel", object["Channel"])
 
 	if contactIds, ok := object["ContactIds"]; ok && contactIds != nil {
-		d.Set("contact_ids", convertJsonStringToStringList(contactIds))
+		contact_idsVal, err := convertJsonStringToStringList(contactIds)
+		if err != nil {
+			return err
+		}
+		d.Set("contact_ids", contact_idsVal)
 	}
 	d.Set("description", object["Description"])
 	if v, ok := object["EmailStatus"]; ok {
-		d.Set("email_status", formatInt(v))
+		email_statusVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("email_status", email_statusVal)
 	}
 	d.Set("item_name", object["ItemName"])
 	if v, ok := object["PmsgStatus"]; ok {
-		d.Set("pmsg_status", formatInt(v))
+		pmsg_statusVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("pmsg_status", pmsg_statusVal)
 	}
 	if v, ok := object["SmsStatus"]; ok {
-		d.Set("sms_status", formatInt(v))
+		sms_statusVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("sms_status", sms_statusVal)
 	}
 	if v, ok := object["TtsStatus"]; ok {
-		d.Set("tts_status", formatInt(v))
+		tts_statusVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("tts_status", tts_statusVal)
 	}
 
 	if webhookIds, ok := object["WebhookIds"]; ok && webhookIds != nil {
-		d.Set("webhook_ids", convertJsonStringToStringList(webhookIds))
+		webhook_idsVal, err := convertJsonStringToStringList(webhookIds)
+		if err != nil {
+			return err
+		}
+		d.Set("webhook_ids", webhook_idsVal)
 	}
 	if v, ok := object["WebhookStatus"]; ok {
-		d.Set("webhook_status", formatInt(v))
+		webhook_statusVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("webhook_status", webhook_statusVal)
 	}
 	return nil
 }

@@ -230,6 +230,11 @@ func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta 
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		notice_typeVal, err := formatInt(object["NoticeType"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                fmt.Sprint(object["ApplicationId"]),
 			"application_id":    fmt.Sprint(object["ApplicationId"]),
@@ -238,7 +243,7 @@ func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta 
 			"desire_value":      object["DesireValue"],
 			"effective_time":    object["EffectiveTime"],
 			"expire_time":       object["ExpireTime"],
-			"notice_type":       formatInt(object["NoticeType"]),
+			"notice_type":       notice_typeVal,
 			"product_code":      object["ProductCode"],
 			"quota_action_code": object["QuotaActionCode"],
 			"quota_description": object["QuotaDescription"],

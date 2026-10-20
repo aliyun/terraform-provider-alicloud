@@ -302,13 +302,18 @@ func dataSourceAlicloudMongodbServerlessInstancesRead(d *schema.ResourceData, me
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		db_instance_storageVal, err := formatInt(object["DBInstanceStorage"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"payment_type":            convertMongodbServerlessInstancePayTypeResponse(object["ChargeType"].(string)),
 			"db_instance_class":       object["DBInstanceClass"],
 			"db_instance_description": object["DBInstanceDescription"],
 			"id":                      fmt.Sprint(object["DBInstanceId"]),
 			"db_instance_id":          fmt.Sprint(object["DBInstanceId"]),
-			"db_instance_storage":     formatInt(object["DBInstanceStorage"]),
+			"db_instance_storage":     db_instance_storageVal,
 			"engine":                  object["Engine"],
 			"engine_version":          object["EngineVersion"],
 			"expire_time":             object["ExpireTime"],
@@ -344,15 +349,27 @@ func dataSourceAlicloudMongodbServerlessInstancesRead(d *schema.ResourceData, me
 		if err != nil {
 			return WrapError(err)
 		}
-		mapping["capacity_unit"] = formatInt(getResp["CapacityUnit"])
+		capacityUnit, err := formatInt(getResp["CapacityUnit"])
+		if err != nil {
+			return err
+		}
+		mapping["capacity_unit"] = capacityUnit
 		mapping["db_instance_release_protection"] = getResp["DBInstanceReleaseProtection"]
 		mapping["maintain_end_time"] = getResp["MaintainEndTime"]
 		mapping["maintain_start_time"] = getResp["MaintainStartTime"]
 		if v, ok := getResp["MaxConnections"]; ok && fmt.Sprint(v) != "0" {
-			mapping["max_connections"] = formatInt(v)
+			maxConnections, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["max_connections"] = maxConnections
 		}
 		if v, ok := getResp["MaxIOPS"]; ok && fmt.Sprint(v) != "0" {
-			mapping["max_iops"] = formatInt(v)
+			maxIops, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["max_iops"] = maxIops
 		}
 		mapping["protocol_type"] = getResp["ProtocolType"]
 		mapping["storage_engine"] = convertMongodbServerlessInstanceStorageEngineResponse(getResp["StorageEngine"].(string))

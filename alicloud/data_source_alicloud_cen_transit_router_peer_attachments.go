@@ -206,9 +206,14 @@ func dataSourceAlicloudCenTransitRouterPeerAttachmentsRead(d *schema.ResourceDat
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		bandwidthVal, err := formatInt(object["Bandwidth"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"auto_publish_route_enabled":            object["AutoPublishRouteEnabled"],
-			"bandwidth":                             formatInt(object["Bandwidth"]),
+			"bandwidth":                             bandwidthVal,
 			"cen_bandwidth_package_id":              object["CenBandwidthPackageId"],
 			"geographic_span_id":                    object["GeographicSpanId"],
 			"peer_transit_router_id":                object["PeerTransitRouterId"],

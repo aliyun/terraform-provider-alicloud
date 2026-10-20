@@ -168,11 +168,16 @@ func dataSourceAlicloudDcdnWafPoliciesRead(d *schema.ResourceData, meta interfac
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		domain_countVal, err := formatInt(object["DomainCount"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                 fmt.Sprint(object["PolicyId"]),
 			"dcdn_waf_policy_id": fmt.Sprint(object["PolicyId"]),
 			"defense_scene":      object["DefenseScene"],
-			"domain_count":       formatInt(object["DomainCount"]),
+			"domain_count":       domain_countVal,
 			"gmt_modified":       object["GmtModified"],
 			"policy_name":        object["PolicyName"],
 			"policy_type":        object["PolicyType"],

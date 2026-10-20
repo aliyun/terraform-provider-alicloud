@@ -76,7 +76,11 @@ func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_contact", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(formatInt(response["ContactId"])))
+	contactId, err := formatInt(response["ContactId"])
+	if err != nil {
+		return err
+	}
+	d.SetId(fmt.Sprint(contactId))
 
 	return resourceAlicloudMscSubContactRead(d, meta)
 }

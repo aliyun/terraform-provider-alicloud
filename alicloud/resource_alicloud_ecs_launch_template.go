@@ -872,8 +872,16 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	d.Set("instance_name", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["InstanceName"])
 	d.Set("instance_type", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["InstanceType"])
 	d.Set("internet_charge_type", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["InternetChargeType"])
-	d.Set("internet_max_bandwidth_in", formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["InternetMaxBandwidthIn"]))
-	d.Set("internet_max_bandwidth_out", formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["InternetMaxBandwidthOut"]))
+	internet_max_bandwidth_inVal, err := formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["InternetMaxBandwidthIn"])
+	if err != nil {
+		return err
+	}
+	d.Set("internet_max_bandwidth_in", internet_max_bandwidth_inVal)
+	internet_max_bandwidth_outVal, err := formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["InternetMaxBandwidthOut"])
+	if err != nil {
+		return err
+	}
+	d.Set("internet_max_bandwidth_out", internet_max_bandwidth_outVal)
 	d.Set("io_optimized", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["IoOptimized"])
 	d.Set("key_pair_name", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["KeyPairName"])
 
@@ -897,11 +905,23 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	if err := d.Set("network_interfaces", networkInterface); err != nil {
 		return WrapError(err)
 	}
-	d.Set("auto_renew", formatBool(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["AutoRenew"]))
-	d.Set("auto_renew_period", formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["AutoRenewPeriod"]))
+	auto_renewVal, err := formatBool(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["AutoRenew"])
+	if err != nil {
+		return err
+	}
+	d.Set("auto_renew", auto_renewVal)
+	auto_renew_periodVal, err := formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["AutoRenewPeriod"])
+	if err != nil {
+		return err
+	}
+	d.Set("auto_renew_period", auto_renew_periodVal)
 	d.Set("network_type", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["NetworkType"])
 	d.Set("password_inherit", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["PasswordInherit"])
-	d.Set("period", formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["Period"]))
+	periodVal, err := formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["Period"])
+	if err != nil {
+		return err
+	}
+	d.Set("period", periodVal)
 	d.Set("period_unit", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["PeriodUnit"])
 	d.Set("private_ip_address", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["PrivateIpAddress"])
 	d.Set("ram_role_name", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["RamRoleName"])
@@ -910,7 +930,11 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	if describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SecurityGroupIds"] != nil {
 		d.Set("security_group_ids", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SecurityGroupIds"].(map[string]interface{})["SecurityGroupId"])
 	}
-	d.Set("spot_duration", fmt.Sprint(formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SpotDuration"])))
+	launchTemplateData, err := formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SpotDuration"])
+	if err != nil {
+		return err
+	}
+	d.Set("spot_duration", fmt.Sprint(launchTemplateData))
 	d.Set("spot_price_limit", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SpotPriceLimit"])
 	d.Set("spot_strategy", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SpotStrategy"])
 	d.Set("system_disk_category", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SystemDisk.Category"])
@@ -981,8 +1005,14 @@ func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 	if len(versions) > 29 {
 		var oldestVersion int
 		for _, version := range versions {
-			if !version.(map[string]interface{})["DefaultVersion"].(bool) && (oldestVersion == 0 || formatInt(version.(map[string]interface{})["VersionNumber"]) < oldestVersion) {
-				oldestVersion = formatInt(version.(map[string]interface{})["VersionNumber"])
+			if !version.(map[string]interface{})["DefaultVersion"].(bool) {
+				versionNumberVal, err := formatInt(version.(map[string]interface{})["VersionNumber"])
+				if err != nil {
+					return err
+				}
+				if oldestVersion == 0 || versionNumberVal < oldestVersion {
+					oldestVersion = versionNumberVal
+				}
 			}
 		}
 

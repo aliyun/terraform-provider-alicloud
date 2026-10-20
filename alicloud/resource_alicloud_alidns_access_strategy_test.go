@@ -35,6 +35,7 @@ func TestAccAliCloudAlidnsAccessStrategy_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"lang":                           "GEO",
 					"default_addr_pool_type":         "IPV4",
 					"default_lba_strategy":           "ALL_RR",
 					"default_min_available_addr_num": "1",
@@ -67,6 +68,7 @@ func TestAccAliCloudAlidnsAccessStrategy_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"strategy_mode": "LATENCY",
 
 					"strategy_name": "${var.name}_1",
 				}),

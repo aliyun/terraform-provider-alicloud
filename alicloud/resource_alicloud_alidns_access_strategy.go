@@ -301,10 +301,18 @@ func resourceAlicloudAlidnsAccessStrategyRead(d *schema.ResourceData, meta inter
 	d.Set("default_latency_optimization", object["DefaultLatencyOptimization"])
 	d.Set("default_lba_strategy", object["DefaultLbaStrategy"])
 	if v, ok := object["DefaultMaxReturnAddrNum"]; ok {
-		d.Set("default_max_return_addr_num", formatInt(v))
+		default_max_return_addr_numVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("default_max_return_addr_num", default_max_return_addr_numVal)
 	}
 	if v, ok := object["DefaultMinAvailableAddrNum"]; ok {
-		d.Set("default_min_available_addr_num", formatInt(v))
+		default_min_available_addr_numVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("default_min_available_addr_num", default_min_available_addr_numVal)
 	}
 	d.Set("failover_addr_pool_type", object["FailoverAddrPoolType"])
 	if failoverAddrPoolsMap, ok := object["FailoverAddrPools"].(map[string]interface{}); ok && failoverAddrPoolsMap != nil {
@@ -338,10 +346,18 @@ func resourceAlicloudAlidnsAccessStrategyRead(d *schema.ResourceData, meta inter
 	d.Set("failover_latency_optimization", object["FailoverLatencyOptimization"])
 	d.Set("failover_lba_strategy", object["FailoverLbaStrategy"])
 	if v, ok := object["FailoverMaxReturnAddrNum"]; ok {
-		d.Set("failover_max_return_addr_num", formatInt(v))
+		failover_max_return_addr_numVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("failover_max_return_addr_num", failover_max_return_addr_numVal)
 	}
 	if v, ok := object["FailoverMinAvailableAddrNum"]; ok {
-		d.Set("failover_min_available_addr_num", formatInt(v))
+		failover_min_available_addr_numVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("failover_min_available_addr_num", failover_min_available_addr_numVal)
 	}
 	d.Set("instance_id", object["InstanceId"])
 	d.Set("strategy_mode", object["StrategyMode"])

@@ -58,7 +58,11 @@ func resourceAlicloudEssAlbServerGroupAttachment() *schema.Resource {
 func resourceAliyunEssAlbServerGroupAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	scalingGroupId := d.Get("scaling_group_id").(string)
 	albServerGroupId := d.Get("alb_server_group_id").(string)
-	port := strconv.Itoa(formatInt(d.Get("port")))
+	portNumber, err := formatInt(d.Get("port"))
+	if err != nil {
+		return err
+	}
+	port := strconv.Itoa(portNumber)
 
 	client := meta.(*connectivity.AliyunClient)
 	request := ess.CreateAttachAlbServerGroupsRequest()
@@ -66,16 +70,20 @@ func resourceAliyunEssAlbServerGroupAttachmentCreate(d *schema.ResourceData, met
 	request.ScalingGroupId = scalingGroupId
 	request.ForceAttach = requests.NewBoolean(d.Get("force_attach").(bool))
 	attachScalingGroupAlbServerGroups := make([]ess.AttachAlbServerGroupsAlbServerGroup, 0)
+
+	weightValue, err := formatInt(d.Get("weight"))
+	if err != nil {
+		return err
+	}
 	attachScalingGroupAlbServerGroups = append(attachScalingGroupAlbServerGroups, ess.AttachAlbServerGroupsAlbServerGroup{
 		AlbServerGroupId: albServerGroupId,
 		Port:             port,
-		Weight:           strconv.Itoa(formatInt(d.Get("weight"))),
+		Weight:           strconv.Itoa(weightValue),
 	})
 	request.AlbServerGroup = &attachScalingGroupAlbServerGroups
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 
 	var raw interface{}
-	var err error
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.AttachAlbServerGroups(request)
@@ -125,12 +133,18 @@ func resourceAliyunEssAlbServerGroupAttachmentRead(d *schema.ResourceData, meta 
 	}
 
 	for _, v := range object.AlbServerGroups.AlbServerGroup {
-		if v.AlbServerGroupId == albServerGroupId && v.Port == formatInt(port) {
-			d.Set("scaling_group_id", object.ScalingGroupId)
-			d.Set("alb_server_group_id", v.AlbServerGroupId)
-			d.Set("weight", v.Weight)
-			d.Set("port", v.Port)
-			return nil
+		if v.AlbServerGroupId == albServerGroupId {
+			portVal, portErr := formatInt(port)
+			if portErr != nil {
+				return portErr
+			}
+			if v.Port == portVal {
+				d.Set("scaling_group_id", object.ScalingGroupId)
+				d.Set("alb_server_group_id", v.AlbServerGroupId)
+				d.Set("weight", v.Weight)
+				d.Set("port", v.Port)
+				return nil
+			}
 		}
 	}
 	return WrapErrorf(NotFoundErr("AlbServerGroup", d.Id()), NotFoundMsg, ProviderERROR)

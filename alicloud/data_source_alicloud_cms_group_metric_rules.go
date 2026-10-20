@@ -311,6 +311,16 @@ func dataSourceAlicloudCmsGroupMetricRulesRead(d *schema.ResourceData, meta inte
 	names := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		periodVal, err := formatInt(object["Period"])
+		if err != nil {
+			return err
+		}
+
+		silence_timeVal, err := formatInt(object["SilenceTime"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"contact_groups":         object["ContactGroups"],
 			"dimensions":             object["Dimensions"],
@@ -322,11 +332,11 @@ func dataSourceAlicloudCmsGroupMetricRulesRead(d *schema.ResourceData, meta inte
 			"metric_name":            object["MetricName"],
 			"namespace":              object["Namespace"],
 			"no_effective_interval":  object["NoEffectiveInterval"],
-			"period":                 formatInt(object["Period"]),
+			"period":                 periodVal,
 			"resources":              object["Resources"],
 			"id":                     fmt.Sprint(object["RuleId"]),
 			"rule_id":                fmt.Sprint(object["RuleId"]),
-			"silence_time":           formatInt(object["SilenceTime"]),
+			"silence_time":           silence_timeVal,
 			"source_type":            object["SourceType"],
 			"status":                 object["AlertState"],
 			"webhook":                object["Webhook"],

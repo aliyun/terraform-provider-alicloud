@@ -265,8 +265,8 @@ func TestAccAliCloudSmartagFlowLog_basic_all(t *testing.T) {
 					"netflow_version":     "V10",
 					"inactive_aging":      "20",
 					"flow_log_name":       "${var.name}_update",
-					"sls_region_id":       defaultRegionToTest,
-					"output_type":         "all",
+					"sls_region_id":       "Active",
+					"output_type":         "netflow",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

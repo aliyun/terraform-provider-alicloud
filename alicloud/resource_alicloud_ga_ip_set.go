@@ -143,7 +143,11 @@ func resourceAliCloudGaIpSetRead(d *schema.ResourceData, meta interface{}) error
 
 	d.Set("accelerator_id", object["AcceleratorId"])
 	d.Set("accelerate_region_id", object["AccelerateRegionId"])
-	d.Set("bandwidth", formatInt(object["Bandwidth"]))
+	bandwidthVal, err := formatInt(object["Bandwidth"])
+	if err != nil {
+		return err
+	}
+	d.Set("bandwidth", bandwidthVal)
 	d.Set("ip_version", object["IpVersion"])
 	d.Set("isp_type", object["IspType"])
 	d.Set("ip_address_list", object["IpAddressList"])

@@ -43,8 +43,9 @@ func TestAccAliCloudRocketmqInstance_SendReceiveRatioValidation(t *testing.T) {
 					"instance_name": name,
 					"product_info": []map[string]interface{}{
 						{
+							// This should be out of range [0.05, 0.5] to test validation
 							"msg_process_spec":       "rmq.p2.4xlarge",
-							"send_receive_ratio":     "0.03", // This should be out of range [0.05, 0.5] to test validation
+							"send_receive_ratio":     "0.03",
 							"message_retention_time": "70",
 						},
 					},
@@ -449,6 +450,19 @@ func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 						"tags.For":     REMOVEKEY,
 					}),
 				),
+			},
+			{
+				// The software maintenance window is managed by the service for
+				// provisioned instances and cannot be set standalone here.
+				// Removing the required sub_series_code stops the plan before
+				// the placeholder reaches the API.
+				Config: testAccConfig(map[string]interface{}{
+					"software": []map[string]interface{}{
+						{"maintain_time": "05:00:00"},
+					},
+					"sub_series_code": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			{
 				ResourceName:            resourceId,

@@ -162,9 +162,14 @@ func resourceAliCloudEsaRoutineCodeDeploymentRead(d *schema.ResourceData, meta i
 			if !ok {
 				continue
 			}
+
+			percentageVal, err := formatInt(cv["Percentage"])
+			if err != nil {
+				return err
+			}
 			codeVersions = append(codeVersions, map[string]interface{}{
 				"code_version": fmt.Sprint(cv["CodeVersion"]),
-				"percentage":   formatInt(cv["Percentage"]),
+				"percentage":   percentageVal,
 			})
 		}
 	}

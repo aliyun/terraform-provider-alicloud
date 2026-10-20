@@ -184,15 +184,27 @@ func resourceAlicloudEhpcJobTemplateRead(d *schema.ResourceData, meta interface{
 	d.Set("clock_time", object["ClockTime"])
 	d.Set("command_line", object["CommandLine"])
 	if v, ok := object["Gpu"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("gpu", formatInt(v))
+		gpuVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("gpu", gpuVal)
 	}
 	d.Set("mem", object["Mem"])
 	if v, ok := object["Node"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("node", formatInt(v))
+		nodeVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("node", nodeVal)
 	}
 	d.Set("package_path", object["PackagePath"])
 	if v, ok := object["Priority"]; ok {
-		d.Set("priority", formatInt(v))
+		priorityVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("priority", priorityVal)
 	}
 	d.Set("queue", object["Queue"])
 	d.Set("job_template_name", object["Name"])
@@ -206,10 +218,18 @@ func resourceAlicloudEhpcJobTemplateRead(d *schema.ResourceData, meta interface{
 	d.Set("stderr_redirect_path", object["StderrRedirectPath"])
 	d.Set("stdout_redirect_path", object["StdoutRedirectPath"])
 	if v, ok := object["Task"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("task", formatInt(v))
+		taskVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("task", taskVal)
 	}
 	if v, ok := object["Thread"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("thread", formatInt(v))
+		threadVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("thread", threadVal)
 	}
 	d.Set("variables", object["Variables"])
 	return nil

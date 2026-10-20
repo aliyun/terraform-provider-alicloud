@@ -425,17 +425,33 @@ func resourceAlicloudCloudStorageGatewayGatewayFileShareRead(d *schema.ResourceD
 	d.Set("gateway_id", parts[0])
 	d.Set("index_id", parts[1])
 	d.Set("access_based_enumeration", object["AccessBasedEnumeration"])
-	d.Set("backend_limit", formatInt(object["BeLimit"]))
+	backend_limitVal, err := formatInt(object["BeLimit"])
+	if err != nil {
+		return err
+	}
+	d.Set("backend_limit", backend_limitVal)
 	d.Set("browsable", object["Browsable"])
 	d.Set("cache_mode", object["CacheMode"])
 	d.Set("direct_io", object["DirectIO"])
-	d.Set("download_limit", formatInt(object["DownloadLimit"]))
+	download_limitVal, err := formatInt(object["DownloadLimit"])
+	if err != nil {
+		return err
+	}
+	d.Set("download_limit", download_limitVal)
 	d.Set("fast_reclaim", object["FastReclaim"])
-	d.Set("fe_limit", formatInt(object["FeLimit"]))
+	fe_limitVal, err := formatInt(object["FeLimit"])
+	if err != nil {
+		return err
+	}
+	d.Set("fe_limit", fe_limitVal)
 	d.Set("gateway_file_share_name", object["Name"])
 	d.Set("ignore_delete", object["IgnoreDelete"])
 	d.Set("in_place", object["InPlace"])
-	d.Set("lag_period", formatInt(object["LagPeriod"]))
+	lag_periodVal, err := formatInt(object["LagPeriod"])
+	if err != nil {
+		return err
+	}
+	d.Set("lag_period", lag_periodVal)
 	d.Set("local_path", object["LocalPath"])
 	d.Set("nfs_v4_optimization", object["NfsV4Optimization"])
 	d.Set("oss_bucket_name", object["OssBucketName"])
@@ -444,7 +460,11 @@ func resourceAlicloudCloudStorageGatewayGatewayFileShareRead(d *schema.ResourceD
 	d.Set("partial_sync_paths", object["PartialSyncPaths"])
 	d.Set("path_prefix", object["PathPrefix"])
 	if v, ok := object["PollingInterval"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("polling_interval", formatInt(v))
+		polling_intervalVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("polling_interval", polling_intervalVal)
 	}
 	d.Set("protocol", object["Protocol"])
 	d.Set("bypass_cache_read", object["BypassCacheRead"])

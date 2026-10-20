@@ -31,6 +31,8 @@ func TestAccAliCloudCloudStorageGatewayGatewayBlockVolume_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"is_source_deletion":        "true",
+					"recovery":                  "true",
 					"gateway_id":                "${alicloud_cloud_storage_gateway_gateway.default.id}",
 					"gateway_block_volume_name": name,
 					"chunk_size":                "8192",

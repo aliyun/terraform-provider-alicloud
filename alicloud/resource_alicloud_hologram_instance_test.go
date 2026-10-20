@@ -1027,12 +1027,13 @@ func TestAccAliCloudHologramInstance_basic4858(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":       "${alicloud_vswitch.defaultVSwitch.zone_id}",
-					"instance_name": name,
-					"payment_type":  "PayAsYouGo",
-					"instance_type": "Standard",
-					"pricing_cycle": "Hour",
-					"cpu":           "32",
+					"leader_instance_id": "${alicloud_hologram_instance.leaderInstance.id}",
+					"zone_id":            "${alicloud_vswitch.defaultVSwitch.zone_id}",
+					"instance_name":      name,
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "Standard",
+					"pricing_cycle":      "Hour",
+					"cpu":                "32",
 					"endpoints": []map[string]interface{}{
 						{
 							"type": "Intranet",

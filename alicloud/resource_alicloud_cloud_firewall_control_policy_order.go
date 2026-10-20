@@ -94,7 +94,11 @@ func resourceAliCloudCloudFirewallControlPolicyOrderRead(d *schema.ResourceData,
 
 	d.Set("acl_uuid", object["AclUuid"])
 	d.Set("direction", object["Direction"])
-	d.Set("order", formatInt(object["Order"]))
+	orderVal, err := formatInt(object["Order"])
+	if err != nil {
+		return err
+	}
+	d.Set("order", orderVal)
 
 	return nil
 }

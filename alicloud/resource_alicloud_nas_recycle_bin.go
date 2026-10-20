@@ -85,7 +85,11 @@ func resourceAlicloudNasRecycleBinRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("file_system_id", d.Id())
-	d.Set("reserved_days", formatInt(object["ReservedDays"]))
+	reserved_daysVal, err := formatInt(object["ReservedDays"])
+	if err != nil {
+		return err
+	}
+	d.Set("reserved_days", reserved_daysVal)
 	d.Set("status", object["Status"])
 	return nil
 }

@@ -160,7 +160,11 @@ func dataSourceAliCloudEsaRoutineCodeVersionsRead(d *schema.ResourceData, meta i
 			"deploy_env":       object["DeployEnv"],
 		}
 		if v, ok := object["BuildId"]; ok && v != nil {
-			mapping["build_id"] = formatInt(v)
+			buildId, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["build_id"] = buildId
 		}
 		if v, ok := object["HasEnvVars"]; ok && v != nil {
 			mapping["has_env_vars"] = v

@@ -346,7 +346,11 @@ func resourceAliCloudExpressConnectRouterInterfaceRead(d *schema.ResourceData, m
 	d.Set("access_point_id", objectRaw["AccessPointId"])
 	d.Set("bandwidth", objectRaw["Bandwidth"])
 	d.Set("description", objectRaw["Description"])
-	d.Set("fast_link_mode", formatBool(objectRaw["FastLinkMode"]))
+	fast_link_modeVal, err := formatBool(objectRaw["FastLinkMode"])
+	if err != nil {
+		return err
+	}
+	d.Set("fast_link_mode", fast_link_modeVal)
 	d.Set("hc_rate", objectRaw["HcRate"])
 	if v, ok := objectRaw["HcThreshold"]; ok {
 		d.Set("hc_threshold", v)

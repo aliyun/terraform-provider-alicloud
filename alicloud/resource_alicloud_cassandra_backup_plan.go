@@ -117,7 +117,11 @@ func resourceAlicloudCassandraBackupPlanRead(d *schema.ResourceData, meta interf
 	d.Set("active", object["Active"])
 	d.Set("backup_period", object["BackupPeriod"])
 	d.Set("backup_time", object["BackupTime"])
-	d.Set("retention_period", formatInt(object["RetentionPeriod"]))
+	retention_periodVal, err := formatInt(object["RetentionPeriod"])
+	if err != nil {
+		return err
+	}
+	d.Set("retention_period", retention_periodVal)
 	return nil
 }
 func resourceAlicloudCassandraBackupPlanUpdate(d *schema.ResourceData, meta interface{}) error {

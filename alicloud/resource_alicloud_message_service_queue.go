@@ -268,7 +268,11 @@ func resourceAliCloudMessageServiceQueueRead(d *schema.ResourceData, meta interf
 	if len(dlqPolicyRaw) > 0 {
 		dlqPolicyMap["dead_letter_target_queue"] = dlqPolicyRaw["DeadLetterTargetQueue"]
 		dlqPolicyMap["enabled"] = dlqPolicyRaw["Enabled"]
-		dlqPolicyMap["max_receive_count"] = formatInt(dlqPolicyRaw["MaxReceiveCount"])
+		maxReceiveCount, err := formatInt(dlqPolicyRaw["MaxReceiveCount"])
+		if err != nil {
+			return err
+		}
+		dlqPolicyMap["max_receive_count"] = maxReceiveCount
 
 		dlqPolicyMaps = append(dlqPolicyMaps, dlqPolicyMap)
 	}

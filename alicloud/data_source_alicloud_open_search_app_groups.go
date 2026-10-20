@@ -269,27 +269,70 @@ func dataSourceAlicloudOpenSearchAppGroupsRead(d *schema.ResourceData, meta inte
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		charge_wayVal, err := formatInt(object["chargingWay"])
+		if err != nil {
+			return err
+		}
+
+		create_timeVal, err := formatInt(object["created"])
+		if err != nil {
+			return err
+		}
+
+		first_rank_algo_deployment_idVal, err := formatInt(object["firstRankAlgoDeploymentId"])
+		if err != nil {
+			return err
+		}
+		has_pending_quota_review_taskVal, err := formatInt(object["hasPendingQuotaReviewTask"])
+		if err != nil {
+			return err
+		}
+
+		locked_by_expirationVal, err := formatInt(object["lockedByExpiration"])
+		if err != nil {
+			return err
+		}
+		pending_second_rank_algo_deployment_idVal, err := formatInt(object["pendingSecondRankAlgoDeploymentId"])
+		if err != nil {
+			return err
+		}
+
+		producedVal, err := formatInt(object["produced"])
+		if err != nil {
+			return err
+		}
+
+		second_rank_algo_deployment_idVal, err := formatInt(object["secondRankAlgoDeploymentId"])
+		if err != nil {
+			return err
+		}
+
+		switched_timeVal, err := formatInt(object["switchedTime"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"payment_type":                           convertOpenSearchAppGroupPaymentTypeResponse(object["chargeType"].(string)),
-			"charge_way":                             formatInt(object["chargingWay"]),
+			"charge_way":                             charge_wayVal,
 			"commodity_code":                         object["commodityCode"],
-			"create_time":                            formatInt(object["created"]),
+			"create_time":                            create_timeVal,
 			"current_version":                        object["currentVersion"],
 			"description":                            object["description"],
 			"domain":                                 object["domain"],
 			"expire_on":                              object["expireOn"],
-			"first_rank_algo_deployment_id":          formatInt(object["firstRankAlgoDeploymentId"]),
-			"has_pending_quota_review_task":          formatInt(object["hasPendingQuotaReviewTask"]),
+			"first_rank_algo_deployment_id":          first_rank_algo_deployment_idVal,
+			"has_pending_quota_review_task":          has_pending_quota_review_taskVal,
 			"instance_id":                            object["instanceId"],
 			"lock_mode":                              object["lockMode"],
-			"locked_by_expiration":                   formatInt(object["lockedByExpiration"]),
-			"pending_second_rank_algo_deployment_id": formatInt(object["pendingSecondRankAlgoDeploymentId"]),
+			"locked_by_expiration":                   locked_by_expirationVal,
+			"pending_second_rank_algo_deployment_id": pending_second_rank_algo_deployment_idVal,
 			"processing_order_id":                    object["processingOrderId"],
-			"produced":                               formatInt(object["produced"]),
+			"produced":                               producedVal,
 			"project_id":                             object["projectId"],
-			"second_rank_algo_deployment_id":         formatInt(object["secondRankAlgoDeploymentId"]),
+			"second_rank_algo_deployment_id":         second_rank_algo_deployment_idVal,
 			"status":                                 object["status"],
-			"switched_time":                          formatInt(object["switchedTime"]),
+			"switched_time":                          switched_timeVal,
 			"type":                                   object["type"],
 		}
 		quotaSli := make([]map[string]interface{}, 0)

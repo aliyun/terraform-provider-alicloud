@@ -108,7 +108,11 @@ func resourceAlicloudClickHouseBackupPolicyRead(d *schema.ResourceData, meta int
 
 	d.Set("db_cluster_id", d.Id())
 	if v, ok := object["BackupRetentionPeriod"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("backup_retention_period", formatInt(v))
+		backup_retention_periodVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("backup_retention_period", backup_retention_periodVal)
 	}
 	d.Set("preferred_backup_period", strings.Split(object["PreferredBackupPeriod"].(string), ","))
 	d.Set("preferred_backup_time", object["PreferredBackupTime"])

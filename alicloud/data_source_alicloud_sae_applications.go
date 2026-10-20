@@ -443,7 +443,11 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		mapping["config_map_mount_desc"] = configMapMountDesc
 
 		if v, ok := getResp["Cpu"]; ok && fmt.Sprint(v) != "0" {
-			mapping["cpu"] = formatInt(v)
+			cpuValue, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["cpu"] = cpuValue
 		}
 		mapping["custom_host_alias"] = getResp["CustomHostAlias"]
 		mapping["edas_container_version"] = getResp["EdasContainerVersion"]
@@ -454,10 +458,18 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		mapping["jdk"] = getResp["Jdk"]
 		mapping["liveness"] = getResp["Liveness"]
 		if v, ok := getResp["Memory"]; ok && fmt.Sprint(v) != "0" {
-			mapping["memory"] = formatInt(v)
+			memoryValue, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["memory"] = memoryValue
 		}
 		if v, ok := getResp["MinReadyInstances"]; ok && fmt.Sprint(v) != "0" {
-			mapping["min_ready_instances"] = formatInt(v)
+			minReadyInstances, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["min_ready_instances"] = minReadyInstances
 		}
 		mapping["mount_host"] = getResp["MountHost"]
 		mapping["nas_id"] = getResp["NasId"]
@@ -488,12 +500,20 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		mapping["pre_stop"] = getResp["PreStop"]
 		mapping["readiness"] = getResp["Readiness"]
 		if v, ok := getResp["Replicas"]; ok && fmt.Sprint(v) != "0" {
-			mapping["replicas"] = formatInt(v)
+			replicasValue, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["replicas"] = replicasValue
 		}
 		mapping["security_group_id"] = getResp["SecurityGroupId"]
 		mapping["sls_configs"] = getResp["SlsConfigs"]
 		if v, ok := getResp["TerminationGracePeriodSeconds"]; ok && fmt.Sprint(v) != "0" {
-			mapping["termination_grace_period_seconds"] = formatInt(v)
+			terminationGracePeriodSeconds, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["termination_grace_period_seconds"] = terminationGracePeriodSeconds
 		}
 		mapping["timezone"] = getResp["Timezone"]
 		mapping["tomcat_config"] = getResp["TomcatConfig"]

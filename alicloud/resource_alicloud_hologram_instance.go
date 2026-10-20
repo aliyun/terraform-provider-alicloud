@@ -407,7 +407,11 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "EnableSSL", objectRaw)
 		}
-		if formatBool(currentStatus) != target {
+		currentStatusValue, formatErr := formatBool(currentStatus)
+		if formatErr != nil {
+			return formatErr
+		}
+		if currentStatusValue != target {
 			if target == true {
 				instanceId := d.Id()
 				action := fmt.Sprintf("/api/v1/instances/%s/enableSSL", instanceId)

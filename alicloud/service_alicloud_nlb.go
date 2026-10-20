@@ -161,7 +161,11 @@ func (s *NlbService) ListTagResources(id string, resourceType string) (object in
 			}
 			addDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources", response)
-			if formatInt(response["TotalCount"]) != 0 && err != nil {
+			totalCountVal, totalCountErr := formatInt(response["TotalCount"])
+			if totalCountErr != nil {
+				return retry.NonRetryableError(totalCountErr)
+			}
+			if totalCountVal != 0 && err != nil {
 				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
 			}
 			if v != nil {

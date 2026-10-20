@@ -445,6 +445,11 @@ func resourceAliCloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	if err != nil {
 		return WrapError(err)
 	}
+
+	portVal, err := formatInt(adAuthServer["Port"])
+	if err != nil {
+		return err
+	}
 	adAuthServerMap := map[string]interface{}{
 		"account":        adAuthServer["Account"],
 		"base_dn":        adAuthServer["BaseDN"],
@@ -454,7 +459,7 @@ func resourceAliCloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		"is_ssl":         adAuthServer["IsSSL"],
 		"mobile_mapping": adAuthServer["MobileMapping"],
 		"name_mapping":   adAuthServer["NameMapping"],
-		"port":           formatInt(adAuthServer["Port"]),
+		"port":           portVal,
 		"server":         adAuthServer["Server"],
 		"standby_server": adAuthServer["StandbyServer"],
 	}

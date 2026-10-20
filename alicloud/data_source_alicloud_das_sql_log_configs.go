@@ -95,16 +95,41 @@ func dataSourceAliCloudDasSqlLogConfigsRead(d *schema.ResourceData, meta interfa
 		dataRaw = map[string]interface{}{}
 	}
 
+	enableVal, err := formatBool(dataRaw["SqlLogEnable"])
+	if err != nil {
+		return err
+	}
+	request_enableVal, err := formatBool(dataRaw["RequestEnable"])
+	if err != nil {
+		return err
+	}
+	retentionVal, err := formatInt(dataRaw["Retention"])
+	if err != nil {
+		return err
+	}
+	hot_retentionVal, err := formatInt(dataRaw["HotRetention"])
+	if err != nil {
+		return err
+	}
+	cold_retentionVal, err := formatInt(dataRaw["ColdRetention"])
+	if err != nil {
+		return err
+	}
+
+	sql_log_visible_timeVal, err := formatInt(dataRaw["SqlLogVisibleTime"])
+	if err != nil {
+		return err
+	}
 	mapping := map[string]interface{}{
 		"instance_id":          instanceId,
-		"enable":               formatBool(dataRaw["SqlLogEnable"]),
-		"request_enable":       formatBool(dataRaw["RequestEnable"]),
-		"retention":            formatInt(dataRaw["Retention"]),
-		"hot_retention":        formatInt(dataRaw["HotRetention"]),
-		"cold_retention":       formatInt(dataRaw["ColdRetention"]),
+		"enable":               enableVal,
+		"request_enable":       request_enableVal,
+		"retention":            retentionVal,
+		"hot_retention":        hot_retentionVal,
+		"cold_retention":       cold_retentionVal,
 		"version":              dataRaw["Version"],
 		"log_filter":           dataRaw["LogFilter"],
-		"sql_log_visible_time": formatInt(dataRaw["SqlLogVisibleTime"]),
+		"sql_log_visible_time": sql_log_visible_timeVal,
 	}
 
 	d.SetId(dataResourceIdHash([]string{instanceId}))

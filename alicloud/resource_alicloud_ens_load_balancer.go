@@ -183,7 +183,11 @@ func resourceAliCloudEnsLoadBalancerRead(d *schema.ResourceData, meta interface{
 			backendServersMap := make(map[string]interface{})
 			backendServersChildRaw := backendServersChildRaw.(map[string]interface{})
 			backendServersMap["ip"] = backendServersChildRaw["Ip"]
-			backendServersMap["port"] = formatInt(backendServersChildRaw["Port"])
+			backendServersChildRawPort, err := formatInt(backendServersChildRaw["Port"])
+			if err != nil {
+				return err
+			}
+			backendServersMap["port"] = backendServersChildRawPort
 			backendServersMap["server_id"] = backendServersChildRaw["ServerId"]
 			backendServersMap["type"] = backendServersChildRaw["Type"]
 			backendServersMap["weight"] = backendServersChildRaw["Weight"]

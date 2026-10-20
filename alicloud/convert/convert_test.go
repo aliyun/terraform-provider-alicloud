@@ -347,51 +347,67 @@ func TestUnitCommonConvertJsonStringToStringList(t *testing.T) {
 		name     string
 		input    interface{}
 		expected []interface{}
-		panics   bool
+		wantErr  bool
 	}{
 		{
 			name:     "ValidIntegerSlice",
 			input:    []interface{}{1, 2, 3},
 			expected: []interface{}{"1", "2", "3"},
-			panics:   false,
+			wantErr:  false,
 		},
 		{
 			name:     "ValidMixedSlice",
 			input:    []interface{}{"10", 5.5, 1},
-			expected: []interface{}{"10", "5", "1"}, // FormatInt(true)=1
-			panics:   false,
+			expected: []interface{}{"10", "5", "1"},
+			wantErr:  false,
 		},
 		{
 			name:     "EmptySlice",
 			input:    []interface{}{},
 			expected: []interface{}{},
-			panics:   false,
+			wantErr:  false,
 		},
 		{
 			name:     "InvalidType",
 			input:    "not a slice",
 			expected: nil,
-			panics:   true,
+			wantErr:  true,
+		},
+		{
+			name:     "NilInput",
+			input:    nil,
+			expected: nil,
+			wantErr:  true,
 		},
 		{
 			name:     "JsonNumber",
 			input:    []interface{}{json.Number("10")},
 			expected: []interface{}{"10"},
-			panics:   false,
+			wantErr:  false,
+		},
+		{
+			name:     "IllegalElement",
+			input:    []interface{}{1, "abc"},
+			expected: nil,
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			defer func() {
-				if r := recover(); r != nil && !tt.panics {
-					t.Errorf("Unexpected panic: %v", r)
-				} else if r == nil && tt.panics {
-					t.Error("Expected panic did not occur")
-				}
-			}()
+			result, err := ConvertJsonStringToStringList(tt.input)
 
-			result := ConvertJsonStringToStringList(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Error expectation failed: wantErr %v, got %v", tt.wantErr, err)
+			}
+
+			if tt.wantErr {
+				if result != nil {
+					t.Errorf("Expected nil result on error, got %v", result)
+				}
+				return
+			}
+
 			if len(result) != len(tt.expected) {
 				t.Fatalf("Length mismatch: got %d, want %d", len(result), len(tt.expected))
 			}

@@ -220,7 +220,11 @@ func resourceAlicloudEcdAdConnectorOfficeSiteRead(d *schema.ResourceData, meta i
 	}
 	d.Set("ad_connector_office_site_name", object["Name"])
 	if v, ok := object["Bandwidth"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("bandwidth", formatInt(v))
+		bandwidthVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("bandwidth", bandwidthVal)
 	}
 	d.Set("cen_id", object["CenId"])
 	d.Set("cidr_block", object["CidrBlock"])

@@ -34,6 +34,11 @@ func TestAccAliCloudAlidnsGtmInstance_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"force_update":            "true",
+					"lang":                    "Subscription",
+					"public_rr":               "60",
+					"public_zone_name":        name,
+					"renew_period":            "1",
 					"instance_name":           name,
 					"payment_type":            "Subscription",
 					"period":                  "1",
@@ -75,6 +80,17 @@ func TestAccAliCloudAlidnsGtmInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"cname_type":              "PUBLIC-upd",
+					"public_rr":               "61",
+					"public_user_domain_name": "60",
+					"public_zone_name":        "60",
+					"alert_config": []map[string]interface{}{
+						{
+							"dingtalk_notice": "false",
+							"email_notice":    "false",
+							"sms_notice":      "false",
+						},
+					},
 					"instance_name": name + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -149,7 +165,7 @@ func TestAccAliCloudAlidnsGtmInstance_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_name":     name,
-					"public_cname_mode": "SYSTEM_ASSIGN",
+					"public_cname_mode": "CUSTOM",
 					"ttl":               "60",
 					"alert_group":       []string{"${alicloud_cms_alarm_contact_group.default.0.alarm_contact_group_name}"},
 					"strategy_mode":     "GEO",

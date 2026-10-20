@@ -159,7 +159,11 @@ func dataSourceAlicloudVpcIpv6InternetBandwidthsRead(d *schema.ResourceData, met
 		if ipv6InternetBandwidth, ok := object["Ipv6InternetBandwidth"]; ok {
 			if v, ok := ipv6InternetBandwidth.(map[string]interface{}); ok {
 				if v, ok := v["Bandwidth"]; ok {
-					mapping["bandwidth"] = formatInt(v)
+					bandwidthValue, err := formatInt(v)
+					if err != nil {
+						return err
+					}
+					mapping["bandwidth"] = bandwidthValue
 				}
 				if v, ok := v["BusinessStatus"]; ok {
 					mapping["status"] = v

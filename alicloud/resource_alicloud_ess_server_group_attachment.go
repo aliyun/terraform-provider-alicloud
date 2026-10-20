@@ -65,7 +65,11 @@ func resourceAliyunEssServerGroupAttachmentCreate(d *schema.ResourceData, meta i
 	scalingGroupId := d.Get("scaling_group_id").(string)
 	serverGroupId := d.Get("server_group_id").(string)
 	typeAttribute := d.Get("type").(string)
-	port := strconv.Itoa(formatInt(d.Get("port")))
+	portNumber, err := formatInt(d.Get("port"))
+	if err != nil {
+		return err
+	}
+	port := strconv.Itoa(portNumber)
 
 	if typeAttribute == "GWLB" {
 		if _, ok := d.GetOkExists("weight"); ok {
@@ -88,10 +92,15 @@ func resourceAliyunEssServerGroupAttachmentCreate(d *schema.ResourceData, meta i
 			Type:          typeAttribute,
 		})
 	} else {
+
+		weightValue, err := formatInt(d.Get("weight"))
+		if err != nil {
+			return err
+		}
 		attachScalingGroupServerGroups = append(attachScalingGroupServerGroups, ess.AttachServerGroupsServerGroup{
 			ServerGroupId: serverGroupId,
 			Port:          port,
-			Weight:        strconv.Itoa(formatInt(d.Get("weight"))),
+			Weight:        strconv.Itoa(weightValue),
 			Type:          typeAttribute,
 		})
 	}
@@ -100,7 +109,6 @@ func resourceAliyunEssServerGroupAttachmentCreate(d *schema.ResourceData, meta i
 	wait := incrementalWait(1*time.Second, 2*time.Second)
 
 	var raw interface{}
-	var err error
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.AttachServerGroups(request)
@@ -158,13 +166,19 @@ func resourceAliyunEssServerGroupAttachmentRead(d *schema.ResourceData, meta int
 				return nil
 			}
 		} else {
-			if v.ServerGroupId == serverGroupId && v.Port == formatInt(port) && v.Type == typeAttribute {
-				d.Set("scaling_group_id", object.ScalingGroupId)
-				d.Set("type", v.Type)
-				d.Set("server_group_id", v.ServerGroupId)
-				d.Set("weight", v.Weight)
-				d.Set("port", v.Port)
-				return nil
+			if v.ServerGroupId == serverGroupId {
+				portVal, portErr := formatInt(port)
+				if portErr != nil {
+					return portErr
+				}
+				if v.Port == portVal && v.Type == typeAttribute {
+					d.Set("scaling_group_id", object.ScalingGroupId)
+					d.Set("type", v.Type)
+					d.Set("server_group_id", v.ServerGroupId)
+					d.Set("weight", v.Weight)
+					d.Set("port", v.Port)
+					return nil
+				}
 			}
 		}
 

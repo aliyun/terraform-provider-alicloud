@@ -486,7 +486,7 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_count": "2",
-					"db_node_class": "polar.mysql.x4.large",
+					"db_node_class": "polar.pg.x4.medium",
 					"sub_category":  "Exclusive",
 					"modify_type":   "Upgrade",
 				}),

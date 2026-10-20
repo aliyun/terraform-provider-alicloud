@@ -265,10 +265,15 @@ func dataSourceAlicloudEcdPolicyGroupsRead(d *schema.ResourceData, meta interfac
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		eds_countVal, err := formatInt(object["EdsCount"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"clipboard":              object["Clipboard"],
 			"domain_list":            object["DomainList"],
-			"eds_count":              formatInt(object["EdsCount"]),
+			"eds_count":              eds_countVal,
 			"html_access":            object["Html5Access"],
 			"html_file_transfer":     object["Html5FileTransfer"],
 			"local_drive":            object["LocalDrive"],

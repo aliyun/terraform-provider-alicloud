@@ -155,16 +155,35 @@ func dataSourceAlicloudSddpDataLimitsRead(d *schema.ResourceData, meta interface
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		audit_statusVal, err := formatInt(object["AuditStatus"])
+		if err != nil {
+			return err
+		}
+		check_statusVal, err := formatInt(object["CheckStatus"])
+		if err != nil {
+			return err
+		}
+
+		log_store_dayVal, err := formatInt(object["LogStoreDay"])
+		if err != nil {
+			return err
+		}
+
+		portVal, err := formatInt(object["Port"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
-			"audit_status":  formatInt(object["AuditStatus"]),
-			"check_status":  formatInt(object["CheckStatus"]),
+			"audit_status":  audit_statusVal,
+			"check_status":  check_statusVal,
 			"id":            fmt.Sprint(object["Id"]),
 			"data_limit_id": fmt.Sprint(object["Id"]),
 			"engine_type":   object["EngineType"],
 			"local_name":    object["LocalName"],
-			"log_store_day": formatInt(object["LogStoreDay"]),
+			"log_store_day": log_store_dayVal,
 			"parent_id":     object["ParentId"],
-			"port":          formatInt(object["Port"]),
+			"port":          portVal,
 			"resource_type": fmt.Sprint(object["ResourceTypeCode"]),
 			"user_name":     object["UserName"],
 		}

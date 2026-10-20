@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -242,11 +243,11 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": name + ":_.-,][[" + name + "]" + "_change",
+					"instance_name": name + ":_.-,[]" + name + "_change",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name":         name + ":_.-,][[" + name + "]" + "_change",
+						"instance_name":         name + ":_.-,[]" + name + "_change",
 						"latest_version_number": "5",
 					}),
 				),
@@ -680,6 +681,36 @@ func TestAccAliCloudECSLaunchTemplateBasic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":             "m-tfacc-placeholder",
+					"image_owner_alias":    "marketplace",
+					"instance_charge_type": "PostPaid",
+					"auto_release_time":    "2026-01-01T12:05:05Z",
+					"deployment_set_id":    "ds-tfacc-placeholder",
+					"enable_vm_os_config":  "true",
+					"password_inherit":     "true",
+					"private_ip_address":   "192.168.0.10",
+					"version_description":  "tfacc-version-desc",
+					"security_group_id":    "sg-tfacc-placeholder",
+					"vpc_id":               "vpc-tfacc-placeholder",
+					"spot_duration":        "2",
+					"system_disk": []map[string]string{
+						{
+							"category":          "cloud_efficiency",
+							"iops":              "100",
+							"performance_level": "PL2",
+						},
+					},
+					"data_disks": []map[string]string{
+						{
+							"snapshot_id": "s-tfacc-placeholder",
+						},
+					},
+					"instance_type": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
 		},
 	})
 }
@@ -712,7 +743,7 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 					"image_id":                      "${data.alicloud_images.default.images.0.id}",
 					"host_name":                     name,
 					"instance_charge_type":          "PrePaid",
-					"instance_name":                 name + ":_.-,][[" + name + "]",
+					"instance_name":                 name + ":_.-,[]" + name,
 					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"internet_charge_type":          "PayByBandwidth",
 					"internet_max_bandwidth_in":     "5",
@@ -801,7 +832,7 @@ func TestAccAliCloudECSLaunchTemplateBasic1(t *testing.T) {
 						"launch_template_name":   name,
 						"description":            name,
 						"host_name":              name,
-						"instance_name":          name + ":_.-,][[" + name + "]",
+						"instance_name":          name + ":_.-,[]" + name,
 						"key_pair_name":          name,
 						"ram_role_name":          name,
 						"auto_release_time":      CHECKSET,

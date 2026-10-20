@@ -118,11 +118,19 @@ func resourceAlicloudEcsActivationRead(d *schema.ResourceData, meta interface{})
 	}
 	d.Set("description", object["Description"])
 	if v, ok := object["InstanceCount"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("instance_count", formatInt(v))
+		instance_countVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("instance_count", instance_countVal)
 	}
 	d.Set("instance_name", object["InstanceName"])
 	d.Set("ip_address_range", object["IpAddressRange"])
-	d.Set("time_to_live_in_hours", formatInt(object["TimeToLiveInHours"]))
+	time_to_live_in_hoursVal, err := formatInt(object["TimeToLiveInHours"])
+	if err != nil {
+		return err
+	}
+	d.Set("time_to_live_in_hours", time_to_live_in_hoursVal)
 
 	return nil
 }

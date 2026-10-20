@@ -277,26 +277,46 @@ func resourceAlicloudDmsEnterpriseInstanceRead(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 	d.Set("host", parts[0])
-	d.Set("port", formatInt(parts[1]))
+	portVal, err := formatInt(parts[1])
+	if err != nil {
+		return err
+	}
+	d.Set("port", portVal)
 	d.Set("data_link_name", object["DataLinkName"])
 	d.Set("database_user", object["DatabaseUser"])
 	d.Set("dba_id", object["DbaId"])
-	d.Set("ddl_online", formatInt(object["DdlOnline"]))
+	ddl_onlineVal, err := formatInt(object["DdlOnline"])
+	if err != nil {
+		return err
+	}
+	d.Set("ddl_online", ddl_onlineVal)
 	d.Set("ecs_instance_id", object["EcsInstanceId"])
 	d.Set("ecs_region", object["EcsRegion"])
 	d.Set("env_type", object["EnvType"])
-	d.Set("export_timeout", formatInt(object["ExportTimeout"]))
+	export_timeoutVal, err := formatInt(object["ExportTimeout"])
+	if err != nil {
+		return err
+	}
+	d.Set("export_timeout", export_timeoutVal)
 	d.Set("instance_id", object["InstanceId"])
 	d.Set("instance_name", object["InstanceAlias"])
 	d.Set("instance_alias", object["InstanceAlias"])
 	d.Set("instance_source", object["InstanceSource"])
 	d.Set("instance_type", object["InstanceType"])
-	d.Set("query_timeout", formatInt(object["QueryTimeout"]))
+	query_timeoutVal, err := formatInt(object["QueryTimeout"])
+	if err != nil {
+		return err
+	}
+	d.Set("query_timeout", query_timeoutVal)
 	d.Set("safe_rule_id", object["SafeRuleId"])
 	d.Set("sid", object["Sid"])
 	d.Set("status", object["State"])
 	d.Set("state", object["State"])
-	d.Set("use_dsql", formatInt(object["UseDsql"]))
+	use_dsqlVal, err := formatInt(object["UseDsql"])
+	if err != nil {
+		return err
+	}
+	d.Set("use_dsql", use_dsqlVal)
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("dba_nick_name", object["DbaNickName"])
 	d.Set("sell_trust", object["SellTrust"])

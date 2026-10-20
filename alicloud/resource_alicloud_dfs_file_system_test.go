@@ -393,6 +393,7 @@ func TestAccAliCloudDfsFileSystem_basic5910(t *testing.T) {
 					"data_redundancy_type":             "LRS",
 					"provisioned_throughput_in_mi_bps": "1000",
 					"throughput_mode":                  "Provisioned",
+					"dedicated_cluster_id":             "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -486,9 +487,11 @@ func TestAccAliCloudDfsFileSystem_basic5175(t *testing.T) {
 			//provisioned_throughput_in_mi_bps can only be modified once a day
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"space_capacity":   "1026",
-					"description":      "ResourceManagerCenterTestCase-fix",
-					"file_system_name": name + "_update",
+					"provisioned_throughput_in_mi_bps": "1001",
+					"throughput_mode":                  "Provisioned-upd",
+					"space_capacity":                   "1026",
+					"description":                      "ResourceManagerCenterTestCase-fix",
+					"file_system_name":                 name + "_update",
 					//"provisioned_throughput_in_mi_bps": "1010",
 				}),
 				Check: resource.ComposeTestCheckFunc(

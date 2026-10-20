@@ -177,15 +177,25 @@ func dataSourceAlicloudSlbCaCertificatesRead(d *schema.ResourceData, meta interf
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		created_timestampVal, err := formatInt(object["CreateTimeStamp"])
+		if err != nil {
+			return err
+		}
+
+		expired_timestampVal, err := formatInt(object["ExpireTimeStamp"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                  fmt.Sprint(object["CACertificateId"]),
 			"ca_certificate_id":   fmt.Sprint(object["CACertificateId"]),
 			"ca_certificate_name": object["CACertificateName"],
 			"name":                object["CACertificateName"],
 			"common_name":         object["CommonName"],
-			"created_timestamp":   formatInt(object["CreateTimeStamp"]),
+			"created_timestamp":   created_timestampVal,
 			"expired_time":        object["ExpireTime"],
-			"expired_timestamp":   formatInt(object["ExpireTimeStamp"]),
+			"expired_timestamp":   expired_timestampVal,
 			"fingerprint":         object["Fingerprint"],
 			"resource_group_id":   object["ResourceGroupId"],
 		}

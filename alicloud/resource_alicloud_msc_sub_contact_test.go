@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudMscSubContact_basic0(t *testing.T) {
+func TestAccAliCloudMscSubContact_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_msc_sub_contact.default"
 	ra := resourceAttrInit(resourceId, AlicloudMscSubContactMap0)
@@ -32,9 +32,9 @@ func TestAccAlicloudMscSubContact_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -115,7 +115,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudMscSubContact_basic1(t *testing.T) {
+func TestAccAliCloudMscSubContact_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_msc_sub_contact.default"
 	ra := resourceAttrInit(resourceId, AlicloudMscSubContactMap1)
@@ -130,9 +130,9 @@ func TestAccAlicloudMscSubContact_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

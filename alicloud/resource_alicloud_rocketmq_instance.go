@@ -656,7 +656,11 @@ func resourceAliCloudRocketmqInstanceRead(d *schema.ResourceData, meta interface
 	}
 	d.Set("auto_renew", queryAvailableInstancesObject["RenewStatus"] == "AutoRenewal")
 	if v, ok := queryAvailableInstancesObject["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("auto_renew_period", formatInt(v))
+		auto_renew_periodVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("auto_renew_period", auto_renew_periodVal)
 	}
 	d.Set("auto_renew_period_unit", convertAmqpInstanceRenewalDurationUnitResponse(queryAvailableInstancesObject["RenewalDurationUnit"]))
 

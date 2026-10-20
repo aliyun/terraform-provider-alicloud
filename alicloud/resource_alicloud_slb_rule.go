@@ -258,7 +258,11 @@ func resourceAliyunSlbRuleRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", object["RuleName"])
 	d.Set("load_balancer_id", object["LoadBalancerId"])
 
-	d.Set("frontend_port", formatInt(object["ListenerPort"]))
+	frontend_portVal, err := formatInt(object["ListenerPort"])
+	if err != nil {
+		return err
+	}
+	d.Set("frontend_port", frontend_portVal)
 	d.Set("domain", object["Domain"])
 	d.Set("url", object["Url"])
 	d.Set("server_group_id", object["VServerGroupId"])

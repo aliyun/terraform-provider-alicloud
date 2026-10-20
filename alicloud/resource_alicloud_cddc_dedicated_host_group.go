@@ -147,20 +147,36 @@ func resourceAlicloudCddcDedicatedHostGroupRead(d *schema.ResourceData, meta int
 	}
 	d.Set("allocation_policy", object["AllocationPolicy"])
 	if v, ok := object["CpuAllocationRatio"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("cpu_allocation_ratio", formatInt(v))
+		cpu_allocation_ratioVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("cpu_allocation_ratio", cpu_allocation_ratioVal)
 	}
 	d.Set("dedicated_host_group_desc", object["DedicatedHostGroupDesc"])
 	if v, ok := object["DiskAllocationRatio"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("disk_allocation_ratio", formatInt(v))
+		disk_allocation_ratioVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("disk_allocation_ratio", disk_allocation_ratioVal)
 	}
 
 	d.Set("engine", convertCddcDedicatedHostGroupEngineResponse(object["Engine"]))
 	d.Set("host_replace_policy", object["HostReplacePolicy"])
 	if v, ok := object["MemAllocationRatio"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("mem_allocation_ratio", formatInt(v))
+		mem_allocation_ratioVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("mem_allocation_ratio", mem_allocation_ratioVal)
 	}
 	d.Set("vpc_id", object["VPCId"])
-	d.Set("open_permission", convertCddcDedicatedHostGroupOpenPermissionResponse(formatInt(object["OpenPermission"])))
+	openPermission, err := formatInt(object["OpenPermission"])
+	if err != nil {
+		return err
+	}
+	d.Set("open_permission", convertCddcDedicatedHostGroupOpenPermissionResponse(openPermission))
 	return nil
 }
 func resourceAlicloudCddcDedicatedHostGroupUpdate(d *schema.ResourceData, meta interface{}) error {

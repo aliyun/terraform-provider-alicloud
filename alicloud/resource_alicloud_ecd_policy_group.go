@@ -342,9 +342,17 @@ func resourceAlicloudEcdPolicyGroupRead(d *schema.ResourceData, meta interface{}
 	d.Set("watermark_transparency", object["WatermarkTransparency"])
 	d.Set("watermark_type", object["WatermarkType"])
 	d.Set("recording", object["Recording"])
-	d.Set("recording_fps", formatInt(object["RecordingFps"]))
+	recording_fpsVal, err := formatInt(object["RecordingFps"])
+	if err != nil {
+		return err
+	}
+	d.Set("recording_fps", recording_fpsVal)
 	d.Set("camera_redirect", object["CameraRedirect"])
-	d.Set("recording_expires", formatInt(object["RecordingExpires"]))
+	recording_expiresVal, err := formatInt(object["RecordingExpires"])
+	if err != nil {
+		return err
+	}
+	d.Set("recording_expires", recording_expiresVal)
 	return nil
 }
 func resourceAlicloudEcdPolicyGroupUpdate(d *schema.ResourceData, meta interface{}) error {

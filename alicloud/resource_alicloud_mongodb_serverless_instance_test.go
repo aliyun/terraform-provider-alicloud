@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -19,7 +20,7 @@ import (
 )
 
 // lintignore: AT001
-func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
+func TestAccAliCloudMongoDBServerlessInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_serverless_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBServerlessSupportRegions)
@@ -36,7 +37,7 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -164,6 +165,15 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":              REMOVEKEY,
+					"engine_version":      REMOVEKEY,
+					"storage_engine":      REMOVEKEY,
+					"db_instance_storage": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -174,7 +184,7 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 }
 
 // lintignore: AT001
-func SkipTestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
+func TestAccAliCloudMongoDBServerlessInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_serverless_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBServerlessSupportRegions)
@@ -191,7 +201,7 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

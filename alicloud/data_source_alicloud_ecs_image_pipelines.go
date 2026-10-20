@@ -218,6 +218,16 @@ func dataSourceAlicloudEcsImagePipelinesRead(d *schema.ResourceData, meta interf
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		internet_max_bandwidth_outVal, err := formatInt(object["InternetMaxBandwidthOut"])
+		if err != nil {
+			return err
+		}
+
+		system_disk_sizeVal, err := formatInt(object["SystemDiskSize"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"base_image":                 object["BaseImage"],
 			"base_image_type":            object["BaseImageType"],
@@ -229,10 +239,10 @@ func dataSourceAlicloudEcsImagePipelinesRead(d *schema.ResourceData, meta interf
 			"id":                         fmt.Sprint(object["ImagePipelineId"]),
 			"image_pipeline_id":          fmt.Sprint(object["ImagePipelineId"]),
 			"instance_type":              object["InstanceType"],
-			"internet_max_bandwidth_out": formatInt(object["InternetMaxBandwidthOut"]),
+			"internet_max_bandwidth_out": internet_max_bandwidth_outVal,
 			"name":                       object["Name"],
 			"resource_group_id":          object["ResourceGroupId"],
-			"system_disk_size":           formatInt(object["SystemDiskSize"]),
+			"system_disk_size":           system_disk_sizeVal,
 			"vswitch_id":                 object["VSwitchId"],
 		}
 		if v, ok := object["Tags"].(map[string]interface{}); ok {

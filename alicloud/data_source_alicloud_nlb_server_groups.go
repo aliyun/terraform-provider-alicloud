@@ -281,14 +281,24 @@ func dataSourceAlicloudNlbServerGroupsRead(d *schema.ResourceData, meta interfac
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		connection_drain_timeoutVal, err := formatInt(object["ConnectionDrainTimeout"])
+		if err != nil {
+			return err
+		}
+
+		server_countVal, err := formatInt(object["ServerCount"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"address_ip_version":         object["AddressIPVersion"],
 			"ip_version_affinity_mode":   object["IpVersionAffinityMode"],
-			"connection_drain_timeout":   formatInt(object["ConnectionDrainTimeout"]),
+			"connection_drain_timeout":   connection_drain_timeoutVal,
 			"protocol":                   object["Protocol"],
 			"related_load_balancer_ids":  object["RelatedLoadBalancerIds"],
 			"scheduler":                  object["Scheduler"],
-			"server_count":               formatInt(object["ServerCount"]),
+			"server_count":               server_countVal,
 			"server_group_name":          object["ServerGroupName"],
 			"status":                     object["ServerGroupStatus"],
 			"id":                         fmt.Sprint(object["ServerGroupId"]),

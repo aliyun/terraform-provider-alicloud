@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudECSStorageCapacityUnit_basic0(t *testing.T) {
+func TestAccAliCloudECSStorageCapacityUnit_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_storage_capacity_unit.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsStorageCapacityUnitMap0)
@@ -35,9 +35,9 @@ func TestAccAlicloudECSStorageCapacityUnit_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -75,7 +75,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudECSStorageCapacityUnit_basic1(t *testing.T) {
+func TestAccAliCloudECSStorageCapacityUnit_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_storage_capacity_unit.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsStorageCapacityUnitMap1)
@@ -91,12 +91,13 @@ func TestAccAlicloudECSStorageCapacityUnit_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"start_time":                 "2022-01-01T12:05:05Z",
 					"storage_capacity_unit_name": name,
 					"capacity":                   "20",
 				}),

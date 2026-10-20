@@ -212,10 +212,18 @@ func resourceAlicloudMongodbServerlessInstanceRead(d *schema.ResourceData, meta 
 		}
 		return WrapError(err)
 	}
-	d.Set("capacity_unit", formatInt(object["CapacityUnit"]))
+	capacity_unitVal, err := formatInt(object["CapacityUnit"])
+	if err != nil {
+		return err
+	}
+	d.Set("capacity_unit", capacity_unitVal)
 	d.Set("db_instance_description", object["DBInstanceDescription"])
 	if v, ok := object["DBInstanceStorage"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("db_instance_storage", formatInt(v))
+		db_instance_storageVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("db_instance_storage", db_instance_storageVal)
 	}
 	d.Set("engine", object["Engine"])
 	d.Set("engine_version", object["EngineVersion"])

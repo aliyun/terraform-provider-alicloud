@@ -195,9 +195,14 @@ func dataSourceAlicloudVpcBgpPeersRead(d *schema.ResourceData, meta interface{})
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		bfd_multi_hopVal, err := formatInt(object["BfdMultiHop"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"auth_key":        object["AuthKey"],
-			"bfd_multi_hop":   formatInt(object["BfdMultiHop"]),
+			"bfd_multi_hop":   bfd_multi_hopVal,
 			"bgp_group_id":    object["BgpGroupId"],
 			"id":              fmt.Sprint(object["BgpPeerId"]),
 			"bgp_peer_id":     fmt.Sprint(object["BgpPeerId"]),

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	yamlV3 "gopkg.in/yaml.v3"
 )
@@ -71,12 +72,17 @@ func ConvertListToJsonString(configured []interface{}) string {
 	return result
 }
 
-func ConvertJsonStringToStringList(src interface{}) (result []interface{}) {
-	if err, ok := src.([]interface{}); !ok {
-		panic(err)
+func ConvertJsonStringToStringList(src interface{}) (result []interface{}, err error) {
+	items, ok := src.([]interface{})
+	if !ok {
+		return nil, errs.Error("Not support type %s to convert to string list", reflect.TypeOf(src))
 	}
-	for _, v := range src.([]interface{}) {
-		result = append(result, fmt.Sprint(FormatInt(v)))
+	for _, v := range items {
+		vInt, err := FormatInt(v)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, fmt.Sprint(vInt))
 	}
 	return
 }

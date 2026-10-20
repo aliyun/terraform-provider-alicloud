@@ -142,7 +142,7 @@ func TestAccAliCloudECSImagePipeline_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"add_account", "build_content"},
+				ImportStateVerifyIgnore: []string{"build_content"},
 			},
 		},
 	})
@@ -209,7 +209,7 @@ func TestAccAliCloudECSImagePipeline_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"add_account", "build_content"},
+				ImportStateVerifyIgnore: []string{"build_content"},
 			},
 		},
 	})

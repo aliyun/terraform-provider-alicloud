@@ -263,6 +263,20 @@ func dataSourceAlicloudDbsBackupPlansRead(d *schema.ResourceData, meta interface
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		backup_retention_periodVal, err := formatInt(object["BackupRetentionPeriod"])
+		if err != nil {
+			return err
+		}
+
+		duplication_archive_periodVal, err := formatInt(object["DuplicationArchivePeriod"])
+		if err != nil {
+			return err
+		}
+		duplication_infrequent_access_periodVal, err := formatInt(object["DuplicationInfrequentAccessPeriod"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"backup_method":                        object["BackupMethod"],
 			"backup_objects":                       object["BackupObjects"],
@@ -270,14 +284,14 @@ func dataSourceAlicloudDbsBackupPlansRead(d *schema.ResourceData, meta interface
 			"id":                                   fmt.Sprint(object["BackupPlanId"]),
 			"backup_plan_id":                       fmt.Sprint(object["BackupPlanId"]),
 			"backup_plan_name":                     object["BackupPlanName"],
-			"backup_retention_period":              formatInt(object["BackupRetentionPeriod"]),
+			"backup_retention_period":              backup_retention_periodVal,
 			"backup_start_time":                    object["BackupStartTime"],
 			"backup_storage_type":                  object["BackupStorageType"],
 			"cross_aliyun_id":                      object["CrossAliyunId"],
 			"cross_role_name":                      object["CrossRoleName"],
 			"database_type":                        object["DatabaseType"],
-			"duplication_archive_period":           formatInt(object["DuplicationArchivePeriod"]),
-			"duplication_infrequent_access_period": formatInt(object["DuplicationInfrequentAccessPeriod"]),
+			"duplication_archive_period":           duplication_archive_periodVal,
+			"duplication_infrequent_access_period": duplication_infrequent_access_periodVal,
 			"enable_backup_log":                    object["EnableBackupLog"],
 			"instance_class":                       object["InstanceClass"],
 			"oss_bucket_name":                      object["OSSBucketName"],

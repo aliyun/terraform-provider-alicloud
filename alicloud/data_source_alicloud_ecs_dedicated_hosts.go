@@ -396,11 +396,25 @@ func dataSourceAliCloudEcsDedicatedHostsRead(d *schema.ResourceData, meta interf
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
+		coresVal, err := formatInt(object["Cores"])
+		if err != nil {
+			return err
+		}
+
+		physical_gpusVal, err := formatInt(object["PhysicalGpus"])
+		if err != nil {
+			return err
+		}
+
+		socketsVal, err := formatInt(object["Sockets"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"action_on_maintenance": object["ActionOnMaintenance"],
 			"auto_placement":        object["AutoPlacement"],
 			"auto_release_time":     object["AutoReleaseTime"],
-			"cores":                 formatInt(object["Cores"]),
+			"cores":                 coresVal,
 			"cpu_over_commit_ratio": object["CpuOverCommitRatio"],
 			"id":                    fmt.Sprint(object["DedicatedHostId"]),
 			"dedicated_host_id":     fmt.Sprint(object["DedicatedHostId"]),
@@ -411,10 +425,10 @@ func dataSourceAliCloudEcsDedicatedHostsRead(d *schema.ResourceData, meta interf
 			"gpu_spec":              object["GPUSpec"],
 			"machine_id":            object["MachineId"],
 			"payment_type":          object["ChargeType"],
-			"physical_gpus":         formatInt(object["PhysicalGpus"]),
+			"physical_gpus":         physical_gpusVal,
 			"resource_group_id":     object["ResourceGroupId"],
 			"sale_cycle":            object["SaleCycle"],
-			"sockets":               formatInt(object["Sockets"]),
+			"sockets":               socketsVal,
 			"status":                object["Status"],
 			"supported_custom_instance_type_families": object["SupportedCustomInstanceTypeFamilies"].(map[string]interface{})["SupportedCustomInstanceTypeFamily"],
 			"supported_instance_type_families":        object["SupportedInstanceTypeFamilies"].(map[string]interface{})["SupportedInstanceTypeFamily"],

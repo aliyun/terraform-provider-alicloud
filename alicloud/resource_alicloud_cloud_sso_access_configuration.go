@@ -186,7 +186,11 @@ func resourceAliCloudCloudSsoAccessConfigurationRead(d *schema.ResourceData, met
 	d.Set("access_configuration_id", object["AccessConfigurationId"])
 
 	if sessionDuration, ok := object["SessionDuration"]; ok && fmt.Sprint(sessionDuration) != "0" {
-		d.Set("session_duration", formatInt(sessionDuration))
+		session_durationVal, err := formatInt(sessionDuration)
+		if err != nil {
+			return err
+		}
+		d.Set("session_duration", session_durationVal)
 	}
 
 	listPermissionPoliciesInAccessConfigurationObject, err := cloudssoService.ListPermissionPoliciesInAccessConfiguration(d.Id())

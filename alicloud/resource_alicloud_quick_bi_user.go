@@ -114,7 +114,11 @@ func resourceAlicloudQuickBiUserRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("admin_user", object["AdminUser"])
 	d.Set("auth_admin_user", object["AuthAdminUser"])
 	d.Set("nick_name", object["NickName"])
-	d.Set("user_type", convertQuickBiUserUserTypeResponse(formatInt(object["UserType"])))
+	userType, err := formatInt(object["UserType"])
+	if err != nil {
+		return err
+	}
+	d.Set("user_type", convertQuickBiUserUserTypeResponse(userType))
 	return nil
 }
 func resourceAlicloudQuickBiUserUpdate(d *schema.ResourceData, meta interface{}) error {

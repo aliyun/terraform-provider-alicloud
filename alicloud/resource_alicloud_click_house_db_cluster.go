@@ -358,7 +358,11 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	d.Set("category", object["Category"])
 	d.Set("db_cluster_description", object["DBClusterDescription"])
 	d.Set("db_cluster_network_type", object["DBClusterNetworkType"])
-	d.Set("db_node_storage", fmt.Sprint(formatInt(object["DBNodeStorage"])))
+	dbnodeStorage, formatErr := formatInt(object["DBNodeStorage"])
+	if formatErr != nil {
+		return formatErr
+	}
+	d.Set("db_node_storage", fmt.Sprint(dbnodeStorage))
 	d.Set("encryption_key", object["EncryptionKey"])
 	d.Set("encryption_type", object["EncryptionType"])
 	d.Set("maintain_time", object["MaintainTime"])

@@ -196,6 +196,15 @@ func dataSourceAlicloudGaCustomRoutingEndpointGroupDestinationsRead(d *schema.Re
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		from_portVal, err := formatInt(object["FromPort"])
+		if err != nil {
+			return err
+		}
+		to_portVal, err := formatInt(object["ToPort"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                fmt.Sprintf("%v:%v", object["EndpointGroupId"], object["DestinationId"]),
 			"endpoint_group_id": fmt.Sprint(object["EndpointGroupId"]),
@@ -203,8 +212,8 @@ func dataSourceAlicloudGaCustomRoutingEndpointGroupDestinationsRead(d *schema.Re
 			"accelerator_id": object["AcceleratorId"],
 			"listener_id":    object["ListenerId"],
 			"protocols":      object["Protocols"],
-			"from_port":      formatInt(object["FromPort"]),
-			"to_port":        formatInt(object["ToPort"]),
+			"from_port":      from_portVal,
+			"to_port":        to_portVal,
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))

@@ -775,7 +775,11 @@ func resourceAliCloudEfloNodeRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("payment_type", objectRaw["SubscriptionType"])
 	d.Set("region_id", objectRaw["Region"])
 	if fmt.Sprint(objectRaw["RenewalDurationUnit"]) == "Y" {
-		d.Set("renew_period", formatInt(objectRaw["RenewalDuration"])*12)
+		renewPeriod, err := formatInt(objectRaw["RenewalDuration"])
+		if err != nil {
+			return err
+		}
+		d.Set("renew_period", renewPeriod*12)
 	} else {
 		d.Set("renew_period", objectRaw["RenewalDuration"])
 	}

@@ -81,7 +81,11 @@ func resourceAlicloudConfigConfigurationRecorderCreate(d *schema.ResourceData, m
 	}
 	addDebug(action, response, request)
 	response = response["ConfigurationRecorder"].(map[string]interface{})
-	d.SetId(fmt.Sprint(formatInt(response["AccountId"])))
+	accountId, err := formatInt(response["AccountId"])
+	if err != nil {
+		return err
+	}
+	d.SetId(fmt.Sprint(accountId))
 
 	return resourceAlicloudConfigConfigurationRecorderUpdate(d, meta)
 }
@@ -98,7 +102,11 @@ func resourceAlicloudConfigConfigurationRecorderRead(d *schema.ResourceData, met
 		return WrapError(err)
 	}
 	d.Set("organization_enable_status", object["OrganizationEnableStatus"])
-	d.Set("organization_master_id", formatInt(object["OrganizationMasterId"]))
+	organization_master_idVal, err := formatInt(object["OrganizationMasterId"])
+	if err != nil {
+		return err
+	}
+	d.Set("organization_master_id", organization_master_idVal)
 	d.Set("resource_types", object["ResourceTypes"])
 	d.Set("status", object["ConfigurationRecorderStatus"])
 	return nil

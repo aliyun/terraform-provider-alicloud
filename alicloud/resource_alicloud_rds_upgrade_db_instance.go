@@ -391,7 +391,11 @@ func resourceAlicloudRdsUpgradeDbInstanceCreate(d *schema.ResourceData, meta int
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
-	stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, rdsService.RdsUpgradeMajorVersionRefreshFunc(d.Get("source_db_instance_id").(string), formatInt(response["TaskId"]), []string{"Deleting"}))
+	taskId, formatErr := formatInt(response["TaskId"])
+	if formatErr != nil {
+		return formatErr
+	}
+	stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, rdsService.RdsUpgradeMajorVersionRefreshFunc(d.Get("source_db_instance_id").(string), taskId, []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -483,7 +487,11 @@ func resourceAlicloudRdsUpgradeDbInstanceRead(d *schema.ResourceData, meta inter
 	d.Set("db_instance_class", object["DBInstanceClass"])
 	d.Set("db_instance_description", object["DBInstanceDescription"])
 	if v, ok := object["DBInstanceStorage"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("db_instance_storage", formatInt(v))
+		db_instance_storageVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("db_instance_storage", db_instance_storageVal)
 	}
 	d.Set("db_instance_storage_type", object["DBInstanceStorageType"])
 	d.Set("dedicated_host_group_id", object["DedicatedHostGroupId"])

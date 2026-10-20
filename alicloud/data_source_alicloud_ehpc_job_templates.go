@@ -172,25 +172,49 @@ func dataSourceAlicloudEhpcJobTemplatesRead(d *schema.ResourceData, meta interfa
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		gpuVal, err := formatInt(object["Gpu"])
+		if err != nil {
+			return err
+		}
+
+		nodeVal, err := formatInt(object["Node"])
+		if err != nil {
+			return err
+		}
+
+		priorityVal, err := formatInt(object["Priority"])
+		if err != nil {
+			return err
+		}
+
+		taskVal, err := formatInt(object["Task"])
+		if err != nil {
+			return err
+		}
+		threadVal, err := formatInt(object["Thread"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"array_request":        object["ArrayRequest"],
 			"clock_time":           object["ClockTime"],
 			"command_line":         object["CommandLine"],
-			"gpu":                  formatInt(object["Gpu"]),
+			"gpu":                  gpuVal,
 			"id":                   fmt.Sprint(object["Id"]),
 			"job_template_id":      fmt.Sprint(object["Id"]),
 			"job_template_name":    object["Name"],
 			"mem":                  object["Mem"],
-			"node":                 formatInt(object["Node"]),
+			"node":                 nodeVal,
 			"package_path":         object["PackagePath"],
-			"priority":             formatInt(object["Priority"]),
+			"priority":             priorityVal,
 			"queue":                object["Queue"],
 			"re_runable":           object["ReRunable"],
 			"runas_user":           object["RunasUser"],
 			"stderr_redirect_path": object["StderrRedirectPath"],
 			"stdout_redirect_path": object["StdoutRedirectPath"],
-			"task":                 formatInt(object["Task"]),
-			"thread":               formatInt(object["Thread"]),
+			"task":                 taskVal,
+			"thread":               threadVal,
 			"variables":            object["Variables"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))

@@ -265,6 +265,11 @@ func dataSourceAlicloudConfigAggregateConfigRulesRead(d *schema.ResourceData, me
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		risk_levelVal, err := formatInt(object["RiskLevel"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"account_id":                 fmt.Sprint(object["AccountId"]),
 			"aggregate_config_rule_name": object["ConfigRuleName"],
@@ -273,7 +278,7 @@ func dataSourceAlicloudConfigAggregateConfigRulesRead(d *schema.ResourceData, me
 			"id":                         fmt.Sprint(object["ConfigRuleId"]),
 			"config_rule_id":             fmt.Sprint(object["ConfigRuleId"]),
 			"description":                object["Description"],
-			"risk_level":                 formatInt(object["RiskLevel"]),
+			"risk_level":                 risk_levelVal,
 			"source_identifier":          object["SourceIdentifier"],
 			"source_owner":               object["SourceOwner"],
 			"status":                     object["ConfigRuleState"],

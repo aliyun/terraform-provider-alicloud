@@ -35,9 +35,9 @@ func TestAccAliCloudNlbListener_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -124,9 +124,9 @@ func TestAccAliCloudNlbListener_TCPSSL(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.NLBSupportRegions)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -480,9 +480,9 @@ func TestAccAliCloudNlbListener_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -515,8 +515,8 @@ func TestAccAliCloudNlbListener_basic1(t *testing.T) {
 					"proxy_protocol_enabled": "false",
 					"proxy_protocol_config": []map[string]interface{}{
 						{
-							"proxy_protocol_config_private_link_eps_id_enabled": "true",
-							"proxy_protocol_config_private_link_ep_id_enabled":  "true",
+							"proxy_protocol_config_private_link_eps_id_enabled": "false",
+							"proxy_protocol_config_private_link_ep_id_enabled":  "false",
 							"proxy_protocol_config_vpc_id_enabled":              "true",
 						},
 					},
@@ -1117,9 +1117,9 @@ func TestAccAliCloudNlbListener_basic4673(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1381,9 +1381,9 @@ func TestAccAliCloudNlbListener_basic4675(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1786,12 +1786,13 @@ func TestAccAliCloudNlbListener_basic4683(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled":        "true",
 					"load_balancer_id":  "${alicloud_nlb_load_balancer.nlb.id}",
 					"server_group_id":   "${alicloud_nlb_server_group.sg1.id}",
 					"listener_protocol": "TCPSSL",
@@ -1820,6 +1821,9 @@ func TestAccAliCloudNlbListener_basic4683(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled": "false",
+					"proxy_protocol_config_private_link_ep_id_enabled":  "true",
+					"proxy_protocol_config_private_link_eps_id_enabled": "true",
 					"certificate_ids": []string{"${local.certificate_update_id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2347,9 +2351,9 @@ func TestAccAliCloudNlbListener_basic4673_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2411,9 +2415,9 @@ func TestAccAliCloudNlbListener_basic4675_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2483,9 +2487,9 @@ func TestAccAliCloudNlbListener_basic4683_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

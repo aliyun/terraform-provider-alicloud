@@ -226,7 +226,11 @@ func dataSourceAlicloudHbrServerBackupPlansRead(d *schema.ResourceData, meta int
 			detail["enable_fs_freeze"] = v["enableFsFreeze"]
 			detail["pre_script_path"] = v["preScriptPath"]
 			detail["post_script_path"] = v["postScriptPath"]
-			detail["timeout_in_seconds"] = formatInt(v["timeoutInSeconds"])
+			timeoutInSecondsValue, err := formatInt(v["timeoutInSeconds"])
+			if err != nil {
+				return err
+			}
+			detail["timeout_in_seconds"] = timeoutInSecondsValue
 			detail["do_copy"] = v["doCopy"]
 			detail["destination_region_id"] = v["destinationRegionId"]
 			detail["destination_retention"] = v["destinationRetention"]

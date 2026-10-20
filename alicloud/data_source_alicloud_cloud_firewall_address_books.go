@@ -342,13 +342,18 @@ func dataSourceAliCloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		auto_add_tag_ecsVal, err := formatInt(object["AutoAddTagEcs"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":               fmt.Sprint(object["GroupUuid"]),
 			"group_uuid":       fmt.Sprint(object["GroupUuid"]),
 			"group_name":       object["GroupName"],
 			"group_type":       object["GroupType"],
 			"description":      object["Description"],
-			"auto_add_tag_ecs": formatInt(object["AutoAddTagEcs"]),
+			"auto_add_tag_ecs": auto_add_tag_ecsVal,
 			"tag_relation":     object["TagRelation"],
 			"address_list":     object["AddressList"],
 		}
@@ -366,7 +371,11 @@ func dataSourceAliCloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 		assetMemberUids := make([]int, 0)
 		if v, ok := object["AssetMemberUids"].([]interface{}); ok {
 			for _, assetMemberUid := range v {
-				assetMemberUids = append(assetMemberUids, formatInt(assetMemberUid))
+				assetMemberUidValue, err := formatInt(assetMemberUid)
+				if err != nil {
+					return err
+				}
+				assetMemberUids = append(assetMemberUids, assetMemberUidValue)
 			}
 		}
 
@@ -374,11 +383,19 @@ func dataSourceAliCloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 		mapping["asset_region_resource_types"] = flattenCloudFirewallAddressBookAssetRegionResourceTypes(object["AssetRegionResourceTypes"])
 
 		if v, ok := object["AddressListCount"]; ok {
-			mapping["address_list_count"] = formatInt(v)
+			addressListCount, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["address_list_count"] = addressListCount
 		}
 
 		if v, ok := object["ReferenceCount"]; ok {
-			mapping["reference_count"] = formatInt(v)
+			referenceCount, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["reference_count"] = referenceCount
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))

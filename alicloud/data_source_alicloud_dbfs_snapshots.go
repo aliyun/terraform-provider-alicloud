@@ -172,20 +172,34 @@ func dataSourceAlicloudDbfsSnapshotsRead(d *schema.ResourceData, meta interface{
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		remain_timeVal, err := formatInt(object["RemainTime"])
+		if err != nil {
+			return err
+		}
+		retention_daysVal, err := formatInt(object["RetentionDays"])
+		if err != nil {
+			return err
+		}
+
+		source_fs_sizeVal, err := formatInt(object["SourceFsSize"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"category":           object["Category"],
 			"create_time":        object["CreationTime"],
 			"description":        object["Description"],
 			"last_modified_time": object["LastModifiedTime"],
 			"progress":           object["Progress"],
-			"remain_time":        formatInt(object["RemainTime"]),
-			"retention_days":     formatInt(object["RetentionDays"]),
+			"remain_time":        remain_timeVal,
+			"retention_days":     retention_daysVal,
 			"id":                 fmt.Sprint(object["SnapshotId"]),
 			"snapshot_id":        fmt.Sprint(object["SnapshotId"]),
 			"snapshot_name":      object["SnapshotName"],
 			"snapshot_type":      object["SnapshotType"],
 			"instance_id":        object["SourceFsId"],
-			"source_fs_size":     formatInt(object["SourceFsSize"]),
+			"source_fs_size":     source_fs_sizeVal,
 			"status":             object["Status"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))

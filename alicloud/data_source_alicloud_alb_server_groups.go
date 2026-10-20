@@ -289,7 +289,11 @@ func dataSourceAlicloudAlbServerGroupsRead(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alb_server_groups", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.ServerGroups", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
+		totalCount, formatErr := formatInt(response["TotalCount"])
+		if formatErr != nil {
+			return formatErr
+		}
+		if totalCount != 0 && err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ServerGroups", response)
 		}
 		result, _ := resp.([]interface{})
@@ -336,17 +340,37 @@ func dataSourceAlicloudAlbServerGroupsRead(d *schema.ResourceData, meta interfac
 			healthCheckConfig := object["HealthCheckConfig"]
 			healthCheckConfigMap := make(map[string]interface{})
 			healthCheckConfigMap["health_check_codes"] = healthCheckConfig.(map[string]interface{})["HealthCheckCodes"]
-			healthCheckConfigMap["health_check_connect_port"] = formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckConnectPort"])
+			healthCheckConnectPort, err := formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckConnectPort"])
+			if err != nil {
+				return err
+			}
+			healthCheckConfigMap["health_check_connect_port"] = healthCheckConnectPort
 			healthCheckConfigMap["health_check_enabled"] = healthCheckConfig.(map[string]interface{})["HealthCheckEnabled"]
 			healthCheckConfigMap["health_check_host"] = healthCheckConfig.(map[string]interface{})["HealthCheckHost"]
 			healthCheckConfigMap["health_check_http_version"] = healthCheckConfig.(map[string]interface{})["HealthCheckHttpVersion"]
-			healthCheckConfigMap["health_check_interval"] = formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckInterval"])
+			healthCheckInterval, err := formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckInterval"])
+			if err != nil {
+				return err
+			}
+			healthCheckConfigMap["health_check_interval"] = healthCheckInterval
 			healthCheckConfigMap["health_check_method"] = healthCheckConfig.(map[string]interface{})["HealthCheckMethod"]
 			healthCheckConfigMap["health_check_path"] = healthCheckConfig.(map[string]interface{})["HealthCheckPath"]
 			healthCheckConfigMap["health_check_protocol"] = healthCheckConfig.(map[string]interface{})["HealthCheckProtocol"]
-			healthCheckConfigMap["health_check_timeout"] = formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckTimeout"])
-			healthCheckConfigMap["healthy_threshold"] = formatInt(healthCheckConfig.(map[string]interface{})["HealthyThreshold"])
-			healthCheckConfigMap["unhealthy_threshold"] = formatInt(healthCheckConfig.(map[string]interface{})["UnhealthyThreshold"])
+			healthCheckTimeout, err := formatInt(healthCheckConfig.(map[string]interface{})["HealthCheckTimeout"])
+			if err != nil {
+				return err
+			}
+			healthCheckConfigMap["health_check_timeout"] = healthCheckTimeout
+			healthyThreshold, err := formatInt(healthCheckConfig.(map[string]interface{})["HealthyThreshold"])
+			if err != nil {
+				return err
+			}
+			healthCheckConfigMap["healthy_threshold"] = healthyThreshold
+			unhealthyThreshold, err := formatInt(healthCheckConfig.(map[string]interface{})["UnhealthyThreshold"])
+			if err != nil {
+				return err
+			}
+			healthCheckConfigMap["unhealthy_threshold"] = unhealthyThreshold
 			healthCheckConfigSli = append(healthCheckConfigSli, healthCheckConfigMap)
 		}
 		mapping["health_check_config"] = healthCheckConfigSli
@@ -379,14 +403,24 @@ func dataSourceAlicloudAlbServerGroupsRead(d *schema.ResourceData, meta interfac
 		servers := make([]map[string]interface{}, 0)
 		for _, v := range serversList {
 			if m1, ok := v.(map[string]interface{}); ok {
+
+				portVal, err := formatInt(m1["Port"])
+				if err != nil {
+					return err
+				}
+
+				weightVal, err := formatInt(m1["Weight"])
+				if err != nil {
+					return err
+				}
 				temp1 := map[string]interface{}{
 					"description": m1["Description"],
-					"port":        formatInt(m1["Port"]),
+					"port":        portVal,
 					"server_id":   m1["ServerId"],
 					"server_ip":   m1["ServerIp"],
 					"server_type": m1["ServerType"],
 					"status":      m1["Status"],
-					"weight":      formatInt(m1["Weight"]),
+					"weight":      weightVal,
 				}
 				servers = append(servers, temp1)
 			}

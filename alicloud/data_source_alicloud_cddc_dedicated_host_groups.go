@@ -249,12 +249,37 @@ func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		cpu_allocation_ratioVal, err := formatInt(object["CpuAllocationRatio"])
+		if err != nil {
+			return err
+		}
+
+		disk_allocation_ratioVal, err := formatInt(object["DiskAllocationRatio"])
+		if err != nil {
+			return err
+		}
+
+		host_numberVal, err := formatInt(object["HostNumber"])
+		if err != nil {
+			return err
+		}
+
+		instance_numberVal, err := formatInt(object["InstanceNumber"])
+		if err != nil {
+			return err
+		}
+
+		mem_allocation_ratioVal, err := formatInt(object["MemAllocationRatio"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"allocation_policy":         object["AllocationPolicy"],
 			"bastion_instance_id":       object["BastionInstanceId"],
 			"cpu_allocate_ration":       object["CpuAllocateRation"],
 			"cpu_allocated_amount":      object["CpuAllocatedAmount"],
-			"cpu_allocation_ratio":      formatInt(object["CpuAllocationRatio"]),
+			"cpu_allocation_ratio":      cpu_allocation_ratioVal,
 			"create_time":               object["CreateTime"],
 			"dedicated_host_group_desc": object["DedicatedHostGroupDesc"],
 			"id":                        fmt.Sprint(object["DedicatedHostGroupId"]),
@@ -262,16 +287,16 @@ func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta 
 			"deploy_type":               object["DeployType"],
 			"disk_allocate_ration":      object["DiskAllocateRation"],
 			"disk_allocated_amount":     object["DiskAllocatedAmount"],
-			"disk_allocation_ratio":     formatInt(object["DiskAllocationRatio"]),
+			"disk_allocation_ratio":     disk_allocation_ratioVal,
 			"disk_used_amount":          object["DiskUsedAmount"],
 			"disk_utility":              object["DiskUtility"],
 			"engine":                    convertCddcDedicatedHostGroupEngineResponse(object["Engine"]),
-			"host_number":               formatInt(object["HostNumber"]),
+			"host_number":               host_numberVal,
 			"host_replace_policy":       object["HostReplacePolicy"],
-			"instance_number":           formatInt(object["InstanceNumber"]),
+			"instance_number":           instance_numberVal,
 			"mem_allocate_ration":       object["MemAllocateRation"],
 			"mem_allocated_amount":      object["MemAllocatedAmount"],
-			"mem_allocation_ratio":      formatInt(object["MemAllocationRatio"]),
+			"mem_allocation_ratio":      mem_allocation_ratioVal,
 			"mem_used_amount":           object["MemUsedAmount"],
 			"mem_utility":               object["MemUtility"],
 			"text":                      object["Text"],

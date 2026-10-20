@@ -1149,7 +1149,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "enableKibanaPrivateNetwork", objectRaw)
 		}
-		if formatBool(currentStatus) != target {
+		currentStatusValue, formatErr := formatBool(currentStatus)
+		if formatErr != nil {
+			return formatErr
+		}
+		if currentStatusValue != target {
 			enableTriggerNetworkTrue := false
 			checkValue00 := objectRaw["enableKibanaPrivateNetwork"]
 			checkValue01 := objectRaw["archType"]
@@ -1329,7 +1333,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "enablePublic", objectRaw)
 		}
-		if formatBool(currentStatus) != target {
+		currentStatusNum, formatErr := formatBool(currentStatus)
+		if formatErr != nil {
+			return formatErr
+		}
+		if currentStatusNum != target {
 			if target == true {
 				InstanceId := d.Id()
 				action := fmt.Sprintf("/openapi/instances/%s/actions/network-trigger", InstanceId)
@@ -1415,7 +1423,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "enableKibanaPublicNetwork", objectRaw)
 		}
-		if formatBool(currentStatus) != target {
+		currentStatusResult, formatErr := formatBool(currentStatus)
+		if formatErr != nil {
+			return formatErr
+		}
+		if currentStatusResult != target {
 			if target == true {
 				InstanceId := d.Id()
 				action := fmt.Sprintf("/openapi/instances/%s/actions/network-trigger", InstanceId)

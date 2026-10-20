@@ -136,11 +136,14 @@ func TestAccAliCloudGaBandwidthPackage_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bandwidth":      "100",
-					"type":           "Basic",
-					"bandwidth_type": "Basic",
-					"auto_pay":       "true",
-					"duration":       "1",
+					"cbn_geographic_region_ida": "defaultRegionToTest",
+					"cbn_geographic_region_idb": "defaultRegionToTest",
+					"bandwidth":                 "100",
+					"type":                      "Basic",
+					"bandwidth_type":            "Basic",
+					"auto_pay":                  "true",
+					"duration":                  "1",
+					"promotion_option_no":       "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

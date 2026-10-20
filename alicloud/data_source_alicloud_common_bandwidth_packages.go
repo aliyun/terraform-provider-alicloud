@@ -251,6 +251,16 @@ func dataSourceAlicloudCommonBandwidthPackagesRead(d *schema.ResourceData, meta 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		ratioVal, err := formatInt(object["Ratio"])
+		if err != nil {
+			return err
+		}
+
+		service_managedVal, err := formatInt(object["ServiceManaged"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"bandwidth":                        object["Bandwidth"],
 			"id":                               fmt.Sprint(object["BandwidthPackageId"]),
@@ -265,13 +275,13 @@ func dataSourceAlicloudCommonBandwidthPackagesRead(d *schema.ResourceData, meta 
 			"isp":                              object["ISP"],
 			"internet_charge_type":             object["InternetChargeType"],
 			"payment_type":                     object["InstanceChargeType"],
-			"ratio":                            formatInt(object["Ratio"]),
+			"ratio":                            ratioVal,
 			"reservation_active_time":          object["ReservationActiveTime"],
 			"reservation_bandwidth":            object["ReservationBandwidth"],
 			"reservation_internet_charge_type": object["ReservationInternetChargeType"],
 			"reservation_order_type":           object["ReservationOrderType"],
 			"resource_group_id":                object["ResourceGroupId"],
-			"service_managed":                  formatInt(object["ServiceManaged"]),
+			"service_managed":                  service_managedVal,
 			"status":                           object["Status"],
 		}
 

@@ -203,7 +203,11 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 		request["NextToken"] = v
 	}
 	if v, ok := d.GetOk("max_results"); ok {
-		request["MaxResults"] = formatInt(v)
+		maxResults, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		request["MaxResults"] = maxResults
 	}
 
 	var clusterNameRegex *regexp.Regexp
@@ -322,7 +326,11 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 	if err := d.Set("clusters", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err := formatInt(response["TotalCount"])
+	if err != nil {
+		return err
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 

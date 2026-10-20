@@ -199,18 +199,56 @@ func resourceAlicloudPolarDBGatewayRead(d *schema.ResourceData, meta interface{}
 	if err = d.Set("region_id", client.RegionId); err != nil {
 		return WrapError(err)
 	}
-	for key, responseKey := range map[string]string{
-		"status": "Status", "description": "GwDescription", "create_time": "CreateTime",
-		"modify_time": "ModifyTime", "expire_time": "ExpireTime", "expired": "Expired",
-		"latest_version": "LatestVersion", "current_version": "CurrentVersion", "running_version": "RunningVersion",
-	} {
-		if value, ok := object[responseKey]; ok && value != nil {
-			if err = d.Set(key, value); err != nil {
-				return WrapError(err)
-			}
+	if value, ok := object["Status"]; ok && value != nil {
+		if err = d.Set("status", value); err != nil {
+			return WrapError(err)
 		}
 	}
-	if err = d.Set("endpoints", flattenPolarDBGatewayEndpoints(object["Endpoints"])); err != nil {
+	if value, ok := object["GwDescription"]; ok && value != nil {
+		if err = d.Set("description", value); err != nil {
+			return WrapError(err)
+		}
+	}
+	if value, ok := object["CreateTime"]; ok && value != nil {
+		if err = d.Set("create_time", value); err != nil {
+			return WrapError(err)
+		}
+	}
+	if value, ok := object["ModifyTime"]; ok && value != nil {
+		if err = d.Set("modify_time", value); err != nil {
+			return WrapError(err)
+		}
+	}
+	if value, ok := object["ExpireTime"]; ok && value != nil {
+		if err = d.Set("expire_time", value); err != nil {
+			return WrapError(err)
+		}
+	}
+	if value, ok := object["Expired"]; ok && value != nil {
+		if err = d.Set("expired", value); err != nil {
+			return WrapError(err)
+		}
+	}
+	if value, ok := object["LatestVersion"]; ok && value != nil {
+		if err = d.Set("latest_version", value); err != nil {
+			return WrapError(err)
+		}
+	}
+	if value, ok := object["CurrentVersion"]; ok && value != nil {
+		if err = d.Set("current_version", value); err != nil {
+			return WrapError(err)
+		}
+	}
+	if value, ok := object["RunningVersion"]; ok && value != nil {
+		if err = d.Set("running_version", value); err != nil {
+			return WrapError(err)
+		}
+	}
+	endpoints, err := flattenPolarDBGatewayEndpoints(object["Endpoints"])
+	if err != nil {
+		return WrapError(err)
+	}
+	if err = d.Set("endpoints", endpoints); err != nil {
 		return WrapError(err)
 	}
 	if err = d.Set("security_ip_arrays", flattenPolarDBGatewaySecurityIPArrays(object["SecurityIPArrays"])); err != nil {
@@ -254,16 +292,20 @@ func resourceAlicloudPolarDBGatewayDelete(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func flattenPolarDBGatewayEndpoints(raw interface{}) []map[string]interface{} {
+func flattenPolarDBGatewayEndpoints(raw interface{}) ([]map[string]interface{}, error) {
 	items := polarDBGatewayList(raw, "Endpoint")
 	result := make([]map[string]interface{}, 0, len(items))
 	for _, item := range items {
+		portVal, err := formatInt(item["Port"])
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, map[string]interface{}{
 			"address": item["Address"], "endpoint_id": item["EndpointId"], "gateway_id": item["GwClusterId"],
-			"port": formatInt(item["Port"]), "tunnel_id": item["TunnelId"], "vpc_id": item["VpcId"], "network_type": item["NetType"],
+			"port": portVal, "tunnel_id": item["TunnelId"], "vpc_id": item["VpcId"], "network_type": item["NetType"],
 		})
 	}
-	return result
+	return result, nil
 }
 
 func flattenPolarDBGatewaySecurityIPArrays(raw interface{}) []map[string]interface{} {

@@ -106,7 +106,11 @@ func resourceAlicloudCmsMonitorGroupCreate(d *schema.ResourceData, meta interfac
 		return WrapError(Error("CreateMonitorGroup failed for %s", response["Message"]))
 	}
 
-	d.SetId(fmt.Sprint(formatInt(response["GroupId"])))
+	groupId, err := formatInt(response["GroupId"])
+	if err != nil {
+		return err
+	}
+	d.SetId(fmt.Sprint(groupId))
 
 	return resourceAlicloudCmsMonitorGroupUpdate(d, meta)
 }

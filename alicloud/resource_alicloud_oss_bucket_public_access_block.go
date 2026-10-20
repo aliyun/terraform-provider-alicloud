@@ -104,7 +104,11 @@ func resourceAliCloudOssBucketPublicAccessBlockRead(d *schema.ResourceData, meta
 		publicAccessBlockConfiguration1Raw = publicAccessBlockConfiguration1RawObj.(map[string]interface{})
 	}
 	if len(publicAccessBlockConfiguration1Raw) > 0 {
-		d.Set("block_public_access", formatBool(publicAccessBlockConfiguration1Raw["BlockPublicAccess"]))
+		block_public_accessVal, err := formatBool(publicAccessBlockConfiguration1Raw["BlockPublicAccess"])
+		if err != nil {
+			return err
+		}
+		d.Set("block_public_access", block_public_accessVal)
 	}
 	d.Set("bucket", d.Id())
 

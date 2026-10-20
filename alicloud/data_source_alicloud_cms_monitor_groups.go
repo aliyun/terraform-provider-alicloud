@@ -216,13 +216,30 @@ func dataSourceAlicloudCmsMonitorGroupsRead(d *schema.ResourceData, meta interfa
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		gmt_createVal, err := formatInt(object["GmtCreate"])
+		if err != nil {
+			return err
+		}
+		gmt_modifiedVal, err := formatInt(object["GmtModified"])
+		if err != nil {
+			return err
+		}
+		resourceGroupId, err := formatInt(object["GroupId"])
+		if err != nil {
+			return err
+		}
+		groupId, err := formatInt(object["GroupId"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"bind_url":            object["BindUrl"],
 			"dynamic_tag_rule_id": object["DynamicTagRuleId"],
-			"gmt_create":          formatInt(object["GmtCreate"]),
-			"gmt_modified":        formatInt(object["GmtModified"]),
-			"id":                  fmt.Sprint(formatInt(object["GroupId"])),
-			"group_id":            fmt.Sprint(formatInt(object["GroupId"])),
+			"gmt_create":          gmt_createVal,
+			"gmt_modified":        gmt_modifiedVal,
+			"id":                  fmt.Sprint(resourceGroupId),
+			"group_id":            fmt.Sprint(groupId),
 			"monitor_group_name":  object["GroupName"],
 			"service_id":          object["ServiceId"],
 			"template_ids":        object["TemplateIds"].(map[string]interface{})["TemplateId"],

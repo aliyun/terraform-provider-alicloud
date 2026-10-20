@@ -302,6 +302,11 @@ func dataSourceAlicloudExpressConnectVirtualPhysicalConnectionsRead(d *schema.Re
 	s := make([]map[string]interface{}, 0)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
+
+		vlan_idVal, err := formatInt(object["VlanId"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"id":                                 fmt.Sprint(object["PhysicalConnectionId"]),
 			"access_point_id":                    object["AccessPointId"],
@@ -329,7 +334,7 @@ func dataSourceAlicloudExpressConnectVirtualPhysicalConnectionsRead(d *schema.Re
 			"virtual_physical_connection_id":     object["PhysicalConnectionId"],
 			"virtual_physical_connection_name":   object["Name"],
 			"virtual_physical_connection_status": object["VirtualPhysicalConnectionStatus"],
-			"vlan_id":                            formatInt(object["VlanId"]),
+			"vlan_id":                            vlan_idVal,
 			"vpconn_ali_uid":                     object["AliUid"],
 		}
 

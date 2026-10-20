@@ -832,7 +832,10 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 				case json.Number:
 					hostGroupId = val.String()
 				}
-				oldNodeCount := formatInt(resp.([]interface{})[0].(map[string]interface{})["NodeCount"])
+				oldNodeCount, oldNodeCountErr := formatInt(resp.([]interface{})[0].(map[string]interface{})["NodeCount"])
+				if oldNodeCountErr != nil {
+					return oldNodeCountErr
+				}
 
 				// scala up
 				if oldNodeCount < newNodeCount {

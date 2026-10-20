@@ -85,7 +85,11 @@ func dataSourceAlicloudPolarDBPolarFsInstancesRead(d *schema.ResourceData, meta 
 		if len(items) < 100 {
 			break
 		}
-		request["PageNumber"] = formatInt(request["PageNumber"]) + 1
+		pageNumber, err := formatInt(request["PageNumber"])
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_polardb_polar_fs_instances", "DescribePolarFs", AlibabaCloudSdkGoERROR)
+		}
+		request["PageNumber"] = pageNumber + 1
 	}
 
 	ids := make([]string, 0, len(all))

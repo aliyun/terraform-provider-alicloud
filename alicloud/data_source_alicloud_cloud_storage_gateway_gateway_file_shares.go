@@ -368,10 +368,40 @@ func dataSourceAlicloudCloudStorageGatewayGatewayFileSharesRead(d *schema.Resour
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		backend_limitVal, err := formatInt(object["BeLimit"])
+		if err != nil {
+			return err
+		}
+
+		download_limitVal, err := formatInt(object["DownloadLimit"])
+		if err != nil {
+			return err
+		}
+
+		fe_limitVal, err := formatInt(object["FeLimit"])
+		if err != nil {
+			return err
+		}
+
+		kms_rotate_periodVal, err := formatInt(object["KmsRotatePeriod"])
+		if err != nil {
+			return err
+		}
+
+		polling_intervalVal, err := formatInt(object["PollingInterval"])
+		if err != nil {
+			return err
+		}
+
+		sync_progressVal, err := formatInt(object["SyncProgress"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"access_based_enumeration": object["AccessBasedEnumeration"],
 			"address":                  object["Address"],
-			"backend_limit":            formatInt(object["BeLimit"]),
+			"backend_limit":            backend_limitVal,
 			"browsable":                object["Browsable"],
 			"bucket_infos":             object["BucketInfos"],
 			"buckets_stub":             object["BucketsStub"],
@@ -381,10 +411,10 @@ func dataSourceAlicloudCloudStorageGatewayGatewayFileSharesRead(d *schema.Resour
 			"direct_io":                object["DirectIO"],
 			"disk_id":                  object["DiskId"],
 			"disk_type":                object["DiskType"],
-			"download_limit":           formatInt(object["DownloadLimit"]),
+			"download_limit":           download_limitVal,
 			"enabled":                  object["Enabled"],
 			"fast_reclaim":             object["FastReclaim"],
-			"fe_limit":                 formatInt(object["FeLimit"]),
+			"fe_limit":                 fe_limitVal,
 			"file_num_limit":           fmt.Sprint(object["FileNumLimit"]),
 			"fs_size_limit":            fmt.Sprint(object["FsSizeLimit"]),
 			"gateway_file_share_name":  object["Name"],
@@ -394,7 +424,7 @@ func dataSourceAlicloudCloudStorageGatewayGatewayFileSharesRead(d *schema.Resour
 			"in_rate":                  fmt.Sprint(object["InRate"]),
 			"id":                       fmt.Sprint(request["GatewayId"], ":", object["IndexId"]),
 			"index_id":                 fmt.Sprint(object["IndexId"]),
-			"kms_rotate_period":        formatInt(object["KmsRotatePeriod"]),
+			"kms_rotate_period":        kms_rotate_periodVal,
 			"lag_period":               fmt.Sprint(object["LagPeriod"]),
 			"local_path":               object["LocalPath"],
 			"mns_health":               object["MnsHealth"],
@@ -408,7 +438,7 @@ func dataSourceAlicloudCloudStorageGatewayGatewayFileSharesRead(d *schema.Resour
 			"out_rate":                 fmt.Sprint(object["OutRate"]),
 			"partial_sync_paths":       object["PartialSyncPaths"],
 			"path_prefix":              object["PathPrefix"],
-			"polling_interval":         formatInt(object["PollingInterval"]),
+			"polling_interval":         polling_intervalVal,
 			"protocol":                 object["Protocol"],
 			"remaining_meta_space":     fmt.Sprint(object["RemainingMetaSpace"]),
 			"remote_sync":              object["RemoteSync"],
@@ -418,7 +448,7 @@ func dataSourceAlicloudCloudStorageGatewayGatewayFileSharesRead(d *schema.Resour
 			"squash":                   object["Squash"],
 			"state":                    object["State"],
 			"support_archive":          object["SupportArchive"],
-			"sync_progress":            formatInt(object["SyncProgress"]),
+			"sync_progress":            sync_progressVal,
 			"total_download":           fmt.Sprint(object["TotalDownload"]),
 			"total_upload":             fmt.Sprint(object["TotalUpload"]),
 			"transfer_acceleration":    object["TransferAcceleration"],

@@ -315,7 +315,11 @@ func dataSourceAlicloudEmrV2ClusterInstancesRead(d *schema.ResourceData, meta in
 	if err := d.Set("instances", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
+	total_countVal, err := formatInt(response["TotalCount"])
+	if err != nil {
+		return err
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 

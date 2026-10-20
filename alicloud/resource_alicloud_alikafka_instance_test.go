@@ -127,6 +127,30 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"password": "YourPassword123!",
+					"zone_id":  "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"confluent_config": []map[string]interface{}{
+						{
+							"connect_cu":               "1",
+							"connect_replica":          "1",
+							"control_center_cu":        "1",
+							"control_center_replica":   "1",
+							"control_center_storage":   "1",
+							"kafka_cu":                 "1",
+							"kafka_replica":            "1",
+							"kafka_rest_proxy_cu":      "1",
+							"kafka_rest_proxy_replica": "1",
+							"kafka_storage":            "1",
+							"ksql_cu":                  "1",
+							"ksql_replica":             "1",
+							"ksql_storage":             "1",
+							"schema_registry_cu":       "1",
+							"schema_registry_replica":  "1",
+							"zookeeper_cu":             "1",
+							"zookeeper_replica":        "1",
+							"zookeeper_storage":        "1",
+						},
+					},
 					"name":           name,
 					"topic_quota":    "50",
 					"disk_type":      "1",
@@ -154,6 +178,28 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"password":        "YourPassword123!-upd",
+					"service_version": "2.2.0",
+					"confluent_config": []map[string]interface{}{
+						{
+							"connect_cu":               "2",
+							"connect_replica":          "2",
+							"control_center_cu":        "2",
+							"control_center_storage":   "2",
+							"kafka_cu":                 "2",
+							"kafka_replica":            "2",
+							"kafka_rest_proxy_cu":      "2",
+							"kafka_rest_proxy_replica": "2",
+							"kafka_storage":            "2",
+							"ksql_cu":                  "2",
+							"ksql_replica":             "2",
+							"ksql_storage":             "2",
+							"schema_registry_cu":       "2",
+							"schema_registry_replica":  "2",
+							"zookeeper_cu":             "2",
+							"zookeeper_storage":        "2",
+						},
+					},
 					"name": fmt.Sprintf("tf-testacc-alikafkainstancechange%v", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(

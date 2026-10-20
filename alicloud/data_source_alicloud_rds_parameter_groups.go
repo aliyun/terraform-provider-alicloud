@@ -162,16 +162,30 @@ func dataSourceAlicloudRdsParameterGroupsRead(d *schema.ResourceData, meta inter
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		force_restartVal, err := formatInt(object["ForceRestart"])
+		if err != nil {
+			return err
+		}
+		param_countsVal, err := formatInt(object["ParamCounts"])
+		if err != nil {
+			return err
+		}
+
+		parameter_group_typeVal, err := formatInt(object["ParameterGroupType"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"engine":               object["Engine"],
 			"engine_version":       object["EngineVersion"],
-			"force_restart":        formatInt(object["ForceRestart"]),
-			"param_counts":         formatInt(object["ParamCounts"]),
+			"force_restart":        force_restartVal,
+			"param_counts":         param_countsVal,
 			"parameter_group_desc": object["ParameterGroupDesc"],
 			"id":                   fmt.Sprint(object["ParameterGroupId"]),
 			"parameter_group_id":   fmt.Sprint(object["ParameterGroupId"]),
 			"parameter_group_name": object["ParameterGroupName"],
-			"parameter_group_type": formatInt(object["ParameterGroupType"]),
+			"parameter_group_type": parameter_group_typeVal,
 		}
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(object["ParameterGroupId"]))

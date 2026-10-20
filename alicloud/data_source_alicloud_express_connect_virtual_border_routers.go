@@ -305,6 +305,25 @@ func dataSourceAlicloudExpressConnectVirtualBorderRoutersRead(d *schema.Resource
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		detect_multiplierVal, err := formatInt(object["DetectMultiplier"])
+		if err != nil {
+			return err
+		}
+
+		min_rx_intervalVal, err := formatInt(object["MinRxInterval"])
+		if err != nil {
+			return err
+		}
+		min_tx_intervalVal, err := formatInt(object["MinTxInterval"])
+		if err != nil {
+			return err
+		}
+
+		vlan_idVal, err := formatInt(object["VlanId"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"access_point_id":                     object["AccessPointId"],
 			"activation_time":                     object["ActivationTime"],
@@ -312,13 +331,13 @@ func dataSourceAlicloudExpressConnectVirtualBorderRoutersRead(d *schema.Resource
 			"cloud_box_instance_id":               object["CloudBoxInstanceId"],
 			"create_time":                         object["CreationTime"],
 			"description":                         object["Description"],
-			"detect_multiplier":                   formatInt(object["DetectMultiplier"]),
+			"detect_multiplier":                   detect_multiplierVal,
 			"ecc_id":                              object["EccId"],
 			"enable_ipv6":                         object["EnableIpv6"],
 			"local_gateway_ip":                    object["LocalGatewayIp"],
 			"local_ipv6_gateway_ip":               object["LocalIpv6GatewayIp"],
-			"min_rx_interval":                     formatInt(object["MinRxInterval"]),
-			"min_tx_interval":                     formatInt(object["MinTxInterval"]),
+			"min_rx_interval":                     min_rx_intervalVal,
+			"min_tx_interval":                     min_tx_intervalVal,
 			"payment_vbr_expire_time":             object["PConnVbrExpireTime"],
 			"peer_gateway_ip":                     object["PeerGatewayIp"],
 			"peer_ipv6_gateway_ip":                object["PeerIpv6GatewayIp"],
@@ -336,7 +355,7 @@ func dataSourceAlicloudExpressConnectVirtualBorderRoutersRead(d *schema.Resource
 			"id":                                  fmt.Sprint(object["VbrId"]),
 			"virtual_border_router_id":            fmt.Sprint(object["VbrId"]),
 			"virtual_border_router_name":          object["Name"],
-			"vlan_id":                             formatInt(object["VlanId"]),
+			"vlan_id":                             vlan_idVal,
 			"vlan_interface_id":                   object["VlanInterfaceId"],
 		}
 		tagsMaps, _ := jsonpath.Get("$.Tags.Tags", object)

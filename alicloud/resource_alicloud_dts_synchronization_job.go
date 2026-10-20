@@ -470,7 +470,11 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	migrationModeObj := object["MigrationMode"].(map[string]interface{})
 	destinationEndpointObj := object["DestinationEndpoint"].(map[string]interface{})
 	sourceEndpointObj := object["SourceEndpoint"].(map[string]interface{})
-	d.Set("checkpoint", fmt.Sprint(formatInt(object["Checkpoint"])))
+	actualCheckpoint, err := formatInt(object["Checkpoint"])
+	if err != nil {
+		return err
+	}
+	d.Set("checkpoint", fmt.Sprint(actualCheckpoint))
 	d.Set("data_initialization", migrationModeObj["DataInitialization"])
 	d.Set("data_synchronization", migrationModeObj["DataSynchronization"])
 	d.Set("db_list", object["DbObject"])

@@ -190,7 +190,7 @@ func TestAccAliCloudDcdnIpaDomain_basic0(t *testing.T) {
 						{
 							"content":  "3.3.3.3",
 							"port":     "7261",
-							"priority": "20",
+							"priority": "30",
 							"type":     "ipaddr",
 							"weight":   "7",
 						},

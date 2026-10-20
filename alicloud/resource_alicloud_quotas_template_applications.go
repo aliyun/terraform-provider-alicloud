@@ -312,7 +312,11 @@ func resourceAliCloudQuotasTemplateApplicationsRead(d *schema.ResourceData, meta
 			periodMap := make(map[string]interface{})
 			period1Raw := quotaApplicationsChild1Raw["Period"].(map[string]interface{})
 			periodMap["period_unit"] = period1Raw["PeriodUnit"]
-			periodMap["period_value"] = formatInt(period1Raw["PeriodValue"])
+			periodValue, err := formatInt(period1Raw["PeriodValue"])
+			if err != nil {
+				return err
+			}
+			periodMap["period_value"] = periodValue
 
 			periodMaps = append(periodMaps, periodMap)
 			quotaApplicationDetailsMap["period"] = periodMaps

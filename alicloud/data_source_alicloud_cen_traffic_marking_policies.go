@@ -172,10 +172,19 @@ func dataSourceAlicloudCenTrafficMarkingPoliciesRead(d *schema.ResourceData, met
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		marking_dscpVal, err := formatInt(object["MarkingDscp"])
+		if err != nil {
+			return err
+		}
+		priorityVal, err := formatInt(object["Priority"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"description":                 object["TrafficMarkingPolicyDescription"],
-			"marking_dscp":                formatInt(object["MarkingDscp"]),
-			"priority":                    formatInt(object["Priority"]),
+			"marking_dscp":                marking_dscpVal,
+			"priority":                    priorityVal,
 			"status":                      object["TrafficMarkingPolicyStatus"],
 			"transit_router_id":           request["TransitRouterId"],
 			"id":                          fmt.Sprint(request["TransitRouterId"], ":", object["TrafficMarkingPolicyId"]),

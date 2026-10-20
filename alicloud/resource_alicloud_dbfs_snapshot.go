@@ -133,7 +133,11 @@ func resourceAliCloudDbfsSnapshotRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("status", object["Status"])
 
 	if retentionDays, ok := object["RetentionDays"]; ok && fmt.Sprint(retentionDays) != "0" {
-		d.Set("retention_days", formatInt(retentionDays))
+		retention_daysVal, err := formatInt(retentionDays)
+		if err != nil {
+			return err
+		}
+		d.Set("retention_days", retention_daysVal)
 	}
 
 	return nil

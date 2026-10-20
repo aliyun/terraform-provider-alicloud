@@ -243,7 +243,11 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 	if err := d.Set("topics", s); err != nil {
 		return WrapError(err)
 	}
-	if err := d.Set("total_count", formatInt(response["Total"])); err != nil {
+	total_countVal, err := formatInt(response["Total"])
+	if err != nil {
+		return err
+	}
+	if err := d.Set("total_count", total_countVal); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

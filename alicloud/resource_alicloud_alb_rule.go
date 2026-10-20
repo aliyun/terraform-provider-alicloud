@@ -856,7 +856,11 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("status", object["RuleStatus"])
 
 	if v, ok := object["Priority"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("priority", formatInt(v))
+		priorityVal, err := formatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("priority", priorityVal)
 	}
 
 	if ruleActionsList, ok := object["RuleActions"]; ok {
@@ -865,7 +869,11 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 			ruleActionsArg := ruleActions.(map[string]interface{})
 			ruleActionsMap := map[string]interface{}{}
 			ruleActionsMap["type"] = ruleActionsArg["Type"]
-			ruleActionsMap["order"] = formatInt(ruleActionsArg["Order"])
+			ruleActionsArgOrder, err := formatInt(ruleActionsArg["Order"])
+			if err != nil {
+				return err
+			}
+			ruleActionsMap["order"] = ruleActionsArgOrder
 
 			if forwardGroupConfig, ok := ruleActionsArg["ForwardGroupConfig"]; ok {
 				forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
@@ -876,7 +884,11 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 							serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 							serverGroupTuplesMap := map[string]interface{}{}
 							serverGroupTuplesMap["server_group_id"] = serverGroupTuplesArg["ServerGroupId"]
-							serverGroupTuplesMap["weight"] = formatInt(serverGroupTuplesArg["Weight"])
+							serverGroupTuplesArgWeight, err := formatInt(serverGroupTuplesArg["Weight"])
+							if err != nil {
+								return err
+							}
+							serverGroupTuplesMap["weight"] = serverGroupTuplesArgWeight
 							serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 						}
 					}

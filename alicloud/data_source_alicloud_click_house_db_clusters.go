@@ -298,6 +298,10 @@ func dataSourceAlicloudClickHouseDbClustersRead(d *schema.ResourceData, meta int
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
+		portVal, err := formatInt(object["Port"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"ali_uid":                 object["AliUid"],
 			"bid":                     object["Bid"],
@@ -316,7 +320,7 @@ func dataSourceAlicloudClickHouseDbClustersRead(d *schema.ResourceData, meta int
 			"lock_mode":               object["LockMode"],
 			"lock_reason":             object["LockReason"],
 			"payment_type":            convertClickHouseDbClusterPaymentTypeResponse(object["PayType"].(string)),
-			"port":                    formatInt(object["Port"]),
+			"port":                    portVal,
 			"storage_type":            object["StorageType"],
 			"vswitch_id":              object["VSwitchId"],
 			"vpc_cloud_instance_id":   object["VpcCloudInstanceId"],
@@ -369,7 +373,11 @@ func dataSourceAlicloudClickHouseDbClustersRead(d *schema.ResourceData, meta int
 		mapping["public_connection_string"] = getResp["PublicConnectionString"]
 		mapping["public_port"] = getResp["PublicPort"]
 		if v, ok := getResp["SupportBackup"]; ok && fmt.Sprint(v) != "0" {
-			mapping["support_backup"] = formatInt(v)
+			supportBackup, err := formatInt(v)
+			if err != nil {
+				return err
+			}
+			mapping["support_backup"] = supportBackup
 		}
 		mapping["support_https_port"] = getResp["SupportHttpsPort"]
 		mapping["support_mysql_port"] = getResp["SupportMysqlPort"]

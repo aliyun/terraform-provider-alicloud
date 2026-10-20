@@ -345,6 +345,16 @@ func dataSourceAlicloudEcsNetworkInterfacesRead(d *schema.ResourceData, meta int
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
+
+		queue_numberVal, err := formatInt(object["QueueNumber"])
+		if err != nil {
+			return err
+		}
+
+		service_idVal, err := formatInt(object["ServiceID"])
+		if err != nil {
+			return err
+		}
 		mapping := map[string]interface{}{
 			"description":                    object["Description"],
 			"instance_id":                    object["InstanceId"],
@@ -355,10 +365,10 @@ func dataSourceAlicloudEcsNetworkInterfacesRead(d *schema.ResourceData, meta int
 			"name":                           object["NetworkInterfaceName"],
 			"primary_ip_address":             object["PrivateIpAddress"],
 			"private_ip":                     object["PrivateIpAddress"],
-			"queue_number":                   formatInt(object["QueueNumber"]),
+			"queue_number":                   queue_numberVal,
 			"resource_group_id":              object["ResourceGroupId"],
 			"security_group_ids":             object["SecurityGroupIds"].(map[string]interface{})["SecurityGroupId"],
-			"service_id":                     formatInt(object["ServiceID"]),
+			"service_id":                     service_idVal,
 			"service_managed":                object["ServiceManaged"],
 			"status":                         object["Status"],
 			"type":                           object["Type"],
