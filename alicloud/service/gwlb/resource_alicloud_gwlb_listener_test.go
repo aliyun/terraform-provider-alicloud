@@ -1,10 +1,11 @@
-package alicloud
+package gwlb_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gwlb"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
@@ -16,8 +17,8 @@ func TestAccAliCloudGwlbListener_basic8508(t *testing.T) {
 	resourceId := "alicloud_gwlb_listener.default"
 	ra := resourceAttrInit(resourceId, AlicloudGwlbListenerMap8508)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbListener")
+		return gwlb.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeListener")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -269,8 +270,8 @@ func TestAccAliCloudGwlbListener_tcpIdleTimeout8508(t *testing.T) {
 	resourceId := "alicloud_gwlb_listener.default"
 	ra := resourceAttrInit(resourceId, AlicloudGwlbListenerMap8508)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbListener")
+		return gwlb.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeListener")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)

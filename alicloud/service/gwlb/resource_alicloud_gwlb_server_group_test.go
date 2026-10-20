@@ -1,10 +1,11 @@
-package alicloud
+package gwlb_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gwlb"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
@@ -16,8 +17,8 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 	resourceId := "alicloud_gwlb_server_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8419)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbServerGroup")
+		return gwlb.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -260,8 +261,8 @@ func TestAccAliCloudGwlbServerGroup_basic8500(t *testing.T) {
 	resourceId := "alicloud_gwlb_server_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8500)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbServerGroup")
+		return gwlb.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -498,8 +499,8 @@ func TestAccAliCloudGwlbServerGroup_basic8564(t *testing.T) {
 	resourceId := "alicloud_gwlb_server_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8564)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbServerGroup")
+		return gwlb.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -736,8 +737,8 @@ func TestAccAliCloudGwlbServerGroupDraining8570(t *testing.T) {
 	resourceId := "alicloud_gwlb_server_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8570)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbServerGroup")
+		return gwlb.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
