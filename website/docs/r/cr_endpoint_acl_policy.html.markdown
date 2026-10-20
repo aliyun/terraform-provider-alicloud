@@ -52,10 +52,12 @@ data "alicloud_cr_endpoint_acl_service" "default" {
 
 resource "alicloud_cr_endpoint_acl_policy" "default" {
   instance_id   = data.alicloud_cr_endpoint_acl_service.default.instance_id
-  entry         = "192.168.1.0/24"
-  description   = var.name
-  module_name   = "Registry"
   endpoint_type = "internet"
+  module_name   = "Registry"
+  entries {
+    entry   = "192.168.1.0/24"
+    comment = var.name
+  }
 }
 ```
 
@@ -65,17 +67,24 @@ resource "alicloud_cr_endpoint_acl_policy" "default" {
 
 The following arguments are supported:
 
-* `description` - (Optional, ForceNew) The description of the entry.
 * `endpoint_type` - (Required, ForceNew) The type of endpoint. Valid values: `internet`, `Internet`. The value is normalized to lowercase `internet` in the state and the resource ID.
-* `entry` - (Required, ForceNew) The IP segment that allowed to access.
+* `entries` - (Required, ForceNew) The ACL entry list for the endpoint. One ACL policy resource owns the whole user-managed entry list for the (instance, endpoint) pair. See [`entries`](#entries) below.
 * `instance_id` - (Required, ForceNew) The ID of the CR Instance.
 * `module_name` - (Optional, ForceNew) The module that needs to set the access policy. Valid values: `Registry`.
+
+### `entries`
+
+The entries block supports the following:
+
+* `entry` - (Required, ForceNew) The IP segment (CIDR) that is allowed to access.
+* `comment` - (Optional, ForceNew) The description of the entry.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of Endpoint Acl Policy. The value formats as `<instance_id>:<endpoint_type>:<entry>`.
+* `id` - The resource ID of Endpoint Acl Policy. The value formats as `<instance_id>:<endpoint_type>`. The ACL policy resource represents the full user-managed entry list for the (instance, endpoint) pair, so the ID identifies the endpoint rather than a single entry.
+* `description` - The description of the first ACL entry, populated from the first entry's `comment` for backward-compatible display. It is read-only; set per-entry descriptions via the `comment` field of the `entries` block.
 
 ## Timeouts
 
@@ -86,8 +95,8 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-CR Endpoint Acl Policy can be imported using the id, which consists of instance_id, endpoint_type and entry. The `endpoint_type` segment of the import ID accepts both `internet` and `Internet`, e.g. `cri-abc123:internet:10.0.0.0/8`.
+CR Endpoint Acl Policy can be imported using the id, which consists of instance_id and endpoint_type. The ACL policy represents the full entry list for the (instance, endpoint) pair, so the import ID identifies the endpoint rather than a single entry. The `endpoint_type` segment of the import ID accepts both `internet` and `Internet`, e.g. `cri-abc123:internet`.
 
 ```shell
-$ terraform import alicloud_cr_endpoint_acl_policy.example <instance_id>:<endpoint_type>:<entry>
+$ terraform import alicloud_cr_endpoint_acl_policy.example <instance_id>:<endpoint_type>
 ```
