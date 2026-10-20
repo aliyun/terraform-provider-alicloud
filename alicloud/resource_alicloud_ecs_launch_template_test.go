@@ -41,13 +41,15 @@ func testAliCloudEcsLaunchTemplate(region string) error {
 	for {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecs_launch_templates", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list %s: %s", action, err)
+			break
 		}
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.LaunchTemplateSets.LaunchTemplateSet", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.LaunchTemplateSets.LaunchTemplateSet", response)
+			log.Printf("[ERROR] Failed to parse $.LaunchTemplateSets.LaunchTemplateSet for %s: %s", action, err)
+			break
 		}
 
 		sweeped := false
