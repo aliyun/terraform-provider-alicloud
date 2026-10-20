@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9192,5 +9193,63 @@ func TestUnitVpcSweepStarrocksTotalRejectsFractionOverflowAndUnknownTypes(t *tes
 		if _, _, err := starrocksVpcRows(response); err == nil {
 			t.Fatalf("invalid total %v (%T) accepted", value, value)
 		}
+	}
+}
+
+func TestUnitVpcDeleteRouterInterfaceDependency(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		code      string
+		permanent bool
+		timeout   time.Duration
+		wantError bool
+		wantCalls int
+	}{
+		{name: "dependency_clears", code: "DependencyViolation.RouterInterface", timeout: 20 * time.Second, wantCalls: 2},
+		{name: "permanent_dependency", code: "DependencyViolation.RouterInterface", permanent: true, timeout: time.Second, wantError: true, wantCalls: 1},
+		{name: "similar_dependency", code: "DependencyViolation.RouterInterfaceOther", timeout: 20 * time.Second, wantError: true, wantCalls: 1},
+		{name: "other_dependency", code: "DependencyViolation.NatGateway", timeout: 20 * time.Second, wantError: true, wantCalls: 1},
+		{name: "vpc_in_use", code: "Forbidden.VpcInUse", timeout: 20 * time.Second, wantError: true, wantCalls: 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			deletes := 0
+			client := routerInterfaceDeleteTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				switch r.Form.Get("Action") {
+				case "DeleteVpc":
+					deletes++
+					if r.Form.Get("VpcId") != "vpc-test" {
+						t.Error("wrong VPC")
+					}
+					if deletes == 1 || tc.permanent {
+						routerInterfaceDeleteTestError(t, w, tc.code)
+						return
+					}
+					routerInterfaceDeleteTestResponse(t, w, map[string]interface{}{})
+				case "DescribeVpcAttribute":
+					routerInterfaceDeleteTestError(t, w, "InvalidVpcId.NotFound")
+				default:
+					t.Errorf("unexpected action %q", r.Form.Get("Action"))
+				}
+			})
+			res := resourceAliCloudVpcVpc()
+			res.Timeouts = &schema.ResourceTimeout{Delete: schema.DefaultTimeout(tc.timeout)}
+			d := res.Data(nil)
+			d.SetId("vpc-test")
+			err := res.Delete(d, client)
+			if tc.wantError {
+				if err == nil || !strings.Contains(err.Error(), tc.code) {
+					t.Errorf("expected dependency error %s, got %v", tc.code, err)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if tc.permanent {
+				if deletes < 1 || deletes > 3 {
+					t.Errorf("unbounded dependency retries: %d", deletes)
+				}
+			} else if deletes != tc.wantCalls {
+				t.Errorf("wanted %d deletes, got %d", tc.wantCalls, deletes)
+			}
+		})
 	}
 }
