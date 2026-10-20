@@ -102,3 +102,109 @@ resource "alicloud_apig_gateway" "plugin_gateway_pre" {
 }
 
 // Test Apig Plugin. <<< Resource test cases, automatically generated.
+
+// TestAccAliCloudApigPlugin_aiGatewayReadBack verifies that an AI gateway plugin
+// can be read back after Create. ListPlugins (GET /v1/plugins) does not return AI
+// gateway plugins unless gatewayType is specified, so before the DescribeApigPlugin
+// fix the Read following Create reported Plugin NotFound and apply failed. This
+// case also covers plan/refresh drift detection and ImportStatePassthrough for AI
+// gateway plugins.
+func TestAccAliCloudApigPlugin_aiGatewayReadBack(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_apig_plugin.default"
+	ra := resourceAttrInit(resourceId, AlicloudApigPluginMap12943)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ApigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeApigPlugin")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc-apig-plugin-ai-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudApigPluginAIGatewayDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plugin_class_id": "pls-crpqb35lhtgo800k2m8g",
+					"gateway_id":      "${alicloud_apig_gateway.ai_gateway.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plugin_class_id": "pls-crpqb35lhtgo800k2m8g",
+						"gateway_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func AlicloudApigPluginAIGatewayDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "k" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = "cn-hangzhou-k"
+  cidr_block = "172.16.1.0/24"
+}
+
+resource "alicloud_vswitch" "j" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = "cn-hangzhou-j"
+  cidr_block = "172.16.2.0/24"
+}
+
+resource "alicloud_apig_gateway" "ai_gateway" {
+  gateway_name = var.name
+  gateway_type = "AI"
+  payment_type = "PayAsYouGo"
+  spec         = "aigw.small.x1"
+  vpc {
+    vpc_id = alicloud_vpc.default.id
+  }
+  vswitch {
+    vswitch_id = alicloud_vswitch.j.id
+  }
+  zone_config {
+    select_option = "Manual"
+  }
+  zones {
+    zone_id    = alicloud_vswitch.j.zone_id
+    vswitch_id = alicloud_vswitch.j.id
+  }
+  zones {
+    zone_id    = alicloud_vswitch.k.zone_id
+    vswitch_id = alicloud_vswitch.k.id
+  }
+  network_access_config {
+    type = "Intranet"
+  }
+  log_config {
+    sls {
+      enable = false
+    }
+  }
+}
+
+`, name)
+}
