@@ -134,8 +134,14 @@ test_range_validation_and_literal_filtering() {
 	assert_not_contains "$RUN_OUTPUT" "alicloud/resource_name1.go" \
 		"regex lookalike finding must be filtered"
 
-	assert_contains "$(cat "$MOCK_ARGS_FILE")" "./alicloud/..." \
-		"tfproviderlint must continue to analyze the full provider package tree"
+	assert_contains "$(cat "$MOCK_ARGS_FILE")" "./alicloud/changed" \
+		"tfproviderlint must analyze the changed nested package"
+	assert_contains "$(cat "$MOCK_ARGS_FILE")" "./alicloud" \
+		"root package changes must analyze the root package"
+	assert_not_contains "$(cat "$MOCK_ARGS_FILE")" "./alicloud/..." \
+		"tfproviderlint must not recursively analyze unrelated packages"
+	assert_not_contains "$(cat "$MOCK_ARGS_FILE")" "./alicloud/unchanged" \
+		"unchanged packages must not be targets"
 
 	local package_error
 	package_error=$'alicloud/unchanged/same.go:10:2: R001: partial diagnostic\n-: package load failed'
@@ -160,13 +166,77 @@ test_range_validation_and_literal_filtering() {
 	commit_file "$repository" scripts/ci/marker.txt 'no Go changes' no-go-change
 	local no_go_head_sha
 	no_go_head_sha="$(git -C "$repository" rev-parse HEAD)"
+	rm -f "$MOCK_ARGS_FILE"
 	run_lint "$repository" \
 		DIFF_BASE="$head_sha" DIFF_HEAD="$no_go_head_sha" \
 		MOCK_LINT_EXIT=3 MOCK_LINT_OUTPUT="$unchanged_output"
 	[[ "$RUN_STATUS" -eq 0 ]] ||
 		die "a valid range without Go changes must ignore stored diagnostics"
-	assert_contains "$RUN_OUTPUT" "No issues in changed files" \
-		"empty changed-file scope must not fail on stored diagnostics"
+	assert_contains "$RUN_OUTPUT" "No changed Go files" \
+		"empty changed-file scope must skip analysis"
+	[[ ! -e "$MOCK_ARGS_FILE" ]] || die "no-Go changes must not invoke tfproviderlint"
+}
+
+test_package_target_selection() {
+	local temp_dir="$1"
+	local repository="$temp_dir/package-targets"
+	git init -q -b master "$repository"
+	git -C "$repository" config core.hooksPath /dev/null
+	git -C "$repository" config user.name "CI Lint Test"
+	git -C "$repository" config user.email "ci-lint-test@example.invalid"
+	commit_file "$repository" alicloud/old/old.go 'package old' base
+	local base_sha
+	base_sha="$(git -C "$repository" rev-parse HEAD)"
+	commit_file "$repository" alicloud/new/first.go 'package new' first
+	commit_file "$repository" alicloud/new/second_test.go 'package new_test' second
+	git -C "$repository" rm -q alicloud/old/old.go
+	git -C "$repository" commit -q -m delete-old-package
+	local head_sha
+	head_sha="$(git -C "$repository" rev-parse HEAD)"
+	run_lint "$repository" DIFF_BASE="$base_sha" DIFF_HEAD="$head_sha" \
+		MOCK_LINT_EXIT=0 MOCK_LINT_OUTPUT=
+	[[ "$RUN_STATUS" -eq 0 ]] || die "new package selection failed: $RUN_OUTPUT"
+	local targets
+	targets="$(cat "$MOCK_ARGS_FILE")"
+	assert_contains "$targets" './alicloud/new' "new packages must be selected"
+	assert_not_contains "$targets" './alicloud/old' "deleted packages must not be loaded"
+	[[ "$(printf '%s' "$targets" | awk -F './alicloud/new' '{print NF-1}')" -eq 1 ]] ||
+		die "multiple files in a package must produce one target"
+
+	base_sha="$head_sha"
+	git -C "$repository" mv alicloud/new/first.go alicloud/new/renamed.go
+	git -C "$repository" commit -q -m rename-file
+	head_sha="$(git -C "$repository" rev-parse HEAD)"
+	run_lint "$repository" DIFF_BASE="$base_sha" DIFF_HEAD="$head_sha" \
+		MOCK_LINT_EXIT=0 MOCK_LINT_OUTPUT=
+	[[ "$RUN_STATUS" -eq 0 ]] || die "rename selection failed: $RUN_OUTPUT"
+	assert_contains "$(cat "$MOCK_ARGS_FILE")" './alicloud/new' \
+		"renamed Go files must select their destination package"
+
+	commit_file "$repository" alicloud/new/remaining.go 'package new' surviving-source
+	base_sha="$(git -C "$repository" rev-parse HEAD)"
+	git -C "$repository" rm -q alicloud/new/renamed.go
+	git -C "$repository" commit -q -m delete-declaration
+	head_sha="$(git -C "$repository" rev-parse HEAD)"
+	run_lint "$repository" DIFF_BASE="$base_sha" DIFF_HEAD="$head_sha" \
+		MOCK_LINT_EXIT=0 MOCK_LINT_OUTPUT=
+	[[ "$RUN_STATUS" -eq 0 ]] || die "deleted source selection failed: $RUN_OUTPUT"
+	assert_contains "$(cat "$MOCK_ARGS_FILE")" './alicloud/new' \
+		"deleting a Go file must still analyze its surviving package"
+
+	base_sha="$head_sha"
+	mkdir -p "$repository/alicloud/destination"
+	git -C "$repository" mv alicloud/new/remaining.go alicloud/destination/moved.go
+	git -C "$repository" commit -q -m move-declaration
+	head_sha="$(git -C "$repository" rev-parse HEAD)"
+	run_lint "$repository" DIFF_BASE="$base_sha" DIFF_HEAD="$head_sha" \
+		MOCK_LINT_EXIT=0 MOCK_LINT_OUTPUT=
+	[[ "$RUN_STATUS" -eq 0 ]] || die "moved source selection failed: $RUN_OUTPUT"
+	assert_contains "$(cat "$MOCK_ARGS_FILE")" './alicloud/new' \
+		"a moved file must still analyze its surviving source package"
+	assert_contains "$(cat "$MOCK_ARGS_FILE")" './alicloud/destination' \
+		"a moved file must analyze its destination package"
+
 }
 
 test_shallow_checkout_fails_closed() {
@@ -222,6 +292,7 @@ main() {
 	export MOCK_BIN MOCK_ARGS_FILE
 
 	test_range_validation_and_literal_filtering "$temp_dir"
+	test_package_target_selection "$temp_dir"
 	test_shallow_checkout_fails_closed "$temp_dir"
 	echo "PASS: run-tflint regression tests"
 }
