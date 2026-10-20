@@ -8,7 +8,7 @@ import (
 )
 
 // TestNewRequiredFieldDetection tests if we can detect new required fields
-func TestNewRequiredFieldDetection(t *testing.T) {
+func TestUnitNewRequiredFieldDetection(t *testing.T) {
 	oldAttrs := map[string]map[string]interface{}{
 		"field1": {
 			"Name":     "field1",
@@ -39,7 +39,7 @@ func TestNewRequiredFieldDetection(t *testing.T) {
 }
 
 // TestAttributeDeletion tests if we can detect attribute deletion
-func TestAttributeDeletion(t *testing.T) {
+func TestUnitAttributeDeletion(t *testing.T) {
 	oldAttrs := map[string]map[string]interface{}{
 		"field1": {
 			"Name":     "field1",
@@ -70,7 +70,7 @@ func TestAttributeDeletion(t *testing.T) {
 }
 
 // TestOptionalToRequired tests if we can detect optional->required change
-func TestOptionalToRequired(t *testing.T) {
+func TestUnitOptionalToRequired(t *testing.T) {
 	oldAttrs := map[string]map[string]interface{}{
 		"field1": {
 			"Name":     "field1",
@@ -96,7 +96,7 @@ func TestOptionalToRequired(t *testing.T) {
 }
 
 // TestTypeChange tests if we can detect type changes
-func TestTypeChange(t *testing.T) {
+func TestUnitTypeChange(t *testing.T) {
 	oldAttrs := map[string]map[string]interface{}{
 		"count_field": {
 			"Name":     "count_field",
@@ -122,7 +122,7 @@ func TestTypeChange(t *testing.T) {
 }
 
 // TestForceNewAdded tests if we can detect ForceNew being added
-func TestForceNewAdded(t *testing.T) {
+func TestUnitForceNewAdded(t *testing.T) {
 	oldAttrs := map[string]map[string]interface{}{
 		"field1": {
 			"Name":     "field1",
@@ -149,7 +149,7 @@ func TestForceNewAdded(t *testing.T) {
 }
 
 // TestSafeChange tests if safe changes are allowed
-func TestSafeChange(t *testing.T) {
+func TestUnitSafeChange(t *testing.T) {
 	oldAttrs := map[string]map[string]interface{}{
 		"field1": {
 			"Name":     "field1",
@@ -180,7 +180,7 @@ func TestSafeChange(t *testing.T) {
 }
 
 // TestRetryCodeRemoval tests if retry error code removal is detected
-func TestRetryCodeRemoval(t *testing.T) {
+func TestUnitRetryCodeRemoval(t *testing.T) {
 	oldCodes := map[string]map[string]struct{}{
 		"CreateInstance": {
 			"Throttling":         {},
@@ -205,7 +205,7 @@ func TestRetryCodeRemoval(t *testing.T) {
 }
 
 // TestRetryCodeAddition tests if adding retry error codes is allowed (safe change)
-func TestRetryCodeAddition(t *testing.T) {
+func TestUnitRetryCodeAddition(t *testing.T) {
 	oldCodes := map[string]map[string]struct{}{
 		"CreateInstance": {
 			"Throttling": {},
@@ -229,7 +229,7 @@ func TestRetryCodeAddition(t *testing.T) {
 }
 
 // TestRetryCodeCompleteRemoval tests if complete removal of IsExpectedErrors is detected
-func TestRetryCodeCompleteRemoval(t *testing.T) {
+func TestUnitRetryCodeCompleteRemoval(t *testing.T) {
 	oldCodes := map[string]map[string]struct{}{
 		"CreateInstance": {
 			"Throttling":         {},
@@ -250,7 +250,7 @@ func TestRetryCodeCompleteRemoval(t *testing.T) {
 }
 
 // TestRetryCodeParsingFromContent tests parsing retry codes from actual Go code
-func TestRetryCodeParsingFromContent(t *testing.T) {
+func TestUnitRetryCodeParsingFromContent(t *testing.T) {
 	content := `
 package alicloud
 
@@ -379,7 +379,7 @@ func extractContentFromDiff(diffContent string) (oldContent, newContent string) 
 	return strings.Join(oldLines, "\n"), strings.Join(newLines, "\n")
 }
 
-func TestParseRetryErrorCodesFromHunk(t *testing.T) {
+func TestUnitParseRetryErrorCodesFromHunk(t *testing.T) {
 	tests := []struct {
 		name           string
 		diffContent    string
@@ -569,7 +569,7 @@ func verifyExpectedCodes(t *testing.T, prefix string, actual map[string]map[stri
 	return true
 }
 
-func TestIsRetryCodeBreaking(t *testing.T) {
+func TestUnitIsRetryCodeBreaking(t *testing.T) {
 	tests := []struct {
 		name           string
 		oldRetryCodes  map[string]map[string]struct{}
@@ -659,7 +659,7 @@ func TestIsRetryCodeBreaking(t *testing.T) {
 	}
 }
 
-func TestRegexPatterns(t *testing.T) {
+func TestUnitRegexPatterns(t *testing.T) {
 	tests := []struct {
 		name     string
 		content  string
@@ -744,7 +744,7 @@ if IsExpectedErrors(err, []string{"Throttling"}) {`,
 	}
 }
 
-func TestExactRdsErrorClassifierCompatibility(t *testing.T) {
+func TestUnitExactRdsErrorClassifierCompatibility(t *testing.T) {
 	old := `action := "DeleteDatabase"
 if IsExpectedErrors(err, []string{"InvalidDBName.NotFound"}) { return nil }`
 	updated := `action := "DeleteDatabase"
@@ -808,7 +808,7 @@ func (e *plaintextEphemeralResource) Schema(ctx context.Context, req ephemeral.S
 }
 `
 
-func TestParseFrameworkSchemaFromAST(t *testing.T) {
+func TestUnitParseFrameworkSchemaFromAST(t *testing.T) {
 	attrs := ParseFrameworkSchemaFromAST(frameworkEphemeralSrc)
 
 	want := map[string]struct {
@@ -848,7 +848,7 @@ func TestParseFrameworkSchemaFromAST(t *testing.T) {
 	}
 }
 
-func TestParseSchemasMergesSDKv2AndFramework(t *testing.T) {
+func TestUnitParseSchemasMergesSDKv2AndFramework(t *testing.T) {
 	src := `package mixed
 
 import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -883,7 +883,7 @@ func (r *resource) Schema() {
 	}
 }
 
-func TestFrameworkSchemaBreakingChanges(t *testing.T) {
+func TestUnitFrameworkSchemaBreakingChanges(t *testing.T) {
 	oldSrc := `package kms
 
 func (e *ephemeral) Schema() {
@@ -941,7 +941,7 @@ func (e *ephemeral) Schema() {
 // TestMigratedEntityNoPhantomTypeBreak proves a migrated entity compares
 // cleanly against its pre-split flat-layout content: schema.TypeString and
 // schema.StringAttribute normalize to the same TypeString.
-func TestMigratedEntityNoPhantomTypeBreak(t *testing.T) {
+func TestUnitMigratedEntityNoPhantomTypeBreak(t *testing.T) {
 	flatSrc := `package alicloud
 
 func resourceUser() *schema.Resource {
@@ -976,5 +976,535 @@ func (r *userResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 `
 	if IsBreakingChange(parseSchemas(flatSrc), parseSchemas(frameworkSrc)) {
 		t.Error("A migrated SDKv2->framework entity must not report phantom breaking changes")
+	}
+}
+
+// TestNestedRequiredChildUnderExistingOptionalParent (path 2): an existing
+// Optional parent that gains a new Required child is a breaking change because
+// existing users of the parent must now supply the new child.
+func TestUnitNestedRequiredChildUnderExistingOptionalParent(t *testing.T) {
+	oldAttrs := map[string]map[string]interface{}{
+		"resource_tag": {
+			"Name":     "resource_tag",
+			"Type":     "TypeSet",
+			"Optional": true,
+			"Nested": map[string]map[string]interface{}{
+				"key": {"Name": "key", "Type": "TypeString", "Required": true},
+			},
+		},
+	}
+	newAttrs := map[string]map[string]interface{}{
+		"resource_tag": {
+			"Name":     "resource_tag",
+			"Type":     "TypeSet",
+			"Optional": true,
+			"Nested": map[string]map[string]interface{}{
+				"key":   {"Name": "key", "Type": "TypeString", "Required": true},
+				"value": {"Name": "value", "Type": "TypeString", "Required": true},
+			},
+		},
+	}
+	if !IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("Expected breaking change when a Required child is added to an existing Optional parent")
+	} else {
+		fmt.Println("✓ Test passed: new Required child under existing Optional parent is breaking")
+	}
+}
+
+// TestNestedRequiredChildUnderNewOptionalParent (path 3): a brand-new Optional
+// parent whose nested children are Required is NOT a global breaking change —
+// the whole block is new and Optional. This is the ecs_invocation resource_tag
+// case that the flattening bug previously misreported.
+func TestUnitNestedRequiredChildUnderNewOptionalParent(t *testing.T) {
+	oldAttrs := map[string]map[string]interface{}{
+		"instance_id": {"Name": "instance_id", "Type": "TypeList", "Required": true},
+	}
+	newAttrs := map[string]map[string]interface{}{
+		"instance_id": {"Name": "instance_id", "Type": "TypeList", "Optional": true},
+		"resource_tag": {
+			"Name":     "resource_tag",
+			"Type":     "TypeSet",
+			"Optional": true,
+			"Nested": map[string]map[string]interface{}{
+				"key":   {"Name": "key", "Type": "TypeString", "Required": true},
+				"value": {"Name": "value", "Type": "TypeString", "Required": true},
+			},
+		},
+	}
+	if IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("A brand-new Optional parent with nested Required children must not be flagged as breaking")
+	} else {
+		fmt.Println("✓ Test passed: new Optional parent with nested Required children is safe")
+	}
+}
+
+// TestParseSchemaNestedNotFlattened verifies ParseSchemaFromAST records nested
+// Elem children under their parent field's "Nested" key instead of flattening
+// them into the top-level attribute map, and that flat Elem contributes no
+// nested attributes.
+func TestUnitParseSchemaNestedNotFlattened(t *testing.T) {
+	src := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"resource_tag": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key":   {Type: schema.TypeString, Required: true, ForceNew: true},
+						"value": {Type: schema.TypeString, Required: true, ForceNew: true},
+					},
+				},
+			},
+			"instance_id": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+		},
+	}
+}`
+	attrs := ParseSchemaFromAST(src)
+	if _, top := attrs["key"]; top {
+		t.Error("nested child 'key' must not be flattened to top level")
+	}
+	if _, top := attrs["value"]; top {
+		t.Error("nested child 'value' must not be flattened to top level")
+	}
+	rt, ok := attrs["resource_tag"]
+	if !ok {
+		t.Fatal("resource_tag not parsed at top level")
+	}
+	nested, ok := rt["Nested"].(map[string]map[string]interface{})
+	if !ok || len(nested) != 2 {
+		t.Fatalf("expected 2 nested children under resource_tag, got %v", rt["Nested"])
+	}
+	if c, ok := nested["key"]; !ok || c["Required"] != true {
+		t.Errorf("nested key Required not captured: %v", nested["key"])
+	}
+	if iid, ok := attrs["instance_id"]; ok {
+		if _, has := iid["Nested"]; has {
+			t.Error("flat Elem (schema.Schema) must not produce a Nested map")
+		}
+	} else {
+		t.Error("instance_id not parsed")
+	}
+}
+
+// TestEcsInvocationResourceTagNotBreaking is the end-to-end regression for the
+// real ecs_invocation change: master had instance_id (Required, flat Elem) and
+// no resource_tag; the candidate adds a brand-new Optional resource_tag with
+// nested Required key/value plus other new Optional fields, and relaxes
+// instance_id to Optional. This must not be reported as a breaking change.
+func TestUnitEcsInvocationResourceTagNotBreaking(t *testing.T) {
+	oldSrc := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"command_id": {Type: schema.TypeString, Required: true, ForceNew: true},
+			"instance_id": {Type: schema.TypeList, Required: true, Elem: &schema.Schema{Type: schema.TypeString}, ForceNew: true},
+			"repeat_mode": {Type: schema.TypeString, Optional: true, ForceNew: true, Computed: true},
+			"status": {Type: schema.TypeString, Computed: true},
+		},
+	}
+}`
+	newSrc := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"command_id": {Type: schema.TypeString, Required: true, ForceNew: true},
+			"instance_id": {Type: schema.TypeList, Optional: true, Computed: true, Elem: &schema.Schema{Type: schema.TypeString}, ForceNew: true},
+			"repeat_mode": {Type: schema.TypeString, Optional: true, ForceNew: true, Computed: true},
+			"resource_tag": {
+				Type: schema.TypeSet, Optional: true, ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key":   {Type: schema.TypeString, Required: true, ForceNew: true},
+						"value": {Type: schema.TypeString, Required: true, ForceNew: true},
+					},
+				},
+			},
+			"resource_group_id": {Type: schema.TypeString, Optional: true, ForceNew: true},
+			"oss_output_delivery": {Type: schema.TypeString, Optional: true, ForceNew: true},
+			"working_dir": {Type: schema.TypeString, Optional: true, Computed: true, ForceNew: true},
+			"status": {Type: schema.TypeString, Computed: true},
+		},
+	}
+}`
+	oldAttrs := ParseSchemaFromAST(oldSrc)
+	newAttrs := ParseSchemaFromAST(newSrc)
+	if IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("ecs_invocation: adding a new Optional resource_tag with nested Required children must not be breaking")
+	} else {
+		fmt.Println("✓ Test passed: ecs_invocation resource_tag addition is non-breaking")
+	}
+}
+
+// schemaThreeLevel renders a three-level nested schema: top field "rules"
+// (TypeList, Optional, Elem &schema.Resource) whose child "match" (TypeList,
+// Optional, Elem &schema.Resource) has the given depth-2 grandchildren. It is
+// consumed by ParseSchemaFromAST, exercising the real AST pipeline rather than
+// hand-crafted attribute maps. Changing a grandchild under the existing
+// rules->match parent chain is the case the previous single-level comparison
+// silently missed.
+func schemaThreeLevel(innerFields string) string {
+	return `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"rules": {
+				Type: schema.TypeList, Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"match": {
+							Type: schema.TypeList, Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+` + innerFields + `
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}`
+}
+
+// nestedGrandchild walks attrs -> "rules"[Nested] -> "match"[Nested] and returns
+// the depth-2 grandchild map plus ok. It documents that the grandchild level is
+// actually parsed (otherwise the deep regression below would be vacuous).
+func nestedGrandchild(attrs map[string]map[string]interface{}) (map[string]map[string]interface{}, bool) {
+	rules, ok := attrs["rules"]
+	if !ok {
+		return nil, false
+	}
+	matchLevel, ok := rules["Nested"].(map[string]map[string]interface{})
+	if !ok {
+		return nil, false
+	}
+	match, ok := matchLevel["match"]
+	if !ok {
+		return nil, false
+	}
+	grand, ok := match["Nested"].(map[string]map[string]interface{})
+	return grand, ok
+}
+
+// TestDeepNestedRequiredAddIsBreaking: a new Required grandchild added under an
+// existing parent chain (rules->match both present in old) must be detected as
+// breaking. The previous single-level comparison only inspected rules' direct
+// children (match) and never descended into match's Nested, so this was missed.
+func TestUnitDeepNestedRequiredAddIsBreaking(t *testing.T) {
+	old := schemaThreeLevel(`"field":   {Type: schema.TypeString, Optional: true},`)
+	new := schemaThreeLevel(`"field":   {Type: schema.TypeString, Optional: true},
+									"pattern": {Type: schema.TypeString, Required: true},`)
+	oldAttrs := ParseSchemaFromAST(old)
+	newAttrs := ParseSchemaFromAST(new)
+
+	oldGrand, ok := nestedGrandchild(oldAttrs)
+	if !ok || len(oldGrand) != 1 {
+		t.Fatalf("expected depth-2 grandchild parsed under rules->match, got %v", oldAttrs)
+	}
+	newGrand, ok := nestedGrandchild(newAttrs)
+	if !ok || len(newGrand) != 2 {
+		t.Fatalf("expected new depth-2 grandchild 'pattern' parsed, got %v", newAttrs)
+	}
+	if _, has := newGrand["pattern"]; !has {
+		t.Fatal("new Required grandchild 'pattern' not parsed at depth 2")
+	}
+
+	if !IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("adding a Required grandchild under an existing parent chain must be breaking")
+	} else {
+		fmt.Println("✓ Test passed: deep Required grandchild addition detected")
+	}
+}
+
+// TestDeepNestedDeletionIsBreaking: deleting a grandchild that existed under an
+// existing parent chain (rules->match) must be detected as breaking.
+func TestUnitDeepNestedDeletionIsBreaking(t *testing.T) {
+	old := schemaThreeLevel(`"field":   {Type: schema.TypeString, Optional: true},
+								"pattern": {Type: schema.TypeString, Optional: true},`)
+	new := schemaThreeLevel(`"field":   {Type: schema.TypeString, Optional: true},`)
+	oldAttrs := ParseSchemaFromAST(old)
+	newAttrs := ParseSchemaFromAST(new)
+
+	oldGrand, ok := nestedGrandchild(oldAttrs)
+	if !ok || len(oldGrand) != 2 {
+		t.Fatalf("expected two depth-2 grandchildren in old, got %v", oldAttrs)
+	}
+	newGrand, ok := nestedGrandchild(newAttrs)
+	if !ok || len(newGrand) != 1 {
+		t.Fatalf("expected one depth-2 grandchild in new, got %v", newAttrs)
+	}
+	if _, has := newGrand["pattern"]; has {
+		t.Fatal("grandchild 'pattern' should be removed in new schema")
+	}
+
+	if !IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("deleting a grandchild under an existing parent chain must be breaking")
+	} else {
+		fmt.Println("✓ Test passed: deep grandchild deletion detected")
+	}
+}
+
+// TestDeepNestedTypeChangeIsBreaking: changing a grandchild's type under an
+// existing parent chain (rules->match) must be detected as breaking.
+func TestUnitDeepNestedTypeChangeIsBreaking(t *testing.T) {
+	old := schemaThreeLevel(`"field": {Type: schema.TypeString, Optional: true},`)
+	new := schemaThreeLevel(`"field": {Type: schema.TypeInt, Optional: true},`)
+	oldAttrs := ParseSchemaFromAST(old)
+	newAttrs := ParseSchemaFromAST(new)
+
+	oldGrand, ok := nestedGrandchild(oldAttrs)
+	if !ok {
+		t.Fatalf("expected depth-2 grandchild parsed, got %v", oldAttrs)
+	}
+	if oldGrand["field"]["Type"] != "TypeString" {
+		t.Fatalf("old grandchild type not captured, got %v", oldGrand["field"])
+	}
+	newGrand, ok := nestedGrandchild(newAttrs)
+	if !ok || newGrand["field"]["Type"] != "TypeInt" {
+		t.Fatalf("new grandchild type not captured, got %v", newAttrs)
+	}
+
+	if !IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("changing a grandchild type under an existing parent chain must be breaking")
+	} else {
+		fmt.Println("✓ Test passed: deep grandchild type change detected")
+	}
+}
+
+// TestNewOptionalMultiLevelSubtreeNotBreaking: a brand-new Optional top-level
+// parent whose nested subtree is several levels deep and contains Required
+// leaves must NOT be flagged as breaking. The whole block is new and Optional,
+// so its internal Required children are legal (path 3) at every depth. This
+// guards against a regression that would over-report a new Optional block.
+func TestUnitNewOptionalMultiLevelSubtreeNotBreaking(t *testing.T) {
+	oldSrc := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"instance_id": {Type: schema.TypeList, Required: true, Elem: &schema.Schema{Type: schema.TypeString}},
+		},
+	}
+}`
+	newSrc := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"instance_id": {Type: schema.TypeList, Optional: true, Elem: &schema.Schema{Type: schema.TypeString}},
+			"policy": {
+				Type: schema.TypeList, Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"rule": {
+							Type: schema.TypeList, Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"action":   {Type: schema.TypeString, Required: true},
+									"resource": {Type: schema.TypeString, Required: true},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}`
+	oldAttrs := ParseSchemaFromAST(oldSrc)
+	newAttrs := ParseSchemaFromAST(newSrc)
+
+	// Sanity: the new Optional multi-level subtree is actually parsed.
+	policy, ok := newAttrs["policy"]
+	if !ok {
+		t.Fatal("new Optional parent 'policy' not parsed")
+	}
+	ruleLevel, ok := policy["Nested"].(map[string]map[string]interface{})
+	if !ok || len(ruleLevel) != 1 {
+		t.Fatalf("expected depth-1 child 'rule' under policy, got %v", policy["Nested"])
+	}
+	leafLevel, ok := ruleLevel["rule"]["Nested"].(map[string]map[string]interface{})
+	if !ok || len(leafLevel) != 2 {
+		t.Fatalf("expected depth-2 Required leaves under rule, got %v", ruleLevel["rule"])
+	}
+	if leafLevel["action"]["Required"] != true || leafLevel["resource"]["Required"] != true {
+		t.Fatal("deep Required leaves under the new Optional parent must be parsed")
+	}
+
+	if IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("a brand-new Optional multi-level subtree with nested Required leaves must not be breaking")
+	} else {
+		fmt.Println("✓ Test passed: new Optional multi-level subtree is non-breaking")
+	}
+}
+
+// TestNestedFullSubtreeDeletionIsBreaking: an existing parent whose nested
+// subtree is fully removed (Elem &schema.Resource{} retained but its Schema
+// emptied) is a breaking deletion of the removed child attributes. The
+// previous len(newNested)==0 guard skipped this case and silently missed it.
+func TestUnitNestedFullSubtreeDeletionIsBreaking(t *testing.T) {
+	oldSrc := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"rules": {
+				Type: schema.TypeList, Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"field":   {Type: schema.TypeString, Optional: true},
+						"pattern": {Type: schema.TypeString, Optional: true},
+					},
+				},
+			},
+		},
+	}
+}`
+	newSrc := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"rules": {
+				Type: schema.TypeList, Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{},
+				},
+			},
+		},
+	}
+}`
+	oldAttrs := ParseSchemaFromAST(oldSrc)
+	newAttrs := ParseSchemaFromAST(newSrc)
+	oldNested, _ := oldAttrs["rules"]["Nested"].(map[string]map[string]interface{})
+	if len(oldNested) != 2 {
+		t.Fatalf("expected 2 children under rules in old, got %v", oldAttrs["rules"]["Nested"])
+	}
+	if _, has := newAttrs["rules"]["Nested"]; has {
+		t.Fatal("rules must have no Nested children in new schema (subtree fully removed)")
+	}
+	if !IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("fully removing an existing parent's nested subtree must be breaking")
+	} else {
+		fmt.Println("✓ Test passed: full nested subtree deletion detected")
+	}
+}
+
+// TestDeepNestedFullSubtreeDeletionIsBreaking: the deep variant — the
+// grandchild level under an existing rules->match parent chain is fully
+// removed (match retained, its children emptied), so newNested at the
+// grandchild level is empty while oldNested is non-empty. This was missed by
+// the previous len(newNested)==0 skip. The partial-deletion case (delete one
+// leaf, keep another) is already covered by TestDeepNestedDeletionIsBreaking;
+// this covers the full-deletion complement.
+func TestUnitDeepNestedFullSubtreeDeletionIsBreaking(t *testing.T) {
+	old := schemaThreeLevel(`"field":   {Type: schema.TypeString, Optional: true},
+								"pattern": {Type: schema.TypeString, Optional: true},`)
+	new := schemaThreeLevel(``)
+	oldAttrs := ParseSchemaFromAST(old)
+	newAttrs := ParseSchemaFromAST(new)
+	oldGrand, ok := nestedGrandchild(oldAttrs)
+	if !ok || len(oldGrand) != 2 {
+		t.Fatalf("expected two depth-2 grandchildren in old, got %v", oldAttrs)
+	}
+	if newGrand, ok := nestedGrandchild(newAttrs); ok {
+		t.Fatalf("expected no depth-2 grandchildren in new (subtree fully removed), got %v", newGrand)
+	}
+	if !IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("fully removing the grandchild level under an existing parent chain must be breaking")
+	} else {
+		fmt.Println("✓ Test passed: deep full nested subtree deletion detected")
+	}
+}
+
+// TestNestedResourceToFlatIsBreaking: an existing parent whose Elem changes
+// from &schema.Resource{Schema:{...}} (nested block) to a flat
+// &schema.Schema{Type: ...} (scalar list) silently drops the nested child
+// attributes. newNested is empty while oldNested is non-empty, so this is a
+// breaking full-subtree deletion the previous skip missed.
+func TestUnitNestedResourceToFlatIsBreaking(t *testing.T) {
+	oldSrc := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"rules": {
+				Type: schema.TypeList, Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"field": {Type: schema.TypeString, Optional: true},
+					},
+				},
+			},
+		},
+	}
+}`
+	newSrc := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"rules": {
+				Type: schema.TypeList, Optional: true,
+				Elem: &schema.Schema{Type: schema.TypeString},
+			},
+		},
+	}
+}`
+	oldAttrs := ParseSchemaFromAST(oldSrc)
+	newAttrs := ParseSchemaFromAST(newSrc)
+	oldNested, _ := oldAttrs["rules"]["Nested"].(map[string]map[string]interface{})
+	if len(oldNested) != 1 {
+		t.Fatalf("expected 1 child under rules in old, got %v", oldAttrs["rules"]["Nested"])
+	}
+	if _, has := newAttrs["rules"]["Nested"]; has {
+		t.Fatal("flat Elem (schema.Schema) must not contribute a Nested map in new schema")
+	}
+	if !IsBreakingChange(oldAttrs, newAttrs) {
+		t.Error("flattening an existing nested block (Resource->flat Elem) must be breaking")
+	} else {
+		fmt.Println("✓ Test passed: Resource->flat Elem deletion detected")
+	}
+}
+
+// TestUnchangedNestedSubtreeNotBreaking guards against a regression from
+// removing the len(newNested)==0 skip: a schema compared against itself (an
+// existing parent with an unchanged nested subtree, plus an existing flat
+// parent whose Nested is empty on both sides) must remain non-breaking. The
+// now-unconditional recursion must be a no-op when both sides are empty.
+func TestUnitUnchangedNestedSubtreeNotBreaking(t *testing.T) {
+	src := `package main
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+func res() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"rules": {
+				Type: schema.TypeList, Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"field": {Type: schema.TypeString, Optional: true},
+					},
+				},
+			},
+			"tags": {Type: schema.TypeList, Optional: true, Elem: &schema.Schema{Type: schema.TypeString}},
+		},
+	}
+}`
+	attrs := ParseSchemaFromAST(src)
+	if IsBreakingChange(attrs, attrs) {
+		t.Error("a schema compared against itself must not be flagged as breaking")
+	} else {
+		fmt.Println("✓ Test passed: unchanged nested subtree is non-breaking")
 	}
 }
