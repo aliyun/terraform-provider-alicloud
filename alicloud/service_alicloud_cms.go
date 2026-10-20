@@ -25,6 +25,39 @@ func (s *CmsService) BuildCmsCommonRequest(region string) *requests.CommonReques
 	return request
 }
 
+func (s *CmsService) DescribeCmsSubscription(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	action := fmt.Sprintf("/subscriptions/%s", id)
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, nil, nil, nil)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if NotFoundError(err) || IsExpectedErrors(err, []string{"NotFound", "ResourceNotFound"}) {
+				return resource.NonRetryableError(WrapErrorf(NotFoundErr("Cms:Subscription", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response)))
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, id)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	obj, err := jsonpath.Get("$.subscription", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.subscription", response)
+	}
+	if obj == nil {
+		return object, WrapErrorf(NotFoundErr("Cms:Subscription", id), NotFoundWithResponse, response)
+	}
+	return obj.(map[string]interface{}), nil
+}
+
 func (s *CmsService) BuildCmsAlarmRequest(id string) *requests.CommonRequest {
 
 	request := s.BuildCmsCommonRequest(s.client.RegionId)
