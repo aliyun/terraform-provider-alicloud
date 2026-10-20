@@ -1,4 +1,5 @@
-package gwlb
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package alicloud
 
 import (
 	"fmt"
@@ -7,16 +8,13 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func DataSourceZones() *schema.Resource {
+func dataSourceAliCloudGwlbZones() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceZonesRead,
+		Read: dataSourceAliCloudGwlbZoneRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -56,7 +54,7 @@ func DataSourceZones() *schema.Resource {
 	}
 }
 
-func dataSourceZonesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudGwlbZoneRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var request map[string]interface{}
@@ -70,22 +68,22 @@ func dataSourceZonesRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("accept_language"); ok {
 		request["AcceptLanguage"] = v
 	}
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	var objects []map[string]interface{}
@@ -93,7 +91,7 @@ func dataSourceZonesRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return errs.WrapError(err)
+			return WrapError(err)
 		}
 		nameRegex = r
 	}
@@ -139,17 +137,17 @@ func dataSourceZonesRead(d *schema.ResourceData, meta interface{}) error {
 		s = append(s, mapping)
 	}
 
-	d.SetId(helper.DataResourceIdHash(ids))
+	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return errs.WrapError(err)
+		return WrapError(err)
 	}
 
 	if err := d.Set("zones", s); err != nil {
-		return errs.WrapError(err)
+		return WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		helper.WriteToFile(output.(string), s)
+		writeToFile(output.(string), s)
 	}
 	return nil
 }

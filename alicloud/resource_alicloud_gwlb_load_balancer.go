@@ -1,4 +1,5 @@
-package gwlb
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package alicloud
 
 import (
 	"fmt"
@@ -6,20 +7,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func ResourceLoadBalancer() *schema.Resource {
+func resourceAliCloudGwlbLoadBalancer() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceLoadBalancerCreate,
-		Read:   resourceLoadBalancerRead,
-		Update: resourceLoadBalancerUpdate,
-		Delete: resourceLoadBalancerDelete,
+		Create: resourceAliCloudGwlbLoadBalancerCreate,
+		Read:   resourceAliCloudGwlbLoadBalancerRead,
+		Update: resourceAliCloudGwlbLoadBalancerUpdate,
+		Delete: resourceAliCloudGwlbLoadBalancerDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -56,7 +53,7 @@ func ResourceLoadBalancer() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tags.TagsSchema(),
+			"tags": tagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -98,7 +95,7 @@ func ResourceLoadBalancer() *schema.Resource {
 	}
 }
 
-func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGwlbLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -109,10 +106,10 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error 
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		tagsMap := ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
 	}
 
@@ -141,11 +138,11 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -153,35 +150,35 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error 
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 
 	if err != nil {
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_gwlb_load_balancer", action, errs.AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_gwlb_load_balancer", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["LoadBalancerId"]))
 
-	gwlbService := NewService(client)
-	stateConf := helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
+	gwlbServiceV2 := GwlbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbServiceV2.GwlbLoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceLoadBalancerRead(d, meta)
+	return resourceAliCloudGwlbLoadBalancerRead(d, meta)
 }
 
-func resourceLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGwlbLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	gwlbService := NewService(client)
+	gwlbServiceV2 := GwlbServiceV2{client}
 
-	objectRaw, err := gwlbService.DescribeLoadBalancer(d.Id())
+	objectRaw, err := gwlbServiceV2.DescribeGwlbLoadBalancer(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && errs.NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_gwlb_load_balancer DescribeLoadBalancer Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_gwlb_load_balancer DescribeGwlbLoadBalancer Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return errs.WrapError(err)
+		return WrapError(err)
 	}
 
 	if objectRaw["AddressIpVersion"] != nil {
@@ -204,7 +201,7 @@ func resourceLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tags.TagsToMap(tagsMaps))
+	d.Set("tags", tagsToMap(tagsMaps))
 	zoneMappings1Raw := objectRaw["ZoneMappings"]
 	zoneMappingsMaps := make([]map[string]interface{}, 0)
 	if zoneMappings1Raw != nil {
@@ -239,7 +236,7 @@ func resourceLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGwlbLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -252,7 +249,7 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
@@ -262,11 +259,11 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -274,14 +271,14 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		gwlbService := NewService(client)
-		stateConf := helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
+		gwlbServiceV2 := GwlbServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbServiceV2.GwlbLoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -290,7 +287,7 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 	query = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 	if d.HasChange("zone_mappings") {
 		update = true
 	}
@@ -310,11 +307,11 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 		request["DryRun"] = v
 	}
 	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -322,14 +319,14 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		gwlbService := NewService(client)
-		stateConf := helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
+		gwlbServiceV2 := GwlbServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbServiceV2.GwlbLoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -338,7 +335,7 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
 		update = true
 	}
@@ -348,11 +345,11 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 	}
 	request["ResourceType"] = "loadbalancer"
 	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -360,23 +357,23 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		gwlbService := NewService(client)
-		if err := gwlbService.SetResourceTags(d, "loadbalancer"); err != nil {
-			return errs.WrapError(err)
+		gwlbServiceV2 := GwlbServiceV2{client}
+		if err := gwlbServiceV2.SetResourceTags(d, "loadbalancer"); err != nil {
+			return WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceLoadBalancerRead(d, meta)
+	return resourceAliCloudGwlbLoadBalancerRead(d, meta)
 }
 
-func resourceLoadBalancerDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGwlbLoadBalancerDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteLoadBalancer"
@@ -388,18 +385,18 @@ func resourceLoadBalancerDelete(d *schema.ResourceData, meta interface{}) error 
 	request["LoadBalancerId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
-		request["ClientToken"] = helper.BuildClientToken(action)
+		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -407,13 +404,13 @@ func resourceLoadBalancerDelete(d *schema.ResourceData, meta interface{}) error 
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 
 	if err != nil {
-		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer"}) || errs.NotFoundError(err) {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer"}) || NotFoundError(err) {
 			return nil
 		}
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

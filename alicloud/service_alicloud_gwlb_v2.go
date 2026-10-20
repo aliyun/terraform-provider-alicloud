@@ -1,4 +1,4 @@
-package gwlb
+package alicloud
 
 import (
 	"fmt"
@@ -6,30 +6,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// Service wraps the Gwlb API calls used by the resources and data
-// sources of this package.
-type Service struct {
+type GwlbServiceV2 struct {
 	client *connectivity.AliyunClient
 }
 
-// NewService is the exported constructor: the client field stays
-// unexported, so callers outside the package (including the flat
-// layout's acceptance tests) build values with it.
-func NewService(client *connectivity.AliyunClient) *Service {
-	return &Service{client: client}
-}
+// DescribeGwlbLoadBalancer <<< Encapsulated get interface for Gwlb LoadBalancer.
 
-// DescribeLoadBalancer <<< Encapsulated get interface for Gwlb LoadBalancer.
-
-func (s *Service) DescribeLoadBalancer(id string) (object map[string]interface{}, err error) {
+func (s *GwlbServiceV2) DescribeGwlbLoadBalancer(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -40,12 +27,12 @@ func (s *Service) DescribeLoadBalancer(id string) (object map[string]interface{}
 	request["LoadBalancerId"] = id
 	request["RegionId"] = client.RegionId
 
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -53,25 +40,25 @@ func (s *Service) DescribeLoadBalancer(id string) (object map[string]interface{}
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 	if err != nil {
-		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer"}) {
-			return object, errs.WrapErrorf(errs.NotFoundErr("LoadBalancer", id), errs.NotFoundMsg, response)
+		if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer"}) {
+			return object, WrapErrorf(NotFoundErr("LoadBalancer", id), NotFoundMsg, response)
 		}
-		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *Service) LoadBalancerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *GwlbServiceV2) GwlbLoadBalancerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeLoadBalancer(id)
+		object, err := s.DescribeGwlbLoadBalancer(id)
 		if err != nil {
-			if errs.NotFoundError(err) {
+			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", errs.WrapError(err)
+			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -79,17 +66,17 @@ func (s *Service) LoadBalancerStateRefreshFunc(id string, field string, failStat
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
 	}
 }
 
-// DescribeLoadBalancer >>> Encapsulated.
+// DescribeGwlbLoadBalancer >>> Encapsulated.
 
 // SetResourceTags <<< Encapsulated tag function for Gwlb.
-func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+func (s *GwlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		var err error
 		var action string
@@ -98,10 +85,10 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := tags.ParsingTags(d)
+		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !tags.IgnoredTags(v, "") {
+			if !ignoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -111,7 +98,7 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ClientToken"] = helper.BuildClientToken(action)
+			request["ClientToken"] = buildClientToken(action)
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
@@ -120,11 +107,11 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 				request["DryRun"] = v
 			}
 			request["ResourceType"] = resourceType
-			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 				if err != nil {
-					if helper.NeedRetry(err) {
+					if NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -132,9 +119,9 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 				}
 				return nil
 			})
-			logs.AddDebug(action, response, request)
+			addDebug(action, response, request)
 			if err != nil {
-				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -145,7 +132,7 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ClientToken"] = helper.BuildClientToken(action)
+			request["ClientToken"] = buildClientToken(action)
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -157,11 +144,11 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 				request["DryRun"] = v
 			}
 			request["ResourceType"] = resourceType
-			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 				if err != nil {
-					if helper.NeedRetry(err) {
+					if NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -169,9 +156,9 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 				}
 				return nil
 			})
-			logs.AddDebug(action, response, request)
+			addDebug(action, response, request)
 			if err != nil {
-				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -182,9 +169,9 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 
 // SetResourceTags >>> tag function encapsulated.
 
-// DescribeListener <<< Encapsulated get interface for Gwlb Listener.
+// DescribeGwlbListener <<< Encapsulated get interface for Gwlb Listener.
 
-func (s *Service) DescribeListener(id string) (object map[string]interface{}, err error) {
+func (s *GwlbServiceV2) DescribeGwlbListener(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -195,12 +182,12 @@ func (s *Service) DescribeListener(id string) (object map[string]interface{}, er
 	request["ListenerId"] = id
 	request["RegionId"] = client.RegionId
 
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -208,25 +195,25 @@ func (s *Service) DescribeListener(id string) (object map[string]interface{}, er
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 	if err != nil {
-		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.Listener"}) {
-			return object, errs.WrapErrorf(errs.NotFoundErr("Listener", id), errs.NotFoundMsg, response)
+		if IsExpectedErrors(err, []string{"ResourceNotFound.Listener"}) {
+			return object, WrapErrorf(NotFoundErr("Listener", id), NotFoundMsg, response)
 		}
-		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *Service) ListenerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *GwlbServiceV2) GwlbListenerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeListener(id)
+		object, err := s.DescribeGwlbListener(id)
 		if err != nil {
-			if errs.NotFoundError(err) {
+			if NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", errs.WrapError(err)
+			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -234,18 +221,18 @@ func (s *Service) ListenerStateRefreshFunc(id string, field string, failStates [
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
 	}
 }
 
-// DescribeListener >>> Encapsulated.
+// DescribeGwlbListener >>> Encapsulated.
 
-// DescribeServerGroup <<< Encapsulated get interface for Gwlb ServerGroup.
+// DescribeGwlbServerGroup <<< Encapsulated get interface for Gwlb ServerGroup.
 
-func (s *Service) DescribeServerGroup(id string) (object map[string]interface{}, err error) {
+func (s *GwlbServiceV2) DescribeGwlbServerGroup(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -256,12 +243,12 @@ func (s *Service) DescribeServerGroup(id string) (object map[string]interface{},
 	request["ServerGroupIds.1"] = id
 	request["RegionId"] = client.RegionId
 
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -269,28 +256,28 @@ func (s *Service) DescribeServerGroup(id string) (object map[string]interface{},
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 	if err != nil {
-		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.ServerGroups[*]", response)
 	if err != nil {
-		return object, errs.WrapErrorf(errs.NotFoundErr("ServerGroup", id), errs.NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, errs.WrapErrorf(errs.NotFoundErr("ServerGroup", id), errs.NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["ServerGroupId"]
 	if currentStatus == nil {
-		return object, errs.WrapErrorf(errs.NotFoundErr("ServerGroup", id), errs.NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("ServerGroup", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *Service) DescribeListServerGroupServers(id string) (object map[string]interface{}, err error) {
+func (s *GwlbServiceV2) DescribeListServerGroupServers(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -301,12 +288,12 @@ func (s *Service) DescribeListServerGroupServers(id string) (object map[string]i
 	request["ServerGroupId"] = id
 	request["RegionId"] = client.RegionId
 
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -314,22 +301,22 @@ func (s *Service) DescribeListServerGroupServers(id string) (object map[string]i
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 	if err != nil {
-		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *Service) ServerGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *GwlbServiceV2) GwlbServerGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeServerGroup(id)
+		object, err := s.DescribeGwlbServerGroup(id)
 		if err != nil {
-			if errs.NotFoundError(err) {
+			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", errs.WrapError(err)
+			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -337,14 +324,14 @@ func (s *Service) ServerGroupStateRefreshFunc(id string, field string, failState
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
 	}
 }
 
-func (s *Service) DescribeAsyncServerGroupListServerGroupServers(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+func (s *GwlbServiceV2) DescribeAsyncServerGroupListServerGroupServers(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
 	id := d.Id()
 	var request map[string]interface{}
@@ -356,12 +343,12 @@ func (s *Service) DescribeAsyncServerGroupListServerGroupServers(d *schema.Resou
 	request["ServerGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -369,22 +356,22 @@ func (s *Service) DescribeAsyncServerGroupListServerGroupServers(d *schema.Resou
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 	if err != nil {
-		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *Service) DescribeAsyncServerGroupStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
+func (s *GwlbServiceV2) DescribeAsyncGwlbServerGroupStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAsyncServerGroupListServerGroupServers(d, res)
 		if err != nil {
-			if errs.NotFoundError(err) {
+			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", errs.WrapError(err)
+			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -393,13 +380,13 @@ func (s *Service) DescribeAsyncServerGroupStateRefreshFunc(d *schema.ResourceDat
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				if _err, ok := object["error"]; ok {
-					return _err, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 				}
-				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
 	}
 }
 
-// DescribeServerGroup >>> Encapsulated.
+// DescribeGwlbServerGroup >>> Encapsulated.

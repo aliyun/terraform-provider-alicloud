@@ -1,4 +1,5 @@
-package gwlb
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package alicloud
 
 import (
 	"fmt"
@@ -6,21 +7,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func ResourceListener() *schema.Resource {
+func resourceAliCloudGwlbListener() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceListenerCreate,
-		Read:   resourceListenerRead,
-		Update: resourceListenerUpdate,
-		Delete: resourceListenerDelete,
+		Create: resourceAliCloudGwlbListenerCreate,
+		Read:   resourceAliCloudGwlbListenerRead,
+		Update: resourceAliCloudGwlbListenerUpdate,
+		Delete: resourceAliCloudGwlbListenerDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -55,18 +51,18 @@ func ResourceListener() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validators.IntBetween(60, 6000),
+				ValidateFunc: IntBetween(60, 6000),
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tags.TagsSchema(),
+			"tags": tagsSchema(),
 		},
 	}
 }
 
-func resourceListenerCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGwlbListenerCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -77,10 +73,10 @@ func resourceListenerCreate(d *schema.ResourceData, meta interface{}) error {
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		tagsMap := ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
 	}
 
@@ -95,11 +91,11 @@ func resourceListenerCreate(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOkExists("tcp_idle_timeout"); ok && v.(int) > 0 {
 		request["TcpIdleTimeout"] = v
 	}
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -107,35 +103,35 @@ func resourceListenerCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 
 	if err != nil {
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_gwlb_listener", action, errs.AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_gwlb_listener", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ListenerId"]))
 
-	gwlbService := NewService(client)
-	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbService.ListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
+	gwlbServiceV2 := GwlbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbServiceV2.GwlbListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceListenerRead(d, meta)
+	return resourceAliCloudGwlbListenerRead(d, meta)
 }
 
-func resourceListenerRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGwlbListenerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	gwlbService := NewService(client)
+	gwlbServiceV2 := GwlbServiceV2{client}
 
-	objectRaw, err := gwlbService.DescribeListener(d.Id())
+	objectRaw, err := gwlbServiceV2.DescribeGwlbListener(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && errs.NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_gwlb_listener DescribeListener Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_gwlb_listener DescribeGwlbListener Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return errs.WrapError(err)
+		return WrapError(err)
 	}
 
 	if objectRaw["ListenerDescription"] != nil {
@@ -158,12 +154,12 @@ func resourceListenerRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tags.TagsToMap(tagsMaps))
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceListenerUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGwlbListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -175,7 +171,7 @@ func resourceListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 	query = make(map[string]interface{})
 	request["ListenerId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
@@ -193,11 +189,11 @@ func resourceListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	request["ServerGroupId"] = d.Get("server_group_id")
 	if update {
-		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -205,27 +201,27 @@ func resourceListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			return nil
 		})
-		logs.AddDebug(action, response, request)
+		addDebug(action, response, request)
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		gwlbService := NewService(client)
-		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.ListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
+		gwlbServiceV2 := GwlbServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbServiceV2.GwlbListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
 	if d.HasChange("tags") {
-		gwlbService := NewService(client)
-		if err := gwlbService.SetResourceTags(d, "listener"); err != nil {
-			return errs.WrapError(err)
+		gwlbServiceV2 := GwlbServiceV2{client}
+		if err := gwlbServiceV2.SetResourceTags(d, "listener"); err != nil {
+			return WrapError(err)
 		}
 	}
-	return resourceListenerRead(d, meta)
+	return resourceAliCloudGwlbListenerRead(d, meta)
 }
 
-func resourceListenerDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGwlbListenerDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteListener"
@@ -237,18 +233,18 @@ func resourceListenerDelete(d *schema.ResourceData, meta interface{}) error {
 	request["ListenerId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	request["ClientToken"] = helper.BuildClientToken(action)
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
-		request["ClientToken"] = helper.BuildClientToken(action)
+		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -256,19 +252,19 @@ func resourceListenerDelete(d *schema.ResourceData, meta interface{}) error {
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 
 	if err != nil {
-		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.Listener"}) || errs.NotFoundError(err) {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.Listener"}) || NotFoundError(err) {
 			return nil
 		}
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	gwlbService := NewService(client)
-	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gwlbService.ListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
+	gwlbServiceV2 := GwlbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gwlbServiceV2.GwlbListenerStateRefreshFunc(d.Id(), "ListenerStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return nil
