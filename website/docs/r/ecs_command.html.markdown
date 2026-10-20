@@ -13,7 +13,7 @@ Provides a ECS Command resource.
 
 For information about ECS Command and how to use it, see [What is Command](https://www.alibabacloud.com/help/en/doc-detail/64844.htm).
 
--> **NOTE:** Available in v1.116.0+.
+-> **NOTE:** Available since v1.116.0.
 
 ## Example Usage
 
@@ -27,9 +27,9 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ecs_command" "example" {
-  name            = "tf-testAcc"
+  name            = "terraform-command"
   command_content = "bHMK"
-  description     = "For Terraform Test"
+  description     = "For Terraform Example"
   type            = "RunShellScript"
   working_dir     = "/root"
 }
@@ -43,9 +43,11 @@ resource "alicloud_ecs_command" "example" {
 The following arguments are supported:
 
 * `command_content` - (Required, ForceNew) The Base64-encoded content of the command.
+* `content_encoding` - (Optional, ForceNew) The encoding mode of the command content. Default to: `Base64`. Valid Value: `Base64`.
 * `description` - (Optional, ForceNew) The description of command.
-* `enable_parameter` - (Optional, ForceNew) Specifies whether to use custom parameters in the command to be created. Default to: false.                                                                                                                  
+* `enable_parameter` - (Optional, ForceNew) Specifies whether to use custom parameters in the command to be created. Default to: false.
 * `name` - (Required, ForceNew) The name of the command, which supports all character sets. It can be up to 128 characters in length.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group to which the command belongs.
 * `timeout` - (Optional, ForceNew) The timeout period that is specified for the command to be run on ECS instances. Unit: seconds. Default to: `60`.
 * `type` - (Required, ForceNew) The command type. Valid Values: `RunBatScript`, `RunPowerShellScript` and `RunShellScript`.
 * `working_dir` - (Optional, ForceNew) The execution path of the command in the ECS instance.

@@ -15,15 +15,28 @@ func resourceAlicloudEcsCommand() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudEcsCommandCreate,
 		Read:   resourceAlicloudEcsCommandRead,
+		Update: resourceAlicloudEcsCommandUpdate,
 		Delete: resourceAlicloudEcsCommandDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"command_content": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"content_encoding": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      "Base64",
+				ValidateFunc: validation.StringInSlice([]string{"Base64"}, false),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -40,6 +53,11 @@ func resourceAlicloudEcsCommand() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"timeout": {
 				Type:     schema.TypeInt,
@@ -69,6 +87,7 @@ func resourceAlicloudEcsCommandCreate(d *schema.ResourceData, meta interface{}) 
 	request := make(map[string]interface{})
 	var err error
 	request["CommandContent"] = d.Get("command_content")
+	request["ContentEncoding"] = d.Get("content_encoding")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -78,6 +97,9 @@ func resourceAlicloudEcsCommandCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	request["Name"] = d.Get("name")
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("timeout"); ok {
 		request["Timeout"] = v
@@ -122,9 +144,20 @@ func resourceAlicloudEcsCommandRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	d.Set("command_content", object["CommandContent"])
+	if object["ContentEncoding"] != nil {
+		d.Set("content_encoding", object["ContentEncoding"])
+	} else {
+		// DescribeCommands does not return ContentEncoding; the schema enum is
+		// single-valued (Base64), so fall back to the canonical value to keep
+		// state in sync with config and allow ImportStateVerify to pass.
+		d.Set("content_encoding", "Base64")
+	}
 	d.Set("description", object["Description"])
 	d.Set("enable_parameter", object["EnableParameter"])
 	d.Set("name", object["Name"])
+	if object["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", object["ResourceGroupId"])
+	}
 	d.Set("timeout", object["Timeout"])
 	d.Set("type", object["Type"])
 	d.Set("working_dir", object["WorkingDir"])
@@ -160,4 +193,45 @@ func resourceAlicloudEcsCommandDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
+}
+
+func resourceAlicloudEcsCommandUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var err error
+	update := false
+	d.Partial(true)
+
+	action := "JoinResourceGroup"
+	request = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "command"
+	if d.HasChange("resource_group_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	d.Partial(false)
+	return resourceAlicloudEcsCommandRead(d, meta)
 }
