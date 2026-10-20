@@ -102,10 +102,10 @@ The following arguments are supported:
 
 * `description` - (Optional) The description of the snapshot-consistent group. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `instance_id` - (Optional, ForceNew) The ID of the instance.
-* `instant_access` - (Optional) Specifies whether to enable the instant access feature.
+* `instant_access` - (Optional, Computed) Specifies whether to enable the instant access feature.
 * `disk_id` - (Optional) The ID of disk for which to create snapshots. You can specify multiple disk IDs across instances with the same zone.
 * `exclude_disk_id` - (Optional) The ID of disk N for which you do not need to create snapshots. After this parameter is specified, the created snapshot-consistent group does not contain snapshots of the disk.
-* `instant_access_retention_days` - (Optional) Specify the number of days for which the instant access feature is available. Unit: days. Valid values: `1` to `65535`.
+* `instant_access_retention_days` - (Optional, Computed) Specify the number of days for which the instant access feature is available. Unit: days. Valid values: `1` to `65535`.
 * `snapshot_group_name` - (Optional) The name of the snapshot-consistent group. The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), underscores (_), hyphens (-), and colons (:). It must start with a letter or a digit and cannot start with `http://` or `https://`.
 * `tags` - (Optional) A mapping of tags to assign to the snapshot group.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which the snapshot consistency group belongs.
@@ -113,8 +113,17 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-
 * `id` - The resource ID in terraform of Snapshot Group.
+* `instant_access` - Whether the instant access feature is enabled.
+* `instant_access_retention_days` - The number of days for which the instant access feature is available. Unit: days. Valid values: `1` to `65535`.
+* `snapshots` - A list of snapshots contained in the snapshot consistency group.
+  * `available` - Whether the snapshot can be used to create cloud disks, roll back Cloud disks, and share snapshots.
+  * `instant_access` - Whether the snapshot speed capability is enabled.
+  * `instant_access_retention_days` - The retention period of the snapshot speed available feature. Unit: days.
+  * `progress` - Snapshot creation progress, in percentage.
+  * `snapshot_id` - The snapshot ID.
+  * `source_disk_id` - The ID of the source cloud disk. If the source disk of the snapshot has been released, this field remains.
+  * `tags` - A mapping of tags to assign to the snapshot.
 * `status` - The status of the resource.
 
 ## Timeouts

@@ -59,6 +59,14 @@ func dataSourceAlicloudEcsSnapshotGroups() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"instant_access": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"instant_access_retention_days": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 						"instance_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -78,6 +86,39 @@ func dataSourceAlicloudEcsSnapshotGroups() *schema.Resource {
 						"snapshot_group_name": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"snapshots": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"available": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"instant_access": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"instant_access_retention_days": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"progress": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"snapshot_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"source_disk_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tags": tagsSchema(),
+								},
+							},
 						},
 						"status": {
 							Type:     schema.TypeString,
@@ -196,13 +237,16 @@ func dataSourceAlicloudEcsSnapshotGroupsRead(d *schema.ResourceData, meta interf
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"description":         object["Description"],
-			"instance_id":         object["InstanceId"],
-			"id":                  fmt.Sprint(object["SnapshotGroupId"]),
-			"snapshot_group_id":   fmt.Sprint(object["SnapshotGroupId"]),
-			"snapshot_group_name": object["Name"],
-			"resource_group_id":   object["ResourceGroupId"],
-			"status":              object["Status"],
+			"description":                   object["Description"],
+			"instant_access":                object["InstantAccess"],
+			"instant_access_retention_days": object["InstantAccessRetentionDays"],
+			"instance_id":                   object["InstanceId"],
+			"id":                            fmt.Sprint(object["SnapshotGroupId"]),
+			"snapshot_group_id":             fmt.Sprint(object["SnapshotGroupId"]),
+			"snapshot_group_name":           object["Name"],
+			"resource_group_id":             object["ResourceGroupId"],
+			"status":                        object["Status"],
+			"snapshots":                     flattenEcsSnapshotGroupSnapshots(object["Snapshots"]),
 		}
 		if v, ok := object["Tags"]; ok {
 			tags := v.(map[string]interface{})

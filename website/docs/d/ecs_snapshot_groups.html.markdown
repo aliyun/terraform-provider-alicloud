@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ecs Snapshot Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.160.0+.
+-> **NOTE:** Available since v1.160.0.
 
 ## Example Usage
 
@@ -59,7 +59,7 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The state of snapshot-consistent group. Valid Values: `accomplished`, `failed` and `progressing`.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the snapshot group.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -67,11 +67,31 @@ The following attributes are exported in addition to the arguments listed above:
 * `groups` - A list of Ecs Snapshot Groups. Each element contains the following attributes:
   * `description` - The description of the snapshot-consistent group.
   * `id` - The ID of the Snapshot Group.
+  * `instant_access` - Whether the instant access feature is enabled.
+  * `instant_access_retention_days` - The number of days for which the instant access feature is available. Unit: days. Valid values: `1` to `65535`.
   * `instance_id` - The ID of the instance.
   * `resource_group_id` - The ID of the resource group to which the snapshot consistency group belongs.
   * `snapshot_group_id` - The first ID of the resource.
   * `snapshot_group_name` - The name of the snapshot-consistent group.
+  * `snapshots` - A list of snapshots contained in the snapshot consistency group.
+    * `available` - Whether the snapshot can be used to create cloud disks, roll back Cloud disks, and share snapshots.
+    * `instant_access` - Whether the snapshot speed capability is enabled.
+    * `instant_access_retention_days` - The retention period of the snapshot speed available feature. Unit: days.
+    * `progress` - Snapshot creation progress, in percentage.
+    * `snapshot_id` - The snapshot ID.
+    * `source_disk_id` - The ID of the source cloud disk. If the source disk of the snapshot has been released, this field remains.
+    * `tags` - A mapping of tags to assign to the snapshot.
   * `status` - The status of the resource.
-  * `tags` - List of label key-value pairs.
-    * `tag_key` - The key of the tag.
-    * `tag_value` - The value of the tag.
+  * `tags` - A mapping of tags to assign to the snapshot group.
+
+### snapshots
+
+The `snapshots` block contains the following attributes for each snapshot in the list:
+
+* `available` - Whether the snapshot can be used to create cloud disks, roll back Cloud disks, and share snapshots.
+* `instant_access` - Whether the snapshot speed capability is enabled.
+* `instant_access_retention_days` - The retention period of the snapshot speed available feature. Unit: days.
+* `progress` - Snapshot creation progress, in percentage.
+* `snapshot_id` - The snapshot ID.
+* `source_disk_id` - The ID of the source cloud disk. If the source disk of the snapshot has been released, this field remains.
+* `tags` - List of label key-value pairs.
