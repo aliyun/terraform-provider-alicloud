@@ -811,3 +811,17 @@ func dtsEndpointSSLReserved(d *schema.ResourceData) (string, error) {
 	}
 	return string(reservedJson), nil
 }
+
+func convertDtsPaymentTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "PostPaid":
+		return "PayAsYouGo"
+	case "POSTPAY":
+		return "PayAsYouGo"
+	case "PrePaid":
+		return "Subscription"
+	case "PREPAY":
+		return "Subscription"
+	}
+	return source
+}
