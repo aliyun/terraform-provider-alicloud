@@ -116,6 +116,12 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
+	// The expected-error step removes a required argument through REMOVEKEY and
+	// fills every other field with placeholders. It needs its own builder:
+	// feeding that map into the cumulative builder would drop
+	// source_endpoint_region from all later steps and leak the placeholders
+	// into the restore step and the post-test destroy.
+	testAccConfigPlaceholder := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -137,6 +143,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 					"source_endpoint_database_name":      "${alicloud_rds_account.source_account.account_password}",
 					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
 					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
+					"source_endpoint_ssl":                "1",
 					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"subscription_instance_network_type": "vpc",
 					"subscription_instance_vpc_id":       "${data.alicloud_vpcs.default.ids.0}",
@@ -152,8 +159,33 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 						"source_endpoint_database_name":      "N1cetest",
 						"source_endpoint_user_name":          "test_mysql",
 						"source_endpoint_password":           "N1cetest",
+						"source_endpoint_ssl":                "1",
 						"db_list":                            "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "vpc",
+					}),
+				),
+			},
+			// Turn SSL off on the source endpoint in place. The field is not ForceNew, so this
+			// must go through ConfigureSubscription with the srcSSL reserve key rather than
+			// recreating the job.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_endpoint_ssl": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_endpoint_ssl": "0",
+					}),
+				),
+			},
+			// Turn SSL back on, covering the enable-by-update direction as well as disable.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_endpoint_ssl": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_endpoint_ssl": "1",
 					}),
 				),
 			},
@@ -263,11 +295,11 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 				// placeholder coverage here. Removing the required
 				// source_endpoint_region stops the plan before any of these
 				// values reach the API.
-				Config: testAccConfig(map[string]interface{}{
+				Config: testAccConfigPlaceholder(map[string]interface{}{
 					"checkpoint":                       "",
 					"compute_unit":                     "1",
 					"database_count":                   "1",
-					"db_list":                          "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
+					"db_list":                          "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"},\\\"second_database\\\":{\\\"name\\\":\\\"second_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"delay_notice":                     "true",
 					"delay_phone":                      "",
 					"delay_rule_time":                  "10",
@@ -277,6 +309,7 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 					"error_notice":                     "true",
 					"error_phone":                      "",
 					"instance_class":                   "large",
+					"payment_type":                     "PayAsYouGo",
 					"reserve":                          "",
 					"source_endpoint_database_name":    "tfacc_db",
 					"source_endpoint_engine_name":      "Oracle",
@@ -297,6 +330,18 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 					"synchronization_direction":        "Forward",
 				}),
 				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			// The expected-error step left an incomplete config in the working
+			// directory, and the SDK reuses that directory for the post-test
+			// destroy. Re-apply the last valid config so the import verification
+			// and the destroy that follows it see a complete configuration.
+			{
+				Config: testAccConfig(nil),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_job_name": "tf-testAccCase2",
+					}),
+				),
 			},
 			{
 				ResourceName:      resourceId,
@@ -572,6 +617,7 @@ var AliCloudDTSSubscriptionJobMap0 = map[string]string{
 	"subscription_data_type_ddl":       CHECKSET,
 	"destination_endpoint_engine_name": NOSET,
 	"used_time":                        NOSET,
+	"source_endpoint_ssl":              NOSET,
 	"status":                           CHECKSET,
 }
 
@@ -619,6 +665,7 @@ resource "alicloud_db_instance" "source" {
   instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
   instance_name    = "rds-mysql-source"
+  ssl_action       = "Open"
 }
 
 resource "alicloud_db_database" "source_db" {
