@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -14,6 +15,7 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -128,9 +130,9 @@ func TestAccAliCloudNasFileSystem_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -263,9 +265,9 @@ func TestAccAliCloudNasFileSystem_basic0_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -338,9 +340,9 @@ func TestAccAliCloudNasFileSystem_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -432,9 +434,9 @@ func TestAccAliCloudNasFileSystem_basic1_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -496,9 +498,9 @@ func TestAccAliCloudNasFileSystem_basic2(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -594,9 +596,9 @@ func TestAccAliCloudNasFileSystem_basic2_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -720,6 +722,28 @@ func AliCloudNasFileSystemBasicDependence1(name string) string {
 `, name)
 }
 
+// testUnitNasFileSystemMockMeta builds a hermetic *connectivity.AliyunClient that
+// performs no real cloud calls at init: dummy credentials, region validation
+// skipped, and empty endpoint/sign-version maps so the static NAS endpoint is
+// resolved without network. It mirrors testUnitCdnServiceMockMeta.
+func testUnitNasFileSystemMockMeta(t *testing.T) *connectivity.AliyunClient {
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: new(sync.Map), SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	meta, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return meta
+}
+
 // lintignore: R001
 func TestUnitAliCloudNasFileSystem(t *testing.T) {
 	p := Provider().ResourcesMap
@@ -742,13 +766,34 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		err = d.Set(key, value)
 		assert.Nil(t, err)
 	}
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
+	// Hermetic client: no real cloud credentials, no network at init.
+	rawClient := testUnitNasFileSystemMockMeta(t)
+	// describeObject is the single file-system object returned by a patched
+	// NasServiceV2.DescribeNasFileSystem, used to bypass the leading/trailing
+	// Describe calls inside Update so the DoRequest error/success sequence
+	// targets the actual ModifyFileSystem/TagResources request under test.
+	describeObject := func() map[string]interface{} {
+		return map[string]interface{}{
+			"Description":    "description",
+			"ProtocolType":   "protocol_type",
+			"StorageType":    "storage_type",
+			"EncryptType":    1,
+			"FileSystemType": "file_system_type",
+			"Capacity":       3600,
+			"ZoneId":         "zone_id",
+			"KMSKeyId":       "kms_key_id",
+			"Status":         "Running",
+			"Options": map[string]interface{}{
+				"EnableOplock":             true,
+				"EnableABE":                true,
+				"VscAccessPointAccessOnly": true,
+			},
+			"tags": map[string]string{
+				"Created": "TF1",
+				"For":     "Test1",
+			},
+		}
 	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		"FileSystems": map[string]interface{}{
 			"FileSystem": []interface{}{
@@ -766,6 +811,11 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 						"For":     "Test1",
 					},
 					"Status": "Running",
+					"Options": map[string]interface{}{
+						"EnableOplock":             true,
+						"EnableABE":                true,
+						"VscAccessPointAccessOnly": true,
+					},
 				},
 			},
 		},
@@ -811,7 +861,11 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 	}
 	// Create
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewNasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		// gomonkey cannot intercept AliyunClient.RpcPost, so patch Client.DoRequest
+		// instead: the endpoint/credential error is returned hermetically without a
+		// real cloud call (the static NAS endpoint resolves without network, then
+		// DoRequest is intercepted).
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
 				Code:       String("loadEndpoint error"),
 				Data:       String("loadEndpoint error"),
@@ -862,7 +916,11 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 	d.SetId("MockFileSystemId")
 	// Update
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewNasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		// gomonkey cannot intercept AliyunClient.RpcPost; patch Client.DoRequest so
+		// the endpoint/credential error surfaces hermetically (Read's
+		// DescribeNasFileSystem hits the patched DoRequest and returns a
+		// non-NotFound error).
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
 				Code:       String("loadEndpoint error"),
 				Data:       String("loadEndpoint error"),
@@ -894,6 +952,11 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
+		// Bypass the leading/trailing Describe calls so the DoRequest
+		// retry/no-retry error sequence targets ModifyFileSystem only.
+		patcheDescribeNasFileSystem := gomonkey.ApplyMethod(reflect.TypeOf(&NasServiceV2{}), "DescribeNasFileSystem", func(_ *NasServiceV2, _ string) (map[string]interface{}, error) {
+			return describeObject(), nil
+		})
 		retryFlag := true
 		noRetryFlag := true
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -908,6 +971,7 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		})
 		err := resourceAliCloudNasFileSystemUpdate(resourceData1, rawClient)
 		patches.Reset()
+		patcheDescribeNasFileSystem.Reset()
 		assert.NotNil(t, err)
 	})
 
@@ -929,6 +993,9 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
+		patcheDescribeNasFileSystem := gomonkey.ApplyMethod(reflect.TypeOf(&NasServiceV2{}), "DescribeNasFileSystem", func(_ *NasServiceV2, _ string) (map[string]interface{}, error) {
+			return describeObject(), nil
+		})
 		retryFlag := false
 		noRetryFlag := false
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -943,6 +1010,7 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		})
 		err := resourceAliCloudNasFileSystemUpdate(resourceData1, rawClient)
 		patches.Reset()
+		patcheDescribeNasFileSystem.Reset()
 		assert.Nil(t, err)
 	})
 
@@ -964,6 +1032,15 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
+		patcheDescribeNasFileSystem := gomonkey.ApplyMethod(reflect.TypeOf(&NasServiceV2{}), "DescribeNasFileSystem", func(_ *NasServiceV2, _ string) (map[string]interface{}, error) {
+			return describeObject(), nil
+		})
+		// DescribeFileSystemDescribeSmbAcl runs unconditionally for non-Agentic
+		// file systems; patch it so it does not issue a real DoRequest and consume
+		// the retry/no-retry flags meant for the TagResources call under test.
+		patcheDescribeSmbAcl := gomonkey.ApplyMethod(reflect.TypeOf(&NasServiceV2{}), "DescribeFileSystemDescribeSmbAcl", func(_ *NasServiceV2, _ string) (map[string]interface{}, error) {
+			return map[string]interface{}{"Enabled": false}, nil
+		})
 		retryFlag := true
 		noRetryFlag := true
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -978,12 +1055,17 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		})
 		err := resourceAliCloudNasFileSystemUpdate(resourceData1, rawClient)
 		patches.Reset()
+		patcheDescribeSmbAcl.Reset()
+		patcheDescribeNasFileSystem.Reset()
 		assert.NotNil(t, err)
 	})
 
 	// Delete
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewNasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		// gomonkey cannot intercept AliyunClient.RpcPost; patch Client.DoRequest so
+		// the endpoint/credential error is returned hermetically (no real cloud
+		// call) and is not a NotFound code, so Delete propagates the error.
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
 				Code:       String("loadEndpoint error"),
 				Data:       String("loadEndpoint error"),
@@ -1017,24 +1099,16 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		resourceData, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, diff)
 		resourceData.SetId(d.Id())
 		_ = resourceData.Set("file_system_type", "cpfs")
-		retryFlag := false
-		noRetryFlag := false
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if retryFlag {
-				retryFlag = false
-				return responseMock["RetryError"]("InvalidFileSystemStatus.Ordering")
-			} else if noRetryFlag {
-				noRetryFlag = false
-				return responseMock["NoRetryError"]("NonRetryableError")
+		// DeleteFileSystem succeeds; the post-delete Describe returns NotFound so
+		// DescribeAsyncNasFileSystemStateRefreshFunc reaches the empty target state.
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteFileSystem" {
+				return responseMock["DeleteNormal"]("")
 			}
-			return responseMock["DeleteNormal"]("")
-		})
-		patcheDescribeNasFileSystem := gomonkey.ApplyMethod(reflect.TypeOf(&NasService{}), "DescribeNasFileSystem", func(*NasService, string) (map[string]interface{}, error) {
 			return responseMock["NotFoundError"]("ResourceNotfound")
 		})
 		err := resourceAliCloudNasFileSystemDelete(resourceData, rawClient)
 		patches.Reset()
-		patcheDescribeNasFileSystem.Reset()
 		assert.Nil(t, err)
 	})
 
@@ -1086,6 +1160,68 @@ func TestUnitAliCloudNasFileSystem(t *testing.T) {
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
+
+	// options.enable_abe and options.vsc_access_point_access_only: the actual
+	// ModifyFileSystem request must carry EnableABE/VscAccessPointAccessOnly.
+	t.Run("UpdateModifyFileSystemOptionsAbeVsc", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		diff.Attributes["options.#"] = &terraform.ResourceAttrDiff{Old: "0", New: "1"}
+		diff.Attributes["options.0.enable_abe"] = &terraform.ResourceAttrDiff{Old: "false", New: "true"}
+		diff.Attributes["options.0.vsc_access_point_access_only"] = &terraform.ResourceAttrDiff{Old: "false", New: "true"}
+		resourceData1, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		// Data(nil, diff) does not reliably populate the Computed options list for
+		// Get, so seed the writer with the new values; the diff is retained so
+		// HasChange("options") still fires the ModifyFileSystem block.
+		_ = resourceData1.Set("options", []interface{}{map[string]interface{}{
+			"enable_abe":                   true,
+			"vsc_access_point_access_only": true,
+		}})
+		patcheDescribeNasFileSystem := gomonkey.ApplyMethod(reflect.TypeOf(&NasServiceV2{}), "DescribeNasFileSystem", func(_ *NasServiceV2, _ string) (map[string]interface{}, error) {
+			return describeObject(), nil
+		})
+		// Patch DescribeFileSystemDescribeSmbAcl so the unconditional trailing
+		// Describe does not issue a DoRequest that would overwrite modifyBody.
+		patcheDescribeSmbAcl := gomonkey.ApplyMethod(reflect.TypeOf(&NasServiceV2{}), "DescribeFileSystemDescribeSmbAcl", func(_ *NasServiceV2, _ string) (map[string]interface{}, error) {
+			return map[string]interface{}{"Enabled": false}, nil
+		})
+		var modifyBody map[string]interface{}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, apiName *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			// Capture only the ModifyFileSystem request so later DoRequest calls
+			// (e.g. ListTagResources in Read) do not overwrite it.
+			if apiName != nil && *apiName == "ModifyFileSystem" {
+				modifyBody = body
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceAliCloudNasFileSystemUpdate(resourceData1, rawClient)
+		patches.Reset()
+		patcheDescribeSmbAcl.Reset()
+		patcheDescribeNasFileSystem.Reset()
+		assert.Nil(t, err)
+		optionsJson, _ := modifyBody["Options"].(string)
+		assert.Contains(t, optionsJson, `"EnableABE":true`)
+		assert.Contains(t, optionsJson, `"VscAccessPointAccessOnly":true`)
+	})
+
+	// Read maps Options.EnableABE/VscAccessPointAccessOnly back into state.
+	t.Run("ReadOptionsMapping", func(t *testing.T) {
+		patcheDescribeNasFileSystem := gomonkey.ApplyMethod(reflect.TypeOf(&NasServiceV2{}), "DescribeNasFileSystem", func(_ *NasServiceV2, _ string) (map[string]interface{}, error) {
+			return describeObject(), nil
+		})
+		// ListTagResources (and any other non-Describe call) returns empty so
+		// no real network is reached; Describe itself is patched above.
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			return map[string]interface{}{}, nil
+		})
+		err := resourceAliCloudNasFileSystemRead(d, rawClient)
+		patches.Reset()
+		patcheDescribeNasFileSystem.Reset()
+		assert.Nil(t, err)
+		assert.True(t, d.Get("options.0.enable_abe").(bool))
+		assert.True(t, d.Get("options.0.vsc_access_point_access_only").(bool))
+		assert.True(t, d.Get("options.0.enable_oplock").(bool))
+	})
 }
 
 // lintignore: R001
@@ -1121,9 +1257,9 @@ func TestAccAliCloudNasFileSystem_basic12182(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1494,9 +1630,9 @@ func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1522,7 +1658,9 @@ func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"options": []map[string]interface{}{
 						{
-							"enable_oplock": "true",
+							"enable_oplock":                "true",
+							"enable_abe":                   "true",
+							"vsc_access_point_access_only": "false",
 						},
 					},
 					"keytab_md5": "${var.key_tab_md5}",
@@ -1535,8 +1673,11 @@ func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"keytab_md5": CHECKSET,
-						"keytab":     CHECKSET,
+						"keytab_md5":              CHECKSET,
+						"keytab":                  CHECKSET,
+						"options.#":               "1",
+						"options.0.enable_oplock": "true",
+						"options.0.enable_abe":    "true",
 					}),
 				),
 			},
@@ -1544,7 +1685,9 @@ func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"options": []map[string]interface{}{
 						{
-							"enable_oplock": "false",
+							"enable_oplock":                "false",
+							"enable_abe":                   "false",
+							"vsc_access_point_access_only": "false",
 						},
 					},
 					"keytab_md5": "${var.key_tab_1_md5}",
@@ -1561,8 +1704,11 @@ func TestAccAliCloudNasFileSystem_basic10635(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"keytab_md5": CHECKSET,
-						"keytab":     CHECKSET,
+						"keytab_md5":              CHECKSET,
+						"keytab":                  CHECKSET,
+						"options.#":               "1",
+						"options.0.enable_oplock": "false",
+						"options.0.enable_abe":    "false",
 					}),
 				),
 			},
@@ -1696,9 +1842,9 @@ func TestAccAliCloudNasFileSystem_basic5328(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1830,9 +1976,9 @@ func TestAccAliCloudNasFileSystem_basic7668(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1963,9 +2109,9 @@ func TestAccAliCloudNasFileSystem_basic12188(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1993,6 +2139,21 @@ func TestAccAliCloudNasFileSystem_basic12188(t *testing.T) {
 						"redundancy_type":          "ZRS",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"redundancy_vswitch_ids": []string{
+						"${alicloud_vswitch.CreateVswitchD.id}", "${alicloud_vswitch.CreateVswitchC.id}", "${alicloud_vswitch.CreateVswitchF.id}"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"redundancy_vswitch_ids": []string{
+						"${alicloud_vswitch.CreateVswitchD.id}", "${alicloud_vswitch.CreateVswitchC.id}", "${alicloud_vswitch.CreateVswitchF.id}"},
+				}),
+				ExpectNonEmptyPlan: false,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
