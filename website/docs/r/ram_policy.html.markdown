@@ -104,7 +104,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Policy.
-* `delete` - (Defaults to 5 mins) Used when delete the Policy.
+* `delete` - (Defaults to 26 mins) Used when delete the Policy.
 * `update` - (Defaults to 5 mins) Used when update the Policy.
 
 ## Import
