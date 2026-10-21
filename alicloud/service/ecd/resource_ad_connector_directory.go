@@ -25,7 +25,13 @@ func ResourceAdConnectorDirectory() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			// Create waits for the directory to leave REGISTERING and settle on
+			// REGISTERED, ERROR, or NEEDCONFIGCONNECTOR. The AD connector
+			// directory's registration state machine retries the unreachable AD
+			// longer than the sibling office site's fast-failing trust config
+			// (office_site uses 5m), so the create wait needs a longer window to
+			// absorb a slow transition out of REGISTERING before timing out.
+			Create: schema.DefaultTimeout(20 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
