@@ -1,12 +1,14 @@
-package alicloud
+package gwlb_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gwlb"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // Test Gwlb ServerGroup. >>> Resource test cases, automatically generated.
@@ -14,23 +16,22 @@ import (
 func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gwlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8419)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbServerGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8419)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gwlb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccgwlb%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbServerGroupBasicDependence8419)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbServerGroupBasicDependence8419)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -75,8 +76,8 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 						"scheduler":            "5TCH",
 						"protocol":             "GENEVE",
 						"server_group_type":    "Instance",
-						"resource_group_id":    CHECKSET,
-						"vpc_id":               CHECKSET,
+						"resource_group_id":    acctest.CHECKSET,
+						"vpc_id":               acctest.CHECKSET,
 						"dry_run":              "false",
 						"servers.#":            "1",
 						"server_group_name":    name,
@@ -121,7 +122,7 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scheduler":            "3TCH",
-						"resource_group_id":    CHECKSET,
+						"resource_group_id":    acctest.CHECKSET,
 						"servers.#":            "1",
 						"server_group_name":    name + "_update",
 						"server_failover_mode": "NoRebalance",
@@ -160,13 +161,13 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -181,8 +182,8 @@ func TestAccAliCloudGwlbServerGroup_basic8419(t *testing.T) {
 }
 
 var AlicloudGwlbServerGroupMap8419 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudGwlbServerGroupBasicDependence8419(name string) string {
@@ -258,23 +259,22 @@ resource "alicloud_instance" "defaultH6McvC" {
 func TestAccAliCloudGwlbServerGroup_basic8500(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gwlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8500)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbServerGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8500)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gwlb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccgwlb%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbServerGroupBasicDependence8500)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbServerGroupBasicDependence8500)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -329,8 +329,8 @@ func TestAccAliCloudGwlbServerGroup_basic8500(t *testing.T) {
 						"scheduler":         "5TCH",
 						"protocol":          "GENEVE",
 						"server_group_type": "Ip",
-						"resource_group_id": CHECKSET,
-						"vpc_id":            CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
 						"dry_run":           "false",
 						"servers.#":         "3",
 						"server_group_name": name,
@@ -374,7 +374,7 @@ func TestAccAliCloudGwlbServerGroup_basic8500(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scheduler":         "3TCH",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"servers.#":         "1",
 						"server_group_name": name + "_update",
 					}),
@@ -402,13 +402,13 @@ func TestAccAliCloudGwlbServerGroup_basic8500(t *testing.T) {
 						},
 					},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"servers":           REMOVEKEY,
+					"servers":           acctest.REMOVEKEY,
 					"server_group_name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scheduler":         "5TCH",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"servers.#":         "0",
 						"server_group_name": name + "_update",
 					}),
@@ -446,13 +446,13 @@ func TestAccAliCloudGwlbServerGroup_basic8500(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -467,8 +467,8 @@ func TestAccAliCloudGwlbServerGroup_basic8500(t *testing.T) {
 }
 
 var AlicloudGwlbServerGroupMap8500 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudGwlbServerGroupBasicDependence8500(name string) string {
@@ -496,23 +496,22 @@ resource "alicloud_vpc" "defaultEaxcvb" {
 func TestAccAliCloudGwlbServerGroup_basic8564(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gwlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8564)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbServerGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8564)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gwlb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccgwlb%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbServerGroupBasicDependence8564)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbServerGroupBasicDependence8564)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -567,8 +566,8 @@ func TestAccAliCloudGwlbServerGroup_basic8564(t *testing.T) {
 						"scheduler":         "5TCH",
 						"protocol":          "GENEVE",
 						"server_group_type": "Ip",
-						"resource_group_id": CHECKSET,
-						"vpc_id":            CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
 						"dry_run":           "false",
 						"servers.#":         "3",
 						"server_group_name": name,
@@ -612,7 +611,7 @@ func TestAccAliCloudGwlbServerGroup_basic8564(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scheduler":         "3TCH",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"servers.#":         "1",
 						"server_group_name": name + "_update",
 					}),
@@ -640,13 +639,13 @@ func TestAccAliCloudGwlbServerGroup_basic8564(t *testing.T) {
 						},
 					},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"servers":           REMOVEKEY,
+					"servers":           acctest.REMOVEKEY,
 					"server_group_name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scheduler":         "5TCH",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"servers.#":         "0",
 						"server_group_name": name + "_update",
 					}),
@@ -684,13 +683,13 @@ func TestAccAliCloudGwlbServerGroup_basic8564(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -705,8 +704,8 @@ func TestAccAliCloudGwlbServerGroup_basic8564(t *testing.T) {
 }
 
 var AlicloudGwlbServerGroupMap8564 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudGwlbServerGroupBasicDependence8564(name string) string {
@@ -734,23 +733,22 @@ resource "alicloud_vpc" "defaultEaxcvb" {
 func TestAccAliCloudGwlbServerGroupDraining8570(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gwlb_server_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8570)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbServerGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8570)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gwlb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccgwlb%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbServerGroupBasicDependence8570)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbServerGroupBasicDependence8570)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				// create two servers with connection drain enabled (1h timeout keeps the
@@ -783,7 +781,7 @@ func TestAccAliCloudGwlbServerGroupDraining8570(t *testing.T) {
 					testAccCheck(map[string]string{
 						"protocol":           "GENEVE",
 						"server_group_type":  "Ip",
-						"vpc_id":             CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
 						"servers.#":          "2",
 						"draining_servers.#": "0",
 						"server_group_name":  name,
@@ -822,8 +820,8 @@ func TestAccAliCloudGwlbServerGroupDraining8570(t *testing.T) {
 				// remove 10.0.0.2 while 10.0.0.1 is still Draining: the provider must skip the
 				// Draining server in RemoveServersFromServerGroup, otherwise the API rejects the
 				// request with an IncorrectStatus error. Both servers are now out of state.
-				// REMOVEKEY drops the servers key from the generated config; an empty map
-				// (CLEARMAP) or list renders invalid HCL for a block-typed attribute.
+				// acctest.REMOVEKEY drops the servers key from the generated config; an empty map
+				// (acctest.CLEARMAP) or list renders invalid HCL for a block-typed attribute.
 				Config: testAccConfig(map[string]interface{}{
 					"connection_drain_config": []map[string]interface{}{
 						{
@@ -832,7 +830,7 @@ func TestAccAliCloudGwlbServerGroupDraining8570(t *testing.T) {
 						},
 					},
 					"vpc_id":            "${alicloud_vpc.defaultEaxcvb.id}",
-					"servers":           REMOVEKEY,
+					"servers":           acctest.REMOVEKEY,
 					"server_group_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -901,7 +899,7 @@ func TestAccAliCloudGwlbServerGroupDraining8570(t *testing.T) {
 			},
 			{
 				// disable connection drain and clear the servers so the destroy is clean;
-				// servers dropped from the config via REMOVEKEY (empty map/list renders invalid HCL)
+				// servers dropped from the config via acctest.REMOVEKEY (empty map/list renders invalid HCL)
 				Config: testAccConfig(map[string]interface{}{
 					"connection_drain_config": []map[string]interface{}{
 						{
@@ -910,13 +908,13 @@ func TestAccAliCloudGwlbServerGroupDraining8570(t *testing.T) {
 						},
 					},
 					"vpc_id":            "${alicloud_vpc.defaultEaxcvb.id}",
-					"servers":           REMOVEKEY,
+					"servers":           acctest.REMOVEKEY,
 					"server_group_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"servers.#":          "0",
-						"draining_servers.#": CHECKSET,
+						"draining_servers.#": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -925,8 +923,8 @@ func TestAccAliCloudGwlbServerGroupDraining8570(t *testing.T) {
 }
 
 var AlicloudGwlbServerGroupMap8570 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudGwlbServerGroupBasicDependence8570(name string) string {

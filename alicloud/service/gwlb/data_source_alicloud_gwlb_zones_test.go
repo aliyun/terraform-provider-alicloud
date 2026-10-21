@@ -1,38 +1,39 @@
-package alicloud
+package gwlb_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudGwlbZoneDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.EfloSupportRegions)
-	rand := acctest.RandIntRange(1000000, 9999999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EfloSupportRegions)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGwlbZoneSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudGwlbZoneSourceConfig(rand, map[string]string{
 			"ids":             `["cn-wulanchabu-b"]`,
 			"accept_language": `"zh-CN"`,
 		}),
-		fakeConfig: testAccCheckAlicloudGwlbZoneSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudGwlbZoneSourceConfig(rand, map[string]string{
 			"ids":             `["cn-wulanchabu-a"]`,
 			"accept_language": `"zh-CN"`,
 		}),
 	}
 
-	GwlbZoneCheckInfo.dataSourceTestCheck(t, rand, idsConf)
+	GwlbZoneCheckInfo.DataSourceTestCheck(t, rand, idsConf)
 }
 
 var existGwlbZoneMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"zones.#":            CHECKSET,
-		"zones.0.id":         CHECKSET,
-		"zones.0.zone_id":    CHECKSET,
-		"zones.0.local_name": CHECKSET,
+		"zones.#":            acctest.CHECKSET,
+		"zones.0.id":         acctest.CHECKSET,
+		"zones.0.zone_id":    acctest.CHECKSET,
+		"zones.0.local_name": acctest.CHECKSET,
 	}
 }
 
@@ -42,10 +43,10 @@ var fakeGwlbZoneMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var GwlbZoneCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_gwlb_zones.default",
-	existMapFunc: existGwlbZoneMapFunc,
-	fakeMapFunc:  fakeGwlbZoneMapFunc,
+var GwlbZoneCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_gwlb_zones.default",
+	ExistMapFunc: existGwlbZoneMapFunc,
+	FakeMapFunc:  fakeGwlbZoneMapFunc,
 }
 
 func testAccCheckAlicloudGwlbZoneSourceConfig(rand int, attrMap map[string]string) string {

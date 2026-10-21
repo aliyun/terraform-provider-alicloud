@@ -1,4 +1,4 @@
-package alicloud
+package gwlb
 
 import (
 	"bytes"
@@ -9,16 +9,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudGwlbServerGroup() *schema.Resource {
+func ResourceServerGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudGwlbServerGroupCreate,
-		Read:   resourceAliCloudGwlbServerGroupRead,
-		Update: resourceAliCloudGwlbServerGroupUpdate,
-		Delete: resourceAliCloudGwlbServerGroupDelete,
+		Create: resourceServerGroupCreate,
+		Read:   resourceServerGroupRead,
+		Update: resourceServerGroupUpdate,
+		Delete: resourceServerGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -91,7 +96,7 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(0, 50),
+							ValidateFunc: validators.IntBetween(0, 50),
 						},
 						"health_check_connect_port": {
 							Type:     schema.TypeInt,
@@ -102,7 +107,7 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(2, 10),
+							ValidateFunc: validators.IntBetween(2, 10),
 						},
 						"health_check_path": {
 							Type:     schema.TypeString,
@@ -113,7 +118,7 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(2, 10),
+							ValidateFunc: validators.IntBetween(2, 10),
 						},
 						"health_check_connect_timeout": {
 							Type:     schema.TypeInt,
@@ -124,7 +129,7 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"TCP", "HTTP"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"TCP", "HTTP"}, false),
 						},
 						"health_check_domain": {
 							Type:     schema.TypeString,
@@ -149,7 +154,7 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"GENEVE"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"GENEVE"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -160,7 +165,7 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"2TCH", "3TCH", "5TCH"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"2TCH", "3TCH", "5TCH"}, false),
 			},
 			"server_group_name": {
 				Type:     schema.TypeString,
@@ -171,13 +176,13 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Ip", "Instance"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Ip", "Instance"}, false),
 			},
 			"server_failover_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"NoRebalance", "Rebalance"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"NoRebalance", "Rebalance"}, false),
 			},
 			"servers": {
 				Set: func(v interface{}) int {
@@ -202,7 +207,7 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 						"server_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"Ip", "Eci", "Eni", "Ecs"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"Ip", "Eci", "Eni", "Ecs"}, false),
 						},
 						"server_id": {
 							Type:     schema.TypeString,
@@ -228,7 +233,7 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -238,7 +243,7 @@ func resourceAliCloudGwlbServerGroup() *schema.Resource {
 	}
 }
 
-func resourceAliCloudGwlbServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -249,7 +254,7 @@ func resourceAliCloudGwlbServerGroupCreate(d *schema.ResourceData, meta interfac
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("health_check_config"); ok {
 		jsonPathResult, err := jsonpath.Get("$[0].health_check_connect_timeout", v)
@@ -267,7 +272,7 @@ func resourceAliCloudGwlbServerGroupCreate(d *schema.ResourceData, meta interfac
 		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
 	}
 
@@ -294,7 +299,7 @@ func resourceAliCloudGwlbServerGroupCreate(d *schema.ResourceData, meta interfac
 	}
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("health_check_config"); !IsNil(v) {
+	if v := d.Get("health_check_config"); !helper.IsNil(v) {
 		healthCheckConnectTimeout1, _ := jsonpath.Get("$[0].health_check_connect_timeout", d.Get("health_check_config"))
 		if healthCheckConnectTimeout1 != nil && healthCheckConnectTimeout1 != "" {
 			objectDataLocalMap["HealthCheckConnectTimeout"] = healthCheckConnectTimeout1
@@ -391,11 +396,11 @@ func resourceAliCloudGwlbServerGroupCreate(d *schema.ResourceData, meta interfac
 			request["HealthCheckConfig.HealthyThreshold"] = jsonPathResult17
 		}
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -403,35 +408,35 @@ func resourceAliCloudGwlbServerGroupCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_gwlb_server_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_gwlb_server_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ServerGroupId"]))
 
-	gwlbServiceV2 := GwlbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbServiceV2.GwlbServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
+	gwlbService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbService.ServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudGwlbServerGroupUpdate(d, meta)
+	return resourceServerGroupUpdate(d, meta)
 }
 
-func resourceAliCloudGwlbServerGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceServerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	gwlbServiceV2 := GwlbServiceV2{client}
+	gwlbService := NewService(client)
 
-	objectRaw, err := gwlbServiceV2.DescribeGwlbServerGroup(d.Id())
+	objectRaw, err := gwlbService.DescribeServerGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_gwlb_server_group DescribeGwlbServerGroup Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_gwlb_server_group DescribeServerGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["CreateTime"] != nil {
@@ -510,11 +515,11 @@ func resourceAliCloudGwlbServerGroupRead(d *schema.ResourceData, meta interface{
 		}
 	}
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
-	objectRaw, err = gwlbServiceV2.DescribeListServerGroupServers(d.Id())
+	objectRaw, err = gwlbService.DescribeListServerGroupServers(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	servers1Raw, _ := jsonpath.Get("$.Servers", objectRaw)
@@ -561,7 +566,7 @@ func resourceAliCloudGwlbServerGroupRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -574,7 +579,7 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 	query = make(map[string]interface{})
 	request["ServerGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("health_check_config.0.health_check_connect_timeout") {
 		update = true
 		jsonPathResult, err := jsonpath.Get("$[0].health_check_connect_timeout", d.Get("health_check_config"))
@@ -621,7 +626,7 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 		update = true
 		objectDataLocalMap := make(map[string]interface{})
 
-		if v := d.Get("health_check_config"); !IsNil(v) {
+		if v := d.Get("health_check_config"); !helper.IsNil(v) {
 			healthCheckConnectTimeout1, _ := jsonpath.Get("$[0].health_check_connect_timeout", v)
 			if healthCheckConnectTimeout1 != nil && (d.HasChange("health_check_config.0.health_check_connect_timeout") || healthCheckConnectTimeout1 != "") {
 				objectDataLocalMap["HealthCheckConnectTimeout"] = healthCheckConnectTimeout1
@@ -732,11 +737,11 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -744,14 +749,14 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		gwlbServiceV2 := GwlbServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbServiceV2.GwlbServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
+		gwlbService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.ServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -760,7 +765,7 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
 	}
@@ -770,11 +775,11 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 	}
 	request["ResourceType"] = "servergroup"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -782,9 +787,9 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -811,7 +816,7 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 			query = make(map[string]interface{})
 			request["ServerGroupId"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 			localData := removed.List()
 			serversMapsArray := make([]interface{}, 0)
 			for _, dataLoop := range localData {
@@ -828,11 +833,11 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 			if v, ok := d.GetOkExists("dry_run"); ok {
 				request["DryRun"] = v
 			}
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || NeedRetry(err) {
+					if errs.IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -840,14 +845,14 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
-			gwlbServiceV2 := GwlbServiceV2{client}
-			stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, gwlbServiceV2.GwlbServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
+			gwlbService := NewService(client)
+			stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, gwlbService.ServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 
 		}
@@ -858,7 +863,7 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 			query = make(map[string]interface{})
 			request["ServerGroupId"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 			localData := added.List()
 			serversMapsArray := make([]interface{}, 0)
 			for _, dataLoop := range localData {
@@ -875,11 +880,11 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 			if v, ok := d.GetOkExists("dry_run"); ok {
 				request["DryRun"] = v
 			}
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
 				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || NeedRetry(err) {
+					if errs.IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -887,30 +892,30 @@ func resourceAliCloudGwlbServerGroupUpdate(d *schema.ResourceData, meta interfac
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
-			gwlbServiceV2 := GwlbServiceV2{client}
-			stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, gwlbServiceV2.GwlbServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
+			gwlbService := NewService(client)
+			stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, gwlbService.ServerGroupStateRefreshFunc(d.Id(), "ServerGroupStatus", []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 
 		}
 
 	}
 	if d.HasChange("tags") {
-		gwlbServiceV2 := GwlbServiceV2{client}
-		if err := gwlbServiceV2.SetResourceTags(d, "servergroup"); err != nil {
-			return WrapError(err)
+		gwlbService := NewService(client)
+		if err := gwlbService.SetResourceTags(d, "servergroup"); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudGwlbServerGroupRead(d, meta)
+	return resourceServerGroupRead(d, meta)
 }
 
-func resourceAliCloudGwlbServerGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceServerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteServerGroup"
@@ -922,18 +927,18 @@ func resourceAliCloudGwlbServerGroupDelete(d *schema.ResourceData, meta interfac
 	request["ServerGroupId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Gwlb", "2024-04-15", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -941,19 +946,19 @@ func resourceAliCloudGwlbServerGroupDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound.ServerGroup"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.ServerGroup"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	gwlbServiceV2 := GwlbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"[]"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gwlbServiceV2.DescribeAsyncGwlbServerGroupStateRefreshFunc(d, response, "$.Servers[*]", []string{}))
+	gwlbService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"[]"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gwlbService.DescribeAsyncServerGroupStateRefreshFunc(d, response, "$.Servers[*]", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 	}
 
 	return nil
