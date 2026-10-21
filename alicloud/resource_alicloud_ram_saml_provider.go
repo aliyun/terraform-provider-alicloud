@@ -32,6 +32,11 @@ func resourceAliCloudRamSamlProvider() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"authn_sign_algo": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -73,6 +78,9 @@ func resourceAliCloudRamSamlProviderCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
+	if v, ok := d.GetOk("authn_sign_algo"); ok {
+		request["AuthnSignAlgo"] = v
+	}
 	request["EncodedSAMLMetadataDocument"] = d.Get("encodedsaml_metadata_document")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -113,6 +121,7 @@ func resourceAliCloudRamSamlProviderRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("arn", objectRaw["Arn"])
+	d.Set("authn_sign_algo", objectRaw["AuthnSignAlgo"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("update_date", objectRaw["UpdateDate"])
 	d.Set("saml_provider_name", objectRaw["SAMLProviderName"])
@@ -142,6 +151,11 @@ func resourceAliCloudRamSamlProviderUpdate(d *schema.ResourceData, meta interfac
 	if d.HasChange("description") {
 		update = true
 		request["NewDescription"] = d.Get("description")
+	}
+
+	if d.HasChange("authn_sign_algo") {
+		update = true
+		request["AuthnSignAlgo"] = d.Get("authn_sign_algo")
 	}
 
 	if d.HasChange("encodedsaml_metadata_document") {
