@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -3012,4 +3013,218 @@ func TestAccAliCloudRedisTairInstance_config(t *testing.T) {
 			},
 		},
 	})
+}
+
+// Case readOnlyCountUpdate: regression for the silent no-op where changing only
+// read_only_count / slave_read_only_count triggered no ModifyInstanceSpec and Read
+// never backfilled them. Each update step verifies the ACTUAL cloud value returned
+// by DescribeInstanceAttribute (not just terraform state, which keeps the
+// configured value regardless of whether the API was called), so the test fails
+// before the fix (cloud unchanged) and passes after (cloud updated). Covers:
+//
+//	AC1 - only read_only_count changed (sent in the main ModifyInstanceSpec block)
+//	AC2 - only slave_read_only_count changed (sent in a separate block, because
+//	      ReadOnlyCount and SlaveReadOnlyCount can not be changed together)
+//	AC3 - both changed together (two separate ModifyInstanceSpec calls)
+//	AC4 - import verifies Read backfills both counts (counts NOT in ImportStateVerifyIgnore)
+func TestAccAliCloudRedisTairInstance_readOnlyCountUpdate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap6500)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence6500)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create with read_only_count=2, slave_read_only_count=2 (MASTER_SLAVE).
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":          "PayAsYouGo",
+					"instance_type":         "tair_rdb",
+					"zone_id":               "${var.zone_id}",
+					"instance_class":        "tair.rdb.with.proxy.1g",
+					"tair_instance_name":    name,
+					"vswitch_id":            "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":                "${alicloud_vpc.defaultVpc.id}",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"password":              "123456Tf",
+					"engine_version":        "5.0",
+					"port":                  "6379",
+					"secondary_zone_id":     "${var.secondary_zone_id}",
+					"shard_count":           "1",
+					"node_type":             "MASTER_SLAVE",
+					"read_only_count":       "2",
+					"slave_read_only_count": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"read_only_count":       "2",
+						"slave_read_only_count": "2",
+					}),
+					testAccCheckRedisTairInstanceReadOnlyCountFromCloud(resourceId, 2, 2),
+				),
+			},
+			{
+				// AC1: only read_only_count 2 -> 3 (slave_read_only_count stays 2).
+				// Pre-fix: ModifyInstanceSpec never fires -> cloud stays 2 -> check fails.
+				Config: testAccConfig(map[string]interface{}{
+					"read_only_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"read_only_count":       "3",
+						"slave_read_only_count": "2",
+					}),
+					testAccCheckRedisTairInstanceReadOnlyCountFromCloud(resourceId, 3, 2),
+				),
+			},
+			{
+				// AC2: only slave_read_only_count 2 -> 3 (read_only_count stays 3).
+				// Pre-fix: ModifyInstanceSpec never fires -> cloud stays 2 -> check fails.
+				Config: testAccConfig(map[string]interface{}{
+					"slave_read_only_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"read_only_count":       "3",
+						"slave_read_only_count": "3",
+					}),
+					testAccCheckRedisTairInstanceReadOnlyCountFromCloud(resourceId, 3, 3),
+				),
+			},
+			{
+				// AC4: import verifies Read backfills both counts (they are NOT in
+				// ImportStateVerifyIgnore). Pre-fix: Read never backfilled them ->
+				// import would fail. After fix: import passes.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "recover_config_mode", "src_db_instance_id"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRedisTairInstance_readOnlyCountBothUpdate verifies AC3: changing
+// read_only_count and slave_read_only_count together in one Update triggers two
+// separate ModifyInstanceSpec calls (ReadOnlyCount first, SlaveReadOnlyCount second
+// with ReadOnlyCount removed) so the cloud-rejected "can not be changed together"
+// constraint is not violated. Pre-fix: no call -> cloud stays at the create values.
+// It is a separate case so the two IsOrderCompleted waits fit the go test budget.
+func TestAccAliCloudRedisTairInstance_readOnlyCountBothUpdate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap6500)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence6500)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create with read_only_count=2, slave_read_only_count=2 (MASTER_SLAVE).
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":          "PayAsYouGo",
+					"instance_type":         "tair_rdb",
+					"zone_id":               "${var.zone_id}",
+					"instance_class":        "tair.rdb.with.proxy.1g",
+					"tair_instance_name":    name,
+					"vswitch_id":            "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":                "${alicloud_vpc.defaultVpc.id}",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"password":              "123456Tf",
+					"engine_version":        "5.0",
+					"port":                  "6379",
+					"secondary_zone_id":     "${var.secondary_zone_id}",
+					"shard_count":           "1",
+					"node_type":             "MASTER_SLAVE",
+					"read_only_count":       "2",
+					"slave_read_only_count": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"read_only_count":       "2",
+						"slave_read_only_count": "2",
+					}),
+					testAccCheckRedisTairInstanceReadOnlyCountFromCloud(resourceId, 2, 2),
+				),
+			},
+			{
+				// AC3: both 2 -> 3 changed together. The fix sends read_only_count first
+				// (ReadOnlyCount, waits IsOrderCompleted), then slave_read_only_count
+				// (SlaveReadOnlyCount with ReadOnlyCount removed, fresh ClientToken, waits
+				// IsOrderCompleted) so the two counts are not sent in one call.
+				Config: testAccConfig(map[string]interface{}{
+					"read_only_count":       "3",
+					"slave_read_only_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"read_only_count":       "3",
+						"slave_read_only_count": "3",
+					}),
+					testAccCheckRedisTairInstanceReadOnlyCountFromCloud(resourceId, 3, 3),
+				),
+			},
+		},
+	})
+}
+
+// testAccCheckRedisTairInstanceReadOnlyCountFromCloud verifies the actual cloud
+// values of read_only_count / slave_read_only_count via DescribeInstanceAttribute,
+// so the test catches a silent no-op Update (API not sent) rather than only
+// checking terraform state. DescribeRedisTairInstance returns the first
+// DBInstanceAttribute object, whose ReadOnlyCount/SlaveReadOnlyCount are the same
+// fields Read backfills. ModifyInstanceSpec completes asynchronously, so the read
+// retries briefly to observe the post-update value instead of a stale state.
+func testAccCheckRedisTairInstanceReadOnlyCountFromCloud(resourceName string, readOnlyCount, slaveReadOnlyCount int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found in state: %s", resourceName)
+		}
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("resource ID is empty for: %s", resourceName)
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		redisServiceV2 := &RedisServiceV2{client}
+		var object map[string]interface{}
+		var err error
+		for i := 0; i < 6; i++ {
+			object, err = redisServiceV2.DescribeRedisTairInstance(rs.Primary.ID)
+			if err != nil {
+				return fmt.Errorf("DescribeRedisTairInstance(%s) failed: %v", rs.Primary.ID, err)
+			}
+			if fmt.Sprint(object["ReadOnlyCount"]) == fmt.Sprint(readOnlyCount) &&
+				fmt.Sprint(object["SlaveReadOnlyCount"]) == fmt.Sprint(slaveReadOnlyCount) {
+				return nil
+			}
+			time.Sleep(10 * time.Second)
+		}
+		return fmt.Errorf("cloud read_only_count/slave_read_only_count mismatch for %s: expected %d/%d, got %v/%v",
+			rs.Primary.ID, readOnlyCount, slaveReadOnlyCount, object["ReadOnlyCount"], object["SlaveReadOnlyCount"])
+	}
 }

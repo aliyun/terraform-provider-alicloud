@@ -194,6 +194,7 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"read_only_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: IntBetween(0, 5),
 			},
 			"recover_config_mode": {
@@ -260,6 +261,7 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"slave_read_only_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"src_db_instance_id": {
 				Type:     schema.TypeString,
@@ -532,6 +534,12 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	if objectRaw["ShardCount"] != nil && objectRaw["ShardCount"] != 0 {
 		d.Set("shard_count", objectRaw["ShardCount"])
 	}
+	if objectRaw["ReadOnlyCount"] != nil {
+		d.Set("read_only_count", objectRaw["ReadOnlyCount"])
+	}
+	if objectRaw["SlaveReadOnlyCount"] != nil {
+		d.Set("slave_read_only_count", objectRaw["SlaveReadOnlyCount"])
+	}
 	if objectRaw["InstanceStatus"] != nil {
 		d.Set("status", objectRaw["InstanceStatus"])
 	}
@@ -747,11 +755,14 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		request["EffectiveTime"] = v
 	}
 	request["AutoPay"] = "true"
-	if v, ok := d.GetOkExists("slave_read_only_count"); ok {
-		request["SlaveReadOnlyCount"] = v
-	}
-	if v, ok := d.GetOkExists("read_only_count"); ok {
-		request["ReadOnlyCount"] = v
+	// read_only_count drives a ModifyInstanceSpec call on change. SlaveReadOnlyCount
+	// is handled in a separate call below because ReadOnlyCount and SlaveReadOnlyCount
+	// can not be changed together (mirrors alicloud_kvstore_instance Update).
+	if !d.IsNewResource() && d.HasChange("read_only_count") {
+		update = true
+		if v, ok := d.GetOkExists("read_only_count"); ok {
+			request["ReadOnlyCount"] = v
+		}
 	}
 	if !d.IsNewResource() && d.HasChange("node_type") {
 		update = true
@@ -759,6 +770,38 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		redisServiceV2 := RedisServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	// slave_read_only_count is sent in a separate ModifyInstanceSpec call because
+	// ReadOnlyCount and SlaveReadOnlyCount can not be changed together.
+	if !d.IsNewResource() && d.HasChange("slave_read_only_count") {
+		delete(request, "ReadOnlyCount")
+		if v, ok := d.GetOkExists("slave_read_only_count"); ok {
+			request["SlaveReadOnlyCount"] = v
+		}
+		request["ClientToken"] = buildClientToken(action)
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
