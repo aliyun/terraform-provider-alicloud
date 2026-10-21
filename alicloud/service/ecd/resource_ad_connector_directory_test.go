@@ -173,10 +173,9 @@ func testSweepEcdAdConnectorDirectory(region string) error {
 	return nil
 }
 
-// ecdRegionSupported reports whether the region is one ECD supports. ECD is
-// available in a fixed set of regions; the flat suite gated with
-// connectivity.EcdSupportRegions, and the split test pins to a supported one so
-// acctest.PreCheck's cn-beijing default (unsupported by ECD) never applies.
+// ecdRegionSupported reports whether the region is one ECD lists as supported.
+// ECD is available in a fixed set of regions; the sweeper skips the others so it
+// never lists resources in a region where the ECD control plane is absent.
 func ecdRegionSupported(region string) bool {
 	for _, r := range connectivity.EcdSupportRegions {
 		if region == string(r) {
@@ -186,14 +185,16 @@ func ecdRegionSupported(region string) bool {
 	return false
 }
 
+// testAccEcdAdConnectorDirectoryPreCheck pins the test region to cn-hangzhou.
+// acctest.PreCheck defaults ALICLOUD_REGION to cn-beijing when the runner has not
+// set it; cn-beijing is in EcdSupportRegions yet its ECD control plane has no
+// cluster for the AD connector's VPC CIDR, so CreateADConnectorDirectory fails
+// with chooseClusterError ("Cannot choose cluster, please try other CIDR block").
+// The flat suite's checkoutSupportedRegions backs off to Hangzhou, and the
+// original test's hardcoded cn-hangzhou-j zone targeted cn-hangzhou, so pin here.
 func testAccEcdAdConnectorDirectoryPreCheck(t *testing.T) {
 	acctest.PreCheck(t)
-	region := os.Getenv("ALICLOUD_REGION")
-	if !ecdRegionSupported(region) {
-		// ECD is not available in every region; fall back to cn-hangzhou, the
-		// first supported region, mirroring the flat suite's region selection.
-		os.Setenv("ALICLOUD_REGION", string(connectivity.Hangzhou))
-	}
+	os.Setenv("ALICLOUD_REGION", string(connectivity.Hangzhou))
 }
 
 func TestAccAliCloudECDAdConnectorDirectory_basic0(t *testing.T) {
