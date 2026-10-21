@@ -114,7 +114,7 @@ func resourceAliCloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ServiceBusy", "FlowControlError"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -206,7 +206,7 @@ func resourceAliCloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ServiceBusy", "FlowControlError"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -330,7 +330,7 @@ func resourceAliCloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ServiceBusy", "FlowControlError"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}

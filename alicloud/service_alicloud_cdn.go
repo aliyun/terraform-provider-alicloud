@@ -90,7 +90,7 @@ func (s *CdnService) DescribeCdnDomainConfig(id string) (object interface{}, err
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cdn", "2018-05-10", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"FlowControlError"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
