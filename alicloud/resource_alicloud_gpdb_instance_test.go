@@ -410,6 +410,164 @@ func TestAccAliCloudGPDBDBInstance_basic0(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudGPDBDBInstance_importBackfillsParameters is a regression test for
+// `terraform import`. ImportStatePassthrough seeds the state with only the
+// instance id, so the previous Read guard `d.GetOk("parameters")` was false on
+// import and the DescribeParameters block was skipped entirely, leaving the
+// imported state with an empty `parameters` set. Read now writes the full
+// server-side parameter set back into state when no parameters are declared in
+// the configuration, so an imported instance reflects its real parameters.
+func TestAccAliCloudGPDBDBInstance_importBackfillsParameters(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create an instance without declaring any `parameters` block,
+				// mirroring the state shape `terraform import` starts from
+				// (state carries only the instance id).
+				Config: testAccConfig(map[string]interface{}{
+					"description":           name,
+					"db_instance_category":  "HighAvailability",
+					"db_instance_class":     "gpdb.group.segsdx1",
+					"db_instance_mode":      "StorageElastic",
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+					"instance_network_type": "VPC",
+					"instance_spec":         "2C16G",
+					"instance_group_count":  "2",
+					"payment_type":          "PayAsYouGo",
+					"seg_storage_type":      "cloud_essd",
+					"seg_node_num":          "4",
+					"storage_size":          "50",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				// Import the instance. ImportStateVerify is intentionally left
+				// off because the configuration declares no `parameters`; the
+				// point is to assert that Read backfills the server-side
+				// parameter set into state instead of skipping it.
+				ResourceName: resourceId,
+				ImportState:  true,
+				Check: resource.ComposeTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceId]
+						if !ok {
+							return fmt.Errorf("resource not found in state: %s", resourceId)
+						}
+						count := rs.Primary.Attributes["parameters.#"]
+						if count == "" || count == "0" {
+							return fmt.Errorf("expected parameters to be backfilled after import, got parameters.#=%q", count)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudGPDBDBInstance_parametersSubsetNoDrift verifies that a
+// configuration declaring only a subset of the server-side parameters keeps the
+// plan empty after refresh. DescribeParameters returns the full server-side
+// parameter set; Read refreshes only the parameters the configuration declares,
+// so the extra server-side parameters must not surface as removed elements and
+// produce a permanent non-empty plan.
+func TestAccAliCloudGPDBDBInstance_parametersSubsetNoDrift(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGPDBDBInstanceBasicDependence0)
+	subsetConfig := testAccConfig(map[string]interface{}{
+		"description":           name,
+		"db_instance_category":  "HighAvailability",
+		"db_instance_class":     "gpdb.group.segsdx1",
+		"db_instance_mode":      "StorageElastic",
+		"engine":                "gpdb",
+		"engine_version":        "6.0",
+		"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+		"instance_network_type": "VPC",
+		"instance_spec":         "2C16G",
+		"payment_type":          "PayAsYouGo",
+		"seg_storage_type":      "cloud_essd",
+		"seg_node_num":          "4",
+		"storage_size":          "50",
+		"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+		"vswitch_id":            "${local.vswitch_id}",
+		"create_sample_data":    "false",
+		"instance_group_count":  "2",
+		"parameters": []map[string]interface{}{
+			{
+				"name":  "optimizer",
+				"value": "off",
+			},
+			{
+				"name":  "statement_timeout",
+				"value": "10800000",
+			},
+		},
+	})
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Declare a subset of the server-side parameter set and apply it.
+				Config: subsetConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "2",
+					}),
+				),
+			},
+			{
+				// Re-apply the same configuration. Refresh runs Read, which must
+				// keep only the declared parameters (not the full server-side
+				// set) and leave the plan empty, proving no permanent diff.
+				Config: subsetConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
 // TestAccAliCloudGPDBDBInstance_minorVersion covers the minor_version attribute.
 // GPDB instances are always provisioned with the latest minor version and
 // UpgradeDBVersion cannot downgrade, so a real upgrade to a higher version cannot
@@ -2655,6 +2813,87 @@ func TestUnitAliCloudGPDBDBInstance(t *testing.T) {
 		}
 	}
 
+}
+
+// TestUnitAliCloudGPDBDBInstanceParametersRefresh exercises the parameter
+// refresh mapping directly, without any cloud calls. These boundary cases are
+// hard to reproduce against a real instance but must stay stable: import
+// backfill, subset refresh, an empty server-side set, a declared parameter
+// absent from the server response (no stale ghost value), and a server-side
+// value change for a declared parameter.
+func TestUnitAliCloudGPDBDBInstanceParametersRefresh(t *testing.T) {
+	param := func(name, current, pvalue string, changeable bool) map[string]interface{} {
+		return map[string]interface{}{
+			"ParameterName":        name,
+			"CurrentValue":         current,
+			"ParameterValue":       pvalue,
+			"IsChangeableConfig":   changeable,
+			"ForceRestartInstance": "false",
+			"OptionalRange":        "[on,off]",
+			"ParameterDescription": name + " description",
+		}
+	}
+	fullList := []interface{}{
+		param("optimizer", "off", "off", true),
+		param("statement_timeout", "10800000", "10800000", true),
+		param("rds_master_mode", "single", "single", false),
+	}
+	declaredSet := func(items ...map[string]interface{}) *schema.Set {
+		s := schema.NewSet(parameterToHash, nil)
+		for _, it := range items {
+			s.Add(it)
+		}
+		return s
+	}
+	byName := func(out []map[string]interface{}) map[string]string {
+		m := map[string]string{}
+		for _, p := range out {
+			m[fmt.Sprint(p["name"])] = fmt.Sprint(p["value"])
+		}
+		return m
+	}
+
+	// Scenario 1: no parameters declared (the state shape `terraform import`
+	// starts from). The full server-side set is backfilled into state.
+	out := gpdbParametersToState(fullList, nil, false)
+	names := byName(out)
+	assert.Equal(t, 3, len(out))
+	assert.Equal(t, "off", names["optimizer"])
+	assert.Equal(t, "10800000", names["statement_timeout"])
+	assert.Equal(t, "single", names["rds_master_mode"])
+
+	// Scenario 2: a subset is declared. Only the declared parameters are
+	// refreshed to their server-side values; the extra server-side parameters
+	// do not surface as state elements.
+	out = gpdbParametersToState(fullList, declaredSet(
+		map[string]interface{}{"name": "optimizer", "value": "off"},
+	), true)
+	names = byName(out)
+	assert.Equal(t, 1, len(out))
+	assert.Equal(t, "off", names["optimizer"])
+
+	// Scenario 3: the API returns an empty parameter set. The declared subset
+	// is cleared cleanly, with no panic and no ghost value.
+	out = gpdbParametersToState([]interface{}{}, declaredSet(
+		map[string]interface{}{"name": "optimizer", "value": "off"},
+	), true)
+	assert.Equal(t, 0, len(out))
+
+	// Scenario 4: a declared parameter is absent from the server response. It
+	// is dropped from state (no stale ghost value), and a declared parameter
+	// whose server-side value changed is refreshed to the current value.
+	changedList := []interface{}{
+		param("optimizer", "on", "off", true),
+	}
+	out = gpdbParametersToState(changedList, declaredSet(
+		map[string]interface{}{"name": "optimizer", "value": "off"},
+		map[string]interface{}{"name": "ghost_parameter", "value": "x"},
+	), true)
+	names = byName(out)
+	assert.Equal(t, 1, len(out), "absent declared parameter is dropped, leaving the one the server still reports")
+	assert.Equal(t, "on", names["optimizer"], "declared parameter refreshes its current server-side value")
+	_, hasGhost := names["ghost_parameter"]
+	assert.False(t, hasGhost, "parameter absent from the server response is not kept as a stale value")
 }
 
 // The whitelist read path maps remote groups onto the reference list: named
