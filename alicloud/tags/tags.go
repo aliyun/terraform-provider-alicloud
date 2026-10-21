@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
@@ -476,8 +477,13 @@ func ConvertTags(tagsMap map[string]interface{}) []map[string]interface{} {
 
 func ConvertLowercaseTags(tagsMap map[string]interface{}) []map[string]interface{} {
 	tags := make([]map[string]interface{}, 0)
-	for key, value := range tagsMap {
-		if value != nil {
+	keys := make([]string, 0, len(tagsMap))
+	for key := range tagsMap {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if value := tagsMap[key]; value != nil {
 			if v, ok := value.(string); ok {
 				tags = append(tags, map[string]interface{}{
 					"key":   key,

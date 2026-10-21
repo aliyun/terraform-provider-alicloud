@@ -988,9 +988,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		l := expandStringList(v.([]interface{}))
 		d.Set("custom_san", strings.Join(l, ","))
 	}
-	//if v, ok := metadata["Timezone"]; ok {
-	//	d.Set("timezone", Interface2String(v))
-	//}
 	// Cluster capabilities
 	capabilities := fetchClusterCapabilities(object.MetaData)
 	if v, ok := capabilities["PublicSLB"]; ok {
@@ -1590,15 +1587,25 @@ func fetchMasterNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 		}
 		num = num + 1
 	}
+	return flattenCsMasterNodes(nodes)
+}
+
+// A node reports no IP address while it is still initialising or has failed, so the
+// address is read only when the service actually returned one.
+func flattenCsMasterNodes(nodes []*roacs.DescribeClusterNodesResponseBodyNodes) []map[string]interface{} {
 	var masterNodes []map[string]interface{}
 	for _, node := range nodes {
-		if *node.InstanceRole != "Master" {
+		if node == nil || tea.StringValue(node.InstanceRole) != "Master" {
 			continue
 		}
+		privateIp := ""
+		if len(node.IpAddress) > 0 {
+			privateIp = tea.StringValue(node.IpAddress[0])
+		}
 		masterNodes = append(masterNodes, map[string]interface{}{
-			"id":         node.InstanceId,
-			"name":       node.NodeName,
-			"private_ip": node.IpAddress[0],
+			"id":         tea.StringValue(node.InstanceId),
+			"name":       tea.StringValue(node.NodeName),
+			"private_ip": privateIp,
 		})
 	}
 

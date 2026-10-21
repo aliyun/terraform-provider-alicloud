@@ -374,22 +374,21 @@ Values: `disabled`, `group1`, `group2`, `group5`, `group14`.
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `bgp_config` - Bgp configuration information.
-  * `status` - The negotiation status of Bgp.
+    * `status` - The negotiation status of Bgp.
 * `create_time` - The creation time of the resource
-* `tunnel_bandwidth` - The bandwidth specification of a single VPN tunnel.
 * `health_check_config` - This parameter is supported if you create an vpn attachment in single-tunnel mode.
-  * `status` - health check status
+    * `status` - health check status
 * `status` - The status of the resource
 * `tunnel_options_specification` - Configure the tunnel. When creating a vpn attachment in dual-tunnel mode, you must add both tunnels for the vpn attachment to ensure that the vpn attachment has link redundancy. Only two tunnels can be added to a vpn attachment.
-  * `internet_ip` - The local internet IP in Tunnel.
-  * `state` - The state of Tunnel.
-  * `status` - The negotiation status of Tunnel.
-  * `tunnel_bgp_config` - Add the BGP configuration for the tunnel.
-    * `bgp_status` - BGP status.
-    * `peer_asn` - Peer asn.
-    * `peer_bgp_ip` - Peer bgp ip.
-  * `tunnel_id` - The tunnel ID of IPsec-VPN connection.
-  * `zone_no` - The zoneNo of tunnel.
+    * `internet_ip` - The local internet IP in Tunnel.
+    * `state` - The state of Tunnel.
+    * `status` - The negotiation status of Tunnel.
+    * `tunnel_bgp_config` - Add the BGP configuration for the tunnel.
+        * `bgp_status` - BGP status.
+        * `peer_asn` - Peer asn.
+        * `peer_bgp_ip` - Peer bgp ip.
+    * `tunnel_id` - The tunnel ID of IPsec-VPN connection.
+    * `zone_no` - The zoneNo of tunnel.
 
 ## Timeouts
 

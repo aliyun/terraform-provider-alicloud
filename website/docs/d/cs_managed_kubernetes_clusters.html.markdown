@@ -49,30 +49,24 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of matched Kubernetes clusters' ids.
 * `names` - A list of matched Kubernetes clusters' names.
 * `clusters` - A list of matched Kubernetes clusters. Each element contains the following attributes:
-  * `id` - The ID of the container cluster.
-  * `name` - The name of the container cluster.
-  * `availability_zone` - The ID of availability zone.
-  * `key_name` - The keypair of ssh login cluster node, you have to create it first.
-  * `worker_numbers` - The ECS instance node number in the current container cluster.
-  * `vswitch_ids` - The ID of VSwitches where the current cluster is located.
-  * `vpc_id` - The ID of VPC where the current cluster is located.
-  * `security_group_id` - The ID of security group where the current cluster worker node is located.
-  * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-  * `worker_nodes` - List of cluster worker nodes.
-    * `id` - ID of the node.
-    * `name` - Node name.
-    * `private_ip` - The private IP address of node.
-  * `connections` - A list of kubernetes cluster connection information.
-    * `api_server_internet` - API Server Internet endpoint.
-    * `api_server_intranet` - API Server Intranet endpoint.
-    * `master_public_ip` - Master node SSH IP address.
-    * `service_domain` - Service Access Domain.
-  * `log_config` - A list of one element containing information about the associated log store. It contains the following attributes:
-    * `type` - Type of collecting logs.
-    * `project` - Log Service project name.
-  * `state` - (Available since v1.245.0) The state of cluster.
-  * `rrsa_config` - (Available since v1.245.0) Nested attribute containing RRSA related data for your cluster.
-    * `enabled` - Whether the RRSA feature has been enabled.
-    * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
-    * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
-    * `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.
+    * `id` - The ID of the container cluster.
+    * `name` - The name of the container cluster.
+    * `availability_zone` - The ID of availability zone.
+    * `vpc_id` - The ID of VPC where the current cluster is located.
+    * `security_group_id` - The ID of security group where the current cluster worker node is located.
+    * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
+    * `worker_nodes` - List of cluster worker nodes.
+        * `id` - ID of the node.
+        * `name` - Node name.
+        * `private_ip` - The private IP address of node.
+    * `connections` - A list of kubernetes cluster connection information.
+        * `api_server_internet` - API Server Internet endpoint.
+        * `api_server_intranet` - API Server Intranet endpoint.
+        * `master_public_ip` - Master node SSH IP address.
+        * `service_domain` - Service Access Domain.
+    * `state` - (Available since v1.245.0) The state of cluster.
+    * `rrsa_config` - (Available since v1.245.0) Nested attribute containing RRSA related data for your cluster.
+        * `enabled` - Whether the RRSA feature has been enabled.
+        * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
+        * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
+        * `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.

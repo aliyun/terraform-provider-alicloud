@@ -608,7 +608,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 				subMapping := map[string]interface{}{
 					"id":         node.InstanceId,
 					"name":       node.InstanceName,
-					"private_ip": node.IpAddress[0],
+					"private_ip": csNodePrivateIp(node.IpAddress),
 				}
 				if node.InstanceRole == "Master" {
 					masterNodes = append(masterNodes, subMapping)
