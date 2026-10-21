@@ -68,16 +68,21 @@ func testSweepMongoDBInstances(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			name := fmt.Sprint(item["DBInstanceDescription"])
+			if protectedSweepVpcName(name) {
+				log.Printf("[INFO] Skipping Mongodb Instance (NODELETING): %s", name)
+				continue
+			}
 
 			skip := true
 			if !sweepAll() {
 				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["DBInstanceDescription"])), strings.ToLower(prefix)) {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 						skip = false
 					}
 				}
 				if skip {
-					log.Printf("[INFO] Skipping Mongodb Instance: %s", fmt.Sprint(item["DBInstanceDescription"]))
+					log.Printf("[INFO] Skipping Mongodb Instance: %s", name)
 					continue
 				}
 			}
@@ -88,9 +93,10 @@ func testSweepMongoDBInstances(region string) error {
 			}
 			_, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, false)
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Mongodb Instance (%s): %s", fmt.Sprint(item["DBInstanceDescription"]), err)
+				log.Printf("[ERROR] Failed to delete Mongodb Instance (%s): %s", name, err)
+				continue
 			}
-			log.Printf("[INFO] Delete Mongodb Instance success: %s ", fmt.Sprint(item["DBInstanceDescription"]))
+			log.Printf("[INFO] Delete Mongodb Instance success: %s ", name)
 		}
 		if len(result) < PageSizeLarge {
 			break
