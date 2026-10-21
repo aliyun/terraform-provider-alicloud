@@ -59,11 +59,13 @@ func testSweepSLBs(region string) error {
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving SLBs: %s", err)
+			log.Printf("[ERROR] Failed to list SLB Load Balancers: %s", err)
+			break
 		}
 		resp, err := jsonpath.Get("$.LoadBalancers.LoadBalancer", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.LoadBalancers.LoadBalancer", response)
+			log.Printf("[ERROR] Failed to parse SLB Load Balancers: %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
