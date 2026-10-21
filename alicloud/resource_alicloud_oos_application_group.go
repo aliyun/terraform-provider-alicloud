@@ -51,6 +51,12 @@ func resourceAlicloudOosApplicationGroup() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"cms_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -78,6 +84,9 @@ func resourceAlicloudOosApplicationGroupCreate(d *schema.ResourceData, meta inte
 			return WrapError(fmt.Errorf("The tag value must be passed in at the same time as the tag key (import_tag_key) or none, not just one. "))
 		}
 		request["ImportTagValue"] = v
+	}
+	if v, ok := d.GetOk("cms_group_id"); ok {
+		request["CmsGroupId"] = v
 	}
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateApplicationGroup")
@@ -124,6 +133,7 @@ func resourceAlicloudOosApplicationGroupRead(d *schema.ResourceData, meta interf
 	d.Set("description", object["Description"])
 	d.Set("import_tag_key", object["ImportTagKey"])
 	d.Set("import_tag_value", object["ImportTagValue"])
+	d.Set("cms_group_id", object["CmsGroupId"])
 	return nil
 }
 func resourceAlicloudOosApplicationGroupDelete(d *schema.ResourceData, meta interface{}) error {

@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudOOSApplicationGroup_basic0(t *testing.T) {
+func TestAccAliCloudOOSApplicationGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_application_group.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSApplicationSupportRegions)
@@ -62,7 +62,7 @@ func TestAccAlicloudOOSApplicationGroup_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOOSApplicationGroup_basic1(t *testing.T) {
+func TestAccAliCloudOOSApplicationGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_application_group.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSApplicationSupportRegions)
@@ -74,7 +74,7 @@ func TestAccAlicloudOOSApplicationGroup_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%soosapplicationgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOOSApplicationGroupBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOOSApplicationGroupBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -91,6 +91,7 @@ func TestAccAlicloudOOSApplicationGroup_basic1(t *testing.T) {
 					"application_group_name": "${var.name}",
 					"import_tag_key":         "${var.name}",
 					"import_tag_value":       "${var.name}",
+					"cms_group_id":           "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -102,6 +103,31 @@ func TestAccAlicloudOOSApplicationGroup_basic1(t *testing.T) {
 						"import_tag_key":         name,
 						"import_tag_value":       name,
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+
+					"deploy_region_id":       os.Getenv("ALICLOUD_REGION"),
+					"description":            "${var.name}",
+					"application_name":       "${alicloud_oos_application.default.id}",
+					"application_group_name": name + "-cms",
+					"import_tag_key":         name + "-cms",
+					"import_tag_value":       name + "-cms",
+					"cms_group_id":           "${alicloud_cms_monitor_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+
+						"deploy_region_id":       CHECKSET,
+						"description":            name,
+						"application_name":       CHECKSET,
+						"application_group_name": name + "-cms",
+						"import_tag_key":         name + "-cms",
+						"import_tag_value":       name + "-cms",
+						"cms_group_id":           CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "cms_group_id", "alicloud_cms_monitor_group.default", "id"),
 				),
 			},
 			{
@@ -119,7 +145,7 @@ var AlicloudOOSApplicationGroupMap0 = map[string]string{
 }
 
 func AlicloudOOSApplicationGroupBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -138,6 +164,16 @@ resource "alicloud_oos_application" "default" {
 `, name)
 }
 
+func AlicloudOOSApplicationGroupBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "alicloud_cms_monitor_group" "default" {
+  monitor_group_name = "${var.name}"
+}
+`, AlicloudOOSApplicationGroupBasicDependence0(name))
+}
+
 // lintignore: R001
 func TestUnitAlicloudOOSApplicationGroup(t *testing.T) {
 	p := Provider().ResourcesMap
@@ -151,6 +187,7 @@ func TestUnitAlicloudOOSApplicationGroup(t *testing.T) {
 		"application_group_name": "application_group_name",
 		"import_tag_key":         "import_tag_key",
 		"import_tag_value":       "import_tag_value",
+		"cms_group_id":           "cms_group_id",
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -172,6 +209,7 @@ func TestUnitAlicloudOOSApplicationGroup(t *testing.T) {
 			"ImportTagValue":       "import_tag_value",
 			"ApplicationGroupName": "application_group_name",
 			"ApplicationName":      "MockApplicationName",
+			"CmsGroupId":           "cms_group_id",
 		},
 	}
 
