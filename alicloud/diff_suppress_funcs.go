@@ -658,6 +658,16 @@ func slbRuleListenerSyncDiffSuppressFunc(k, old, new string, d *schema.ResourceD
 }
 
 func kmsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	// When kms_encrypted_password is being set in the config (new is non-empty),
+	// never suppress its diff. This allows migrating from a plaintext password
+	// to kms_encrypted_password in a single apply. Previously the d.GetOk checks
+	// below read the state (old plaintext password) during DiffSuppressFunc, so
+	// the kms_encrypted_password diff was wrongly suppressed while password was
+	// being removed, leaving both fields empty and hitting the
+	// "One of the 'password' and 'kms_encrypted_password' should be set" error.
+	if new != "" {
+		return false
+	}
 	if v, ok := d.GetOk("password"); ok && v.(string) != "" {
 		return true
 	}
