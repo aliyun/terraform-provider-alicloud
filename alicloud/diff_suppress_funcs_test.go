@@ -3841,25 +3841,52 @@ func TestUnitCommonKmsDiffSuppressFunc(t *testing.T) {
 		name            string
 		password        string
 		accountPassword string
+		newKmsEncrypted string
 		expected        bool
 		description     string
 	}{
 		{
-			name:        "With_Password",
+			name:            "MigrateToKMS_WithPassword",
+			password:        "mypassword",
+			newKmsEncrypted: "kms-ciphertext",
+			expected:        false,
+			description:     "Migrating from plaintext password to kms_encrypted_password should not suppress the kms diff",
+		},
+		{
+			name:            "MigrateToKMS_WithAccountPassword",
+			accountPassword: "myaccountpassword",
+			newKmsEncrypted: "kms-ciphertext",
+			expected:        false,
+			description:     "Migrating from account_password to kms_encrypted_password should not suppress the kms diff",
+		},
+		{
+			name:            "KMSRotation",
+			newKmsEncrypted: "kms-ciphertext-update",
+			expected:        false,
+			description:     "Rotating kms_encrypted_password should not suppress the kms diff",
+		},
+		{
+			name:        "WithPassword_NoNewKMS",
 			password:    "mypassword",
 			expected:    true,
-			description: "With password should suppress diff",
+			description: "With password set and no new kms value should suppress diff",
 		},
 		{
-			name:            "With_AccountPassword",
+			name:            "WithAccountPassword_NoNewKMS",
 			accountPassword: "myaccountpassword",
 			expected:        true,
-			description:     "With account_password should suppress diff",
+			description:     "With account_password set and no new kms value should suppress diff",
 		},
 		{
-			name:        "No_Password",
+			name:        "NoPassword_NoNewKMS",
 			expected:    false,
-			description: "Without any password should not suppress diff",
+			description: "Without any password and no new kms value should not suppress diff",
+		},
+		{
+			name:            "NoPassword_WithNewKMS",
+			newKmsEncrypted: "kms-ciphertext",
+			expected:        false,
+			description:     "Without any password but with new kms value should not suppress diff",
 		},
 	}
 
@@ -3876,7 +3903,7 @@ func TestUnitCommonKmsDiffSuppressFunc(t *testing.T) {
 				"password":         {Type: schema.TypeString},
 				"account_password": {Type: schema.TypeString},
 			}, data)
-			result := kmsDiffSuppressFunc("key", "old", "new", d)
+			result := kmsDiffSuppressFunc("key", "old", tc.newKmsEncrypted, d)
 			assert.Equal(t, tc.expected, result, tc.description)
 		})
 	}

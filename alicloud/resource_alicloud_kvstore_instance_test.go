@@ -3643,3 +3643,158 @@ resource "alicloud_security_group" "default" {
 `, engine, paymentType, engine, versionFilter, paymentType, strings.Join(classes, ", "), zones, name, name, name+"-update", name)
 	}
 }
+
+// TestAccAliCloudKVStoreRedisInstance_kmsPasswordMigration verifies migrating a
+// plaintext password to kms_encrypted_password in a single apply.
+//
+// Regression for kmsDiffSuppressFunc: previously, when password was removed
+// from the config while kms_encrypted_password was being set, the suppress
+// func read the (still-present) state password via d.GetOk and suppressed the
+// kms diff, leaving both password and kms_encrypted_password empty in the
+// update path and hitting "One of the 'password' and 'kms_encrypted_password'
+// should be set". The fix skips suppression whenever a new kms value is present.
+func TestAccAliCloudKVStoreRedisInstance_kmsPasswordMigration(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudKVStoreMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceKmsMigration%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKVStoreRedisInstanceKmsDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Step 1: create the instance with a plaintext password.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":    "redis.shard.small.ce",
+					"db_instance_name":  name,
+					"instance_type":     "Redis",
+					"engine_version":    "7.0",
+					"shard_count":       "2",
+					"password":          "Test123456!",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":    "redis.shard.small.ce",
+						"db_instance_name":  name,
+						"instance_type":     "Redis",
+						"engine_version":    "7.0",
+						"shard_count":       "2",
+						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
+					}),
+				),
+			},
+			// Step 2: migrate the plaintext password to kms_encrypted_password.
+			// password is removed from the config while kms_encrypted_password
+			// is set; the kms diff must NOT be suppressed so the update path can
+			// decrypt the new KMS password.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password":               REMOVEKEY,
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name,
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			// Step 3: rotate the KMS-encrypted password.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.update.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name + "update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "kms_encrypted_password", "kms_encryption_context", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+		},
+	})
+}
+
+func AliCloudKVStoreRedisInstanceKmsDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		status = "OK"
+	}
+
+	data "alicloud_kvstore_zones" "default" {
+  		instance_charge_type = "PostPaid"
+		product_type         = "OnECS"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+	}
+
+	data "alicloud_vswitches" "update" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_kvstore_zones.default.zones.1.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		inner_access_policy = "Accept"
+  		name                = "tf-example"
+  		vpc_id              = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_kms_key" "default" {
+  		description            = var.name
+  		status                 = "Enabled"
+  		pending_window_in_days = 7
+	}
+
+	resource "alicloud_kms_ciphertext" "default" {
+  		key_id    = alicloud_kms_key.default.id
+  		plaintext = "YourPassword1234!"
+  		encryption_context = {
+    		"name" = var.name
+  		}
+	}
+
+	resource "alicloud_kms_ciphertext" "update" {
+  		key_id    = alicloud_kms_key.default.id
+  		plaintext = "YourPassword1234!update"
+  		encryption_context = {
+    		"name" = "${var.name}update"
+  		}
+	}
+	`, name)
+}
