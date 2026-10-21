@@ -770,6 +770,23 @@ func (s *PolarDBService) DescribePolarDBInstanceNetInfo(id string) ([]polardb.DB
 	return response.Items, nil
 }
 
+// polarDBEndpointLookupError resolves the error to return when DescribePolarDBClusterEndpoint's
+// retry loop does not surface a visible endpoint. lastSDKErr is the most recent real API error
+// from DescribeDBClusterEndpoints (nil when the last call succeeded but returned an empty Items
+// list). A real API error (auth/permission/service) is surfaced via DefaultErrorMsg and never
+// masked as NotFound just because the SDK pre-allocates a non-nil empty response before DoAction;
+// only InvalidDBClusterId.NotFound (retried to exhaustion, meaning the cluster is gone) and a
+// persistent empty list on successful calls resolve to NotFound.
+func polarDBEndpointLookupError(lastSDKErr error, dbClusterId, dbEndpointId, actionName string) error {
+	if lastSDKErr != nil {
+		if IsExpectedErrors(lastSDKErr, []string{"InvalidDBClusterId.NotFound"}) {
+			return WrapErrorf(NotFoundErr("DBEndpoint", dbEndpointId), NotFoundMsg, ProviderERROR)
+		}
+		return WrapErrorf(lastSDKErr, DefaultErrorMsg, dbClusterId, actionName, AlibabaCloudSdkGoERROR)
+	}
+	return WrapErrorf(NotFoundErr("DBEndpoint", dbEndpointId), NotFoundMsg, ProviderERROR)
+}
+
 func (s *PolarDBService) DescribePolarDBClusterEndpoint(id string) (*polardb.DBEndpoint, error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -783,27 +800,45 @@ func (s *PolarDBService) DescribePolarDBClusterEndpoint(id string) (*polardb.DBE
 	request.DBClusterId = dbClusterId
 	request.DBEndpointId = dbEndpointId
 
-	var raw interface{}
+	// lastSDKErr holds the most recent real API error from DescribeDBClusterEndpoints
+	// (nil when the last call succeeded). It distinguishes a genuine API failure, which
+	// must be surfaced, from a retry that exhausted because every successful call returned
+	// an empty endpoint list (endpoint removed or stuck in a long intermediate state).
+	var lastSDKErr error
+	var response *polardb.DescribeDBClusterEndpointsResponse
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err = s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+		var raw interface{}
+		raw, lastSDKErr = s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.DescribeDBClusterEndpoints(request)
 		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+		if lastSDKErr != nil {
+			// InvalidDBClusterId.NotFound may lag behind cluster creation/deletion; retry
+			// so a freshly changed cluster stabilizes before concluding NotFound.
+			if IsExpectedErrors(lastSDKErr, []string{"InvalidDBClusterId.NotFound"}) {
 				time.Sleep(10 * time.Second)
-				return retry.RetryableError(err)
+				return retry.RetryableError(lastSDKErr)
 			}
-			return retry.NonRetryableError(err)
+			return retry.NonRetryableError(lastSDKErr)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		// DescribeDBClusterEndpoints may transiently return an empty endpoint list while
+		// the cluster is in an intermediate state (e.g. SSL_MODIFYING after enabling SSL),
+		// even though the endpoint still exists. Retry until it becomes visible again; if
+		// it stays empty on every successful call the endpoint has been removed and the
+		// caller resolves to NotFound.
+		response, _ = raw.(*polardb.DescribeDBClusterEndpointsResponse)
+		if response == nil || len(response.Items) < 1 {
+			return retry.RetryableError(fmt.Errorf("DBEndpoint %s of DBCluster %s is not found, retrying for eventual consistency", dbEndpointId, dbClusterId))
+		}
 		return nil
 	})
 
-	response, _ := raw.(*polardb.DescribeDBClusterEndpointsResponse)
-	if len(response.Items) < 1 {
+	if err != nil {
+		return nil, polarDBEndpointLookupError(lastSDKErr, dbClusterId, dbEndpointId, request.GetActionName())
+	}
+	if response == nil || len(response.Items) < 1 {
 		return nil, WrapErrorf(NotFoundErr("DBEndpoint", dbEndpointId), NotFoundMsg, ProviderERROR)
 	}
-
 	return &response.Items[0], nil
 }
 
