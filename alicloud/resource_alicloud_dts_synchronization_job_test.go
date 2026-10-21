@@ -2,12 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
@@ -43,7 +45,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 					"source_endpoint_engine_name":        "MySQL",
 					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_database_name":      "test_database",
-					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_user_name":          "${alicloud_db_account_privilege.source_privilege.account_name}",
 					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
 					"destination_endpoint_instance_type": "RDS",
 					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
@@ -56,6 +58,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 					"structure_initialization":           "true",
 					"data_initialization":                "true",
 					"data_synchronization":               "true",
+					"instance_class":                     "4xlarge",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -93,25 +96,6 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 						"job_parameters": expectedSynchronizationConfigValue,
 					}),
 				),
-			},
-			{
-				// Negative coverage for the create-only attributes that cannot be
-				// exercised against a single-account test environment: cross-account
-				// owner/role, Oracle SID, dedicated cluster, alert phones, data check
-				// and the incremental checkpoint. The missing required dts_job_name
-				// stops the plan before any of these values reach the API.
-				Config: testAccConfig(map[string]interface{}{
-					"checkpoint":                    "",
-					"data_check_configure":          "",
-					"dedicated_cluster_id":          "",
-					"delay_phone":                   "",
-					"destination_endpoint_owner_id": "",
-					"destination_endpoint_role":     "",
-					"source_endpoint_oracle_sid":    "",
-					"source_endpoint_role":          "",
-					"dts_job_name":                  REMOVEKEY,
-				}),
-				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
@@ -184,7 +168,51 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
+			},
+		},
+	})
+}
+
+// The negative plan must run as its own test: the rejected config stays in the
+// working directory and the framework reuses the last config for the post-test
+// destroy, which cannot succeed on a config that is missing a required argument.
+// Nothing is created here because the plan fails validation first, so the run
+// ends with an empty state and no destroy.
+func TestAccAliCloudDTSSynchronizationJob_createOnlyNegative(t *testing.T) {
+	resourceId := "alicloud_dts_synchronization_job.default"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy: func(*terraform.State) error {
+			return nil
+		},
+		Steps: []resource.TestStep{
+			{
+				// Negative coverage for the create-only attributes that cannot be
+				// exercised against a single-account test environment: cross-account
+				// owner/role, Oracle SID, dedicated cluster, alert phones, data check
+				// and the incremental checkpoint. The missing required dts_job_name
+				// stops the plan before any of these values reach the API.
+				Config: testAccConfig(map[string]interface{}{
+					"checkpoint":                    "",
+					"data_check_configure":          "",
+					"dedicated_cluster_id":          "",
+					"delay_phone":                   "",
+					"destination_endpoint_owner_id": "",
+					"destination_endpoint_role":     "",
+					"source_endpoint_oracle_sid":    "",
+					"source_endpoint_role":          "",
+					"dts_job_name":                  REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 		},
 	})
@@ -207,7 +235,11 @@ func TestAccAliCloudDTSSynchronizationJob_basic1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
+		// The job keeps advancing from prechecking to synchronizing after the
+		// create wait releases, so two reads of this server-driven lifecycle value
+		// can disagree even though nothing in the configuration changed.
 		IDRefreshName:     resourceId,
+		IDRefreshIgnore:   []string{"status"},
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -220,7 +252,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic1(t *testing.T) {
 					"source_endpoint_engine_name":        "PolarDB",
 					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_database_name":      "test_database",
-					"source_endpoint_user_name":          "${alicloud_polardb_account.source_account.account_name}",
+					"source_endpoint_user_name":          "${alicloud_polardb_account_privilege.source_privilege.account_name}",
 					"source_endpoint_password":           "${alicloud_polardb_account.source_account.account_password}",
 					"destination_endpoint_instance_type": "RDS",
 					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
@@ -229,10 +261,11 @@ func TestAccAliCloudDTSSynchronizationJob_basic1(t *testing.T) {
 					"destination_endpoint_database_name": "test_database",
 					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
 					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
-					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"structure_initialization":           "true",
 					"data_initialization":                "true",
 					"data_synchronization":               "true",
+					"instance_class":                     "4xlarge",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -243,16 +276,19 @@ func TestAccAliCloudDTSSynchronizationJob_basic1(t *testing.T) {
 						"destination_endpoint_instance_type": "RDS",
 						"destination_endpoint_engine_name":   "MySQL",
 						"destination_endpoint_region":        CHECKSET,
-						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
+						"db_list":                            "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
 					}),
 					resource.TestCheckResourceAttrPair(resourceId, "source_endpoint_region", "data.alicloud_regions.default", "regions.0.id"),
 					resource.TestCheckResourceAttrPair(resourceId, "destination_endpoint_region", "data.alicloud_regions.default", "regions.0.id"),
 				),
 			},
 			{
+				// The job keeps advancing from prechecking to synchronizing after the
+				// create wait releases, so status differs between the apply read and the
+				// import read and cannot be compared here.
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
 			},
 		},
 	})
@@ -288,7 +324,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 					"source_endpoint_engine_name":        "MySQL",
 					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_database_name":      "test_database",
-					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_user_name":          "${alicloud_db_account_privilege.source_privilege.account_name}",
 					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
 					"destination_endpoint_instance_type": "RDS",
 					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
@@ -301,6 +337,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 					"structure_initialization":           "true",
 					"data_initialization":                "true",
 					"data_synchronization":               "true",
+					"instance_class":                     "4xlarge",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -330,7 +367,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
 			},
 		},
 	})
@@ -365,27 +402,13 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"delay_notice":                       "true",
-					"delay_rule_time":                    "2022-01-01T12:05:05Z",
-					"destination_endpoint_ip":            "172.16.0.0/16",
-					"destination_endpoint_oracle_sid":    "true",
-					"destination_endpoint_port":          "1",
-					"dts_bis_label":                      name,
-					"error_notice":                       "true",
-					"error_phone":                        "Synchronizing",
-					"instance_class":                     "large",
-					"source_endpoint_ip":                 "172.16.0.0/16",
-					"source_endpoint_owner_id":           "${alicloud_db_instance.source.id}",
-					"source_endpoint_port":               "1",
-					"source_endpoint_vswitch_id":         "${alicloud_db_instance.source.id}",
-					"status":                             "Synchronizing",
-					"synchronization_direction":          "Forward",
+					"instance_class":                     "4xlarge",
 					"dts_instance_id":                    "${alicloud_dts_synchronization_instance.default.id}",
 					"dts_job_name":                       "tf-testAccCaseSsl",
 					"source_endpoint_instance_type":      "RDS",
@@ -393,7 +416,7 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 					"source_endpoint_engine_name":        "MySQL",
 					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_database_name":      "test_database",
-					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_user_name":          "${alicloud_db_account_privilege.source_privilege.account_name}",
 					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
 					"destination_endpoint_instance_type": "RDS",
 					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
@@ -429,9 +452,6 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 			// the job.
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_list":                  "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
-					"instance_class":           "medium",
-					"status":                   "Suspending",
 					"source_endpoint_ssl":      "0",
 					"destination_endpoint_ssl": "0",
 				}),
@@ -470,7 +490,7 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
 			},
 		},
 	})
@@ -493,9 +513,9 @@ func TestAccAliCloudDTSSynchronizationJob_vpcNat(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// The four VPC NAT vswitch attributes only exist on ConfigureDtsJob, so this step is
 			// what proves the request is accepted with them set — a rejected or misspelled
@@ -510,7 +530,7 @@ func TestAccAliCloudDTSSynchronizationJob_vpcNat(t *testing.T) {
 					"source_endpoint_engine_name":        "MySQL",
 					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
 					"source_endpoint_database_name":      "test_database",
-					"source_endpoint_user_name":          "${alicloud_rds_account.source_account.account_name}",
+					"source_endpoint_user_name":          "${alicloud_db_account_privilege.source_privilege.account_name}",
 					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
 					"destination_endpoint_instance_type": "RDS",
 					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
@@ -527,6 +547,7 @@ func TestAccAliCloudDTSSynchronizationJob_vpcNat(t *testing.T) {
 					"structure_initialization":           "true",
 					"data_initialization":                "true",
 					"data_synchronization":               "true",
+					"instance_class":                     "4xlarge",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -547,7 +568,7 @@ func TestAccAliCloudDTSSynchronizationJob_vpcNat(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "src_primary_vswitch_id", "src_secondary_vswitch_id", "dest_primary_vswitch_id", "dest_secondary_vswitch_id"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "src_primary_vswitch_id", "src_secondary_vswitch_id", "dest_primary_vswitch_id", "dest_secondary_vswitch_id", "instance_class"},
 			},
 		},
 	})
@@ -606,7 +627,7 @@ func AliCloudDTSSynchronizationJobVpcNatDependence(name string) string {
   		engine                   = "MySQL"
   		engine_version           = "8.0"
   		instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   		db_instance_storage_type = "cloud_essd"
   		vswitch_id               = alicloud_vswitch.primary.id
   		instance_name            = "${var.name}-source"
@@ -635,7 +656,7 @@ func AliCloudDTSSynchronizationJobVpcNatDependence(name string) string {
   		engine                   = "MySQL"
   		engine_version           = "8.0"
   		instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   		db_instance_storage_type = "cloud_essd"
   		vswitch_id               = alicloud_vswitch.primary.id
   		instance_name            = "${var.name}-target"
@@ -687,16 +708,17 @@ func AliCloudDTSSynchronizationJobSslDependence(name string) string {
   		instance_charge_type     = "PostPaid"
 	}
 
-	resource "alicloud_vpc" "default" {
-  		vpc_name   = var.name
-  		cidr_block = "172.16.0.0/16"
+	// Reuse the shared default VPC instead of creating a new one: the test runs
+	// in cn-beijing where the account VPC quota is frequently exhausted, and a
+	// new alicloud_vpc would fail with QuotaExceeded.Vpc before the job under
+	// test is reached. The default VPC already has vswitches in the db_zones zone.
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
 	}
 
-	resource "alicloud_vswitch" "default" {
-  		vpc_id       = alicloud_vpc.default.id
-  		cidr_block   = "172.16.0.0/24"
-  		zone_id      = data.alicloud_db_zones.default.zones.0.id
-  		vswitch_name = var.name
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_db_zones.default.zones.0.id
 	}
 
 	## RDS MySQL Source, with SSL opened
@@ -704,9 +726,9 @@ func AliCloudDTSSynchronizationJobSslDependence(name string) string {
   		engine                   = "MySQL"
   		engine_version           = "8.0"
   		instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   		db_instance_storage_type = "cloud_essd"
-  		vswitch_id               = alicloud_vswitch.default.id
+  		vswitch_id               = data.alicloud_vswitches.default.ids.0
   		instance_name            = "rds-mysql-source-ssl"
   		ssl_action               = "Open"
 	}
@@ -734,9 +756,9 @@ func AliCloudDTSSynchronizationJobSslDependence(name string) string {
   		engine                   = "MySQL"
   		engine_version           = "8.0"
   		instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  		instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   		db_instance_storage_type = "cloud_essd"
-  		vswitch_id               = alicloud_vswitch.default.id
+  		vswitch_id               = data.alicloud_vswitches.default.ids.0
   		instance_name            = "rds-mysql-target-ssl"
   		ssl_action               = "Open"
 	}
@@ -868,12 +890,15 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		current = true
 	}
 
-	data "alicloud_db_zones" "default" {
-  		engine                   = "MySQL"
-  		engine_version           = "8.0"
-  		instance_charge_type     = "PostPaid"
-  		category                 = "HighAvailability"
-  		db_instance_storage_type = "cloud_essd"
+	data "alicloud_polardb_zones" "default" {}
+
+	// PolarDB sales zones in the configured region do not always overlap with the
+	// first zone returned by alicloud_db_zones; pick a zone that actually sells
+	// PolarDB so CreateDBCluster does not fail with InvalidZoneID.NotFound. RDS
+	// MySQL HA is available in the same zone, so the db_instance_classes lookup
+	// and the RDS target keep working.
+	locals {
+  		zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 	}
 
 	data "alicloud_vpcs" "default" {
@@ -882,11 +907,11 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
 
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_db_zones.default.zones.4.id
+  		zone_id = local.zone_id
 	}
 
 	data "alicloud_db_instance_classes" "default" {
-  		zone_id                  = data.alicloud_db_zones.default.zones.4.id
+  		zone_id                  = local.zone_id
   		engine                   = "MySQL"
   		engine_version           = "8.0"
   		category                 = "HighAvailability"
@@ -898,7 +923,7 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		db_type    = "MySQL"
   		db_version = "8.0"
   		pay_type   = "PostPaid"
-  		zone_id    = data.alicloud_db_zones.default.zones.4.id
+  		zone_id    = local.zone_id
 	}
 
 	## PolarDB PolarDB Source
@@ -910,12 +935,17 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		db_node_class = "polar.mysql.x4.medium.c"
   		vswitch_id    = data.alicloud_vswitches.default.ids.0
   		description   = "polardb_cluster_description"
+		encrypt_new_tables = "OFF"
+		// PolarDB Binlog is off by default, and DTS fails precheck for a PolarDB
+		// source without it ("loose_polar_log_bin" must be ON).
+		loose_polar_log_bin = "ON"
 	}
 
 	resource "alicloud_polardb_database" "source_db" {
   		db_cluster_id = alicloud_polardb_cluster.source.id
   		db_name       = "test_database"
   		account_name  = "test_polardb"
+  		depends_on = [alicloud_polardb_account.source_account]
 	}
 
 	resource "alicloud_polardb_account" "source_account" {
@@ -958,4 +988,131 @@ func AliCloudDTSSynchronizationJobBasicDependence1(name string) string {
   		sync_architecture                = "oneway"
 	}
 `, name)
+}
+
+// TestAccAliCloudDTSSynchronizationJob_instanceClassDowngrade is an opt-in probe
+// of a class change to a smaller spec. TransferInstanceClass documents only
+// UPGRADE, and any downgrade path is limited to allowlisted synchronization
+// instances of class large or above with a minimum target of medium, so the case
+// is gated on TF_ACC_DTS_DOWNGRADE and skipped by default. It records the
+// reserved class-change path; it is not evidence that a downgrade is available.
+func TestAccAliCloudDTSSynchronizationJob_instanceClassDowngrade(t *testing.T) {
+	// Downgrade requires an allowlisted account: TransferInstanceClass returns
+	// NoPermission for accounts without downgrade permission. Skip by default;
+	// set TF_ACC_DTS_DOWNGRADE=1 to opt in once the account is allowlisted.
+	if os.Getenv("TF_ACC_DTS_DOWNGRADE") == "" {
+		t.Skip("Skipping instance_class downgrade test: requires allowlisted account; set TF_ACC_DTS_DOWNGRADE=1 to run")
+	}
+	var v map[string]interface{}
+	resourceId := "alicloud_dts_synchronization_job.default"
+	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDtsSynchronizationJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtssyncjobdowngrade%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dts_instance_id":                    "${alicloud_dts_synchronization_instance.default.id}",
+					"dts_job_name":                       "tf-testAccDowngrade",
+					"source_endpoint_instance_type":      "RDS",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
+					"source_endpoint_engine_name":        "MySQL",
+					"source_endpoint_region":             "${data.alicloud_regions.default.regions.0.id}",
+					"source_endpoint_database_name":      "test_database",
+					"source_endpoint_user_name":          "${alicloud_db_account_privilege.source_privilege.account_name}",
+					"source_endpoint_password":           "${alicloud_rds_account.source_account.account_password}",
+					"destination_endpoint_instance_type": "RDS",
+					"destination_endpoint_instance_id":   "${alicloud_db_instance.target.id}",
+					"destination_endpoint_engine_name":   "MySQL",
+					"destination_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
+					"destination_endpoint_database_name": "test_database",
+					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
+					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
+					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+					"structure_initialization":           "true",
+					"data_initialization":                "true",
+					"data_synchronization":               "true",
+					"instance_class":                     "4xlarge",
+					"synchronization_direction":          "Forward",
+					"source_endpoint_port":               "3306",
+					"source_endpoint_role":               "Source",
+					"source_endpoint_vswitch_id":         "${data.alicloud_vswitches.default.ids.0}",
+					"destination_endpoint_port":          "3306",
+					"destination_endpoint_role":          "Destination",
+					"dts_bis_label":                      "tf-testacc",
+					"data_check_configure":               "{}",
+					"checkpoint":                         "",
+					"status":                             "Synchronizing",
+					"dedicated_cluster_id":               "",
+					"delay_notice":                       "false",
+					"delay_phone":                        "",
+					"delay_rule_time":                    "",
+					"destination_endpoint_ip":            "",
+					"destination_endpoint_oracle_sid":    "",
+					"destination_endpoint_owner_id":      "",
+					"error_notice":                       "false",
+					"error_phone":                        "",
+					"source_endpoint_ip":                 "",
+					"source_endpoint_oracle_sid":         "",
+					"source_endpoint_owner_id":           "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dts_job_name": "tf-testAccDowngrade",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "instance_class", "4xlarge"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "large",
+					"db_list":        "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"},\\\"another_db\\\":{\\\"name\\\":\\\"another_db\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "large",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "instance_class", "large"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "4xlarge",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "4xlarge",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "instance_class", "4xlarge"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "4xlarge",
+					"status":         "Suspending",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "4xlarge",
+						"status":         "Suspending",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "status", "Suspending"),
+				),
+			},
+		},
+	})
 }

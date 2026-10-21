@@ -46,6 +46,13 @@ func TestAccAliCloudDTSSynchronizationInstance_basic0(t *testing.T) {
 					"source_endpoint_region":           "${data.alicloud_regions.default.regions.0.id}",
 					"destination_endpoint_engine_name": "MySQL",
 					"destination_endpoint_region":      "${data.alicloud_regions.default.regions.0.id}",
+					"compute_unit":                     "2",
+					"database_count":                   "1",
+					"instance_class":                   "small",
+					"payment_duration":                 "1",
+					"payment_duration_unit":            "Month",
+					"quantity":                         "1",
+					"sync_architecture":                "oneway",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -60,30 +67,29 @@ func TestAccAliCloudDTSSynchronizationInstance_basic0(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_pay", "auto_start", "compute_unit", "period", "used_time", "auto_pay", "order_type", "synchronization_direction"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_pay", "auto_start", "compute_unit", "payment_duration", "payment_duration_unit"},
 			},
 		},
 	})
 }
 
 var AlicloudDTSSynchronizationInstanceMap0 = map[string]string{
-	"sync_architecture":         NOSET,
-	"compute_unit":              NOSET,
 	"period":                    NOSET,
 	"used_time":                 NOSET,
 	"order_type":                NOSET,
 	"synchronization_direction": NOSET,
-	"database_count":            NOSET,
 	"status":                    NOSET,
-	"quantity":                  NOSET,
 }
 
 func AlicloudDTSSynchronizationInstanceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
 
+// The region has to come from the provider rather than from ALICLOUD_REGION: that
+// variable is not always set, and an empty region_id makes CreateDtsInstance fail
+// with MissingDestinationRegion before the instance is created.
 data "alicloud_regions" "default" {
   current = true
 }
