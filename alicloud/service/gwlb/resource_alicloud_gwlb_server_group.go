@@ -258,13 +258,13 @@ func resourceServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("health_check_config"); ok {
 		jsonPathResult, err := jsonpath.Get("$[0].health_check_connect_timeout", v)
-		if err == nil && jsonPathResult != "" {
+		if err == nil && jsonPathResult != "" && jsonPathResult.(int) > 0 {
 			request["HealthCheckConfig.HealthCheckConnectTimeout"] = jsonPathResult
 		}
 	}
 	if v, ok := d.GetOk("health_check_config"); ok {
 		jsonPathResult1, err := jsonpath.Get("$[0].health_check_connect_port", v)
-		if err == nil && jsonPathResult1 != "" {
+		if err == nil && jsonPathResult1 != "" && jsonPathResult1.(int) > 0 {
 			request["HealthCheckConfig.HealthCheckConnectPort"] = jsonPathResult1
 		}
 	}
@@ -301,11 +301,11 @@ func resourceServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v := d.Get("health_check_config"); !helper.IsNil(v) {
 		healthCheckConnectTimeout1, _ := jsonpath.Get("$[0].health_check_connect_timeout", d.Get("health_check_config"))
-		if healthCheckConnectTimeout1 != nil && healthCheckConnectTimeout1 != "" {
+		if healthCheckConnectTimeout1 != nil && healthCheckConnectTimeout1 != "" && healthCheckConnectTimeout1.(int) > 0 {
 			objectDataLocalMap["HealthCheckConnectTimeout"] = healthCheckConnectTimeout1
 		}
 		healthCheckConnectPort1, _ := jsonpath.Get("$[0].health_check_connect_port", d.Get("health_check_config"))
-		if healthCheckConnectPort1 != nil && healthCheckConnectPort1 != "" {
+		if healthCheckConnectPort1 != nil && healthCheckConnectPort1 != "" && healthCheckConnectPort1.(int) > 0 {
 			objectDataLocalMap["HealthCheckConnectPort"] = healthCheckConnectPort1
 		}
 		healthCheckPath1, _ := jsonpath.Get("$[0].health_check_path", d.Get("health_check_config"))
@@ -349,7 +349,7 @@ func resourceServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if v, ok := d.GetOk("health_check_config"); ok {
 		jsonPathResult8, err := jsonpath.Get("$[0].unhealthy_threshold", v)
-		if err == nil && jsonPathResult8 != "" {
+		if err == nil && jsonPathResult8 != "" && jsonPathResult8.(int) > 0 {
 			request["HealthCheckConfig.UnhealthyThreshold"] = jsonPathResult8
 		}
 	}
@@ -359,7 +359,7 @@ func resourceServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if v, ok := d.GetOk("health_check_config"); ok {
 		jsonPathResult11, err := jsonpath.Get("$[0].health_check_interval", v)
-		if err == nil && jsonPathResult11 != "" {
+		if err == nil && jsonPathResult11 != "" && jsonPathResult11.(int) > 0 {
 			request["HealthCheckConfig.HealthCheckInterval"] = jsonPathResult11
 		}
 	}
@@ -392,7 +392,7 @@ func resourceServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if v, ok := d.GetOk("health_check_config"); ok {
 		jsonPathResult17, err := jsonpath.Get("$[0].healthy_threshold", v)
-		if err == nil && jsonPathResult17 != "" {
+		if err == nil && jsonPathResult17 != "" && jsonPathResult17.(int) > 0 {
 			request["HealthCheckConfig.HealthyThreshold"] = jsonPathResult17
 		}
 	}
@@ -583,7 +583,7 @@ func resourceServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	if !d.IsNewResource() && d.HasChange("health_check_config.0.health_check_connect_timeout") {
 		update = true
 		jsonPathResult, err := jsonpath.Get("$[0].health_check_connect_timeout", d.Get("health_check_config"))
-		if err == nil {
+		if err == nil && jsonPathResult.(int) > 0 {
 			request["HealthCheckConfig.HealthCheckConnectTimeout"] = jsonPathResult
 		}
 	}
@@ -591,7 +591,7 @@ func resourceServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	if !d.IsNewResource() && d.HasChange("health_check_config.0.health_check_connect_port") {
 		update = true
 		jsonPathResult1, err := jsonpath.Get("$[0].health_check_connect_port", d.Get("health_check_config"))
-		if err == nil {
+		if err == nil && jsonPathResult1.(int) > 0 {
 			request["HealthCheckConfig.HealthCheckConnectPort"] = jsonPathResult1
 		}
 	}
@@ -628,11 +628,11 @@ func resourceServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 
 		if v := d.Get("health_check_config"); !helper.IsNil(v) {
 			healthCheckConnectTimeout1, _ := jsonpath.Get("$[0].health_check_connect_timeout", v)
-			if healthCheckConnectTimeout1 != nil && (d.HasChange("health_check_config.0.health_check_connect_timeout") || healthCheckConnectTimeout1 != "") {
+			if healthCheckConnectTimeout1 != nil && (d.HasChange("health_check_config.0.health_check_connect_timeout") || healthCheckConnectTimeout1 != "") && healthCheckConnectTimeout1.(int) > 0 {
 				objectDataLocalMap["HealthCheckConnectTimeout"] = healthCheckConnectTimeout1
 			}
 			healthCheckConnectPort1, _ := jsonpath.Get("$[0].health_check_connect_port", v)
-			if healthCheckConnectPort1 != nil && (d.HasChange("health_check_config.0.health_check_connect_port") || healthCheckConnectPort1 != "") {
+			if healthCheckConnectPort1 != nil && (d.HasChange("health_check_config.0.health_check_connect_port") || healthCheckConnectPort1 != "") && healthCheckConnectPort1.(int) > 0 {
 				objectDataLocalMap["HealthCheckConnectPort"] = healthCheckConnectPort1
 			}
 			healthCheckPath1, _ := jsonpath.Get("$[0].health_check_path", v)
