@@ -62,10 +62,9 @@ func ProtoV6ProviderFactories(names ...string) map[string]func() (tfprotov6.Prov
 
 // PreCheck is the exported form of the suite's testAccPreCheck: it fails the test unless
 // credentials are in the environment, and defaults the region the way the suite does.
-//
-// It does not set package alicloud's defaultRegionToTest, which is unexported and only
-// read by tests in that package. Read the region back from ALICLOUD_REGION if a test in a
-// service package needs it.
+// It keeps this package's DefaultRegionToTest in sync with the final ALICLOUD_REGION
+// value. Package alicloud's own defaultRegionToTest stays unexported and only tests in
+// that package read it.
 func PreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
@@ -76,6 +75,9 @@ func PreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_REGION"); v == "" {
 		log.Println("[INFO] Test: Using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
+		DefaultRegionToTest = "cn-beijing"
+	} else {
+		DefaultRegionToTest = v
 	}
 }
 
