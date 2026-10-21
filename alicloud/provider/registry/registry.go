@@ -19,6 +19,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oos"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sae"
@@ -44,6 +45,7 @@ var servicePackages = []conns.ServicePackage{
 	alicloudfunction.ServicePackage(),
 	kms.ServicePackage(),
 	oos.ServicePackage(),
+	oss.ServicePackage(),
 	cs.ServicePackage(),
 	gwlb.ServicePackage(),
 	cr.ServicePackage(),
