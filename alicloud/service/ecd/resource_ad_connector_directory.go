@@ -157,11 +157,17 @@ func resourceAdConnectorDirectoryCreate(d *schema.ResourceData, meta interface{}
 
 	d.SetId(fmt.Sprint(response["DirectoryId"]))
 
-	// Wait for the directory to finish registering before reading, so the
-	// dependent VSwitch/VPC are not touched while the directory is still in
-	// REGISTERING. Previously the resource returned immediately after SetId.
+	// Wait for the directory to settle before reading, so the dependent
+	// VSwitch/VPC are not touched while the directory is still REGISTERING.
+	// Previously the resource returned immediately after SetId, which left the
+	// directory mid-registration and caused OfficeSiteNameUsed on the next run.
+	// The terminal set mirrors alicloud_ecd_ad_connector_office_site's
+	// EcdAdConnectorOfficeSiteStateRefreshFunc: REGISTERED is the success, ERROR a
+	// failure, NEEDCONFIGCONNECTOR a connector-config-needed state the operator
+	// must resolve out-of-band. All three are stable, so the resource only
+	// returns once the directory is no longer REGISTERING.
 	ecdService := NewService(client)
-	stateConf := helper.BuildStateConf([]string{"REGISTERING"}, []string{"REGISTERED", "ERROR"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecdService.EcdAdConnectorDirectoryStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{"REGISTERING"}, []string{"REGISTERED", "ERROR", "NEEDCONFIGCONNECTOR"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecdService.EcdAdConnectorDirectoryStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
