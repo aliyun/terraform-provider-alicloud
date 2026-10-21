@@ -944,4 +944,220 @@ resource "alicloud_vpc" "defaultEaxcvb" {
 `, name)
 }
 
+// Case ServerGroup Test_health_check_zero_value 8801
+// Regression for the health_check_config zero-value defect: when only
+// health_check_enabled is configured, the jsonpath lookup returned 0 for the
+// unconfigured integer sub-attributes and 0 != "" is true, so the Provider sent
+// HealthCheckConnectPort/Timeout/Interval/Healthy/UnhealthyThreshold = 0 in the
+// Create/Update request. The guards below assert the server-side defaults
+// (80/5/10/2/2 per docs) are used instead of 0, and that an explicit
+// health_check_enabled=false is still sent.
+func TestAccAliCloudGwlbServerGroup_healthCheckZeroValue8801(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gwlb_server_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGwlbServerGroupMap8801)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gwlb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccgwlb%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbServerGroupBasicDependence8801)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// AC1: create with only health_check_enabled=false; the unconfigured
+				// integer sub-attributes must NOT be sent as 0 and the server applies its
+				// documented defaults (port 80 / timeout 5 / interval 10 / 2 / 2).
+				Config: testAccConfig(map[string]interface{}{
+					"protocol":          "GENEVE",
+					"server_group_type": "Ip",
+					"vpc_id":            "${alicloud_vpc.defaultEaxcvb.id}",
+					"dry_run":           "false",
+					"health_check_config": []map[string]interface{}{
+						{
+							"health_check_enabled": "false",
+						},
+					},
+					"servers": []map[string]interface{}{
+						{
+							"server_id":   "10.0.0.1",
+							"server_ip":   "10.0.0.1",
+							"server_type": "Ip",
+						},
+					},
+					"server_group_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_config.0.health_check_enabled":         "false",
+						"health_check_config.0.health_check_connect_port":    "80",
+						"health_check_config.0.health_check_connect_timeout": "5",
+						"health_check_config.0.health_check_interval":        "10",
+						"health_check_config.0.healthy_threshold":            "2",
+						"health_check_config.0.unhealthy_threshold":          "2",
+						"health_check_config.0.health_check_http_code.#":     "0",
+					}),
+				),
+			},
+			{
+				// AC3: full health_check_config regression (HTTP protocol, port, timeout,
+				// domain, http codes, interval, path, thresholds, enabled).
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_config": []map[string]interface{}{
+						{
+							"health_check_protocol":        "HTTP",
+							"health_check_connect_port":    "80",
+							"health_check_connect_timeout": "5",
+							"health_check_domain":          "www.domain.com",
+							"health_check_enabled":         "true",
+							"health_check_http_code":       []string{"http_2xx", "http_3xx", "http_4xx"},
+							"health_check_interval":        "10",
+							"health_check_path":            "/health-check",
+							"healthy_threshold":            "2",
+							"unhealthy_threshold":          "2",
+						},
+					},
+					"servers": []map[string]interface{}{
+						{
+							"server_id":   "10.0.0.2",
+							"server_ip":   "10.0.0.2",
+							"server_type": "Ip",
+						},
+					},
+					"server_group_name": name + "_full",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_config.0.health_check_enabled":         "true",
+						"health_check_config.0.health_check_protocol":        "HTTP",
+						"health_check_config.0.health_check_connect_port":    "80",
+						"health_check_config.0.health_check_connect_timeout": "5",
+						"health_check_config.0.health_check_interval":        "10",
+						"health_check_config.0.healthy_threshold":            "2",
+						"health_check_config.0.unhealthy_threshold":          "2",
+						"health_check_config.0.health_check_http_code.#":     "3",
+						"health_check_config.0.health_check_path":            "/health-check",
+						"health_check_config.0.health_check_domain":          "www.domain.com",
+						"server_group_name":                                  name + "_full",
+					}),
+				),
+			},
+			{
+				// Clear health_check_http_code while enabled and on TCP (the API clears the
+				// code list only when the check is active); this prevents a permanent diff
+				// when the next step drops the http_code attribute while disabled.
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_config": []map[string]interface{}{
+						{
+							"health_check_protocol":        "TCP",
+							"health_check_connect_port":    "80",
+							"health_check_connect_timeout": "5",
+							"health_check_enabled":         "true",
+							"health_check_http_code":       []string{},
+							"health_check_interval":        "10",
+							"healthy_threshold":            "2",
+							"unhealthy_threshold":          "2",
+						},
+					},
+					"servers": []map[string]interface{}{
+						{
+							"server_id":   "10.0.0.2",
+							"server_ip":   "10.0.0.2",
+							"server_type": "Ip",
+						},
+					},
+					"server_group_name": name + "_full",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_config.0.health_check_protocol":    "TCP",
+						"health_check_config.0.health_check_enabled":     "true",
+						"health_check_config.0.health_check_http_code.#": "0",
+						// TCP clears the HTTP-only domain/path attributes server-side;
+						// drop them from the accumulated expected set so the step does
+						// not keep asserting the prior HTTP values.
+						"health_check_config.0.health_check_domain": acctest.REMOVEKEY,
+						"health_check_config.0.health_check_path":   acctest.REMOVEKEY,
+					}),
+				),
+			},
+			{
+				// AC2: switch back to only health_check_enabled=false. The integer
+				// sub-attributes are now omitted from the config; the Provider must not
+				// send 0, so the server keeps the previously applied non-zero values
+				// instead of being reset to 0.
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_config": []map[string]interface{}{
+						{
+							"health_check_enabled": "false",
+						},
+					},
+					"servers": []map[string]interface{}{
+						{
+							"server_id":   "10.0.0.2",
+							"server_ip":   "10.0.0.2",
+							"server_type": "Ip",
+						},
+					},
+					"server_group_name": name + "_full",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_config.0.health_check_enabled":         "false",
+						"health_check_config.0.health_check_connect_port":    "80",
+						"health_check_config.0.health_check_connect_timeout": "5",
+						"health_check_config.0.health_check_interval":        "10",
+						"health_check_config.0.healthy_threshold":            "2",
+						"health_check_config.0.unhealthy_threshold":          "2",
+						"health_check_config.0.health_check_http_code.#":     "0",
+						// domain/path were already dropped from the accumulated
+						// expected set by the prior TCP step; do not re-reference them
+						// here, or REMOVEKEY re-adds the literal sentinel value.
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudGwlbServerGroupMap8801 = map[string]string{
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+}
+
+func AlicloudGwlbServerGroupBasicDependence8801(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-wulanchabu"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "defaultEaxcvb" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = "tf-gwlb-vpc"
+}
+
+
+`, name)
+}
+
 // Test Gwlb ServerGroup. <<< Resource test cases, automatically generated.
