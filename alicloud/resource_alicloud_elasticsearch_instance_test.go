@@ -4819,3 +4819,130 @@ resource "alicloud_vswitch" "default" {
 }
 `, name)
 }
+
+// Case resource_group_id in-place move via ResourceManager.MoveResources
+func TestAccAliCloudElasticsearchInstance_resourceGroup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapResourceGroup)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeElasticsearchInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfes%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceResourceGroup)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create with resource_group_id and read it back.
+				Config: testAccConfig(map[string]interface{}{
+					"zone_count":  "1",
+					"description": "ResourceGroupMove",
+					"kibana_configuration": []map[string]interface{}{
+						{
+							"amount": "1",
+							"spec":   "elasticsearch.n4.small",
+							"disk":   "0",
+						},
+					},
+					"payment_type":      "PayAsYouGo",
+					"vswitch_id":        "${alicloud_vswitch.defaultAislbL.id}",
+					"instance_category": "x-pack",
+					"protocol":          "HTTP",
+					"version":           "7.10.0_with_X-Pack",
+					"password":          "Admain@123",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"data_node_configuration": []map[string]interface{}{
+						{
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.sn1ne.large.new",
+							"disk":              "20",
+							"performance_level": "PL1",
+							"disk_encryption":   "true",
+							"amount":            "2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_count":        "1",
+						"payment_type":      "PayAsYouGo",
+						"instance_category": "x-pack",
+						"protocol":          "HTTP",
+						"version":           "7.10.0_with_X-Pack",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				// In-place update: move the instance to the target resource group.
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${alicloud_resource_manager_resource_group.target.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.target", "id"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy"},
+			},
+		},
+	})
+}
+
+var AlicloudElasticsearchInstanceMapResourceGroup = map[string]string{
+	"status":        CHECKSET,
+	"kibana_domain": CHECKSET,
+	"domain":        CHECKSET,
+	"kibana_port":   CHECKSET,
+	"create_time":   CHECKSET,
+	"public_port":   CHECKSET,
+}
+
+func AlicloudElasticsearchInstanceBasicDependenceResourceGroup(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_resource_manager_resource_group" "target" {
+  display_name        = "%s"
+  resource_group_name = "%s"
+}
+
+resource "alicloud_vpc" "defaultLPXHTQ" {
+  description = "es-instance-resource-group"
+  vpc_name    = "es-instance-resource-group"
+  dry_run     = false
+  cidr_block  = "10.0.10.0/24"
+  is_default  = false
+}
+
+resource "alicloud_vswitch" "defaultAislbL" {
+  vpc_id       = alicloud_vpc.defaultLPXHTQ.id
+  zone_id      = "cn-hangzhou-i"
+  description  = "tf-case"
+  cidr_block   = "10.0.10.0/24"
+  vswitch_name = "es-instance-resource-group"
+}
+
+
+`, name, name, name)
+}
