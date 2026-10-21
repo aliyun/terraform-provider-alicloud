@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudOOSApplicationGroup_basic0(t *testing.T) {
+func TestAccAliCloudOOSApplicationGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_application_group.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSApplicationSupportRegions)
@@ -34,9 +34,9 @@ func TestAccAlicloudOOSApplicationGroup_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -63,7 +63,7 @@ func TestAccAlicloudOOSApplicationGroup_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOOSApplicationGroup_basic1(t *testing.T) {
+func TestAccAliCloudOOSApplicationGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_application_group.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSApplicationSupportRegions)
@@ -80,9 +80,9 @@ func TestAccAlicloudOOSApplicationGroup_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -93,6 +93,7 @@ func TestAccAlicloudOOSApplicationGroup_basic1(t *testing.T) {
 					"application_group_name": "${var.name}",
 					"import_tag_key":         "${var.name}",
 					"import_tag_value":       "${var.name}",
+					"cms_group_id":           "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -121,7 +122,7 @@ var AlicloudOOSApplicationGroupMap0 = map[string]string{
 }
 
 func AlicloudOOSApplicationGroupBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -153,6 +154,7 @@ func TestUnitAlicloudOOSApplicationGroup(t *testing.T) {
 		"application_group_name": "application_group_name",
 		"import_tag_key":         "import_tag_key",
 		"import_tag_value":       "import_tag_value",
+		"cms_group_id":           "cms_group_id",
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -174,6 +176,7 @@ func TestUnitAlicloudOOSApplicationGroup(t *testing.T) {
 			"ImportTagValue":       "import_tag_value",
 			"ApplicationGroupName": "application_group_name",
 			"ApplicationName":      "MockApplicationName",
+			"CmsGroupId":           "cms_group_id",
 		},
 	}
 

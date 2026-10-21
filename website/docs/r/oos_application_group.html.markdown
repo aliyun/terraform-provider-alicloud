@@ -68,13 +68,13 @@ resource "alicloud_oos_application_group" "default" {
 
 The following arguments are supported:
 
-* `application_group_name` - (Required, ForceNew) The name of the Application group.
-* `application_name` - (Required, ForceNew) The name of the Application.
-* `deploy_region_id` - (Required, ForceNew) The region ID of the deployment.
-* `description` - (Optional, ForceNew) Application group description information.
-* `import_tag_key` - (Optional, ForceNew) The tag key must be passed in at the same time as the tag value (import_tag_value) or none, not just one. If both `import_tag_key` and `import_tag_value` are left empty, the default is app-{ApplicationName} (application name).
-* `import_tag_value` - (Optional, ForceNew) The tag value must be passed in at the same time as the tag key (import_tag_key) or none, not just one. If both `import_tag_key` and `import_tag_value` are left empty, the default is application group name.
-.
+* `application_group_name` - (Required, ForceNew) The name of the application group.
+* `application_name` - (Required, ForceNew) The name of the application.
+* `cms_group_id` - (Optional, ForceNew) The cloud monitoring group ID.
+* `deploy_region_id` - (Required, ForceNew) The ID of the region in which the related resources reside.
+* `description` - (Optional, ForceNew) The description of the application group.
+* `import_tag_key` - (Optional, ForceNew) The key of the tag. You must set both the ImportTagKey and the ImportTagValue parameters, or leave both of them empty. If you do not set the ImportTagKey and ImportTagValue parameters, the application name is used for this parameter by default.
+* `import_tag_value` - (Optional, ForceNew) The value of the tag. You must set both the ImportTagKey and the ImportTagValue parameters, or leave both of them empty. If you do not set the ImportTagKey and ImportTagValue parameters, the application group name is used for this parameter by default.
 
 ## Attributes Reference
 
