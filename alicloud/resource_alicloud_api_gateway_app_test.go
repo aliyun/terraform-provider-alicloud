@@ -42,7 +42,8 @@ func testSweepApiGatewayApp(region string) error {
 		return cloudApiClient.DescribeAppAttributes(req)
 	})
 	if err != nil {
-		return fmt.Errorf("Error Describe Apps: %s", err)
+		log.Printf("[ERROR] Failed to list api gateway apps: %s", err)
+		return nil
 	}
 	apps, _ := raw.(*cloudapi.DescribeAppAttributesResponse)
 
@@ -103,9 +104,9 @@ func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -205,9 +206,9 @@ func SkipTestAccAlicloudApigatewayApp_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
