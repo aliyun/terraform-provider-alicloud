@@ -1248,6 +1248,71 @@ resource "alicloud_rds_backup" "default" {
 
 `, name)
 }
+
+// TestAccAliCloudRdsCloneDBInstanceMySQL_Tags verifies that tags configured at
+// creation time are carried atomically by CloneDBInstance (AC1) and that the
+// subsequent update/remove of tags still works through setInstanceTags (AC2).
+func TestAccAliCloudRdsCloneDBInstanceMySQL_Tags(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_rds_clone_db_instance.default"
+	ra := resourceAttrInit(resourceId, cloneInstanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccmysqltagsclone%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCloneDBInstanceConfigDependence_general_essd)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				// AC1: tags set in the create config are carried atomically by the cloned instance on creation (via CloneDBInstance).
+				Config: testAccConfig(map[string]interface{}{
+					"source_db_instance_id":    "${alicloud_db_instance.default.id}",
+					"db_instance_storage_type": "general_essd",
+					"payment_type":             "PayAsYouGo",
+					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_db_instance_id":    CHECKSET,
+						"db_instance_storage_type": "general_essd",
+						"payment_type":             "PayAsYouGo",
+						"backup_id":                CHECKSET,
+						"tags.%":                   "2",
+						"tags.Created":             "TF",
+						"tags.For":                 "acceptance Test",
+					}),
+				),
+			},
+			{
+				// AC2: removing all tags exercises the existing setInstanceTags (UnTagResources) path on the cloned instance. REMOVEKEY clears every key Step 1 set, so the accumulating check helper does not retain a stale expectation for a removed tag.
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       REMOVEKEY,
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+		},
+	})
+}
 func TestAccAliCloudRdsCloneDBInstanceSQLServer_ServerlessHA(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_rds_clone_db_instance.default"
