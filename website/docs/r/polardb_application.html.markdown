@@ -107,11 +107,27 @@ The following arguments are supported:
 * `model_api` - (Optional, ForceNew) The API endpoint for the model.
 * `model_name` - (Optional, ForceNew) The name of the model.
 * `upgrade_version` - (Optional, Computed) Whether to upgrade the version. Valid values are `true`, `false`.
-* `parameters` - (Optional, Computed, Type: list) The parameters of the application. See [`parameters`](#parameters) below.
+* `parameters` - (Optional, Type: list) The parameters of the application. See [`parameters`](#parameters) below.
 * `component_id` - (Optional, Computed) The ID of the component.
 * `security_ip_list` - (Optional, Type: list) The list of IP addresses allowed to access the application.
 * `security_ip_array_name` - (Optional) The name of the IP whitelist group.
 * `modify_mode` - (Optional) The method for modifying the IP whitelist. Valid values are `Cover`, `Append`, `Delete`.
+* `target_version` - (Optional, ForceNew) The target version of the application. Available since v2.1.1.
+* `skill_template_id` - (Optional, ForceNew) The ID of the skill template. Available since v2.1.1.
+* `dnat_ip_address` - (Optional, ForceNew) The DNAT IP address of the application. Available since v2.1.1.
+* `auth_provider` - (Optional, ForceNew) The authentication provider. Available since v2.1.1.
+* `auth_provider_config` - (Optional, ForceNew) The configuration of the authentication provider. Available since v2.1.1.
+* `vpc_nat_gateway_id` - (Optional, ForceNew) The ID of the VPC NAT gateway. Available since v2.1.1.
+* `security_ip_type` - (Optional, ForceNew) The type of the security IP. Available since v2.1.1.
+* `auto_allocate_public_eip` - (Optional, ForceNew) Whether to automatically allocate a public EIP for the application. Available since v2.1.1.
+* `agentic_db_cluster_id` - (Optional, ForceNew) The ID of the agentic database cluster. Available since v2.1.1.
+* `storages` - (Optional, ForceNew, Type: set) The storage mounts of the application. See [`storages`](#storages) below. Available since v2.1.1.
+* `mem_application_spec` - (Optional, ForceNew, Type: list) The memory application specification. See [`mem_application_spec`](#mem_application_spec) below. Available since v2.1.1.
+* `agentic_db_branch_spec` - (Optional, ForceNew, Type: list) The agentic database branch specification. See [`agentic_db_branch_spec`](#agentic_db_branch_spec) below. Available since v2.1.1.
+* `endpoints` - (Optional, ForceNew, Type: set) The endpoints of the application. See [`endpoints`](#endpoints) below. Available since v2.1.1.
+* `knowledge_application_spec` - (Optional, ForceNew, Type: list) The knowledge application specification. See [`knowledge_application_spec`](#knowledge_application_spec) below. Available since v2.1.1.
+* `dnat_entries` - (Optional, ForceNew, Type: set) The DNAT entries of the application. See [`dnat_entries`](#dnat_entries) below. Available since v2.1.1.
+* `tags` - (Optional) The tags of the application. Available since v2.1.1.
 
 ### `components`
 
@@ -127,6 +143,72 @@ The `parameters` block supports the following:
 
 * `parameter_name` - (Optional) The name of the parameter.
 * `parameter_value` - (Optional) The value of the parameter.
+
+### `storages`
+
+The `storages` block supports the following:
+
+* `storage_type` - (Optional, ForceNew) The type of the storage. Available since v2.1.1.
+* `storage_instance_id` - (Optional, ForceNew) The ID of the storage instance. Available since v2.1.1.
+* `endpoint_id` - (Optional, ForceNew) The ID of the endpoint. Available since v2.1.1.
+* `mount_path` - (Optional, ForceNew) The mount path of the storage. Available since v2.1.1.
+* `container_mount_path` - (Optional, ForceNew) The mount path inside the container. Available since v2.1.1.
+* `storage_capacity` - (Optional, ForceNew) The capacity of the storage. Available since v2.1.1.
+* `storage_endpoint` - (Optional, ForceNew) The endpoint of the storage. Available since v2.1.1.
+* `storage_performance_level` - (Optional, ForceNew) The performance level of the storage. Available since v2.1.1.
+
+### `mem_application_spec`
+
+The `mem_application_spec` block supports the following:
+
+* `db_name` - (Optional, ForceNew) The name of the database. Available since v2.1.1.
+* `db_password` - (Optional, ForceNew) The password of the database. Available since v2.1.1.
+* `db_user` - (Optional, ForceNew) The user of the database. Available since v2.1.1.
+* `embedder_model` - (Optional, ForceNew) The embedder model. Available since v2.1.1.
+* `embedder_model_dimension` - (Optional, ForceNew) The dimension of the embedder model. Available since v2.1.1.
+* `graph_llm_model` - (Optional, ForceNew) The graph LLM model. Available since v2.1.1.
+* `llm_model` - (Optional, ForceNew) The LLM model. Available since v2.1.1.
+* `memory_type` - (Optional, ForceNew) The type of the memory. Available since v2.1.1.
+* `project_name` - (Optional, ForceNew) The name of the project. Available since v2.1.1.
+* `reranker_model` - (Optional, ForceNew) The reranker model. Available since v2.1.1.
+* `shard` - (Optional, ForceNew) The shard count. Available since v2.1.1.
+* `visual_embedder_model` - (Optional, ForceNew) The visual embedder model. Available since v2.1.1.
+* `visual_embedder_model_dimension` - (Optional, ForceNew) The dimension of the visual embedder model. Available since v2.1.1.
+* `visual_llm_modalities` - (Optional, ForceNew, Type: set) The modalities of the visual LLM. Available since v2.1.1.
+* `visual_llm_model` - (Optional, ForceNew) The visual LLM model. Available since v2.1.1.
+
+### `agentic_db_branch_spec`
+
+The `agentic_db_branch_spec` block supports the following:
+
+* `branch_id` - (Optional, ForceNew) The ID of the branch. Available since v2.1.1.
+* `db_cluster_id` - (Optional, ForceNew) The ID of the database cluster. Available since v2.1.1.
+* `fork_from_application_id` - (Optional, ForceNew) The application ID to fork from. Available since v2.1.1.
+* `fork_from_branch` - (Optional, ForceNew) Whether to fork from a branch. Available since v2.1.1.
+* `project_id` - (Optional, ForceNew) The ID of the project. Available since v2.1.1.
+* `tenant_id` - (Optional, ForceNew) The ID of the tenant. Available since v2.1.1.
+
+### `endpoints`
+
+The `endpoints` block supports the following:
+
+* `endpoint_type` - (Optional, ForceNew) The type of the endpoint. Available since v2.1.1.
+* `description` - (Optional, ForceNew) The description of the endpoint. Available since v2.1.1.
+
+### `knowledge_application_spec`
+
+The `knowledge_application_spec` block supports the following:
+
+* `dashboard_password` - (Optional, ForceNew) The password of the dashboard. Available since v2.1.1.
+* `db_password` - (Optional, ForceNew) The password of the database. Available since v2.1.1.
+* `llm_model` - (Optional, ForceNew) The LLM model. Available since v2.1.1.
+
+### `dnat_entries`
+
+The `dnat_entries` block supports the following:
+
+* `port_name` - (Optional, ForceNew) The name of the port. Available since v2.1.1.
+* `front_port` - (Optional, ForceNew) The front port. Available since v2.1.1.
 
 ## Attributes Reference
 
