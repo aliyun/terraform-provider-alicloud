@@ -2061,7 +2061,6 @@ func Provider() *schema.Provider {
 			"alicloud_ecs_instance_set":                                      resourceAliCloudEcsInstanceSet(),
 			"alicloud_ecd_ram_directory":                                     resourceAlicloudEcdRamDirectory(),
 			"alicloud_service_mesh_user_permission":                          resourceAliCloudServiceMeshUserPermission(),
-			"alicloud_ecd_ad_connector_directory":                            resourceAlicloudEcdAdConnectorDirectory(),
 			"alicloud_ecd_custom_property":                                   resourceAlicloudEcdCustomProperty(),
 			"alicloud_ecd_ad_connector_office_site":                          resourceAlicloudEcdAdConnectorOfficeSite(),
 			"alicloud_ecs_activation":                                        resourceAlicloudEcsActivation(),
