@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/rand"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -4578,8 +4580,8 @@ func TestAccAliCloudRdsDBInstanceSqlService_general_essd(t *testing.T) {
 }
 
 func resourceDBInstanceConfigGeneralEssdSqlService(name string) string {
-	templateName := fmt.Sprintf("tf-test%d", rand.Intn(1000))
-	templateName1 := fmt.Sprintf("tf-test%d", rand.Intn(1000))
+	templateName := fmt.Sprintf("tf-testAcc-whitelist-%d", acctest.RandIntRange(10000, 999999))
+	templateName1 := fmt.Sprintf("tf-testAcc-whitelist-%d", acctest.RandIntRange(10000, 999999))
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
@@ -4645,6 +4647,298 @@ func testAccCheckKeyValueInMaps(ps []map[string]interface{}, propName, key, valu
 		}
 		return nil
 	}
+}
+
+func TestAccAliCloudRdsDBInstance_CustomIPArray(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testaccdbinstanceconfig%d", rand)
+	customArrayName := fmt.Sprintf("tf_testacc_custom_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                    "MySQL",
+					"engine_version":            "8.0",
+					"instance_type":             "mysql.n1e.small.1",
+					"instance_storage":          "20",
+					"instance_charge_type":      "Postpaid",
+					"instance_name":             "${var.name}",
+					"vswitch_id":                "${local.vswitch_id}",
+					"db_instance_storage_type":  "cloud_essd",
+					"security_ips":              []string{"10.168.1.12", "100.69.7.112"},
+					"db_instance_ip_array_name": customArrayName,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceSecurityIpArray(resourceId, customArrayName, "10.168.1.12,100.69.7.112"),
+					testAccCheck(map[string]string{
+						"db_instance_ip_array_name": customArrayName,
+						"engine_version":            "8.0",
+						"instance_storage":          "20",
+						"instance_name":             name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                    "MySQL",
+					"engine_version":            "8.0",
+					"instance_type":             "mysql.n1e.small.1",
+					"instance_storage":          "20",
+					"instance_charge_type":      "Postpaid",
+					"instance_name":             "${var.name}",
+					"vswitch_id":                "${local.vswitch_id}",
+					"db_instance_storage_type":  "cloud_essd",
+					"security_ips":              []string{"10.168.1.13", "100.69.7.113"},
+					"db_instance_ip_array_name": customArrayName,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckDBInstanceSecurityIpArray(resourceId, customArrayName, "10.168.1.13,100.69.7.113"),
+					testAccCheck(map[string]string{
+						"db_instance_ip_array_name": customArrayName,
+						"engine_version":            "8.0",
+						"instance_storage":          "20",
+						"instance_name":             name,
+					}),
+				),
+			},
+		},
+	})
+}
+
+// testAccCheckDBInstanceSecurityIpArray verifies that the custom whitelist
+// group contains the expected IPs and that the default group is not polluted
+// (still contains only 127.0.0.1).
+func testAccCheckDBInstanceSecurityIpArray(n, customArrayName, expectedCustomIps string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No DB Instance ID is set")
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsService := RdsService{client}
+		resp, err := rdsService.DescribeDBSecurityIps(rs.Primary.ID)
+		log.Printf("[DEBUG] check instance %s security ip array %#v", rs.Primary.ID, resp)
+		if err != nil {
+			return err
+		}
+		if len(resp) < 1 {
+			return fmt.Errorf("DB security ip not found")
+		}
+		customFound, defaultFound := false, false
+		expectedCustomSet := make(map[string]bool)
+		for _, ip := range strings.Split(expectedCustomIps, ",") {
+			ip = strings.TrimSpace(ip)
+			if ip != "" {
+				expectedCustomSet[ip] = true
+			}
+		}
+		for _, item := range resp {
+			ipArray := item.(map[string]interface{})
+			arrayName := ipArray["DBInstanceIPArrayName"].(string)
+			securityIps := ipArray["SecurityIPList"].(string)
+			actualSet := make(map[string]bool)
+			for _, ip := range strings.Split(securityIps, ",") {
+				ip = strings.TrimSpace(ip)
+				if ip != "" {
+					actualSet[ip] = true
+				}
+			}
+			if arrayName == customArrayName {
+				customFound = true
+				for ip := range expectedCustomSet {
+					if !actualSet[ip] {
+						return fmt.Errorf("custom whitelist group %q expected to contain IP %q, got %q", customArrayName, ip, securityIps)
+					}
+				}
+			}
+			if arrayName == "default" {
+				defaultFound = true
+				// Default group should not be polluted with the user's IPs.
+				for ip := range expectedCustomSet {
+					if actualSet[ip] {
+						return fmt.Errorf("default whitelist group should not contain user IP %q, got %q", ip, securityIps)
+					}
+				}
+				if !actualSet[LOCAL_HOST_IP] {
+					return fmt.Errorf("default whitelist group expected to contain %q, got %q", LOCAL_HOST_IP, securityIps)
+				}
+			}
+		}
+		if !customFound {
+			return fmt.Errorf("custom whitelist group %q not found", customArrayName)
+		}
+		if !defaultFound {
+			return fmt.Errorf("default whitelist group not found")
+		}
+		return nil
+	}
+}
+
+// TestUnitDBInstanceTemplateIdListOrderSuppress is the bounded-suppressor unit
+// net for suppressTemplateIdListOrderDiff: a reorder-only case expects
+// suppression, and membership-change cases (an addition and an equal-length
+// replacement) expect no suppression. It guards against an over-broad
+// suppressor that swallows real membership changes.
+//
+// This is the collection-order checker's string-literal net (d == nil): the
+// same set comparison runs through parseIntMemberCsv + intListSameSet. The
+// runtime d != nil / d.GetChange branch is covered by the companion test
+// TestUnitDBInstanceTemplateIdListOrderSuppressRuntime below.
+func TestUnitDBInstanceTemplateIdListOrderSuppress(t *testing.T) {
+	testCases := []struct {
+		name     string
+		old      string
+		new      string
+		expected bool
+	}{
+		{"ReorderOnly", "1,2", "2,1", true},
+		{"MemberAdded", "1,2", "1,2,3", false},
+		{"SameLengthReplace", "1,2", "3,4", false},
+	}
+	for _, tc := range testCases {
+		if got := suppressTemplateIdListOrderDiff("template_id_list", tc.old, tc.new, nil); got != tc.expected {
+			t.Fatalf("case %s: got %v, expected %v", tc.name, got, tc.expected)
+		}
+	}
+}
+
+// TestUnitDBInstanceTemplateIdListOrderSuppressRuntime exercises the runtime
+// (d != nil) branch of suppressTemplateIdListOrderDiff through the SDK's real
+// diff pipeline: schema.Resource.Diff is the path the SDK uses to invoke a
+// DiffSuppressFunc during planning. A prior terraform.InstanceState carries
+// the old list and a raw ResourceConfig carries the new list, so the
+// d.GetChange call inside the suppressor returns distinct old/new lists on
+// the production path — not a hand-built ResourceData whose GetChange
+// semantics are easy to assume wrongly. Reorder suppresses to an empty
+// diff; a member addition and an equal-length member replacement both
+// preserve the diff, so a broken suppressor (e.g. unconditionally returning
+// true) cannot pass undetected.
+func TestUnitDBInstanceTemplateIdListOrderSuppressRuntime(t *testing.T) {
+	r := &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"template_id_list": {
+				Type:             schema.TypeList,
+				Optional:         true,
+				Elem:             &schema.Schema{Type: schema.TypeInt},
+				DiffSuppressFunc: suppressTemplateIdListOrderDiff,
+			},
+		},
+	}
+	cases := []struct {
+		name         string
+		old          []int
+		new          []int
+		expectNoDiff bool
+	}{
+		{"ReorderSuppress", []int{1, 2}, []int{2, 1}, true},
+		{"MemberAddedKeepsDiff", []int{1, 2}, []int{1, 2, 3}, false},
+		{"SameLengthReplaceKeepsDiff", []int{1, 2}, []int{3, 4}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			attrs := map[string]string{
+				"template_id_list.#": fmt.Sprintf("%d", len(tc.old)),
+			}
+			for i, v := range tc.old {
+				attrs[fmt.Sprintf("template_id_list.%d", i)] = fmt.Sprintf("%d", v)
+			}
+			state := &terraform.InstanceState{Attributes: attrs}
+			newList := make([]interface{}, len(tc.new))
+			for i, v := range tc.new {
+				newList[i] = v
+			}
+			config := map[string]interface{}{"template_id_list": newList}
+			diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
+			if err != nil {
+				t.Fatalf("case %s: Diff returned error: %v", tc.name, err)
+			}
+			noDiff := diff == nil || diff.Empty()
+			if noDiff != tc.expectNoDiff {
+				t.Fatalf("case %s: noDiff=%v expected %v; attributes=%v", tc.name, noDiff, tc.expectNoDiff, diff.Attributes)
+			}
+		})
+	}
+}
+
+// TestAccAliCloudRdsDBInstance_TemplateIdListOrder verifies that reordering
+// the members of template_id_list converges: apply two distinct whitelist
+// template IDs in one order, then apply them reordered with an empty
+// post-apply plan. The RDS whitelist-template association API has set
+// semantics (individual Attach/Detach by ID, server-chosen return order),
+// so the DiffSuppressFunc on template_id_list treats the reorder as a clean
+// no-op. Uses the KMS-free SQLServer dependence and whitelist templates.
+func TestAccAliCloudRdsDBInstance_TemplateIdListOrder(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap8)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceConfig%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigGeneralEssdSqlService)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "SQLServer",
+					"engine_version":           "2022_web",
+					"instance_type":            "mssql.x2.medium.w1",
+					"instance_storage":         "50",
+					"instance_charge_type":     "Postpaid",
+					"category":                 "Basic",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+					"template_id_list":         []string{"${alicloud_rds_whitelist_template.default1.id}", "${alicloud_rds_whitelist_template.default.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                   "SQLServer",
+						"engine_version":           "2022_web",
+						"instance_type":            CHECKSET,
+						"instance_storage":         CHECKSET,
+						"instance_charge_type":     CHECKSET,
+						"instance_name":            name,
+						"db_instance_storage_type": "general_essd",
+						"template_id_list.#":       CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_id_list": []string{"${alicloud_rds_whitelist_template.default.id}", "${alicloud_rds_whitelist_template.default1.id}"},
+				}),
+			},
+		},
+	})
 }
 
 var instanceBasicMap = map[string]string{
