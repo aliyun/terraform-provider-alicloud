@@ -36,7 +36,7 @@ The following arguments are supported:
 * `ids` - (Optional) Cluster IDs to filter.
 * `name_regex` - (Optional) A regex string to filter results by cluster name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `enable_details` - (Optional) Boolean, false by default, only `id` and `name` are exported. Set to true if more details are needed, e.g., `master_disk_category`, `slb_internet_enabled`, `connections`. See full list in attributes.
+* `enable_details` - (Optional) Boolean, false by default, only `id` and `name` are exported. Set to true if more details are needed, e.g., `vpc_id`, `security_group_id`, `connections`. See full list in attributes.
 
 ## Attributes Reference
 
@@ -44,29 +44,32 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of matched Kubernetes clusters' ids.
 * `names` - A list of matched Kubernetes clusters' names.
-* `clusters` - A list of matched Kubernetes clusters. Each element contains the following attributes:
-  * `id` - The ID of the container cluster.
-  * `name` - The name of the container cluster.
-  * `availability_zone` - The ID of availability zone.
-  * `key_name` - The keypair of ssh login cluster node, you have to create it first.
-  * `worker_numbers` - The ECS instance node number in the current container cluster.
-  * `vswitch_ids` - The ID of VSwitches where the current cluster is located.
-  * `vpc_id` - The ID of VPC where the current cluster is located.
-  * `security_group_id` - The ID of security group where the current cluster worker node is located.
-  * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-  * `worker_nodes` - List of cluster worker nodes. It contains several attributes to `Block Nodes`.
-  * `connections` - A list of kubernetes cluster connection information. It contains several attributes to `Block Connections`.
-  * `log_config` - A list of one element containing information about the associated log store. It contains the following attributes:
-    * `type` - Type of collecting logs.
-    * `project` - Log Service project name. 
+* `clusters` - A list of matched Kubernetes clusters.
 
-### Block Nodes
+### `clusters`
+
+The clusters supports the following:
+
+* `id` - The ID of the container cluster.
+* `name` - The name of the container cluster.
+* `availability_zone` - The ID of availability zone.
+* `vpc_id` - The ID of VPC where the current cluster is located.
+* `security_group_id` - The ID of security group where the current cluster worker node is located.
+* `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
+* `worker_nodes` - List of cluster worker nodes.
+* `connections` - A list of kubernetes cluster connection information.
+
+### `clusters.worker_nodes`
+
+The worker_nodes supports the following:
 
 * `id` - ID of the node.
 * `name` - Node name.
 * `private_ip` - The private IP address of node.
 
-### Block Connections
+### `clusters.connections`
+
+The connections supports the following:
 
 * `api_server_internet` - API Server Internet endpoint.
 * `api_server_intranet` - API Server Intranet endpoint.
