@@ -3,11 +3,14 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -1464,4 +1467,185 @@ resource "alicloud_rds_backup" "default" {
 }
 
 `, name)
+}
+
+// TestUnitBuildCloneDBInstanceTags verifies that the Create path injects the
+// configured tags atomically into the CloneDBInstance request as Tag.N.Key /
+// Tag.N.Value pairs at request-build time. Unlike the existing ACC, which
+// only checks the final state tags (set later by Update -> setInstanceTags),
+// this request-level unit test fails if the atomic tag injection is removed.
+func TestUnitBuildCloneDBInstanceTags(t *testing.T) {
+	p := Provider().ResourcesMap
+	r, ok := p["alicloud_rds_clone_db_instance"]
+	if !ok {
+		t.Fatalf("resource alicloud_rds_clone_db_instance not registered in provider")
+	}
+	d, err := schema.InternalMap(r.Schema).Data(nil, nil)
+	if err != nil {
+		t.Fatalf("failed to build ResourceData: %v", err)
+	}
+
+	tags := map[string]interface{}{
+		"env":  "prod",
+		"team": "rds",
+	}
+	if err := d.Set("tags", tags); err != nil {
+		t.Fatalf("failed to set tags: %v", err)
+	}
+
+	request := make(map[string]interface{})
+	buildCloneDBInstanceTags(d, request)
+
+	// At least two configured tags must be present as paired Tag.N.Key /
+	// Tag.N.Value entries in the CloneDBInstance request.
+	assert.Contains(t, request, "Tag.1.Key", "CloneDBInstance request must contain Tag.1.Key")
+	assert.Contains(t, request, "Tag.1.Value", "CloneDBInstance request must contain Tag.1.Value")
+	assert.Contains(t, request, "Tag.2.Key", "CloneDBInstance request must contain Tag.2.Key")
+	assert.Contains(t, request, "Tag.2.Value", "CloneDBInstance request must contain Tag.2.Value")
+
+	// Each Tag.N.Key must be paired with its matching Tag.N.Value, and every
+	// configured tag must appear with its expected value (order is irrelevant
+	// since tags come from a map).
+	paired := make(map[string]string, len(tags))
+	for i := 1; i <= len(tags); i++ {
+		key := request[fmt.Sprintf("Tag.%d.Key", i)]
+		value := request[fmt.Sprintf("Tag.%d.Value", i)]
+		if key == nil || value == nil {
+			t.Fatalf("Tag.%d pair incomplete in CloneDBInstance request: key=%v value=%v", i, key, value)
+		}
+		paired[key.(string)] = value.(string)
+	}
+	for k, v := range tags {
+		got, ok := paired[k]
+		if !ok {
+			t.Errorf("configured tag %q missing from CloneDBInstance request", k)
+			continue
+		}
+		assert.Equal(t, v, got, "tag %q value mismatch in CloneDBInstance request", k)
+	}
+}
+
+// TestUnitBuildCloneDBInstanceTags_NoTags verifies that no Tag.N.* entries are
+// injected when no tags are configured, guarding against stray tag encoding.
+func TestUnitBuildCloneDBInstanceTags_NoTags(t *testing.T) {
+	p := Provider().ResourcesMap
+	r, ok := p["alicloud_rds_clone_db_instance"]
+	if !ok {
+		t.Fatalf("resource alicloud_rds_clone_db_instance not registered in provider")
+	}
+	d, err := schema.InternalMap(r.Schema).Data(nil, nil)
+	if err != nil {
+		t.Fatalf("failed to build ResourceData: %v", err)
+	}
+
+	request := make(map[string]interface{})
+	buildCloneDBInstanceTags(d, request)
+	for k := range request {
+		if strings.HasPrefix(k, "Tag.") {
+			t.Errorf("unexpected Tag.* entry %q in CloneDBInstance request when no tags configured", k)
+		}
+	}
+}
+
+// TestUnitCloneDBInstanceCreateRequestInjectsTags asserts that the production
+// CloneDBInstance request constructor — buildCloneDBInstanceCreateRequest, to
+// which resourceAlicloudRdsCloneDbInstanceCreate delegates all request building
+// and which returns the exact map sent to client.RpcPost for the non-serverless
+// CloneDBInstance call — injects the configured tags atomically as paired
+// Tag.N.Key / Tag.N.Value entries.
+//
+// This is the request-level mutation guard the original ACC lacked. The ACC only
+// checks final-state tags (set later by Update -> setInstanceTags), so removing
+// the atomic tag injection still passed. This test instead inspects the actual
+// creation request: removing ONLY the buildCloneDBInstanceTags(d, request) call
+// from buildCloneDBInstanceCreateRequest (while leaving the leaf helper and its
+// direct unit tests, TestUnitBuildCloneDBInstanceTags / _NoTags, untouched)
+// leaves those helper tests green but makes THIS test fail, because the returned
+// CloneDBInstance request no longer carries Tag.N.Key / Tag.N.Value.
+//
+// No cloud credentials or network access are required: buildCloneDBInstanceCreateRequest
+// only reads the exported client.SourceIp / client.RegionId fields, so a zero-value
+// client is sufficient and no gomonkey patching of RPC methods (which Go 1.25
+// register-ABI makes unreliable on concrete-type pointer-receiver methods such as
+// AliyunClient.RpcPost / RdsService.DescribeDBInstance) is needed.
+func TestUnitCloneDBInstanceCreateRequestInjectsTags(t *testing.T) {
+	p := Provider().ResourcesMap
+	r, ok := p["alicloud_rds_clone_db_instance"]
+	if !ok {
+		t.Fatalf("resource alicloud_rds_clone_db_instance not registered in provider")
+	}
+	d, err := schema.InternalMap(r.Schema).Data(nil, nil)
+	if err != nil {
+		t.Fatalf("failed to build ResourceData: %v", err)
+	}
+
+	tags := map[string]interface{}{
+		"env":  "prod",
+		"team": "rds",
+	}
+	sourceInstance := "rm-source-mock"
+	// Explicit literal-key Set calls populate each configured attribute on
+	// ResourceData exactly as terraform apply would, so the production request
+	// constructor reads them on the real create path. Literal keys are required
+	// by tflint R001 (variable-key d.Set is flagged); the six input values and
+	// the two-tag pairing assertions below are unchanged.
+	if e := d.Set("source_db_instance_id", sourceInstance); e != nil {
+		t.Fatalf("failed to set source_db_instance_id: %v", e)
+	}
+	if e := d.Set("payment_type", "PayAsYouGo"); e != nil {
+		t.Fatalf("failed to set payment_type: %v", e)
+	}
+	if e := d.Set("db_instance_class", "mysql.n2.medium.25"); e != nil {
+		t.Fatalf("failed to set db_instance_class: %v", e)
+	}
+	if e := d.Set("db_instance_storage", 50); e != nil {
+		t.Fatalf("failed to set db_instance_storage: %v", e)
+	}
+	if e := d.Set("db_instance_storage_type", "cloud_essd"); e != nil {
+		t.Fatalf("failed to set db_instance_storage_type: %v", e)
+	}
+	if e := d.Set("tags", tags); e != nil {
+		t.Fatalf("failed to set tags: %v", e)
+	}
+
+	// Zero-value client: only exported SourceIp/RegionId are read during request
+	// building. No credentials, endpoints or network access are touched.
+	client := &connectivity.AliyunClient{}
+
+	// The production request constructor Create delegates to; the returned map is
+	// the exact CloneDBInstance request sent to RpcPost (non-serverless path).
+	request := buildCloneDBInstanceCreateRequest(d, client)
+
+	// Sanity: this is the real CloneDBInstance request, not a detached helper —
+	// the source instance id and storage type from schema are present, proving
+	// the production request-construction path ran.
+	assert.Equal(t, sourceInstance, request["DBInstanceId"],
+		"buildCloneDBInstanceCreateRequest must populate DBInstanceId from source_db_instance_id, proving it is the production request path")
+	assert.Equal(t, "cloud_essd", request["DBInstanceStorageType"],
+		"buildCloneDBInstanceCreateRequest must populate DBInstanceStorageType, proving it is the production request path")
+
+	// At least two configured tags must be present as paired Tag.N.Key /
+	// Tag.N.Value entries in the actual CloneDBInstance request.
+	assert.Contains(t, request, "Tag.1.Key", "CloneDBInstance request must contain Tag.1.Key")
+	assert.Contains(t, request, "Tag.1.Value", "CloneDBInstance request must contain Tag.1.Value")
+	assert.Contains(t, request, "Tag.2.Key", "CloneDBInstance request must contain Tag.2.Key")
+	assert.Contains(t, request, "Tag.2.Value", "CloneDBInstance request must contain Tag.2.Value")
+
+	paired := make(map[string]string, len(tags))
+	for i := 1; i <= len(tags); i++ {
+		key := request[fmt.Sprintf("Tag.%d.Key", i)]
+		value := request[fmt.Sprintf("Tag.%d.Value", i)]
+		if key == nil || value == nil {
+			t.Fatalf("Tag.%d pair incomplete in CloneDBInstance request: key=%v value=%v", i, key, value)
+		}
+		paired[key.(string)] = value.(string)
+	}
+	for k, v := range tags {
+		got, ok := paired[k]
+		if !ok {
+			t.Errorf("configured tag %q missing from CloneDBInstance request", k)
+			continue
+		}
+		assert.Equal(t, v, got, "tag %q value mismatch in CloneDBInstance request", k)
+	}
 }

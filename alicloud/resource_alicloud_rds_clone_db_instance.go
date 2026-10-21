@@ -449,14 +449,31 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudRdsCloneDbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	rdsService := RdsService{client}
-	var response map[string]interface{}
-	action := "CloneDBInstance"
+// buildCloneDBInstanceTags injects the configured tags into the CloneDBInstance
+// request map as Tag.N.Key/Tag.N.Value pairs so the cloned instance carries the
+// tags atomically on creation. Extracted from resourceAlicloudRdsCloneDbInstanceCreate
+// to allow request-level unit testing of the atomic tag injection.
+func buildCloneDBInstanceTags(d *schema.ResourceData, request map[string]interface{}) {
+	if v, ok := d.GetOk("tags"); ok {
+		count := 1
+		for key, value := range v.(map[string]interface{}) {
+			request[fmt.Sprintf("Tag.%d.Key", count)] = key
+			request[fmt.Sprintf("Tag.%d.Value", count)] = value
+			count++
+		}
+	}
+}
+
+// buildCloneDBInstanceCreateRequest builds the CloneDBInstance RPC request map
+// from schema state, including the atomic tag injection (buildCloneDBInstanceTags).
+// resourceAlicloudRdsCloneDbInstanceCreate delegates request construction to this
+// function; the returned map is the exact map sent to client.RpcPost for the
+// non-serverless CloneDBInstance call. Extracted so a request-level unit test can
+// assert the tags are present in the actual creation request, and fail when the
+// atomic tag injection is removed from the production request-construction path.
+func buildCloneDBInstanceCreateRequest(d *schema.ResourceData, client *connectivity.AliyunClient) map[string]interface{} {
 	request := make(map[string]interface{})
 	request["SourceIp"] = client.SourceIp
-	var err error
 	if v, ok := d.GetOk("backup_id"); ok {
 		request["BackupId"] = v
 	}
@@ -522,14 +539,17 @@ func resourceAlicloudRdsCloneDbInstanceCreate(d *schema.ResourceData, meta inter
 	// Tags are passed atomically into CloneDBInstance so that the cloned
 	// instance carries the configured tags on creation, mirroring the
 	// CreateDBInstance atomic tag pattern in resource_alicloud_db_instance.
-	if v, ok := d.GetOk("tags"); ok {
-		count := 1
-		for key, value := range v.(map[string]interface{}) {
-			request[fmt.Sprintf("Tag.%d.Key", count)] = key
-			request[fmt.Sprintf("Tag.%d.Value", count)] = value
-			count++
-		}
-	}
+	buildCloneDBInstanceTags(d, request)
+	return request
+}
+
+func resourceAlicloudRdsCloneDbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
+	var response map[string]interface{}
+	action := "CloneDBInstance"
+	var err error
+	request := buildCloneDBInstanceCreateRequest(d, client)
 
 	instance, err := rdsService.DescribeDBInstance(d.Get("source_db_instance_id").(string))
 	if err != nil {
