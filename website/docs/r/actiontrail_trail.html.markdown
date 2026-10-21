@@ -77,7 +77,7 @@ The following arguments are supported:
 * `oss_write_role_arn` - (Optional) The name of the RAM role that the user allows ActionTrail to access OSS service.
 * `sls_project_arn` - (Optional) The ARN of the Simple Log Service project to which the trail delivers logs.
 * `sls_write_role_arn` - (Optional) The ARN of the role that ActionTrail assumes to deliver operation events to the Simple Log Service project.
-* `status` - (Optional) The status of the trail. Default value: `Enable`. Valid values: `Enable`, `Disable`.
+* `status` - (Optional) The status of the trail. Valid values: `Enable`, `Disable`, `Fresh`. A new trail is created in the `Fresh` status and does not deliver audit events. Set `status` to `Enable` to enable the trail through StartLogging.
 * `trail_name` - (Optional, ForceNew, Available since v1.95.0) The name of the trail to be created.
 * `trail_region` - (Optional) The region of the trail.
 * `name` - (Optional, ForceNew, Deprecated since v1.95.0) Field `name` has been deprecated from provider version 1.95.0. New field `trail_name` instead.
