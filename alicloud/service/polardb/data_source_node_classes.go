@@ -1,4 +1,4 @@
-package alicloud
+package polardb
 
 import (
 	"strings"
@@ -6,20 +6,23 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudPolarDBNodeClasses() *schema.Resource {
+func DataSourceNodeClasses() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudPolarDBInstanceClassesRead,
+		Read: dataSourceNodeClassesRead,
 
 		Schema: map[string]*schema.Schema{
 			"pay_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
+				ValidateFunc: validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 			},
 			"db_type": {
 				Type:     schema.TypeString,
@@ -91,14 +94,14 @@ func dataSourceAlicloudPolarDBNodeClasses() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceNodeClassesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := polardb.CreateDescribeDBClusterAvailableResourcesRequest()
 	payType := d.Get("pay_type").(string)
-	if payType == string(PostPaid) {
+	if payType == "PostPaid" {
 		request.PayType = "Postpaid"
-	} else if payType == string(PrePaid) {
+	} else if payType == "PrePaid" {
 		request.PayType = "Prepaid"
 	}
 
@@ -131,19 +134,19 @@ func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta i
 			return polardbClient.DescribeDBClusterAvailableResources(request)
 		})
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				time.Sleep(time.Duration(5) * time.Second)
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response = raw.(*polardb.DescribeDBClusterAvailableResourcesResponse)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_polardb_node_classes", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_polardb_node_classes", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
 	ids := []string{}
@@ -157,11 +160,17 @@ func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta i
 			if len(supportedEngine.AvailableResources) == 0 {
 				continue
 			}
-			if dbTypeGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(dbType.(string))) {
-				continue
+			if dbTypeGot {
+				engineType, _ := engineInfo(supportedEngine.Engine)
+				if normalizeEngineType(engineType) != normalizeEngineType(dbType.(string)) {
+					continue
+				}
 			}
-			if dbVersionGot && !strings.Contains(strings.ToLower(supportedEngine.Engine), strings.ToLower(dbVersion.(string))) {
-				continue
+			if dbVersionGot {
+				_, version := engineInfo(supportedEngine.Engine)
+				if version != strings.ToLower(dbVersion.(string)) {
+					continue
+				}
 			}
 			var dbNodeClasses []map[string]string
 			for _, availableResource := range supportedEngine.AvailableResources {
@@ -207,18 +216,52 @@ func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta i
 		}
 
 	}
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	err = d.Set("classes", availableClasses)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok {
-		err = writeToFile(output.(string), availableClasses)
+		err = helper.WriteToFile(output.(string), availableClasses)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	return nil
+}
+
+// engineInfo splits a PolarDB engine identifier returned by the
+// DescribeDBClusterAvailableResources API into its engine prefix and the
+// remaining version suffix. The API returns the engine as the full DB type
+// name followed by the version (e.g. "PostgreSQL11", "MySQL5.6", "Oracle");
+// some responses may also use compact forms (e.g. "pg14", "mysql8", "pgo14").
+// Splitting at the first digit preserves version suffixes that contain dots.
+func engineInfo(engine string) (engineType string, version string) {
+	e := strings.ToLower(engine)
+	i := 0
+	for i < len(e) && (e[i] < '0' || e[i] > '9') {
+		i++
+	}
+	return e[:i], e[i:]
+}
+
+// normalizeEngineType maps a DB type to the canonical engine prefix,
+// applied to both the API-returned engine prefix (from engineInfo) and
+// the user-specified db_type argument so the two are comparable. It handles
+// full-name forms ("PostgreSQL", "MySQL", "Oracle") and compact forms
+// ("pg", "pgo") alike, mapping them to "pg", "mysql", "oracle".
+// Unrecognized values are lower-cased as-is.
+func normalizeEngineType(dbType string) string {
+	switch strings.ToLower(dbType) {
+	case "postgresql", "pg":
+		return "pg"
+	case "mysql":
+		return "mysql"
+	case "oracle", "pgo":
+		return "oracle"
+	default:
+		return strings.ToLower(dbType)
+	}
 }
