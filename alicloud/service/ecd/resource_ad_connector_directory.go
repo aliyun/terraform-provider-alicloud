@@ -1,4 +1,4 @@
-package alicloud
+package ecd
 
 import (
 	"fmt"
@@ -7,23 +7,26 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudEcdAdConnectorDirectory() *schema.Resource {
+func ResourceAdConnectorDirectory() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEcdAdConnectorDirectoryCreate,
-		Read:   resourceAlicloudEcdAdConnectorDirectoryRead,
-		Update: resourceAlicloudEcdAdConnectorDirectoryUpdate,
-		Delete: resourceAlicloudEcdAdConnectorDirectoryDelete,
+		Create: resourceAdConnectorDirectoryCreate,
+		Read:   resourceAdConnectorDirectoryRead,
+		Update: resourceAdConnectorDirectoryUpdate,
+		Delete: resourceAdConnectorDirectoryDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(3 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"directory_name": {
@@ -104,7 +107,7 @@ func resourceAlicloudEcdAdConnectorDirectory() *schema.Resource {
 	}
 }
 
-func resourceAlicloudEcdAdConnectorDirectoryCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAdConnectorDirectoryCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateADConnectorDirectory"
@@ -135,11 +138,11 @@ func resourceAlicloudEcdAdConnectorDirectoryCreate(d *schema.ResourceData, meta 
 		request["SubDomainName"] = v
 	}
 	request["VSwitchId"] = d.Get("vswitch_ids")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -147,26 +150,36 @@ func resourceAlicloudEcdAdConnectorDirectoryCreate(d *schema.ResourceData, meta 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecd_ad_connector_directory", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ecd_ad_connector_directory", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["DirectoryId"]))
 
-	return resourceAlicloudEcdAdConnectorDirectoryRead(d, meta)
+	// Wait for the directory to finish registering before reading, so the
+	// dependent VSwitch/VPC are not touched while the directory is still in
+	// REGISTERING. Previously the resource returned immediately after SetId.
+	ecdService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{"REGISTERING"}, []string{"REGISTERED", "ERROR"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecdService.EcdAdConnectorDirectoryStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return resourceAdConnectorDirectoryRead(d, meta)
 }
-func resourceAlicloudEcdAdConnectorDirectoryRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAdConnectorDirectoryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ecdService := EcdService{client}
+	ecdService := NewService(client)
 	object, err := ecdService.DescribeEcdAdConnectorDirectory(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ecd_ad_connector_directory ecdService.DescribeEcdAdConnectorDirectory Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("directory_name", object["Name"])
 	d.Set("desktop_access_type", object["DesktopAccessType"])
@@ -181,11 +194,13 @@ func resourceAlicloudEcdAdConnectorDirectoryRead(d *schema.ResourceData, meta in
 	d.Set("vswitch_ids", object["VSwitchIds"])
 	return nil
 }
-func resourceAlicloudEcdAdConnectorDirectoryUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAdConnectorDirectoryUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudEcdAdConnectorDirectoryRead(d, meta)
+	return resourceAdConnectorDirectoryRead(d, meta)
 }
-func resourceAlicloudEcdAdConnectorDirectoryDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAdConnectorDirectoryDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDirectories"
 	var response map[string]interface{}
@@ -194,11 +209,11 @@ func resourceAlicloudEcdAdConnectorDirectoryDelete(d *schema.ResourceData, meta 
 		"DirectoryId": []string{d.Id()},
 	}
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidDirectoryStatus"}) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"InvalidDirectoryStatus"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -206,9 +221,19 @@ func resourceAlicloudEcdAdConnectorDirectoryDelete(d *schema.ResourceData, meta 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	// Wait for the directory to disappear before returning, so dependent
+	// VSwitch/VPC are only destroyed once the directory is gone. Previously the
+	// resource returned immediately after the delete RPC, causing the VSwitch to
+	// be destroyed while the directory still referenced it (DependencyViolation).
+	ecdService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, ecdService.EcdAdConnectorDirectoryStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
