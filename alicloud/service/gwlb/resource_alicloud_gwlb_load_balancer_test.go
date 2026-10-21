@@ -1,12 +1,14 @@
-package alicloud
+package gwlb_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gwlb"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // Test Gwlb LoadBalancer. >>> Resource test cases, automatically generated.
@@ -14,23 +16,22 @@ import (
 func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gwlb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudGwlbLoadBalancerMap7994)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbLoadBalancer")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sgwlbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbLoadBalancerBasicDependence7994)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGwlbLoadBalancerMap7994)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gwlb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeLoadBalancer")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgwlbloadbalancer%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbLoadBalancerBasicDependence7994)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
+			acctest.PreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -48,11 +49,11 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":             CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
 						"load_balancer_name": name,
 						"zone_mappings.#":    "1",
 						"address_ip_version": "Ipv4",
-						"resource_group_id":  CHECKSET,
+						"resource_group_id":  acctest.CHECKSET,
 						"dry_run":            "false",
 					}),
 				),
@@ -72,7 +73,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 					testAccCheck(map[string]string{
 						"load_balancer_name": name + "_update",
 						"zone_mappings.#":    "1",
-						"resource_group_id":  CHECKSET,
+						"resource_group_id":  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -82,7 +83,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -118,13 +119,13 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -139,8 +140,8 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 }
 
 var AlicloudGwlbLoadBalancerMap7994 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudGwlbLoadBalancerBasicDependence7994(name string) string {
@@ -190,23 +191,22 @@ resource "alicloud_vswitch" "defaultH4pKT4" {
 func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gwlb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudGwlbLoadBalancerMap8565)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GwlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGwlbLoadBalancer")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sgwlbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGwlbLoadBalancerBasicDependence8565)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGwlbLoadBalancerMap8565)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gwlb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeLoadBalancer")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgwlbloadbalancer%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbLoadBalancerBasicDependence8565)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
+			acctest.PreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -224,11 +224,11 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":             CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
 						"load_balancer_name": name,
 						"zone_mappings.#":    "1",
 						"address_ip_version": "Ipv4",
-						"resource_group_id":  CHECKSET,
+						"resource_group_id":  acctest.CHECKSET,
 						"dry_run":            "false",
 					}),
 				),
@@ -248,7 +248,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 					testAccCheck(map[string]string{
 						"load_balancer_name": name + "_update",
 						"zone_mappings.#":    "1",
-						"resource_group_id":  CHECKSET,
+						"resource_group_id":  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -258,7 +258,7 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -294,13 +294,13 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -315,8 +315,8 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 }
 
 var AlicloudGwlbLoadBalancerMap8565 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudGwlbLoadBalancerBasicDependence8565(name string) string {
