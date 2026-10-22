@@ -111,6 +111,7 @@ The following arguments are supported:
   - `Ipv4Gateway`: An IPv4 gateway.
   - `GatewayEndpoint`: A gateway endpoint.
   - `Ecr`: A Express Connect Router (ECR).
+  - `GatewayLoadBalancerEndpoint`: The Gateway-based load balancing endpoint.
 * `nexthop_id` - (Optional, ForceNew) The ID of Next Hop.
 * `name` - (Optional, ForceNew, Available since v1.55.1) The name of the Route Entry. The name must be `1` to `128` characters in length, and cannot start with `http://` or `https://`.
 * `description` - (Optional, ForceNew, Available since v1.231.0) The description of the Route Entry. The description must be `1` to `256` characters in length, and cannot start with `http://` or `https://`.
