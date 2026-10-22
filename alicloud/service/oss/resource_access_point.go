@@ -1,5 +1,4 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package oss
 
 import (
 	"context"
@@ -11,17 +10,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
 
-func resourceAliCloudOssAccessPoint() *schema.Resource {
+func ResourceAccessPoint() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudOssAccessPointCreate,
-		Read:   resourceAliCloudOssAccessPointRead,
-		Update: resourceAliCloudOssAccessPointUpdate,
-		Delete: resourceAliCloudOssAccessPointDelete,
+		Create: resourceAccessPointCreate,
+		Read:   resourceAccessPointRead,
+		Update: resourceAccessPointUpdate,
+		Delete: resourceAccessPointDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -49,6 +51,7 @@ func resourceAliCloudOssAccessPoint() *schema.Resource {
 			"public_access_block_configuration": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -83,7 +86,7 @@ func resourceAliCloudOssAccessPoint() *schema.Resource {
 	}
 }
 
-func resourceAliCloudOssAccessPointCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAccessPointCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := fmt.Sprintf("/?accessPoint")
 	var request map[string]interface{}
@@ -93,12 +96,12 @@ func resourceAliCloudOssAccessPointCreate(d *schema.ResourceData, meta interface
 	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	request = make(map[string]interface{})
-	hostMap["bucket"] = StringPointer(d.Get("bucket").(string))
+	hostMap["bucket"] = helper.StringPointer(d.Get("bucket").(string))
 	jsonString := "{}"
 	jsonString, _ = sjson.Set(jsonString, "CreateAccessPointConfiguration.AccessPointName", d.Get("access_point_name"))
 	err = json.Unmarshal([]byte(jsonString), &request)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	objectDataLocalMap := make(map[string]interface{})
@@ -107,7 +110,7 @@ func resourceAliCloudOssAccessPointCreate(d *schema.ResourceData, meta interface
 		objectDataLocalMap["NetworkOrigin"] = v
 	}
 
-	if v := d.Get("vpc_configuration"); !IsNil(v) {
+	if v := d.Get("vpc_configuration"); !helper.IsNil(v) {
 		vpcConfiguration := make(map[string]interface{})
 		vpcId1, _ := jsonpath.Get("$[0].vpc_id", v)
 		if vpcId1 != nil && vpcId1 != "" {
@@ -122,11 +125,11 @@ func resourceAliCloudOssAccessPointCreate(d *schema.ResourceData, meta interface
 
 	request["CreateAccessPointConfiguration"] = objectDataLocalMap
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
-		response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "CreateAccessPoint", action), query, body, nil, hostMap, false)
+		response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "CreateAccessPoint", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -134,37 +137,37 @@ func resourceAliCloudOssAccessPointCreate(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_access_point", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_oss_access_point", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	CreateAccessPointConfigurationAccessPointNameVar, _ := jsonpath.Get("CreateAccessPointConfiguration.AccessPointName", request)
-	id := fmt.Sprintf("%s:%s", *hostMap["bucket"], CreateAccessPointConfigurationAccessPointNameVar)
-	ossServiceV2 := OssServiceV2{client}
-	stateConf := BuildStateConf([]string{"creating"}, []string{"enable"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossServiceV2.OssAccessPointStateRefreshFunc(id, "Status", []string{}))
+	createAccessPointConfigurationAccessPointNameVar, _ := jsonpath.Get("CreateAccessPointConfiguration.AccessPointName", request)
+	id := fmt.Sprintf("%s:%s", *hostMap["bucket"], createAccessPointConfigurationAccessPointNameVar)
+	ossService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{"creating"}, []string{"enable"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ossService.AccessPointStateRefreshFunc(id, "Status", []string{}))
 	if _, err := stateConf.WaitForStateContext(context.Background()); err != nil {
-		return WrapErrorf(err, IdMsg, id)
+		return errs.WrapErrorf(err, errs.IdMsg, id)
 	}
 
 	d.SetId(id)
 
-	return resourceAliCloudOssAccessPointUpdate(d, meta)
+	return resourceAccessPointUpdate(d, meta)
 }
 
-func resourceAliCloudOssAccessPointRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAccessPointRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ossServiceV2 := OssServiceV2{client}
+	ossService := NewService(client)
 
-	objectRaw, err := ossServiceV2.DescribeOssAccessPoint(d.Id())
+	objectRaw, err := ossService.DescribeAccessPoint(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_oss_access_point DescribeOssAccessPoint Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_oss_access_point DescribeAccessPoint Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["NetworkOrigin"] != nil {
@@ -202,12 +205,17 @@ func resourceAliCloudOssAccessPointRead(d *schema.ResourceData, meta interface{}
 	if objectRaw["VpcConfiguration"] != nil {
 		vpcConfiguration1Raw = objectRaw["VpcConfiguration"].(map[string]interface{})
 	}
-	if len(vpcConfiguration1Raw) > 0 {
+	if len(vpcConfiguration1Raw) > 0 && vpcConfiguration1Raw["VpcId"] != nil && vpcConfiguration1Raw["VpcId"] != "" {
 		vpcConfigurationMap["vpc_id"] = vpcConfiguration1Raw["VpcId"]
 
 		vpcConfigurationMaps = append(vpcConfigurationMaps, vpcConfigurationMap)
 	}
-	if objectRaw["VpcConfiguration"] != nil {
+	// Only a VPC-origin access point carries a VpcId; any other origin reports an
+	// empty or absent one. Write the empty list back for those origins so a block
+	// persisted by an older provider version is cleared instead of forcing a
+	// needless replacement, while a VPC-origin point keeps its state when the
+	// response omits the VpcId.
+	if len(vpcConfigurationMaps) > 0 || objectRaw["NetworkOrigin"] != "vpc" {
 		if err := d.Set("vpc_configuration", vpcConfigurationMaps); err != nil {
 			return err
 		}
@@ -216,7 +224,7 @@ func resourceAliCloudOssAccessPointRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func resourceAliCloudOssAccessPointUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAccessPointUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -231,8 +239,8 @@ func resourceAliCloudOssAccessPointUpdate(d *schema.ResourceData, meta interface
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 	hostMap := make(map[string]*string)
-	hostMap["bucket"] = StringPointer(parts[0])
-	query["x-oss-access-point-name"] = StringPointer(parts[1])
+	hostMap["bucket"] = helper.StringPointer(parts[0])
+	query["x-oss-access-point-name"] = helper.StringPointer(parts[1])
 
 	if d.HasChange("public_access_block_configuration") {
 		update = true
@@ -250,11 +258,11 @@ func resourceAliCloudOssAccessPointUpdate(d *schema.ResourceData, meta interface
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.Do("Oss", xmlParam("PUT", "2019-05-17", "PutAccessPointPublicAccessBlock", action), query, body, nil, hostMap, false)
+			response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "PutAccessPointPublicAccessBlock", action), query, body, nil, hostMap, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -262,16 +270,16 @@ func resourceAliCloudOssAccessPointUpdate(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudOssAccessPointRead(d, meta)
+	return resourceAccessPointRead(d, meta)
 }
 
-func resourceAliCloudOssAccessPointDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAccessPointDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -282,14 +290,14 @@ func resourceAliCloudOssAccessPointDelete(d *schema.ResourceData, meta interface
 	query := make(map[string]*string)
 	hostMap := make(map[string]*string)
 	request = make(map[string]interface{})
-	hostMap["bucket"] = StringPointer(parts[0])
-	query["x-oss-access-point-name"] = StringPointer(parts[1])
+	hostMap["bucket"] = helper.StringPointer(parts[0])
+	query["x-oss-access-point-name"] = helper.StringPointer(parts[1])
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-		response, err = client.Do("Oss", xmlParam("DELETE", "2019-05-17", "DeleteAccessPoint", action), query, nil, nil, hostMap, false)
+		response, err = client.Do("Oss", helper.XmlParam("DELETE", "2019-05-17", "DeleteAccessPoint", action), query, nil, nil, hostMap, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"AccessPointCreatingConflict"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"AccessPointCreatingConflict"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -297,19 +305,19 @@ func resourceAliCloudOssAccessPointDelete(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	ossServiceV2 := OssServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ossServiceV2.OssAccessPointStateRefreshFunc(d.Id(), "Status", []string{}))
+	ossService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ossService.AccessPointStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

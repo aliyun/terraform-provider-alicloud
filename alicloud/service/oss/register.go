@@ -8,6 +8,12 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Oss",
+		SDKResources: []conns.SDKResource{
+			{
+				TypeName: "alicloud_oss_access_point",
+				Factory:  ResourceAccessPoint,
+			},
+		},
 		Resources: []conns.Resource{
 			{
 				TypeName: "alicloud_oss_access_point_policy",
