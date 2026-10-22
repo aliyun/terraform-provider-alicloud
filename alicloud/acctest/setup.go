@@ -1,11 +1,13 @@
 package acctest
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -197,5 +199,76 @@ func PreCheckWithMultipleAccount(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCESS_KEY_2")); v == "" {
 		t.Skipf("Skipping unsupported test with multiple account")
 		t.Skipped()
+	}
+}
+
+const (
+	ProviderNameAlicloudAlt  = "alicloudalt"
+	ProviderNameAlicloudAlt2 = "alicloudalt2"
+	ProviderNameAlicloudAlt3 = "alicloudalt3"
+)
+
+func SDKProviderFactoriesAlternate() map[string]func() (*schema.Provider, error) {
+	altProvider := alicloud.Provider()
+	return map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return Provider, nil
+		},
+		ProviderNameAlicloudAlt: func() (*schema.Provider, error) {
+			return altProvider, nil
+		},
+	}
+}
+
+func SDKProviderFactoriesMultiRegion(n int) map[string]func() (*schema.Provider, error) {
+	factories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return Provider, nil
+		},
+	}
+	altNames := []string{ProviderNameAlicloudAlt, ProviderNameAlicloudAlt2, ProviderNameAlicloudAlt3}
+	for i := 0; i < n-1 && i < len(altNames); i++ {
+		p := alicloud.Provider()
+		factories[altNames[i]] = func() (*schema.Provider, error) {
+			return p, nil
+		}
+	}
+	return factories
+}
+
+func ConfigAlternateRegionProvider(region string) string {
+	return fmt.Sprintf(`
+provider "alicloudalt" {
+  region = "%s"
+}
+`, region)
+}
+
+func ConfigNamedRegionalProvider(providerName string, region string) string {
+	return fmt.Sprintf(`
+provider "%s" {
+  region = "%s"
+}
+`, providerName, region)
+}
+
+func CheckoutAccount(t *testing.T, SLAVE bool) {
+	if SLAVE {
+		if os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE") == "" || os.Getenv("ALICLOUD_SECRET_KEY_SLAVE") == "" {
+			t.Logf("\nALICLOUD_ACCESS_KEY_SLAVE or ALICLOUD_SECRET_KEY_SLAVE is empty and please add them.")
+		} else {
+			os.Setenv("ALICLOUD_ACCESS_KEY_MASTER", os.Getenv("ALICLOUD_ACCESS_KEY"))
+			os.Setenv("ALICLOUD_SECRET_KEY_MASTER", os.Getenv("ALICLOUD_SECRET_KEY"))
+			os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE"))
+			os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_SLAVE"))
+			t.Logf("%s is using the slave account", t.Name())
+		}
+	} else {
+		if os.Getenv("ALICLOUD_ACCESS_KEY_MASTER") == "" || os.Getenv("ALICLOUD_SECRET_KEY_MASTER") == "" {
+			t.Logf("\nALICLOUD_ACCESS_KEY_MASTER or ALICLOUD_SECRET_KEY_MASTER is empty and please add them.")
+		} else {
+			os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_MASTER"))
+			os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_MASTER"))
+		}
 	}
 }
