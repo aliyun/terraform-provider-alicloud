@@ -1640,8 +1640,28 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 	}
 	if d.HasChange("tags") || d.Get("override").(bool) {
 		update = true
-		count := 1
+		// ModifyEciScalingConfiguration replaces the whole tag set when Tag.N is present, so the
+		// ignored tags already on the configuration have to be sent back when ignore_tags is
+		// configured; without the configuration the configured tags are sent as-is.
+		desired := make(map[string]string)
 		for key, value := range d.Get("tags").(map[string]interface{}) {
+			desired[key] = value.(string)
+		}
+		payload := desired
+		if !client.IgnoreTags.Empty() {
+			essService := EssService{client}
+			object, err := essService.DescribeEssEciScalingConfiguration(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			current := make(map[string]string)
+			for key, value := range tagsToMap(object["Tags"]) {
+				current[key] = value.(string)
+			}
+			payload = mergeIgnoredTags(desired, current, client.IgnoreTags)
+		}
+		count := 1
+		for key, value := range payload {
 			request[fmt.Sprintf("Tag.%d.Key", count)] = key
 			request[fmt.Sprintf("Tag.%d.Value", count)] = value
 			count++

@@ -1597,9 +1597,27 @@ func resourceAlicloudOssBucketEncryptionUpdate(client *connectivity.AliyunClient
 }
 
 func resourceAlicloudOssBucketTaggingUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {
-	tagsMap := d.Get("tags").(map[string]interface{})
+	desired := make(map[string]string)
+	for key, value := range d.Get("tags").(map[string]interface{}) {
+		if v, ok := value.(string); ok {
+			desired[key] = v
+		}
+	}
+	// OSS replaces or deletes the whole tag set, so when ignore_tags is configured the ignored tags
+	// already on the bucket have to be sent back; otherwise removing the last managed tag would
+	// delete them too. Without the configuration the write keeps its baseline form: the configured
+	// tags are sent as-is and the current set is not read at all.
+	payload := desired
+	if !client.IgnoreTags.Empty() {
+		current, err := describeOssBucketTagging(client, d.Id())
+		if err != nil {
+			return err
+		}
+		payload = mergeIgnoredTags(desired, current, client.IgnoreTags)
+	}
+
 	var requestInfo *oss.Client
-	if tagsMap == nil || len(tagsMap) == 0 {
+	if len(payload) == 0 {
 		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			requestInfo = ossClient
 			return nil, ossClient.DeleteBucketTagging(d.Id())
@@ -1613,10 +1631,10 @@ func resourceAlicloudOssBucketTaggingUpdate(client *connectivity.AliyunClient, d
 
 	// Put tagging
 	var bTagging oss.Tagging
-	for k, v := range tagsMap {
+	for k, v := range payload {
 		bTagging.Tags = append(bTagging.Tags, oss.Tag{
 			Key:   k,
-			Value: v.(string),
+			Value: v,
 		})
 	}
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
@@ -1631,6 +1649,29 @@ func resourceAlicloudOssBucketTaggingUpdate(client *connectivity.AliyunClient, d
 		"tagging":    bTagging,
 	})
 	return nil
+}
+
+// describeOssBucketTagging returns every tag on the bucket, including the keys Terraform ignores,
+// because a whole-set write has to send them back.
+func describeOssBucketTagging(client *connectivity.AliyunClient, bucket string) (map[string]string, error) {
+	tagsMap := make(map[string]string)
+	var requestInfo *oss.Client
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
+		return ossClient.GetBucketTagging(bucket)
+	})
+	if err != nil {
+		if ossNotFoundError(err) {
+			return tagsMap, nil
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, bucket, "GetBucketTagging", AliyunOssGoSdk)
+	}
+	addDebug("GetBucketTagging", raw, requestInfo, map[string]string{"bucketName": bucket})
+	tagging, _ := raw.(oss.GetBucketTaggingResult)
+	for _, t := range tagging.Tags {
+		tagsMap[t.Key] = t.Value
+	}
+	return tagsMap, nil
 }
 
 func resourceAlicloudOssBucketVersioningUpdate(client *connectivity.AliyunClient, d *schema.ResourceData) error {

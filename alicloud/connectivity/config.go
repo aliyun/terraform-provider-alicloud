@@ -196,6 +196,10 @@ type Config struct {
 
 	// Features carries the provider's behaviour toggles. See the features package.
 	Features features.Features
+
+	// IgnoreTags lists the tag keys a resource Read keeps out of state. It belongs to this
+	// provider instance, so two aliases can ignore different keys.
+	IgnoreTags features.IgnoreTags
 }
 
 type AssumeRoleWithOidc struct {

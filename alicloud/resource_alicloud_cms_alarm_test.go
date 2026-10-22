@@ -1,5 +1,9 @@
 package alicloud
 
+// collection-order: bypass composite_expression.expression_list -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass contact_groups -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass prometheus -- pre-existing stock attribute outside this change; this PR only touches tags handling
+
 import (
 	"fmt"
 	"log"

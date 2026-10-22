@@ -99,6 +99,42 @@ func TestUnitProviderSchema(t *testing.T) {
 				},
 			},
 		},
+		"list of primitives": {
+			"a_list": {
+				Type:     sdkschema.TypeList,
+				Optional: true,
+				Elem:     &sdkschema.Schema{Type: sdkschema.TypeString},
+			},
+		},
+		"map of primitives": {
+			"a_map": {
+				Type:     sdkschema.TypeMap,
+				Optional: true,
+				Elem:     &sdkschema.Schema{Type: sdkschema.TypeInt},
+			},
+		},
+		// The provider's ignore_tags block: sets of strings nested in a list block.
+		"set of primitives nested in a block": {
+			"ignore_tags": {
+				Type:     sdkschema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &sdkschema.Resource{
+					Schema: map[string]*sdkschema.Schema{
+						"keys": {
+							Type:     sdkschema.TypeSet,
+							Optional: true,
+							Elem:     &sdkschema.Schema{Type: sdkschema.TypeString},
+						},
+						"key_prefixes": {
+							Type:     sdkschema.TypeSet,
+							Optional: true,
+							Elem:     &sdkschema.Schema{Type: sdkschema.TypeString},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for name, sdk := range testCases {
@@ -123,11 +159,11 @@ func TestUnitProviderSchemaUnsupported(t *testing.T) {
 		"float": {
 			"a_float": {Type: sdkschema.TypeFloat, Optional: true},
 		},
-		"list of primitives": {
-			"a_list": {
-				Type:     sdkschema.TypeList,
+		"set of unsupported primitives": {
+			"a_set": {
+				Type:     sdkschema.TypeSet,
 				Optional: true,
-				Elem:     &sdkschema.Schema{Type: sdkschema.TypeString},
+				Elem:     &sdkschema.Schema{Type: sdkschema.TypeFloat},
 			},
 		},
 		"computed": {

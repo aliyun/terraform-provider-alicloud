@@ -3,8 +3,10 @@ package framework
 import (
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	sdkschema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -57,14 +59,17 @@ func convertSchemaMap(sdk map[string]*sdkschema.Schema, prefix string, diags *di
 			continue
 		}
 
-		elem, ok := s.Elem.(*sdkschema.Resource)
-		if !ok {
-			addUnsupportedError(diags, path, fmt.Sprintf("Elem is %T; only *schema.Resource is supported", s.Elem))
-			continue
-		}
-
-		if block, ok := convertBlock(s, elem, path, diags); ok {
-			blocks[name] = block
+		switch elem := s.Elem.(type) {
+		case *sdkschema.Resource:
+			if block, ok := convertBlock(s, elem, path, diags); ok {
+				blocks[name] = block
+			}
+		case *sdkschema.Schema:
+			if attribute, ok := convertCollectionAttribute(s, elem, path, diags); ok {
+				attributes[name] = attribute
+			}
+		default:
+			addUnsupportedError(diags, path, fmt.Sprintf("Elem is %T; only *schema.Resource and *schema.Schema are supported", s.Elem))
 		}
 	}
 
@@ -118,6 +123,76 @@ func convertAttribute(s *sdkschema.Schema, path string, diags *diag.Diagnostics)
 	}
 
 	addUnsupportedError(diags, path, fmt.Sprintf("type %s is not supported; only TypeString, TypeInt and TypeBool are", s.Type))
+
+	return nil, false
+}
+
+// convertCollectionAttribute converts an SDK v2 collection of primitives into a
+// framework attribute. The element schema only contributes its type: SDK v2
+// validators are not part of the protocol schema and keep running on the SDK v2
+// side, which serves the provider configuration.
+func convertCollectionAttribute(s *sdkschema.Schema, elem *sdkschema.Schema, path string, diags *diag.Diagnostics) (fwschema.Attribute, bool) {
+	if s.Computed {
+		addUnsupportedError(diags, path, "Computed is not expressible in a framework provider schema")
+		return nil, false
+	}
+	if s.WriteOnly {
+		addUnsupportedError(diags, path, "WriteOnly is not expressible in a framework provider schema")
+		return nil, false
+	}
+
+	elementType, ok := primitiveType(elem.Type)
+	if !ok {
+		addUnsupportedError(diags, path, fmt.Sprintf("element type %s is not supported; only TypeString, TypeInt and TypeBool are", elem.Type))
+		return nil, false
+	}
+
+	required, optional := requiredOptional(s)
+
+	switch s.Type {
+	case sdkschema.TypeList:
+		return fwschema.ListAttribute{
+			ElementType:        elementType,
+			Required:           required,
+			Optional:           optional,
+			Sensitive:          s.Sensitive,
+			Description:        s.Description,
+			DeprecationMessage: s.Deprecated,
+		}, true
+	case sdkschema.TypeSet:
+		return fwschema.SetAttribute{
+			ElementType:        elementType,
+			Required:           required,
+			Optional:           optional,
+			Sensitive:          s.Sensitive,
+			Description:        s.Description,
+			DeprecationMessage: s.Deprecated,
+		}, true
+	case sdkschema.TypeMap:
+		return fwschema.MapAttribute{
+			ElementType:        elementType,
+			Required:           required,
+			Optional:           optional,
+			Sensitive:          s.Sensitive,
+			Description:        s.Description,
+			DeprecationMessage: s.Deprecated,
+		}, true
+	}
+
+	addUnsupportedError(diags, path, fmt.Sprintf("type %s with a *schema.Schema Elem is not supported; only TypeList, TypeSet and TypeMap are", s.Type))
+
+	return nil, false
+}
+
+func primitiveType(valueType sdkschema.ValueType) (attr.Type, bool) {
+	switch valueType {
+	case sdkschema.TypeString:
+		return types.StringType, true
+	case sdkschema.TypeInt:
+		return types.Int64Type, true
+	case sdkschema.TypeBool:
+		return types.BoolType, true
+	}
 
 	return nil, false
 }
