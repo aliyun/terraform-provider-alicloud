@@ -49,7 +49,7 @@ func testSweepEhpcCluster(region string) error {
 
 		resp, err := jsonpath.Get("$.Clusters.ClusterInfoSimple", response)
 		if err != nil {
-			log.Println(err)
+			log.Printf("[ERROR] Failed to parse $.Clusters.ClusterInfoSimple (treat as empty): %s", err)
 			break
 		}
 		result, _ := resp.([]interface{})
