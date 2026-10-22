@@ -6,11 +6,12 @@ package alicloud
 // resource implementation itself lives in alicloud/service/ecs.
 
 import (
+	"fmt"
 	"log"
-	"strings"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -27,10 +28,6 @@ func testAliCloudEcsDisk(region string) error {
 		return WrapErrorf(err, "Error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"tf-testAcc",
-		"tf-testacc",
-	}
 	request := map[string]interface{}{
 		"PageSize":   PageSizeLarge,
 		"PageNumber": 1,
@@ -55,26 +52,23 @@ func testAliCloudEcsDisk(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["DiskName"].(string)), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Disk: %s", item["DiskName"].(string))
+			name := fmt.Sprint(item["DiskName"])
+			if !ecs.IsDiskSweepCandidateName(name) {
+				log.Printf("[INFO] Skipping Disk: %s", name)
 				continue
 			}
-			action = "DeleteDisk"
-			request := map[string]interface{}{
-				"DiskId":   item["DiskId"],
-				"RegionId": client.RegionId,
+			id := fmt.Sprint(item["DiskId"])
+			log.Printf("[INFO] Deleting Disk: %s (%s)", name, id)
+			// SweepDisk runs the forced release sequence, so a PrePaid disk left
+			// behind by the force_delete acceptance cases is converted and
+			// detached before DeleteDisk; the dependencies of those cases
+			// (instance, vpc, vswitch, security group) carry the same tf-testAcc
+			// name and are covered by their own sweepers.
+			if err := ecs.NewService(client).SweepDisk(id); err != nil {
+				log.Printf("[ERROR] Failed to delete Disk (%s): %s", name, err)
+				continue
 			}
-			_, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete Disk (%s): %s", item["DiskName"].(string), err)
-			}
-			log.Printf("[INFO] Delete Disk success: %s ", item["DiskName"].(string))
+			log.Printf("[INFO] Delete Disk success: %s ", name)
 		}
 		if len(result) < PageSizeLarge {
 			break
