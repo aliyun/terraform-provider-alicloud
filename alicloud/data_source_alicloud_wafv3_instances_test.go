@@ -18,7 +18,10 @@ func TestAccAliCloudWafv3InstanceDataSource(t *testing.T) {
 		fakeConfig:  "",
 	}
 
-	Wafv3InstanceCheckInfo.dataSourceTestCheck(t, rand, allConf)
+	Wafv3InstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, func() {
+		testAccPreCheck(t)
+		testAccPreCheckWafv3Instance(t)
+	}, allConf)
 }
 
 var existWafv3InstanceMapFunc = func(rand int) map[string]string {
