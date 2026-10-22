@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -19,7 +20,7 @@ import (
 )
 
 // lintignore: AT001
-func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
+func TestAccAliCloudMongoDBServerlessInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_serverless_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBServerlessSupportRegions)
@@ -36,7 +37,6 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -122,11 +122,17 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"capacity_unit":       "2000",
 					"db_instance_storage": "20",
+					"auto_pay":            true,
+					"order_type":          "UPGRADE",
+					"effective_time":      "Immediately",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"capacity_unit":       "2000",
 						"db_instance_storage": "20",
+						"auto_pay":            "true",
+						"order_type":          "UPGRADE",
+						"effective_time":      "Immediately",
 					}),
 				),
 			},
@@ -164,17 +170,26 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":              REMOVEKEY,
+					"engine_version":      REMOVEKEY,
+					"storage_engine":      REMOVEKEY,
+					"db_instance_storage": REMOVEKEY,
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "period", "period_price_type", "account_password"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_pay", "order_type", "effective_time", "period", "period_price_type", "account_password"},
 			},
 		},
 	})
 }
 
 // lintignore: AT001
-func SkipTestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
+func TestAccAliCloudMongoDBServerlessInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_serverless_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBServerlessSupportRegions)
@@ -191,12 +206,14 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_renew":              "false",
+					"auto_pay":                true,
+					"order_type":              "UPGRADE",
+					"effective_time":          "Immediately",
 					"account_password":        "Abc12345",
 					"capacity_unit":           "100",
 					"db_instance_storage":     "5",
@@ -231,6 +248,9 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
 						"storage_engine":          "WiredTiger",
 						"db_instance_description": name,
 						"vswitch_id":              CHECKSET,
+						"auto_pay":                "true",
+						"order_type":              "UPGRADE",
+						"effective_time":          "Immediately",
 						"tags.%":                  "2",
 						"tags.Created":            "MongodbServerlessInstance",
 						"tags.For":                "TF",
@@ -242,15 +262,18 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "period", "period_price_type", "account_password"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_pay", "order_type", "effective_time", "period", "period_price_type", "account_password"},
 			},
 		},
 	})
 }
 
 var AlicloudMongoDBServerlessInstanceMap0 = map[string]string{
-	"auto_pay": NOSET,
-	"status":   CHECKSET,
+	"auto_pay":       NOSET,
+	"order_type":     NOSET,
+	"effective_time": NOSET,
+	"payment_type":   CHECKSET,
+	"status":         CHECKSET,
 }
 
 func AlicloudMongoDBServerlessInstanceBasicDependence0(name string) string {
@@ -294,6 +317,9 @@ func TestUnitAlicloudMongoDBServerlessInstance(t *testing.T) {
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"auto_renew":              false,
+		"auto_pay":                true,
+		"order_type":              "UPGRADE",
+		"effective_time":          "Immediately",
 		"account_password":        "CreateServerlessDBInstanceValue",
 		"capacity_unit":           100,
 		"db_instance_storage":     5,
@@ -341,6 +367,7 @@ func TestUnitAlicloudMongoDBServerlessInstance(t *testing.T) {
 			"DBInstance": []interface{}{
 				map[string]interface{}{
 					"CapacityUnit":          100,
+					"ChargeType":            "PostPaid",
 					"DBInstanceStatus":      "Running",
 					"DBInstanceId":          "CreateServerlessDBInstanceValue",
 					"DBInstanceDescription": "CreateServerlessDBInstanceValue",
@@ -354,6 +381,9 @@ func TestUnitAlicloudMongoDBServerlessInstance(t *testing.T) {
 					"VSwitchId":             "CreateServerlessDBInstanceValue",
 					"ZoneId":                "CreateServerlessDBInstanceValue",
 					"VPCId":                 "CreateServerlessDBInstanceValue",
+					"AutoPay":               true,
+					"OrderType":             "UPGRADE",
+					"EffectiveTime":         "Immediately",
 				},
 			},
 		},
@@ -640,10 +670,13 @@ func TestUnitAlicloudMongoDBServerlessInstance(t *testing.T) {
 		}
 	}
 
-	// ModifyDBInstanceMaintainTime
+	// ModifyDBInstanceSpec
 	attributesDiff = map[string]interface{}{
 		"db_instance_storage": 10,
 		"capacity_unit":       200,
+		"auto_pay":            false,
+		"order_type":          "DOWNGRADE",
+		"effective_time":      "MaintainTime",
 	}
 	diff, err = newInstanceDiff("alicloud_mongodb_serverless_instance", attributes, attributesDiff, dExisted.State())
 	if err != nil {

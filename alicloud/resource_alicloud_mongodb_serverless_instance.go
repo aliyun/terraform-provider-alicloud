@@ -37,6 +37,20 @@ func resourceAlicloudMongodbServerlessInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"effective_time": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Immediately", "MaintainTime"}, false),
+			},
+			"order_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
+			},
 			"capacity_unit": {
 				Type:         schema.TypeInt,
 				Required:     true,
@@ -81,6 +95,10 @@ func resourceAlicloudMongodbServerlessInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Day", "Month"}, false),
+			},
+			"payment_type": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -219,6 +237,16 @@ func resourceAlicloudMongodbServerlessInstanceRead(d *schema.ResourceData, meta 
 	}
 	d.Set("engine", object["Engine"])
 	d.Set("engine_version", object["EngineVersion"])
+	d.Set("payment_type", convertMongodbServerlessInstancePayTypeResponse(fmt.Sprint(object["ChargeType"])))
+	if v, ok := object["AutoPay"]; ok {
+		d.Set("auto_pay", v)
+	}
+	if v, ok := object["OrderType"]; ok {
+		d.Set("order_type", v)
+	}
+	if v, ok := object["EffectiveTime"]; ok {
+		d.Set("effective_time", v)
+	}
 	d.Set("maintain_end_time", object["MaintainEndTime"])
 	d.Set("maintain_start_time", object["MaintainStartTime"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
@@ -391,6 +419,15 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 		}
 		if v, ok := d.GetOk("db_instance_storage"); ok {
 			request["DBInstanceStorage"] = v
+		}
+		if v, ok := d.GetOkExists("auto_pay"); ok {
+			request["AutoPay"] = v
+		}
+		if v, ok := d.GetOk("order_type"); ok {
+			request["OrderType"] = v.(string)
+		}
+		if v, ok := d.GetOk("effective_time"); ok {
+			request["EffectiveTime"] = v.(string)
 		}
 		action := "ModifyDBInstanceSpec"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
