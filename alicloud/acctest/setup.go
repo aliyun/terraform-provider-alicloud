@@ -2,7 +2,9 @@ package acctest
 
 import (
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -119,6 +121,81 @@ func CheckoutSupportedRegions(t *testing.T, supported bool, regions []connectivi
 			}
 			t.Skipf("Skipping unsupported region %s. Unsupported regions: %s.", region, regions)
 		}
+		t.Skipped()
+	}
+}
+
+type AccountSite string
+
+const (
+	DomesticSite = AccountSite("Domestic")
+	IntlSite     = AccountSite("International")
+)
+
+// currently not all account site type support create PostPaid resources, PayByBandwidth and other limits.
+// The setting of account site type can skip some unsupported cases automatically.
+
+func PreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
+	defaultAccount := string(DomesticSite)
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_SITE")); v != "" {
+		defaultAccount = v
+	} else if v = strings.TrimSpace(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")); v != "" {
+		defaultAccount = v
+	} else if v = strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_TYPE")); v != "" {
+		defaultAccount = v
+	}
+	if defaultAccount != string(account) {
+		t.Skipf("Skipping unsupported account type %s-Site. It only supports %s-Site.", defaultAccount, account)
+		t.Skipped()
+	}
+}
+
+func PreCheckPrePaidResources(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ENABLE_CHECKING_PRE_PAID")); v != "true" {
+		t.Skip("Skipping testing PrePaid resources, otherwise setting environment parameter 'ENABLE_CHECKING_PRE_PAID'.")
+		t.Skipped()
+	}
+}
+
+func ClassicNetworkResources(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ENABLE_CLASSIC_NETWORK")); v != "true" {
+		t.Skip("Skipping testing classic resources, otherwise setting environment parameter 'ENABLE_CLASSIC_NETWORK'.")
+		t.Skipped()
+	}
+}
+
+func PreCheckWithEnvVariable(t *testing.T, envVariableName string) {
+	if v := strings.TrimSpace(os.Getenv(envVariableName)); v == "" {
+		t.Skipf("Skipping the test case with no env variable %s", envVariableName)
+		t.Skipped()
+	}
+}
+
+func PreCheckWithTime(t *testing.T, days []int) {
+	skipped := true
+	for _, d := range days {
+		if time.Now().Day() == d {
+			skipped = false
+			break
+		}
+	}
+	if skipped {
+		t.Skipf("Skipping the test case when not in specified days %#v of every month", days)
+		t.Skipped()
+	}
+}
+
+func PreCheckEnterpriseAccountEnabled(t *testing.T) {
+	enable := os.Getenv("ENTERPRISE_ACCOUNT_ENABLED")
+	if enable != "true" {
+		t.Skipf("Skipping the test case because the enterprise account is not enabled.")
+		t.Skipped()
+	}
+}
+
+func PreCheckWithMultipleAccount(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCESS_KEY_2")); v == "" {
+		t.Skipf("Skipping unsupported test with multiple account")
 		t.Skipped()
 	}
 }
