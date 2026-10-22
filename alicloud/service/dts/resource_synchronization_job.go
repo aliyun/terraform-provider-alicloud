@@ -1,23 +1,34 @@
-package alicloud
+package dts
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
+// upperLowerCaseDiffSuppressFunc suppresses diffs where the only difference is letter case.
+func upperLowerCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(old) == strings.ToLower(new)
+}
+
+func ResourceSynchronizationJob() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDtsSynchronizationJobCreate,
-		Read:   resourceAlicloudDtsSynchronizationJobRead,
-		Update: resourceAlicloudDtsSynchronizationJobUpdate,
-		Delete: resourceAlicloudDtsSynchronizationJobDelete,
+		Create: resourceSynchronizationJobCreate,
+		Read:   resourceSynchronizationJobRead,
+		Update: ResourceSynchronizationJobUpdate,
+		Delete: resourceSynchronizationJobDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -54,7 +65,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"xmicro", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "6xlarge", "8xlarge"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"xmicro", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "6xlarge", "8xlarge"}, false),
 			},
 			"data_initialization": {
 				Type:     schema.TypeBool,
@@ -76,7 +87,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Forward", "Reverse"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Forward", "Reverse"}, false),
 			},
 			"db_list": {
 				Type:     schema.TypeString,
@@ -91,15 +102,15 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     StringInSlice([]string{"CEN", "DG", "DISTRIBUTED_DMSLOGICDB", "ECS", "EXPRESS", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "DISTRIBUTED_POLARDBX10"}, true),
-				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
+				ValidateFunc:     validators.StringInSlice([]string{"CEN", "DG", "DISTRIBUTED_DMSLOGICDB", "ECS", "EXPRESS", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "DISTRIBUTED_POLARDBX10"}, true),
+				DiffSuppressFunc: upperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_engine_name": {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA", "POLARDB_PG", "MARIADB", "POLARDBX10", "TiDB", "REDIS"}, true),
-				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
+				ValidateFunc:     validators.StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA", "POLARDB_PG", "MARIADB", "POLARDBX10", "TiDB", "REDIS"}, true),
+				DiffSuppressFunc: upperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_instance_id": {
 				Type:     schema.TypeString,
@@ -169,21 +180,21 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"0", "1"}, false),
 			},
 			"destination_endpoint_instance_type": {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "ELK", "Tablestore", "ODPS"}, true),
-				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
+				ValidateFunc:     validators.StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "ELK", "Tablestore", "ODPS"}, true),
+				DiffSuppressFunc: upperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_engine_name": {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL", "POLARDB_PG", "MARIADB", "POLARDBX10", "ODPS", "Tablestore", "ELK", "REDIS"}, true),
-				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
+				ValidateFunc:     validators.StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL", "POLARDB_PG", "MARIADB", "POLARDBX10", "ODPS", "Tablestore", "ELK", "REDIS"}, true),
+				DiffSuppressFunc: upperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_instance_id": {
 				Type:     schema.TypeString,
@@ -238,7 +249,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"0", "1", "3"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"0", "1", "3"}, false),
 			},
 			"dest_primary_vswitch_id": {
 				Type:     schema.TypeString,
@@ -284,7 +295,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Synchronizing", "Suspending"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Synchronizing", "Suspending"}, false),
 			},
 			"job_parameters": {
 				Type:     schema.TypeString,
@@ -295,7 +306,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSynchronizationJobCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "ConfigureDtsJob"
@@ -361,8 +372,8 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("reserve"); ok {
 		request["Reserve"] = v
 	}
-	if err := setDtsEndpointSSL(d, request); err != nil {
-		return WrapError(err)
+	if err := setEndpointSSL(d, request); err != nil {
+		return errs.WrapError(err)
 	}
 	if v, ok := d.GetOk("source_endpoint_database_name"); ok {
 		request["SourceEndpointDatabaseName"] = v
@@ -428,11 +439,11 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("dts_bis_label"); ok {
 		request["DtsBisLabel"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"SQLExecuteError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"SQLExecuteError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -440,47 +451,39 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dts_synchronization_job", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dts_synchronization_job", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["DtsJobId"]))
 	d.Set("dts_instance_id", response["DtsInstanceId"])
-	dtsService := DtsService{client}
-	// DescribeDtsSynchronizationJob maps the transient Initializing state to
-	// Synchronizing so the create wait does not block on the data initialization
-	// phase. The wait releases as soon as the job reports a target state
-	// (Synchronizing/NotStarted). SynchronizationDirection is intentionally NOT
-	// gated here: DTS does not always report it for synchronization jobs, and
-	// requiring it non-empty would never converge, timing out the create. The
-	// direction is configured once by ConfigureDtsJob and is written back in Read
-	// when the API reports a non-empty value.
-	stateConf := BuildStateConf([]string{}, []string{"Synchronizing", "NotStarted"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
+	dtsService := Service{client}
+	stateConf := helper.BuildStateConf([]string{}, []string{"Synchronizing", "NotStarted"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dtsService.SynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudDtsSynchronizationJobUpdate(d, meta)
+	return ResourceSynchronizationJobUpdate(d, meta)
 }
-func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSynchronizationJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dtsService := DtsService{client}
-	object, err := dtsService.DescribeDtsSynchronizationJob(d.Id())
+	dtsService := Service{client}
+	object, err := dtsService.DescribeSynchronizationJob(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_job dtsService.DescribeDtsSynchronizationJob Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_job dtsService.DescribeSynchronizationJob Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	migrationModeObj := object["MigrationMode"].(map[string]interface{})
 	destinationEndpointObj := object["DestinationEndpoint"].(map[string]interface{})
 	sourceEndpointObj := object["SourceEndpoint"].(map[string]interface{})
-	actualCheckpoint, err := formatInt(object["Checkpoint"])
+	actualCheckpoint, err := convert.FormatInt(object["Checkpoint"])
 	if err != nil {
-		return err
+		return errs.WrapError(err)
 	}
 	d.Set("checkpoint", fmt.Sprint(actualCheckpoint))
 	d.Set("data_initialization", migrationModeObj["DataInitialization"])
@@ -495,7 +498,7 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	d.Set("destination_endpoint_port", destinationEndpointObj["Port"])
 	d.Set("destination_endpoint_region", destinationEndpointObj["Region"])
 	d.Set("destination_endpoint_user_name", destinationEndpointObj["UserName"])
-	if ssl := convertDtsEndpointSslResponse(destinationEndpointObj["SslSolutionEnum"]); ssl != nil {
+	if ssl := convertEndpointSslResponse(destinationEndpointObj["SslSolutionEnum"]); ssl != nil {
 		d.Set("destination_endpoint_ssl", ssl)
 	}
 	d.Set("dts_instance_id", object["DtsInstanceID"])
@@ -511,7 +514,7 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 	d.Set("source_endpoint_region", sourceEndpointObj["Region"])
 	d.Set("source_endpoint_role", sourceEndpointObj["RoleName"])
 	d.Set("source_endpoint_user_name", sourceEndpointObj["UserName"])
-	if ssl := convertDtsEndpointSslResponse(sourceEndpointObj["SslSolutionEnum"]); ssl != nil {
+	if ssl := convertEndpointSslResponse(sourceEndpointObj["SslSolutionEnum"]); ssl != nil {
 		d.Set("source_endpoint_ssl", ssl)
 	}
 	d.Set("status", object["Status"])
@@ -533,17 +536,17 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 
 	parameters, err := dtsService.QueryChangedJobParameters(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_job dtsService.DescribeDtsSynchronizationJob Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_job dtsService.DescribeSynchronizationJob Failed!!! %s", err)
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("job_parameters", parameters)
 
 	return nil
 }
-func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceSynchronizationJobUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -560,11 +563,11 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 	request["RegionId"] = client.RegionId
 	if update {
 		action := "ModifyDtsJobName"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -572,12 +575,49 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
+		if isJobNotFoundSignal(err, response) {
+			// An instance that carries historical deletion records can lose the server-side
+			// mapping between the job ID stored in state and the instance, so ModifyDtsJobName
+			// reports that the instance does not exist. Recover the currently valid job ID from
+			// the instance and retry the rename once before failing.
+			dtsService := Service{client}
+			resolvedId, resolveErr := synchronizationJobResolveJobId(d, &dtsService)
+			if resolveErr != nil {
+				log.Printf("[WARN] Failed to resolve the valid DTS job ID under instance %s: %s", d.Get("dts_instance_id"), resolveErr)
+			}
+			if resolveErr == nil && resolvedId != "" && resolvedId != d.Id() {
+				log.Printf("[INFO] The DTS job ID %s of alicloud_dts_synchronization_job is no longer valid, retrying %s with the resolved job ID %s.", d.Id(), action, resolvedId)
+				request["DtsJobId"] = resolvedId
+				var retryErr error
+				retryWait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+				retryErr = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, retryErr = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+					if retryErr != nil {
+						if helper.NeedRetry(retryErr) {
+							retryWait()
+							return retry.RetryableError(retryErr)
+						}
+						return retry.NonRetryableError(retryErr)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if retryErr == nil && fmt.Sprint(response["Success"]) != "false" {
+					d.SetId(resolvedId)
+					err = nil
+				} else if retryErr != nil {
+					err = retryErr
+				} else {
+					err = fmt.Errorf("%s failed, response: %v", action, response)
+				}
+			}
+		}
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 
@@ -596,11 +636,11 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		}
 
 		action := "ModifyDtsJobPassword"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyDtsJobPasswordReq, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -608,18 +648,18 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, modifyDtsJobPasswordReq)
+		logs.AddDebug(action, response, modifyDtsJobPasswordReq)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err = resourceSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
-			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
+			return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
 		}
 	}
 
@@ -634,11 +674,11 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		}
 
 		action := "ModifyDtsJobPassword"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyDtsJobPasswordReq, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -646,18 +686,18 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, modifyDtsJobPasswordReq)
+		logs.AddDebug(action, response, modifyDtsJobPasswordReq)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err = resourceSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
-			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
+			return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
 		}
 	}
 
@@ -665,24 +705,22 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 	request = map[string]interface{}{
 		"DtsJobId": d.Id(),
 	}
-	// ConfigureDtsJob does not accept InstanceClass, so the job is created with the
-	// service-side default. TransferInstanceClass is called with OrderType=UPGRADE;
-	// the service rejects requests that would downgrade the class (NoPermission for
-	// accounts without downgrade permission). Compare the configured class against
-	// the actual one returned by DescribeDtsJobDetail and request the transfer only
-	// when they differ, so a redundant create-time transfer is skipped while an
-	// actual class change still flows through.
 	if d.HasChange("instance_class") {
 		if v, ok := d.GetOk("instance_class"); ok {
 			configClass := v.(string)
-			dtsService := DtsService{client}
-			object, err := dtsService.DescribeDtsSynchronizationJob(d.Id())
+			dtsService := Service{client}
+			object, err := dtsService.DescribeSynchronizationJob(d.Id())
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			actualClass, _ := object["DtsJobClass"].(string)
-			// An empty actual class means the describe response did not carry it; do not
-			// trigger a transfer from incomplete data.
+			// ConfigureDtsJob does not accept InstanceClass, so the job is created with the
+			// service-side default. TransferInstanceClass is called with OrderType=UPGRADE and
+			// the service rejects requests that would downgrade the class. Compare the configured
+			// class against the actual one returned by DescribeDtsJobDetail and request the
+			// transfer only when they differ, so a redundant create-time transfer is skipped
+			// while an actual class change still flows through. An empty actual class means the
+			// describe response did not carry it; do not trigger a transfer from incomplete data.
 			if actualClass != "" && configClass != actualClass {
 				request["InstanceClass"] = configClass
 				update = true
@@ -694,11 +732,11 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 
 	if update {
 		action := "TransferInstanceClass"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -706,20 +744,20 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 
 	if d.HasChange("status") {
 		target := d.Get("status").(string)
-		err := resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err := resourceSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -734,11 +772,11 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		}
 
 		action := "ModifyDtsJob"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyDtsJobReq, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InvalidJobStatus", "InvalidTaskStatus", "DTS.Msg.OperationDenied.JobStatusModifying", "DTS.Msg.ModifyDenied.JobStatusNotRunning"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"InvalidJobStatus", "InvalidTaskStatus", "DTS.Msg.OperationDenied.JobStatusModifying", "DTS.Msg.ModifyDenied.JobStatusNotRunning"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -746,26 +784,26 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, modifyDtsJobReq)
+		logs.AddDebug(action, response, modifyDtsJobReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err = resourceSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
-			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
+			return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
 		}
 	}
 
 	if d.HasChange("source_endpoint_ssl") || d.HasChange("destination_endpoint_ssl") {
-		reserved, err := dtsEndpointSSLReserved(d)
+		reserved, err := endpointSSLReserved(d)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		modifyReservedReq := map[string]interface{}{
 			"DtsInstanceId":  d.Get("dts_instance_id"),
@@ -781,11 +819,11 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		}
 
 		action := "ModifyDtsJob"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyReservedReq, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InvalidJobStatus", "InvalidTaskStatus", "DTS.Msg.OperationDenied.JobStatusModifying", "DTS.Msg.ModifyDenied.JobStatusNotRunning"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"InvalidJobStatus", "InvalidTaskStatus", "DTS.Msg.OperationDenied.JobStatusModifying", "DTS.Msg.ModifyDenied.JobStatusNotRunning"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -793,18 +831,18 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, modifyReservedReq)
+		logs.AddDebug(action, response, modifyReservedReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 		target := d.Get("status").(string)
-		err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+		err = resourceSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
-			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
+			return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
 		}
 	}
 
@@ -857,12 +895,12 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			modifyJobConfigReq["Parameters"] = normNew
 
 			action := "ModifyDtsJobConfig"
-			wait := incrementalWait(3*time.Second, 3*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyJobConfigReq, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -870,27 +908,27 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 				}
 				return nil
 			})
-			addDebug(action, response, modifyJobConfigReq)
+			logs.AddDebug(action, response, modifyJobConfigReq)
 
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 			if fmt.Sprint(response["Success"]) == "false" {
-				return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+				return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 			}
 			// d.Set("job_parameters", normNew)
 
 			target := d.Get("status").(string)
-			err = resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
+			err = resourceSynchronizationJobStatusFlow(d, meta, target)
 			if err != nil {
-				return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
+				return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
 			}
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudDtsSynchronizationJobRead(d, meta)
+	return resourceSynchronizationJobRead(d, meta)
 }
-func resourceAlicloudDtsSynchronizationJobDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSynchronizationJobDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDtsJob"
 	var response map[string]interface{}
@@ -903,11 +941,11 @@ func resourceAlicloudDtsSynchronizationJobDelete(d *schema.ResourceData, meta in
 		request["DtsInstanceId"] = v
 	}
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -915,25 +953,25 @@ func resourceAlicloudDtsSynchronizationJobDelete(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
 
-func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, meta interface{}, target string) error {
+func resourceSynchronizationJobStatusFlow(d *schema.ResourceData, meta interface{}, target string) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	dtsService := DtsService{client}
+	dtsService := Service{client}
 	var response map[string]interface{}
 	var err error
-	object, err := dtsService.DescribeDtsSynchronizationJob(d.Id())
+	object, err := dtsService.DescribeSynchronizationJob(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if object["Status"].(string) != target {
 		if target == "Synchronizing" || target == "Suspending" {
@@ -945,11 +983,11 @@ func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, met
 				request["SynchronizationDirection"] = v
 			}
 			action := "StartDtsJob"
-			wait := incrementalWait(3*time.Second, 3*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -957,13 +995,13 @@ func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, met
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Synchronizing"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
+			stateConf := helper.BuildStateConf([]string{}, []string{"Synchronizing"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, dtsService.SynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		}
 		if target == "Suspending" {
@@ -975,11 +1013,11 @@ func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, met
 				request["SynchronizationDirection"] = v
 			}
 			action := "SuspendDtsJob"
-			wait := incrementalWait(3*time.Second, 3*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -987,18 +1025,93 @@ func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, met
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Suspending"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
+			stateConf := helper.BuildStateConf([]string{}, []string{"Suspending"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.SynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		}
 	}
 
 	return nil
+}
+
+// synchronizationJobResolveJobId recovers the currently valid DTS job ID from the DTS
+// instance backing this resource. The instance ID remains stable while the job attached to it
+// can be deleted and re-created, leaving the job ID stored in state stale.
+func synchronizationJobResolveJobId(d *schema.ResourceData, dtsService *Service) (string, error) {
+	instanceId := ""
+	if v, ok := d.GetOk("dts_instance_id"); ok {
+		instanceId = fmt.Sprint(v)
+	}
+	if instanceId == "" {
+		return "", fmt.Errorf("dts_instance_id is empty, cannot resolve the valid job ID of alicloud_dts_synchronization_job %s", d.Id())
+	}
+	jobs, err := dtsService.DescribeJobsByInstanceId(instanceId, "SYNC")
+	if err != nil {
+		return "", errs.WrapError(err)
+	}
+	// A bidirectional synchronization topology attaches a reverse job to the same instance, and
+	// DescribeDtsJobs may expose it either as a separate list entry or nested under ReverseJob.
+	candidates := make([]map[string]interface{}, 0, len(jobs))
+	seenJobIds := make(map[string]bool)
+	appendCandidate := func(item map[string]interface{}) {
+		jobId := fmt.Sprint(item["DtsJobId"])
+		if jobId == "" || jobId == "<nil>" || seenJobIds[jobId] {
+			return
+		}
+		seenJobIds[jobId] = true
+		candidates = append(candidates, item)
+	}
+	for _, job := range jobs {
+		appendCandidate(job)
+		if reverse, ok := job["ReverseJob"].(map[string]interface{}); ok {
+			appendCandidate(reverse)
+		}
+	}
+	if len(candidates) == 0 {
+		return "", fmt.Errorf("no DTS synchronization job was found under instance %s", instanceId)
+	}
+	direction := ""
+	if v, ok := d.GetOk("synchronization_direction"); ok {
+		direction = fmt.Sprint(v)
+	}
+	// When the known synchronization_direction is configured, filter every candidate by
+	// direction first — even when only one candidate remains. A single candidate whose
+	// direction does not match must not be used, otherwise the rename would target the
+	// wrong job (e.g. the reverse job) and switch the resource identity.
+	if direction != "" {
+		matched := make([]string, 0, len(candidates))
+		for _, job := range candidates {
+			// DescribeDtsJobs returns the direction of each listed job as DtsJobDirection.
+			jobDirection := fmt.Sprint(job["DtsJobDirection"])
+			if jobDirection == "<nil>" || jobDirection == "" {
+				jobDirection = fmt.Sprint(job["SynchronizationDirection"])
+			}
+			if jobDirection == direction {
+				matched = append(matched, fmt.Sprint(job["DtsJobId"]))
+			}
+		}
+		if len(matched) == 1 {
+			return matched[0], nil
+		}
+		if len(matched) == 0 {
+			return "", fmt.Errorf("no DTS synchronization job with synchronization direction %s was found under instance %s", direction, instanceId)
+		}
+		return "", fmt.Errorf("found multiple DTS synchronization jobs (%s) with synchronization direction %s under instance %s, cannot determine the valid job ID automatically", strings.Join(matched, ","), direction, instanceId)
+	}
+	// No synchronization_direction configured: fall back to the uniqueness rule.
+	if len(candidates) == 1 {
+		return fmt.Sprint(candidates[0]["DtsJobId"]), nil
+	}
+	jobIds := make([]string, 0, len(candidates))
+	for _, job := range candidates {
+		jobIds = append(jobIds, fmt.Sprint(job["DtsJobId"]))
+	}
+	return "", fmt.Errorf("found multiple DTS synchronization jobs (%s) under instance %s, set synchronization_direction to determine the valid job ID", strings.Join(jobIds, ","), instanceId)
 }
 
 func convertSourceEndpointEngineNameUppercaseResponse(source interface{}) interface{} {

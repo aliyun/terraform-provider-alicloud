@@ -1,15 +1,26 @@
-package alicloud
+package dts_test
 
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"testing"
 
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
@@ -17,11 +28,11 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
 	synchronizationConfigValue := `[{\"module\":\"03\",\"name\":\"sink.batch.size.minimum\",\"value\":\"64\"},{\"module\":\"03\",\"name\":\"sink.task.number\",\"value\":\"4\"}]`
@@ -29,12 +40,12 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 	expectedSynchronizationConfigValue := `[{"module":"03","name":"sink.batch.size.minimum","value":"64"},{"module":"03","name":"sink.task.number","value":"4"}]`
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -181,16 +192,16 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 // ends with an empty state and no destroy.
 func TestAccAliCloudDTSSynchronizationJob_createOnlyNegative(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy: func(*terraform.State) error {
 			return nil
 		},
@@ -223,25 +234,25 @@ func TestAccAliCloudDTSSynchronizationJob_basic1(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// The job keeps advancing from prechecking to synchronizing after the
 		// create wait releases, so two reads of this server-driven lifecycle value
 		// can disagree even though nothing in the configuration changed.
-		IDRefreshName:     resourceId,
-		IDRefreshIgnore:   []string{"status"},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		IDRefreshIgnore:          []string{"status"},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -299,21 +310,21 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -390,21 +401,21 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testaccdtssyncjobssl%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobSslDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -501,21 +512,21 @@ func TestAccAliCloudDTSSynchronizationJob_vpcNat(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testaccdtssyncjobvpcnat%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobVpcNatDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// The four VPC NAT vswitch attributes only exist on ConfigureDtsJob, so this step is
 			// what proves the request is accepted with them set — a rejected or misspelled
@@ -1007,22 +1018,22 @@ func TestAccAliCloudDTSSynchronizationJob_instanceClassDowngrade(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssyncjobdowngrade%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1114,5 +1125,309 @@ func TestAccAliCloudDTSSynchronizationJob_instanceClassDowngrade(t *testing.T) {
 				),
 			},
 		},
+	})
+}
+
+func TestUnitAlicloudDTSSynchronizationJob(t *testing.T) {
+	p := acctest.Provider.ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, nil)
+	assert.Nil(t, d.Set("dts_instance_id", "dts_instance_id"))
+	assert.Nil(t, d.Set("dts_job_name", "dts_job_name"))
+	assert.Nil(t, d.Set("source_endpoint_instance_type", "RDS"))
+	assert.Nil(t, d.Set("source_endpoint_engine_name", "MySQL"))
+	assert.Nil(t, d.Set("destination_endpoint_instance_type", "RDS"))
+	assert.Nil(t, d.Set("destination_endpoint_engine_name", "MySQL"))
+	assert.Nil(t, d.Set("db_list", "db_list"))
+	assert.Nil(t, d.Set("structure_initialization", true))
+	assert.Nil(t, d.Set("data_initialization", true))
+	assert.Nil(t, d.Set("data_synchronization", true))
+	assert.Nil(t, d.Set("status", "Synchronizing"))
+	rawClient := testUnitDtsMockMeta(t)
+
+	readMockResponse := map[string]interface{}{
+		"Checkpoint": 0,
+		"MigrationMode": map[string]interface{}{
+			"DataInitialization":      true,
+			"DataSynchronization":     true,
+			"StructureInitialization": true,
+		},
+		"DbObject": "db_list",
+		"DestinationEndpoint": map[string]interface{}{
+			"EngineName":   "MySQL",
+			"InstanceType": "RDS",
+		},
+		"DtsInstanceID": "dts_instance_id",
+		"DtsJobName":    "dts_job_name_renamed",
+		"SourceEndpoint": map[string]interface{}{
+			"EngineName":   "MySQL",
+			"InstanceType": "RDS",
+		},
+		"Status":                   "Synchronizing",
+		"SynchronizationDirection": "Forward",
+	}
+
+	describeDtsJobsResponse := map[string]interface{}{
+		"Success": true,
+		"DtsJobList": []interface{}{
+			map[string]interface{}{
+				"DtsJobId":        "dts_job_id_resolved",
+				"DtsInstanceID":   "dts_instance_id",
+				"DtsJobDirection": "Forward",
+				"Status":          "Synchronizing",
+			},
+		},
+	}
+
+	describeDtsJobsBidirectionalResponse := map[string]interface{}{
+		"Success": true,
+		"DtsJobList": []interface{}{
+			map[string]interface{}{
+				"DtsJobId":        "dts_job_id_reverse",
+				"DtsInstanceID":   "dts_instance_id",
+				"DtsJobDirection": "Reverse",
+				"Status":          "Synchronizing",
+			},
+			map[string]interface{}{
+				"DtsJobId":        "dts_job_id_forward",
+				"DtsInstanceID":   "dts_instance_id",
+				"DtsJobDirection": "Forward",
+				"Status":          "Synchronizing",
+			},
+		},
+	}
+
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       helper.String(errorCode),
+				Data:       helper.String(errorCode),
+				Message:    helper.String(errorCode),
+				StatusCode: tea.Int(400),
+			}
+		},
+		"ModifyJobNameNormal": func(errorCode string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"Success": true,
+			}, nil
+		},
+		"ModifyJobNameNotFoundResponse": func(errorCode string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"Success":    false,
+				"ErrCode":    errorCode,
+				"ErrMessage": errorCode,
+			}, nil
+		},
+		"DescribeDtsJobsNormal": func(errorCode string) (map[string]interface{}, error) {
+			return describeDtsJobsResponse, nil
+		},
+		"DescribeDtsJobsBidirectional": func(errorCode string) (map[string]interface{}, error) {
+			return describeDtsJobsBidirectionalResponse, nil
+		},
+		"DescribeDtsJobsEmpty": func(errorCode string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"Success":    true,
+				"DtsJobList": []interface{}{},
+			}, nil
+		},
+		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
+			return readMockResponse, nil
+		},
+	}
+
+	// Test case 1: UpdateModifyJobNameResolveNormal
+	t.Run("UpdateModifyJobNameResolveNormal", func(t *testing.T) {
+		diff := sdktf.NewInstanceDiff()
+		diff.Attributes["dts_job_name"] = &sdktf.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"}
+		diff.Attributes["dts_instance_id"] = &sdktf.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"}
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patcheRead := gomonkey.ApplyMethod(reflect.TypeOf((*dts.Service)(nil)), "DescribeSynchronizationJob", func(*dts.Service, string) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		patcheParameters := gomonkey.ApplyMethod(reflect.TypeOf((*dts.Service)(nil)), "QueryChangedJobParameters", func(*dts.Service, string) (string, error) {
+			return "", nil
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			case 2:
+				return responseMock["DescribeDtsJobsNormal"]("")
+			default:
+				return responseMock["ModifyJobNameNormal"]("")
+			}
+		})
+		err := dts.ResourceSynchronizationJobUpdate(resourceData, rawClient)
+		patcheRead.Reset()
+		patcheParameters.Reset()
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "dts_job_id_resolved", resourceData.Id())
+	})
+
+	// Test case 2: UpdateModifyJobNameResolveSuccessFalseNormal
+	t.Run("UpdateModifyJobNameResolveSuccessFalseNormal", func(t *testing.T) {
+		diff := sdktf.NewInstanceDiff()
+		diff.Attributes["dts_job_name"] = &sdktf.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"}
+		diff.Attributes["dts_instance_id"] = &sdktf.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"}
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patcheRead := gomonkey.ApplyMethod(reflect.TypeOf((*dts.Service)(nil)), "DescribeSynchronizationJob", func(*dts.Service, string) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		patcheParameters := gomonkey.ApplyMethod(reflect.TypeOf((*dts.Service)(nil)), "QueryChangedJobParameters", func(*dts.Service, string) (string, error) {
+			return "", nil
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["ModifyJobNameNotFoundResponse"]("Forbidden.InstanceNotFound")
+			case 2:
+				return responseMock["DescribeDtsJobsNormal"]("")
+			default:
+				return responseMock["ModifyJobNameNormal"]("")
+			}
+		})
+		err := dts.ResourceSynchronizationJobUpdate(resourceData, rawClient)
+		patcheRead.Reset()
+		patcheParameters.Reset()
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "dts_job_id_resolved", resourceData.Id())
+	})
+
+	// Test case 3: UpdateModifyJobNameResolveBidirectionalNormal
+	t.Run("UpdateModifyJobNameResolveBidirectionalNormal", func(t *testing.T) {
+		diff := sdktf.NewInstanceDiff()
+		diff.Attributes["dts_job_name"] = &sdktf.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"}
+		diff.Attributes["dts_instance_id"] = &sdktf.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"}
+		diff.Attributes["synchronization_direction"] = &sdktf.ResourceAttrDiff{Old: "Forward", New: "Forward"}
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patcheRead := gomonkey.ApplyMethod(reflect.TypeOf((*dts.Service)(nil)), "DescribeSynchronizationJob", func(*dts.Service, string) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		patcheParameters := gomonkey.ApplyMethod(reflect.TypeOf((*dts.Service)(nil)), "QueryChangedJobParameters", func(*dts.Service, string) (string, error) {
+			return "", nil
+		})
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			case 2:
+				return responseMock["DescribeDtsJobsBidirectional"]("")
+			default:
+				return responseMock["ModifyJobNameNormal"]("")
+			}
+		})
+		err := dts.ResourceSynchronizationJobUpdate(resourceData, rawClient)
+		patcheRead.Reset()
+		patcheParameters.Reset()
+		patches.Reset()
+		assert.Nil(t, err)
+		assert.Equal(t, "dts_job_id_forward", resourceData.Id())
+	})
+
+	// Test case 4: UpdateModifyJobNameResolveNotFoundAbnormal
+	t.Run("UpdateModifyJobNameResolveNotFoundAbnormal", func(t *testing.T) {
+		diff := sdktf.NewInstanceDiff()
+		diff.Attributes["dts_job_name"] = &sdktf.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"}
+		diff.Attributes["dts_instance_id"] = &sdktf.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"}
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			default:
+				return responseMock["DescribeDtsJobsEmpty"]("")
+			}
+		})
+		err := dts.ResourceSynchronizationJobUpdate(resourceData, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	// Test case 5: UpdateModifyJobNameResolveSingleCandidateDirectionMismatch — a single
+	// candidate whose direction does not match the configured synchronization_direction must
+	// NOT be used: no second ModifyDtsJobName call and no SetId to the mismatched candidate.
+	t.Run("UpdateModifyJobNameResolveSingleCandidateDirectionMismatch", func(t *testing.T) {
+		diff := sdktf.NewInstanceDiff()
+		diff.Attributes["dts_job_name"] = &sdktf.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"}
+		diff.Attributes["dts_instance_id"] = &sdktf.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"}
+		diff.Attributes["synchronization_direction"] = &sdktf.ResourceAttrDiff{Old: "Reverse", New: "Reverse"}
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				// First ModifyDtsJobName fails: job ID is stale.
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			case 2:
+				// DescribeDtsJobs returns a single candidate with direction Forward,
+				// but the resource is configured as Reverse — the reverse job is absent.
+				return responseMock["DescribeDtsJobsNormal"]("")
+			default:
+				// A second ModifyDtsJobName must never be issued for a direction mismatch.
+				t.Fatalf("unexpected DoRequest call %d: ModifyDtsJobName must not be retried when direction does not match", callIndex)
+				return nil, nil
+			}
+		})
+		t.Cleanup(patches.Reset)
+		err := dts.ResourceSynchronizationJobUpdate(resourceData, rawClient)
+		assert.NotNil(t, err)
+		assert.Equal(t, "dts_job_id_old", resourceData.Id())
+		assert.Equal(t, 2, callIndex)
+	})
+
+	// Test case 6: UpdateModifyJobNameResolveSingleCandidateDirectionMatch — a single
+	// candidate whose direction matches the configured synchronization_direction resolves
+	// and the rename retries successfully. DescribeSynchronizationJob and
+	// QueryChangedJobParameters are patched because Update ends with a Read call.
+	t.Run("UpdateModifyJobNameResolveSingleCandidateDirectionMatch", func(t *testing.T) {
+		diff := sdktf.NewInstanceDiff()
+		diff.Attributes["dts_job_name"] = &sdktf.ResourceAttrDiff{Old: "dts_job_name", New: "dts_job_name_renamed"}
+		diff.Attributes["dts_instance_id"] = &sdktf.ResourceAttrDiff{Old: "dts_instance_id", New: "dts_instance_id"}
+		diff.Attributes["synchronization_direction"] = &sdktf.ResourceAttrDiff{Old: "Forward", New: "Forward"}
+		resourceData, _ := schema.InternalMap(p["alicloud_dts_synchronization_job"].Schema).Data(nil, diff)
+		resourceData.SetId("dts_job_id_old")
+		callIndex := 0
+		patcheRead := gomonkey.ApplyMethod(reflect.TypeOf((*dts.Service)(nil)), "DescribeSynchronizationJob", func(*dts.Service, string) (map[string]interface{}, error) {
+			return responseMock["ReadNormal"]("")
+		})
+		t.Cleanup(patcheRead.Reset)
+		patcheParameters := gomonkey.ApplyMethod(reflect.TypeOf((*dts.Service)(nil)), "QueryChangedJobParameters", func(*dts.Service, string) (string, error) {
+			return "", nil
+		})
+		t.Cleanup(patcheParameters.Reset)
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			callIndex++
+			switch callIndex {
+			case 1:
+				// First ModifyDtsJobName fails: job ID is stale.
+				return responseMock["NoRetryError"]("Forbidden.InstanceNotFound")
+			case 2:
+				// DescribeDtsJobs returns a single Forward candidate matching the configured direction.
+				return responseMock["DescribeDtsJobsNormal"]("")
+			default:
+				// Retry ModifyDtsJobName with the resolved job ID succeeds.
+				return responseMock["ModifyJobNameNormal"]("")
+			}
+		})
+		t.Cleanup(patches.Reset)
+		err := dts.ResourceSynchronizationJobUpdate(resourceData, rawClient)
+		assert.Nil(t, err)
+		assert.Equal(t, "dts_job_id_resolved", resourceData.Id())
+		assert.Equal(t, 3, callIndex)
 	})
 }
