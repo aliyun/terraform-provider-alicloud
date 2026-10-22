@@ -253,7 +253,12 @@ minimal-test-set:
 # the same account and you only want to clean up stale leftovers.
 # SWEEP_ALL traverses a whole dependency graph and may exceed Go's default 10m.
 # SWEEP_TIMEOUT overrides this inner Go deadline; remote runner deadlines still apply.
+# Each resource is resolved to the test package whose test binary calls
+# resource.AddTestSweepers for it: registrations in the root global shell run on ./alicloud,
+# and a product package that registers its own sweeper runs on ./alicloud/service/<product>.
+# SWEEP_DRY_RUN=1 only prints the resolved package(s) and exits without deleting anything.
 SWEEP_TIMEOUT ?= $(if $(filter 1,$(SWEEP_ALL)),3h,10m)
+SWEEP_DRY_RUN ?=
 sweep:
 	@if [ -z "$(REGION)" ]; then \
 		echo "Error: REGION is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
@@ -263,13 +268,45 @@ sweep:
 		echo "Error: RESOURCE is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
 		exit 1; \
 	fi
-	@if [ "$(SWEEP_ALL)" = "1" ]; then \
-		echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
-		ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
-	else \
-		echo "Sweeping $(RESOURCE) in region $(REGION)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
-		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
-	fi
+	@PACKAGES=""; \
+	for res in $$(echo "$(RESOURCE)" | tr '|,' '  '); do \
+		pkg=""; \
+		for f in alicloud/*_test.go alicloud/service/*/*_test.go; do \
+			[ -f "$$f" ] || continue; \
+			grep -q "AddTestSweepers" "$$f" || continue; \
+			grep -q "\"$$res\"" "$$f" || continue; \
+			case "$$f" in \
+				alicloud/service/*) pkg="./alicloud/service/$$(basename "$$(dirname "$$f")")";; \
+				*) pkg="./alicloud";; \
+			esac; \
+			break; \
+		done; \
+		if [ -z "$$pkg" ]; then \
+			echo "Warning: no sweeper registration found for $$res; falling back to ./alicloud"; \
+			pkg="./alicloud"; \
+		fi; \
+		echo "Sweep discovery: $$res -> $$pkg"; \
+		case " $$PACKAGES " in \
+			*" $$pkg "*) ;; \
+			*) PACKAGES="$$PACKAGES $$pkg";; \
+		esac; \
+	done; \
+	if [ "$(SWEEP_DRY_RUN)" = "1" ]; then \
+		for pkg in $$PACKAGES; do \
+			echo "Dry run: would run: $(if $(filter 1,$(SWEEP_ALL)),ALICLOUD_SWEEP_ALL_RESOURCES=true )ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test $$pkg -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE)"; \
+		done; \
+		echo "Dry run: nothing deleted"; \
+		exit 0; \
+	fi; \
+	for pkg in $$PACKAGES; do \
+		if [ "$(SWEEP_ALL)" = "1" ]; then \
+			echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))... package $$pkg"; \
+			ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test $$pkg -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE) || exit $$?; \
+		else \
+			echo "Sweeping $(RESOURCE) in region $(REGION)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))... package $$pkg"; \
+			ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test $$pkg -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE) || exit $$?; \
+		fi; \
+	done
 
 .PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native
 
