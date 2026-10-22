@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
@@ -67,7 +68,6 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 			"product_form": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"product_version": {
@@ -114,6 +114,21 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 			"enable_ssl": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
+			},
+			"ssl_enabled": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Enable", "Disable", "Update"}, false),
+			},
+			"ssl_connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ssl_expire_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"db_cluster_description": {
 				Type:     schema.TypeString,
@@ -196,7 +211,81 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 				Computed: true,
 			},
 		},
+		CustomizeDiff: resourceAdbDbClusterLakeVersionCustomizeDiff,
 	}
+}
+
+// resourceAdbDbClusterLakeVersionCustomizeDiff implements the product
+// contract: when ssl_enabled is explicitly set in HCL config, it takes
+// priority over enable_ssl; otherwise enable_ssl (the legacy boolean) is
+// used as-is.
+//
+// GetRawConfig returns the raw HCL config as a cty.Value. Unlike GetOk
+// (which reads merged state/config/diff via ReadFieldMerge and cannot
+// distinguish an explicitly configured ssl_enabled from a state-retained
+// value), GetRawConfig only reflects what the user wrote in HCL. When
+// ssl_enabled is omitted from config, GetRawConfig returns a typed null
+// for that attribute, so CustomizeDiff correctly returns nil and lets
+// the legacy enable_ssl boolean drive the operation. This prevents a
+// removed ssl_enabled command from reading stale state and swallowing a
+// legitimate enable_ssl true→false change.
+//
+// Unknown guard: cross-resource references may produce cty unknown
+// values during planning. Skip processing until the value is known.
+//
+// When ssl_enabled is explicitly set and known:
+//   - "Enable"  → plan enable_ssl=true  (priority)
+//   - "Disable" → plan enable_ssl=false (priority)
+//   - "Update"  → preserve the old actual SSL state (from prior state),
+//     not the user's new enable_ssl config value. Without this, a
+//     conflicting enable_ssl change would drive the next round's
+//     operation and unexpectedly disable SSL. By forcing enable_ssl
+//     back to its old state value, HasChange("enable_ssl") returns
+//     false on the next plan, preventing an unintended Disable.
+//
+// When ssl_enabled is absent (not in config), enable_ssl is used as-is.
+func resourceAdbDbClusterLakeVersionCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	rawConfig := d.GetRawConfig()
+	// Defensive: in production Terraform always provides a valid object.
+	// This guards against nil/non-object raw config in edge cases.
+	if rawConfig.IsNull() || !rawConfig.Type().IsObjectType() {
+		return nil
+	}
+	sslEnabledVal := rawConfig.GetAttr("ssl_enabled")
+	// Unknown guard: skip when the value is unknown (cross-resource
+	// references during planning).
+	if !sslEnabledVal.IsKnown() {
+		return nil
+	}
+	// Not configured: ssl_enabled is absent from HCL (typed null).
+	// The legacy enable_ssl boolean is used as-is.
+	if sslEnabledVal.IsNull() {
+		return nil
+	}
+	sslEnabledStr := sslEnabledVal.AsString()
+	if sslEnabledStr == "" {
+		return nil
+	}
+	switch sslEnabledStr {
+	case "Enable":
+		if err := d.SetNew("enable_ssl", true); err != nil {
+			return WrapError(err)
+		}
+	case "Disable":
+		if err := d.SetNew("enable_ssl", false); err != nil {
+			return WrapError(err)
+		}
+	case "Update":
+		// Renewal: preserve the server's actual SSL state from the
+		// prior state, not the user's new config value. This prevents
+		// a conflicting enable_ssl change from driving the next
+		// round's operation and unexpectedly disabling SSL.
+		oldEnableSsl, _ := d.GetChange("enable_ssl")
+		if err := d.SetNew("enable_ssl", oldEnableSsl); err != nil {
+			return WrapError(err)
+		}
+	}
+	return nil
 }
 
 func resourceAliCloudAdbDbClusterLakeVersionCreate(d *schema.ResourceData, meta interface{}) error {
@@ -380,6 +469,35 @@ func resourceAliCloudAdbDbClusterLakeVersionRead(d *schema.ResourceData, meta in
 		log.Printf("[WARN] Resource alicloud_adb_db_cluster_lake_version DescribeAdbDbClusterLakeVersionDBClusterSSL Failed!!! %s", err)
 	} else {
 		d.Set("enable_ssl", sslObject["SSLEnabled"])
+		d.Set("ssl_connection_string", sslObject["ConnectionString"])
+		d.Set("ssl_expire_time", sslObject["ExpireTime"])
+		// SslEnabled (Enable/Disable/Update) is a write-only SSL operation
+		// command, so the API does not return it directly. When the state is
+		// "Update", retain it to prevent a persistent diff that would
+		// re-trigger renewal on every plan/apply — this is for Terraform
+		// state convergence only and does NOT prove the renewal was executed
+		// on the server; independent evidence (ssl_expire_time change) is
+		// required to verify renewal. For "Enable"/"Disable", derive the
+		// actual SSL state from the SSLEnabled boolean. This read is also
+		// required by the Update trigger: a later enable_ssl-only change
+		// (with ssl_enabled removed from config) compares the preserved
+		// state value to itself (equal-to-equal) and falls through to the
+		// EnableSSL branch. When both ssl_enabled and enable_ssl are set in
+		// config, CustomizeDiff resolves the priority (ssl_enabled takes
+		// priority) via SetNew: Enable/Disable override enable_ssl, and
+		// Update preserves the old actual enable_ssl state to prevent a
+		// conflicting bool from driving the next round's operation.
+		if d.Get("ssl_enabled").(string) != "Update" {
+			sslEnabledStr := fmt.Sprint(sslObject["SSLEnabled"])
+			var sslEnabledValue string
+			switch sslEnabledStr {
+			case "true", "Enable", "1":
+				sslEnabledValue = "Enable"
+			default:
+				sslEnabledValue = "Disable"
+			}
+			d.Set("ssl_enabled", sslEnabledValue)
+		}
 	}
 
 	return nil
@@ -425,6 +543,14 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 
 		if v, ok := d.GetOkExists("reserved_node_count"); ok {
 			request["ReservedNodeCount"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("product_form") {
+		update = true
+
+		if v, ok := d.GetOk("product_form"); ok {
+			request["ProductForm"] = v
 		}
 	}
 
@@ -499,10 +625,40 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		"DBClusterId": d.Id(),
 	}
 
-	if d.HasChange("enable_ssl") {
+	if d.HasChange("enable_ssl") || d.HasChange("ssl_enabled") {
 		update = true
 
-		if v, ok := d.GetOkExists("enable_ssl"); ok {
+		// SslEnabled (Enable/Disable/Update) is a write-only operation command;
+		// EnableSSL (boolean) reports/sets the actual state. Detect an explicit
+		// ssl_enabled change with HasChange rather than GetOk: ssl_enabled is
+		// read back into state as the actual Enable/Disable value, so GetOk
+		// would always be true once SSL is configured and would misroute a
+		// later enable_ssl-only change (e.g. enable_ssl=false) into the
+		// SSLEnabled branch, omitting EnableSSL and failing with
+		// MissingEnableSSL. HasChange is false when ssl_enabled is removed
+		// from config because Optional+Computed preserves the prior state
+		// value (equal-to-equal), so the change routes to EnableSSL.
+		if d.HasChange("ssl_enabled") {
+			if v, ok := d.GetOk("ssl_enabled"); ok && v.(string) != "" {
+				modifyDBClusterSSLReq["SSLEnabled"] = v
+				// EnableSSL is mandatory for ModifyDBClusterSSL: the API
+				// rejects the request with MissingEnableSSL when it is omitted.
+				// Derive the required boolean from the SslEnabled command so
+				// both the operation command and the mandatory flag are sent:
+				// Enable turns SSL on, Disable turns it off, and Update
+				// derives EnableSSL from the actual old SSL state (preserved
+				// by CustomizeDiff via SetNew), not a hardcoded true.
+				switch v.(string) {
+				case "Enable":
+					modifyDBClusterSSLReq["EnableSSL"] = true
+				case "Disable":
+					modifyDBClusterSSLReq["EnableSSL"] = false
+				case "Update":
+					oldEnableSsl, _ := d.GetChange("enable_ssl")
+					modifyDBClusterSSLReq["EnableSSL"] = oldEnableSsl
+				}
+			}
+		} else if v, ok := d.GetOkExists("enable_ssl"); ok {
 			modifyDBClusterSSLReq["EnableSSL"] = v
 		}
 	}
@@ -532,9 +688,34 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		sslEnabledStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(modifyDBClusterSSLReq["EnableSSL"])}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d, []string{}))
-		if _, err := sslEnabledStateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		// Determine the target SSL state for state refresh
+		var sslTarget string
+		if v, ok := modifyDBClusterSSLReq["SSLEnabled"]; ok {
+			switch fmt.Sprint(v) {
+			case "Enable":
+				sslTarget = "true"
+			case "Disable":
+				sslTarget = "false"
+			case "Update":
+				// Certificate renewal does not change the SSL enabled state —
+				// SSLEnabled stays true after renewal. Always target "true"
+				// regardless of enable_ssl to avoid waiting on a state (e.g.
+				// false) that the renewal operation will never reach.
+				sslTarget = "true"
+			}
+		} else if v, ok := modifyDBClusterSSLReq["EnableSSL"]; ok {
+			sslTarget = fmt.Sprint(v)
+		}
+
+		if sslTarget != "" {
+			// "provisioning" is a pending state returned by the SSL state
+			// refresh when SSLEnabled is true but ConnectionString has not
+			// been provisioned yet. Listing it as Pending keeps the state
+			// refresh polling until the SSL certificate is fully configured.
+			sslEnabledStateConf := BuildStateConf([]string{"provisioning"}, []string{sslTarget}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d, []string{}))
+			if _, err := sslEnabledStateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 
 	}
@@ -703,17 +884,24 @@ func resourceAliCloudAdbDbClusterLakeVersionDelete(d *schema.ResourceData, meta 
 	})
 	addDebug(action, response, request)
 
+	// If DeleteDBCluster returned an error, check for NotFound before
+	// running WaitForState. InvalidDBClusterId.NotFound means the cluster
+	// is already gone — return nil promptly without a meaningless wait.
+	// InvalidDBCluster.NotFound is preserved for backward compatibility.
+	// Other errors (permission, throttling, etc.) are propagated
+	// transparently without an unnecessary state wait.
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFound"}) || NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	// DeleteDBCluster succeeded; wait for the cluster to be fully deleted.
 	adbService := AdbService{client}
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
-	}
-
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) || NotFoundError(err) {
-			return nil
-		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
