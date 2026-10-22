@@ -320,7 +320,11 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	identityParts := []string{}
-	identityValues0 := fwWalkMappedPath(response, fwMappingPath("$.DBNodeId"), nil)
+	// CreateDBNodes returns the created node IDs as a repeatList: the response
+	// nests a "DBNodeId" string array under the "DBNodeIds" object, so the path
+	// is $.DBNodeIds.DBNodeId[*]. The resource creates a single node, so the
+	// first (and only) element is the DBNodeId to use as the resource identity.
+	identityValues0 := fwWalkMappedPath(response, fwMappingPath("$.DBNodeIds.DBNodeId[*]"), nil)
 	if len(identityValues0) == 0 || identityValues0[0].Value == nil || fmt.Sprint(identityValues0[0].Value) == "" {
 		resp.Diagnostics.AddError("Creating alicloud_polardb_db_node: missing identity", "The create operation did not return or accept every identity component")
 		return
