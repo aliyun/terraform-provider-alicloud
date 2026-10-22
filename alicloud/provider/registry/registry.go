@@ -18,6 +18,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/esa"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gwlb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kms"
@@ -46,6 +47,7 @@ var servicePackages = []conns.ServicePackage{
 	cloudauth.ServicePackage(),
 	cloudfirewall.ServicePackage(),
 	ecs.ServicePackage(),
+	esa.ServicePackage(),
 	alicloudfunction.ServicePackage(),
 	kms.ServicePackage(),
 	oos.ServicePackage(),
