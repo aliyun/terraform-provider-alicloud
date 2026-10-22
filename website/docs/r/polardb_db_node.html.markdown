@@ -107,9 +107,9 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 10 mins) Used when create the DB Node.
-* `delete` - (Defaults to 10 mins) Used when delete the DB Node.
-* `update` - (Defaults to 10 mins) Used when update the DB Node.
+* `create` - (Defaults to 15 mins) Used when create the DB Node.
+* `delete` - (Defaults to 15 mins) Used when delete the DB Node.
+* `update` - (Defaults to 15 mins) Used when update the DB Node.
 
 ## Import
 

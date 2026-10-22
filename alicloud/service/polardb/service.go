@@ -243,52 +243,51 @@ func fwTimeoutDuration(value types.Object, operation string, fallback time.Durat
 	return duration, diagnostics
 }
 
-// retryRpcPost mirrors alicloud's retry.Retry+NeedRetry wrapper around RpcPost.
-// RpcPost returns *tea.SDKError, so the classifier only handles that path.
-// OperationDenied.OrderProcessing is retried because PolarDB order-bearing actions
-// (CreateDBNodes, ModifyDBNodeClass, DeleteDBNodes) fail while a prior order settles;
-// the existing SDKv2 polardb resources retry it the same way.
+// retryRpcPost wraps RpcPost with NeedRetry + OperationDenied.OrderProcessing retry.
+// PolarDB order-bearing actions (CreateDBNodes, ModifyDBNodeClass, DeleteDBNodes)
+// fail with OperationDenied.OrderProcessing while a prior order settles; the retry
+// loop rides out the settlement window.  A plain polling loop with incrementalWait
+// avoids the double backoff that retry.Retry+incrementalWait would create, giving
+// more retries within the same timeout.
 func retryRpcPost(client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var response map[string]interface{}
-	err := retry.Retry(timeout, func() *retry.RetryError {
+	deadline := time.Now().Add(timeout)
+	for {
 		resp, e := client.RpcPost(product, version, action, nil, request, true)
 		response = resp
-		if e != nil {
-			if needRetry(e) || isExpectedErrors(e, []string{"OperationDenied.OrderProcessing"}) {
-				wait()
-				return retry.RetryableError(e)
-			}
-			return retry.NonRetryableError(e)
+		if e == nil {
+			return response, nil
 		}
-		return nil
-	})
-	if err != nil {
-		return response, errs.WrapErrorf(err, "calling %s failed", action)
+		if !needRetry(e) && !isExpectedErrors(e, []string{"OperationDenied.OrderProcessing"}) {
+			return response, errs.WrapErrorf(e, "calling %s failed", action)
+		}
+		if time.Now().After(deadline) {
+			return response, errs.WrapErrorf(e, "calling %s timeout after %s", action, timeout)
+		}
+		wait()
 	}
-	return response, nil
 }
 
 // retryRpcGet preserves query parameters for RPC APIs whose metadata only permits GET.
 func retryRpcGet(client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var response map[string]interface{}
-	err := retry.Retry(timeout, func() *retry.RetryError {
+	deadline := time.Now().Add(timeout)
+	for {
 		resp, e := client.RpcGet(product, version, action, request, nil)
 		response = resp
-		if e != nil {
-			if needRetry(e) {
-				wait()
-				return retry.RetryableError(e)
-			}
-			return retry.NonRetryableError(e)
+		if e == nil {
+			return response, nil
 		}
-		return nil
-	})
-	if err != nil {
-		return response, errs.WrapErrorf(err, "calling %s failed", action)
+		if !needRetry(e) {
+			return response, errs.WrapErrorf(e, "calling %s failed", action)
+		}
+		if time.Now().After(deadline) {
+			return response, errs.WrapErrorf(e, "calling %s timeout after %s", action, timeout)
+		}
+		wait()
 	}
-	return response, nil
 }
 
 // buildClientToken mirrors alicloud.buildClientToken (TF-<action>-<unix>-<uuid>, <=64 chars).
