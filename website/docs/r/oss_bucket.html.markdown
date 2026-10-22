@@ -28,6 +28,14 @@ Private Bucket
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -52,6 +60,14 @@ Static Website
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -75,6 +91,14 @@ Enable Logging
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -108,6 +132,14 @@ Referer configuration
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -136,6 +168,14 @@ Set lifecycle rule
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -339,6 +379,14 @@ Set bucket policy
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -375,6 +423,14 @@ When managing bucket configurations through standalone sub-resources such as `al
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -437,6 +493,14 @@ IA Bucket
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -457,6 +521,14 @@ Set bucket server-side encryption rule
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -505,6 +577,14 @@ Set bucket tags
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -534,6 +614,14 @@ Enable bucket versioning
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -561,6 +649,14 @@ Set bucket redundancy type
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -583,6 +679,14 @@ Set bucket accelerate configuration
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -606,6 +710,14 @@ Set bucket resource group id
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
