@@ -451,6 +451,7 @@ var regularProductEndpoint = map[string]string{
 	"nlb":                  "nlb.%s.aliyuncs.com",
 	"ebs":                  "ebs.%s.aliyuncs.com",
 	"eflo":                 "eflo.%s.aliyuncs.com",
+	"eflo_controller":      "eflo-controller.%s.aliyuncs.com",
 	"oceanbasepro":         "oceanbasepro.%s.aliyuncs.com",
 	"adcp":                 "adcp.%s.aliyuncs.com",
 	"rocketmq":             "rocketmq.%s.aliyuncs.com",

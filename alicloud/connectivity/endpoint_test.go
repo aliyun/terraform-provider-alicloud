@@ -1,6 +1,7 @@
 package connectivity
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -158,6 +159,41 @@ func TestUnitSlsEndpoint(t *testing.T) {
 			assert.Equal(t, tc.expected, val)
 		})
 	}
+}
+
+func TestUnitEfloControllerEndpoint(t *testing.T) {
+	// The location service returns InvalidRegionId for efloctrl in some
+	// regions (e.g. us-southeast-1). regularProductEndpoint acts as the
+	// backup endpoint so eflo_controller resolves to
+	// eflo-controller.<region>.aliyuncs.com instead of failing.
+	endpointFmt, ok := regularProductEndpoint["eflo_controller"]
+	assert.True(t, ok)
+	assert.Equal(t, "eflo-controller.%s.aliyuncs.com", endpointFmt)
+
+	for _, region := range []string{"us-southeast-1", "cn-hangzhou", "cn-beijing"} {
+		assert.Equal(t, fmt.Sprintf("eflo-controller.%s.aliyuncs.com", region), fmt.Sprintf(endpointFmt, region))
+	}
+}
+
+func TestUnitEfloControllerEndpointFromEnv(t *testing.T) {
+	// Explicit provider endpoint config and environment variables take
+	// precedence over the regularProductEndpoint fallback.
+	t.Setenv("ALIBABA_CLOUD_ENDPOINT_EFLO_CONTROLLER", "https://eflo-controller.test.com")
+	defer os.Unsetenv("ALIBABA_CLOUD_ENDPOINT_EFLO_CONTROLLER")
+
+	client := &AliyunClient{
+		config: &Config{
+			Endpoints: new(sync.Map),
+			RegionId:  "us-southeast-1",
+		},
+	}
+
+	err := client.loadEndpoint("eflo_controller")
+	assert.NoError(t, err)
+
+	val, ok := client.config.Endpoints.Load("eflo_controller")
+	assert.True(t, ok)
+	assert.Equal(t, "https://eflo-controller.test.com", val)
 }
 
 func TestUnitSlsWithoutEndpoint(t *testing.T) {
