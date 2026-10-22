@@ -1379,7 +1379,6 @@ func Provider() *schema.Provider {
 			"alicloud_hologram_instance":                                    resourceAliCloudHologramInstance(),
 			"alicloud_ack_one_cluster":                                      resourceAliCloudAckOneCluster(),
 			"alicloud_ack_one_membership_attachment":                        resourceAliCloudAckOneMembershipAttachment(),
-			"alicloud_drds_polardbx_instance":                               resourceAliCloudDrdsPolardbxInstance(),
 			"alicloud_gpdb_backup_policy":                                   resourceAliCloudGpdbBackupPolicy(),
 			"alicloud_threat_detection_file_upload_limit":                   resourceAliCloudThreatDetectionFileUploadLimit(),
 			"alicloud_threat_detection_rd_default_sync_list":                resourceAliCloudThreatDetectionRdDefaultSyncList(),
