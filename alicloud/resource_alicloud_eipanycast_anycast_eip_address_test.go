@@ -63,7 +63,8 @@ func testSweepEipanycastAnycastEipAddress(region string) error {
 		}
 		resp, err := jsonpath.Get("$.AnycastList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AnycastList", response)
+			log.Printf("[ERROR] Failed to parse $.AnycastList (treat as empty): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
