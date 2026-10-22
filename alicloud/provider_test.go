@@ -499,6 +499,7 @@ func checkoutAccount(t *testing.T, SLAVE bool) {
 // Skip automatically the sweep testcases which does not support some known regions.
 // If supported is true, the regions should a list of supporting the service regions.
 // If supported is false, the regions should a list of unsupporting the service regions.
+// Migrated to alicloud/sweep.SweepPreCheckWithRegions.
 func testSweepPreCheckWithRegions(region string, supported bool, regions []connectivity.Region) bool {
 	find := false
 	for _, r := range regions {
