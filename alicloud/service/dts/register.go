@@ -8,6 +8,12 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Dts",
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_dts_check_job",
+				Factory:  NewCheckJobResource,
+			},
+		},
 		SDKResources: []conns.SDKResource{
 			{
 				TypeName: "alicloud_dts_migration_instance",

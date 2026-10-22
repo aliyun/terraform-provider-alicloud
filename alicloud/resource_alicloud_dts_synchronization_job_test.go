@@ -167,7 +167,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
 			},
 		},
 	})
@@ -363,7 +363,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
 			},
 		},
 	})
@@ -485,7 +485,7 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
 			},
 		},
 	})
@@ -558,11 +558,12 @@ func TestAccAliCloudDTSSynchronizationJob_vpcNat(t *testing.T) {
 			},
 			// DTS does not return the vswitch ids on DescribeDtsJobDetail, so Read cannot set them
 			// and an imported job has them empty. They are ignored here for that reason, not
-			// because the values are expected to drift.
+			// because the values are expected to drift. The status is server driven and can still
+			// be in a precheck phase when the import refresh runs.
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "src_primary_vswitch_id", "src_secondary_vswitch_id", "dest_primary_vswitch_id", "dest_secondary_vswitch_id", "instance_class"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "src_primary_vswitch_id", "src_secondary_vswitch_id", "dest_primary_vswitch_id", "dest_secondary_vswitch_id", "instance_class"},
 			},
 		},
 	})

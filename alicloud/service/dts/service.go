@@ -3,6 +3,7 @@ package dts
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -16,6 +17,8 @@ import (
 )
 
 // Service wraps the DTS API calls used by the resources of this package.
+// The root alicloud package cannot be imported from a service package, so
+// the encapsulated calls live here with the resources.
 type Service struct {
 	client *connectivity.AliyunClient
 }
@@ -273,6 +276,64 @@ func (s *Service) DescribeMigrationInstance(id string) (object map[string]interf
 	return object, nil
 }
 
+func (s *Service) DescribeCheckJob(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobDetail"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"DtsJobId": id,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *Service) CheckJobStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCheckJob(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
 // setEndpointSSL folds source_endpoint_ssl and destination_endpoint_ssl into the DTS Reserve
 // parameter as its srcSSL and destSSL keys. ConfigureDtsJob has no dedicated SSL parameter, so
 // Reserve is the only place the connection mode can be sent. Values already present under those
@@ -285,9 +346,17 @@ func setEndpointSSL(d *schema.ResourceData, request map[string]interface{}) erro
 	}
 	reserve := make(map[string]interface{})
 	if v, ok := request["Reserve"]; ok {
-		if err := json.Unmarshal([]byte(fmt.Sprint(v)), &reserve); err != nil {
+		var decoded interface{}
+		if err := json.Unmarshal([]byte(fmt.Sprint(v)), &decoded); err != nil {
 			return errs.WrapError(err)
 		}
+		// json.Unmarshal accepts null and non-object documents without an error, but only a
+		// JSON object can carry srcSSL/destSSL, and a nil map would panic on the writes below.
+		object, ok := decoded.(map[string]interface{})
+		if !ok {
+			return errs.WrapError(fmt.Errorf("reserve must be a JSON object, got %T", decoded))
+		}
+		reserve = object
 	}
 	if srcOk {
 		reserve["srcSSL"] = srcSSL
@@ -348,4 +417,63 @@ func endpointSSLReserved(d *schema.ResourceData) (string, error) {
 		return "", errs.WrapError(err)
 	}
 	return string(reservedJson), nil
+}
+
+func convertSourceEndpointEngineNameUppercaseResponse(source interface{}) interface{} {
+	switch source {
+	case "polardb_pg":
+		return "POLARDB_PG"
+	case "express":
+		return "EXPRESS"
+	case "PostgreSQL":
+		return "POSTGRESQL"
+	case "MongoDB":
+		return "MONGODB"
+	case "as400":
+		return "AS400"
+	case "Redis":
+		return "REDIS"
+	case "TeraData":
+		return "TERADATA"
+	case "polardb_o":
+		return "POLARDB_O"
+	case "polardbx20":
+		return "POLARDBX20"
+	case "Oracle":
+		return "ORACLE"
+	case "DMSPolarDB":
+		return "DMSPOLARDB"
+	}
+	return source
+}
+
+func upperLowerCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.EqualFold(old, new)
+}
+
+// convertMigrationJobStatusResponse keeps the computed status inside the writable status domain
+// without hiding an unstarted migration. DTS cycles through Prechecking while a job is being
+// prepared or started; that phase is folded into Migrating so a refresh that lands inside it does
+// not report a status change right after an apply that changed nothing the user controls.
+//
+// PreCheckPass is deliberately preserved: it is the settled state of a job whose precheck finished
+// but whose migration never started. Folding it into Migrating makes an explicit
+// `status = "Migrating"` match the existing state, so Terraform schedules no update and
+// StartDtsJob is never called.
+func convertMigrationJobStatusResponse(source interface{}) interface{} {
+	if fmt.Sprint(source) == "Prechecking" {
+		return "Migrating"
+	}
+	return source
+}
+
+// convertCheckJobStatusResponse folds both precheck phases into Migrating. A check job starts on
+// its own right after ConfigureDtsJob and cannot be started or suspended afterwards, so it has no
+// "configured but not started" state of its own that a user could resume.
+func convertCheckJobStatusResponse(source interface{}) interface{} {
+	switch fmt.Sprint(source) {
+	case "Prechecking", "PreCheckPass":
+		return "Migrating"
+	}
+	return source
 }
