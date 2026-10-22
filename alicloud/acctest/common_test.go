@@ -337,3 +337,85 @@ func Test_CheckAlicloudDataSourceID(t *testing.T) {
 		t.Fatal("CheckAlicloudDataSourceID with empty ID must error")
 	}
 }
+
+func Test_SDKProviderFactoriesAlternate(t *testing.T) {
+	factories := SDKProviderFactoriesAlternate()
+	if len(factories) != 2 {
+		t.Fatalf("SDKProviderFactoriesAlternate returned %d factories, want 2", len(factories))
+	}
+	for _, name := range []string{"alicloud", "alicloudalt"} {
+		f, ok := factories[name]
+		if !ok {
+			t.Fatalf("missing factory %q", name)
+		}
+		if p, err := f(); err != nil || p == nil {
+			t.Fatalf("factory %q returned provider %v, err %v", name, p, err)
+		}
+	}
+}
+
+func Test_SDKProviderFactoriesMultiRegion(t *testing.T) {
+	if factories := SDKProviderFactoriesMultiRegion(1); len(factories) != 1 {
+		t.Fatalf("n=1 returned %d factories, want 1", len(factories))
+	}
+	factories := SDKProviderFactoriesMultiRegion(5)
+	if len(factories) != 4 {
+		t.Fatalf("n=5 returned %d factories, want 4 (alt names cap the count)", len(factories))
+	}
+	for _, name := range []string{"alicloud", "alicloudalt", "alicloudalt2", "alicloudalt3"} {
+		if _, ok := factories[name]; !ok {
+			t.Fatalf("missing factory %q", name)
+		}
+	}
+}
+
+func Test_ConfigAlternateRegionProvider(t *testing.T) {
+	expected := "\nprovider \"alicloudalt\" {\n  region = \"cn-hangzhou\"\n}\n"
+	if got := ConfigAlternateRegionProvider("cn-hangzhou"); got != expected {
+		t.Fatalf("ConfigAlternateRegionProvider = %q, want %q", got, expected)
+	}
+}
+
+func Test_ConfigNamedRegionalProvider(t *testing.T) {
+	expected := "\nprovider \"alicloudalt2\" {\n  region = \"eu-central-1\"\n}\n"
+	if got := ConfigNamedRegionalProvider("alicloudalt2", "eu-central-1"); got != expected {
+		t.Fatalf("ConfigNamedRegionalProvider = %q, want %q", got, expected)
+	}
+}
+
+func Test_CheckoutAccount(t *testing.T) {
+	t.Setenv("ALICLOUD_ACCESS_KEY", "key-main")
+	t.Setenv("ALICLOUD_SECRET_KEY", "secret-main")
+	t.Setenv("ALICLOUD_ACCESS_KEY_MASTER", "")
+	t.Setenv("ALICLOUD_SECRET_KEY_MASTER", "")
+	t.Setenv("ALICLOUD_ACCESS_KEY_SLAVE", "")
+	t.Setenv("ALICLOUD_SECRET_KEY_SLAVE", "")
+
+	CheckoutAccount(t, true)
+	if got := os.Getenv("ALICLOUD_ACCESS_KEY"); got != "key-main" {
+		t.Fatalf("slave path without slave credentials must not swap, got ALICLOUD_ACCESS_KEY %q", got)
+	}
+
+	t.Setenv("ALICLOUD_ACCESS_KEY_SLAVE", "key-slave")
+	t.Setenv("ALICLOUD_SECRET_KEY_SLAVE", "secret-slave")
+	CheckoutAccount(t, true)
+	if got := os.Getenv("ALICLOUD_ACCESS_KEY"); got != "key-slave" {
+		t.Fatalf("slave path must swap in the slave key, got %q", got)
+	}
+	if got := os.Getenv("ALICLOUD_ACCESS_KEY_MASTER"); got != "key-main" {
+		t.Fatalf("slave path must back up the main key, got %q", got)
+	}
+
+	t.Setenv("ALICLOUD_ACCESS_KEY_MASTER", "key-master")
+	t.Setenv("ALICLOUD_SECRET_KEY_MASTER", "secret-master")
+	CheckoutAccount(t, false)
+	if got := os.Getenv("ALICLOUD_ACCESS_KEY"); got != "key-master" {
+		t.Fatalf("master path must restore the master key, got %q", got)
+	}
+
+	t.Setenv("ALICLOUD_ACCESS_KEY_MASTER", "")
+	CheckoutAccount(t, false)
+	if got := os.Getenv("ALICLOUD_ACCESS_KEY"); got != "key-master" {
+		t.Fatalf("master path without master credentials must not swap, got %q", got)
+	}
+}

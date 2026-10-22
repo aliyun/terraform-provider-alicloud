@@ -50,12 +50,14 @@ var defaultRegionToTest = func() string {
 	return "cn-beijing"
 }()
 
+// Migrated to alicloud/acctest/setup.go (same-named constants).
 const (
 	ProviderNameAlicloudAlt  = "alicloudalt"
 	ProviderNameAlicloudAlt2 = "alicloudalt2"
 	ProviderNameAlicloudAlt3 = "alicloudalt3"
 )
 
+// Migrated to alicloud/acctest.SDKProviderFactoriesAlternate.
 func testAccProviderFactoriesAlternate() map[string]func() (*schema.Provider, error) {
 	altProvider := Provider()
 	return map[string]func() (*schema.Provider, error){
@@ -68,6 +70,7 @@ func testAccProviderFactoriesAlternate() map[string]func() (*schema.Provider, er
 	}
 }
 
+// Migrated to alicloud/acctest.SDKProviderFactoriesMultiRegion.
 func testAccProviderFactoriesMultiRegion(n int) map[string]func() (*schema.Provider, error) {
 	factories := map[string]func() (*schema.Provider, error){
 		"alicloud": func() (*schema.Provider, error) {
@@ -84,6 +87,7 @@ func testAccProviderFactoriesMultiRegion(n int) map[string]func() (*schema.Provi
 	return factories
 }
 
+// Migrated to alicloud/acctest.ConfigAlternateRegionProvider.
 func configAlternateRegionProvider(region string) string {
 	return fmt.Sprintf(`
 provider "alicloudalt" {
@@ -92,6 +96,7 @@ provider "alicloudalt" {
 `, region)
 }
 
+// Migrated to alicloud/acctest.ConfigNamedRegionalProvider.
 func configNamedRegionalProvider(providerName string, region string) string {
 	return fmt.Sprintf(`
 provider "%s" {
@@ -469,6 +474,7 @@ func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivi
 	}
 }
 
+// Migrated to alicloud/acctest.CheckoutAccount.
 func checkoutAccount(t *testing.T, SLAVE bool) {
 	if SLAVE {
 		if os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE") == "" || os.Getenv("ALICLOUD_SECRET_KEY_SLAVE") == "" {
