@@ -678,3 +678,17 @@ func (conf *DataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *Da
 	}
 	return steps
 }
+
+func CheckAlicloudDataSourceID(n string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Can't find data source: %s", n)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("data source ID not set")
+		}
+		return nil
+	}
+}

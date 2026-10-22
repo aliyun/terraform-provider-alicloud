@@ -5,8 +5,10 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func Test_getResourceDescribeMethod(t *testing.T) {
@@ -201,5 +203,137 @@ func Test_CheckoutSupportedRegionsFallsBackToHangzhou(t *testing.T) {
 	}
 	if DefaultRegionToTest != string(connectivity.Hangzhou) {
 		t.Fatalf("DefaultRegionToTest = %q, want %q", DefaultRegionToTest, connectivity.Hangzhou)
+	}
+}
+
+func Test_PreCheckPrePaidResourcesGate(t *testing.T) {
+	t.Run("skips when unset", func(t *testing.T) {
+		t.Setenv("ENABLE_CHECKING_PRE_PAID", "")
+		PreCheckPrePaidResources(t)
+		t.Fatal("expected skip")
+	})
+	t.Run("passes when enabled", func(t *testing.T) {
+		t.Setenv("ENABLE_CHECKING_PRE_PAID", "true")
+		PreCheckPrePaidResources(t)
+	})
+	t.Run("trims surrounding whitespace", func(t *testing.T) {
+		t.Setenv("ENABLE_CHECKING_PRE_PAID", " true ")
+		PreCheckPrePaidResources(t)
+	})
+}
+
+func Test_ClassicNetworkResourcesGate(t *testing.T) {
+	t.Run("skips when unset", func(t *testing.T) {
+		t.Setenv("ENABLE_CLASSIC_NETWORK", "")
+		ClassicNetworkResources(t)
+		t.Fatal("expected skip")
+	})
+	t.Run("passes when enabled", func(t *testing.T) {
+		t.Setenv("ENABLE_CLASSIC_NETWORK", "true")
+		ClassicNetworkResources(t)
+	})
+}
+
+func Test_PreCheckWithEnvVariableGate(t *testing.T) {
+	t.Run("skips when unset", func(t *testing.T) {
+		t.Setenv("TF_ACCTEST_HELPER_VAR", "")
+		PreCheckWithEnvVariable(t, "TF_ACCTEST_HELPER_VAR")
+		t.Fatal("expected skip")
+	})
+	t.Run("passes when set", func(t *testing.T) {
+		t.Setenv("TF_ACCTEST_HELPER_VAR", "value")
+		PreCheckWithEnvVariable(t, "TF_ACCTEST_HELPER_VAR")
+	})
+	t.Run("skips on whitespace-only value", func(t *testing.T) {
+		t.Setenv("TF_ACCTEST_HELPER_VAR", "  ")
+		PreCheckWithEnvVariable(t, "TF_ACCTEST_HELPER_VAR")
+		t.Fatal("expected skip")
+	})
+}
+
+func Test_PreCheckWithTimeGate(t *testing.T) {
+	t.Run("passes on today", func(t *testing.T) {
+		PreCheckWithTime(t, []int{time.Now().Day()})
+	})
+	t.Run("skips on no matching day", func(t *testing.T) {
+		PreCheckWithTime(t, nil)
+		t.Fatal("expected skip")
+	})
+}
+
+func Test_PreCheckEnterpriseAccountEnabledGate(t *testing.T) {
+	t.Run("skips when unset", func(t *testing.T) {
+		t.Setenv("ENTERPRISE_ACCOUNT_ENABLED", "")
+		PreCheckEnterpriseAccountEnabled(t)
+		t.Fatal("expected skip")
+	})
+	t.Run("passes when enabled", func(t *testing.T) {
+		t.Setenv("ENTERPRISE_ACCOUNT_ENABLED", "true")
+		PreCheckEnterpriseAccountEnabled(t)
+	})
+	t.Run("does not trim surrounding whitespace", func(t *testing.T) {
+		t.Setenv("ENTERPRISE_ACCOUNT_ENABLED", " true")
+		PreCheckEnterpriseAccountEnabled(t)
+		t.Fatal("expected skip")
+	})
+}
+
+func Test_PreCheckWithMultipleAccountGate(t *testing.T) {
+	t.Run("skips when unset", func(t *testing.T) {
+		t.Setenv("ALICLOUD_ACCESS_KEY_2", "")
+		PreCheckWithMultipleAccount(t)
+		t.Fatal("expected skip")
+	})
+	t.Run("passes when set", func(t *testing.T) {
+		t.Setenv("ALICLOUD_ACCESS_KEY_2", "second-account-key")
+		PreCheckWithMultipleAccount(t)
+	})
+}
+
+func Test_PreCheckWithAccountSiteTypeGate(t *testing.T) {
+	t.Setenv("ALICLOUD_ACCOUNT_SITE", "")
+	t.Setenv("ALIBABA_CLOUD_ACCOUNT_TYPE", "")
+	t.Setenv("ALICLOUD_ACCOUNT_TYPE", "")
+
+	t.Run("defaults to Domestic", func(t *testing.T) {
+		PreCheckWithAccountSiteType(t, DomesticSite)
+	})
+	t.Run("skips mismatched account site", func(t *testing.T) {
+		PreCheckWithAccountSiteType(t, IntlSite)
+		t.Fatal("expected skip")
+	})
+	t.Run("ALICLOUD_ACCOUNT_SITE wins over ALIBABA_CLOUD_ACCOUNT_TYPE", func(t *testing.T) {
+		t.Setenv("ALICLOUD_ACCOUNT_SITE", "Domestic")
+		t.Setenv("ALIBABA_CLOUD_ACCOUNT_TYPE", "International")
+		PreCheckWithAccountSiteType(t, DomesticSite)
+	})
+	t.Run("ALIBABA_CLOUD_ACCOUNT_TYPE fallback", func(t *testing.T) {
+		t.Setenv("ALIBABA_CLOUD_ACCOUNT_TYPE", "International")
+		PreCheckWithAccountSiteType(t, IntlSite)
+	})
+	t.Run("ALICLOUD_ACCOUNT_TYPE fallback", func(t *testing.T) {
+		t.Setenv("ALICLOUD_ACCOUNT_TYPE", "International")
+		PreCheckWithAccountSiteType(t, IntlSite)
+	})
+}
+
+func Test_CheckAlicloudDataSourceID(t *testing.T) {
+	s := terraform.NewState()
+	s.RootModule().Resources["data.alicloud_foo.bar"] = &terraform.ResourceState{
+		Primary: &terraform.InstanceState{ID: "d-123"},
+	}
+
+	if err := CheckAlicloudDataSourceID("data.alicloud_foo.bar")(s); err != nil {
+		t.Fatalf("CheckAlicloudDataSourceID with set ID: unexpected error %s", err)
+	}
+	if err := CheckAlicloudDataSourceID("data.alicloud_foo.absent")(s); err == nil {
+		t.Fatal("CheckAlicloudDataSourceID with absent resource must error")
+	}
+
+	s.RootModule().Resources["data.alicloud_foo.empty"] = &terraform.ResourceState{
+		Primary: &terraform.InstanceState{ID: ""},
+	}
+	if err := CheckAlicloudDataSourceID("data.alicloud_foo.empty")(s); err == nil {
+		t.Fatal("CheckAlicloudDataSourceID with empty ID must error")
 	}
 }

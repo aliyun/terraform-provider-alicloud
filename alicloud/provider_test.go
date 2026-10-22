@@ -333,6 +333,7 @@ Time: %s
 // currently not all account site type support create PostPaid resources, PayByBandwidth and other limits.
 // The setting of account site type can skip some unsupported cases automatically.
 
+// Migrated to alicloud/acctest.PreCheckWithAccountSiteType.
 func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
 	defaultAccount := string(DomesticSite)
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_SITE")); v != "" {
@@ -348,6 +349,7 @@ func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheckPrePaidResources.
 func testAccPreCheckPrePaidResources(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ENABLE_CHECKING_PRE_PAID")); v != "true" {
 		t.Skip("Skipping testing PrePaid resources, otherwise setting environment parameter 'ENABLE_CHECKING_PRE_PAID'.")
@@ -355,6 +357,7 @@ func testAccPreCheckPrePaidResources(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.ClassicNetworkResources.
 func testAccClassicNetworkResources(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ENABLE_CLASSIC_NETWORK")); v != "true" {
 		t.Skip("Skipping testing classic resources, otherwise setting environment parameter 'ENABLE_CLASSIC_NETWORK'.")
@@ -489,6 +492,7 @@ func testSweepPreCheckWithRegions(region string, supported bool, regions []conne
 	return (find && !supported) || (!find && supported)
 }
 
+// Migrated to alicloud/acctest.CheckAlicloudDataSourceID.
 func testAccCheckAlicloudDataSourceID(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -503,6 +507,7 @@ func testAccCheckAlicloudDataSourceID(n string) resource.TestCheckFunc {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheckWithMultipleAccount.
 func testAccPreCheckWithMultipleAccount(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCESS_KEY_2")); v == "" {
 		t.Skipf("Skipping unsupported test with multiple account")
@@ -563,6 +568,7 @@ func testAccPreCheckWithResourceManagerAccount(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheckWithEnvVariable.
 func testAccPreCheckWithEnvVariable(t *testing.T, envVariableName string) {
 	if v := strings.TrimSpace(os.Getenv(envVariableName)); v == "" {
 		t.Skipf("Skipping the test case with no env variable %s", envVariableName)
@@ -591,6 +597,7 @@ func testAccPreCheckWithExpressConnectUidSetting(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheckWithTime.
 func testAccPreCheckWithTime(t *testing.T, days []int) {
 	skipped := true
 	for _, d := range days {
@@ -614,6 +621,7 @@ func testAccPreCheckWithAlikafkaAclEnable(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheckEnterpriseAccountEnabled.
 func testAccPreCheckEnterpriseAccountEnabled(t *testing.T) {
 	enable := os.Getenv("ENTERPRISE_ACCOUNT_ENABLED")
 	if enable != "true" {
