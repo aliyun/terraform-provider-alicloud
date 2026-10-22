@@ -25,6 +25,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ram"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/redis"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sae"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sts"
 )
@@ -56,6 +57,7 @@ var servicePackages = []conns.ServicePackage{
 	ram.ServicePackage(),
 	sae.ServicePackage(),
 	sts.ServicePackage(),
+	redis.ServicePackage(),
 	polardb.ServicePackage(),
 	dts.ServicePackage(),
 	agentloop.ServicePackage(),
