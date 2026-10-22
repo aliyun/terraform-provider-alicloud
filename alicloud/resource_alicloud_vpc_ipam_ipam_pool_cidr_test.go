@@ -40,11 +40,12 @@ func testSweepVpcIpamIpamPoolCidr(region string) error {
 		poolResponse, err = client.RpcPost("VpcIpam", "2023-02-28", poolAction, nil, poolRequest, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve VPC IPAM Pool list: %s", err)
-			return nil
+			break
 		}
 		resp, err := jsonpath.Get("$.IpamPools", poolResponse)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, poolAction, "$.IpamPools", poolResponse)
+			log.Printf("[ERROR] Failed to parse VPC IPAM Pool list ($.IpamPools): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
