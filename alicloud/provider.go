@@ -1809,7 +1809,6 @@ func Provider() *schema.Provider {
 			"alicloud_amqp_exchange":                                         resourceAliCloudAmqpExchange(),
 			"alicloud_cassandra_backup_plan":                                 resourceAlicloudCassandraBackupPlan(),
 			"alicloud_cen_transit_router_peer_attachment":                    resourceAliCloudCenTransitRouterPeerAttachment(),
-			"alicloud_amqp_instance":                                         resourceAliCloudAmqpInstance(),
 			"alicloud_hbr_vault":                                             resourceAliCloudHbrVault(),
 			"alicloud_ssl_certificates_service_certificate":                  resourceAliCloudSslCertificatesServiceCertificate(),
 			"alicloud_arms_alert_contact":                                    resourceAlicloudArmsAlertContact(),

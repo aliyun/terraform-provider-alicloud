@@ -173,9 +173,12 @@ A Serverless instance (`payment_type = "PayAsYouGo"`) supports the following bil
 
 ### Deleting `alicloud_amqp_instance` or removing it from your configuration
 
-The `alicloud_amqp_instance` resource allows you to manage  `payment_type = "PayAsYouGo"`  instance, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
-You can resume managing the subscription instance via the AlibabaCloud Console.
+When `terraform destroy` is run (or the resource is removed from the configuration):
+
+* A `payment_type = "PayAsYouGo"` instance (this covers all Serverless instances, regardless of `serverless_charge_type`) is released by calling the `DeleteInstance` API, so the instance is destroyed for real and stops billing.
+* A `payment_type = "Subscription"` instance is refunded and released through the `RefundInstance` API with `ImmediatelyRelease` enabled.
+
+Destroying an instance that has already been removed from the cloud succeeds, keeping `terraform destroy` idempotent.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_amqp_instance&spm=docs.r.amqp_instance.example&intl_lang=EN_US)
 
