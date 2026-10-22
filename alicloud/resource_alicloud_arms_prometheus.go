@@ -22,7 +22,7 @@ func resourceAlicloudArmsPrometheus() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cluster_type": {
@@ -412,6 +412,28 @@ func resourceAliCloudArmsPrometheusDelete(d *schema.ResourceData, meta interface
 		if NotFoundError(err) {
 			return nil
 		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	// UninstallPromCluster is asynchronous. After it returns success the
+	// underlying ECS instances are not removed immediately, which causes the
+	// dependent security group deletion to fail with DependencyViolation.
+	// Poll GetPrometheusInstance until the instance is fully removed so that
+	// downstream resources can be destroyed safely.
+	armsService := ArmsService{client}
+	wait = incrementalWait(5*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		if _, err := armsService.DescribeArmsPrometheus(d.Id()); err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return retry.NonRetryableError(err)
+		}
+		wait()
+		return retry.RetryableError(fmt.Errorf("Waiting for ARMS Prometheus instance %s to be deleted.", d.Id()))
+	})
+
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
