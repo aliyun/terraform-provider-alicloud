@@ -1,5 +1,4 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package dcdn
 
 import (
 	"encoding/json"
@@ -10,11 +9,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDcdnDomain() *schema.Resource {
+func ResourceAliCloudDcdnDomain() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudDcdnDomainCreate,
 		Read:   resourceAliCloudDcdnDomainRead,
@@ -48,7 +52,7 @@ func resourceAliCloudDcdnDomain() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"upload", "cas", "free"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"upload", "cas", "free"}, false),
 			},
 			"check_url": {
 				Type:     schema.TypeString,
@@ -71,7 +75,7 @@ func resourceAliCloudDcdnDomain() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"routine", "image", "cloudFunction"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"routine", "image", "cloudFunction"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -86,7 +90,8 @@ func resourceAliCloudDcdnDomain() *schema.Resource {
 			"scope": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"domestic", "overseas", "global"}, false),
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"domestic", "overseas", "global"}, false),
 			},
 			"sources": {
 				Type:     schema.TypeSet,
@@ -96,30 +101,30 @@ func resourceAliCloudDcdnDomain() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"domain", "ipaddr", "oss", "common"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"domain", "ipaddr", "oss", "common"}, false),
 						},
 						"content": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringMatch(regexp.MustCompile(".*"), "The address of the source station."),
+							ValidateFunc: validators.StringMatch(regexp.MustCompile(".*"), "The address of the source station."),
 						},
 						"priority": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"20", "30"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"20", "30"}, false),
 						},
 						"port": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(0, 65535),
+							ValidateFunc: validators.IntBetween(0, 65535),
 						},
 						"weight": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringMatch(regexp.MustCompile("\\d+"), "The weight of the origin if multiple origins are specified. Default to `10`."),
+							ValidateFunc: validators.StringMatch(regexp.MustCompile("\\d+"), "The weight of the origin if multiple origins are specified. Default to `10`."),
 						},
 					},
 				},
@@ -132,7 +137,7 @@ func resourceAliCloudDcdnDomain() *schema.Resource {
 			"ssl_protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"off", "on"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"off", "on"}, false),
 				Default:      "off",
 			},
 			"ssl_pub": {
@@ -144,9 +149,9 @@ func resourceAliCloudDcdnDomain() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"online", "offline", "configuring", "configure_failed", "checking", "check_failed"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"online", "offline", "configuring", "configure_failed", "checking", "check_failed"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"top_level_domain": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -175,8 +180,8 @@ func resourceAliCloudDcdnDomainCreate(d *schema.ResourceData, meta interface{}) 
 		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
 	if v, ok := d.GetOk("scope"); ok {
@@ -210,35 +215,35 @@ func resourceAliCloudDcdnDomainCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		sourcesMapsJson, err := json.Marshal(sourcesMaps)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Sources"] = string(sourcesMapsJson)
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ServiceBusy"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dcdn_domain", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dcdn_domain", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(query["DomainName"]))
 
-	dcdnServiceV2 := DcdnServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dcdnServiceV2.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"check_failed", "configure_failed"}))
+	dcdnService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"check_failed", "configure_failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudDcdnDomainUpdate(d, meta)
@@ -246,16 +251,16 @@ func resourceAliCloudDcdnDomainCreate(d *schema.ResourceData, meta interface{}) 
 
 func resourceAliCloudDcdnDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dcdnServiceV2 := DcdnServiceV2{client}
+	dcdnService := NewService(client)
 
-	objectRaw, err := dcdnServiceV2.DescribeDcdnDomain(d.Id())
+	objectRaw, err := dcdnService.DescribeDcdnDomain(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_dcdn_domain DescribeDcdnDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["GmtCreated"] != nil {
@@ -306,9 +311,9 @@ func resourceAliCloudDcdnDomainRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("cname", objectRaw["Cname"])
 
-	objectRaw, err = dcdnServiceV2.DescribeDescribeDcdnDomainCertificateInfo(d.Id())
+	objectRaw, err = dcdnService.DescribeDescribeDcdnDomainCertificateInfo(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["CertId"] != nil {
@@ -335,13 +340,12 @@ func resourceAliCloudDcdnDomainRead(d *schema.ResourceData, meta interface{}) er
 
 	d.Set("domain_name", d.Id())
 
-	dcdnService := DcdnService{client}
 	listTagResourcesObject, err := dcdnService.ListTagResources(d.Id(), "DOMAIN")
-	if err != nil {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
-	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("tags", tags.TagsToMap(listTagResourcesObject))
 
 	return nil
 }
@@ -365,26 +369,26 @@ func resourceAliCloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		dcdnServiceV2 := DcdnServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dcdnServiceV2.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"configure_failed"}))
+		dcdnService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"configure_failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -404,19 +408,19 @@ func resourceAliCloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 			sourcesMaps := make([]interface{}, 0)
 			for _, dataLoop := range v.(*schema.Set).List() {
 				dataLoopTmp := dataLoop.(map[string]interface{})
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["Type"] = dataLoopTmp["type"]
-				dataLoopMap["Content"] = dataLoopTmp["content"]
-				dataLoopMap["Priority"] = dataLoopTmp["priority"]
+				dataLoop1Map := make(map[string]interface{})
+				dataLoop1Map["Type"] = dataLoopTmp["type"]
+				dataLoop1Map["Content"] = dataLoopTmp["content"]
+				dataLoop1Map["Priority"] = dataLoopTmp["priority"]
 				if dataLoopTmp["port"].(int) > 0 {
-					dataLoopMap["Port"] = dataLoopTmp["port"]
+					dataLoop1Map["Port"] = dataLoopTmp["port"]
 				}
-				dataLoopMap["Weight"] = dataLoopTmp["weight"]
-				sourcesMaps = append(sourcesMaps, dataLoopMap)
+				dataLoop1Map["Weight"] = dataLoopTmp["weight"]
+				sourcesMaps = append(sourcesMaps, dataLoop1Map)
 			}
 			sourcesMapsJson, err := json.Marshal(sourcesMaps)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			request["Sources"] = string(sourcesMapsJson)
 		}
@@ -426,33 +430,33 @@ func resourceAliCloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		request["TopLevelDomain"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		dcdnServiceV2 := DcdnServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dcdnServiceV2.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"configure_failed", "check_failed"}))
+		dcdnService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"configure_failed", "check_failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
-	dcdnService := DcdnService{client}
+	dcdnService := NewService(client)
 	if !d.IsNewResource() && d.HasChange("tags") {
 		if err := dcdnService.SetResourceTags(d, "DOMAIN"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -501,35 +505,35 @@ func resourceAliCloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		request["Env"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		dcdnServiceV2 := DcdnServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, dcdnServiceV2.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
+		dcdnService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	if d.HasChange("status") {
 		client := meta.(*connectivity.AliyunClient)
-		dcdnServiceV2 := DcdnServiceV2{client}
-		object, err := dcdnServiceV2.DescribeDcdnDomain(d.Id())
+		dcdnService := NewService(client)
+		object, err := dcdnService.DescribeDcdnDomain(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("status").(string)
@@ -540,26 +544,26 @@ func resourceAliCloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 				query = make(map[string]interface{})
 				query["DomainName"] = d.Id()
 
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
 						return retry.NonRetryableError(err)
 					}
-					addDebug(action, response, request)
+					logs.AddDebug(action, response, request)
 					return nil
 				})
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				dcdnServiceV2 := DcdnServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dcdnServiceV2.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"configure_failed", "check_failed"}))
+				dcdnService := NewService(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"configure_failed", "check_failed"}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -569,26 +573,26 @@ func resourceAliCloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 				query = make(map[string]interface{})
 				query["DomainName"] = d.Id()
 
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
 						return retry.NonRetryableError(err)
 					}
-					addDebug(action, response, request)
+					logs.AddDebug(action, response, request)
 					return nil
 				})
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				dcdnServiceV2 := DcdnServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"offline"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dcdnServiceV2.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"configure_failed", "check_failed"}))
+				dcdnService := NewService(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"offline"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"configure_failed", "check_failed"}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -610,29 +614,29 @@ func resourceAliCloudDcdnDomainDelete(d *schema.ResourceData, meta interface{}) 
 	request = make(map[string]interface{})
 	query["DomainName"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	dcdnServiceV2 := DcdnServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Minute, dcdnServiceV2.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
+	dcdnService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Minute, dcdnService.DcdnDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

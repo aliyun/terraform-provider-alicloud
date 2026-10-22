@@ -78,7 +78,7 @@ The following arguments are supported:
   - `webservicescene`: accelerate website business.
   - `staticscene`: video and graphic acceleration.
   - (Empty): no scene.
-* `scope` - (Optional) The region where the acceleration service is deployed. Valid values:
+* `scope` - (Optional, Computed) The region where the acceleration service is deployed. If not set, the API returns `domestic` as the default. Valid values:
   - `domestic`: Chinese mainland
   - `overseas`: global (excluding mainland China)
   - `global`: global
@@ -111,7 +111,7 @@ The sources supports the following:
   - `ipaddr`: The origin is configured using an IP address.
   - `domain`: The origin is configured using a domain name.
   - `oss`: The origin is configured using the Internet domain name of an Alibaba Cloud Object Storage Service (OSS) bucket.
-* `weight` - (Optional) The weight of the origin if multiple origins are specified. Default to `10`.
+* `weight` - (Optional, Computed) The weight of the origin if multiple origins are specified. If not set, defaults to `10`.
 
 ## Attributes Reference
 
