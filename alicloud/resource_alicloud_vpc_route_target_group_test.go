@@ -46,9 +46,8 @@ func TestAccAliCloudVpcRouteTargetGroup_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Step 1: create with every Optional/Required field set.
 			// Active-Standby requires exactly 2 members (weight 100 active + 0

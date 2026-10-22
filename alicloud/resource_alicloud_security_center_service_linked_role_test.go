@@ -31,7 +31,6 @@ func TestAccAliCloudSASServiceLinkedRole_basic0(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

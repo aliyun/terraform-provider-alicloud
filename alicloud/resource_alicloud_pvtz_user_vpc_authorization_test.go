@@ -26,7 +26,6 @@ func TestAccAliCloudPvtzUserVpcAuthorization_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -72,9 +71,8 @@ func TestAccAliCloudPvtzUserVpcAuthorization_defaultAuthType(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

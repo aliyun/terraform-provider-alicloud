@@ -33,9 +33,8 @@ func TestAccAliCloudPolarDBDynamoItem_basic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckPolarDBDynamoItemDestroy,
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPolarDBDynamoItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

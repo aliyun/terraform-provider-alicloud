@@ -149,9 +149,8 @@ func TestAccAliCloudPolarDBCluster_Distributed(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -404,7 +403,6 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -703,7 +701,6 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -821,7 +818,6 @@ func TestAccAliCloudPolarDBCluster_Multi(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -873,7 +869,6 @@ func TestAccAliCloudPolarDBCluster_CreateGDN(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -940,7 +935,6 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1136,9 +1130,8 @@ func TestAccAliCloudPolarDBCluster_GlobalSecurityGroupOnCreate(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1220,7 +1213,6 @@ func TestAccAliCloudPolarDBCluster_CreateCloneFromPolarDB(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1299,7 +1291,6 @@ func TestAccAliCloudPolarDBCluster_CreateCloneFromRDS(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1375,7 +1366,6 @@ func TestAccAliCloudPolarDBCluster_CreateMigrationFromRDS(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1452,7 +1442,6 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1529,7 +1518,6 @@ func TestAccAliCloudPolarDBCluster_NormalMultimaster(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.PolarDBCloneFromRdsSupportRegions)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1588,7 +1576,6 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1681,7 +1668,6 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreateWithStandbyAz(t *testing.T)
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1752,7 +1738,6 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreate(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1841,7 +1826,6 @@ func TestAccAliCloudPolarDBCluster_Serverless(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1980,7 +1964,6 @@ func TestAccAliCloudPolarDBCluster_SteadyServerless(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -2196,7 +2179,6 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -2309,7 +2291,6 @@ func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -2390,7 +2371,6 @@ func TestAccAliCloudPolarDBCluster_TargetMinorVersion(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -2442,7 +2422,6 @@ func TestAccAliCloudPolarDBCluster_Xengine(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -2508,7 +2487,6 @@ func TestAccAliCloudPolarDBCluster_3AZ(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.Cluster3AZPolarDBSupportRegions)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -3305,8 +3283,6 @@ func TestAccAliCloudPolarDBCluster_TDEOnCreateAndUpdateEncryptNewTables(t *testi
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-
-		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),

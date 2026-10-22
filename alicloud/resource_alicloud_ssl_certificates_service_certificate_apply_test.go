@@ -46,8 +46,7 @@ func TestAccAliCloudSslCertificatesServiceCertificateApply_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		// Destroying the application withdraws it, but the instance it was submitted on survives,
 		// so GetInstanceDetail keeps succeeding and the default "describe must report NotFound"
 		// check would always fail. What marks an instance as no longer applying for a certificate

@@ -27,7 +27,6 @@ func TestAccAliCloudAgentloopContextStore_basic11077(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

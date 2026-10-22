@@ -27,8 +27,7 @@ func TestAccAliCloudThreatDetectionRdDefaultSyncList_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				// Create: omit folder_ids so the singleton is adopted without

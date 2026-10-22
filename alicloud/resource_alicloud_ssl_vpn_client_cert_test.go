@@ -121,9 +121,8 @@ func TestAccAlicloudSslVpnClientCert_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSslVpnClientCertConfigBasic(rand),

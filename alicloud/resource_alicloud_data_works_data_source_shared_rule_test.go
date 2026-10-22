@@ -28,9 +28,8 @@ func TestAccAliCloudDataWorksDataSourceSharedRule_basic8955(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -111,9 +110,8 @@ func TestAccAliCloudDataWorksDataSourceSharedRule_basic8166(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

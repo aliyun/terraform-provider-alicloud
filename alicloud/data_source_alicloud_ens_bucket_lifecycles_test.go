@@ -31,8 +31,7 @@ resource "alicloud_ens_bucket_lifecycle" "default" {
 			testAccPreCheck(t)
 			createEnsBucketForLifecycleTest(t, bucketName)
 		},
-		IDRefreshName: "data.alicloud_ens_bucket_lifecycles.default",
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		CheckDestroy: func(*terraform.State) error {
 			deleteEnsBucketForLifecycleTest(bucketName)
 			return nil
@@ -74,8 +73,7 @@ resource "alicloud_ens_bucket_lifecycle" "default" {
 			testAccPreCheck(t)
 			createEnsBucketForLifecycleTest(t, bucketName)
 		},
-		IDRefreshName: "data.alicloud_ens_bucket_lifecycles.default",
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		CheckDestroy: func(*terraform.State) error {
 			deleteEnsBucketForLifecycleTest(bucketName)
 			return nil

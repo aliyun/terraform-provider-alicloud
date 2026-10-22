@@ -29,9 +29,8 @@ func TestAccAliCloudRAMGroupMembership_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckRamGroupMembershipDestroy,
+		CheckDestroy:      testAccCheckRamGroupMembershipDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRamGroupMembershipCreateConfig(rand),

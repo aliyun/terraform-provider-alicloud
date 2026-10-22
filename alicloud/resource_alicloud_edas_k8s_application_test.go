@@ -147,7 +147,6 @@ func SkipTestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEdasK8sApplicationDestroy,
 		Steps: []resource.TestStep{
@@ -298,7 +297,6 @@ func SkipTestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEdasK8sApplicationDestroy,
 		Steps: []resource.TestStep{
@@ -423,7 +421,6 @@ func SkipTestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEdasApplicationDestroy,
 		Steps: []resource.TestStep{

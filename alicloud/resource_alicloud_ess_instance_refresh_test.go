@@ -33,7 +33,6 @@ func TestAccAliCloudEssInstanceRefresh_image(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEssInstanceRefreshDestroy,
@@ -107,7 +106,6 @@ func TestAccAliCloudEssInstanceRefresh_template(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEssInstanceRefreshDestroy,
@@ -180,7 +178,6 @@ func TestAccAliCloudEssInstanceRefresh_container(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEssInstanceRefreshDestroy,

@@ -182,9 +182,8 @@ func TestAccAliCloudRAMUser(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckRamUserDestroy,
+		CheckDestroy:      testAccCheckRamUserDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRamUserNameConfig(randInt),
@@ -429,9 +428,8 @@ func TestAccAliCloudRAMUser_tags(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamUserDestroy,
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckRamUserDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

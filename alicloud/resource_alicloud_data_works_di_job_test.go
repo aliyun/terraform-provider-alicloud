@@ -28,7 +28,6 @@ func TestAccAliCloudDataWorksDiJob_basic8957(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

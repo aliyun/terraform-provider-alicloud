@@ -28,7 +28,6 @@ func TestAccAliCloudALBAclEntryAttachment_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -66,9 +65,8 @@ func TestAccAliCloudALBAclEntryAttachment_entries(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckAlbAclEntryAttachmentBatchDestroy,
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAlbAclEntryAttachmentBatchDestroy,
 		Steps: []resource.TestStep{
 			{
 				// exactly one of `entry` and `entries` must be specified: a config
@@ -189,9 +187,8 @@ func TestAccAliCloudALBAclEntryAttachment_entriesChunking(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckAlbAclEntryAttachmentBatchDestroy,
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAlbAclEntryAttachmentBatchDestroy,
 		Steps: []resource.TestStep{
 			{
 				// exactly 20 entries: the single-call boundary of the api

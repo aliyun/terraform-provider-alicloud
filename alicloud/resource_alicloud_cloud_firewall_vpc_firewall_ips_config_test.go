@@ -28,7 +28,6 @@ func TestAccAliCloudCloudFirewallVpcFirewallIpsConfig_basic7786(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

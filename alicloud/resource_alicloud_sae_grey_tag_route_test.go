@@ -33,9 +33,8 @@ func TestAccAliCloudSAEGreyTagRoute_basic0(t *testing.T) {
 	name := fmt.Sprintf("tftestacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSAEGreyTagRouteBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

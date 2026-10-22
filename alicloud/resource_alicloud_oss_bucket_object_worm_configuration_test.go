@@ -28,8 +28,7 @@ func TestAccAliCloudOssBucketObjectWormConfiguration_basic12777(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -150,8 +149,7 @@ func TestAccAliCloudOssBucketObjectWormConfiguration_basic12778(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -231,8 +229,7 @@ func TestAccAliCloudOssBucketObjectWormConfiguration_basic12779(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				// Configuration without any "rule" block. The server still

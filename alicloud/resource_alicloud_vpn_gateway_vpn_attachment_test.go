@@ -141,7 +141,6 @@ func TestAccAliCloudVPNGatewayVpnAttachment_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -307,7 +306,6 @@ func TestAccAliCloudVPNGatewayVpnAttachment_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -822,7 +820,6 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic10338(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-huhehaote"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1274,7 +1271,6 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic10363(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-huhehaote"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1490,7 +1486,6 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic5629(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1693,7 +1688,6 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic5358(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1938,7 +1932,6 @@ func TestAccAliCloudVpnGatewayVpnAttachment_role(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -2410,7 +2403,6 @@ func TestAccAliCloudVpnGatewayVpnAttachment_roleSwitch(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -2602,7 +2594,6 @@ func TestAccAliCloudVpnGatewayVpnAttachment_tunnelBandwidth(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -4321,7 +4312,6 @@ func TestAccAliCloudVPNGatewayVpnAttachment_reorderExplicitIkeBlock(t *testing.T
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		IDRefreshName:     resourceID,
 		CheckDestroy: func(state *terraform.State) error {
 			if err := rc.checkResourceDestroy()(state); err != nil {
 				return err
@@ -4466,7 +4456,7 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.EUCentral1})
 			testAccPreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory, IDRefreshName: resourceID,
+		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: func(state *terraform.State) error {
 			if err := rc.checkResourceDestroy()(state); err != nil {
 				return err

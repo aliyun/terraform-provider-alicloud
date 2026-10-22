@@ -29,8 +29,7 @@ func TestAccAliCloudEnsBucketLifecycle_basic(t *testing.T) {
 			testAccPreCheck(t)
 			createEnsBucketForLifecycleTest(t, bucketName)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			rac.checkResourceDestroy(),
 			func(*terraform.State) error {
@@ -116,8 +115,7 @@ func TestAccAliCloudEnsBucketLifecycle_ruleId(t *testing.T) {
 			testAccPreCheck(t)
 			createEnsBucketForLifecycleTest(t, bucketName)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		CheckDestroy: resource.ComposeTestCheckFunc(
 			rac.checkResourceDestroy(),
 			func(*terraform.State) error {

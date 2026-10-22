@@ -339,7 +339,6 @@ func TestAccAliCloudVPC_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6SupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -494,7 +493,6 @@ func TestAccAliCloudVPC_enableIpv6(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6SupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -644,7 +642,6 @@ func TestAccAliCloudVPC_basic1(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6SupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -712,7 +709,6 @@ func TestAccAliCloudVPC_basic2(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6SupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -775,7 +771,6 @@ func TestAccAliCloudVPC_isNotDefault(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6SupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -838,7 +833,6 @@ func TestAccAliCloudVPC_isDefault(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1345,7 +1339,6 @@ func TestAccAliCloudVPCVPC_basic3113(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1552,7 +1545,6 @@ func TestAccAliCloudVPCVPC_basic3113_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1665,7 +1657,6 @@ func TestAccAliCloudVPCVPC_basic9656(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

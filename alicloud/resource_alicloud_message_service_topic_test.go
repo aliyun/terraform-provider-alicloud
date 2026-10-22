@@ -145,7 +145,6 @@ func TestAccAliCloudMessageServiceTopic_basic9031(t *testing.T) {
 			// account whitelist (cn-qingdao).
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -313,7 +312,6 @@ func TestAccAliCloudMessageServiceTopic_basic9031_twin(t *testing.T) {
 			// account whitelist (cn-qingdao).
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -381,7 +379,6 @@ func TestAccAliCloudMessageServiceTopic_basic9032(t *testing.T) {
 			// account whitelist (cn-qingdao).
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -551,7 +548,6 @@ func TestAccAliCloudMessageServiceTopic_basic9032_twin(t *testing.T) {
 			// account whitelist (cn-qingdao).
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

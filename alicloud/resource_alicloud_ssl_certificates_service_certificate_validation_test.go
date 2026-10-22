@@ -37,8 +37,7 @@ func TestAccAliCloudSslCertificatesServiceCertificateValidation_basic(t *testing
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		// Destroying a wait calls no API, and the adopted instance belongs to the account, not to
 		// this test — there is nothing whose absence could be asserted.
 		CheckDestroy: func(s *terraform.State) error {

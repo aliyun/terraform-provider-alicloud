@@ -178,8 +178,6 @@ func TestAccAliCloudDTSMigrationJob_basic0(t *testing.T) {
 			// converged to cn-beijing for every input region, so pin it here.
 			os.Setenv("ALICLOUD_REGION", "cn-beijing")
 		},
-		IDRefreshName:            migrationJobResourceId,
-		IDRefreshIgnore:          []string{"status"},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkMigrationJobDestroy(migrationJobResourceId),
 		Steps: []resource.TestStep{
@@ -214,8 +212,6 @@ func TestAccAliCloudDTSMigrationJob_mariadb(t *testing.T) {
 			acctest.PreCheck(t)
 			os.Setenv("ALICLOUD_REGION", "cn-beijing")
 		},
-		IDRefreshName:            migrationJobResourceId,
-		IDRefreshIgnore:          []string{"status"},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkMigrationJobDestroy(migrationJobResourceId),
 		Steps: []resource.TestStep{
@@ -251,8 +247,6 @@ func TestAccAliCloudDTSMigrationJob_ssl(t *testing.T) {
 			// The SSL steps ran in cn-hangzhou in the flat suite.
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		IDRefreshName:            migrationJobResourceId,
-		IDRefreshIgnore:          []string{"status"},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkMigrationJobDestroy(migrationJobResourceId),
 		Steps: []resource.TestStep{
@@ -310,8 +304,6 @@ func TestAccAliCloudDTSMigrationJob_vpcNat(t *testing.T) {
 			// The VPC NAT steps ran in cn-hangzhou in the flat suite.
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		IDRefreshName:            migrationJobResourceId,
-		IDRefreshIgnore:          []string{"status"},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkMigrationJobDestroy(migrationJobResourceId),
 		Steps: []resource.TestStep{

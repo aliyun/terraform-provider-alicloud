@@ -138,7 +138,6 @@ func TestAccAliCloudCenInstanceAttachment_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -188,7 +187,6 @@ func TestAccAliCloudCenInstanceAttachment_multi_same_region(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenInstanceAttachmentDestroyWithProviders(&providers),
 
@@ -224,7 +222,6 @@ func TestAccAliCloudCenInstanceAttachment_multi_different_region(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenInstanceAttachmentDestroyWithProviders(&providers),
 

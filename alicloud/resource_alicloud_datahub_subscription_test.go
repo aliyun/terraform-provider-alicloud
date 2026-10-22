@@ -34,9 +34,8 @@ func TestAccAlicloudDatahubSubscription_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -99,9 +98,8 @@ func TestAccAlicloudDatahubSubscription_multi(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

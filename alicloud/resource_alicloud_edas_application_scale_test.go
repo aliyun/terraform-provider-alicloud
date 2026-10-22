@@ -32,9 +32,8 @@ func SkipTestAccAlicloudEdasApplicationScale_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testEdasCheckIAAttachmentDestroy,
+		CheckDestroy:      testEdasCheckIAAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

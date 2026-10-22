@@ -127,7 +127,6 @@ func TestAccAliCloudDcdnIpaDomain_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -235,7 +234,6 @@ func TestAccAliCloudDcdnIpaDomain_basic1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

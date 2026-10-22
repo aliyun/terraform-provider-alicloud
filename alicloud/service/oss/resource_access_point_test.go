@@ -35,7 +35,6 @@ func TestAccAliCloudOssAccessPoint_basic6642(t *testing.T) {
 			testAccPreCheckOssAccessPoint(t)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		IDRefreshName:            resourceId,
 		CheckDestroy:             testAccCheckOssAccessPointDestroy,
 		Steps: []resource.TestStep{
 			{

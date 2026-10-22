@@ -27,7 +27,6 @@ func TestAccAliCloudCloudFirewallInstanceMember_basic(t *testing.T) {
 			// currently, international test account has not enabled RD
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

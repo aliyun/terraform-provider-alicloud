@@ -169,7 +169,6 @@ func TestAccAliCloudEventBridgeEventBus_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

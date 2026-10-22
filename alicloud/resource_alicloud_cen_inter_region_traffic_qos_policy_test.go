@@ -22,7 +22,6 @@ func TestAccAliCloudCenInterRegionTrafficQosPolicy_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactoriesAlternate(),
 		CheckDestroy:      testAccCheckCenInterRegionTrafficQosPolicyDestroy,
 		Steps: []resource.TestStep{

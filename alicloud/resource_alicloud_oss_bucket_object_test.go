@@ -42,7 +42,6 @@ func TestAccAliCloudOssBucketObject_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckAlicloudOssBucketObjectDestroy,
 		Steps: []resource.TestStep{
@@ -184,10 +183,9 @@ func TestAccAliCloudOssBucketObject_worm(t *testing.T) {
 	extendedUntil := extendedUntilTime.Format(iso8601Ms)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:      func() { testAccPreCheck(t) },
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckAlicloudOssBucketObjectDestroy,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAlicloudOssBucketObjectDestroy,
 		Steps: []resource.TestStep{
 			{
 				// The bucket field references

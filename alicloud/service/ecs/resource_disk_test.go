@@ -15,7 +15,6 @@ import (
 // reports "tags.% = 0"; plugin-testing compares raw apply-state with refreshed
 // state for the ID-only check, so tags is excluded there. Tags are still
 // verified by per-step checks and ImportStateVerify.
-var diskIDRefreshIgnore = []string{"tags"}
 
 // Case cloud_efficiency生命周期 8017
 func TestAccAliCloudECSDisk_basic8017(t *testing.T) {
@@ -34,8 +33,6 @@ func TestAccAliCloudECSDisk_basic8017(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -215,8 +212,6 @@ func TestAccAliCloudECSDisk_basic8017_twin(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -374,8 +369,6 @@ func TestAccAliCloudECSDisk_basic8018(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -541,8 +534,6 @@ func TestAccAliCloudECSDisk_basic8018_twin(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -614,8 +605,6 @@ func TestAccAliCloudECSDisk_basic8019(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -791,8 +780,6 @@ func TestAccAliCloudECSDisk_basic8019_twin_excluding_kms_key_id(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -864,8 +851,6 @@ func TestAccAliCloudECSDisk_basic8019_twin(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -961,8 +946,6 @@ func TestAccAliCloudECSDisk_basic8019_essd_to_autopl_burst(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1075,8 +1058,6 @@ func TestAccAliCloudECSDisk_basic8020(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1252,8 +1233,6 @@ func TestAccAliCloudECSDisk_basic8020_twin(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          diskIDRefreshIgnore,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

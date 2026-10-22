@@ -28,7 +28,6 @@ func TestAccAliCloudGpdbDatabase_basic7868(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

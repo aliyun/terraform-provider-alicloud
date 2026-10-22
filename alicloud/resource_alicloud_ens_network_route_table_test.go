@@ -26,18 +26,17 @@ func TestAccAliCloudEnsNetworkRouteTable_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"network_id":    "${alicloud_ens_network.defaultObbrL7.id}",
+					"network_id":     "${alicloud_ens_network.defaultObbrL7.id}",
 					"associate_type": "Gateway",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"network_id":    CHECKSET,
+						"network_id":     CHECKSET,
 						"associate_type": "Gateway",
 					}),
 				),
@@ -64,33 +63,33 @@ func TestAccAliCloudEnsNetworkRouteTable_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"network_id":    "${alicloud_ens_network.defaultObbrL7.id}",
-					"associate_type": "Gateway",
+					"network_id":       "${alicloud_ens_network.defaultObbrL7.id}",
+					"associate_type":   "Gateway",
 					"route_table_name": name,
-					"description": "test description",
+					"description":      "test description",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"network_id":    CHECKSET,
-						"associate_type": "Gateway",
+						"network_id":       CHECKSET,
+						"associate_type":   "Gateway",
 						"route_table_name": name,
-						"description": "test description",
+						"description":      "test description",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"network_id":    "${alicloud_ens_network.defaultObbrL7.id}",
-					"associate_type": "Gateway",
+					"network_id":       "${alicloud_ens_network.defaultObbrL7.id}",
+					"associate_type":   "Gateway",
 					"route_table_name": name,
-					"description": "test description",
+					"description":      "test description",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"network_id":    CHECKSET,
-						"associate_type": "Gateway",
-						"route_table_name": name,
-						"description": "test description",
+						"network_id":                     CHECKSET,
+						"associate_type":                 "Gateway",
+						"route_table_name":               name,
+						"description":                    "test description",
 						"is_default_gateway_route_table": "true",
 					}),
 				),
@@ -106,8 +105,8 @@ func TestAccAliCloudEnsNetworkRouteTable_basic0(t *testing.T) {
 }
 
 var AlicloudEnsNetworkRouteTableMap0 = map[string]string{
-	"create_time": CHECKSET,
-	"status":      CHECKSET,
+	"create_time":      CHECKSET,
+	"status":           CHECKSET,
 	"route_table_type": CHECKSET,
 }
 

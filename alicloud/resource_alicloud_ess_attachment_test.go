@@ -30,10 +30,9 @@ func TestAccAliCloudEssAttachment_update(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssAttachmentDestroy,
+		CheckDestroy:      testAccCheckEssAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -117,7 +116,6 @@ func TestAccAliCloudEssAttachment_delay(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckEssAttachmentDestroy,
@@ -204,10 +202,9 @@ func TestAccAliCloudEssAttachment_final(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckEssAttachmentDestroy,
+		CheckDestroy:      testAccCheckEssAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

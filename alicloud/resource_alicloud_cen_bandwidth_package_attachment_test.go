@@ -35,9 +35,8 @@ func TestAccAliCloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

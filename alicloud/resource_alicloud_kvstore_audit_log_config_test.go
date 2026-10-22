@@ -37,9 +37,8 @@ func TestAccAliCloudKvstoreAuditLogConfig_basic(t *testing.T) {
 			testAccPreCheckPrePaidResources(t)
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

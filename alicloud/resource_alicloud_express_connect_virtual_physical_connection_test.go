@@ -29,9 +29,8 @@ func TestAccAliCloudExpressConnectVirtualPhysicalConnection_basic2033(t *testing
 			testAccPreCheck(t)
 			testAccPreCheckWithExpressConnectUidSetting(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

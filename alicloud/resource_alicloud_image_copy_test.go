@@ -33,7 +33,6 @@ func TestAccAliCloudECSImageCopyBasic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckECSImageCopyDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{

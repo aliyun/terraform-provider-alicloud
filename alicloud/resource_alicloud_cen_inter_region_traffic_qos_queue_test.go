@@ -22,7 +22,6 @@ func TestAccAliCloudCenInterRegionTrafficQosQueue_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactoriesAlternate(),
 		CheckDestroy:      testAccCheckCenInterRegionTrafficQosQueueDestroy,
 		Steps: []resource.TestStep{
@@ -71,7 +70,6 @@ func TestAccAliCloudCenInterRegionTrafficQosQueue_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactoriesAlternate(),
 		CheckDestroy:      testAccCheckCenInterRegionTrafficQosQueueDestroy,
 		Steps: []resource.TestStep{

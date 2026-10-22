@@ -483,7 +483,6 @@ func TestAccAlicloudEDASK8sSlbAttachment_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEdasSlbAttachmentDestroy,
 		Steps: []resource.TestStep{

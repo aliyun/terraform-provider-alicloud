@@ -127,7 +127,6 @@ func SkipTestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
@@ -174,7 +173,6 @@ func SkipTestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCenBandwidthLimitDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{

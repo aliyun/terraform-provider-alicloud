@@ -31,7 +31,6 @@ func TestAccAliCloudCSKubernetesPolicyInstance_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceID,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

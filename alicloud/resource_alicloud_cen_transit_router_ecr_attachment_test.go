@@ -26,9 +26,8 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366(t *testing.T) {
 			testAccPreCheck(t)
 			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -218,9 +217,8 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366_twin(t *testing.T) {
 			testAccPreCheck(t)
 			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -277,9 +275,8 @@ func TestAccAliCloudCenTransitRouterEcrAttachment_basic5366_raw(t *testing.T) {
 			testAccPreCheck(t)
 			checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

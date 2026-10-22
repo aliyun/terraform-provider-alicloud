@@ -31,9 +31,8 @@ func TestAccAlicloudEdasApplicationPackageAttachment_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testEdasCheckDeploymentDestroy,
+		CheckDestroy:      testEdasCheckDeploymentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

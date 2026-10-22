@@ -139,9 +139,8 @@ func TestAccAlicloudSslVpnServerBasic(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSslVpnServerDestroy,
+		CheckDestroy:      testAccCheckSslVpnServerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSslVpnServerConfigBasic(rand),
@@ -255,9 +254,8 @@ func TestAccAlicloudSslVpnServerMulti(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSslVpnServerDestroy,
+		CheckDestroy:      testAccCheckSslVpnServerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSslVpnServerConfig_mulit(rand),

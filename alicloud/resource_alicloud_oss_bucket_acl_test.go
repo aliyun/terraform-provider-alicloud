@@ -44,9 +44,8 @@ func TestAccAliCloudOssBucketAcl_pointerResponse(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		CheckDestroy:  rac.checkResourceDestroy(),
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -89,7 +88,6 @@ func TestAccAliCloudOssBucketAcl_basic6192(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -172,7 +170,6 @@ func TestAccAliCloudOssBucketAcl_basic6192_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

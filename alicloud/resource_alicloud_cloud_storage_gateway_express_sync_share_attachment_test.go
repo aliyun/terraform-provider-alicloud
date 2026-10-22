@@ -25,7 +25,6 @@ func TestAccAliCloudCloudStorageGatewayExpressSyncShareAttachment_basic0(t *test
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

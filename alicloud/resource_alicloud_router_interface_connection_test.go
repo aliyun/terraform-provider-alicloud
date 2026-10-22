@@ -75,10 +75,9 @@ func TestAccAlicloudVPCRouterInterfaceConnectionBasic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckRouterInterfaceConnectionDestroy,
+		CheckDestroy:      testAccCheckRouterInterfaceConnectionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRouterInterfaceConnectionConfigBasic(rand),

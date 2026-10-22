@@ -23,8 +23,6 @@ func TestAccAliCloudAgentloopEvaluationTask_basic11081(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          []string{"status"},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

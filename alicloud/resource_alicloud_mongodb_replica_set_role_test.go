@@ -39,7 +39,6 @@ func TestAccAliCloudMongoDBReplicaSetRole_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      checkDestroy,
 		Steps: []resource.TestStep{

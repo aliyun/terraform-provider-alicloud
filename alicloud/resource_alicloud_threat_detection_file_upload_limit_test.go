@@ -28,7 +28,6 @@ func TestAccAliCloudThreatDetectionFileUploadLimit_basic4279(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -101,7 +100,6 @@ func TestAccAliCloudThreatDetectionFileUploadLimit_basic4279_twin(t *testing.T) 
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

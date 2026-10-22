@@ -36,9 +36,8 @@ func TestAccAlicloudCloudSSOGroup_basic0(t *testing.T) {
 			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheckWithRegions(t, true, connectivity.CloudSsoSupportRegions)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

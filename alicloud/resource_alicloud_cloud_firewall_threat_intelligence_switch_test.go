@@ -30,7 +30,6 @@ func TestAccAliCloudCloudFirewallThreatIntelligenceSwitch_basic11212(t *testing.
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

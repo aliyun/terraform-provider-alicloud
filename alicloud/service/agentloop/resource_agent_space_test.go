@@ -24,7 +24,6 @@ func TestAccAliCloudAgentloopAgentSpace_basic11075(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -122,7 +121,6 @@ func TestAccAliCloudAgentloopAgentSpace_basic11076(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

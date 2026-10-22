@@ -120,7 +120,6 @@ func TestAccAliCloudSAEIngress_basic0(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%ssaeingress%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEIngressBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -282,7 +281,6 @@ func TestAccAliCloudSAEIngress_basic1(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%ssaeingress%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEIngressBasicDependence1)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

@@ -35,7 +35,6 @@ func TestAccAliCloudThreatDetectionCheckConfig_basic12031(t *testing.T) {
 			testAccPreCheck(t)
 			testAccThreatDetectionCheckConfigBackup(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

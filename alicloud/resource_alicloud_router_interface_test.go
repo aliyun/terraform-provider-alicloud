@@ -166,7 +166,6 @@ func TestAccAliCloudVPCRouterInterfaceBasic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckRouterInterfaceDestroy,
 		Steps: []resource.TestStep{
@@ -254,7 +253,6 @@ func TestAccAliCloudVPCRouterInterfaceMulti(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckRouterInterfaceDestroy,
 		Steps: []resource.TestStep{

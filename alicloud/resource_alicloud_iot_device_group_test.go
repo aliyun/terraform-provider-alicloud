@@ -112,9 +112,8 @@ func TestAccAlicloudIotDeviceGroup_basic0(t *testing.T) {
 			os.Setenv("ALICLOUD_REGION", "cn-shanghai")
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

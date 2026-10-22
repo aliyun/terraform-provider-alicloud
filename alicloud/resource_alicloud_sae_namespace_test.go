@@ -98,7 +98,6 @@ func TestAccAlicloudSAENamespace_basic0(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%ssaenamespace%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAENamespaceBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -185,7 +184,6 @@ func TestAccAlicloudSAENamespace_basic1(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%ssaenamespace%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAENamespaceBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

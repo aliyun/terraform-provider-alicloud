@@ -35,7 +35,6 @@ func TestAccAliCloudPolarDBBatchTask_Create(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: checkPolarDBBatchTaskDestroy(),

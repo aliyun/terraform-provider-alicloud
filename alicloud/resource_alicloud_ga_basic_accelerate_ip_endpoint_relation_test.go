@@ -33,7 +33,6 @@ func TestAccAliCloudGaBasicAccelerateIpEndpointRelation_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckGaBasicAccelerateIpEndpointRelationDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{

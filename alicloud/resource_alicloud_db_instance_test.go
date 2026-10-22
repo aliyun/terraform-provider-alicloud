@@ -200,7 +200,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -617,7 +616,6 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -883,7 +881,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_5_7_HighAvailabilityInstance(t *testing.
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1008,7 +1005,6 @@ func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1303,7 +1299,6 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_12_0(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1579,7 +1574,6 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -1912,7 +1906,6 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_15_0_Babelfish(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -2257,7 +2250,6 @@ func TestAccAliCloudRdsDBInstance_MariaDB_10_3(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -2480,7 +2472,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_MultiAZ(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -2533,7 +2524,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
@@ -2631,9 +2621,8 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaidForceDelete(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2694,7 +2683,6 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_Cluster(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
@@ -2756,7 +2744,6 @@ func TestAccAliCloudRdsDBInstance_MySQL_8_0_ServerlessBasic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -2955,7 +2942,6 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_14_0_Serverless(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -3164,7 +3150,6 @@ func TestAccAliCloudRdsDBInstanceMySQL_ServerlessStandard(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -3328,7 +3313,6 @@ func TestAccAliCloudRdsDBInstance_SQLServer_2019_ServerlessHA(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -3537,7 +3521,6 @@ func TestAccAliCloudRdsDBInstanceMysql_Downgrade(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -3655,7 +3638,6 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -3713,7 +3695,6 @@ func TestAccAliCloudRdsDBInstanceMysql_DBParamGroupId(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -4083,7 +4064,6 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -4204,7 +4184,6 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd_supplement(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -4261,7 +4240,6 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -4358,9 +4336,8 @@ func TestAccAliCloudRdsDBInstance_PG_MajorVersionUpgrade_Prepaid(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4499,7 +4476,6 @@ func TestAccAliCloudRdsDBInstanceSqlService_general_essd(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

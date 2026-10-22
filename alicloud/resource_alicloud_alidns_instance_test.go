@@ -29,7 +29,6 @@ func TestAccAliCloudAlidnsInstance_basic(t *testing.T) {
 			testAccPreCheck(t)
 			//testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

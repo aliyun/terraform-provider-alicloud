@@ -28,7 +28,6 @@ func TestAccAliCloudWafv3Instance_basic2294(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckForCleanUpInstances(t, string(connectivity.Hangzhou), "waf", "waf", "waf", "waf")
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
