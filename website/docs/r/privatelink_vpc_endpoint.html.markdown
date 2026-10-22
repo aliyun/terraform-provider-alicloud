@@ -80,6 +80,10 @@ variable "name" {
   default = "terraform-example"
 }
 
+provider "alicloud" {
+  region = "ap-southeast-5"
+}
+
 data "alicloud_zones" "example" {
   available_resource_creation = "VSwitch"
 }
