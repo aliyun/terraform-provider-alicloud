@@ -69,6 +69,7 @@ variable "domain_name" {
 }
 resource "alicloud_dcdn_domain" "default" {
   domain_name = "${var.domain_name}"
+  scope       = "overseas"
   sources {
     content = "1.1.1.1"
     port = "80"
