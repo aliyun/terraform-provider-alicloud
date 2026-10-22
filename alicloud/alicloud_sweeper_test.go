@@ -32,6 +32,7 @@ func TestMain(m *testing.M) {
 
 // sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
 // functions for a given region
+// Migrated to alicloud/sweep.SharedClientForRegionWithBackendRegions.
 func sharedClientForRegionWithBackendRegions(region string, supported bool, regions []connectivity.Region) (interface{}, error) {
 	find := false
 	backupRegion := string(connectivity.APSouthEast1)
@@ -74,6 +75,7 @@ var regionalEndpoints sync.Map
 
 // SDK endpoint caches are keyed by product. Sharing one across regions can route
 // a Hangzhou request to a previously cached Beijing endpoint.
+// Migrated to alicloud/sweep.SharedEndpointCacheForRegion.
 func sharedEndpointCacheForRegion(region string) *sync.Map {
 	cache, _ := regionalEndpoints.LoadOrStore(region, new(sync.Map))
 	return cache.(*sync.Map)
@@ -81,6 +83,7 @@ func sharedEndpointCacheForRegion(region string) *sync.Map {
 
 // sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
 // functions for a give n region
+// Migrated to alicloud/sweep.SharedClientForRegion.
 func sharedClientForRegion(region string) (interface{}, error) {
 	var accessKey, secretKey, securityToken string
 	if accessKey = os.Getenv("ALICLOUD_ACCESS_KEY"); accessKey == "" {
@@ -138,6 +141,7 @@ func sharedClientForRegion(region string) (interface{}, error) {
 	return client, nil
 }
 
+// Migrated to alicloud/sweep.SweepAll.
 func sweepAll() bool {
 	return os.Getenv("ALICLOUD_SWEEP_ALL_RESOURCES") == "true"
 }
@@ -147,6 +151,7 @@ func sweepAll() bool {
 // environment variable, a Go time.Duration string (for example "12h" or "24h").
 // A missing, empty or invalid value returns 0, which disables the age filter
 // and preserves the legacy sweep behavior.
+// Migrated to alicloud/sweep.SweepOlderThan.
 func sweepOlderThan() time.Duration {
 	v := strings.TrimSpace(os.Getenv("ALICLOUD_SWEEP_OLDER_THAN"))
 	if v == "" {
@@ -167,6 +172,7 @@ func sweepOlderThan() time.Duration {
 // (the conservative, protective default). It returns skip=false (proceed to
 // delete) when the age filter is disabled or the resource is older than the
 // threshold. The caller logs the reason when skipping.
+// Migrated to alicloud/sweep.SweepRecentCheck.
 func sweepRecentCheck(item map[string]interface{}) (skip bool, reason string) {
 	threshold := sweepOlderThan()
 	if threshold <= 0 {
@@ -198,6 +204,7 @@ func sweepRecentCheck(item map[string]interface{}) (skip bool, reason string) {
 // commonly return. The VPC DescribeVpcs API, for example, returns CreationTime
 // as RFC3339 (e.g. 2021-04-18T15:02:37Z). The remaining layouts cover the
 // no-seconds and space-separated variants other services use.
+// Migrated to alicloud/sweep.ParseSweepCreationTime.
 func parseSweepCreationTime(s string) (time.Time, bool) {
 	layouts := []string{
 		time.RFC3339,             // 2006-01-02T15:04:05Z07:00
