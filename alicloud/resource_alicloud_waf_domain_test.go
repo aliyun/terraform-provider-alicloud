@@ -42,7 +42,8 @@ func testSweepWafDomains(region string) error {
 	}
 	resp, err := jsonpath.Get("$.InstanceInfos", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceInfos", response)
+		log.Printf("[ERROR] Failed to parse $.InstanceInfos (treat as empty): %s", err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
