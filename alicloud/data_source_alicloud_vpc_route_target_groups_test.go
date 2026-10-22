@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 // TestAccAliCloudVpcRouteTargetGroupsDataSource exercises every Optional filter

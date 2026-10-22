@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDcdnDomainDataSource(t *testing.T) {

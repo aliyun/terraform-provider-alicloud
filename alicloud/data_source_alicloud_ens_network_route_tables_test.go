@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudEnsNetworkRouteTablesDataSource(t *testing.T) {
@@ -43,11 +43,11 @@ func TestAccAliCloudEnsNetworkRouteTablesDataSource(t *testing.T) {
 
 	associateTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAliCloudEnsNetworkRouteTableSourceConfig(rand, map[string]string{
-			"associate_type": `"${alicloud_ens_network_route_table.default.associate_type}"`,
+			"associate_type":   `"${alicloud_ens_network_route_table.default.associate_type}"`,
 			"route_table_name": `"${alicloud_ens_network_route_table.default.route_table_name}"`,
 		}),
 		fakeConfig: testAccCheckAliCloudEnsNetworkRouteTableSourceConfig(rand, map[string]string{
-			"associate_type": `"InvalidType"`,
+			"associate_type":   `"InvalidType"`,
 			"route_table_name": `"${alicloud_ens_network_route_table.default.route_table_name}_fake"`,
 		}),
 	}
@@ -65,16 +65,16 @@ func TestAccAliCloudEnsNetworkRouteTablesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAliCloudEnsNetworkRouteTableSourceConfig(rand, map[string]string{
-			"route_table_id": `"${alicloud_ens_network_route_table.default.route_table_id}"`,
+			"route_table_id":   `"${alicloud_ens_network_route_table.default.route_table_id}"`,
 			"route_table_name": `"${alicloud_ens_network_route_table.default.route_table_name}"`,
-			"network_id": `"${alicloud_ens_network_route_table.default.network_id}"`,
-			"associate_type": `"${alicloud_ens_network_route_table.default.associate_type}"`,
+			"network_id":       `"${alicloud_ens_network_route_table.default.network_id}"`,
+			"associate_type":   `"${alicloud_ens_network_route_table.default.associate_type}"`,
 		}),
 		fakeConfig: testAccCheckAliCloudEnsNetworkRouteTableSourceConfig(rand, map[string]string{
-			"route_table_id": `"${alicloud_ens_network_route_table.default.route_table_id}_fake"`,
+			"route_table_id":   `"${alicloud_ens_network_route_table.default.route_table_id}_fake"`,
 			"route_table_name": `"${alicloud_ens_network_route_table.default.route_table_name}_fake"`,
-			"network_id": `"${alicloud_ens_network_route_table.default.network_id}_fake"`,
-			"associate_type": `"InvalidType"`,
+			"network_id":       `"${alicloud_ens_network_route_table.default.network_id}_fake"`,
+			"associate_type":   `"InvalidType"`,
 		}),
 	}
 
@@ -118,10 +118,10 @@ data "alicloud_ens_network_route_tables" "default" {
 
 var existEnsNetworkRouteTableMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"tables.#":                          "1",
-		"tables.0.route_table_name":         fmt.Sprintf("tf-testAccEnsNetworkRouteTablesDataSource%d", rand),
-		"tables.0.description":              fmt.Sprintf("tf-testAccEnsNetworkRouteTablesDataSource%d", rand),
-		"tables.0.associate_type":           "Gateway",
+		"tables.#":                  "1",
+		"tables.0.route_table_name": fmt.Sprintf("tf-testAccEnsNetworkRouteTablesDataSource%d", rand),
+		"tables.0.description":      fmt.Sprintf("tf-testAccEnsNetworkRouteTablesDataSource%d", rand),
+		"tables.0.associate_type":   "Gateway",
 	}
 }
 

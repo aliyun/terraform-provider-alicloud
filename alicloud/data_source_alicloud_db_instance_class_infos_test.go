@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudRdsDBInstanceClassInfosDatasource_main(t *testing.T) {
@@ -28,12 +28,12 @@ func TestAccAlicloudRdsDBInstanceClassInfosDatasource_main(t *testing.T) {
 
 	var existDBInstanceMainMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                   CHECKSET,
-			"infos.#":                 CHECKSET,
-			"infos.0.class_code":      CHECKSET,
-			"infos.0.class_group":     CHECKSET,
-			"infos.0.cpu":             CHECKSET,
-			"infos.0.memory_class":    CHECKSET,
+			"ids.#":                CHECKSET,
+			"infos.#":              CHECKSET,
+			"infos.0.class_code":   CHECKSET,
+			"infos.0.class_group":  CHECKSET,
+			"infos.0.cpu":          CHECKSET,
+			"infos.0.memory_class": CHECKSET,
 		}
 	}
 

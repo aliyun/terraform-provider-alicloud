@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudServiceMeshServiceMeshesDataSource(t *testing.T) {
@@ -63,12 +63,12 @@ func TestAccAlicloudServiceMeshServiceMeshesDataSource(t *testing.T) {
 
 	var existDataAlicloudServiceMeshServiceMeshesSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                           "1",
-			"meshes.#":                        "1",
-			"meshes.0.status":                 "running",
-			"meshes.0.sidecar_version":        CHECKSET,
-			"meshes.0.kube_config":            CHECKSET,
-			"meshes.0.service_mesh_name":      fmt.Sprintf("tf-testaccservicemeshservicemesh-%d", rand),
+			"ids.#":                      "1",
+			"meshes.#":                   "1",
+			"meshes.0.status":            "running",
+			"meshes.0.sidecar_version":   CHECKSET,
+			"meshes.0.kube_config":       CHECKSET,
+			"meshes.0.service_mesh_name": fmt.Sprintf("tf-testaccservicemeshservicemesh-%d", rand),
 		}
 	}
 	var fakeDataAlicloudServiceMeshServiceMeshesSourceNameMapFunc = func(rand int) map[string]string {

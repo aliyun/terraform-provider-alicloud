@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 // NOTE: Test depends on data source or hardcoded are not stable and may fail at any time

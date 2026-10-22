@@ -12,10 +12,11 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -646,19 +647,19 @@ func TestUnitAliCloudCenTransitRouterPeerAttachment(t *testing.T) {
 	})
 
 	t.Run("UpdateModifyCenAttributeAbnormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdktf.NewInstanceDiff()
 		for _, key := range []string{"auto_publish_route_enabled", "bandwidth", "dry_run", "cen_bandwidth_package_id", "transit_router_attachment_description", "transit_router_attachment_name"} {
 			switch p["alicloud_cen_transit_router_peer_attachment"].Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdktf.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdktf.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdktf.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_cen_transit_router_peer_attachment"].Schema).Data(nil, diff)
@@ -681,19 +682,19 @@ func TestUnitAliCloudCenTransitRouterPeerAttachment(t *testing.T) {
 	})
 
 	t.Run("UpdateModifyCenAttributeAttributeNormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdktf.NewInstanceDiff()
 		for _, key := range []string{"auto_publish_route_enabled", "bandwidth", "dry_run", "cen_bandwidth_package_id", "transit_router_attachment_description", "transit_router_attachment_name"} {
 			switch p["alicloud_cen_transit_router_peer_attachment"].Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdktf.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdktf.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdktf.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_cen_transit_router_peer_attachment"].Schema).Data(nil, diff)

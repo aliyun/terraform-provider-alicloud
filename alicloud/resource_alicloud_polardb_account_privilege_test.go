@@ -6,7 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudPolarDBAccountPrivilege_update(t *testing.T) {

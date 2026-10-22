@@ -19,10 +19,11 @@ import (
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func init() {
@@ -6261,11 +6262,11 @@ func TestUnitAliCloudInstanceImageUpdateForcesNew(t *testing.T) {
 			// A fresh resource per case: ForceNew is recorded on the schema, so cases would
 			// otherwise leak into each other through a shared schema map.
 			instanceResource := resourceAliCloudInstance()
-			state := &terraform.InstanceState{
+			state := &sdktf.InstanceState{
 				ID:         "i-unit-test",
 				Attributes: map[string]string{"image_id": testCase.stateImageId},
 			}
-			config := terraform.NewResourceConfigRaw(map[string]interface{}{
+			config := sdktf.NewResourceConfigRaw(map[string]interface{}{
 				"image_id": testCase.configImageId,
 			})
 			client := &connectivity.AliyunClient{
