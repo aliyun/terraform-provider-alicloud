@@ -2734,6 +2734,136 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
     }`, name)
 }
 
+func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterArchitecture"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":           CHECKSET,
+		"db_node_class":         CHECKSET,
+		"vswitch_id":            CHECKSET,
+		"db_type":               CHECKSET,
+		"db_version":            CHECKSET,
+		"architecture":          CHECKSET,
+		"cluster_network_type":  CHECKSET,
+		"storage_auto_scale":    CHECKSET,
+		"storage_type":          CHECKSET,
+		"storage_space":         CHECKSET,
+		"storage_upper_bound":   CHECKSET,
+		"deploy_unit":           CHECKSET,
+		"db_cluster_ip_array.#": CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterSENormalConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":              "MySQL",
+					"db_version":           "8.0",
+					"pay_type":             "PostPaid",
+					"db_node_count":        "2",
+					"db_node_class":        "polar.mysql.x4.large.c",
+					"vswitch_id":           "${local.vswitch_id}",
+					"zone_id":              "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
+					"creation_category":    "SENormal",
+					"architecture":         "X86",
+					"cluster_network_type": "VPC",
+					"storage_type":         "ESSDPL1",
+					"storage_space":        50,
+					"storage_auto_scale":   "Enable",
+					"storage_upper_bound":  "200",
+					"description":          "${var.name}",
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"architecture":         "X86",
+						"cluster_network_type": "VPC",
+						"storage_auto_scale":   "Enable",
+						"storage_type":         "ESSDPL1",
+						"storage_space":        "50",
+						"storage_upper_bound":  "200",
+						"deploy_unit":          CHECKSET,
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "db_cluster_ip_array.*.db_cluster_ip_array_name", "default"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class":       "polar.mysql.x4.xlarge.c",
+					"storage_auto_scale":  "Disable",
+					"storage_upper_bound": "300",
+					// Add a user-managed hidden IP array to verify the write path
+					// sends DBClusterIPArrayAttribute=hidden and the Read path (F2)
+					// keeps it in state so the attribute converges instead of being
+					// dropped. The default array is redeclared so it is not removed.
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Disable",
+						"storage_type":        "ESSDPL1",
+						"storage_upper_bound": "300",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "db_cluster_ip_array.*.db_cluster_ip_array_name", "tftesthid"),
+					resource.TestCheckTypeSetElemAttr(resourceId, "db_cluster_ip_array.*.db_cluster_ip_array_attribute", "hidden"),
+				),
+			},
+			{
+				// Re-import after the hidden array was added so the import path
+				// (F2) is covered: a user-managed hidden group must be preserved
+				// by Read instead of being dropped when the configuration is
+				// unavailable during import.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type"},
+			},
+		},
+	})
+}
+
 func resourcePolarDBClusterConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {

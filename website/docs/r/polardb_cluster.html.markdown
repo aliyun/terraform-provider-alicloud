@@ -216,7 +216,7 @@ The following arguments are supported:
 * `encryption_key` - (Optional, Available since 1.200.0) The ID of the custom key. `encryption_key` cannot be modified after TDE is opened.
 * `role_arn` - (Optional, Available since 1.200.0) The Alibaba Cloud Resource Name (ARN) of the RAM role. A RAM role is a virtual identity that you can create within your Alibaba Cloud account. For more information see [RAM role overview](https://www.alibabacloud.com/help/en/resource-access-management/latest/ram-role-overview).
 * `enable_automatic_rotation` - (Optional, Type: bool, Available since v1.289.0) Specifies whether to enable automatic rotation of the TDE encryption key. Default to `false`. Valid values are `true`, `false`. This parameter takes effect only after TDE is enabled.
-* `security_group_ids` - (Optional, Available since 1.128.0) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
+* `security_group_ids` - (Optional, Available since 1.128.0) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster. This attribute manages security-group (`SecurityGroup`) whitelists; it is the recommended way to bind security groups and is read back from the API separately from the IP whitelist arrays.
 
   -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
 * `deletion_lock` - (Optional, Available since 1.169.0) turn on table deletion_lock. Valid values are 0, 1. 1 means to open the cluster protection lock, 0 means to close the cluster protection lock
@@ -258,6 +258,8 @@ The following arguments are supported:
 * `standby_az` - (Optional, Computed, Available since 1.249.0) The availability zone where the hot standby cluster is stored, takes effect when `hot_standby_cluster` is `ON` or `EQUAL`.
 
   -> **NOTE:** `standby_az` is required when `hot_standby_cluster` is `EQUAL`.
+* `architecture` - (Optional, ForceNew, Computed, Available since v2.1.1) The CPU architecture of the cluster. Valid values: `X86`, `ARM`.
+* `cluster_network_type` - (Optional, ForceNew, Computed, Available since v2.1.1) The network type of the cluster. Valid value: `VPC`.
 * `strict_consistency` - (Optional, Computed, ForceNew, Available since v1.239.0) Whether the cluster has enabled strong data consistency across multiple zones. Valid values are `ON`, `OFF`. Available parameters can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1)
 * `serverless_type` - (Optional, Available since v1.204.0) The type of the serverless cluster. Valid values `AgileServerless`, `SteadyServerless`. This parameter is valid only for serverless clusters.
 * `serverless_steady_switch` - (Optional, Available since v1.211.1) Serverless steady-state switch. Valid values are `ON`, `OFF`. This parameter is valid only for serverless clusters.
@@ -317,6 +319,8 @@ The following arguments are supported:
 * `compress_storage` - (Optional, Available since v1.232.0) Enable storage compression function. The value of this parameter is `ON`. Only MySQL supports.
 
   -> **NOTE:** When the value of db_type is not MySQL, the value of creation_option is neither empty nor Normal, and the value of storage_type is not PSL4, this field will be ignored.
+* `storage_auto_scale` - (Optional, Computed, Available since v2.1.1) Specifies whether to enable automatic storage scaling. Valid values: `Enable`, `Disable`.
+* `storage_upper_bound` - (Optional, Computed, Available since v2.1.1) The upper bound of the storage capacity in GB when automatic storage scaling is enabled. Valid values: 0 to 32000. This parameter takes effect when `storage_auto_scale` is `Enable`.
 * `global_security_group_list` - (Optional, List, Available since v1.271.0) The list of global security ip group ids.
 * `enable_dynamodb` - (Optional, Bool, Available since v1.273.0) Specifies whether to enable DynamoDB compatibility. Valid values: `true`, `false`.
 
@@ -329,6 +333,8 @@ The db_cluster_ip_array supports the following:
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of a cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `db_cluster_ip_array_name` - (Optional) The name of the IP whitelist group. The group name must be 2 to 120 characters in length and consists of lowercase letters and digits. It must start with a letter, and end with a letter or a digit.
   **NOTE:** If the specified whitelist group name does not exist, the whitelist group is created. If the specified whitelist group name exists, the whitelist group is modified. If you do not specify this parameter, the default group is modified. You can create a maximum of 50 IP whitelist groups for a cluster.
+* `db_cluster_ip_array_attribute` - (Optional, Computed, Available since v2.1.1) The attribute of the IP whitelist array. Set it to `hidden` to create a hidden whitelist group. The value is read back from the API and is not part of the element identity, so omitting it does not cause a diff.
+* `white_list_type` - (Optional, Available since v2.1.1, Forces IP channel) The type of the whitelist. Valid values: `IP`, `SecurityGroup`. This field is write-only: it is sent on write and recovered from the configuration on read because the Describe API does not return it. The `db_cluster_ip_array` block only carries IP-type arrays (`white_list_type = IP`, the default); `security_ips` holds the IP addresses. Security-group whitelists (`white_list_type = SecurityGroup`) are managed by the top-level `security_group_ids` attribute instead, because security groups are returned by the API as a separate list and do not map to a named IP array. Do not set `white_list_type = SecurityGroup` inside a `db_cluster_ip_array` block.
 * `modify_mode` - (Optional) The method for modifying the IP whitelist. Valid values are `Cover`, `Append`, `Delete`.
   **NOTE:** There does not recommend setting modify_mode to `Append` or `Delete` and it will bring a potential diff error.  
 
@@ -348,6 +354,7 @@ The following attributes are exported:
 * `port` - (Available since 1.196.0) PolarDB cluster connection port. 
 * `status` - (Available since 1.204.1) PolarDB cluster status.
 * `create_time` - (Available since 1.204.1) PolarDB cluster creation time.
+* `deploy_unit` - (Available since v2.1.1) The deploy unit of the cluster.
 * `cn_node_ids` - (Available since v1.293.0) The IDs of the CN (Coordinator Node) nodes in a distributed cluster.
 * `dn_node_ids` - (Available since v1.293.0) The IDs of the DN (Data Node) nodes in a distributed cluster.
 * `tde_region` - (Available since 1.200.0) The region where the TDE key resides.
