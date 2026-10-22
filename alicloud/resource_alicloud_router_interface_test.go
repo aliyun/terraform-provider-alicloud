@@ -49,7 +49,8 @@ func testSweepRouterInterfaces(region string) error {
 			return vpcClient.DescribeRouterInterfaces(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving Router Interfaces: %s", err)
+			log.Printf("[ERROR] Failed to list Router Interfaces: %s", err)
+			break
 		}
 		resp, _ := raw.(*vpc.DescribeRouterInterfacesResponse)
 		if resp == nil || len(resp.RouterInterfaceSet.RouterInterfaceType) < 1 {
@@ -63,7 +64,8 @@ func testSweepRouterInterfaces(region string) error {
 
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to get next page number for Router Interfaces: %s", err)
+			break
 		}
 		req.PageNumber = page
 	}
