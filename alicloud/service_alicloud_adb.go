@@ -1096,6 +1096,29 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersionDBClusterSSL(id string) (obj
 	return object, nil
 }
 
+// sslReadyState determines the SSL provisioning state from the
+// DescribeDBClusterSSL response. When SSLEnabled is true but
+// ConnectionString or ExpireTime is missing, nil, or empty, returns
+// "provisioning" so the state refresh keeps polling until the SSL
+// endpoint is fully configured. Otherwise returns sslEnabled.
+//
+// Note: fmt.Sprint(nil) returns "<nil>" (not ""), so the nil and
+// missing-key cases must be checked explicitly alongside the
+// empty-string case.
+func sslReadyState(sslEnabled string, object map[string]interface{}) string {
+	if sslEnabled == "true" {
+		connStr, ok := object["ConnectionString"]
+		if !ok || connStr == nil || fmt.Sprint(connStr) == "" {
+			return "provisioning"
+		}
+		expireTime, ok := object["ExpireTime"]
+		if !ok || expireTime == nil || fmt.Sprint(expireTime) == "" {
+			return "provisioning"
+		}
+	}
+	return sslEnabled
+}
+
 func (s *AdbService) AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbDbClusterLakeVersionDBClusterSSL(d.Id())
@@ -1106,12 +1129,14 @@ func (s *AdbService) AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d *sche
 			return nil, "", WrapError(err)
 		}
 
+		sslEnabled := fmt.Sprint(object["SSLEnabled"])
+
 		for _, failState := range failStates {
-			if fmt.Sprint(object["SSLEnabled"]) == failState {
-				return object, fmt.Sprint(object["SSLEnabled"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["SSLEnabled"])))
+			if sslEnabled == failState {
+				return object, sslEnabled, WrapError(Error(FailedToReachTargetStatus, sslEnabled))
 			}
 		}
 
-		return object, fmt.Sprint(object["SSLEnabled"]), nil
+		return object, sslReadyState(sslEnabled, object), nil
 	}
 }
