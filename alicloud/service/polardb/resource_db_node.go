@@ -218,7 +218,12 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "create", 5*time.Minute)
+	// PolarDB order-bearing actions (CreateDBNodes, ModifyDBNodeClass,
+	// DeleteDBNodes) fail with OperationDenied.OrderProcessing while a prior
+	// order settles. The SDKv2 polardb cluster resource uses 50m for
+	// create/update; 10m is sufficient for the DBNode lifecycle while keeping
+	// the retry well within the test timeout.
+	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "create", 10*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -661,7 +666,11 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "update", 5*time.Minute)
+	// ModifyDBNodeClass is an order-bearing action subject to
+	// OperationDenied.OrderProcessing while a prior order settles; 10m
+	// matches the create default and allows the retry loop to ride out
+	// order settlement.
+	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "update", 10*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -927,7 +936,11 @@ func (r *dbNodeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(state.FwTimeouts, "delete", 5*time.Minute)
+	// DeleteDBNodes is an order-bearing action subject to
+	// OperationDenied.OrderProcessing while a prior order settles; 10m
+	// matches the create/update defaults and allows the retry loop to
+	// ride out order settlement.
+	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(state.FwTimeouts, "delete", 10*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
