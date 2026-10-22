@@ -15,6 +15,12 @@ Provides a PolarDB PolarFS endpoint resource.
 
 ## Example Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_polar_fs_endpoint&exampleId=b9edaed9-8743-442a-f655-7daa9621bc4e8c3a848a&activeTab=example&spm=docs.r.polardb_polar_fs_endpoint.0.b9edaed987&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_polardb_polar_fs_endpoint" "example" {
   db_cluster_id        = alicloud_polardb_cluster.example.id
@@ -24,6 +30,10 @@ resource "alicloud_polardb_polar_fs_endpoint" "example" {
   vswitch_id           = alicloud_vswitch.example.id
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_polar_fs_endpoint&spm=docs.r.polardb_polar_fs_endpoint.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 

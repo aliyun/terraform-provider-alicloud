@@ -1,6 +1,6 @@
-## 2.0.2 (Unreleased)
+## 2.1.1 (Unreleased)
 
-## 2.0.1 (October 22, 2026)
+## 2.1.0 (October 22, 2026)
 
 FEATURES:
 
