@@ -565,64 +565,6 @@ func (s *DtsService) QueryChangedJobParameters(dtsJobId string) (string, error) 
 	return string(b), nil
 }
 
-func (s *DtsService) DtsMigrationJobStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeDtsMigrationJob(id)
-		if err != nil {
-			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
-				return nil, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
-		for _, failState := range failStates {
-			if fmt.Sprint(object["Status"]) == failState {
-				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
-			}
-		}
-		return object, fmt.Sprint(object["Status"]), nil
-	}
-}
-
-func (s *DtsService) DescribeDtsMigrationInstance(id string) (object map[string]interface{}, err error) {
-	client := s.client
-	var response map[string]interface{}
-	action := "DescribeDtsJobDetail"
-	request := map[string]interface{}{
-		"RegionId":      s.client.RegionId,
-		"DtsInstanceID": id,
-	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
-			return object, WrapErrorf(NotFoundErr("DTS", id), NotFoundWithResponse, response)
-		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-	}
-	v, err := jsonpath.Get("$", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
-	}
-	object = v.(map[string]interface{})
-	return object, nil
-}
-
 func (s *DtsService) DescribeDtsSyncJob(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var response map[string]interface{}
@@ -810,4 +752,12 @@ func dtsEndpointSSLReserved(d *schema.ResourceData) (string, error) {
 		return "", WrapError(err)
 	}
 	return string(reservedJson), nil
+}
+
+func convertDtsMigrationJobPaymentTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "PostPaid":
+		return "PayAsYouGo"
+	}
+	return source
 }

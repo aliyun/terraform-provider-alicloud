@@ -2007,8 +2007,6 @@ func Provider() *schema.Provider {
 			"alicloud_nas_recycle_bin":                                       resourceAlicloudNasRecycleBin(),
 			"alicloud_dbfs_snapshot":                                         resourceAliCloudDbfsSnapshot(),
 			"alicloud_dbfs_instance_attachment":                              resourceAliCloudDbfsInstanceAttachment(),
-			"alicloud_dts_migration_job":                                     resourceAlicloudDtsMigrationJob(),
-			"alicloud_dts_migration_instance":                                resourceAlicloudDtsMigrationInstance(),
 			"alicloud_mse_gateway":                                           resourceAlicloudMseGateway(),
 			"alicloud_dbfs_service_linked_role":                              resourceAlicloudDbfsServiceLinkedRole(),
 			"alicloud_resource_manager_service_linked_role":                  resourceAliCloudResourceManagerServiceLinkedRole(),

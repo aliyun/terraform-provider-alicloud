@@ -15,6 +15,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudfirewall"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gwlb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
@@ -55,6 +56,7 @@ var servicePackages = []conns.ServicePackage{
 	sae.ServicePackage(),
 	sts.ServicePackage(),
 	polardb.ServicePackage(),
+	dts.ServicePackage(),
 }
 
 var validateOnce sync.Once
