@@ -175,20 +175,79 @@ class ScopeTest(unittest.TestCase):
             self.assertEqual(wrapper.main(), 0)
             run.assert_not_called()
 
-    def test_formatter_checks_renamed_and_earlier_commit_files_and_propagates_failures(self):
+    def test_formatter_checks_renamed_and_earlier_commit_files_in_batches(self):
         self.write('alicloud/change/same.go', 'package change\nvar x = 2')
+        self.write('alicloud/change/other.go', 'package change\nvar y = 3')
+        self.write('alicloud/change/new_test.go', 'package change')
         self.commit()
         self.git('mv', 'alicloud/old/source.go', 'alicloud/change/renamed.go')
         self.commit()
         formatter = load('run-format-check')
         paths = check_scope.changed_paths()
-        with mock.patch.object(formatter, 'changed_paths', return_value=paths), mock.patch.object(formatter.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, b'bad.go\n')) as run:
-            self.assertEqual(formatter.main(), 1)
-            checked = {call.args[0][-1] for call in run.call_args_list}
-            self.assertEqual(checked, {'alicloud/change/same.go', 'alicloud/change/renamed.go'})
-        with mock.patch.object(formatter, 'changed_paths', return_value=paths), mock.patch.object(formatter.subprocess, 'run', side_effect=subprocess.CalledProcessError(2, 'goimports')):
-            with self.assertRaises(subprocess.CalledProcessError):
+        expected = {'alicloud/change/same.go', 'alicloud/change/renamed.go',
+                    'alicloud/change/other.go', 'alicloud/change/new_test.go'}
+        for needs_formatting in [False, True]:
+            with self.subTest(needs_formatting=needs_formatting):
+                def run(command, **kwargs):
+                    listed = b''
+                    if (needs_formatting and command[1] == '-l'
+                            and 'alicloud/change/same.go' in command[2:]):
+                        listed = b'alicloud/change/same.go\n'
+                    return subprocess.CompletedProcess(command, 0, listed)
+
+                with mock.patch.object(formatter, 'changed_paths', return_value=paths), \
+                        mock.patch.object(formatter.os, 'cpu_count', return_value=2), \
+                        mock.patch.object(formatter.subprocess, 'run', side_effect=run) as calls:
+                    self.assertEqual(formatter.main(), int(needs_formatting))
+                for tool in ['gofmt', 'goimports']:
+                    commands = [call.args[0] for call in calls.call_args_list
+                                if call.args[0][:2] == [tool, '-l']]
+                    self.assertEqual(len(commands), 2)
+                    self.assertTrue(all(len(command[2:]) == 2 for command in commands))
+                    self.assertCountEqual([path for command in commands for path in command[2:]],
+                                          expected)
+                    diffs = [call.args[0] for call in calls.call_args_list
+                             if call.args[0][:2] == [tool, '-d']]
+                    self.assertEqual(diffs, [[tool, '-d', 'alicloud/change/same.go']]
+                                     if needs_formatting else [])
+
+    def test_formatter_propagates_worker_error_after_formatting_failure(self):
+        formatter = load('run-format-check')
+        path = 'alicloud/change/same.go'
+        error = subprocess.CalledProcessError(2, ['goimports', '-l', path])
+
+        def check_chunk(tool, files):
+            if tool == 'goimports':
+                raise error
+            return True
+
+        with mock.patch.object(formatter, 'changed_paths', return_value=[path]), \
+                mock.patch.object(formatter.os, 'cpu_count', return_value=1), \
+                mock.patch.object(formatter, 'check_chunk', side_effect=check_chunk):
+            with self.assertRaises(subprocess.CalledProcessError) as raised:
                 formatter.main()
+        self.assertIs(raised.exception, error)
+
+    def test_formatter_batch_failure_falls_back_and_identifies_bad_file(self):
+        formatter = load('run-format-check')
+        paths = ['alicloud/change/same.go', 'alicloud/old/source.go']
+        for tool in ['gofmt', 'goimports']:
+            with self.subTest(tool=tool):
+                batch = [tool, '-l', *paths]
+                first = [tool, '-l', paths[0]]
+                bad = [tool, '-l', paths[1]]
+                error = subprocess.CalledProcessError(2, bad, stderr=b'syntax error')
+                results = [subprocess.CompletedProcess(batch, 2, b'', b'syntax error'),
+                           subprocess.CompletedProcess(first, 0, b''), error]
+                with mock.patch.object(formatter.subprocess, 'run', side_effect=results) as run:
+                    with self.assertRaises(subprocess.CalledProcessError) as raised:
+                        formatter.check_chunk(tool, paths)
+                self.assertIs(raised.exception, error)
+                self.assertEqual(run.call_args_list, [
+                    mock.call(batch, check=False, capture_output=True),
+                    mock.call(first, check=True, capture_output=True),
+                    mock.call(bad, check=True, capture_output=True),
+                ])
 
     def test_document_scope_covers_all_changed_markdown_extensions(self):
         self.write('website/docs/r/changed.md', 'new')
