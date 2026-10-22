@@ -2,6 +2,7 @@
 import contextlib
 import importlib.util
 import io
+import os
 from pathlib import Path
 import shlex
 import tempfile
@@ -38,6 +39,49 @@ class DocumentChecksTest(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertIn('first-result', output.getvalue())
         self.assertIn('second-result', output.getvalue())
+
+
+class ContentScopeTest(unittest.TestCase):
+    INDEX = 'website/docs/index.html.markdown'
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.original = Path.cwd()
+        os.chdir(self.directory.name)
+        self.addCleanup(os.chdir, self.original)
+
+    def create(self, *paths):
+        for path in paths:
+            target = Path(self.directory.name) / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text('# Example\n')
+        return list(paths)
+
+    def test_provider_index_skips_the_resource_page_template(self):
+        [index] = self.create(self.INDEX)
+        content = checks.scoped_commands([index])['Content']
+        self.assertNotIn('document_check.go', content)
+        self.assertNotIn(index, content)
+        self.assertIn('No resource or data source documentation files changed.', content)
+
+    def test_provider_index_keeps_its_remaining_documentation_checks(self):
+        [index] = self.create(self.INDEX)
+        commands = checks.scoped_commands([index])
+        for name in ('markdown-link', 'markdown-lint', 'misspell', 'terrafmt'):
+            self.assertIn('./' + index, commands[name])
+
+    def test_resource_documentation_still_uses_the_page_template(self):
+        [resource] = self.create('website/docs/r/demo.html.markdown')
+        content = checks.scoped_commands([resource])['Content']
+        self.assertIn('scripts/document/document_check.go', content)
+        self.assertIn('./' + resource, content)
+
+    def test_mixed_changes_only_template_check_resource_pages(self):
+        resource, index = self.create('website/docs/r/demo.html.markdown', self.INDEX)
+        content = checks.scoped_commands([index, resource])['Content']
+        self.assertIn('./' + resource, content)
+        self.assertNotIn('./' + index, content)
 
 
 if __name__ == '__main__':

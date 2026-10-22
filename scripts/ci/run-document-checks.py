@@ -15,6 +15,12 @@ GROUPS = {
     "go": ("basic-check", "Content", "misspell", "terrafmt"),
 }
 
+# The provider index page documents provider configuration, not a resource,
+# data source or ephemeral resource. The page template in
+# scripts/document/document_check.go does not apply to it; the Markdown, link,
+# spelling and Terraform example checks still do.
+PROVIDER_INDEX_DOC = 'website/docs/index.html.markdown'
+
 COMMANDS = {'markdown-link': "find website/docs -type f -name '*.md' -print0 |\n"
                   '  xargs -0 -r npx --yes markdown-link-check@3.14.2 \\\n'
                   '    --quiet --verbose --config .markdown-link-check.json\n',
@@ -38,16 +44,6 @@ COMMANDS = {'markdown-link': "find website/docs -type f -name '*.md' -print0 |\n
                   '  --rules .github/markdownlint/rules/note-attachment.js \\\n'
                   '  -- "${markdown_files[@]}"\n',
  'basic-check': 'bash scripts/basic-check.sh',
- 'Content': 'checker="$RUNNER_TEMP/document-check"\n'
-            'go build -o "$checker" scripts/document/document_check.go\n'
-            "while IFS= read -r -d '' changed_file; do\n"
-            '  if [[ -f "$changed_file" ]]; then\n'
-            '    "$checker" "$changed_file"\n'
-            '  fi\n'
-            'done < <(\n'
-            '  git diff --name-only -z --diff-filter=ACMR \\\n'
-            '    "$DIFF_BASE" "$DIFF_HEAD" -- website/docs\n'
-            ')\n',
  'misspell': '"$HOME/.cache/terraform-doc-tools/misspell" \\\n'
              '  -error \\\n'
              "  -i 'bussiness,protocal,attemps,alltime,transfering' \\\n"
@@ -61,6 +57,14 @@ def file_loop(files, command):
         return 'echo "No matching documentation files changed."'
     # Git paths never become shell syntax, including spaces and metacharacters.
     return 'for doc in ' + ' '.join(shlex.quote('./' + p) for p in files) + '; do\n' + command + '\ndone'
+
+
+def content_command(files):
+    if not files:
+        return 'echo "No resource or data source documentation files changed."'
+    return ('checker="$RUNNER_TEMP/document-check"\n'
+            'go build -o "$checker" scripts/document/document_check.go\n' +
+            file_loop(files, '"$checker" "$doc"'))
 
 
 def scoped_commands(paths, full=False):
@@ -82,12 +86,7 @@ def scoped_commands(paths, full=False):
     commands['markdown-lint'] = ('git diff --check "$DIFF_BASE" "$DIFF_HEAD" -- website/docs\n' +
         file_loop(markdown, 'npx --yes markdownlint-cli@0.47.0 --config .github/markdownlint/website-docs.json '
                   '--rules .github/markdownlint/rules/note-attachment.js -- "$doc"'))
-    if docs:
-        commands['Content'] = ('checker="$RUNNER_TEMP/document-check"\n'
-            'go build -o "$checker" scripts/document/document_check.go\n' +
-            file_loop(docs, '"$checker" "$doc"'))
-    else:
-        commands['Content'] = 'echo "No documentation files changed."'
+    commands['Content'] = content_command([p for p in docs if p != PROVIDER_INDEX_DOC])
     if not full:
         commands['misspell'] = file_loop(docs,
             '\"$HOME/.cache/terraform-doc-tools/misspell\" -error '

@@ -24,7 +24,7 @@ name: Documentation Checks
       - scripts/ci/run-document-checks.py
       - scripts/ci/test_document_checks.py
       - scripts/ci/resolve-change-range.sh
-      - scripts/document/document_check.go
+      - scripts/document/**
       - scripts/basic-check.sh
 permissions: {}
 concurrency:
@@ -108,6 +108,8 @@ jobs:
         with:
           go-version-file: .go-version
           cache: false
+      - name: Test document content checker
+        run: go test ./scripts/document/
       - name: Cache misspell binary
         id: misspell-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
