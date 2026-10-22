@@ -978,7 +978,6 @@ func Provider() *schema.Provider {
 			"alicloud_compute_nest_service_instances":                   dataSourceAlicloudComputeNestServiceInstances(),
 			"alicloud_vpc_flow_log_service":                             dataSourceAliCloudVpcFlowLogService(),
 			"alicloud_arms_prometheus_monitorings":                      dataSourceAliCloudArmsPrometheusMonitorings(),
-			"alicloud_ga_endpoint_group_ip_address_cidr_blocks":         dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks(),
 			"alicloud_quotas_template_applications":                     dataSourceAliCloudQuotasTemplateApplications(),
 			"alicloud_cloud_monitor_service_hybrid_double_writes":       dataSourceAliCloudCloudMonitorServiceHybridDoubleWrites(),
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
