@@ -742,7 +742,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		for _, compositeExpression := range v.([]interface{}) {
 			compositeExpressionArg := compositeExpression.(map[string]interface{})
 
-			if level, ok := compositeExpressionArg["level"]; ok {
+			if level, ok := compositeExpressionArg["level"]; ok && level.(string) != "" {
 				compositeExpressionMap["Level"] = level
 			}
 
@@ -750,37 +750,37 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 				compositeExpressionMap["Times"] = times
 			}
 
-			if expressionRaw, ok := compositeExpressionArg["expression_raw"]; ok {
+			if expressionRaw, ok := compositeExpressionArg["expression_raw"]; ok && expressionRaw.(string) != "" {
 				compositeExpressionMap["ExpressionRaw"] = expressionRaw
 			}
 
-			if expressionListJoin, ok := compositeExpressionArg["expression_list_join"]; ok {
+			if expressionListJoin, ok := compositeExpressionArg["expression_list_join"]; ok && expressionListJoin.(string) != "" {
 				compositeExpressionMap["ExpressionListJoin"] = expressionListJoin
 			}
 
-			if expressionList, ok := compositeExpressionArg["expression_list"]; ok {
+			if expressionList, ok := compositeExpressionArg["expression_list"]; ok && len(expressionList.([]interface{})) > 0 {
 				expressionListMaps := make([]map[string]interface{}, 0)
 				for _, expressionListArgList := range expressionList.([]interface{}) {
 					expressionListMap := map[string]interface{}{}
 					expressionListArg := expressionListArgList.(map[string]interface{})
 
-					if metricName, ok := expressionListArg["metric_name"]; ok {
+					if metricName, ok := expressionListArg["metric_name"]; ok && metricName.(string) != "" {
 						expressionListMap["MetricName"] = metricName
 					}
 
-					if comparisonOperator, ok := expressionListArg["comparison_operator"]; ok {
+					if comparisonOperator, ok := expressionListArg["comparison_operator"]; ok && comparisonOperator.(string) != "" {
 						expressionListMap["ComparisonOperator"] = convertCmsAlarmComparisonOperator(fmt.Sprint(comparisonOperator))
 					}
 
-					if statistics, ok := expressionListArg["statistics"]; ok {
+					if statistics, ok := expressionListArg["statistics"]; ok && statistics.(string) != "" {
 						expressionListMap["Statistics"] = statistics
 					}
 
-					if threshold, ok := expressionListArg["threshold"]; ok {
+					if threshold, ok := expressionListArg["threshold"]; ok && threshold.(string) != "" {
 						expressionListMap["Threshold"] = threshold
 					}
 
-					if period, ok := expressionListArg["period"]; ok {
+					if period, ok := expressionListArg["period"]; ok && period.(string) != "" {
 						expressionListMap["Period"] = period
 					}
 
