@@ -19,13 +19,13 @@ var Provider = alicloud.Provider()
 // ProtoV5ProviderFactories serves the real muxed provider — the SDK v2 half and the
 // framework half behind one server — under the name given, defaulting to "alicloud".
 //
-// It works from a test on either harness, terraform-plugin-sdk/v2/helper/resource or
-// terraform-plugin-testing/helper/resource, but only because no non-test file in package
-// alicloud imports the former any more: both register a -sweep flag in their init, and a
-// test binary linking both dies at startup with "flag redefined: sweep" before any test
-// runs. This package imports package alicloud for Provider(), so a single non-test file
-// in package alicloud going back to helper/resource resurrects that panic for every
-// terraform-plugin-testing test that reaches this factory. Non-test code retries with
+// Every alicloud test binary runs terraform-plugin-testing/helper/resource — the root
+// monolith tests included since the framework flip — and none may link
+// terraform-plugin-sdk/v2/helper/resource again: both register a -sweep flag in their
+// init, and a test binary linking both dies at startup with "flag redefined: sweep"
+// before any test runs. This package imports package alicloud for Provider(), so a
+// single file — test or non-test — going back to SDKv2 helper/resource resurrects that
+// panic for every test that reaches this factory. Non-test code retries with
 // helper/retry instead.
 func ProtoV5ProviderFactories(names ...string) map[string]func() (tfprotov5.ProviderServer, error) {
 	if len(names) == 0 {

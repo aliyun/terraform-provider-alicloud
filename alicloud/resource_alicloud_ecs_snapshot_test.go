@@ -23,10 +23,11 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -701,17 +702,17 @@ func TestUnitAliCloudEcsSnapshot(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("UpdateHpcClusterAttributeAbnormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdktf.NewInstanceDiff()
 		for _, key := range []string{"description", "snapshot_name", "name"} {
 			switch p["alicloud_ecs_snapshot"].Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdktf.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdktf.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdktf.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, diff)
@@ -734,17 +735,17 @@ func TestUnitAliCloudEcsSnapshot(t *testing.T) {
 	})
 
 	t.Run("UpdateHpcClusterAttributeTagsAbnormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdktf.NewInstanceDiff()
 		for _, key := range []string{"description", "snapshot_name", "name", "tags"} {
 			switch p["alicloud_ecs_snapshot"].Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdktf.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdktf.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdktf.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, diff)
@@ -767,17 +768,17 @@ func TestUnitAliCloudEcsSnapshot(t *testing.T) {
 	})
 
 	t.Run("UpdateHpcClusterAttributeNormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdktf.NewInstanceDiff()
 		for _, key := range []string{"description", "snapshot_name", "name"} {
 			switch p["alicloud_ecs_snapshot"].Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdktf.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdktf.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdktf.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, diff)
@@ -1345,11 +1346,11 @@ func TestUnitEcsSnapshotWaitUntilSchema(t *testing.T) {
 	if available == nil || available.Type != schema.TypeBool || !available.Computed || available.Optional || available.Required || available.ForceNew {
 		t.Fatalf("available must be a computed-only boolean, got %#v", available)
 	}
-	if errs := r.Validate(terraform.NewResourceConfigRaw(map[string]interface{}{"disk_id": "disk-test"})); len(errs) != 0 {
+	if errs := r.Validate(sdktf.NewResourceConfigRaw(map[string]interface{}{"disk_id": "disk-test"})); len(errs) != 0 {
 		t.Fatalf("omitted wait_until must be valid: %v", errs)
 	}
 	for _, value := range []string{"accomplished", "available", "progressing", "AVAILABLE", ""} {
-		errs := r.Validate(terraform.NewResourceConfigRaw(map[string]interface{}{"disk_id": "disk-test", "wait_until": value}))
+		errs := r.Validate(sdktf.NewResourceConfigRaw(map[string]interface{}{"disk_id": "disk-test", "wait_until": value}))
 		valid := value == "accomplished" || value == "available"
 		if valid != (len(errs) == 0) {
 			t.Errorf("wait_until %q validation errors: %v", value, errs)
@@ -1402,7 +1403,7 @@ func TestUnitEcsSnapshotCreateWaitUntil(t *testing.T) {
 			if tc.policy != "" {
 				config["wait_until"] = tc.policy
 			}
-			diff, err := r.Diff(context.Background(), nil, terraform.NewResourceConfigRaw(config), client)
+			diff, err := r.Diff(context.Background(), nil, sdktf.NewResourceConfigRaw(config), client)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1481,7 +1482,7 @@ func TestUnitEcsSnapshotUpdateWaitUntil(t *testing.T) {
 			})
 			r := resourceAliCloudEcsSnapshot()
 			r.Timeouts = &schema.ResourceTimeout{Update: schema.DefaultTimeout(10 * time.Second)}
-			state := &terraform.InstanceState{ID: "snapshot-test", Attributes: map[string]string{
+			state := &sdktf.InstanceState{ID: "snapshot-test", Attributes: map[string]string{
 				"disk_id": "disk-test", "snapshot_name": "before", "name": "before", "description": "before", "wait_until": "accomplished",
 			}}
 			config := map[string]interface{}{"disk_id": "disk-test", "description": "before"}
@@ -1492,7 +1493,7 @@ func TestUnitEcsSnapshotUpdateWaitUntil(t *testing.T) {
 			if tc.policy != "" {
 				config["wait_until"] = tc.policy
 			}
-			diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), client)
+			diff, err := r.Diff(context.Background(), state, sdktf.NewResourceConfigRaw(config), client)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1549,14 +1550,14 @@ func TestUnitEcsSnapshotRetentionWaitUntil(t *testing.T) {
 				})
 				r := resourceAliCloudEcsSnapshot()
 				r.Timeouts = &schema.ResourceTimeout{Update: schema.DefaultTimeout(10 * time.Second)}
-				state := &terraform.InstanceState{ID: "snapshot-test", Attributes: map[string]string{
+				state := &sdktf.InstanceState{ID: "snapshot-test", Attributes: map[string]string{
 					"disk_id": "disk-test", "retention_days": "20", "wait_until": policy,
 				}}
 				config := map[string]interface{}{"disk_id": "disk-test", "retention_days": 30, "wait_until": policy}
 				if mixed {
 					config["description"] = "after"
 				}
-				diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), client)
+				diff, err := r.Diff(context.Background(), state, sdktf.NewResourceConfigRaw(config), client)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -1596,7 +1597,7 @@ func TestUnitEcsSnapshotWaitUntilOnly(t *testing.T) {
 			})
 			r := resourceAliCloudEcsSnapshot()
 			r.Timeouts = &schema.ResourceTimeout{Update: schema.DefaultTimeout(1 * time.Second)}
-			state := &terraform.InstanceState{ID: "snapshot-test", Attributes: map[string]string{
+			state := &sdktf.InstanceState{ID: "snapshot-test", Attributes: map[string]string{
 				"disk_id": "disk-test", "snapshot_name": "unchanged", "name": "unchanged", "description": "unchanged", "status": "progressing",
 			}}
 			if tc.before != "" {
@@ -1614,7 +1615,7 @@ func TestUnitEcsSnapshotWaitUntilOnly(t *testing.T) {
 			if tc.after != "" {
 				config["wait_until"] = tc.after
 			}
-			diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), client)
+			diff, err := r.Diff(context.Background(), state, sdktf.NewResourceConfigRaw(config), client)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1637,7 +1638,7 @@ func TestUnitEcsSnapshotWaitUntilOnly(t *testing.T) {
 			if got := atomic.LoadInt32(&describes); got != 1 {
 				t.Fatalf("policy-only changes must perform only the final Read, not a waiter, got %d queries", got)
 			}
-			diff, err = r.Diff(context.Background(), updated, terraform.NewResourceConfigRaw(config), client)
+			diff, err = r.Diff(context.Background(), updated, sdktf.NewResourceConfigRaw(config), client)
 			if err != nil || diff != nil && !diff.Empty() {
 				t.Fatalf("applied local policy must have no remaining diff: %#v, %v", diff, err)
 			}

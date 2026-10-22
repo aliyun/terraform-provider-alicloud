@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
@@ -99,13 +99,13 @@ func TestAccAlicloudGaAcceleratorsDataSource_withAnycast(t *testing.T) {
 
 	var existMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                                  "1",
-			"accelerators.#":                         CHECKSET,
-			"accelerators.0.id":                      CHECKSET,
-			"accelerators.0.payment_type":            "POSTPAY",
-			"accelerators.0.bandwidth_billing_type":  "CDT",
-			"accelerators.0.bandwidth":               "200",
-			"accelerators.0.ip_set_config.#":         "1",
+			"ids.#":                                      "1",
+			"accelerators.#":                             CHECKSET,
+			"accelerators.0.id":                          CHECKSET,
+			"accelerators.0.payment_type":                "POSTPAY",
+			"accelerators.0.bandwidth_billing_type":      "CDT",
+			"accelerators.0.bandwidth":                   "200",
+			"accelerators.0.ip_set_config.#":             "1",
 			"accelerators.0.ip_set_config.0.access_mode": "Anycast",
 		}
 	}

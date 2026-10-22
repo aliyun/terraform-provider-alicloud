@@ -25,11 +25,12 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	credential "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -2381,7 +2382,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_roleSwitch(t *testing.T) {
 			if indexErr != nil {
 				return indexErr
 			}
-			if index < 1 || index > 2 || seen[index] || vpnAttachmentStateAttrByIndex(entry.Primary, index, "role") != fmt.Sprint(tunnel["Role"]) {
+			if index < 1 || index > 2 || seen[index] || vpnAttachmentStateAttrByIndex(entry.Primary.Attributes, index, "role") != fmt.Sprint(tunnel["Role"]) {
 				return fmt.Errorf("SAFE_TUNNEL_CONFIGURATION_MISMATCH")
 			}
 			seen[index] = true
@@ -2737,7 +2738,7 @@ func TestUnitVpnGatewayVpnAttachmentRejectsRemovedConfiguration(t *testing.T) {
 			default:
 				tunnels[0].(map[string]interface{})[removed] = []interface{}{}
 			}
-			if _, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil); err == nil {
+			if _, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil); err == nil {
 				t.Fatal("expected a plan error: an omitted API parameter cannot remove existing tunnel configuration")
 			}
 		})
@@ -2777,7 +2778,7 @@ func TestUnitVpnGatewayVpnAttachmentRebuildAllowsRemovedConfiguration(t *testing
 			config := vpnAttachmentUnitConfig()
 			config[tc.forceNewKey] = tc.forceNewVal
 			tc.rewrite(config)
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatalf("changing ForceNew field %s plans a rebuild; removing the configuration must not be rejected by the in-place guards: %s", tc.forceNewKey, err)
 			}
@@ -2823,7 +2824,7 @@ func TestUnitVpnGatewayVpnAttachmentNestedDiffAndUpdate(t *testing.T) {
 				tunnel = tunnel[tt.block].([]interface{})[0].(map[string]interface{})
 			}
 			tunnel[tt.field] = tt.value
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2914,7 +2915,7 @@ func TestUnitVpnGatewayVpnAttachmentCreateTunnels(t *testing.T) {
 	r := resourceAliCloudVpnGatewayVpnAttachment()
 	config := vpnAttachmentUnitConfig()
 	config["tunnel_options_specification"].([]interface{})[1].(map[string]interface{})["role"] = "slave"
-	diff, err := r.Diff(context.Background(), nil, terraform.NewResourceConfigRaw(config), nil)
+	diff, err := r.Diff(context.Background(), nil, sdktf.NewResourceConfigRaw(config), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2937,7 +2938,7 @@ func TestUnitVpnGatewayVpnAttachmentCreateTunnels(t *testing.T) {
 		if calls[0].Has(prefix + "Role") {
 			t.Fatal("read-only role sent to CreateVpnAttachment")
 		}
-		if vpnAttachmentStateAttrByIndex(state, i, "role") != "master" {
+		if vpnAttachmentStateAttrByIndex(state.Attributes, i, "role") != "master" {
 			t.Fatal("configured role replaced service-reported state")
 		}
 		if got := calls[0].Get(prefix + "TunnelIndex"); got != fmt.Sprint(i) {
@@ -3040,7 +3041,7 @@ func TestUnitVpnGatewayVpnAttachmentEnableBgpOnly(t *testing.T) {
 	old := schema.TestResourceDataRaw(t, r.Schema, oldConfig)
 	old.SetId("vco-unit-test")
 	config := vpnAttachmentUnitConfig()
-	diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+	diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3090,7 +3091,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateWaitsForCompletion(t *testing.T) {
 			tunnel := config["tunnel_options_specification"].([]interface{})[0].(map[string]interface{})
 			tunnel["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})["psk"] = "updated-after-completion"
 			tunnel["tunnel_bgp_config"].([]interface{})[0].(map[string]interface{})["local_asn"] = 65001
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -3114,10 +3115,10 @@ func TestUnitVpnGatewayVpnAttachmentUpdateWaitsForCompletion(t *testing.T) {
 			if describes < 3 {
 				t.Errorf("Apply returned after %d Describe call(s), before configuration completed", describes)
 			}
-			if got := vpnAttachmentStateAttrByIndex(state, 1, "tunnel_ike_config.0.psk"); got != "updated-after-completion" {
+			if got := vpnAttachmentStateAttrByIndex(state.Attributes, 1, "tunnel_ike_config.0.psk"); got != "updated-after-completion" {
 				t.Errorf("Apply retained PSK from before asynchronous update: %q", got)
 			}
-			if got := vpnAttachmentStateAttrByIndex(state, 1, "tunnel_bgp_config.0.local_asn"); got != "65001" {
+			if got := vpnAttachmentStateAttrByIndex(state.Attributes, 1, "tunnel_bgp_config.0.local_asn"); got != "65001" {
 				t.Errorf("Apply retained BGP ASN from before asynchronous update: %q", got)
 			}
 			vpnAttachmentUnitAssertNoDiff(t, r, state, config, client)
@@ -3135,7 +3136,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateRejectsFailureStates(t *testing.T) {
 			config := vpnAttachmentUnitConfig()
 			tunnel := config["tunnel_options_specification"].([]interface{})[0].(map[string]interface{})
 			tunnel["enable_dpd"] = false
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -3171,7 +3172,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTunnelIkeWithoutPsk(t *testing.T) {
 			value.(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})["psk"] = ""
 		}
 		config["tunnel_options_specification"].([]interface{})[0].(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})["ike_lifetime"] = 43200
-		diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+		diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3201,7 +3202,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTunnelIkeWithoutPsk(t *testing.T) {
 		ike := config["tunnel_options_specification"].([]interface{})[0].(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})
 		ike["psk"] = "recovered-test-psk"
 		ike["ike_lifetime"] = 43200
-		diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+		diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3238,7 +3239,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTopLevelIkeWithoutPsk(t *testing.T) {
 			config := vpnAttachmentUnitConfig()
 			config["ike_config"] = []interface{}{map[string]interface{}{"psk": "", "ike_lifetime": 43200}}
 			client, requests := vpnAttachmentUnitClient(t, vpnAttachmentUnitAPI(config))
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), client)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), client)
 			if err == nil {
 				if _, diags := r.Apply(context.Background(), old.State(), diff, client); diags.HasError() {
 					err = fmt.Errorf("%v", diags)
@@ -3271,7 +3272,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTopLevelIkeWithoutPsk(t *testing.T) {
 			if mode == "unknown_psk_resolved" {
 				pending := vpnAttachmentUnitConfig()
 				pending["ike_config"] = []interface{}{map[string]interface{}{"psk": "74D93920-ED26-11E3-AC10-0800200C9A66", "ike_lifetime": 43200}}
-				pendingDiff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(pending), nil)
+				pendingDiff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(pending), nil)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -3284,7 +3285,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTopLevelIkeWithoutPsk(t *testing.T) {
 			if omitPsk {
 				delete(config["ike_config"].([]interface{})[0].(map[string]interface{}), "psk")
 			}
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -3315,7 +3316,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTopLevelIkeWithoutPsk(t *testing.T) {
 			r := resourceAliCloudVpnGatewayVpnAttachment()
 			config := vpnAttachmentUnitConfig()
 			config["ike_config"] = []interface{}{map[string]interface{}{"psk": "", "ike_lifetime": 43200}}
-			var prior *terraform.InstanceState
+			var prior *sdktf.InstanceState
 			if replacement {
 				oldConfig := vpnAttachmentUnitConfig()
 				oldConfig["ike_config"] = []interface{}{map[string]interface{}{"psk": "prior-top-level-psk", "ike_lifetime": 86400}}
@@ -3324,7 +3325,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTopLevelIkeWithoutPsk(t *testing.T) {
 				prior = old.State()
 				config["network_type"] = "private"
 			}
-			if _, err := r.Diff(context.Background(), prior, terraform.NewResourceConfigRaw(config), nil); err != nil {
+			if _, err := r.Diff(context.Background(), prior, sdktf.NewResourceConfigRaw(config), nil); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -3395,7 +3396,7 @@ func TestUnitVpnGatewayVpnAttachmentReadMaskedPSK(t *testing.T) {
 				t.Errorf("tunnel %d PSK = %q, want the adopted API value, not the prior", position+1, got)
 			}
 		}
-		diff, err := r.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(config), client)
+		diff, err := r.Diff(context.Background(), d.State(), sdktf.NewResourceConfigRaw(config), client)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3480,9 +3481,9 @@ func vpnAttachmentUnitClientResponses(t *testing.T, responses []map[string]inter
 	return client, requests
 }
 
-func vpnAttachmentUnitAssertNoDiff(t *testing.T, r *schema.Resource, state *terraform.InstanceState, config map[string]interface{}, meta interface{}) {
+func vpnAttachmentUnitAssertNoDiff(t *testing.T, r *schema.Resource, state *sdktf.InstanceState, config map[string]interface{}, meta interface{}) {
 	t.Helper()
-	diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), meta)
+	diff, err := r.Diff(context.Background(), state, sdktf.NewResourceConfigRaw(config), meta)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3691,16 +3692,16 @@ func TestAccAliCloudVPNGatewayVpnAttachment_tunnelOrder(t *testing.T) {
 			return fmt.Errorf("SAFE_UNEXPECTED_RECREATION")
 		}
 		for _, index := range []int{1, 2} {
-			if vpnAttachmentStateAttrByIndex(entry.Primary, index, "tunnel_ike_config.0.psk") != fmt.Sprintf("tf-acc-backfill-%d", index) {
+			if vpnAttachmentStateAttrByIndex(entry.Primary.Attributes, index, "tunnel_ike_config.0.psk") != fmt.Sprintf("tf-acc-backfill-%d", index) {
 				return fmt.Errorf("SAFE_PSK_RETENTION_MISMATCH")
 			}
-			if vpnAttachmentStateAttrByIndex(entry.Primary, index, "internet_ip") != afterIP[index] {
+			if vpnAttachmentStateAttrByIndex(entry.Primary.Attributes, index, "internet_ip") != afterIP[index] {
 				return fmt.Errorf("SAFE_REFRESH_INTERNET_IP_MISMATCH")
 			}
-			if vpnAttachmentStateAttrByIndex(entry.Primary, index, "tunnel_ike_config.0.local_id") != after[index] {
+			if vpnAttachmentStateAttrByIndex(entry.Primary.Attributes, index, "tunnel_ike_config.0.local_id") != after[index] {
 				return fmt.Errorf("SAFE_REFRESH_LOCAL_ID_MISMATCH")
 			}
-			if vpnAttachmentStateAttrByIndex(entry.Primary, index, "customer_gateway_id") != s.RootModule().Resources[fmt.Sprintf("alicloud_vpn_customer_gateway.cgw%d", index)].Primary.ID {
+			if vpnAttachmentStateAttrByIndex(entry.Primary.Attributes, index, "customer_gateway_id") != s.RootModule().Resources[fmt.Sprintf("alicloud_vpn_customer_gateway.cgw%d", index)].Primary.ID {
 				return fmt.Errorf("SAFE_TUNNEL_GATEWAY_MISMATCH")
 			}
 		}
@@ -3750,7 +3751,7 @@ func TestAccAliCloudVPNGatewayVpnAttachment_tunnelOrder(t *testing.T) {
 					return fmt.Errorf("SAFE_UNEXPECTED_RECREATION")
 				}
 				for _, index := range []int{1, 2} {
-					if vpnAttachmentStateAttrByIndex(e.Primary, index, "tunnel_ike_config.0.psk") != fmt.Sprintf("tf-acc-backfill-%d", index) || vpnAttachmentStateAttrByIndex(e.Primary, index, "customer_gateway_id") != s.RootModule().Resources[fmt.Sprintf("alicloud_vpn_customer_gateway.cgw%d", index)].Primary.ID {
+					if vpnAttachmentStateAttrByIndex(e.Primary.Attributes, index, "tunnel_ike_config.0.psk") != fmt.Sprintf("tf-acc-backfill-%d", index) || vpnAttachmentStateAttrByIndex(e.Primary.Attributes, index, "customer_gateway_id") != s.RootModule().Resources[fmt.Sprintf("alicloud_vpn_customer_gateway.cgw%d", index)].Primary.ID {
 						return fmt.Errorf("SAFE_TUNNEL_CONFIGURATION_MISMATCH")
 					}
 				}
@@ -3868,7 +3869,7 @@ func TestUnitVpnGatewayVpnAttachmentSetExplicitUpdateAfterRefresh(t *testing.T) 
 			if reverse {
 				tunnels[0], tunnels[1] = tunnels[1], tunnels[0]
 			}
-			diff, err := r.Diff(context.Background(), baseline, terraform.NewResourceConfigRaw(config), client)
+			diff, err := r.Diff(context.Background(), baseline, sdktf.NewResourceConfigRaw(config), client)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -3907,7 +3908,7 @@ func TestUnitVpnGatewayVpnAttachmentSetExplicitWholeIke(t *testing.T) {
 	tunnels := config["tunnel_options_specification"].([]interface{})
 	tunnels[0], tunnels[1] = tunnels[1], tunnels[0]
 	tunnels[0].(map[string]interface{})["tunnel_ike_config"] = vpnAttachmentDistinctTunnel(1)["tunnel_ike_config"]
-	diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+	diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3931,7 +3932,7 @@ func TestUnitVpnGatewayVpnAttachmentSetRejectsDuplicateIndex(t *testing.T) {
 	config := vpnAttachmentDistinctConfig()
 	tunnels := config["tunnel_options_specification"].([]interface{})
 	tunnels[1].(map[string]interface{})["tunnel_index"] = 1
-	if _, err := r.Diff(context.Background(), nil, terraform.NewResourceConfigRaw(config), nil); err == nil {
+	if _, err := r.Diff(context.Background(), nil, sdktf.NewResourceConfigRaw(config), nil); err == nil {
 		t.Fatal("two different configurations for tunnel_index 1 must fail planning")
 	}
 }
@@ -3948,7 +3949,7 @@ func TestUnitVpnGatewayVpnAttachmentSetUnknownValues(t *testing.T) {
 				tunnel = tunnel["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})
 			}
 			tunnel[field] = "74D93920-ED26-11E3-AC10-0800200C9A66"
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -4011,7 +4012,7 @@ func TestUnitVpnGatewayVpnAttachmentSetPartialUpdate(t *testing.T) {
 			}
 			// Keep the other tunnel wholly omitted so this update targets only index 2.
 			delete(tunnels[1].(map[string]interface{}), "tunnel_ike_config")
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -4129,7 +4130,7 @@ func TestUnitVpnGatewayVpnAttachmentRoleCompatibility(t *testing.T) {
 				tunnel["tunnel_ipsec_config"].([]interface{})[0].(map[string]interface{})["ipsec_lifetime"] = 12345
 			}
 			client, requests := vpnAttachmentUnitClient(t, vpnAttachmentUnitAPI(config))
-			diff, err := r.Diff(context.Background(), baseline, terraform.NewResourceConfigRaw(config), client)
+			diff, err := r.Diff(context.Background(), baseline, sdktf.NewResourceConfigRaw(config), client)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -4170,7 +4171,7 @@ func TestUnitVpnGatewayVpnAttachmentRoleCompatibility(t *testing.T) {
 			if refreshDiags.HasError() {
 				t.Fatalf("%v", refreshDiags)
 			}
-			if vpnAttachmentStateAttrByIndex(state, 1, "role") != "master" {
+			if vpnAttachmentStateAttrByIndex(state.Attributes, 1, "role") != "master" {
 				t.Fatal("configured role overwrote service readback")
 			}
 			vpnAttachmentUnitAssertNoDiff(t, r, state, config, client)
@@ -4201,7 +4202,7 @@ func TestUnitVpnGatewayVpnAttachmentSetUnknownResolvedUpdate(t *testing.T) {
 				target = target["tunnel_bgp_config"].([]interface{})[0].(map[string]interface{})
 			}
 			target[tc.field] = "74D93920-ED26-11E3-AC10-0800200C9A66"
-			unknown, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+			unknown, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -4215,7 +4216,7 @@ func TestUnitVpnGatewayVpnAttachmentSetUnknownResolvedUpdate(t *testing.T) {
 				t.Fatal("target unknown was overwritten")
 			}
 			target[tc.field] = tc.value
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -4236,10 +4237,10 @@ func TestUnitVpnGatewayVpnAttachmentSetUnknownResolvedUpdate(t *testing.T) {
 	}
 }
 
-func vpnAttachmentStateAttrByIndex(state *terraform.InstanceState, index int, field string) string {
-	for key, value := range state.Attributes {
+func vpnAttachmentStateAttrByIndex(attributes map[string]string, index int, field string) string {
+	for key, value := range attributes {
 		if strings.HasPrefix(key, "tunnel_options_specification.") && strings.HasSuffix(key, ".tunnel_index") && value == fmt.Sprint(index) {
-			return state.Attributes[strings.TrimSuffix(key, ".tunnel_index")+"."+field]
+			return attributes[strings.TrimSuffix(key, ".tunnel_index")+"."+field]
 		}
 	}
 	return ""
@@ -4251,7 +4252,7 @@ func TestUnitVpnGatewayVpnAttachmentSetExplicitEmptyPsk(t *testing.T) {
 	old.SetId("vco-unit-test")
 	config := vpnAttachmentDistinctConfig()
 	config["tunnel_options_specification"].([]interface{})[0].(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})["psk"] = ""
-	diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(config), nil)
+	diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -4272,12 +4273,12 @@ func TestUnitVpnGatewayVpnAttachmentSetUnknownIdentityAndBlockResolved(t *testin
 			old.SetId("vco-unit-test")
 			pending := vpnAttachmentDistinctConfig()
 			pending["tunnel_options_specification"].([]interface{})[0].(map[string]interface{})[field] = "74D93920-ED26-11E3-AC10-0800200C9A66"
-			if _, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(pending), nil); err != nil {
+			if _, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(pending), nil); err != nil {
 				t.Fatal(err)
 			}
 			resolved := vpnAttachmentDistinctConfig()
 			resolved["tunnel_options_specification"].([]interface{})[0].(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})["local_id"] = "resolved-local"
-			diff, err := r.Diff(context.Background(), old.State(), terraform.NewResourceConfigRaw(resolved), nil)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(resolved), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -4431,7 +4432,7 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
 				if phase == 0 {
 					baseline[index] = map[string]string{}
 					for _, field := range []string{"role", "enable_dpd", "enable_nat_traversal", "tunnel_ike_config.0.ike_auth_alg", "tunnel_ike_config.0.ike_enc_alg", "tunnel_ike_config.0.ike_version", "tunnel_ike_config.0.ike_mode", "tunnel_ike_config.0.ike_lifetime", "tunnel_ike_config.0.ike_pfs", "tunnel_ike_config.0.remote_id"} {
-						baseline[index][field] = vpnAttachmentStateAttrByIndex(state.RootModule().Resources[resourceID].Primary, index, field)
+						baseline[index][field] = vpnAttachmentStateAttrByIndex(state.RootModule().Resources[resourceID].Primary.Attributes, index, field)
 					}
 				}
 				m := map[string]string{}
@@ -4521,7 +4522,7 @@ func vpnAttachmentCheckConfiguration(resourceID string, originalID *string, expe
 			}
 			seen[index] = true
 			for field, value := range want[index] {
-				if vpnAttachmentStateAttrByIndex(entry.Primary, index, field) != value {
+				if vpnAttachmentStateAttrByIndex(entry.Primary.Attributes, index, field) != value {
 					return mismatch
 				}
 				var actual interface{} = tunnel

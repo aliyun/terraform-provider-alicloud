@@ -17,10 +17,11 @@ import (
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -2257,7 +2258,19 @@ resource "alicloud_vswitch" "default" {
 			if configureNodeType {
 				config["node_type"] = nodeType
 			}
-			diff, err := resourceAliCloudKvstoreInstance().Diff(context.Background(), states[0], terraform.NewResourceConfigRaw(config), testAccProvider.Meta())
+			// The import runner hands plugin-testing states to this closure;
+			// the resource's Diff is an SDKv2 helper/schema API, so the state
+			// crosses forks through a shallow copy (structurally identical).
+			prior := &sdktf.InstanceState{
+				ID:         states[0].ID,
+				Attributes: states[0].Attributes,
+				Ephemeral: sdktf.EphemeralState{
+					ConnInfo: states[0].Ephemeral.ConnInfo,
+					Type:     states[0].Ephemeral.Type,
+				},
+				Meta: states[0].Meta,
+			}
+			diff, err := resourceAliCloudKvstoreInstance().Diff(context.Background(), prior, sdktf.NewResourceConfigRaw(config), testAccProvider.Meta())
 			if err != nil {
 				return err
 			}
@@ -3395,7 +3408,7 @@ func TestUnitKvstoreNodeTypeCompatibility(t *testing.T) {
 		{nodeType: "STAND_ALONE", alias: "single", other: "MASTER_SLAVE"},
 	} {
 		t.Run(test.nodeType, func(t *testing.T) {
-			config := terraform.NewResourceConfigRaw(map[string]interface{}{"node_type": test.nodeType})
+			config := sdktf.NewResourceConfigRaw(map[string]interface{}{"node_type": test.nodeType})
 			diags := r.Validate(config)
 			assert.Empty(t, diags, "supported node types must not produce a deprecation warning")
 
@@ -3403,14 +3416,14 @@ func TestUnitKvstoreNodeTypeCompatibility(t *testing.T) {
 			data.SetId("test-instance")
 			state := data.State()
 			for _, config := range []map[string]interface{}{{}, {"node_type": test.nodeType}, {"node_type": test.alias}} {
-				diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), nil)
+				diff, err := r.Diff(context.Background(), state, sdktf.NewResourceConfigRaw(config), nil)
 				if !assert.NoError(t, err) || diff == nil {
 					continue
 				}
 				assert.NotContains(t, diff.Attributes, "node_type", "existing and imported node types must remain stable")
 				assert.False(t, diff.RequiresNew(), "equivalent node-type aliases must not replace the instance")
 			}
-			diff, err := r.Diff(context.Background(), state, terraform.NewResourceConfigRaw(map[string]interface{}{"node_type": test.other}), nil)
+			diff, err := r.Diff(context.Background(), state, sdktf.NewResourceConfigRaw(map[string]interface{}{"node_type": test.other}), nil)
 			if assert.NoError(t, err) && assert.NotNil(t, diff) && assert.Contains(t, diff.Attributes, "node_type") {
 				assert.True(t, diff.Attributes["node_type"].RequiresNew)
 			}

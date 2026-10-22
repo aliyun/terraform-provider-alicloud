@@ -9,8 +9,8 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func init() {
@@ -132,9 +132,9 @@ func TestAccAlicloudFCTrigger_log(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerLog(testTriggerLogTemplate, testFCLogRoleTemplate, testFCLogPolicyTemplate, name),
@@ -181,9 +181,9 @@ func TestAccAlicloudFCTrigger_mnsTopic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerMnsTopic(testTriggerMnsTopicTemplate, testFCMnsTopicRoleTemplate, testFCMnsTopicPolicyTemplate, name),
@@ -217,9 +217,9 @@ func TestAccAlicloudFCTrigger_cdn_events(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerCdnEvents(testTriggerCdnEventsTemplate, testFCcdnRoleTemplate, testFCcdnPolicyTemplate, name),
@@ -265,9 +265,9 @@ func TestAccAlicloudFCTrigger_eventbridge_With_Default_EventSource(t *testing.T)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerEventBridge(testTriggerEventBridgeWithDefaultSourceTemplate, name),
@@ -312,9 +312,9 @@ func TestAccAlicloudFCTrigger_eventbridge_With_MNS_EventSource(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
+		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerEventBridge(testTriggerEventBridgeWithMNSSourceTemplate, name),

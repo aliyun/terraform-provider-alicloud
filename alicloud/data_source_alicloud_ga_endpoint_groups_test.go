@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudGaEndpointGroupsDataSource(t *testing.T) {
@@ -125,15 +125,15 @@ func TestAccAliCloudGaEndpointGroupsDataSource_withIpTarget(t *testing.T) {
 
 	var existMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                                       "1",
-			"groups.#":                                    "1",
-			"groups.0.id":                                 CHECKSET,
-			"groups.0.endpoint_group_id":                  CHECKSET,
-			"groups.0.endpoint_group_region":              CHECKSET,
-			"groups.0.status":                             "active",
-			"groups.0.endpoint_configurations.#":          "1",
-			"groups.0.endpoint_configurations.0.type":     "IpTarget",
-			"groups.0.endpoint_configurations.0.vpc_id":   CHECKSET,
+			"ids.#":                                            "1",
+			"groups.#":                                         "1",
+			"groups.0.id":                                      CHECKSET,
+			"groups.0.endpoint_group_id":                       CHECKSET,
+			"groups.0.endpoint_group_region":                   CHECKSET,
+			"groups.0.status":                                  "active",
+			"groups.0.endpoint_configurations.#":               "1",
+			"groups.0.endpoint_configurations.0.type":          "IpTarget",
+			"groups.0.endpoint_configurations.0.vpc_id":        CHECKSET,
 			"groups.0.endpoint_configurations.0.vswitch_ids.#": CHECKSET,
 		}
 	}

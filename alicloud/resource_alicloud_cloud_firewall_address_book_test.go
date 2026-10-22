@@ -13,10 +13,11 @@ import (
 
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // collection-order: bypass asset_region_resource_types -- pre-existing list unchanged by this PR; regression changes cover address_list unknown handling only
@@ -927,7 +928,7 @@ func TestUnitCloudFirewallAddressBookRefreshDiff(t *testing.T) {
 			if diags.HasError() {
 				t.Fatalf("%v", diags)
 			}
-			diff, err := r.Diff(context.Background(), refreshed, terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), refreshed, sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -994,7 +995,7 @@ func TestUnitCloudFirewallAddressBookConfiguredDiff(t *testing.T) {
 			if !tc.omitted {
 				config["address_list"] = tc.addresses
 			}
-			diff, err := r.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(config), nil)
+			diff, err := r.Diff(context.Background(), d.State(), sdktf.NewResourceConfigRaw(config), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1041,7 +1042,7 @@ func TestUnitCloudFirewallAddressBookApplyOrder(t *testing.T) {
 	client := cloudFirewallAddressBookTestClient(t, []interface{}{a, b})
 	for _, addresses := range [][]interface{}{{b, a}, {a, b}} {
 		config["address_list"] = addresses
-		diff, err := r.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(config), nil)
+		diff, err := r.Diff(context.Background(), d.State(), sdktf.NewResourceConfigRaw(config), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1056,7 +1057,7 @@ func TestUnitCloudFirewallAddressBookApplyOrder(t *testing.T) {
 		if diags.HasError() {
 			t.Fatalf("%v", diags)
 		}
-		diff, err = r.Diff(context.Background(), refreshed, terraform.NewResourceConfigRaw(config), nil)
+		diff, err = r.Diff(context.Background(), refreshed, sdktf.NewResourceConfigRaw(config), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1199,7 +1200,7 @@ resource "alicloud_cloud_firewall_instance_member" "order" {
 func TestUnitCloudFirewallAddressBookImportOrder(t *testing.T) {
 	r := resourceAliCloudCloudFirewallAddressBook()
 	client := cloudFirewallAddressBookTestClient(t, []interface{}{"198.51.100.1/32", "192.0.2.1/32", "192.0.2.1/32"})
-	refreshed, diags := r.RefreshWithoutUpgrade(context.Background(), &terraform.InstanceState{ID: "address-book", Attributes: map[string]string{}}, client)
+	refreshed, diags := r.RefreshWithoutUpgrade(context.Background(), &sdktf.InstanceState{ID: "address-book", Attributes: map[string]string{}}, client)
 	if diags.HasError() {
 		t.Fatalf("%v", diags)
 	}

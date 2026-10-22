@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudApigAiModelProvidersDataSource(t *testing.T) {
@@ -29,15 +29,15 @@ func TestAccAliCloudApigAiModelProvidersDataSource(t *testing.T) {
 
 var existApigAiModelProvidersMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"ids.#":                          "1",
-		"providers.#":                    "1",
-		"providers.0.id":                 CHECKSET,
-		"providers.0.model_provider_id":  CHECKSET,
-		"providers.0.gateway_id":         CHECKSET,
-		"providers.0.model_provider":     "openai",
-		"providers.0.display_name":       fmt.Sprintf("tfaccapigaimp%d", rand),
-		"providers.0.source":             CHECKSET,
-		"providers.0.update_time":        CHECKSET,
+		"ids.#":                         "1",
+		"providers.#":                   "1",
+		"providers.0.id":                CHECKSET,
+		"providers.0.model_provider_id": CHECKSET,
+		"providers.0.gateway_id":        CHECKSET,
+		"providers.0.model_provider":    "openai",
+		"providers.0.display_name":      fmt.Sprintf("tfaccapigaimp%d", rand),
+		"providers.0.source":            CHECKSET,
+		"providers.0.update_time":       CHECKSET,
 	}
 }
 

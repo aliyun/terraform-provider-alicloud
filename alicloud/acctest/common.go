@@ -21,8 +21,9 @@ import (
 // resourceAttr / resourceConfig / dataSourceAttr reflection engine and its
 // sentinels), sunk from alicloud/service_alicloud_common_test.go so split
 // packages consume one framework instead of copying it. The runner is
-// terraform-plugin-testing: one test binary links at most one helper/resource,
-// and SDKv2 helper/resource already occupies the root binary.
+// terraform-plugin-testing for every alicloud test binary, root monolith
+// included: one binary links at most one helper/resource, and the SDKv2 one
+// must not come back.
 
 // be used to check attribute map value
 const (
