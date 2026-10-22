@@ -27,9 +27,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+// Marked setup copies remain local because importing alicloud/acctest would create an import cycle.
+
+// Migrated to alicloud/acctest.SDKProviders.
 var testAccProviders map[string]*schema.Provider
+
+// Migrated to alicloud/acctest.SDKProviderFactories.
 var testAccProviderFactory map[string]func() (*schema.Provider, error)
+
+// Migrated to alicloud/acctest.Provider.
 var testAccProvider *schema.Provider
+
+// Migrated to alicloud/acctest.DefaultRegionToTest.
 var defaultRegionToTest = func() string {
 	if v := os.Getenv("ALICLOUD_REGION"); v != "" {
 		return v
@@ -199,6 +208,7 @@ func TestProviderFeatures(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheck.
 func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
@@ -369,6 +379,7 @@ func testAccClassicNetworkResources(t *testing.T) {
 // If supported is true, the regions should a list of supporting the service regions.
 // If supported is false, the regions should a list of unsupporting the service regions.
 // If the region is unsupported and has backend region, the backend region will instead
+// Migrated to alicloud/acctest.PreCheckWithRegions.
 func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connectivity.Region) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
@@ -384,6 +395,7 @@ func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connecti
 	defaultRegionToTest = os.Getenv("ALICLOUD_REGION")
 }
 
+// Migrated to alicloud/acctest.CheckoutSupportedRegions.
 func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivity.Region) {
 	region := os.Getenv("ALICLOUD_REGION")
 	find := false

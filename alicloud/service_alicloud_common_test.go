@@ -25,7 +25,10 @@ import (
 These common test cases are used to creating some dependence resources, like vpc, vswitch and security group.
 */
 
+// Marked framework copies remain local because importing alicloud/acctest would create an import cycle.
+
 // be used to check attribute map value
+// Migrated to alicloud/acctest/common.go (same-named constants).
 const (
 	NOSET      = "#NOSET"       // be equivalent to method "TestCheckNoResourceAttrSet"
 	CHECKSET   = "#CHECKSET"    // "TestCheckResourceAttrSet"
@@ -36,6 +39,7 @@ const (
 	ForceSleep = "force_sleep"
 )
 
+// Migrated to alicloud/acctest/common.go (same-named constants).
 const (
 	// indentation symbol
 	INDENTATIONSYMBOL = " "
@@ -45,12 +49,15 @@ const (
 )
 
 // get a function that change checkMap pairs for a series test step
+// Migrated to alicloud/acctest.ResourceAttrMapUpdate.
 type resourceAttrMapUpdate func(map[string]string) resource.TestCheckFunc
 
 // get a function that change attributeMap pairs for a series test step
+// Migrated to alicloud/acctest.ResourceTestAccConfigFunc.
 type ResourceTestAccConfigFunc func(map[string]interface{}) string
 
 // check the existence of resource
+// Migrated to alicloud/acctest.ResourceCheck.
 type resourceCheck struct {
 	// IDRefreshName, like "alicloud_instance.foo"
 	resourceId string
@@ -71,6 +78,7 @@ type resourceCheck struct {
 	additionalAttrsType map[string]schema.ValueType
 }
 
+// Migrated to alicloud/acctest.ResourceCheckInit.
 func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, additionalAttrs ...string) *resourceCheck {
 	rc := &resourceCheck{
 		resourceId:      resourceId,
@@ -84,6 +92,7 @@ func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFun
 	return rc
 }
 
+// Migrated to alicloud/acctest.ResourceCheckInitWithDescribeMethod.
 func resourceCheckInitWithDescribeMethod(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, describeMethod string, additionalAttrs ...string) *resourceCheck {
 	rc := &resourceCheck{
 		resourceId:      resourceId,
@@ -99,6 +108,7 @@ func resourceCheckInitWithDescribeMethod(resourceId string, resourceObject inter
 }
 
 // caching the additional attribute type used to convert the addition attribute value type before calling Get method
+// Migrated to alicloud/acctest.ResourceCheck.setAdditionalAttrsType.
 func (rc *resourceCheck) setAdditionalAttrsType() {
 	provider := Provider()
 	resourceType, ok := provider.ResourcesMap[strings.Split(rc.resourceId, ".")[0]]
@@ -119,11 +129,13 @@ func (rc *resourceCheck) setAdditionalAttrsType() {
 }
 
 // check attribute only
+// Migrated to alicloud/acctest.ResourceAttr.
 type resourceAttr struct {
 	resourceId string
 	checkMap   map[string]string
 }
 
+// Migrated to alicloud/acctest.ResourceAttrInit.
 func resourceAttrInit(resourceId string, checkMap map[string]string) *resourceAttr {
 	if checkMap == nil {
 		checkMap = make(map[string]string)
@@ -135,11 +147,13 @@ func resourceAttrInit(resourceId string, checkMap map[string]string) *resourceAt
 }
 
 // check the existence and attribute of the resource at the same time
+// Migrated to alicloud/acctest.ResourceAttrCheck.
 type resourceAttrCheck struct {
 	*resourceCheck
 	*resourceAttr
 }
 
+// Migrated to alicloud/acctest.ResourceAttrCheckInit.
 func resourceAttrCheckInit(rc *resourceCheck, ra *resourceAttr) *resourceAttrCheck {
 	return &resourceAttrCheck{
 		resourceCheck: rc,
@@ -149,6 +163,7 @@ func resourceAttrCheckInit(rc *resourceCheck, ra *resourceAttr) *resourceAttrChe
 
 // check the resource existence by invoking DescribeXXX method of service and assign *resourceCheck.resourceObject value,
 // the service is returned by invoking *resourceCheck.serviceFunc
+// Migrated to alicloud/acctest.ResourceCheck.CheckResourceExists.
 func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		var err error
@@ -176,6 +191,7 @@ func (rc *resourceCheck) checkResourceExists() resource.TestCheckFunc {
 }
 
 // check the resource destroy
+// Migrated to alicloud/acctest.ResourceCheck.CheckResourceDestroy.
 func (rc *resourceCheck) checkResourceDestroy() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		strs := strings.Split(rc.resourceId, ".")
@@ -214,6 +230,7 @@ func (rc *resourceCheck) checkResourceDestroy() resource.TestCheckFunc {
 }
 
 // invoking DescribeXXX method of service
+// Migrated to alicloud/acctest.ResourceCheck.callDescribeMethod.
 func (rc *resourceCheck) callDescribeMethod(rs *terraform.ResourceState) ([]reflect.Value, error) {
 	var err error
 	if rs.Primary.ID == "" {
@@ -253,6 +270,7 @@ func (rc *resourceCheck) callDescribeMethod(rs *terraform.ResourceState) ([]refl
 	return value.Call(inValue), nil
 }
 
+// Migrated to alicloud/acctest.getResourceDescribeMethod.
 func getResourceDescribeMethod(resourceId string) (string, error) {
 	start := strings.Index(resourceId, "alicloud_")
 	if start < 0 {
@@ -272,6 +290,7 @@ func getResourceDescribeMethod(resourceId string) (string, error) {
 }
 
 // check attribute func and check resource exist
+// Migrated to alicloud/acctest.ResourceAttrCheck.resourceAttrMapCheck.
 func (rac *resourceAttrCheck) resourceAttrMapCheck() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		err := rac.resourceCheck.checkResourceExists()(s)
@@ -283,6 +302,7 @@ func (rac *resourceAttrCheck) resourceAttrMapCheck() resource.TestCheckFunc {
 }
 
 // execute the callback before check attribute and check resource exist
+// Migrated to alicloud/acctest.ResourceAttrCheck.resourceAttrMapCheckWithCallback.
 func (rac *resourceAttrCheck) resourceAttrMapCheckWithCallback(callback func()) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		err := rac.resourceCheck.checkResourceExists()(s)
@@ -294,6 +314,7 @@ func (rac *resourceAttrCheck) resourceAttrMapCheckWithCallback(callback func()) 
 }
 
 // get resourceAttrMapUpdate for a series test step and check resource exist
+// Migrated to alicloud/acctest.ResourceAttrCheck.ResourceAttrMapUpdateSet.
 func (rac *resourceAttrCheck) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 	return func(changeMap map[string]string) resource.TestCheckFunc {
 		callback := func() {
@@ -304,6 +325,7 @@ func (rac *resourceAttrCheck) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 }
 
 // make a new map and copy from the old field checkMap, then update it according to the changeMap
+// Migrated to alicloud/acctest.ResourceAttr.updateCheckMapPair.
 func (ra *resourceAttr) updateCheckMapPair(changeMap map[string]string) {
 	if interval, ok := changeMap[ForceSleep]; ok {
 		intervalInt, err := strconv.Atoi(interval)
@@ -333,6 +355,7 @@ func (ra *resourceAttr) updateCheckMapPair(changeMap map[string]string) {
 }
 
 // check attribute func
+// Migrated to alicloud/acctest.ResourceAttr.resourceAttrMapCheck.
 func (ra *resourceAttr) resourceAttrMapCheck() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[ra.resourceId]
@@ -378,6 +401,7 @@ func (ra *resourceAttr) resourceAttrMapCheck() resource.TestCheckFunc {
 }
 
 // execute the callback before check attribute
+// Migrated to alicloud/acctest.ResourceAttr.resourceAttrMapCheckWithCallback.
 func (ra *resourceAttr) resourceAttrMapCheckWithCallback(callback func()) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		callback()
@@ -386,6 +410,7 @@ func (ra *resourceAttr) resourceAttrMapCheckWithCallback(callback func()) resour
 }
 
 // get resourceAttrMapUpdate for a series test step
+// Migrated to alicloud/acctest.ResourceAttr.ResourceAttrMapUpdateSet.
 func (ra *resourceAttr) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 	return func(changeMap map[string]string) resource.TestCheckFunc {
 		callback := func() {
@@ -395,6 +420,7 @@ func (ra *resourceAttr) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 	}
 }
 
+// Migrated to alicloud/acctest.ResourceTestAccConfig.
 func resourceTestAccConfigFunc(resourceId string,
 	name string,
 	configDependence func(name string) string) ResourceTestAccConfigFunc {
@@ -408,6 +434,7 @@ func resourceTestAccConfigFunc(resourceId string,
 	return basicInfo.configBuild(false)
 }
 
+// Migrated to alicloud/acctest.DataSourceTestAccConfigFunc.
 func dataSourceTestAccConfigFunc(resourceId string,
 	name string,
 	configDependence func(name string) string) ResourceTestAccConfigFunc {
@@ -421,6 +448,7 @@ func dataSourceTestAccConfigFunc(resourceId string,
 }
 
 // be used for generate testcase step config
+// Migrated to alicloud/acctest.resourceConfig.
 type resourceConfig struct {
 	// the resource name
 	name string
@@ -438,6 +466,7 @@ type resourceConfig struct {
 }
 
 // according to changeMap to change the attributeMap value
+// Migrated to alicloud/acctest.resourceConfig.configUpdate.
 func (b *resourceConfig) configUpdate(changeMap map[string]interface{}) {
 	newMap := make(map[string]interface{}, len(b.attributeMap))
 	for k, v := range b.attributeMap {
@@ -470,6 +499,7 @@ func (b *resourceConfig) configUpdate(changeMap map[string]interface{}) {
 
 // get BasicConfigFunc for resource a series test step
 // overwrite: if true ,the attributeMap will be replace by changMap , other will be update
+// Migrated to alicloud/acctest.resourceConfig.configBuild.
 func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 	return func(changeMap map[string]interface{}) string {
 		if overwrite {
@@ -497,6 +527,7 @@ func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 }
 
 // deal with the parameter common method
+// Migrated to alicloud/acctest.valueConvert.
 func valueConvert(indentation int, val reflect.Value) interface{} {
 	switch val.Kind() {
 	case reflect.Interface:
@@ -520,6 +551,7 @@ func valueConvert(indentation int, val reflect.Value) interface{} {
 }
 
 // deal with list parameter
+// Migrated to alicloud/acctest.listValue.
 func listValue(indentation int, val reflect.Value) string {
 	var valList []string
 	for i := 0; i < val.Len(); i++ {
@@ -531,6 +563,7 @@ func listValue(indentation int, val reflect.Value) string {
 }
 
 // deal with map parameter
+// Migrated to alicloud/acctest.mapValue.
 func mapValue(indentation int, val reflect.Value) string {
 	var valList []string
 	for _, keyV := range val.MapKeys() {
@@ -563,6 +596,7 @@ func mapValue(indentation int, val reflect.Value) string {
 }
 
 // deal with list parameter that child element is map
+// Migrated to alicloud/acctest.listValueMapChild.
 func listValueMapChild(indentation int, key string, val reflect.Value) string {
 	var valList []string
 	for i := 0; i < val.Len(); i++ {
@@ -573,6 +607,7 @@ func listValueMapChild(indentation int, key string, val reflect.Value) string {
 	return fmt.Sprintf("%s\n%s", strings.Join(valList, "\n"), addIndentation(indentation))
 }
 
+// Migrated to alicloud/acctest.getRealValueType.
 func getRealValueType(value reflect.Value) reflect.Value {
 	switch value.Kind() {
 	case reflect.Interface:
@@ -582,6 +617,7 @@ func getRealValueType(value reflect.Value) reflect.Value {
 	}
 }
 
+// Migrated to alicloud/acctest.addIndentation.
 func addIndentation(indentation int) string {
 	return strings.Repeat(INDENTATIONSYMBOL, indentation)
 }
@@ -589,6 +625,7 @@ func addIndentation(indentation int) string {
 // in most cases, the TestCheckFunc list of dataSource test case is repeated，so we make an abstract in
 // order to reduce redundant code.
 // dataSourceAttr has 3 field ,incloud resourceId  existMapFunc fakeMapFunc, every dataSource test can use only one
+// Migrated to alicloud/acctest.DataSourceAttr.
 type dataSourceAttr struct {
 	// IDRefreshName, like "data.alicloud_dns_records.record"
 	resourceId string
@@ -601,6 +638,7 @@ type dataSourceAttr struct {
 }
 
 // get exist and empty resourceAttrMapUpdate function
+// Migrated to alicloud/acctest.DataSourceAttr.checkDataSourceAttr.
 func (dsa *dataSourceAttr) checkDataSourceAttr(rand int) (exist, empty resourceAttrMapUpdate) {
 	exist = resourceAttrInit(dsa.resourceId, dsa.existMapFunc(rand)).resourceAttrMapUpdateSet()
 	empty = resourceAttrInit(dsa.resourceId, dsa.fakeMapFunc(rand)).resourceAttrMapUpdateSet()
@@ -608,6 +646,7 @@ func (dsa *dataSourceAttr) checkDataSourceAttr(rand int) (exist, empty resourceA
 }
 
 // according to configs generate step list and execute the test
+// Migrated to alicloud/acctest.DataSourceAttr.DataSourceTestCheck.
 // lintignore: AT001
 func (dsa *dataSourceAttr) dataSourceTestCheck(t *testing.T, rand int, configs ...dataSourceTestAccConfig) {
 	var steps []resource.TestStep
@@ -624,6 +663,7 @@ func (dsa *dataSourceAttr) dataSourceTestCheck(t *testing.T, rand int, configs .
 }
 
 // according to configs generate step list and execute the test with preCheck
+// Migrated to alicloud/acctest.DataSourceAttr.DataSourceTestCheckWithPreCheck.
 // lintignore: AT001
 func (dsa *dataSourceAttr) dataSourceTestCheckWithPreCheck(t *testing.T, rand int, preCheck func(), configs ...dataSourceTestAccConfig) {
 	var steps []resource.TestStep
@@ -638,6 +678,7 @@ func (dsa *dataSourceAttr) dataSourceTestCheckWithPreCheck(t *testing.T, rand in
 }
 
 // per schema attribute test config
+// Migrated to alicloud/acctest.DataSourceTestAccConfig.
 type dataSourceTestAccConfig struct {
 	// be equal to testCase config string,but the result has only one record
 	existConfig string
@@ -653,6 +694,7 @@ type dataSourceTestAccConfig struct {
 }
 
 // build test cases for each attribute
+// Migrated to alicloud/acctest.DataSourceTestAccConfig.buildDataSourceSteps.
 func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *dataSourceAttr, rand int) []resource.TestStep {
 	testAccCheckExist, testAccCheckEmpty := info.checkDataSourceAttr(rand)
 	var steps []resource.TestStep
