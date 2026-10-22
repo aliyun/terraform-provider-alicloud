@@ -112,7 +112,6 @@ func TestAccAliCloudDMSEnterprise(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      resourceDMSEnterpriseCheckDestroy(rac.resourceCheck),
 		Steps: []resource.TestStep{

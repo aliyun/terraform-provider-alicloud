@@ -29,7 +29,6 @@ func TestAccAliCloudPolarDbAccount_basic11819(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -93,7 +92,6 @@ func TestAccAliCloudPolarDbAccount_basic11819_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -184,7 +182,6 @@ func TestAccAliCloudPolarDbAccount_basic9211(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -285,7 +282,6 @@ func TestAccAliCloudPolarDbAccount_basic9211_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -407,9 +403,8 @@ func TestAccAliCloudPolarDbAccount_dynamoDB(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -494,7 +489,6 @@ func TestAccAliCloudPolarDbAccount_passwordWo(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

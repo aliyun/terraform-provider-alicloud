@@ -111,7 +111,6 @@ func TestAccAliCloudCmsMonitorGroup_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -205,7 +204,6 @@ func TestAccAliCloudCmsMonitorGroup_ByResourceGroupId(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

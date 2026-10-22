@@ -129,7 +129,6 @@ func TestAccAliCloudKmsKey_basic8855(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -287,7 +286,6 @@ func TestAccAliCloudKmsKey_basic8855_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -367,7 +365,6 @@ func TestAccAliCloudKmsKey_basic8856(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"}) // fixed to cn-hangzhou region
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -548,7 +545,6 @@ func TestAccAliCloudKmsKey_basic8856_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"}) // fixed to cn-hangzhou region
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -631,7 +627,6 @@ func TestAccAliCloudKmsKey_basic8857(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -799,7 +794,6 @@ func TestAccAliCloudKmsKey_basic8857_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -878,7 +872,6 @@ func TestAccAliCloudKmsKey_basic8858(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1046,7 +1039,6 @@ func TestAccAliCloudKmsKey_basic8858_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

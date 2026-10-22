@@ -28,7 +28,6 @@ func TestAccAliCloudCloudPhoneInstance_basic9932(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

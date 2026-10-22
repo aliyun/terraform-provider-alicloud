@@ -35,7 +35,6 @@ func TestAccAliCloudSDDPConfig_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -101,7 +100,6 @@ func TestAccAliCloudSDDPConfig_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -164,7 +162,6 @@ func TestAccAliCloudSDDPConfig_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

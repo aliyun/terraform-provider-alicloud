@@ -36,7 +36,6 @@ func TestAccAliCloudGPDBAccount_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -130,7 +129,6 @@ func TestAccAliCloudGPDBAccount_basic1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -406,7 +404,6 @@ func TestAccAliCloudGPDBAccount_passwordWo(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

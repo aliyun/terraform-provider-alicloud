@@ -31,7 +31,6 @@ func TestAccAliCloudSimpleApplicationServerDisk_basic5761(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

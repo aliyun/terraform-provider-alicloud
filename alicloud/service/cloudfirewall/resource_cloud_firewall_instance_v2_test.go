@@ -77,7 +77,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_basic11709(t *testing.T) {
 			acctest.PreCheck(t)
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -146,7 +145,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_basic11709_twin(t *testing.T) {
 			acctest.PreCheck(t)
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -217,7 +215,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_basic11710(t *testing.T) {
 			acctest.PreCheck(t)
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -286,7 +283,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_basic11710_twin(t *testing.T) {
 			acctest.PreCheck(t)
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -340,7 +336,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_basic11711(t *testing.T) {
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -405,7 +400,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_basic11711_twin(t *testing.T) {
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -476,7 +470,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_basic11712(t *testing.T) {
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -541,7 +534,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_basic11712_twin(t *testing.T) {
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -627,7 +619,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_paymentTypeChange(t *testing.T) {
 			acctest.PreCheck(t)
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -717,7 +708,6 @@ func TestAccAliCloudCloudFirewallInstanceV2_paymentTypeChangeWithReplacement(t *
 			acctest.PreCheck(t)
 			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		IDRefreshName:            resourceId,
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{

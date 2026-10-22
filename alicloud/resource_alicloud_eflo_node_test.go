@@ -27,7 +27,6 @@ func TestAccAliCloudEfloNode_basic10171(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-wulanchabu"})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -215,7 +214,6 @@ func TestAccAliCloudEfloNode_basic11276(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -354,7 +352,6 @@ func TestAccAliCloudEfloNode_basic11280(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -493,7 +490,6 @@ func TestAccAliCloudEfloNode_basic11275(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -632,7 +628,6 @@ func TestAccAliCloudEfloNode_basic11278(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

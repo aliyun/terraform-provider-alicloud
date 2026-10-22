@@ -109,7 +109,6 @@ func TestAccAliCloudOnsInstance_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

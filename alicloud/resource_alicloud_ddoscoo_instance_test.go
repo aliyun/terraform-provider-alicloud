@@ -241,7 +241,6 @@ func TestAccAliCloudDdosCooInstance_basic0(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -417,7 +416,6 @@ func TestAccAliCloudDdosCooInstance_basic0_twin(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -485,7 +483,6 @@ func TestAccAliCloudDdosCooInstance_basic0_intl(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -663,7 +660,6 @@ func TestAccAliCloudDdosCooInstance_basic1_dip(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, DomesticSite)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -833,7 +829,6 @@ func TestAccAliCloudDdosCooInstance_basic1_dip_intl(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

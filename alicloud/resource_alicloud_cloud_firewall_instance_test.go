@@ -41,7 +41,6 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccCloudFirewallInstancePreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -98,7 +97,6 @@ func TestAccAliCloudCloudFirewallInstance_basic0_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccCloudFirewallInstancePreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -142,7 +140,6 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccCloudFirewallInstancePreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

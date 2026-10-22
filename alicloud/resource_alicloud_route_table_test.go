@@ -141,7 +141,6 @@ func TestAccAliCloudVPCRouteTable_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -236,7 +235,6 @@ func TestAccAliCloudVPCRouteTable_basic1(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -294,7 +292,6 @@ func TestAccAliCloudVPCRouteTable_basic2(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -372,7 +369,6 @@ func TestAccAliCloudVPCRouteTable_RoutePropagationEnableOnCreate(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -808,7 +804,6 @@ func TestAccAliCloudVpcRouteTable_basic10268(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -953,7 +948,6 @@ func TestAccAliCloudVpcRouteTable_basic10267(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1064,7 +1058,6 @@ func TestAccAliCloudVpcRouteTable_basic10258(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1209,7 +1202,6 @@ func TestAccAliCloudVpcRouteTable_basic10259(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

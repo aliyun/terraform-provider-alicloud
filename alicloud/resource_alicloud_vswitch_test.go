@@ -156,7 +156,6 @@ func TestAccAliCloudVPCVSwitch_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -254,7 +253,6 @@ func TestAccAliCloudVPCVSwitch_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -302,7 +300,6 @@ func TestAccAliCloudVPCVSwitch_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -360,7 +357,6 @@ func TestAccAliCloudVPCVSwitch_basic3(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -412,7 +408,6 @@ func TestAccAliCloudVPCVSwitch_basic4(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -494,7 +489,6 @@ func TestAccAliCloudVPCVSwitch_basic5(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -619,9 +613,8 @@ func TestAccAliCloudVPCVSwitch_ipv6MaskRemoval(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Step 0: create the vswitch with IPv6 enabled and an explicit mask = 1 (user scenario).
 			{
@@ -695,9 +688,8 @@ func TestAccAliCloudVPCVSwitch_ipv6MaskSetZero(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Step 0: create with IPv6 enabled and an explicit mask = 1.
 			{
@@ -764,9 +756,8 @@ func TestAccAliCloudVPCVSwitch_enableIpv6FalseAfterComputedTrue(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -820,9 +811,8 @@ func TestAccAliCloudVPCVSwitch_ipv6EnableZeroMaskFromDisabled(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -870,9 +860,8 @@ func TestAccAliCloudVPCVSwitch_ipv6EnableNoMask(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Step 0: create the vswitch without IPv6.
 			{
@@ -914,9 +903,8 @@ func TestAccAliCloudVPCVSwitch_ipv6EnableWithMask(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Step 0: create the vswitch without IPv6.
 			{
@@ -964,9 +952,8 @@ func TestAccAliCloudVPCVSwitch_ipv6MaskWhileDisabled(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Step 0: create without IPv6.
 			{
@@ -1010,9 +997,8 @@ func TestAccAliCloudVPCVSwitch_ipv6ReenableSameMaskAfterDisable(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1068,7 +1054,6 @@ func TestAccAliCloudVPCVSwitch_isDefault(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1108,7 +1093,6 @@ func TestAccAliCloudVPCVSwitch_isDefault_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1582,7 +1566,6 @@ func TestAccAliCloudVPCVSwitch_basic3078(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1745,7 +1728,6 @@ func TestAccAliCloudVPCVSwitch_basic3078_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

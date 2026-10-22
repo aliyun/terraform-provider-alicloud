@@ -36,8 +36,6 @@ func TestAccAliCloudDTSMigrationInstance_basic0(t *testing.T) {
 			// converged to cn-beijing for every input region, so pin it here.
 			os.Setenv("ALICLOUD_REGION", "cn-beijing")
 		},
-		IDRefreshName:            migrationInstanceResourceId,
-		IDRefreshIgnore:          []string{"tags"},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkMigrationInstanceDestroy(migrationInstanceResourceId),
 		Steps: []resource.TestStep{
@@ -87,8 +85,6 @@ func TestAccAliCloudDTSMigrationInstance_mariadb(t *testing.T) {
 			acctest.PreCheck(t)
 			os.Setenv("ALICLOUD_REGION", "cn-beijing")
 		},
-		IDRefreshName:            migrationInstanceResourceId,
-		IDRefreshIgnore:          []string{"tags"},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkMigrationInstanceDestroy(migrationInstanceResourceId),
 		Steps: []resource.TestStep{

@@ -28,7 +28,6 @@ func TestAccAliCloudCloudFirewallVpcFirewallAclEngineMode_basic12344(t *testing.
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

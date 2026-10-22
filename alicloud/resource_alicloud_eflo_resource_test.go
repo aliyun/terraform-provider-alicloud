@@ -30,7 +30,6 @@ func TestAccAliCloudEfloResource_basic10576(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.EfloExperimentPlanTemplateSupportRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -106,7 +105,6 @@ func TestAccAliCloudEfloResource_basic10576_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.EfloExperimentPlanTemplateSupportRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

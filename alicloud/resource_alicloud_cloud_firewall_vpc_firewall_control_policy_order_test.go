@@ -27,9 +27,8 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicyOrder_basic12717(t *tes
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: alicloudCloudFirewallVpcFirewallControlPolicyOrderBasicDependence12717(name),

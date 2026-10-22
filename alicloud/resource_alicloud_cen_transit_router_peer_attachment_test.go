@@ -32,7 +32,6 @@ func TestAccAliCloudCenTransitRouterPeerAttachment_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		CheckDestroy:      testAccCheckCenTransitRouterPeerAttachmentDestroy,
 		ProviderFactories: testAccProviderFactoriesMultiRegion(3),
 		Steps: []resource.TestStep{
@@ -191,7 +190,6 @@ func TestAccAliCloudCenTransitRouterPeerAttachment_basic1(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		CheckDestroy:      testAccCheckCenTransitRouterPeerAttachmentDestroy,
 		ProviderFactories: testAccProviderFactoriesMultiRegion(3),
 		Steps: []resource.TestStep{
@@ -436,7 +434,6 @@ func TestAccAliCloudCenTransitRouterPeerAttachment_basic2(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		CheckDestroy:      testAccCheckCenTransitRouterPeerAttachmentDestroy,
 		ProviderFactories: testAccProviderFactoriesMultiRegion(3),
 		Steps: []resource.TestStep{
@@ -855,7 +852,6 @@ func SkipTestAccAliCloudCenTransitRouterPeerAttachment_basic3(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		CheckDestroy:      testAccCheckCenTransitRouterPeerAttachmentDestroy,
 		ProviderFactories: testAccProviderFactoriesMultiRegion(3),
 		Steps: []resource.TestStep{
@@ -964,9 +960,8 @@ func SkipTestAccAliCloudCenTransitRouterPeerAttachment_basic6600_twin(t *testing
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

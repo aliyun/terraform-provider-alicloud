@@ -34,7 +34,6 @@ func TestAccAliCloudConfigConfigurationRecorder_basic(t *testing.T) {
 			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

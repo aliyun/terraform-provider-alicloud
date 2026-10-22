@@ -138,9 +138,8 @@ func TestAccAliCloudVPCRouteTableAttachmentBasic(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckRouteTableAttachmentDestroy,
+		CheckDestroy:      testAccCheckRouteTableAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRouteTableAttachmentConfigBasic(rand),
@@ -174,9 +173,8 @@ func TestAccAliCloudVPCRouteTableAttachmentMulti(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckRouteTableAttachmentDestroy,
+		CheckDestroy:      testAccCheckRouteTableAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRouteTableAttachmentConfigMulti(rand),
@@ -205,9 +203,8 @@ func TestAccAliCloudVPCRouteTableAttachmentMulti_bugfix(t *testing.T) {
 			testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckRouteTableAttachmentDestroy,
+		CheckDestroy:      testAccCheckRouteTableAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRouteTableAttachmentConfigMultiBugFix(rand),

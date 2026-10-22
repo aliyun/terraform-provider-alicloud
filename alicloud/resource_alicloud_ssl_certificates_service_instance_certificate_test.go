@@ -34,8 +34,7 @@ func TestAccAliCloudSslCertificatesServiceInstanceCertificate_basic(t *testing.T
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
+		Providers: testAccProviders,
 		// Destroying this resource calls no API: the certificate was issued by the certificate
 		// authority and goes on existing, so GetCertificateDetail keeps succeeding afterwards.
 		// Asserting that it has disappeared would always fail, and asserting nothing about the

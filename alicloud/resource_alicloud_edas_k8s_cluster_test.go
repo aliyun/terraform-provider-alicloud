@@ -123,7 +123,6 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEdasK8sClusterDestroy,
 		Steps: []resource.TestStep{

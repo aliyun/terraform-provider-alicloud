@@ -117,7 +117,6 @@ func TestAccAliCloudResourceManagerHandshake_basic(t *testing.T) {
 			testAccPreCheckResourceManagerHandshakeAccountDetached(t, invitedAccountId)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -366,7 +365,6 @@ func TestAccAliCloudResourceManagerHandshake_basic11272(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckResourceManagerHandshakeAccountDetached(t, invitedAccountId)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

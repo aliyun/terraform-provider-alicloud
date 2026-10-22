@@ -115,7 +115,6 @@ func TestAccAliCloudVPCHavipAttachment_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -158,7 +157,6 @@ func TestAccAliCloudVPCHavipAttachment_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -202,7 +200,6 @@ func TestAccAliCloudVPCHavipAttachment_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -256,7 +253,6 @@ func TestAccAliCloudVPCHavipAttachment_basic_multiple_instance_bug_fix(t *testin
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -310,7 +306,6 @@ func TestAccAliCloudVPCHavipAttachment_basic_multiple_havip_bug_fix(t *testing.T
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

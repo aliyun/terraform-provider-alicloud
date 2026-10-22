@@ -30,7 +30,6 @@ import (
 // API's canonical re-encoding; both are equivalent JSON, but the ID-only check
 // compares raw strings. The policy is still verified by the per-step effect
 // checks and by ImportStateVerify.
-var accessPointPolicyIDRefreshIgnore = []string{"policy"}
 
 func TestAccAliCloudOssAccessPointPolicy_basic(t *testing.T) {
 	resourceId := "alicloud_oss_access_point_policy.default"
@@ -45,8 +44,6 @@ func TestAccAliCloudOssAccessPointPolicy_basic(t *testing.T) {
 			testAccPreCheckOssAccessPointPolicy(t)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          accessPointPolicyIDRefreshIgnore,
 		CheckDestroy:             testAccCheckOssAccessPointPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -93,8 +90,6 @@ func TestAccAliCloudOssAccessPointPolicy_twin(t *testing.T) {
 			testAccPreCheckOssAccessPointPolicy(t)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		IDRefreshName:            resourceId,
-		IDRefreshIgnore:          accessPointPolicyIDRefreshIgnore,
 		CheckDestroy:             testAccCheckOssAccessPointPolicyDestroy,
 		Steps: []resource.TestStep{
 			{

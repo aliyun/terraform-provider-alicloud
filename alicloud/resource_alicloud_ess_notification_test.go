@@ -34,7 +34,6 @@ func TestAccAliCloudEssNotification_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEssNotificationDestroy,
 		Steps: []resource.TestStep{
@@ -108,7 +107,6 @@ func TestAccAliCloudEssNotification_timeZone(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEssNotificationDestroy,
 		Steps: []resource.TestStep{
@@ -166,7 +164,6 @@ func TestAccAliCloudEssNotification_timeZone1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEssNotificationDestroy,
 		Steps: []resource.TestStep{
@@ -223,7 +220,6 @@ func TestAccAliCloudEssNotification_mns_messageEncodingCreate(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEssNotificationDestroy,
 		Steps: []resource.TestStep{
@@ -284,9 +280,8 @@ func TestAccAliCloudEssNotification_mns_messageEncodingUpdate(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckEssNotificationDestroy,
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssNotificationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -344,9 +339,8 @@ func TestAccAliCloudEssNotification_cms(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckEssNotificationDestroy,
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssNotificationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

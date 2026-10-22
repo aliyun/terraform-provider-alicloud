@@ -26,9 +26,8 @@ func TestAccAlicloudChatbotPublishTask_basic2099(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -42,9 +41,9 @@ func TestAccAlicloudChatbotPublishTask_basic2099(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 				// Chatbot PublishTask is asynchronous on the server side: after Create
 				// the task moves through FE_RUNNING -> FE_SUCCESS and modify_time
 				// updates accordingly. ImportStateVerify reads twice with a small

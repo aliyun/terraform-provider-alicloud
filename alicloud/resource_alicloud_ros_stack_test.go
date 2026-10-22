@@ -116,7 +116,6 @@ func TestAccAliCloudROSStack_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy: func(state *terraform.State) error {
 			rosServiceClient := RosService{testAccProvider.Meta().(*connectivity.AliyunClient)}

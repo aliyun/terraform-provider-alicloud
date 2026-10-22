@@ -36,7 +36,6 @@ func TestAccAliCloudRdsDBAccountPrivilege_mysql(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -115,7 +114,6 @@ func TestAccAliCloudRdsDBAccountPrivilege_PostgreSql(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
@@ -182,7 +180,6 @@ func TestAccAliCloudRdsDBAccountPrivilege_SQLServer(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),

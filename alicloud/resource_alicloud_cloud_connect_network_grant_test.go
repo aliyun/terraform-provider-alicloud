@@ -39,7 +39,6 @@ func TestAccAlicloudCloudConnectNetworkGrant_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCcnGrantDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
@@ -91,7 +90,6 @@ func TestAccAlicloudCloudConnectNetworkGrant_multi(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCcnGrantDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{

@@ -36,9 +36,8 @@ func TestAccAlicloudSimpleApplicationServerSnapshot_basic0(t *testing.T) {
 			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

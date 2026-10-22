@@ -35,7 +35,6 @@ func TestAccAliCloudSDDPDataLimit_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			checkoutSupportedRegions(t, true, []connectivity.Region{sddpDataLimitsDataSourceTestRegion})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

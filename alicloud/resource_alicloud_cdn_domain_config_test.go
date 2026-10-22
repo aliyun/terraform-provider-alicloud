@@ -33,7 +33,6 @@ func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -129,7 +128,6 @@ func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new_twin(t *testing.T
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -193,7 +191,6 @@ func TestAccAliCloudCDNDomainConfig_ip_allow_list(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -247,7 +244,6 @@ func TestAccAliCloudCDNDomainConfig_referer_white_list(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -301,7 +297,6 @@ func TestAccAliCloudCDNDomainConfig_referer_black_list(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -355,7 +350,6 @@ func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -418,7 +412,6 @@ func TestAccAliCloudCDNDomainConfig_oss_auth(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -473,7 +466,6 @@ func TestAccAliCloudCDNDomainConfig_ip_black_list(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -527,7 +519,6 @@ func TestAccAliCloudCDNDomainConfig_ip_white_list(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -581,7 +572,6 @@ func TestAccAliCloudCDNDomainConfig_error_page(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -639,7 +629,6 @@ func TestAccAliCloudCDNDomainConfig_set_req_host_header(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -693,7 +682,6 @@ func TestAccAliCloudCDNDomainConfig_set_hashkey_args(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -747,7 +735,6 @@ func TestAccAliCloudCDNDomainConfig_aliauth(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -805,7 +792,6 @@ func TestAccAliCloudCDNDomainConfig_set_resp_header(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -863,7 +849,6 @@ func TestAccAliCloudCDNDomainConfig_https_force(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -917,7 +902,6 @@ func TestAccAliCloudCDNDomainConfig_http_force(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -971,7 +955,6 @@ func TestAccAliCloudCDNDomainConfig_https_option(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1025,7 +1008,6 @@ func TestAccAliCloudCDNDomainConfig_l2_oss_key(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1079,7 +1061,6 @@ func TestAccAliCloudCDNDomainConfig_forward_scheme(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1139,7 +1120,6 @@ func SkipTestAccAliCloudCDNDomainConfig_green_manager(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1193,7 +1173,6 @@ func TestAccAliCloudCDNDomainConfig_tmd_signature(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1330,7 +1309,6 @@ func TestAccAliCloudCDNDomainConfig_set_req_header(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1388,7 +1366,6 @@ func TestAccAliCloudCDNDomainConfig_range(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1442,7 +1419,6 @@ func TestAccAliCloudCDNDomainConfig_video_seek(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1496,7 +1472,6 @@ func TestAccAliCloudCDNDomainConfig_https_tls_version(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1554,7 +1529,6 @@ func TestAccAliCloudCDNDomainConfig_HSTS(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1612,7 +1586,6 @@ func TestAccAliCloudCDNDomainConfig_filetype_force_ttl_code(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1670,7 +1643,6 @@ func TestAccAliCloudCDNDomainConfig_path_force_ttl_code(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1728,7 +1700,6 @@ func TestAccAliCloudCDNDomainConfig_gzip(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1782,7 +1753,6 @@ func TestAccAliCloudCDNDomainConfig_tesla(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1836,7 +1806,6 @@ func TestAccAliCloudCDNDomainConfig_https_origin_sni(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1894,7 +1863,6 @@ func TestAccAliCloudCDNDomainConfig_brotli(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1952,7 +1920,6 @@ func TestAccAliCloudCDNDomainConfig_ali_ua(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -2010,7 +1977,6 @@ func TestAccAliCloudCDNDomainConfig_host_redirect(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

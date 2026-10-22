@@ -188,7 +188,6 @@ func TestAccAliCloudConfigAggregateConfigRule_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -382,7 +381,6 @@ func TestAccAliCloudConfigAggregateConfigRule_status(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -546,7 +544,6 @@ func SkipTestAccAliCloudConfigAggregateConfigRule_basic1(t *testing.T) {
 			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

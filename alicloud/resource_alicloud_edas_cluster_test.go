@@ -125,7 +125,6 @@ func TestAccAlicloudEdasCluster_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEdasClusterDestroy,
 		Steps: []resource.TestStep{
@@ -193,7 +192,6 @@ func TestAccAlicloudEdasCluster_multi(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckEdasClusterDestroy,
 		Steps: []resource.TestStep{

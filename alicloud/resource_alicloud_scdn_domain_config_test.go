@@ -39,7 +39,6 @@ func SkipTestAccAlicloudScdnDomainConfig_ip_allow_list(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -92,7 +91,6 @@ func SkipTestAccAlicloudScdnDomainConfig_referer_white_list(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -146,7 +144,6 @@ func SkipTestAccAlicloudScdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

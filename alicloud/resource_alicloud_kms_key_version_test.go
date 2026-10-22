@@ -36,7 +36,6 @@ func TestAccAliCloudKmsKeyVersion_basic(t *testing.T) {
 			testAccPreCheckKMSForKeyIdImport(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

@@ -28,9 +28,8 @@ func TestAccAliCloudNlbListenerAdditionalCertificateAttachment_basic5384(t *test
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.NLBSupportRegions)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

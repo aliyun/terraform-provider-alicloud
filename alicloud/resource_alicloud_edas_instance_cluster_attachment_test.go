@@ -30,9 +30,8 @@ func TestAccAlicloudEdasinstanceClusterAttachment_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testEdasCheckICAttachmentDestroy,
+		CheckDestroy:      testEdasCheckICAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -29,7 +29,6 @@ func TestAccAliCloudMaxComputeQuota_basic10404(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -232,7 +231,6 @@ func TestAccAliCloudMaxComputeQuota_basic6979(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

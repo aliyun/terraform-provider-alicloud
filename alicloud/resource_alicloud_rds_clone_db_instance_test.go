@@ -90,7 +90,6 @@ func TestAccAliCloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -366,7 +365,6 @@ func TestAccAliCloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -504,7 +502,6 @@ func TestAccAliCloudRdsCloneDBInstanceMySQL_ServerlessBasic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ServerlessSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -599,7 +596,6 @@ func TestAccAliCloudRdsCloneDBInstanceMySQL_Cluster(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -859,7 +855,6 @@ func TestAccAliCloudRdsCloneDBInstanceMySQL_ServerlessStandard(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ServerlessSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -1021,7 +1016,6 @@ func TestAccAliCloudRdsCloneDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ServerlessSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -1164,7 +1158,6 @@ func TestAccAliCloudRdsCloneDBInstancegeneral_essd(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -1269,7 +1262,6 @@ func TestAccAliCloudRdsCloneDBInstanceMySQL_Tags(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -1332,7 +1324,6 @@ func TestAccAliCloudRdsCloneDBInstanceSQLServer_ServerlessHA(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ServerlessSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

@@ -28,7 +28,6 @@ func TestAccAliCloudCloudFirewallUserAlarmConfig_basic12512(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -151,7 +150,6 @@ func TestAccAliCloudCloudFirewallUserAlarmConfig_basic12506(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

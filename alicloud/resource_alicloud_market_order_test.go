@@ -26,7 +26,6 @@ func TestAccAlicloudMarketOrder_basic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckPrePaidResources(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

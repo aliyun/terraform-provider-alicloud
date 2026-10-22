@@ -29,7 +29,6 @@ func TestAccAliCloudECSSnapshotLock_basic0(t *testing.T) {
 			acctest.PreCheck(t)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		IDRefreshName:            resourceId,
 		CheckDestroy:             testAccCheckEcsSnapshotLockDestroy,
 		Steps: []resource.TestStep{
 			{

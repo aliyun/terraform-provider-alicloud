@@ -235,7 +235,6 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -483,7 +482,6 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -899,8 +897,7 @@ func TestAccAliCloudCSKubernetes_StateMigrationV0ToV1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				ExternalProviders: map[string]resource.ExternalProvider{

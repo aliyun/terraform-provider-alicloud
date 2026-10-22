@@ -118,7 +118,6 @@ func TestAccAlicloudMscSubWebhook_basic0(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithEnvVariable(t, "ALICLOUD_MSC_SUB_WEBHOOK_TOKEN")
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

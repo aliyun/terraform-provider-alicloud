@@ -70,9 +70,8 @@ func TestAccAliCloudPolarDBGateway_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Beijing})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

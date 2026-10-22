@@ -36,9 +36,8 @@ func TestAccAliCloudPrivatelinkVpcEndpointServiceUser_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -304,9 +303,8 @@ func TestAccAliCloudPrivateLinkVpcEndpointServiceUser_basic4876(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

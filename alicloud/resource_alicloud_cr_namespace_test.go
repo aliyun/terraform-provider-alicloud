@@ -123,7 +123,6 @@ func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

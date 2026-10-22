@@ -206,7 +206,6 @@ func TestAccAliCloudEdgeKubernetes_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      resourceAttrCheck.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -392,7 +391,6 @@ func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      resourceAttrCheck.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -555,7 +553,6 @@ func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      resourceAttrCheck.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -807,8 +804,7 @@ func TestAccAliCloudEdgeKubernetes_StateMigrationV0ToV1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
 		},
-		IDRefreshName: resourceId,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				ExternalProviders: map[string]resource.ExternalProvider{

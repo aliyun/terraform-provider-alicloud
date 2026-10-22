@@ -35,9 +35,8 @@ func TestAccAliCloudVPCIpv6EgressRule_basic0(t *testing.T) {
 			testAccPreCheckWithEnvVariable(t, "ECS_WITH_IPV6_ADDRESS")
 			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6EgressRuleSupportRegions)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -83,9 +82,8 @@ func TestAccAliCloudVPCIpv6EgressRule_basic1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6EgressRuleSupportRegions)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

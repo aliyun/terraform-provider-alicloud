@@ -28,7 +28,6 @@ func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -159,7 +158,6 @@ func TestAccAliCloudDMSEnterpriseAuthorityTemplate_basic4696_twin(t *testing.T) 
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

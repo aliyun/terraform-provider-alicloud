@@ -31,9 +31,8 @@ func TestAccAliCloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -165,9 +164,8 @@ func TestAccAliCloudCenRouteMap_basic_transit_router_route_table_id(t *testing.T
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -214,7 +212,6 @@ func TestAccAliCloudCenRouteMap_basic_child_instance_different_region(t *testing
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactoriesAlternate(),
 		CheckDestroy:      testAccCheckCenRouteMapDestroy,
 		Steps: []resource.TestStep{
@@ -383,9 +380,8 @@ func TestAccAliCloudCenRouteMap_multi(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

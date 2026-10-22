@@ -137,9 +137,8 @@ func TestAccAliCloudPolarDBPolarFs_complete(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Beijing})
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckPolarDBPolarFsDestroy,
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckPolarDBPolarFsDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -134,7 +134,6 @@ func TestAccAliCloudNatGateway_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -301,7 +300,6 @@ func TestAccAliCloudNatGateway_NetworkType(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -361,9 +359,8 @@ func TestAccAliCloudNatGateway_AvailabilityMode(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				// availability_mode is set to CrossAZ (cross-zone DR), which is also the
@@ -448,9 +445,8 @@ func TestAccAliCloudNatGateway_AvailabilityModeSingleAZ(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -499,7 +495,6 @@ func TestAccAliCloudNatGateway_PayByLcu(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -627,7 +622,6 @@ func TestAccAliCloudNatGateway_basic1(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -697,7 +691,6 @@ func TestAccAliCloudNatGateway_basic2(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

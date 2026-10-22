@@ -33,7 +33,6 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{
@@ -198,7 +197,6 @@ func TestAccAliCloudReservedInstanceBasic1(t *testing.T) {
 			testAccPreCheckPrePaidResources(t)
 			testAccPreCheckWithTime(t, []int{1})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

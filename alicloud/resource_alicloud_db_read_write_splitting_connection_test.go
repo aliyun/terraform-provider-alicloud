@@ -31,10 +31,9 @@ func TestAccAlicloudRdsDBReadWriteSplittingConnectionMssql_create(t *testing.T) 
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -50,10 +49,10 @@ func TestAccAlicloudRdsDBReadWriteSplittingConnectionMssql_create(t *testing.T) 
 					"instance_id":       "${alicloud_db_readonly_instance.default.master_db_instance_id}",
 					"distribution_type": "Custom",
 					"weight": map[string]interface{}{
-											`"${alicloud_db_readonly_instance.default.id}"`: "200",
-											"master": "200",
-											"slave":  "400",
-										},
+						`"${alicloud_db_readonly_instance.default.id}"`: "200",
+						"master": "200",
+						"slave":  "400",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					rc.checkResourceExists(),

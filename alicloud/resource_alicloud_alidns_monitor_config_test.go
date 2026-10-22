@@ -29,7 +29,6 @@ func TestAccAliCloudAlidnsMonitorConfig_basic0(t *testing.T) {
 			testAccPreCheckWithTime(t, []int{1})
 			testAccPreCheckWithEnvVariable(t, "ALICLOUD_ICP_DOMAIN_NAME")
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

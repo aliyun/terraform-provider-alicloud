@@ -30,9 +30,8 @@ func TestAccAliCloudSLBListener_http_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -308,9 +307,8 @@ func TestAccAliCloudSLBListener_Forward(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -375,9 +373,8 @@ func TestAccAliCloudSLBListener_same_port(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -418,9 +415,8 @@ func TestAccAliCloudSLBListener_https_update(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -700,9 +696,8 @@ func TestAccAliCloudSLBListener_tcp_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -893,9 +888,8 @@ func TestAccAliCloudSLBListener_tcp_server_group(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -979,9 +973,8 @@ func TestAccAliCloudSLBListener_udp_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1133,9 +1126,8 @@ func TestAccAliCloudSLBListener_http_healcheckmethod(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1244,9 +1236,8 @@ func TestAccAliCloudSLBListener_https_healcheckmethod(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1383,9 +1374,8 @@ func TestAccAliCloudSLBListener_tcp_ProxyProtocolV2Enabled(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1477,9 +1467,8 @@ func TestAccAliCloudSLBListener_udp_ProxyProtocolV2Enabled(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		CheckDestroy:      testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

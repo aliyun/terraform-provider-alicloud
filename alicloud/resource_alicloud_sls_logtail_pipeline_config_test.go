@@ -28,9 +28,8 @@ func TestAccAliCloudSlsLogtailPipelineConfig_basic12633(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Step 0: Create resource with all required and optional fields (inputs, processors, flushers, aggregators)
 			{

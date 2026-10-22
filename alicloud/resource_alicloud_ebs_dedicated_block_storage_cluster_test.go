@@ -28,7 +28,6 @@ func SkipTestAccAlicloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

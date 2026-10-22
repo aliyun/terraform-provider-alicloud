@@ -115,9 +115,8 @@ func TestAccAlicloudVPCNetworkAclAttachment_basic(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckNetworkAclAttachmentDestroy,
+		CheckDestroy:      testAccCheckNetworkAclAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccNetworkAclAttachment_create(rand),

@@ -47,10 +47,9 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

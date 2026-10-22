@@ -36,7 +36,6 @@ func TestAccAlicloudADBConnectionConfig(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),

@@ -28,9 +28,8 @@ func TestAccAliCloudVPCVswitchCidrReservation_basic3117(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VpcVSwitchCidrReservationSupportRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -181,9 +180,8 @@ func TestAccAliCloudVPCVswitchCidrReservation_basic3138(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VpcVSwitchCidrReservationSupportRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -334,9 +332,8 @@ func TestAccAliCloudVPCVswitchCidrReservation_basic3117_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VpcVSwitchCidrReservationSupportRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -386,9 +383,8 @@ func TestAccAliCloudVPCVswitchCidrReservation_basic3138_twin(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.VpcVSwitchCidrReservationSupportRegions)
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

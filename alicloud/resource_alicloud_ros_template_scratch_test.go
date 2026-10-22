@@ -120,7 +120,6 @@ func TestAccAliCloudROSTemplateScratch_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -216,7 +215,6 @@ func TestAccAliCloudROSTemplateScratch_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -314,7 +312,6 @@ func TestAccAliCloudROSTemplateScratch_basic2(t *testing.T) {
 			// This test needs to ensure that there is at least one VPC and VSwitch labeled {"Created":"No-Deleting"} in the region.
 			testAccPreCheckWithEnvVariable(t, "VPC_WITH_NO-DELETING_TAG")
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -433,7 +430,6 @@ func TestAccAliCloudROSTemplateScratch_basic3(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

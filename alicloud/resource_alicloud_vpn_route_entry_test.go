@@ -34,7 +34,6 @@ func TestAccAliCloudVPNRouteEntry_basic(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -113,7 +112,6 @@ func TestAccAliCloudVPNRouteEntry_multi(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

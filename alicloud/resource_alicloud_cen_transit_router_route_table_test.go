@@ -37,9 +37,8 @@ func TestAccAliCloudCenTransitRouterRouteTable_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -115,9 +114,8 @@ func TestAccAliCloudCenTransitRouterRouteTable_basic1(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

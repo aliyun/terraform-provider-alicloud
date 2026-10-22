@@ -29,9 +29,8 @@ func TestAccAliCloudEcsDiskDefaultKmsKey_basic12760(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckEcsDiskDefaultKmsKeyDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEcsDiskDefaultKmsKeyDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -79,9 +78,8 @@ func TestAccAliCloudEcsDiskDefaultKmsKey_basic12760_twin(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckEcsDiskDefaultKmsKeyDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEcsDiskDefaultKmsKeyDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

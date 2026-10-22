@@ -30,7 +30,6 @@ func TestAccAliCloudOssBucketCname_basic8544(t *testing.T) {
 			// this case in a region where the ICP requirement does not apply.
 			checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -146,7 +145,6 @@ func TestAccAliCloudOssBucketCname_basic8542(t *testing.T) {
 			// this case in a region where the ICP requirement does not apply.
 			checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -259,7 +257,6 @@ func TestAccAliCloudOssBucketCname_basic8386(t *testing.T) {
 			// this case in a region where the ICP requirement does not apply.
 			checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

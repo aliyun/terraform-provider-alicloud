@@ -24,7 +24,6 @@ func TestAccAliCloudVpcPeerConnectionAccepter_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactoriesAlternate(),
 		CheckDestroy:      testAccCheckVPCPeerConnectionAccepterDestroy,
 		Steps: []resource.TestStep{

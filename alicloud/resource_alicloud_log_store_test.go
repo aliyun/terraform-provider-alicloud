@@ -30,7 +30,6 @@ func TestAccAliCloudLogStore_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -177,7 +176,6 @@ func TestAccAliCloudLogStore_mode(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.SlsTestRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -239,7 +237,6 @@ func TestAccAliCloudLogStore_lite(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.SlsTestRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -300,7 +297,6 @@ func TestAccAliCloudLogStore_metric(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -397,9 +393,8 @@ func TestAccAliCloudLogStore_telemetry_type_switch(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Step 1: Create as logstore (no telemetry_type specified)
 			{
@@ -479,7 +474,6 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_logstoreName(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -606,7 +600,6 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_projectName(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -733,7 +726,6 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_projectName_and_logstoreName(t
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -860,7 +852,6 @@ func TestAccAliCloudLogStore_create_with_encrypt(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -999,7 +990,6 @@ func TestAccAliCloudLogStore_create_with_encrypt_bugfix(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1131,7 +1121,6 @@ func TestAccAliCloudLogStore_create_with_encrypt_enable(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1218,7 +1207,6 @@ func TestAccAliCloudLogStore_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1355,7 +1343,6 @@ func TestAccAliCloudSlsLogStore_basic5614_old(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.SLSLiteSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSLSLogStoreDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
@@ -1787,7 +1774,6 @@ func TestAccAliCloudSlsLogStore_basic5614_old_twin(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.SLSLiteSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSLSLogStoreDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
@@ -1886,7 +1872,6 @@ func TestAccAliCloudLogStore_infrequest_access_ttl(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

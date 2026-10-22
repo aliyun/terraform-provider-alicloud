@@ -117,7 +117,6 @@ func TestAccAliCloudEmrCluster_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -286,7 +285,6 @@ func TestAccAliCloudEmrCluster_hadoop_cluster(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -396,7 +394,6 @@ func TestAccAliCloudEmrCluster_local_storage(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -488,7 +485,6 @@ func TestAccAliCloudEmrCluster_gateway(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -556,7 +552,6 @@ func TestAccAliCloudEmrCluster_multicluster(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

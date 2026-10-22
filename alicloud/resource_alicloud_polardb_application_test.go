@@ -33,7 +33,6 @@ func TestAccAliCloudPolarDBApplication_Create(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),
@@ -145,7 +144,6 @@ func TestAccAliCloudPolarDBApplication_CreateFull(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),

@@ -25,7 +25,6 @@ func TestAccAliCloudCenTransitRouterMulticastDomainPeerMember_basic1905(t *testi
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactoriesAlternate(),
-		IDRefreshName:     resourceId,
 		CheckDestroy:      testAccCheckCenTransitRouterMulticastDomainPeerMemberDestroy,
 		Steps: []resource.TestStep{
 			{

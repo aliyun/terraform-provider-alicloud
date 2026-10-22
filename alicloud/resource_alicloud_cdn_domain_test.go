@@ -91,10 +91,9 @@ func SkipTestAccAlicloudCDNDomain_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_cdn_domain.domain",
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckCdnDomainDestroy,
+		CheckDestroy:      testAccCheckCdnDomainDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCdnDomainConfig(rand),
@@ -123,10 +122,9 @@ func SkipTestAccAlicloudCDNDomain_https(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_cdn_domain.domain",
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckCdnDomainDestroy,
+		CheckDestroy:      testAccCheckCdnDomainDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCdnDomainHttpsConfig(rand),
@@ -153,10 +151,9 @@ func SkipTestAccAlicloudCDNDomain_domestic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: "alicloud_cdn_domain.domain",
 
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: testAccCheckCdnDomainDestroy,
+		CheckDestroy:      testAccCheckCdnDomainDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCdnDomainDomestic(rand),

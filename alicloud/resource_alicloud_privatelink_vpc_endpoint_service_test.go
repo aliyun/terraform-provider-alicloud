@@ -124,7 +124,6 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_base(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -207,7 +206,6 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_supportedRegionList(t *testing
 		PreCheck: func() {
 			testAccPreCheckPrivateLinkCrossRegion(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckPrivateLinkVpcEndpointServiceDestroyInRegion(testAccPrivateLinkCrossRegionServiceRegion),
 		Steps: []resource.TestStep{
@@ -546,9 +544,8 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_resource(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				// Create the endpoint service with a backend resource attached
@@ -1042,7 +1039,6 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1196,7 +1192,6 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case9628(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

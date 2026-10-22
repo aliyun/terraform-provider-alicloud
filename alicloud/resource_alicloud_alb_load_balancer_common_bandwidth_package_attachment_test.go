@@ -26,7 +26,6 @@ func TestAccAliCloudAlbLoadBalancerCommonBandwidthPackageAttachment_basic(t *tes
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

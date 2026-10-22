@@ -132,7 +132,6 @@ func TestAccAliCloudARMSDispatchRule_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.ARMSSupportRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

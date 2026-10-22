@@ -29,9 +29,8 @@ func TestAccAliCloudEipanycastAnycastEipAddressAttachment_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -126,7 +125,6 @@ func TestAccAliCloudEipanycastAnycastEipAddressAttachment_basic3732(t *testing.T
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEipanycastEipAddressAttachmentDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
@@ -573,7 +571,6 @@ func TestAccAliCloudEipanycastAnycastEipAddressAttachment_basic3732_twin(t *test
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEipanycastEipAddressAttachmentDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
@@ -621,7 +618,6 @@ func TestAccAliCloudEipanycastAnycastEipAddressAttachment_basic3732_region(t *te
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEipanycastEipAddressAttachmentDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{

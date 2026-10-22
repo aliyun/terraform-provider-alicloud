@@ -89,7 +89,6 @@ func TestAccAliCloudRAMAccountAlias_basic(t *testing.T) {
 		},
 
 		// module name
-		IDRefreshName: resourceId,
 
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      testAccCheckRamAccountAliasDestroy,
@@ -162,7 +161,6 @@ func TestAccAliCloudRamAccountAlias_basic9000(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		Steps: []resource.TestStep{
 			{

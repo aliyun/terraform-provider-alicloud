@@ -17,9 +17,8 @@ func TestAccAlicloudVPCNetworkAclEntries_basic(t *testing.T) {
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		// module name
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  testAccCheckNetworkAclEntriesDestroy,
+		CheckDestroy:      testAccCheckNetworkAclEntriesDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccNetworkAclEntries_create(rand),

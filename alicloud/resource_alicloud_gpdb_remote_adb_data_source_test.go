@@ -25,7 +25,6 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -225,7 +224,6 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853_raw(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

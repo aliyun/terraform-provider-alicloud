@@ -152,7 +152,6 @@ func SkipTestAccAlicloudCenBandwidthPackage_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -245,7 +244,6 @@ func SkipTestAccAliCloudCenBandwidthPackage_multi(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 		// module name
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -280,7 +278,6 @@ func TestAccAliCloudCenBandwidthPackage_upgrade(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -372,9 +369,8 @@ func TestAccAliCloudCenBandwidthPackage_southAmerica(t *testing.T) {
 			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -418,7 +414,6 @@ func TestAccAliCloudCenBandwidthPackage_basic1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -467,7 +462,6 @@ func TestAccAliCloudCenBandwidthPackage_basic2(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -516,7 +510,6 @@ func TestAccAliCloudCenBandwidthPackage_basic3(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -563,7 +556,6 @@ func TestAccAliCloudCenBandwidthPackage_basic4(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -610,7 +602,6 @@ func TestAccAliCloudCenBandwidthPackage_basic5(t *testing.T) {
 			testAccPreCheck(t)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

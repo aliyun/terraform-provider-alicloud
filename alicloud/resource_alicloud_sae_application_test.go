@@ -127,7 +127,6 @@ func TestAccAliCloudSAEApplication_basicImage(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -491,7 +490,6 @@ func TestAccAliCloudSAEApplication_basicFatJar(t *testing.T) {
 	name := fmt.Sprintf("tftestacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSAEApplicationBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -817,7 +815,6 @@ func TestAccAliCloudSAEApplication_basicWar(t *testing.T) {
 	name := fmt.Sprintf("tftestacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSAEApplicationBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1165,7 +1162,6 @@ func TestAccAliCloudSAEApplication_basicPhp(t *testing.T) {
 	name := fmt.Sprintf("tftestacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSAEApplicationBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1493,7 +1489,6 @@ func TestAccAliCloudSAEApplication_basicNewImage(t *testing.T) {
 	name := fmt.Sprintf("tftestacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSAEApplicationBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -1865,7 +1860,6 @@ func TestAccAliCloudSAEApplication_basicNewFatJar(t *testing.T) {
 	name := fmt.Sprintf("tftestacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSAEApplicationBasicDependence1)
 	resource.Test(t, resource.TestCase{
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -2487,7 +2481,6 @@ func TestAccAliCloudSAEApplication_basicTags(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -2571,7 +2564,6 @@ func SkipAccAliCloudSAEApplication_basic3(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
 		},
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

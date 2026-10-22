@@ -38,7 +38,6 @@ func TestAccAliCloudConfigDeliveryChannel_basic(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -169,7 +168,6 @@ func TestAccAliCloudConfigDeliveryChannel_MNS(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
@@ -288,7 +286,6 @@ func TestAccAliCloudConfigDeliveryChannel_SLS(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, connectivity.CloudConfigSupportedRegions)
 		},
 
-		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{

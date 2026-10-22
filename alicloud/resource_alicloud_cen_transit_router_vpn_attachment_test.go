@@ -36,9 +36,8 @@ func TestAccAliCloudCENTransitRouterVpnAttachment_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -107,7 +106,7 @@ func TestAccAliCloudCENTransitRouterVpnAttachment_zoneMismatch(t *testing.T) {
 		// created (Create is expected to fail), so SDK's refresh probe on
 		// that ID would report "ID-only refresh check never ran.".
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy: nil,
+		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -272,7 +271,6 @@ func TestAccAliCloudCENTransitRouterVpnAttachment_crossAccountOrderType(t *testi
 	name := fmt.Sprintf("tf-testacc%scentrvpnatt%d", defaultRegionToTest, rand)
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() {},
-		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -406,9 +404,8 @@ func TestAccAliCloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -787,9 +784,8 @@ func TestAccAliCloudCenTransitRouterVpnAttachment_basic10332(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1008,9 +1004,8 @@ func TestAccAliCloudCenTransitRouterVpnAttachment_basic10409(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
