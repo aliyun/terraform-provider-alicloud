@@ -75,6 +75,12 @@ Usage with Vpc Endpoint Zone
 
 The `alicloud_privatelink_vpc_endpoint` and `alicloud_privatelink_vpc_endpoint_zone` resources are separate. You can use them together to add a zone to a VPC endpoint. The following example creates a VPC endpoint and then adds a zone to it by referencing the endpoint ID, a vSwitch in the same zone, and the zone ID.
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_privatelink_vpc_endpoint&exampleId=28d4a656-10f2-7f93-1f89-474ed3819b4cfabe7178&activeTab=example&spm=docs.r.privatelink_vpc_endpoint.1.28d4a65610&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 variable "name" {
   default = "terraform-example"

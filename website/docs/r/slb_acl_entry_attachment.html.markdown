@@ -26,6 +26,12 @@ For information about acl entry attachment and how to use it, see [Configure an 
 
 The `entries` attribute manages all entries of the acl in one resource. The entries are added and removed in batches of at most `50` entries per API call.
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_acl_entry_attachment&exampleId=f7b1bfde-e073-3ea9-9d05-4755fb38c66463db3d33&activeTab=example&spm=docs.r.slb_acl_entry_attachment.0.f7b1bfdee0&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_slb_acl" "attachment" {
   name       = "forSlbAclEntryAttachment"
@@ -51,6 +57,12 @@ resource "alicloud_slb_acl_entry_attachment" "attachment" {
 
 `entry` is deprecated, please use `entries` instead.
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_slb_acl_entry_attachment&exampleId=7c6c4728-07cc-937d-e55e-9ac7e8f9feee94398cfc&activeTab=example&spm=docs.r.slb_acl_entry_attachment.1.7c6c472807&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_slb_acl" "attachment" {
   name       = "forSlbAclEntryAttachment"
@@ -63,6 +75,10 @@ resource "alicloud_slb_acl_entry_attachment" "attachment" {
   comment = "second"
 }
 ```
+
+
+📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_slb_acl_entry_attachment&spm=docs.r.slb_acl_entry_attachment.example&intl_lang=EN_US)
+
 
 ## Argument Reference
 
