@@ -468,6 +468,12 @@ func resourceAliCloudEsaWafRule() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"position": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+				Description: "The position of the WAF rule. Position is only supported by UpdateWafRule; it is not accepted when creating a rule. When omitted, the API-assigned position is used.",
+			},
 			"shared": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1571,6 +1577,7 @@ func resourceAliCloudEsaWafRuleRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("phase", objectRaw["Phase"])
 	d.Set("ruleset_id", objectRaw["RulesetId"])
 	d.Set("waf_rule_id", objectRaw["Id"])
+	d.Set("position", objectRaw["Position"])
 
 	configMaps := make([]map[string]interface{}, 0)
 	configMap := make(map[string]interface{})
@@ -2867,6 +2874,10 @@ func resourceAliCloudEsaWafRuleUpdate(d *schema.ResourceData, meta interface{}) 
 		if err == nil {
 			request["Status"] = configStatusJsonPath
 		}
+	}
+	if d.HasChange("position") {
+		update = true
+		request["Position"] = d.Get("position")
 	}
 
 	if update && enableUpdateWafRule1 {
