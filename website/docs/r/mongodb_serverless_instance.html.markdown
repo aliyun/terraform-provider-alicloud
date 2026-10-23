@@ -15,9 +15,7 @@ For information about MongoDB Serverless Instance and how to use it, see [What i
 
 -> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
 
--> **NOTE:** Deprecated since v1.214.0.
-
--> **DEPRECATED:**  This resource has been deprecated from version `1.214.0`.
+-> **DEPRECATED:** This resource has been deprecated from v1.214.0.
 
 ## Example Usage
 
@@ -71,27 +69,30 @@ resource "alicloud_mongodb_serverless_instance" "example" {
 The following arguments are supported:
 
 * `account_password` - (Required, Sensitive) The password of the database logon account.
-    * The password length is `8` to `32` bits.
-    * The password consists of at least any three of uppercase letters, lowercase letters, numbers, and special characters. The special character is `!#$%^&*()_+-=`. The MongoDB Serverless instance provides a default database login account. This account cannot be modified. You can only set or modify the password for this account.
+  * The password length is `8` to `32` bits.
+  * The password consists of at least any three of uppercase letters, lowercase letters, numbers, and special characters. The special character is `!#$%^&*()_+-=`. The MongoDB Serverless instance provides a default database login account. This account cannot be modified. You can only set or modify the password for this account.
+* `auto_pay` - (Optional) Specifies whether to automatically pay for the configuration change. Default value: `true`.
 * `auto_renew` - (Optional) Set whether the instance is automatically renewed.
 * `capacity_unit` - (Required) The I/O throughput consumed by the instance. Valid values: `100` to `8000`.
 * `db_instance_description` - (Optional) The db instance description.
 * `db_instance_storage` - (Required) The db instance storage. Valid values: `1` to `100`.
+* `effective_time` - (Optional) The effective time of the configuration change. Default value: `Immediately`. Valid values: `Immediately`, `MaintainTime`.
 * `engine` - (Optional) The database engine of the instance. Valid values: `MongoDB`.
 * `engine_version` - (Required) The database version number. Valid values: `4.2`.
 * `maintain_end_time` - (Optional) The end time of the maintenance window. Specify the time in the `HH:mmZ` format. The time must be in UTC. **NOTE:** The difference between the start time and end time must be one hour. For example, if `maintain_start_time` is `01:00Z`, `maintain_end_time` must be `02:00Z`.
 * `maintain_start_time` - (Optional) The start time of the maintenance window. Specify the time in the `HH:mmZ` format. The time must be in UTC.
+* `order_type` - (Optional) The type of the configuration change. Default value: `UPGRADE`. Valid values: `UPGRADE`, `DOWNGRADE`.
 * `period` - (Optional) The purchase duration of the instance, in months. Valid values: `1` to `9`, `12`, `24`, `36`, `60`.
 * `period_price_type` - (Optional) The period price type. Valid values: `Day`, `Month`.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `security_ip_groups` - (Optional) An array that consists of the information of IP whitelists.
+* `security_ip_groups` - (Optional) An array that consists of the information of IP whitelists. See [`security_ip_groups`](#security_ip_groups) below.
 * `storage_engine` - (Optional) The storage engine used by the instance. Valid values: `WiredTiger`.
 * `vswitch_id` - (Required, ForceNew) The of the vswitch.
 * `zone_id` - (Required, ForceNew) The ID of the zone. Use this parameter to specify the zone created by the instance.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC network.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
-#### Block security_ip_groups
+### `security_ip_groups`
 
 The security_ip_groups supports the following:
 
@@ -105,6 +106,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Serverless Instance.
 * `status` - The instance status. For more information, see the instance Status Table.
+* `payment_type` - The payment type of the instance. Valid values: `Subscription`.
 
 ## Timeouts
 
