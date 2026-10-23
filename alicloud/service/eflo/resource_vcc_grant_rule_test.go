@@ -25,6 +25,17 @@ import (
 // a registered Terraform resource, so the VCC must be created out-of-band.
 var testVccGrantRuleVccID string
 
+// testVccGrantRuleVpcID and testVccGrantRuleVswID hold the VPC and VSwitch IDs
+// created via the CreateVpc / CreateVSwitch OpenAPI calls.  VPC and VSwitch are
+// intentionally NOT Terraform-managed resources in this test: the VCC creates
+// ServiceManaged network interfaces on the VSwitch that cannot be deleted via
+// the ECS API and may persist long after VCC deletion.  If the VSwitch were in
+// Terraform state, terraform destroy would fail with
+// DependencyViolation.NetworkInterface.  By keeping VPC/VSwitch out-of-band,
+// terraform destroy only needs to delete the ER and grant rule.
+var testVccGrantRuleVpcID string
+var testVccGrantRuleVswID string
+
 // Test Eflo VccGrantRule. >>> Resource test cases, automatically generated.
 // Case vcc_grant_rule_tf_副本1770195464559_副本1770271544998 12535
 func TestAccAliCloudEfloVccGrantRule_basic12535(t *testing.T) {
@@ -40,11 +51,12 @@ func TestAccAliCloudEfloVccGrantRule_basic12535(t *testing.T) {
 		CheckDestroy:             testAccCheckEfloVccGrantRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				// Create ER + VPC + VSwitch through Terraform, then
-				// create the VCC instance via the CreateVcc OpenAPI call.
+				// Create ER through Terraform, then create VPC, VSwitch,
+				// and VCC via OpenAPI calls.  VPC and VSwitch are NOT
+				// Terraform-managed (see package-level comment above).
 				Config: testAccAliCloudEfloVccGrantRule_basic12535_step0(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccEfloVccGrantRuleCreateVcc(name, &testVccGrantRuleVccID),
+					testAccEfloVccGrantRuleCreateDeps(name, &testVccGrantRuleVccID),
 				),
 			},
 			{
@@ -70,28 +82,28 @@ func TestAccAliCloudEfloVccGrantRule_basic12535(t *testing.T) {
 			{
 				// No-op re-apply: the config is identical to step 1, so
 				// Terraform detects no changes and only refreshes state.
-				// The Check deletes the API-created VCC and cleans up its
-				// side-effect resources (router interfaces, network
-				// interfaces) BEFORE the framework's post-test terraform
-				// destroy runs. This prevents DependencyViolation errors
-				// during destroy.
+				// The Check deletes the API-created VCC and best-effort
+				// cleans up side-effect resources (router interfaces, ENIs,
+				// VSwitch, VPC) BEFORE the framework's post-test terraform
+				// destroy runs.  Since VPC/VSwitch are not in Terraform
+				// state, terraform destroy only deletes ER + grant rule,
+				// avoiding DependencyViolation.NetworkInterface.
 				//
-				// The import step was removed because its Check did not
-				// execute reliably (the import step replaces the working
-				// state, causing the cleanup Check to be skipped).
+				// IMPORTANT: TF_VAR_vcc_id is NOT unset here.  Terraform needs
+				// it for the post-apply non-refresh plan and for terraform
+				// destroy (the config still declares variable "vcc_id").
 				Config: testAccAliCloudEfloVccGrantRule_basic12535_step1(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccEfloVccGrantRuleDeleteVcc(&testVccGrantRuleVccID),
+					testAccEfloVccGrantRuleDeleteDeps(&testVccGrantRuleVccID),
 				),
 			},
 		},
 	})
 }
 
-// testAccAliCloudEfloVccGrantRule_basic12535_step0 creates ER + VPC +
-// VSwitch dependencies. The VCC instance is created via the CreateVcc OpenAPI
-// call in the Check function because alicloud_eflo_vcc is not a Terraform
-// resource; CreateVcc requires VpcId and VSwitchId from a regular VPC.
+// testAccAliCloudEfloVccGrantRule_basic12535_step0 creates the ER dependency.
+// VPC and VSwitch are created via OpenAPI in the Check function, NOT via
+// Terraform, to keep them out of Terraform state (see package-level comment).
 func testAccAliCloudEfloVccGrantRule_basic12535_step0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -105,25 +117,13 @@ resource "alicloud_eflo_er" "default" {
   er_name        = var.name
   master_zone_id = "cn-wulanchabu-b"
 }
-
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = "cn-wulanchabu-b"
-}
 `, name)
 }
 
 // testAccAliCloudEfloVccGrantRule_basic12535_step1 adds the VCC grant rule on
-// top of the ER + VPC + VSwitch dependencies. The VCC ID is passed via the
-// TF_VAR_vcc_id environment variable (set in step 0's Check) and referenced
-// as var.vcc_id, which has no default so Terraform reads TF_VAR_vcc_id at
-// apply time.
+// top of the ER dependency. The VCC ID is passed via the TF_VAR_vcc_id
+// environment variable (set in step 0's Check) and referenced as var.vcc_id,
+// which has no default so Terraform reads TF_VAR_vcc_id at apply time.
 func testAccAliCloudEfloVccGrantRule_basic12535_step1(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -142,17 +142,6 @@ resource "alicloud_eflo_er" "default" {
   master_zone_id = "cn-wulanchabu-b"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = "cn-wulanchabu-b"
-}
-
 resource "alicloud_eflo_vcc_grant_rule" "default" {
   grant_tenant_id = data.alicloud_account.default.id
   er_id           = alicloud_eflo_er.default.id
@@ -161,13 +150,98 @@ resource "alicloud_eflo_vcc_grant_rule" "default" {
 `, name)
 }
 
+// testAccEfloVccGrantRuleCreateVpc creates a VPC via the CreateVpc OpenAPI call
+// and returns its ID. VPC is intentionally not a Terraform resource in this
+// test (see package-level comment).
+func testAccEfloVccGrantRuleCreateVpc(client *connectivity.AliyunClient, name string) (string, error) {
+	req := map[string]interface{}{
+		"RegionId":  client.RegionId,
+		"VpcName":   name,
+		"CidrBlock": "172.16.0.0/16",
+	}
+	resp, err := client.RpcPost("Vpc", "2016-04-28", "CreateVpc", req, req, true)
+	if err != nil {
+		return "", fmt.Errorf("CreateVpc failed: %w", err)
+	}
+	vpcID, _ := resp["VpcId"].(string)
+	if vpcID == "" {
+		return "", fmt.Errorf("CreateVpc response missing VpcId: %v", resp)
+	}
+	fmt.Printf("[VPC_CREATE] created VPC %s\n", vpcID)
+	return vpcID, nil
+}
+
+// testAccEfloVccGrantRuleCreateVSwitch creates a VSwitch via the CreateVSwitch
+// OpenAPI call and returns its ID. VSwitch is intentionally not a Terraform
+// resource in this test (see package-level comment).
+func testAccEfloVccGrantRuleCreateVSwitch(client *connectivity.AliyunClient, vpcID, name string) (string, error) {
+	req := map[string]interface{}{
+		"RegionId":    client.RegionId,
+		"ZoneId":      "cn-wulanchabu-b",
+		"CidrBlock":   "172.16.0.0/24",
+		"VpcId":       vpcID,
+		"VSwitchName": name,
+	}
+	resp, err := client.RpcPost("Vpc", "2016-04-28", "CreateVSwitch", req, req, true)
+	if err != nil {
+		return "", fmt.Errorf("CreateVSwitch failed: %w", err)
+	}
+	vswID, _ := resp["VSwitchId"].(string)
+	if vswID == "" {
+		return "", fmt.Errorf("CreateVSwitch response missing VSwitchId: %v", resp)
+	}
+	fmt.Printf("[VSWITCH_CREATE] created VSwitch %s\n", vswID)
+	return vswID, nil
+}
+
+// testAccEfloVccGrantRuleDeleteVSwitch deletes a VSwitch via the DeleteVSwitch
+// OpenAPI call. Best-effort: errors are logged but not fatal. Retries up to 3
+// times with 30-second intervals because the VCC-created ServiceManaged ENI
+// may still be blocking deletion.
+func testAccEfloVccGrantRuleDeleteVSwitch(client *connectivity.AliyunClient, vswID string) {
+	if vswID == "" {
+		return
+	}
+	for attempt := 1; attempt <= 3; attempt++ {
+		req := map[string]interface{}{
+			"RegionId":  client.RegionId,
+			"VSwitchId": vswID,
+		}
+		if _, err := client.RpcPost("Vpc", "2016-04-28", "DeleteVSwitch", req, req, true); err != nil {
+			fmt.Printf("[VSWITCH_CLEANUP] delete VSwitch %s attempt %d error: %v\n", vswID, attempt, err)
+			if attempt < 3 {
+				time.Sleep(30 * time.Second)
+			}
+		} else {
+			fmt.Printf("[VSWITCH_CLEANUP] deleted VSwitch %s (attempt %d)\n", vswID, attempt)
+			return
+		}
+	}
+}
+
+// testAccEfloVccGrantRuleDeleteVpc deletes a VPC via the DeleteVpc OpenAPI
+// call. Best-effort: errors are logged but not fatal.
+func testAccEfloVccGrantRuleDeleteVpc(client *connectivity.AliyunClient, vpcID string) {
+	if vpcID == "" {
+		return
+	}
+	req := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"VpcId":    vpcID,
+	}
+	if _, err := client.RpcPost("Vpc", "2016-04-28", "DeleteVpc", req, req, true); err != nil {
+		fmt.Printf("[VPC_CLEANUP] delete VPC %s error: %v\n", vpcID, err)
+	} else {
+		fmt.Printf("[VPC_CLEANUP] deleted VPC %s\n", vpcID)
+	}
+}
+
 // testAccEfloVccGrantRuleCleanupRIs queries and deletes all router interfaces
 // in the test region to free the RiPerUser quota. Previous VCC creation
 // attempts (successful or failed) may leave dangling router interfaces that
 // exhaust the quota, causing VCC creation to fail with
 // "QuotaExceeded: RiPerUser quota exceeded". This cleanup is best-effort and
-// non-fatal: any error is logged and the function returns nil so the test can
-// proceed (or fail with the original quota error if cleanup was insufficient).
+// non-fatal: any error is logged and the function returns.
 func testAccEfloVccGrantRuleCleanupRIs(client *connectivity.AliyunClient) {
 	query := map[string]interface{}{
 		"RegionId":   client.RegionId,
@@ -418,7 +492,8 @@ func testAccEfloVccGrantRuleListENIs(client *connectivity.AliyunClient, vpcID st
 // ENIs remain in the VPC or the deadline expires. After VCC deletion, the
 // Eflo service asynchronously cleans up ServiceManaged network interfaces on
 // the VSwitch; DeleteVSwitch will fail with DependencyViolation.NetworkInterface
-// until they are gone.
+// until they are gone. Since VPC/VSwitch are not in Terraform state, this
+// wait is for cleanup hygiene only — test success does not depend on it.
 func testAccEfloVccGrantRuleWaitENIsGone(client *connectivity.AliyunClient, vpcID string, timeout time.Duration) {
 	if vpcID == "" {
 		return
@@ -461,13 +536,15 @@ func mapKeys(m map[string]interface{}) []string {
 	return keys
 }
 
-// testAccEfloVccGrantRuleCreateVcc creates a VCC instance via the CreateVcc
-// OpenAPI call, stores its ID, and sets the TF_VAR_vcc_id environment variable
-// so the subsequent Terraform step can reference var.vcc_id.  alicloud_eflo_vcc
-// is not a Terraform resource, so the VCC is created out-of-band using the RPC
-// client. Before creating a new VCC, old router interfaces and VCCs are
+// testAccEfloVccGrantRuleCreateDeps creates the VPC, VSwitch, and VCC instances
+// via OpenAPI calls, stores their IDs in package-level variables, and sets the
+// TF_VAR_vcc_id environment variable so the subsequent Terraform step can
+// reference var.vcc_id.  alicloud_eflo_vcc is not a Terraform resource, so the
+// VCC is created out-of-band using the RPC client. VPC and VSwitch are also
+// created out-of-band to keep them out of Terraform state (see package-level
+// comment). Before creating a new VCC, old router interfaces and VCCs are
 // cleaned up to avoid "RiPerUser quota exceeded" errors from prior runs.
-func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestCheckFunc {
+func testAccEfloVccGrantRuleCreateDeps(name string, vccID *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
 
@@ -480,21 +557,28 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 		// VCC deletion may free associated router interfaces; clean up again.
 		testAccEfloVccGrantRuleCleanupRIs(client)
 
-		// Retrieve the VPC ID and VSwitch ID from state. VPD is omitted
-		// because CreateVcc with ConnectionType=VPC connects directly to
-		// the VPC without a VPD, and VPD quota in cn-wulanchabu is limited.
-		vpcRes, ok := s.RootModule().Resources["alicloud_vpc.default"]
-		if !ok {
-			return fmt.Errorf("alicloud_vpc.default not found in state")
+		// Create VPC and VSwitch via OpenAPI (NOT via Terraform) to keep them
+		// out of Terraform state. The VCC creates ServiceManaged ENIs on the
+		// VSwitch that block terraform destroy's DeleteVSwitch.
+		vpcID, err := testAccEfloVccGrantRuleCreateVpc(client, name)
+		if err != nil {
+			return err
 		}
-		vpcID := vpcRes.Primary.ID
+		testVccGrantRuleVpcID = vpcID
+		// VPC creation is fast but not instantaneous; wait briefly.
+		time.Sleep(5 * time.Second)
 
-		vswRes, ok := s.RootModule().Resources["alicloud_vswitch.default"]
-		if !ok {
-			return fmt.Errorf("alicloud_vswitch.default not found in state")
+		vswID, err := testAccEfloVccGrantRuleCreateVSwitch(client, vpcID, name)
+		if err != nil {
+			// Best-effort cleanup of VPC on failure.
+			testAccEfloVccGrantRuleDeleteVpc(client, vpcID)
+			testVccGrantRuleVpcID = ""
+			return err
 		}
-		vswID := vswRes.Primary.ID
+		testVccGrantRuleVswID = vswID
+		time.Sleep(5 * time.Second)
 
+		// Create the VCC instance.
 		request := map[string]interface{}{
 			"RegionId":       client.RegionId,
 			"VccName":        name,
@@ -506,6 +590,11 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 		}
 		response, err := client.RpcPost("eflo", "2022-05-30", "CreateVcc", request, request, true)
 		if err != nil {
+			// Best-effort cleanup of VSwitch and VPC on failure.
+			testAccEfloVccGrantRuleDeleteVSwitch(client, vswID)
+			testAccEfloVccGrantRuleDeleteVpc(client, vpcID)
+			testVccGrantRuleVpcID = ""
+			testVccGrantRuleVswID = ""
 			return fmt.Errorf("calling CreateVcc failed: %w", err)
 		}
 		content, ok := response["Content"].(map[string]interface{})
@@ -528,79 +617,82 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 	}
 }
 
-// testAccEfloVccGrantRuleDeleteVcc deletes the API-created VCC instance so
-// that Terraform's post-test destroy can delete the VPC and VSwitch. The VCC
-// creates two kinds of side-effect resources that block terraform destroy:
-//   - Route interfaces on the VPC (block DeleteVpc with
-//     DependencyViolation.RouteInterface)
-//   - Network interfaces (ENIs) on the VSwitch (block DeleteVSwitch with
-//     DependencyViolation.NetworkInterface)
+// testAccEfloVccGrantRuleDeleteDeps deletes the API-created VCC and best-effort
+// cleans up its side-effect resources. This Check runs in a no-op re-apply
+// step (same config, no changes), before the framework's automatic terraform
+// destroy.
 //
-// This Check runs in a no-op re-apply step (same config, no changes), before
-// the framework's automatic terraform destroy. After calling DeleteVcc, we:
+// IMPORTANT: TF_VAR_vcc_id is NOT unset here. Terraform needs it for the
+// post-apply non-refresh plan and for terraform destroy (the config declares
+// variable "vcc_id" with no default). It is unset only in CheckDestroy after
+// terraform destroy completes.
+//
+// After calling DeleteVcc, we:
 //  1. Poll GetVcc until the VCC is no longer queryable (deletion is async).
 //  2. Wait for the Eflo service to clean up ServiceManaged ENIs on the VSwitch
-//     (these cannot be deleted via ECS API; they are removed asynchronously
-//     after VCC deletion).
-//  3. Run RI cleanup to remove any remaining route interfaces on the VPC.
-//  4. Run ENI cleanup to delete any remaining non-ServiceManaged ENIs.
+//     (best-effort; these cannot be deleted via ECS API).
+//  3. Run RI cleanup to remove any remaining route interfaces.
+//  4. Run ENI cleanup for any remaining non-ServiceManaged ENIs.
+//  5. Try to delete the VSwitch (best-effort, may fail if ENIs persist).
+//  6. Try to delete the VPC (best-effort).
 //
-// This ensures both DeleteVpc and DeleteVSwitch succeed during terraform destroy.
-func testAccEfloVccGrantRuleDeleteVcc(vccID *string) resource.TestCheckFunc {
+// Since VPC/VSwitch are not in Terraform state, failures here do not affect
+// the test outcome — terraform destroy only deletes ER + grant_rule.
+func testAccEfloVccGrantRuleDeleteDeps(vccID *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		if *vccID == "" {
-			return nil
-		}
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
-		fmt.Printf("[VCC_DELETE] deleting VCC %s\n", *vccID)
-		req := map[string]interface{}{
-			"RegionId": client.RegionId,
-			"VccId":    *vccID,
-		}
-		_, _ = client.RpcPost("eflo", "2022-05-30", "DeleteVcc", req, req, true)
 
-		// Poll GetVcc until the VCC is no longer queryable — VCC deletion
-		// is async, and the route interface on the VPC is removed as part
-		// of the VCC deletion process.
-		deadline := time.Now().Add(5 * time.Minute)
-		for time.Now().Before(deadline) {
-			query := map[string]interface{}{
+		if *vccID != "" {
+			fmt.Printf("[VCC_DELETE] deleting VCC %s\n", *vccID)
+			req := map[string]interface{}{
 				"RegionId": client.RegionId,
 				"VccId":    *vccID,
 			}
-			resp, err := client.RpcPost("eflo", "2022-05-30", "GetVcc", query, query, true)
-			if err != nil {
-				// VCC no longer queryable — deletion complete.
-				fmt.Printf("[VCC_DELETE] VCC %s no longer queryable, deletion complete\n", *vccID)
-				break
-			}
-			content, _ := resp["Content"].(map[string]interface{})
-			status, _ := content["Status"].(string)
-			fmt.Printf("[VCC_DELETE] VCC %s status=%q, waiting for deletion...\n", *vccID, status)
-			time.Sleep(15 * time.Second)
-		}
+			_, _ = client.RpcPost("eflo", "2022-05-30", "DeleteVcc", req, req, true)
 
-		// Retrieve the VPC ID from state for ENI cleanup.
-		var vpcID string
-		if vpcRes, ok := s.RootModule().Resources["alicloud_vpc.default"]; ok {
-			vpcID = vpcRes.Primary.ID
+			// Poll GetVcc until the VCC is no longer queryable — VCC deletion
+			// is async, and the route interface on the VPC is removed as part
+			// of the VCC deletion process.
+			deadline := time.Now().Add(5 * time.Minute)
+			for time.Now().Before(deadline) {
+				query := map[string]interface{}{
+					"RegionId": client.RegionId,
+					"VccId":    *vccID,
+				}
+				resp, err := client.RpcPost("eflo", "2022-05-30", "GetVcc", query, query, true)
+				if err != nil {
+					fmt.Printf("[VCC_DELETE] VCC %s no longer queryable, deletion complete\n", *vccID)
+					break
+				}
+				content, _ := resp["Content"].(map[string]interface{})
+				status, _ := content["Status"].(string)
+				fmt.Printf("[VCC_DELETE] VCC %s status=%q, waiting for deletion...\n", *vccID, status)
+				time.Sleep(15 * time.Second)
+			}
+			*vccID = ""
 		}
 
 		// Wait for the Eflo service to clean up ServiceManaged ENIs on the
-		// VSwitch after VCC deletion. These ENIs cannot be deleted via the
-		// ECS API and must be removed by the owning service.
-		testAccEfloVccGrantRuleWaitENIsGone(client, vpcID, 5*time.Minute)
+		// VSwitch after VCC deletion. Best-effort: if the ENIs don't clear,
+		// VSwitch/VPC deletion will fail, but since they are not in Terraform
+		// state, the test outcome is unaffected.
+		testAccEfloVccGrantRuleWaitENIsGone(client, testVccGrantRuleVpcID, 5*time.Minute)
 
-		// Clean up any remaining route interfaces on the VPC to prevent
-		// DependencyViolation.RouteInterface during terraform destroy.
+		// Clean up any remaining route interfaces on the VPC.
 		testAccEfloVccGrantRuleCleanupRIs(client)
 
-		// Clean up any remaining non-ServiceManaged network interfaces to
-		// prevent DependencyViolation.NetworkInterface during terraform destroy.
-		testAccEfloVccGrantRuleCleanupENIs(client, vpcID)
+		// Clean up any remaining non-ServiceManaged network interfaces.
+		testAccEfloVccGrantRuleCleanupENIs(client, testVccGrantRuleVpcID)
 
-		*vccID = ""
-		os.Unsetenv("TF_VAR_vcc_id")
+		// Try to delete the VSwitch (best-effort). May fail if ServiceManaged
+		// ENIs are still present.
+		testAccEfloVccGrantRuleDeleteVSwitch(client, testVccGrantRuleVswID)
+
+		// Try to delete the VPC (best-effort). May fail if VSwitch still exists.
+		testAccEfloVccGrantRuleDeleteVpc(client, testVccGrantRuleVpcID)
+
+		// Do NOT unset TF_VAR_vcc_id here — Terraform still needs it for
+		// the post-apply non-refresh plan and terraform destroy.
 		return nil
 	}
 }
@@ -671,10 +763,10 @@ func testAccEfloVccGrantRuleWaitVcc(client *connectivity.AliyunClient, vccID str
 }
 
 // testAccCheckEfloVccGrantRuleDestroy verifies the grant rule is gone (error
-// code 1003 = not found) and best-effort deletes the API-created VCC. This is
-// a safety net: the no-op re-apply step's Check normally deletes the VCC and
-// cleans up side-effect resources before terraform destroy. If the test failed
-// before that step, this function attempts the same cleanup.
+// code 1003 = not found) and best-effort cleans up the API-created VCC, VSwitch,
+// and VPC. This is a safety net: the no-op re-apply step's Check normally
+// deletes these before terraform destroy. If the test failed before reaching
+// that step, this function attempts the same cleanup.
 func testAccCheckEfloVccGrantRuleDestroy(s *terraform.State) error {
 	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
 	for _, rs := range s.RootModule().Resources {
@@ -699,9 +791,10 @@ func testAccCheckEfloVccGrantRuleDestroy(s *terraform.State) error {
 		}
 		return fmt.Errorf("VCC grant rule %s still exists", rs.Primary.ID)
 	}
+
 	// Best-effort VCC cleanup: if the VCC was not already deleted by the
 	// no-op re-apply step's Check (e.g. test failed before reaching it), try
-	// to delete it now to avoid dangling route interfaces and ENIs.
+	// to delete it now.
 	if testVccGrantRuleVccID != "" {
 		req := map[string]interface{}{
 			"RegionId": client.RegionId,
@@ -722,20 +815,19 @@ func testAccCheckEfloVccGrantRuleDestroy(s *terraform.State) error {
 		}
 		testVccGrantRuleVccID = ""
 	}
-	// Retrieve the VPC ID from state for ENI cleanup.
-	var vpcID string
-	if vpcRes, ok := s.RootModule().Resources["alicloud_vpc.default"]; ok {
-		vpcID = vpcRes.Primary.ID
-	}
+
 	// Wait for ServiceManaged ENIs to be cleaned by the Eflo service.
-	testAccEfloVccGrantRuleWaitENIsGone(client, vpcID, 3*time.Minute)
-	// Safety-net RI cleanup: remove any remaining route interfaces to
-	// prevent DependencyViolation.RouteInterface during terraform destroy.
+	testAccEfloVccGrantRuleWaitENIsGone(client, testVccGrantRuleVpcID, 3*time.Minute)
+	// Safety-net RI cleanup.
 	testAccEfloVccGrantRuleCleanupRIs(client)
-	// Safety-net ENI cleanup: remove any remaining non-ServiceManaged network
-	// interfaces to prevent DependencyViolation.NetworkInterface during
-	// terraform destroy.
-	testAccEfloVccGrantRuleCleanupENIs(client, vpcID)
+	// Safety-net ENI cleanup for non-ServiceManaged ENIs.
+	testAccEfloVccGrantRuleCleanupENIs(client, testVccGrantRuleVpcID)
+	// Try to delete VSwitch and VPC (best-effort).
+	testAccEfloVccGrantRuleDeleteVSwitch(client, testVccGrantRuleVswID)
+	testAccEfloVccGrantRuleDeleteVpc(client, testVccGrantRuleVpcID)
+
+	testVccGrantRuleVpcID = ""
+	testVccGrantRuleVswID = ""
 	os.Unsetenv("TF_VAR_vcc_id")
 	return nil
 }
