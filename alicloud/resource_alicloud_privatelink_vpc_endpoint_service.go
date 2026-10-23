@@ -72,7 +72,11 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 				// value-independent and avoids perpetual diff / detach-attach churn.
 				Set: func(v interface{}) int {
 					m := v.(map[string]interface{})
-					return helper.Hashcode(fmt.Sprintf("%s|%s", m["resource_id"], m["resource_type"]))
+					resourceType := fmt.Sprint(m["resource_type"])
+					if resourceType != "slb" {
+						return helper.Hashcode(fmt.Sprintf("%s|%s|%s", m["resource_id"], resourceType, vpcEndpointServiceResourceZoneId(m["zone_id"])))
+					}
+					return helper.Hashcode(fmt.Sprintf("%s|%s", m["resource_id"], resourceType))
 				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -88,7 +92,6 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 						"zone_id": {
 							Type:     schema.TypeString,
 							Optional: true,
-							Computed: true,
 						},
 					},
 				},

@@ -142,12 +142,6 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_base(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_accept_connection": "true",
 				}),
@@ -190,6 +184,12 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_base(t *testing.T) {
 						"connect_bandwidth":      "200",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
 			},
 		},
 	})
@@ -458,6 +458,20 @@ func AlicloudPrivatelinkVpcEndpointServiceBasicDependence(name string) string {
 	data "alicloud_privatelink_service" "open" {
 	  enable = "On"
 	}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_slb_load_balancer" "default" {
+  count              = 3
+  load_balancer_spec = "slb.s2.small"
+  vswitch_id         = data.alicloud_vswitches.default.ids.0
+}
 `, name)
 }
 
@@ -632,7 +646,7 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_resource(t *testing.T) {
 				// still verified on import: element identity is stable (Set hashes
 				// on resource_id + resource_type) and zone_id is Computed, so a
 				// refreshed element matches the configured one.
-				ImportStateVerifyIgnore: []string{"dry_run", "resource.resource_type"},
+				ImportStateVerifyIgnore: []string{"dry_run"},
 			},
 		},
 	})
