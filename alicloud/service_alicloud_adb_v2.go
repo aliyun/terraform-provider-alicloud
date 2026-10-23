@@ -57,7 +57,7 @@ func (s *AdbServiceV2) DescribeAdbLakeAccount(id string) (object map[string]inte
 	return response, nil
 }
 
-func (s *AdbServiceV2) DescribeLakeAccountDescribeAccounts(id string) (object map[string]interface{}, err error) {
+func (s *AdbServiceV2) DescribeLakeAccountDescribeAccounts(id string, engine string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -71,6 +71,15 @@ func (s *AdbServiceV2) DescribeLakeAccountDescribeAccounts(id string) (object ma
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
 	request["DBClusterId"] = parts[0]
+	// DescribeAccounts accepts an Engine filter. When the engine is known (for
+	// example a Clickhouse account created through this resource), pass it so the
+	// query targets the correct engine instead of the API default (AnalyticDB).
+	// For imports and legacy two-segment IDs the engine is unknown, so it is
+	// omitted and the account is located by AccountName; the Engine field from
+	// the response then backfills state during Read.
+	if engine != "" {
+		request["Engine"] = engine
+	}
 
 	action := "DescribeAccounts"
 
