@@ -28,6 +28,7 @@ jobs:
     timeout-minutes: 3
     outputs:
       classification: ${{ steps.select.outputs.classification }}
+      relevant: ${{ steps.select.outputs.relevant }}
       heavy_runner: ${{ steps.select.outputs.heavy_runner }}
     steps:
       - name: Select runner
@@ -37,6 +38,10 @@ jobs:
   consistency:
     name: Consistency
     needs: route
+    # The docs-vs-schema check only applies to provider code; CI-only and
+    # tooling-only diffs leave it vacuous, so skip them instead of queueing a
+    # heavy runner.
+    if: ${{ needs.route.outputs.relevant == 'true' }}
     runs-on: ${{ fromJSON(needs.route.outputs.heavy_runner) }}
     permissions:
       contents: read
