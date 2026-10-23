@@ -16,6 +16,44 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// apiGatewayErrorCodeSample defines the error code sample structure for CreateApi/ModifyApi.
+type apiGatewayErrorCodeSample struct {
+	Code        string `json:"code"`
+	Message     string `json:"message"`
+	Model       string `json:"model,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+// apiGatewayOpenIdConnectConfig defines the OpenID Connect config structure for CreateApi/ModifyApi.
+type apiGatewayOpenIdConnectConfig struct {
+	IdTokenParamName string `json:"idTokenParamName,omitempty"`
+	PublicKeyId      string `json:"publicKeyId,omitempty"`
+	OpenIdApiType    string `json:"openIdApiType,omitempty"`
+}
+
+// apiGatewayRequestConfigExt extends the request config with governance fields.
+type apiGatewayRequestConfigExt struct {
+	ApiGatewayRequestConfig
+	PostBodyDescription string `json:"postBodyDescription,omitempty"`
+	BodyModel           string `json:"bodyModel,omitempty"`
+}
+
+// apiGatewayRequestParamExt extends the request param with governance fields.
+type apiGatewayRequestParamExt struct {
+	ApiGatewayRequestParam
+	DemoValue         string `json:"demoValue,omitempty"`
+	MaxValue          int64  `json:"maxValue,omitempty"`
+	MinValue          int64  `json:"minValue,omitempty"`
+	MaxLength         int64  `json:"maxLength,omitempty"`
+	MinLength         int64  `json:"minLength,omitempty"`
+	RegularExpression string `json:"regularExpression,omitempty"`
+	JsonScheme        string `json:"jsonScheme,omitempty"`
+	EnumValue         string `json:"enumValue,omitempty"`
+	DocShow           string `json:"docShow,omitempty"`
+	DocOrder          int    `json:"docOrder,omitempty"`
+	ArrayItemsType    string `json:"arrayItemsType,omitempty"`
+}
+
 func resourceAliyunApigatewayApi() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunApigatewayApiCreate,
@@ -80,6 +118,16 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 						"body_format": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"post_body_description": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"body_model": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -268,6 +316,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 			"request_parameters": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Set:      apiGatewayApiRequestParamHash,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -302,6 +351,61 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"demo_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"max_value": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"min_value": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"max_length": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"min_length": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"regular_expression": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"json_scheme": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"enum_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"doc_show": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"doc_order": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"array_items_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -334,6 +438,7 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 			"system_parameters": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Set:      apiGatewayApiSystemParamHash,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -347,6 +452,16 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 						"in": {
 							Type:     schema.TypeString,
 							Required: true,
+						},
+						"demo_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -376,6 +491,210 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 			"backend_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+
+			// Governance fields: hardcoded constants converted to Optional+Computed with fallback.
+			"visibility": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"allow_signature_method": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"result_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"result_sample": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"web_socket_api_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+
+			// Governance fields: new writable properties.
+			"fail_result_sample": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"result_body_model": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"disable_internet": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"open_id_connect_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id_token_param_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"public_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"open_id_api_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"error_code_samples": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"code": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"message": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"model": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"tags": tagsSchemaForceNew(),
+
+			// Governance fields: readOnly Computed from DescribeApi response.
+			"model_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"auth_valid_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"stage_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"group_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"deployed_infos": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"deployed_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"effective_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"stage_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"result_descriptions": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"custom_system_parameters": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"parameter_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"service_parameter_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"location": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"traffic_control_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"app_id": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"ip_control_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"backend_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"use_backend_service": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"signature_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -440,6 +759,78 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("auth_type", objectRaw["AuthType"])
 	d.Set("app_code_auth_type", objectRaw["AppCodeAuthType"])
 	d.Set("force_nonce_check", objectRaw["ForceNonceCheck"])
+
+	// Governance fields: converted constants read back from DescribeApi.
+	d.Set("visibility", objectRaw["Visibility"])
+	d.Set("allow_signature_method", objectRaw["AllowSignatureMethod"])
+	d.Set("result_type", objectRaw["ResultType"])
+	d.Set("result_sample", objectRaw["ResultSample"])
+	d.Set("web_socket_api_type", objectRaw["WebSocketApiType"])
+	d.Set("fail_result_sample", objectRaw["FailResultSample"])
+	d.Set("result_body_model", objectRaw["ResultBodyModel"])
+	d.Set("disable_internet", objectRaw["DisableInternet"])
+	d.Set("create_time", objectRaw["CreatedTime"])
+	d.Set("group_name", objectRaw["GroupName"])
+	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("traffic_control_id", objectRaw["TrafficControlId"])
+	d.Set("ip_control_id", objectRaw["IpControlId"])
+	d.Set("signature_id", objectRaw["SignatureId"])
+	d.Set("model_name", objectRaw["ModelName"])
+	d.Set("auth_valid_time", objectRaw["AuthValidTime"])
+	d.Set("stage_id", objectRaw["StageId"])
+
+	// AppId is returned as float64 in JSON map.
+	if v, ok := objectRaw["AppId"]; ok {
+		d.Set("app_id", v)
+	}
+
+	// OpenIdConnectConfig read back.
+	d.Set("open_id_connect_config", convertApiGatewayApiOpenIdConnectConfigResponse(objectRaw["OpenIdConnectConfig"]))
+
+	// ErrorCodeSamples read back.
+	d.Set("error_code_samples", convertApiGatewayApiErrorCodeSamplesResponse(objectRaw["ErrorCodeSamples"]))
+
+	// ResultDescriptions read back.
+	d.Set("result_descriptions", convertApiGatewayApiResultDescriptionsResponse(objectRaw["ResultDescriptions"]))
+
+	// DeployedInfos read back.
+	d.Set("deployed_infos", convertApiGatewayApiDeployedInfosResponse(objectRaw["DeployedInfos"]))
+
+	// CustomSystemParameters read back.
+	d.Set("custom_system_parameters", convertApiGatewayApiCustomSystemParametersResponse(objectRaw["CustomSystemParameters"]))
+
+	// Backend config additional fields.
+	if backendConfig, ok := objectRaw["BackendConfig"].(map[string]interface{}); ok {
+		if v, ok := backendConfig["BackendName"].(string); ok {
+			d.Set("backend_name", v)
+		}
+		if v, ok := backendConfig["Type"].(string); ok {
+			d.Set("use_backend_service", v == "HTTP")
+		}
+	}
+
+	// Tags are read back via ListTagResources per the CloudSpec model get
+	// mapping ($.TagResources.TagResource[*]); DescribeApi does not return tags.
+	// ListTagResources expects the raw ApiId, not the composite resource id.
+	apiId, _ := objectRaw["ApiId"].(string)
+	if apiId == "" {
+		if parts := strings.Split(d.Id(), COLON_SEPARATED); len(parts) > 1 {
+			apiId = parts[1]
+		} else {
+			apiId = d.Id()
+		}
+	}
+	if tagResources, e := cloudApiService.DescribeTags(apiId, nil, TagResourceType("api")); e != nil {
+		if NotFoundError(e) {
+			d.Set("tags", cloudApiService.tagsToMap(nil))
+		} else {
+			// Tags are ForceNew/create-only; on a read failure do not overwrite
+			// the configured value to avoid a spurious ForceNew diff.
+			addDebug("ListTagResources", e)
+		}
+	} else {
+		d.Set("tags", cloudApiService.tagsToMap(tagResources))
+	}
 
 	v := convertApiGatewayApiRequestConfigResponse(objectRaw["RequestConfig"])
 	if err := d.Set("request_config", []map[string]interface{}{v}); err != nil {
@@ -557,12 +948,36 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 	request.ServiceParameters = string(sps)
 	request.ServiceParametersMap = string(spm)
 
+	if d.HasChanges("visibility", "allow_signature_method", "result_type", "result_sample", "web_socket_api_type",
+		"fail_result_sample", "result_body_model", "disable_internet", "open_id_connect_config", "error_code_samples") {
+		update = true
+	}
 	if update {
-		request.ResultType = ResultType
-		request.ResultSample = ResultSample
-		request.Visibility = Visibility
-		request.AllowSignatureMethod = AllowSignatureMethod
-		request.WebSocketApiType = WebSocketApiType
+		request.ResultType = getApiGatewayApiFieldWithDefault(d, "result_type", ResultType)
+		request.ResultSample = getApiGatewayApiFieldWithDefault(d, "result_sample", ResultSample)
+		request.Visibility = getApiGatewayApiFieldWithDefault(d, "visibility", Visibility)
+		request.AllowSignatureMethod = getApiGatewayApiFieldWithDefault(d, "allow_signature_method", AllowSignatureMethod)
+		request.WebSocketApiType = getApiGatewayApiFieldWithDefault(d, "web_socket_api_type", WebSocketApiType)
+
+		if v, ok := d.GetOk("fail_result_sample"); ok && v.(string) != "" {
+			request.FailResultSample = v.(string)
+		}
+		if v, ok := d.GetOk("result_body_model"); ok && v.(string) != "" {
+			request.ResultBodyModel = v.(string)
+		}
+		if v, ok := d.GetOk("disable_internet"); ok {
+			request.DisableInternet = requests.Boolean(strconv.FormatBool(v.(bool)))
+		}
+		if v, ok := d.GetOk("open_id_connect_config"); ok {
+			if openIdJson, e := openIdConnectConfigToJsonStr(v.([]interface{})); e == nil && openIdJson != "" {
+				request.OpenIdConnectConfig = openIdJson
+			}
+		}
+		if v, ok := d.GetOk("error_code_samples"); ok {
+			if ecJson, e := errorCodeSamplesToJsonStr(v.(*schema.Set)); e == nil && ecJson != "" {
+				request.ErrorCodeSamples = ecJson
+			}
+		}
 
 		backendEnabled := d.Get("backend_enabled").(bool)
 		request.QueryParams["BackendEnable"] = strconv.FormatBool(backendEnabled)
@@ -680,11 +1095,43 @@ func buildAliyunApiArgs(d *schema.ResourceData, meta interface{}) (*cloudapi.Cre
 	request.ServiceParameters = string(sps)
 	request.ServiceParametersMap = string(spm)
 
-	request.ResultType = ResultType
-	request.ResultSample = ResultSample
-	request.Visibility = Visibility
-	request.AllowSignatureMethod = AllowSignatureMethod
-	request.WebSocketApiType = WebSocketApiType
+	request.ResultType = getApiGatewayApiFieldWithDefault(d, "result_type", ResultType)
+	request.ResultSample = getApiGatewayApiFieldWithDefault(d, "result_sample", ResultSample)
+	request.Visibility = getApiGatewayApiFieldWithDefault(d, "visibility", Visibility)
+	request.AllowSignatureMethod = getApiGatewayApiFieldWithDefault(d, "allow_signature_method", AllowSignatureMethod)
+	request.WebSocketApiType = getApiGatewayApiFieldWithDefault(d, "web_socket_api_type", WebSocketApiType)
+
+	if v, ok := d.GetOk("fail_result_sample"); ok && v.(string) != "" {
+		request.FailResultSample = v.(string)
+	}
+	if v, ok := d.GetOk("result_body_model"); ok && v.(string) != "" {
+		request.ResultBodyModel = v.(string)
+	}
+	if v, ok := d.GetOk("disable_internet"); ok {
+		request.DisableInternet = requests.Boolean(strconv.FormatBool(v.(bool)))
+	}
+	if v, ok := d.GetOk("open_id_connect_config"); ok {
+		if openIdJson, e := openIdConnectConfigToJsonStr(v.([]interface{})); e == nil && openIdJson != "" {
+			request.OpenIdConnectConfig = openIdJson
+		}
+	}
+	if v, ok := d.GetOk("error_code_samples"); ok {
+		if ecJson, e := errorCodeSamplesToJsonStr(v.(*schema.Set)); e == nil && ecJson != "" {
+			request.ErrorCodeSamples = ecJson
+		}
+	}
+	// Tags are mapped to the CreateApi Tag[*] repeatList parameters per the
+	// CloudSpec operationMapping (CreateApi Tags→Tag[*].Key/Tag[*].Value).
+	// ModifyApi does not accept Tag, so tags are create-time only (ForceNew).
+	if v, ok := d.GetOk("tags"); ok {
+		tags := v.(map[string]interface{})
+		count := 1
+		for key, value := range tags {
+			request.QueryParams[fmt.Sprintf("Tag.%d.Key", count)] = key
+			request.QueryParams[fmt.Sprintf("Tag.%d.Value", count)] = value.(string)
+			count++
+		}
+	}
 
 	backendEnabled := d.Get("backend_enabled").(bool)
 	request.QueryParams["BackendEnable"] = strconv.FormatBool(backendEnabled)
@@ -700,7 +1147,7 @@ func buildAliyunApiArgs(d *schema.ResourceData, meta interface{}) (*cloudapi.Cre
 func requestConfigToJsonStr(l []interface{}) (string, error) {
 	config := l[0].(map[string]interface{})
 
-	var requestConfig ApiGatewayRequestConfig
+	var requestConfig apiGatewayRequestConfigExt
 	requestConfig.Protocol = config["protocol"].(string)
 	requestConfig.Path = config["path"].(string)
 	requestConfig.Method = config["method"].(string)
@@ -709,9 +1156,94 @@ func requestConfigToJsonStr(l []interface{}) (string, error) {
 	if v, ok := config["body_format"]; ok {
 		requestConfig.BodyFormat = v.(string)
 	}
+	if v, ok := config["post_body_description"]; ok {
+		requestConfig.PostBodyDescription = v.(string)
+	}
+	if v, ok := config["body_model"]; ok {
+		requestConfig.BodyModel = v.(string)
+	}
 	configStr, err := json.Marshal(requestConfig)
 
 	return string(configStr), WrapError(err)
+}
+
+// getApiGatewayApiFieldWithDefault returns the field value if set, otherwise the default constant.
+func getApiGatewayApiFieldWithDefault(d *schema.ResourceData, key, defaultValue string) string {
+	if v, ok := d.GetOk(key); ok && v.(string) != "" {
+		return v.(string)
+	}
+	return defaultValue
+}
+
+// openIdConnectConfigToJsonStr converts the open_id_connect_config schema block to a JSON string.
+func openIdConnectConfigToJsonStr(l []interface{}) (string, error) {
+	if len(l) == 0 {
+		return "", nil
+	}
+	config := l[0].(map[string]interface{})
+	var cfg apiGatewayOpenIdConnectConfig
+	cfg.IdTokenParamName = config["id_token_param_name"].(string)
+	cfg.PublicKeyId = config["public_key_id"].(string)
+	cfg.OpenIdApiType = config["open_id_api_type"].(string)
+	configStr, err := json.Marshal(cfg)
+	return string(configStr), WrapError(err)
+}
+
+// errorCodeSamplesToJsonStr converts the error_code_samples schema set to a JSON string.
+func errorCodeSamplesToJsonStr(s *schema.Set) (string, error) {
+	samples := make([]apiGatewayErrorCodeSample, 0)
+	for _, element := range s.List() {
+		req := element.(map[string]interface{})
+		var sample apiGatewayErrorCodeSample
+		sample.Code = req["code"].(string)
+		sample.Message = req["message"].(string)
+		if v, ok := req["description"]; ok {
+			sample.Description = v.(string)
+		}
+		if v, ok := req["model"]; ok {
+			sample.Model = v.(string)
+		}
+		samples = append(samples, sample)
+	}
+	configStr, err := json.Marshal(samples)
+	return string(configStr), WrapError(err)
+}
+
+// apiGatewayApiRequestParamHash computes the set identity hash for an API
+// Gateway request parameter. It intentionally excludes the Optional+Computed
+// governance fields (demo_value, max_value, min_value, max_length,
+// min_length, regular_expression, json_scheme, enum_value, doc_show,
+// doc_order, array_items_type) that the API populates with defaults when the
+// user leaves them unset, so that a parameter written in config without those
+// fields still hashes identically to the same parameter read back from the
+// API. Without this the TypeSet would show a perpetual diff, because the
+// default schema.HashResource hashes Computed fields that are empty in config
+// but populated in state. The remaining identity fields are sufficient to
+// uniquely distinguish a request parameter within one API.
+func apiGatewayApiRequestParamHash(i interface{}) int {
+	m, ok := i.(map[string]interface{})
+	if !ok {
+		return 0
+	}
+	return schema.HashString(fmt.Sprintf("%v|%v|%v|%v|%v|%v|%v|%v",
+		m["name"], m["type"], m["required"], m["in"], m["in_service"],
+		m["name_service"], m["description"], m["default_value"]))
+}
+
+// apiGatewayApiSystemParamHash computes the set identity hash for an API
+// Gateway system parameter. It intentionally excludes demo_value and
+// description (Optional+Computed, populated with server defaults by the API
+// when the user leaves them unset) so that a system parameter written in
+// config without those fields still hashes identically to the same parameter
+// read back from the API. The remaining identity fields are sufficient to
+// uniquely distinguish a system parameter within one API.
+func apiGatewayApiSystemParamHash(i interface{}) int {
+	m, ok := i.(map[string]interface{})
+	if !ok {
+		return 0
+	}
+	return schema.HashString(fmt.Sprintf("%v|%v|%v",
+		m["name"], m["name_service"], m["in"]))
 }
 
 func getHttpServiceConfig(d *schema.ResourceData) ([]byte, error) {
@@ -878,7 +1410,7 @@ func serviceConfigToJsonStr(d *schema.ResourceData) (string, error) {
 }
 
 func setParameters(d *schema.ResourceData) (rps []byte, sps []byte, spm []byte, err error) {
-	requestParameters := make([]ApiGatewayRequestParam, 0)
+	requestParameters := make([]apiGatewayRequestParamExt, 0)
 	serviceParameters := make([]ApiGatewayServiceParam, 0)
 	serviceParamMaps := make([]ApiGatewayParameterMap, 0)
 
@@ -905,11 +1437,11 @@ func setParameters(d *schema.ResourceData) (rps []byte, sps []byte, spm []byte, 
 	return rps, sps, spm, WrapError(err)
 }
 
-func setSystemParameters(d *schema.ResourceData, requestParameters []ApiGatewayRequestParam, serviceParameters []ApiGatewayServiceParam, serviceParamMaps []ApiGatewayParameterMap) ([]ApiGatewayRequestParam, []ApiGatewayServiceParam, []ApiGatewayParameterMap) {
+func setSystemParameters(d *schema.ResourceData, requestParameters []apiGatewayRequestParamExt, serviceParameters []ApiGatewayServiceParam, serviceParamMaps []ApiGatewayParameterMap) ([]apiGatewayRequestParamExt, []ApiGatewayServiceParam, []ApiGatewayParameterMap) {
 	if l, ok := d.GetOk("system_parameters"); ok {
 
 		for _, element := range l.(*schema.Set).List() {
-			var requestParam ApiGatewayRequestParam
+			var requestParam apiGatewayRequestParamExt
 			var serviceParam ApiGatewayServiceParam
 			var serviceParamMap ApiGatewayParameterMap
 
@@ -923,6 +1455,12 @@ func setSystemParameters(d *schema.ResourceData, requestParameters []ApiGatewayR
 			requestParam.In = in
 			requestParam.Required = "REQUIRED"
 			requestParam.Type = "String"
+			if v, ok := request["description"]; ok && v.(string) != "" {
+				requestParam.Description = v.(string)
+			}
+			if v, ok := request["demo_value"]; ok && v.(string) != "" {
+				requestParam.DemoValue = v.(string)
+			}
 			requestParameters = append(requestParameters, requestParam)
 
 			serviceParam.Type = "String"
@@ -940,11 +1478,11 @@ func setSystemParameters(d *schema.ResourceData, requestParameters []ApiGatewayR
 	return requestParameters, serviceParameters, serviceParamMaps
 }
 
-func setConstantParameters(d *schema.ResourceData, requestParameters []ApiGatewayRequestParam, serviceParameters []ApiGatewayServiceParam, serviceParamMaps []ApiGatewayParameterMap) ([]ApiGatewayRequestParam, []ApiGatewayServiceParam, []ApiGatewayParameterMap) {
+func setConstantParameters(d *schema.ResourceData, requestParameters []apiGatewayRequestParamExt, serviceParameters []ApiGatewayServiceParam, serviceParamMaps []ApiGatewayParameterMap) ([]apiGatewayRequestParamExt, []ApiGatewayServiceParam, []ApiGatewayParameterMap) {
 	if l, ok := d.GetOk("constant_parameters"); ok {
 
 		for _, element := range l.(*schema.Set).List() {
-			var requestParam ApiGatewayRequestParam
+			var requestParam apiGatewayRequestParamExt
 			var serviceParam ApiGatewayServiceParam
 			var serviceParamMap ApiGatewayParameterMap
 
@@ -978,11 +1516,11 @@ func setConstantParameters(d *schema.ResourceData, requestParameters []ApiGatewa
 	return requestParameters, serviceParameters, serviceParamMaps
 }
 
-func setRequestParameters(d *schema.ResourceData, requestParameters []ApiGatewayRequestParam, serviceParameters []ApiGatewayServiceParam, serviceParamMaps []ApiGatewayParameterMap) ([]ApiGatewayRequestParam, []ApiGatewayServiceParam, []ApiGatewayParameterMap) {
+func setRequestParameters(d *schema.ResourceData, requestParameters []apiGatewayRequestParamExt, serviceParameters []ApiGatewayServiceParam, serviceParamMaps []ApiGatewayParameterMap) ([]apiGatewayRequestParamExt, []ApiGatewayServiceParam, []ApiGatewayParameterMap) {
 	if l, ok := d.GetOk("request_parameters"); ok {
 
 		for _, element := range l.(*schema.Set).List() {
-			var requestParam ApiGatewayRequestParam
+			var requestParam apiGatewayRequestParamExt
 			var serviceParam ApiGatewayServiceParam
 			var serviceParamMap ApiGatewayParameterMap
 
@@ -1007,6 +1545,40 @@ func setRequestParameters(d *schema.ResourceData, requestParameters []ApiGateway
 			requestParam.ApiParameterName = nameRequest
 			requestParam.In = in
 			requestParam.Type = paramType
+
+			if v, ok := request["demo_value"]; ok && v.(string) != "" {
+				requestParam.DemoValue = v.(string)
+			}
+			if v, ok := request["max_value"]; ok {
+				requestParam.MaxValue = int64(v.(int))
+			}
+			if v, ok := request["min_value"]; ok {
+				requestParam.MinValue = int64(v.(int))
+			}
+			if v, ok := request["max_length"]; ok {
+				requestParam.MaxLength = int64(v.(int))
+			}
+			if v, ok := request["min_length"]; ok {
+				requestParam.MinLength = int64(v.(int))
+			}
+			if v, ok := request["regular_expression"]; ok && v.(string) != "" {
+				requestParam.RegularExpression = v.(string)
+			}
+			if v, ok := request["json_scheme"]; ok && v.(string) != "" {
+				requestParam.JsonScheme = v.(string)
+			}
+			if v, ok := request["enum_value"]; ok && v.(string) != "" {
+				requestParam.EnumValue = v.(string)
+			}
+			if v, ok := request["doc_show"]; ok && v.(string) != "" {
+				requestParam.DocShow = v.(string)
+			}
+			if v, ok := request["doc_order"]; ok {
+				requestParam.DocOrder = v.(int)
+			}
+			if v, ok := request["array_items_type"]; ok && v.(string) != "" {
+				requestParam.ArrayItemsType = v.(string)
+			}
 
 			requestParameters = append(requestParameters, requestParam)
 
@@ -1096,6 +1668,12 @@ func convertApiGatewayApiRequestConfigResponse(source interface{}) map[string]in
 
 	if bodyFormat, ok := requestConfigMap["BodyFormat"]; ok && bodyFormat != "" {
 		requestConfig["body_format"] = bodyFormat
+	}
+	if v, ok := requestConfigMap["PostBodyDescription"]; ok {
+		requestConfig["post_body_description"] = v
+	}
+	if v, ok := requestConfigMap["BodyModel"]; ok {
+		requestConfig["body_model"] = v
 	}
 
 	return requestConfig
@@ -1243,6 +1821,39 @@ func convertApiGatewayApiRequestParamsResponse(objectRaw map[string]interface{})
 				if defaultValue, ok := requestParamMap["DefaultValue"]; ok && defaultValue != "" {
 					param["default_value"] = defaultValue
 				}
+				if v, ok := requestParamMap["DemoValue"]; ok && v != "" {
+					param["demo_value"] = v
+				}
+				if v, ok := requestParamMap["MaxValue"]; ok {
+					param["max_value"] = v
+				}
+				if v, ok := requestParamMap["MinValue"]; ok {
+					param["min_value"] = v
+				}
+				if v, ok := requestParamMap["MaxLength"]; ok {
+					param["max_length"] = v
+				}
+				if v, ok := requestParamMap["MinLength"]; ok {
+					param["min_length"] = v
+				}
+				if v, ok := requestParamMap["RegularExpression"]; ok && v != "" {
+					param["regular_expression"] = v
+				}
+				if v, ok := requestParamMap["JsonScheme"]; ok && v != "" {
+					param["json_scheme"] = v
+				}
+				if v, ok := requestParamMap["EnumValue"]; ok && v != "" {
+					param["enum_value"] = v
+				}
+				if v, ok := requestParamMap["DocShow"]; ok && v != "" {
+					param["doc_show"] = v
+				}
+				if v, ok := requestParamMap["DocOrder"]; ok {
+					param["doc_order"] = v
+				}
+				if v, ok := requestParamMap["ArrayItemsType"]; ok && v != "" {
+					param["array_items_type"] = v
+				}
 				break
 			}
 		}
@@ -1305,8 +1916,195 @@ func convertApiGatewayApiSystemParamsResponse(source interface{}) []map[string]i
 		param["name"] = systemParamMap["ParameterName"]
 		param["in"] = systemParamMap["Location"]
 		param["name_service"] = systemParamMap["ServiceParameterName"]
+		if v, ok := systemParamMap["DemoValue"]; ok && v != "" {
+			param["demo_value"] = v
+		}
+		if v, ok := systemParamMap["Description"]; ok && v != "" {
+			param["description"] = v
+		}
 		systemParams = append(systemParams, param)
 	}
 
 	return systemParams
+}
+
+func convertApiGatewayApiOpenIdConnectConfigResponse(source interface{}) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0)
+	if source == nil {
+		return result
+	}
+	var cfg map[string]interface{}
+	switch s := source.(type) {
+	case map[string]interface{}:
+		cfg = s
+	case string:
+		// DescribeApi may return OpenIdConnectConfig as the raw JSON string
+		// submitted to CreateApi (camelCase keys) rather than a parsed object.
+		if s == "" {
+			return result
+		}
+		if err := json.Unmarshal([]byte(s), &cfg); err != nil {
+			return result
+		}
+	default:
+		return result
+	}
+	if len(cfg) == 0 {
+		return result
+	}
+	m := map[string]interface{}{}
+	for _, key := range []string{"IdTokenParamName", "idTokenParamName"} {
+		if v, ok := cfg[key]; ok && v != nil {
+			m["id_token_param_name"] = v
+			break
+		}
+	}
+	for _, key := range []string{"PublicKeyId", "publicKeyId"} {
+		if v, ok := cfg[key]; ok && v != nil {
+			m["public_key_id"] = v
+			break
+		}
+	}
+	for _, key := range []string{"OpenIdApiType", "openIdApiType"} {
+		if v, ok := cfg[key]; ok && v != nil {
+			m["open_id_api_type"] = v
+			break
+		}
+	}
+	result = append(result, m)
+	return result
+}
+
+func convertApiGatewayApiErrorCodeSamplesResponse(source interface{}) []map[string]interface{} {
+	var result []map[string]interface{}
+	if source == nil {
+		return result
+	}
+	ecsMap, ok := source.(map[string]interface{})
+	if !ok {
+		return result
+	}
+	ecs, ok := ecsMap["ErrorCodeSample"].([]interface{})
+	if !ok {
+		return result
+	}
+	for _, ec := range ecs {
+		ecMap, ok := ec.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		m := map[string]interface{}{}
+		m["code"] = ecMap["Code"]
+		m["message"] = ecMap["Message"]
+		if v, ok := ecMap["Description"]; ok && v != "" {
+			m["description"] = v
+		}
+		if v, ok := ecMap["Model"]; ok && v != "" {
+			m["model"] = v
+		}
+		result = append(result, m)
+	}
+	return result
+}
+
+func convertApiGatewayApiResultDescriptionsResponse(source interface{}) []map[string]interface{} {
+	var result []map[string]interface{}
+	if source == nil {
+		return result
+	}
+	rdMap, ok := source.(map[string]interface{})
+	if !ok {
+		return result
+	}
+	rds, ok := rdMap["ResultDescription"].([]interface{})
+	if !ok {
+		return result
+	}
+	for _, rd := range rds {
+		rdM, ok := rd.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		m := map[string]interface{}{}
+		if v, ok := rdM["Key"]; ok {
+			m["key"] = v
+		}
+		if v, ok := rdM["Name"]; ok {
+			m["name"] = v
+		}
+		if v, ok := rdM["Type"]; ok {
+			m["type"] = v
+		}
+		if v, ok := rdM["Description"]; ok {
+			m["description"] = v
+		}
+		result = append(result, m)
+	}
+	return result
+}
+
+func convertApiGatewayApiDeployedInfosResponse(source interface{}) []map[string]interface{} {
+	var result []map[string]interface{}
+	if source == nil {
+		return result
+	}
+	diMap, ok := source.(map[string]interface{})
+	if !ok {
+		return result
+	}
+	dis, ok := diMap["DeployedInfo"].([]interface{})
+	if !ok {
+		return result
+	}
+	for _, di := range dis {
+		diM, ok := di.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		m := map[string]interface{}{}
+		if v, ok := diM["DeployedStatus"]; ok {
+			m["deployed_status"] = v
+		}
+		if v, ok := diM["EffectiveVersion"]; ok {
+			m["effective_version"] = v
+		}
+		if v, ok := diM["StageName"]; ok {
+			m["stage_name"] = v
+		}
+		result = append(result, m)
+	}
+	return result
+}
+
+func convertApiGatewayApiCustomSystemParametersResponse(source interface{}) []map[string]interface{} {
+	var result []map[string]interface{}
+	if source == nil {
+		return result
+	}
+	cspMap, ok := source.(map[string]interface{})
+	if !ok {
+		return result
+	}
+	csps, ok := cspMap["CustomSystemParameter"].([]interface{})
+	if !ok {
+		return result
+	}
+	for _, csp := range csps {
+		cspM, ok := csp.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		m := map[string]interface{}{}
+		if v, ok := cspM["ParameterName"]; ok {
+			m["parameter_name"] = v
+		}
+		if v, ok := cspM["ServiceParameterName"]; ok {
+			m["service_parameter_name"] = v
+		}
+		if v, ok := cspM["Location"]; ok {
+			m["location"] = v
+		}
+		result = append(result, m)
+	}
+	return result
 }

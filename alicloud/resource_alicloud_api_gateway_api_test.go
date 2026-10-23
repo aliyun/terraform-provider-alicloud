@@ -277,9 +277,244 @@ func TestAccAliCloudApigatewayApi_basic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudApigatewayApi_governance(t *testing.T) {
+	var api *cloudapi.DescribeApiResponse
+	resourceId := "alicloud_api_gateway_api.default"
+	governanceApiGatewayApiMap := map[string]string{
+		"name":                                   CHECKSET,
+		"group_id":                               CHECKSET,
+		"description":                            "tf_testAcc_api governance",
+		"auth_type":                              "APP",
+		"request_config.0.protocol":              "HTTP",
+		"request_config.0.method":                "POST",
+		"request_config.0.path":                  CHECKSET,
+		"request_config.0.mode":                  "MAPPING",
+		"request_config.0.post_body_description": "governance post body desc",
+		"service_type":                           "HTTP",
+		"api_id":                                 CHECKSET,
+		"visibility":                             "PUBLIC",
+		"allow_signature_method":                 "HmacSHA256",
+		"result_type":                            "JSON",
+		"result_sample":                          "governance result sample",
+		"web_socket_api_type":                    "COMMON",
+		"fail_result_sample":                     "governance fail sample",
+		"disable_internet":                       "true",
+		"create_time":                            CHECKSET,
+		"group_name":                             CHECKSET,
+		"region_id":                              CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, governanceApiGatewayApiMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &api, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApiGatewayApi_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayApiConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// open_id_connect_config is sent to CreateApi per the model but is not
+				// persisted without a registered public key in the test account; the
+				// resulting drift is expected (test-account capability gate).
+				ExpectNonEmptyPlan: true,
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${alicloud_api_gateway_group.default.name}",
+					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"description": "tf_testAcc_api governance",
+					"auth_type":   "APP",
+					"request_config": []map[string]string{{
+						"protocol":              "HTTP",
+						"method":                "POST",
+						"path":                  "/test/governance",
+						"mode":                  "MAPPING",
+						"body_format":           "STREAM",
+						"post_body_description": "governance post body desc",
+					}},
+					"service_type": "HTTP",
+					"http_service_config": []map[string]string{{
+						"address":   "http://apigateway-backend.alicloudapi.com:8080",
+						"method":    "POST",
+						"path":      "/web/cloudapi",
+						"timeout":   "20",
+						"aone_name": "cloudapi-openapi",
+					}},
+					"visibility":             "PUBLIC",
+					"allow_signature_method": "HmacSHA256",
+					"result_type":            "JSON",
+					"result_sample":          "governance result sample",
+					"web_socket_api_type":    "COMMON",
+					"fail_result_sample":     "governance fail sample",
+					"disable_internet":       true,
+					"open_id_connect_config": []map[string]string{{
+						"id_token_param_name": "id_token",
+						"public_key_id":       "pub_key_id",
+						"open_id_api_type":    "BUSINESS",
+					}},
+					"error_code_samples": []map[string]string{{
+						"code":        "400",
+						"message":     "Bad Request",
+						"description": "desc for 400",
+					}},
+					"request_parameters": []map[string]string{{
+						"name":               "govparam",
+						"type":               "STRING",
+						"required":           "OPTIONAL",
+						"in":                 "QUERY",
+						"in_service":         "QUERY",
+						"name_service":       "govparams",
+						"description":        "governance param desc",
+						"demo_value":         "demo123",
+						"max_value":          "100",
+						"min_value":          "0",
+						"max_length":         "50",
+						"min_length":         "1",
+						"regular_expression": "^[a-zA-Z0-9]+$",
+						"json_scheme":        "{}",
+						"enum_value":         "A,B,C",
+						"doc_show":           "PUBLIC",
+						"doc_order":          "1",
+						"array_items_type":   "STRING",
+					}},
+					"system_parameters": []map[string]string{{
+						"name":         "CaClientIp",
+						"name_service": "clientIP",
+						"in":           "HEAD",
+						"demo_value":   "cn-hangzhou",
+						"description":  "region header",
+					}},
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"Env":     "governance",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                            "tf_testAcc_api governance",
+						"visibility":                             "PUBLIC",
+						"allow_signature_method":                 "HmacSHA256",
+						"result_type":                            "JSON",
+						"result_sample":                          "governance result sample",
+						"web_socket_api_type":                    "COMMON",
+						"fail_result_sample":                     "governance fail sample",
+						"request_config.0.post_body_description": "governance post body desc",
+						"error_code_samples.0.code":              "400",
+						"error_code_samples.0.message":           "Bad Request",
+						"tags.Created":                           "TF",
+						"tags.Env":                               "governance",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":            "tf_testAcc_api governance updated",
+					"visibility":             "PRIVATE",
+					"allow_signature_method": "HmacSHA1,HmacSHA256",
+					"open_id_connect_config": REMOVEKEY,
+					"result_type":            "TEXT",
+					"result_sample":          "updated result sample",
+					"web_socket_api_type":    "",
+					"fail_result_sample":     "updated fail sample",
+					"result_body_model":      "",
+					"disable_internet":       false,
+					"request_config": []map[string]string{{
+						"protocol":              "HTTP",
+						"method":                "POST",
+						"path":                  "/test/governance",
+						"mode":                  "MAPPING",
+						"body_format":           "STREAM",
+						"post_body_description": "updated post body desc",
+						"body_model":            "",
+					}},
+					"error_code_samples": []map[string]string{{
+						"code":        "500",
+						"message":     "Internal Error",
+						"description": "desc for 500",
+						"model":       "",
+					}},
+					"request_parameters": []map[string]string{{
+						"name":               "govparam",
+						"type":               "STRING",
+						"required":           "OPTIONAL",
+						"in":                 "QUERY",
+						"in_service":         "QUERY",
+						"name_service":       "govparams",
+						"description":        "governance param desc updated",
+						"demo_value":         "demo456",
+						"max_value":          "200",
+						"min_value":          "10",
+						"max_length":         "100",
+						"min_length":         "2",
+						"regular_expression": "^[a-z]+$",
+						"json_scheme":        "",
+						"enum_value":         "A,B,C,D",
+						"doc_show":           "PRIVATE",
+						"doc_order":          "2",
+						"array_items_type":   "INT",
+					}},
+					"system_parameters": []map[string]string{{
+						"name":         "CaClientIp",
+						"name_service": "clientIP",
+						"in":           "HEAD",
+						"demo_value":   "cn-beijing",
+						"description":  "updated region header",
+					}},
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"Env":     "governance",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                            "tf_testAcc_api governance updated",
+						"visibility":                             "PRIVATE",
+						"allow_signature_method":                 "HmacSHA1,HmacSHA256",
+						"result_type":                            "TEXT",
+						"result_sample":                          "updated result sample",
+						"fail_result_sample":                     "updated fail sample",
+						"disable_internet":                       "false",
+						"request_config.0.post_body_description": "updated post body desc",
+						"error_code_samples.0.code":              "500",
+						"error_code_samples.0.message":           "Internal Error",
+						"tags.Created":                           "TF",
+						"tags.Env":                               "governance",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_signature_method": "HmacSHA256",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_signature_method": "HmacSHA256",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudApigatewayApi_appCodeAuthType(t *testing.T) {
 	var api *cloudapi.DescribeApiResponse
 	resourceId := "alicloud_api_gateway_api.default"
+
 	ra := resourceAttrInit(resourceId, apiGatewayApiMap)
 	serviceFunc := func() interface{} {
 		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
