@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -66,13 +67,38 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				MaxItems: 10,
-				// Hash an element on resource_id + resource_type only, so the
-				// server-assigned zone_id (Optional + Computed) never changes an
-				// element's identity after Read. This keeps the set order- and
-				// value-independent and avoids perpetual diff / detach-attach churn.
+				// Hash a resource element on the backend identity, distinguishing
+				// backend types so the cross-zone backend is not silently dropped
+				// while omitted-zone configurations stay stable.
+				//
+				// For nlb/alb/gwlb the same backend can be attached in multiple
+				// zones, so the backend ID alone does not uniquely identify an
+				// association: zone_id is required for these types (enforced
+				// at plan time by CustomizeDiff per the PrivateLink API
+				// contract: AttachResourceToVpcEndpointService —
+				// "服务资源为ALB/NLB/GWLB时，ZoneId为需要填写") and is part
+				// of the identity, keeping two cross-zone backends with the
+				// same resource_id + resource_type as distinct elements
+				// (otherwise the second zone association would be lost, as
+				// in the original bug).
+				//
+				// For slb the backend ID already uniquely identifies the
+				// association and zone_id is optional, so the zone is omitted
+				// from the identity. The real server-returned ZoneId is still
+				// stored in state (Read only normalizes nil -> ""), it is just
+				// not part of the hash. This makes create, refresh and
+				// passthrough import converge on the same element identity for a
+				// given remote association regardless of whether the caller
+				// pinned the zone, so an omitted-zone configuration never churns
+				// (plan diff / detach-attach) and the remote ZoneId is never
+				// discarded.
 				Set: func(v interface{}) int {
 					m := v.(map[string]interface{})
-					return helper.Hashcode(fmt.Sprintf("%s|%s", m["resource_id"], m["resource_type"]))
+					resourceType := fmt.Sprint(m["resource_type"])
+					if resourceType != "slb" {
+						return helper.Hashcode(fmt.Sprintf("%s|%s|%s", m["resource_id"], resourceType, vpcEndpointServiceResourceZoneId(m["zone_id"])))
+					}
+					return helper.Hashcode(fmt.Sprintf("%s|%s", m["resource_id"], resourceType))
 				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -142,6 +168,26 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+		},
+		// CustomizeDiff enforces the PrivateLink API contract that zone_id
+		// is required for alb/nlb/gwlb backends
+		// (AttachResourceToVpcEndpointService: "服务资源为ALB/NLB/GWLB时,
+		// ZoneId为需要填写"). Without this, an omitted-zone non-slb
+		// configuration reaches apply where the server-assigned zone_id
+		// (Computed) diverges from the empty configured value, producing a
+		// perpetual plan diff (R3.10). The check runs at plan time so the
+		// user gets a clear, actionable error instead of silent churn.
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+			if v, ok := diff.GetOk("resource"); ok {
+				for _, item := range v.(*schema.Set).List() {
+					m := item.(map[string]interface{})
+					resourceType := fmt.Sprint(m["resource_type"])
+					if resourceType != "" && resourceType != "slb" && vpcEndpointServiceResourceZoneId(m["zone_id"]) == "" {
+						return fmt.Errorf("resource: zone_id is required when resource_type is %q (ALB/NLB/GWLB require ZoneId per the PrivateLink API contract; zone_id is optional only for slb)", resourceType)
+					}
+				}
+			}
+			return nil
 		},
 	}
 }
@@ -277,7 +323,15 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceRead(d *schema.ResourceData, m
 		item := v.(map[string]interface{})
 		// Normalize ZoneId so an absent/nil API value is stored as "" rather than
 		// nil; this keeps TypeSet element hashing stable (nil vs "" hash
-		// differently) and avoids perpetual diff / detach-attach churn.
+		// differently). The real server-returned ZoneId is preserved in state
+		// (it is not overwritten by the configured value), so create, refresh
+		// and passthrough import all store the same value for a given remote
+		// association. Element identity is decided by the Set hash above:
+		// zone_id is part of the identity for nlb/alb/gwlb (cross-zone
+		// backends stay distinct) and is omitted for slb (the backend ID
+		// uniquely identifies the association), so an omitted-zone slb
+		// configuration converges across all paths without discarding the
+		// remote ZoneId.
 		zoneId := vpcEndpointServiceResourceZoneId(item["ZoneId"])
 		resourceMap := map[string]interface{}{
 			"resource_id":   item["ResourceId"],

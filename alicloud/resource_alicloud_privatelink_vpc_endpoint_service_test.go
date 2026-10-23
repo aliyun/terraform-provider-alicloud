@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -629,8 +630,12 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_resource(t *testing.T) {
 				// (slb/alb/nlb/gwlb) and cannot be modified in place without
 				// reattaching a different backend type, so the testing-coverage
 				// check exempts it via this entry. The `resource` set itself is
-				// still verified on import: element identity is stable (Set hashes
-				// on resource_id + resource_type) and zone_id is Computed, so a
+				// still verified on import: element identity is stable — the Set
+				// hashes on resource_id + resource_type, and additionally on
+				// zone_id for nlb/alb/gwlb (the backend types that can attach the
+				// same backend in multiple zones); zone_id is omitted from the
+				// identity for slb, where the backend ID already uniquely
+				// identifies the association — and zone_id is Computed, so a
 				// refreshed element matches the configured one.
 				ImportStateVerifyIgnore: []string{"dry_run", "resource.resource_type"},
 			},
@@ -699,6 +704,502 @@ resource "alicloud_nlb_load_balancer" "second" {
   }
 }
 `, name)
+}
+
+// AlicloudPrivatelinkVpcEndpointServiceCrossZoneDependence provisions a single
+// NLB that is itself registered in two zones (zone_a, zone_b). This is the
+// fixture for the cross-zone regression cases: the same backend ID is
+// attached to the endpoint service in two distinct zones, so zone_id must
+// participate in the set identity (otherwise the second association is
+// silently dropped).
+func AlicloudPrivatelinkVpcEndpointServiceCrossZoneDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_nlb_zones" "default" {}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "zone_a" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  cidr_block = "10.1.0.0/16"
+}
+
+resource "alicloud_vswitch" "zone_b" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  cidr_block = "10.2.0.0/16"
+}
+
+resource "alicloud_nlb_load_balancer" "default" {
+  load_balancer_name = "${var.name}-cz"
+  vpc_id             = alicloud_vpc.default.id
+  address_type       = "Intranet"
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.zone_a.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  }
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.zone_b.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  }
+}
+`, name)
+}
+
+// TestAccAliCloudPrivatelinkVpcEndpointService_crossZoneResource verifies that
+// the same NLB attached in two zones keeps both associations: with zone_id
+// part of the nlb identity, the two cross-zone backends stay distinct elements
+// (resource.# == 2) and a subsequent no-change plan is empty.
+func TestAccAliCloudPrivatelinkVpcEndpointService_crossZoneResource(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpointService")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scrosszoneresource%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceCrossZoneDependence)
+	crossZone := []map[string]interface{}{
+		{
+			"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+			"resource_type": "nlb",
+			"zone_id":       "${data.alicloud_nlb_zones.default.zones.0.id}",
+		},
+		{
+			"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+			"resource_type": "nlb",
+			"zone_id":       "${data.alicloud_nlb_zones.default.zones.1.id}",
+		},
+	}
+	crossZoneConfig := func() string {
+		return testAccConfig(map[string]interface{}{
+			"service_description":    name,
+			"service_resource_type":  "nlb",
+			"auto_accept_connection": "true",
+			"resource":               crossZone,
+		})
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Attach the same NLB in two zones: both associations must be
+				// kept (zone_id is part of the nlb identity), so the original
+				// cross-zone-drop bug does not regress.
+				Config: crossZoneConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_resource_type": "nlb",
+						"resource.#":            "2",
+					}),
+				),
+			},
+			{
+				// Same cross-zone config: both associations remain and the
+				// refreshed set matches the configured one, so the plan is empty.
+				Config:   crossZoneConfig(),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudPrivatelinkVpcEndpointService_crossZoneRemoveOne verifies that
+// removing only one of two cross-zone associations detaches just the selected
+// zone-specific backend while the other remains: with zone_id in the nlb
+// identity, only the removed zone's element is detached (resource.# drops to 1)
+// and a subsequent no-change plan is empty.
+func TestAccAliCloudPrivatelinkVpcEndpointService_crossZoneRemoveOne(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpointService")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scrosszoneremoveone%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceCrossZoneDependence)
+	twoZones := []map[string]interface{}{
+		{
+			"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+			"resource_type": "nlb",
+			"zone_id":       "${data.alicloud_nlb_zones.default.zones.0.id}",
+		},
+		{
+			"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+			"resource_type": "nlb",
+			"zone_id":       "${data.alicloud_nlb_zones.default.zones.1.id}",
+		},
+	}
+	oneZone := []map[string]interface{}{
+		{
+			"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+			"resource_type": "nlb",
+			"zone_id":       "${data.alicloud_nlb_zones.default.zones.0.id}",
+		},
+	}
+	twoZoneConfig := func() string {
+		return testAccConfig(map[string]interface{}{
+			"service_description":    name,
+			"service_resource_type":  "nlb",
+			"auto_accept_connection": "true",
+			"resource":               twoZones,
+		})
+	}
+	oneZoneConfig := func() string {
+		return testAccConfig(map[string]interface{}{
+			"service_description":    name,
+			"service_resource_type":  "nlb",
+			"auto_accept_connection": "true",
+			"resource":               oneZone,
+		})
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Attach the same NLB in two zones.
+				Config: twoZoneConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource.#": "2",
+					}),
+				),
+			},
+			{
+				// Remove the second zone-specific association only; the first
+				// must remain. Because zone_id is part of the nlb identity,
+				// only the removed zone's element is detached and resource.#
+				// drops to 1 (if the wrong element were detached, the next
+				// plan would still drift).
+				Config: oneZoneConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource.#": "1",
+					}),
+				),
+			},
+			{
+				// No-change plan after removing one zone: the remaining
+				// association is stable, the plan is empty.
+				Config:   oneZoneConfig(),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+// TestAccAliCloudPrivatelinkVpcEndpointService_omittedZoneNlbReject verifies
+// that an nlb backend configured with zone_id omitted is rejected at plan
+// time by CustomizeDiff. The PrivateLink API contract requires ZoneId for
+// ALB/NLB/GWLB ("服务资源为ALB/NLB/GWLB时，ZoneId为需要填写"), so an
+// omitted-zone non-slb configuration must not reach apply, where the
+// server-assigned zone_id (Computed) would diverge from the empty configured
+// value and produce a perpetual plan diff (R3.10).
+func TestAccAliCloudPrivatelinkVpcEndpointService_omittedZoneNlbReject(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpointService")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%somittedzonenlbreject%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceCrossZoneDependence)
+	// zone_id is intentionally omitted for an nlb backend: the API contract
+	// requires ZoneId for ALB/NLB/GWLB, so CustomizeDiff must reject this
+	// configuration at plan time rather than letting it reach apply where the
+	// server-assigned zone_id (Computed) would diverge from the empty
+	// configured value (R3.10 perpetual diff).
+	omittedZoneNlbConfig := func() string {
+		return testAccConfig(map[string]interface{}{
+			"service_description":    name,
+			"service_resource_type":  "nlb",
+			"auto_accept_connection": "true",
+			"resource": []map[string]interface{}{
+				{
+					"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+					"resource_type": "nlb",
+				},
+			},
+		})
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config:      omittedZoneNlbConfig(),
+				ExpectError: regexp.MustCompile(`zone_id is required when resource_type is "nlb"`),
+			},
+		},
+	})
+}
+
+// AlicloudPrivatelinkVpcEndpointServiceOmittedZoneDependence provisions an SLB
+// (the only backend type for which zone_id is optional) that is attached
+// without a zone_id. This is the fixture for the omitted-zone regression case:
+// the backend ID uniquely identifies the association, so the zone is omitted
+// from the set identity and an omitted-zone configuration must converge across
+// create, refresh and passthrough import without discarding the remote ZoneId.
+func AlicloudPrivatelinkVpcEndpointServiceOmittedZoneDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_slb_zones" "default" {}
+
+resource "alicloud_vpc" "default" {
+  description = "test-terraform-omitted-zone"
+  cidr_block  = "10.0.0.0/8"
+  vpc_name    = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = data.alicloud_slb_zones.default.zones.0.id
+  cidr_block = "10.1.0.0/16"
+}
+
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name   = "${var.name}-slb"
+  load_balancer_spec   = "slb.s2.small"
+  address_type         = "intranet"
+  instance_charge_type = "PayBySpec"
+  delete_protection    = "on"
+  vswitch_id           = alicloud_vswitch.default.id
+  master_zone_id       = data.alicloud_slb_zones.default.zones.0.id
+  slave_zone_id        = data.alicloud_slb_zones.default.zones.1.id
+}
+`, name)
+}
+
+// alicloudPrivatelinkVpcEndpointServiceOmittedZoneDependenceOff is the same
+// fixture as AlicloudPrivatelinkVpcEndpointServiceOmittedZoneDependence but
+// with delete_protection = "off": the SLB server in eu-west-1 (the only
+// SlbPrivateNetSupportRegions entry) defaults new SLBs to delete_protection =
+// "on" and ignores the value sent on CreateLoadBalancer, so the initial
+// fixture matches the server default. A later step switches to this fixture to
+// trigger an in-place Update (ModifyLoadBalancerAttribute) that actually sets
+// delete_protection = "off", enabling the post-test destroy.
+func alicloudPrivatelinkVpcEndpointServiceOmittedZoneDependenceOff(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_slb_zones" "default" {}
+
+resource "alicloud_vpc" "default" {
+  description = "test-terraform-omitted-zone"
+  cidr_block  = "10.0.0.0/8"
+  vpc_name    = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = data.alicloud_slb_zones.default.zones.0.id
+  cidr_block = "10.1.0.0/16"
+}
+
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name   = "${var.name}-slb"
+  load_balancer_spec   = "slb.s2.small"
+  address_type         = "intranet"
+  instance_charge_type = "PayBySpec"
+  delete_protection    = "off"
+  vswitch_id           = alicloud_vswitch.default.id
+  master_zone_id       = data.alicloud_slb_zones.default.zones.0.id
+  slave_zone_id        = data.alicloud_slb_zones.default.zones.1.id
+}
+`, name)
+}
+
+// TestAccAliCloudPrivatelinkVpcEndpointService_omittedZone verifies that an slb
+// backend configured with zone_id omitted stays stable across create, refresh
+// and passthrough import and produces a no-change plan. zone_id is optional for
+// slb and the backend ID uniquely identifies the association, so the zone is
+// omitted from the set identity: whether the service reports an empty or a
+// server-assigned zone, the configured omitted-zone element matches the
+// refreshed/imported one and never churns.
+func TestAccAliCloudPrivatelinkVpcEndpointService_omittedZone(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpointService")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%somittedzone%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceOmittedZoneDependence)
+	testAccConfigOff := resourceTestAccConfigFunc(resourceId, name, alicloudPrivatelinkVpcEndpointServiceOmittedZoneDependenceOff)
+	// zone_id is intentionally omitted: zone_id is optional for slb and the
+	// backend ID uniquely identifies the association, so the zone is omitted
+	// from the set identity and must stay stable across all paths.
+	omittedZoneConfig := func() string {
+		return testAccConfig(map[string]interface{}{
+			"service_description":    name,
+			"service_resource_type":  "slb",
+			"auto_accept_connection": "true",
+			"resource": []map[string]interface{}{
+				{
+					"resource_id":   "${alicloud_slb_load_balancer.default.id}",
+					"resource_type": "slb",
+				},
+			},
+		})
+	}
+	// omittedZoneConfigOff switches the SLB fixture to delete_protection = "off".
+	// The eu-west-1 SLB server defaults new SLBs to delete_protection = "on"
+	// and ignores the value on CreateLoadBalancer, so the initial config
+	// matches that default. This step triggers an in-place Update
+	// (ModifyLoadBalancerAttribute) that actually sets it to "off", enabling
+	// the post-test destroy without disturbing the privatelink service.
+	omittedZoneConfigOff := func() string {
+		return testAccConfigOff(map[string]interface{}{
+			"service_description":    name,
+			"service_resource_type":  "slb",
+			"auto_accept_connection": "true",
+			"resource": []map[string]interface{}{
+				{
+					"resource_id":   "${alicloud_slb_load_balancer.default.id}",
+					"resource_type": "slb",
+				},
+			},
+		})
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.SlbPrivateNetSupportRegions)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create with zone_id omitted: the slb backend is a single
+				// element whose identity does not depend on the zone.
+				Config: omittedZoneConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_resource_type": "slb",
+						"resource.#":            "1",
+					}),
+				),
+			},
+			{
+				// Refresh: re-apply the same omitted-zone config; the slb
+				// backend must remain a single element with no drift.
+				Config: omittedZoneConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource.#": "1",
+					}),
+				),
+			},
+			{
+				// Passthrough import: it starts without the previous resource
+				// set, so Read stores the server-returned zone. Because the
+				// zone is omitted from the slb identity, the imported element
+				// still matches the configured omitted-zone one.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "resource.resource_type"},
+			},
+			{
+				// Switch the SLB fixture to delete_protection = "off": this
+				// triggers an in-place Update that actually disables protection
+				// on the server (CreateLoadBalancer ignored it), so the
+				// post-test destroy can succeed. The privatelink service is
+				// unaffected — the omitted-zone backend identity is unchanged.
+				Config: omittedZoneConfigOff(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource.#": "1",
+					}),
+				),
+			},
+			{
+				// Subsequent no-change plan: the omitted zone must converge
+				// (no detach-attach churn, no plan diff).
+				Config:   omittedZoneConfigOff(),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+// TestUnitVpcEndpointServiceResourceSetHashIncludesZoneId verifies that two nlb
+// backends sharing the same resource_id + resource_type but attached in
+// different zones are distinct set elements (Len == 2): for nlb the zone is
+// part of the identity, so the cross-zone backend is not silently dropped.
+func TestUnitVpcEndpointServiceResourceSetHashIncludesZoneId(t *testing.T) {
+	p := Provider().ResourcesMap
+	rs := p["alicloud_privatelink_vpc_endpoint_service"]
+	d, _ := schema.InternalMap(rs.Schema).Data(nil, nil)
+	assert.Nil(t, d.Set("resource", []map[string]interface{}{
+		{"resource_id": "lb-1", "resource_type": "nlb", "zone_id": "zone-A"},
+		{"resource_id": "lb-1", "resource_type": "nlb", "zone_id": "zone-B"},
+	}))
+	assert.Equal(t, 2, d.Get("resource").(*schema.Set).Len())
+}
+
+// TestUnitVpcEndpointServiceResourceSetHashOmitsZoneForSlb verifies the slb
+// branch of the set hash: for slb the backend ID uniquely identifies the
+// association, so the zone is omitted from the identity. An omitted zone and
+// an explicit zone on the same slb backend collapse to a single element (no
+// spurious duplication / churn), while two distinct slb backends stay separate.
+func TestUnitVpcEndpointServiceResourceSetHashOmitsZoneForSlb(t *testing.T) {
+	p := Provider().ResourcesMap
+	rs := p["alicloud_privatelink_vpc_endpoint_service"]
+	d, _ := schema.InternalMap(rs.Schema).Data(nil, nil)
+	// Same slb backend, zone_id omitted vs explicit: a single element, since
+	// the zone is not part of the slb identity.
+	assert.Nil(t, d.Set("resource", []map[string]interface{}{
+		{"resource_id": "lb-1", "resource_type": "slb", "zone_id": ""},
+		{"resource_id": "lb-1", "resource_type": "slb", "zone_id": "cn-hangzhou-i"},
+	}))
+	assert.Equal(t, 1, d.Get("resource").(*schema.Set).Len())
+
+	// Two distinct slb backends stay separate regardless of their zone.
+	assert.Nil(t, d.Set("resource", []map[string]interface{}{
+		{"resource_id": "lb-1", "resource_type": "slb", "zone_id": ""},
+		{"resource_id": "lb-2", "resource_type": "slb", "zone_id": "cn-hangzhou-i"},
+	}))
+	assert.Equal(t, 2, d.Get("resource").(*schema.Set).Len())
 }
 
 func TestUnitVpcEndpointServiceConnectBandwidthReadByResourceType(t *testing.T) {
