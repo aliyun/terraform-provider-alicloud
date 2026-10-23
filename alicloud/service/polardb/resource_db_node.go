@@ -221,9 +221,11 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 	// PolarDB order-bearing actions (CreateDBNodes, ModifyDBNodeClass,
 	// DeleteDBNodes) fail with OperationDenied.OrderProcessing while a prior
 	// order settles. The SDKv2 polardb cluster resource uses 50m for
-	// create/update; 20m is sufficient for the DBNode lifecycle while keeping
-	// the retry well within the test timeout.
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "create", 20*time.Minute)
+	// create/update; 40m is sufficient for the DBNode lifecycle — ACC 17895
+	// proved 20m too short: a PostPaid cluster's billing order can remain
+	// in processing for more than 20 minutes after the cluster reaches
+	// Running, causing CreateDBNodes to exhaust the retry window.
+	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "create", 40*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -667,10 +669,10 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// ModifyDBNodeClass is an order-bearing action subject to
-	// OperationDenied.OrderProcessing while a prior order settles; 20m
+	// OperationDenied.OrderProcessing while a prior order settles; 40m
 	// matches the create default and allows the retry loop to ride out
 	// order settlement.
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "update", 20*time.Minute)
+	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(plan.FwTimeouts, "update", 40*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -937,10 +939,10 @@ func (r *dbNodeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// DeleteDBNodes is an order-bearing action subject to
-	// OperationDenied.OrderProcessing while a prior order settles; 20m
+	// OperationDenied.OrderProcessing while a prior order settles; 40m
 	// matches the create/update defaults and allows the retry loop to
 	// ride out order settlement.
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(state.FwTimeouts, "delete", 20*time.Minute)
+	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(state.FwTimeouts, "delete", 40*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
