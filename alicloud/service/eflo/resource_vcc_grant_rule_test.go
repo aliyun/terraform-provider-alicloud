@@ -32,7 +32,7 @@ func TestAccAliCloudEfloVccGrantRule_basic12535(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			t.Setenv("ALICLOUD_REGION", "cn-hangzhou")
+			t.Setenv("ALICLOUD_REGION", "cn-wulanchabu")
 			acctest.PreCheck(t)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
@@ -87,7 +87,7 @@ data "alicloud_account" "default" {
 
 resource "alicloud_eflo_er" "default" {
   er_name        = var.name
-  master_zone_id = "cn-hangzhou-a"
+  master_zone_id = "cn-wulanchabu-b"
 }
 
 resource "alicloud_eflo_vpd" "default" {
@@ -103,7 +103,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id     = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/24"
-  zone_id    = "cn-hangzhou-f"
+  zone_id    = "cn-wulanchabu-b"
 }
 `, name)
 }
@@ -122,7 +122,7 @@ data "alicloud_account" "default" {
 
 resource "alicloud_eflo_er" "default" {
   er_name        = var.name
-  master_zone_id = "cn-hangzhou-a"
+  master_zone_id = "cn-wulanchabu-b"
 }
 
 resource "alicloud_eflo_vpd" "default" {
@@ -138,7 +138,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id     = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/24"
-  zone_id    = "cn-hangzhou-f"
+  zone_id    = "cn-wulanchabu-b"
 }
 
 resource "alicloud_eflo_vcc_grant_rule" "default" {
@@ -178,7 +178,7 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 		request := map[string]interface{}{
 			"RegionId":       client.RegionId,
 			"VccName":        name,
-			"ZoneId":         "cn-hangzhou-b",
+			"ZoneId":         "cn-wulanchabu-a",
 			"VpdId":          vpdID,
 			"VpcId":          vpcID,
 			"VSwitchId":      vswID,

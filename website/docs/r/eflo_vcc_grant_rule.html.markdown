@@ -22,7 +22,7 @@ Basic Usage
 
 ```terraform
 provider "alicloud" {
-  region = "cn-hangzhou"
+  region = "cn-wulanchabu"
 }
 
 variable "vcc_id" {
@@ -34,7 +34,7 @@ data "alicloud_account" "default" {
 
 resource "alicloud_eflo_er" "default" {
   er_name        = "tf-example-er"
-  master_zone_id = "cn-hangzhou-a"
+  master_zone_id = "cn-wulanchabu-b"
 }
 
 resource "alicloud_eflo_vcc_grant_rule" "default" {
