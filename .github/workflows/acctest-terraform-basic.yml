@@ -181,10 +181,11 @@ jobs:
 
             throw new Error("Timed out waiting for a unique Basic Policy result.");
 
-  V2RetryGuard:
+  TestFrameworkGuard:
     needs: route
-    # The v2 line lives on master since the line switch: non-test code
-    # must use helper/retry, never the SDK v2 helper/resource retry helpers.
+    # The test line runs terraform-plugin-testing since the flip: no file,
+    # test or not, may newly import the SDK v2 helper/resource package
+    # (non-test code uses helper/retry, tests use the plugin-testing harness).
     if: ${{ needs.route.outputs.relevant == 'true' }}
     permissions:
       contents: read
@@ -203,11 +204,11 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
-      - name: Reject new SDK v2 helper/resource retry usage
+      - name: Reject new SDK v2 helper/resource imports
         env:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
-        run: bash scripts/ci/v2-retry-guard.sh
+        run: bash scripts/ci/test-framework-guard.sh
 
   BreakingChange:
     needs: route

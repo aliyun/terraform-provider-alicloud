@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 
-# Fixture tests for scripts/ci/v2-retry-guard.sh. Each case builds a throwaway
-# git repository with a base commit and one or more head commits, then runs the
-# guard over the resulting range and asserts the exit code and output.
+# Fixture tests for scripts/ci/test-framework-guard.sh. Each case builds a
+# throwaway git repository with a base commit and one or more head commits,
+# then runs the guard over the resulting range and asserts the exit code and
+# output.
 
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-guard="$script_dir/v2-retry-guard.sh"
+guard="$script_dir/test-framework-guard.sh"
 
 die() {
         echo "FAIL: $*" >&2
@@ -19,8 +20,8 @@ setup_repo() {
         mkdir -p "$repository/alicloud"
         git init -q -b master "$repository"
         git -C "$repository" config core.hooksPath /dev/null
-        git -C "$repository" config user.name "V2 Retry Guard Test"
-        git -C "$repository" config user.email "v2-retry-guard-test@example.invalid"
+        git -C "$repository" config user.name "Test Framework Guard Test"
+        git -C "$repository" config user.email "test-framework-guard-test@example.invalid"
 }
 
 commit_file() {
@@ -61,6 +62,13 @@ assert_output_contains() {
         local needle="$1"
         [[ "$guard_output" == *"$needle"* ]] ||
                 die "expected output to contain '$needle', got:
+$guard_output"
+}
+
+assert_output_not_contains() {
+        local needle="$1"
+        [[ "$guard_output" != *"$needle"* ]] ||
+                die "expected output NOT to contain '$needle', got:
 $guard_output"
 }
 
@@ -129,8 +137,8 @@ test_untouched_legacy_usage_is_accepted() {
                 $'package alicloud\n\nimport (\n\t"context"\n\t"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"\n)\n\nfunc example(ctx context.Context) {\n\tresource.Retry(60, func() *resource.RetryError {\n\t\treturn resource.RetryableError("try again")\n\t})\n}\n\nfunc other() {}' "base"
         local base head
         base="$(git -C "$repository" rev-parse HEAD)"
-        # Edit the file without touching the retry lines: unmigrated files
-        # must stay editable until the Route 1 migration reaches them.
+        # Edit the file without touching the retry lines: unmigrated stock
+        # must stay editable until the remaining migration reaches it.
         commit_file "$repository" alicloud/service_legacy.go \
                 $'package alicloud\n\nimport (\n\t"context"\n\t"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"\n)\n\nfunc example(ctx context.Context) {\n\tresource.Retry(60, func() *resource.RetryError {\n\t\treturn resource.RetryableError("try again")\n\t})\n}\n\nfunc other() {\n\t// updated\n}' "head"
         head="$(git -C "$repository" rev-parse HEAD)"
@@ -174,15 +182,15 @@ test_github_actions_annotations() {
                 die "annotations run should be rejected
 $guard_output"
         fi
-        assert_output_contains "::error file=alicloud/service_annotations.go,line=9,title=v2-retry-guard::deprecated symbol: resource.Retry -> retry.Retry"
+        assert_output_contains "::error file=alicloud/service_annotations.go,line=9,title=test-framework-guard::deprecated symbol: resource.Retry -> retry.Retry"
         # Workflow commands are consumed by the runner; the plain-text copy
         # keeps the violation with its line number visible in the job log.
-        assert_output_contains "v2-retry-guard: alicloud/service_annotations.go:9: deprecated symbol: resource.Retry -> retry.Retry"
-        assert_output_contains "v2-retry-guard: 4 deprecated helper/resource usage(s) introduced."
+        assert_output_contains "test-framework-guard: alicloud/service_annotations.go:9: deprecated symbol: resource.Retry -> retry.Retry"
+        assert_output_contains "test-framework-guard: 4 deprecated SDK v2 helper/resource usage(s) introduced."
 }
 
-test_test_files_are_exempt() {
-        local repository="$1/test-files"
+test_test_file_sdk_import_is_rejected() {
+        local repository="$1/test-file-sdk-import"
         setup_repo "$repository"
         commit_file "$repository" alicloud/resource_alicloud_example_test.go \
                 $'package alicloud\n\nfunc TestExample() {}' "base"
@@ -192,8 +200,48 @@ test_test_files_are_exempt() {
                 $'package alicloud\n\nimport (\n\t"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"\n)\n\nfunc TestExample() {\n\tresource.Retry(60, func() *resource.RetryError {\n\t\treturn resource.RetryableError("try again")\n\t})\n}' "head"
         head="$(git -C "$repository" rev-parse HEAD)"
 
+        if run_guard "$repository" "$base" "$head"; then
+                die "test-file SDK v2 helper/resource import should be rejected
+$guard_output"
+        fi
+        assert_output_contains "resource_alicloud_example_test.go:4: deprecated import \"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource\" -> replace with \"github.com/hashicorp/terraform-plugin-testing/helper/resource\""
+        # The retry symbols are not flagged in test files: plugin-testing
+        # helper/resource exports the same names, so only the import decides
+        # which fork the test binary links.
+        assert_output_not_contains "deprecated symbol"
+}
+
+test_test_file_plugin_testing_is_accepted() {
+        local repository="$1/test-file-plugin-testing"
+        setup_repo "$repository"
+        commit_file "$repository" alicloud/resource_alicloud_example_test.go \
+                $'package alicloud\n\nfunc TestExample() {}' "base"
+        local base head
+        base="$(git -C "$repository" rev-parse HEAD)"
+        commit_file "$repository" alicloud/resource_alicloud_example_test.go \
+                $'package alicloud\n\nimport (\n\t"github.com/hashicorp/terraform-plugin-testing/helper/resource"\n)\n\nfunc TestExample() {\n\tresource.Retry(60, func() *resource.RetryError {\n\t\treturn resource.RetryableError("try again")\n\t})\n}' "head"
+        head="$(git -C "$repository" rev-parse HEAD)"
+
         run_guard "$repository" "$base" "$head" ||
-                die "test files should stay exempt
+                die "plugin-testing harness usage in test files should be accepted
+$guard_output"
+}
+
+test_scripts_test_files_are_exempt() {
+        local repository="$1/scripts-test-file"
+        setup_repo "$repository"
+        commit_file "$repository" scripts/checker_test.go \
+                $'package scripts\n\nfunc TestFixture() {}' "base"
+        local base head
+        base="$(git -C "$repository" rev-parse HEAD)"
+        # Standalone tooling tests never link the plugin-testing harness, and
+        # fixture sources may legitimately embed the SDK v2 import path.
+        commit_file "$repository" scripts/checker_test.go \
+                $'package scripts\n\nimport (\n\t_ "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"\n)\n\nfunc TestFixture() {}' "head"
+        head="$(git -C "$repository" rev-parse HEAD)"
+
+        run_guard "$repository" "$base" "$head" ||
+                die "scripts/ test files should stay exempt
 $guard_output"
 }
 
@@ -207,9 +255,11 @@ main() {
         test_github_actions_annotations "$temp_dir"
         test_helper_retry_is_accepted "$temp_dir"
         test_untouched_legacy_usage_is_accepted "$temp_dir"
-        test_test_files_are_exempt "$temp_dir"
+        test_test_file_sdk_import_is_rejected "$temp_dir"
+        test_test_file_plugin_testing_is_accepted "$temp_dir"
+        test_scripts_test_files_are_exempt "$temp_dir"
 
-        echo "v2-retry-guard tests: all passed"
+        echo "test-framework-guard tests: all passed"
 }
 
 main "$@"

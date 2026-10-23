@@ -11,7 +11,7 @@ func fixture(steps string) string {
 	return `package alicloud
 import (
  "testing"
- "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+ "github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 func TestAccExample(t *testing.T) {
  resourceId := "alicloud_example.default"
@@ -31,6 +31,7 @@ func TestListReorderCoverage(t *testing.T) {
 		pass      bool
 	}{
 		{"diff and convergent apply", valid, true},
+		{"sdk v2 harness import still discovered", strings.Replace(valid, "terraform-plugin-testing", "terraform-plugin-sdk/v2", 1), true},
 		{"convergent apply without plan", fixture(apply + reorderedApply), true},
 		{"explicit convergent apply", fixture(apply + plan + strings.Replace(reorderedApply, "{Config:", "{ExpectNonEmptyPlan:false,Config:", 1)), true},
 		{"apply retained builder snapshot", fixture(apply + plan + `{Config:testAccConfig(map[string]interface{}{})},`), true},
@@ -156,7 +157,7 @@ func suppressedFixture(steps, unit string) string {
 	return `package alicloud
 import (
  "testing"
- "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+ "github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 ` + unit + `
 func TestAccExample(t *testing.T) {
