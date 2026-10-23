@@ -121,6 +121,7 @@ The following arguments are supported:
 * `account_privileges` - (Optional) List of permissions granted. See [`account_privileges`](#account_privileges) below.
 * `account_type` - (Optional, ForceNew) The type of the account.
 * `db_cluster_id` - (Required, ForceNew) The DBCluster ID.
+* `engine` - (Optional, ForceNew) The engine type of the account. Valid values: `AnalyticDB` (default): the AnalyticDB MySQL engine. `Clickhouse`: the wide-table engine. The engine is immutable after creation and is forwarded to the account lifecycle APIs (Describe, Modify, Reset password, Delete) that accept it. `DescribeAccounts` does not return `Engine` for default-engine (`AnalyticDB`) accounts, so the value configured at create time is preserved on refresh rather than overwritten; for such accounts the attribute may not be read back during a legacy two-segment import. `DescribeAccounts` filters by `Engine` and defaults to `AnalyticDB`, so `Clickhouse` accounts cannot be located by the default query; import a `Clickhouse` account with the three-segment id `<db_cluster_id>:<account_name>:Clickhouse` so the engine is recorded before read.
 * `ram_user_list` - (Optional, List, Available since v1.274.0) List of Alibaba Cloud RAM user IDs to bind.
 
 ### `account_privileges`
@@ -140,7 +141,7 @@ The privilege_object supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<account_name>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<account_name>`. Import supports the three-segment form `<db_cluster_id>:<account_name>:<engine>`; the `<engine>` segment is required for `Clickhouse` accounts and optional (defaults to `AnalyticDB`) for the legacy two-segment form.
 * `status` - The status of the resource.
 
 ## Timeouts
