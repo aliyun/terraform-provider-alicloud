@@ -16,6 +16,7 @@ import (
 // buildClientToken, debugOn, addDebug, GetUserHomeDir). Tests of the utilities
 // moved to alicloud/helper live in that package now; test names are unchanged.
 
+// Migrated to alicloud/helper (output_test.go).
 func TestUnitCommonWriteToFile(t *testing.T) {
 	tmpFile := fmt.Sprintf("%s/testfile.txt", t.TempDir())
 
@@ -124,6 +125,7 @@ func TestUnitCommonNewInstanceDiff(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/helper (client_token_test.go).
 func TestUnitCommonBuildClientToken(t *testing.T) {
 	token1 := buildClientToken("CreateInstance")
 	token2 := buildClientToken("CreateInstance")
@@ -208,6 +210,7 @@ func TestUnitCommonGetCenChildInstanceType(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/logs (logs_test.go).
 func TestUnitCommonDebugOn(t *testing.T) {
 	// Save original value
 	originalDebug := os.Getenv("DEBUG")
@@ -238,6 +241,7 @@ func TestUnitCommonDebugOn(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/helper (output_test.go).
 func TestUnitCommonWriteToFileWithHomeDir(t *testing.T) {
 	// Test with ~ in path
 	tmpDir := t.TempDir()
@@ -294,6 +298,7 @@ func TestUnitCommonNewInstanceDiffComplex(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/helper (output_test.go).
 func TestUnitCommonWriteToFileEdgeCases(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -369,6 +374,7 @@ func TestUnitCommonNewInstanceDiffRemoveAttributes(t *testing.T) {
 
 // Tests for previously uncovered functions
 
+// Migrated to alicloud/helper (output_test.go).
 func TestUnitCommonGetUserHomeDir(t *testing.T) {
 	// Test getting user home directory
 	homeDir, err := GetUserHomeDir()
@@ -384,6 +390,7 @@ func TestUnitCommonGetUserHomeDir(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/helper (output_test.go).
 func TestUnitCommonWriteToFileComprehensive(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -479,6 +486,7 @@ func TestUnitCommonWriteToFileComprehensive(t *testing.T) {
 	})
 }
 
+// Migrated to alicloud/logs (logs_test.go).
 func TestUnitCommonAddDebug(t *testing.T) {
 	// Save original DEBUG env
 	originalDebug := os.Getenv("DEBUG")
