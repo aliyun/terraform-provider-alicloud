@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -371,12 +372,9 @@ func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData)
 	return true
 }
 
-func polardbPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("pay_type").(string) == "PrePaid" {
-		return false
-	}
-	return true
-}
+// polardbPostPaidDiffSuppressFunc moved to validators (PolarDBPostPaidDiffSuppressFunc);
+// this alias keeps the flat-layout callers (polardb cluster, zonal cluster) unchanged.
+var polardbPostPaidDiffSuppressFunc = validators.PolarDBPostPaidDiffSuppressFunc
 
 func polardbDBClusterVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	var latestVersion interface{}

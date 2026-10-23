@@ -1657,7 +1657,6 @@ func Provider() *schema.Provider {
 			"alicloud_polardb_dynamo_item":                                   resourceAlicloudPolarDBDynamoItem(),
 			"alicloud_polardb_endpoint_address":                              resourceAlicloudPolarDBEndpointAddress(),
 			"alicloud_polardb_primary_endpoint":                              resourceAlicloudPolarDBPrimaryEndpoint(),
-			"alicloud_polardb_application":                                   resourceAlicloudPolarDBApplication(),
 			"alicloud_polardb_application_endpoint":                          resourceAlicloudPolarDBApplicationEndpoint(),
 			"alicloud_polardb_batch_task":                                    resourceAlicloudPolarDBBatchTask(),
 			"alicloud_polardb_aicluster":                                     resourceAlicloudPolarDBAICluster(),

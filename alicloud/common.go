@@ -41,6 +41,7 @@ var (
 	addDebug         = logs.AddDebug
 	debugOn          = logs.DebugOn
 	buildClientToken = helper.BuildClientToken
+	getChargeType    = helper.GetChargeType
 	incrementalWait  = helper.IncrementalWait
 	writeToFile      = helper.WriteToFile
 	GetUserHomeDir   = helper.GetUserHomeDir
@@ -208,14 +209,16 @@ const (
 	TagResourceCluster       = tags.TagResourceCluster
 )
 
-type PayType string
+// PayType and its values moved to helper/payment.go; the type alias keeps the
+// flat call sites' type identity, and the const aliases preserve every caller.
+type PayType = helper.PayType
 
 const (
-	PrePaid    = PayType("PrePaid")
-	PostPaid   = PayType("PostPaid")
-	Prepaid    = PayType("Prepaid")
-	Postpaid   = PayType("Postpaid")
-	Serverless = PayType("Serverless")
+	PrePaid    = helper.PrePaid
+	PostPaid   = helper.PostPaid
+	Prepaid    = helper.Prepaid
+	Postpaid   = helper.Postpaid
+	Serverless = helper.Serverless
 )
 
 const (
@@ -269,14 +272,15 @@ const (
 	CLOSE = ActionType("CLOSE")
 )
 
-type TimeType string
+// TimeType and its values moved to helper/payment.go; alias preserves identity.
+type TimeType = helper.TimeType
 
 const (
-	Hour  = TimeType("Hour")
-	Day   = TimeType("Day")
-	Week  = TimeType("Week")
-	Month = TimeType("Month")
-	Year  = TimeType("Year")
+	Hour  = helper.Hour
+	Day   = helper.Day
+	Week  = helper.Week
+	Month = helper.Month
+	Year  = helper.Year
 )
 
 type IpVersion string

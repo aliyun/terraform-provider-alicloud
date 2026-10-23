@@ -825,13 +825,8 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func getChargeType(paymentType string) string {
-	if strings.ToLower(paymentType) == strings.ToLower(string(PostPaid)) {
-		return string(PostPaid)
-	} else {
-		return string(PrePaid)
-	}
-}
+// getChargeType moved to helper/payment.go (GetChargeType); the flat layout now
+// uses the alias in common.go so all callers behave unchanged.
 
 func filterWhitelist(destIPs []string, localIPs *schema.Set) []string {
 	var whitelist []string
