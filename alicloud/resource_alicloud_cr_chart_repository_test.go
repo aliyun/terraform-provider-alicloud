@@ -35,9 +35,9 @@ func TestAccAlicloudCRChartRepository_basic0(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
+		IDRefreshName:     resourceId,
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -149,6 +149,7 @@ func TestUnitAlicloudCRChartRepository(t *testing.T) {
 		"repo_type":           "PUBLIC",
 		"summary":             "Summary",
 		"repo_namespace_name": "repo_namespace_name",
+		"ResourceGroupId":     "rg-mockxxxxx",
 	}
 
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
