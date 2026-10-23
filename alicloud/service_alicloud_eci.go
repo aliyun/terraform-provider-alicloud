@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -55,63 +54,6 @@ func (s *EciService) EciImageCacheStateRefreshFunc(id string, failStates []strin
 			}
 		}
 		return object, object.Status, nil
-	}
-}
-
-func (s *EciService) DescribeEciContainerGroup(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
-	client := s.client
-	action := "DescribeContainerGroups"
-	jsonId, err := json.Marshal([]string{id})
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	request := map[string]interface{}{
-		"RegionId":          s.client.RegionId,
-		"ContainerGroupIds": string(jsonId),
-	}
-	response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.NotFound"}) {
-			err = WrapErrorf(NotFoundErr("EciContainerGroup", id), NotFoundMsg, ProviderERROR)
-			return object, err
-		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
-	}
-	addDebug(action, response, request)
-	v, err := jsonpath.Get("$.ContainerGroups", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ContainerGroups", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("ECIOpenAPI", id), NotFoundWithResponse, response)
-	} else {
-		if v.([]interface{})[0].(map[string]interface{})["ContainerGroupId"].(string) != id {
-			return object, WrapErrorf(NotFoundErr("ECIOpenAPI", id), NotFoundWithResponse, response)
-		}
-	}
-	object = v.([]interface{})[0].(map[string]interface{})
-	return object, nil
-}
-
-func (s *EciService) EciContainerGroupStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeEciContainerGroup(id)
-		if err != nil {
-			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
-				return nil, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
-		for _, failState := range failStates {
-			if object["Status"].(string) == failState {
-				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
-			}
-		}
-		return object, object["Status"].(string), nil
 	}
 }
 

@@ -1,4 +1,4 @@
-package alicloud
+package eci
 
 import (
 	"fmt"
@@ -7,11 +7,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEciContainerGroup() *schema.Resource {
+func ResourceEciContainerGroup() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudEciContainerGroupCreate,
 		Read:   resourceAliCloudEciContainerGroupRead,
@@ -85,7 +90,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
 			},
 			"auto_match_image_cache": {
 				Type:     schema.TypeBool,
@@ -138,9 +143,9 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 				ForceNew:     true,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchemaComputed(),
 			"containers": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -175,7 +180,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "IfNotPresent",
-							ValidateFunc: StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
 						},
 						"working_dir": {
 							Type:     schema.TypeString,
@@ -184,6 +189,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 						"commands": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -191,6 +197,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 						"args": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -257,6 +264,16 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 										Type:     schema.TypeBool,
 										Optional: true,
 										Default:  false,
+									},
+									"sub_path": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"mount_propagation": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Default:      "None",
+										ValidateFunc: validators.StringInSlice([]string{"None", "HostToContainer", "Bidirectional"}, false),
 									},
 								},
 							},
@@ -427,6 +444,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 							Type:     schema.TypeList,
 							Optional: true,
 							Computed: true,
+							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"capability": {
@@ -453,15 +471,32 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 										Optional: true,
 										ForceNew: true,
 									},
+									"read_only_root_filesystem": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
 								},
 							},
 						},
 						"lifecycle_pre_stop_handler_exec": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+						},
+						"stdin": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"stdin_once": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"tty": {
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 					},
 				},
@@ -500,7 +535,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "IfNotPresent",
-							ValidateFunc: StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
 						},
 						"working_dir": {
 							Type:     schema.TypeString,
@@ -509,6 +544,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 						"commands": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -516,6 +552,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 						"args": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -583,6 +620,12 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 										Optional: true,
 										Default:  false,
 									},
+									"mount_propagation": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Default:      "None",
+										ValidateFunc: validators.StringInSlice([]string{"None", "HostToContainer", "Bidirectional"}, false),
+									},
 								},
 							},
 						},
@@ -598,6 +641,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 							Type:     schema.TypeList,
 							Optional: true,
 							Computed: true,
+							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"capability": {
@@ -617,6 +661,10 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 									},
 									"run_as_user": {
 										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"read_only_root_filesystem": {
+										Type:     schema.TypeBool,
 										Optional: true,
 									},
 								},
@@ -845,6 +893,187 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 					},
 				},
 			},
+			"active_deadline_seconds": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"compute_category_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"container_resource_view": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"core_pattern": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cpu_architecture": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"AMD64", "ARM64"}, false),
+			},
+			"cpu_options_core": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cpu_options_numa": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cpu_options_threads_per_core": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_cache_bucket": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_cache_bursting_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_cache_pl": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_cache_provisioned_iops": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"egress_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ingress_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"eip_common_bandwidth_package": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"eip_isp": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"BGP", "BGP_PRO"}, false),
+			},
+			"environment_var_hide": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"fixed_ip": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"true", "false"}, false),
+			},
+			"fixed_ip_retain_hour": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"image_accelerate_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"nydus", "dadi", "p2p", "imc"}, false),
+			},
+			"image_snapshot_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ipv6_address": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ipv6_address_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ipv6_gateway_bandwidth": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ipv6_gateway_bandwidth_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ntp_server": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"overhead_reservation_option": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable_overhead_reservation": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
+			"private_ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"schedule_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"VSwitchOrdered", "VSwitchRandom"}, false),
+			},
+			"share_process_namespace": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"spot_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"strict_spot": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"update_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validators.StringInSlice([]string{"RenewUpdate", "IncrementalUpdate"}, false),
+			},
 			"internet_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -863,7 +1092,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 
 func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eciService := EciService{client}
+	eciService := NewService(client)
 	var response map[string]interface{}
 	action := "CreateContainerGroup"
 	request := make(map[string]interface{})
@@ -912,6 +1141,8 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 			VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 			VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+			VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
+			VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 		}
 		Containers[i]["VolumeMount"] = VolumeMounts
 
@@ -994,11 +1225,16 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				}
 			}
 			SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+			SecurityContext["ReadOnlyRootFilesystem"] = SecurityContextMap["read_only_root_filesystem"]
 			Containers[i]["SecurityContextPrivileged"] = SecurityContextMap["privileged"]
 		}
 		Containers[i]["SecurityContext"] = SecurityContext
 
 		Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_exec"]
+		Containers[i]["Stdin"] = ContainersMap["stdin"]
+		Containers[i]["StdinOnce"] = ContainersMap["stdin_once"]
+		Containers[i]["Tty"] = ContainersMap["tty"]
+		Containers[i]["EnvironmentVarHide"] = d.Get("environment_var_hide")
 
 	}
 	request["Container"] = Containers
@@ -1126,6 +1362,7 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 			}
 			InitContainers[i]["VolumeMount"] = VolumeMounts
 
@@ -1142,6 +1379,7 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 					}
 				}
 				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+				SecurityContext["ReadOnlyRootFilesystem"] = SecurityContextMap["read_only_root_filesystem"]
 			}
 			InitContainers[i]["SecurityContext"] = SecurityContext
 		}
@@ -1213,7 +1451,7 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["ZoneId"] = v
 	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
+	vswitchId := helper.Trim(d.Get("vswitch_id").(string))
 	request["VSwitchId"] = vswitchId
 
 	if v, ok := d.GetOk("image_registry_credential"); ok {
@@ -1247,6 +1485,102 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["InsecureRegistry"] = v
 	}
 
+	if v, ok := d.GetOk("active_deadline_seconds"); ok {
+		request["ActiveDeadlineSeconds"] = v
+	}
+	if v, ok := d.GetOk("compute_category_list"); ok {
+		request["ComputeCategory"] = v
+	}
+	if isRawConfigSet(d, "container_resource_view") {
+		request["ContainerResourceView"] = d.Get("container_resource_view")
+	}
+	if v, ok := d.GetOk("core_pattern"); ok {
+		request["CorePattern"] = v
+	}
+	if v, ok := d.GetOk("cpu_architecture"); ok {
+		request["CpuArchitecture"] = v
+	}
+	if v, ok := d.GetOk("cpu_options_core"); ok {
+		request["CpuOptionsCore"] = v
+	}
+	if v, ok := d.GetOk("cpu_options_numa"); ok {
+		request["CpuOptionsNuma"] = v
+	}
+	if v, ok := d.GetOk("cpu_options_threads_per_core"); ok {
+		request["CpuOptionsThreadsPerCore"] = v
+	}
+	if v, ok := d.GetOk("data_cache_bucket"); ok {
+		request["DataCacheBucket"] = v
+	}
+	if isRawConfigSet(d, "data_cache_bursting_enabled") {
+		request["DataCacheBurstingEnabled"] = d.Get("data_cache_bursting_enabled")
+	}
+	if v, ok := d.GetOk("data_cache_pl"); ok {
+		request["DataCachePl"] = v
+	}
+	if v, ok := d.GetOk("data_cache_provisioned_iops"); ok {
+		request["DataCacheProvisionedIops"] = v
+	}
+	if v, ok := d.GetOk("egress_bandwidth"); ok {
+		request["EgressBandwidth"] = v
+	}
+	if v, ok := d.GetOk("ingress_bandwidth"); ok {
+		request["IngressBandwidth"] = v
+	}
+	if v, ok := d.GetOk("eip_common_bandwidth_package"); ok {
+		request["EipCommonBandwidthPackage"] = v
+	}
+	if v, ok := d.GetOk("eip_isp"); ok {
+		request["EipIsp"] = v
+	}
+	if v, ok := d.GetOk("fixed_ip"); ok {
+		request["FixedIp"] = v
+	}
+	if v, ok := d.GetOk("fixed_ip_retain_hour"); ok {
+		request["FixedIpRetainHour"] = v
+	}
+	if v, ok := d.GetOk("image_accelerate_mode"); ok {
+		request["ImageAccelerateMode"] = v
+	}
+	if v, ok := d.GetOk("image_snapshot_id"); ok {
+		request["ImageSnapshotId"] = v
+	}
+	if v, ok := d.GetOk("ipv6_address_count"); ok {
+		request["Ipv6AddressCount"] = v
+	}
+	if v, ok := d.GetOk("ipv6_gateway_bandwidth"); ok {
+		request["Ipv6GatewayBandwidth"] = v
+	}
+	if isRawConfigSet(d, "ipv6_gateway_bandwidth_enable") {
+		request["Ipv6GatewayBandwidthEnable"] = d.Get("ipv6_gateway_bandwidth_enable")
+	}
+	if v, ok := d.GetOk("ntp_server"); ok {
+		request["NtpServer"] = v
+	}
+	if v, ok := d.GetOk("overhead_reservation_option"); ok {
+		for _, OverheadReservationOptionValue := range v.([]interface{}) {
+			OverheadReservationOptionMap := OverheadReservationOptionValue.(map[string]interface{})
+			request["OverheadReservationOption"] = map[string]interface{}{
+				"EnableOverheadReservation": OverheadReservationOptionMap["enable_overhead_reservation"],
+			}
+		}
+	}
+	if v, ok := d.GetOk("private_ip_address"); ok {
+		request["PrivateIpAddress"] = v
+	}
+	if v, ok := d.GetOk("schedule_strategy"); ok {
+		request["ScheduleStrategy"] = v
+	}
+	if isRawConfigSet(d, "share_process_namespace") {
+		request["ShareProcessNamespace"] = d.Get("share_process_namespace")
+	}
+	if v, ok := d.GetOk("spot_duration"); ok {
+		request["SpotDuration"] = v
+	}
+	if isRawConfigSet(d, "strict_spot") {
+		request["StrictSpot"] = d.Get("strict_spot")
+	}
+
 	if v, ok := d.GetOk("termination_grace_period_seconds"); ok {
 		request["TerminationGracePeriodSeconds"] = v
 	}
@@ -1258,12 +1592,12 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["SpotPriceLimit"] = v
 	}
 
-	request["ClientToken"] = buildClientToken("CreateContainerGroup")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateContainerGroup")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1271,17 +1605,17 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eci_container_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eci_container_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ContainerGroupId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudEciContainerGroupRead(d, meta)
@@ -1289,19 +1623,20 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eciService := EciService{client}
+	eciService := NewService(client)
 	object, err := eciService.DescribeEciContainerGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_eci_openapi_container_group eciService.DescribeEciContainerGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("container_group_name", object["ContainerGroupName"])
 	d.Set("internet_ip", object["InternetIp"])
 	d.Set("intranet_ip", object["IntranetIp"])
+	d.Set("ipv6_address", object["Ipv6Address"])
 	d.Set("ephemeral_storage", object["EphemeralStorage"])
 
 	containers := make([]map[string]interface{}, 0)
@@ -1319,6 +1654,9 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					"name":              m1["Name"],
 					"ready":             m1["Ready"],
 					"restart_count":     m1["RestartCount"],
+					"stdin":             m1["Stdin"],
+					"stdin_once":        m1["StdinOnce"],
+					"tty":               m1["Tty"],
 					"working_dir":       m1["WorkingDir"],
 				}
 				if m1["EnvironmentVars"] != nil {
@@ -1361,9 +1699,11 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					for _, volumeMountsValue := range m1["VolumeMounts"].([]interface{}) {
 						volumeMounts := volumeMountsValue.(map[string]interface{})
 						volumeMountsMap := map[string]interface{}{
-							"mount_path": volumeMounts["MountPath"],
-							"name":       volumeMounts["Name"],
-							"read_only":  volumeMounts["ReadOnly"],
+							"mount_path":        volumeMounts["MountPath"],
+							"name":              volumeMounts["Name"],
+							"read_only":         volumeMounts["ReadOnly"],
+							"sub_path":          volumeMounts["SubPath"],
+							"mount_propagation": volumeMounts["MountPropagation"],
 						}
 						volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 					}
@@ -1458,8 +1798,9 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					SecurityContextMaps := make([]map[string]interface{}, 0)
 					SecurityContextValue := m1["SecurityContext"].(map[string]interface{})
 					SecurityContextMap := map[string]interface{}{
-						"run_as_user": SecurityContextValue["RunAsUser"],
-						"privileged":  getSecurityContextPrivileged(d, temp1["name"]),
+						"run_as_user":               SecurityContextValue["RunAsUser"],
+						"privileged":                getSecurityContextPrivileged(d, temp1["name"]),
+						"read_only_root_filesystem": SecurityContextValue["ReadOnlyRootFilesystem"],
 					}
 					if SecurityContextValue["Capability"] != nil && SecurityContextValue["Capability"].(map[string]interface{})["Adds"] != nil {
 						Capabilities := make([]map[string]interface{}, 0)
@@ -1483,7 +1824,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		}
 	}
 	if err := d.Set("containers", containers); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("cpu", object["Cpu"])
 
@@ -1541,7 +1882,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		}
 	}
 	if err := d.Set("host_aliases", hostAliases); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	initContainers := make([]map[string]interface{}, 0)
@@ -1601,9 +1942,10 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					for _, volumeMountsValue := range m1["VolumeMounts"].([]interface{}) {
 						volumeMounts := volumeMountsValue.(map[string]interface{})
 						volumeMountsMap := map[string]interface{}{
-							"mount_path": volumeMounts["MountPath"],
-							"name":       volumeMounts["Name"],
-							"read_only":  volumeMounts["ReadOnly"],
+							"mount_path":        volumeMounts["MountPath"],
+							"name":              volumeMounts["Name"],
+							"read_only":         volumeMounts["ReadOnly"],
+							"mount_propagation": volumeMounts["MountPropagation"],
 						}
 						volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 					}
@@ -1613,7 +1955,8 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					SecurityContextMaps := make([]map[string]interface{}, 0)
 					SecurityContextValue := m1["SecurityContext"].(map[string]interface{})
 					SecurityContextMap := map[string]interface{}{
-						"run_as_user": SecurityContextValue["RunAsUser"],
+						"run_as_user":               SecurityContextValue["RunAsUser"],
+						"read_only_root_filesystem": SecurityContextValue["ReadOnlyRootFilesystem"],
 					}
 					if SecurityContextValue["Capability"] != nil && SecurityContextValue["Capability"].(map[string]interface{})["Adds"] != nil {
 						Capabilities := make([]map[string]interface{}, 0)
@@ -1632,7 +1975,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		}
 	}
 	if err := d.Set("init_containers", initContainers); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("instance_type", object["InstanceType"])
 	d.Set("memory", object["Memory"])
@@ -1641,7 +1984,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 	d.Set("restart_policy", object["RestartPolicy"])
 	d.Set("security_group_id", object["SecurityGroupId"])
 	d.Set("status", object["Status"])
-	d.Set("tags", tagsToMap(object["Tags"]))
+	d.Set("tags", tags.TagsToMap(object["Tags"]))
 	d.Set("vswitch_id", object["VSwitchId"])
 
 	volumes := make([]map[string]interface{}, 0)
@@ -1679,7 +2022,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		}
 	}
 	if err := d.Set("volumes", volumes); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("spot_strategy", object["SpotStrategy"])
@@ -1750,9 +2093,17 @@ func getConfigFileContent(d *schema.ResourceData, name interface{}, path interfa
 	return ""
 }
 
+func isRawConfigSet(d *schema.ResourceData, key string) bool {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() {
+		return false
+	}
+	return !rawConfig.GetAttr(key).IsNull()
+}
+
 func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eciService := EciService{client}
+	eciService := NewService(client)
 	var response map[string]interface{}
 	var err error
 	update := false
@@ -1855,6 +2206,12 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 	}
 
 	request["UpdateType"] = "IncrementalUpdate"
+	if d.HasChange("update_type") {
+		update = true
+		if v, ok := d.GetOk("update_type"); ok {
+			request["UpdateType"] = v.(string)
+		}
+	}
 
 	if update {
 
@@ -1901,6 +2258,8 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
+				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 			}
 			Containers[i]["VolumeMount"] = VolumeMounts
 
@@ -1985,10 +2344,14 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 					}
 				}
 				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+				SecurityContext["ReadOnlyRootFilesystem"] = SecurityContextMap["read_only_root_filesystem"]
 			}
 			Containers[i]["SecurityContext"] = SecurityContext
 
 			Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_exec"]
+			Containers[i]["Stdin"] = ContainersMap["stdin"]
+			Containers[i]["StdinOnce"] = ContainersMap["stdin_once"]
+			Containers[i]["Tty"] = ContainersMap["tty"]
 		}
 		request["Container"] = Containers
 
@@ -2035,6 +2398,7 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 			}
 			InitContainers[i]["VolumeMount"] = VolumeMounts
 
@@ -2050,17 +2414,18 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				}
 				SecurityContext["Capability"] = CapabilityValue
 				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+				SecurityContext["ReadOnlyRootFilesystem"] = SecurityContextMap["read_only_root_filesystem"]
 			}
 			InitContainers[i]["SecurityContext"] = SecurityContext
 		}
 		request["InitContainer"] = InitContainers
 
 		action := "UpdateContainerGroup"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -2068,15 +2433,15 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -2093,11 +2458,11 @@ func resourceAliCloudEciContainerGroupDelete(d *schema.ResourceData, meta interf
 	}
 
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -2105,10 +2470,10 @@ func resourceAliCloudEciContainerGroupDelete(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,12 +1,21 @@
 package eci
 
-import (
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
-)
+import "github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
 
-// ServicePackage is a placeholder for the eci service; declarations move here when the product adopts the split layout.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Eci",
+		SDKResources: []conns.SDKResource{
+			{
+				TypeName: "alicloud_eci_container_group",
+				Factory:  ResourceEciContainerGroup,
+			},
+		},
+		SDKDataSources: []conns.SDKDataSource{
+			{
+				TypeName: "alicloud_eci_container_groups",
+				Factory:  DataSourceEciContainerGroups,
+			},
+		},
 	}
 }

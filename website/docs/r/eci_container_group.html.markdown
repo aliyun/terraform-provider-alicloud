@@ -163,6 +163,38 @@ The following arguments are supported:
 * `termination_grace_period_seconds` - (Optional, ForceNew, Int, Available since v1.216.0) The buffer time during which the program handles operations before the program stops. Unit: seconds.
 * `spot_strategy` - (Optional, ForceNew, Available since v1.216.0) Filter the results by ECI spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
 * `spot_price_limit` - (Optional, ForceNew, Available since v1.216.0) The maximum hourly price of the ECI spot instance.
+* `active_deadline_seconds` - (Optional, ForceNew, Int) The active deadline in seconds for the container group.
+* `compute_category_list` - (Optional, ForceNew, List) The list of compute categories.
+* `container_resource_view` - (Optional, ForceNew, Bool) Specifies whether to enable the container resource view.
+* `core_pattern` - (Optional, ForceNew) The core pattern of the container group.
+* `cpu_architecture` - (Optional, ForceNew) The CPU architecture. Valid values: `AMD64` and `ARM64`.
+* `cpu_options_core` - (Optional, ForceNew, Int) The number of CPU cores.
+* `cpu_options_numa` - (Optional, ForceNew) The NUMA node of the CPU.
+* `cpu_options_threads_per_core` - (Optional, ForceNew, Int) The number of threads per CPU core.
+* `data_cache_bucket` - (Optional, ForceNew) The data cache bucket.
+* `data_cache_bursting_enabled` - (Optional, ForceNew, Bool) Specifies whether to enable data cache bursting.
+* `data_cache_pl` - (Optional, ForceNew) The performance level of the data cache.
+* `data_cache_provisioned_iops` - (Optional, ForceNew, Int) The provisioned IOPS of the data cache.
+* `egress_bandwidth` - (Optional, ForceNew, Int) The egress bandwidth.
+* `ingress_bandwidth` - (Optional, ForceNew, Int) The ingress bandwidth.
+* `eip_common_bandwidth_package` - (Optional, ForceNew) The ID of the EIP common bandwidth package.
+* `eip_isp` - (Optional, ForceNew) The ISP of the EIP. Valid values: `BGP` and `BGP_PRO`.
+* `environment_var_hide` - (Optional, ForceNew, Bool) Specifies whether to hide environment variables.
+* `fixed_ip` - (Optional, ForceNew) Specifies whether to use a fixed IP. Valid values: `true` and `false`.
+* `fixed_ip_retain_hour` - (Optional, ForceNew, Int) The retain hour of the fixed IP.
+* `image_accelerate_mode` - (Optional, ForceNew) The image accelerate mode. Valid values: `nydus`, `dadi`, `p2p` and `imc`.
+* `image_snapshot_id` - (Optional, ForceNew) The ID of the image snapshot.
+* `ipv6_address_count` - (Optional, ForceNew, Int) The number of IPv6 addresses.
+* `ipv6_gateway_bandwidth` - (Optional, ForceNew) The bandwidth of the IPv6 gateway.
+* `ipv6_gateway_bandwidth_enable` - (Optional, ForceNew, Bool) Specifies whether to enable the IPv6 gateway bandwidth.
+* `ntp_server` - (Optional, ForceNew, List) The list of NTP servers.
+* `overhead_reservation_option` - (Optional, ForceNew, Set) The overhead reservation option. See [`overhead_reservation_option`](#overhead_reservation_option) below.
+* `private_ip_address` - (Optional, ForceNew) The private IP address of the container group.
+* `schedule_strategy` - (Optional, ForceNew) The schedule strategy. Valid values: `VSwitchOrdered` and `VSwitchRandom`.
+* `share_process_namespace` - (Optional, ForceNew, Bool) Specifies whether to share the process namespace.
+* `spot_duration` - (Optional, ForceNew, Int) The duration of the spot instance.
+* `strict_spot` - (Optional, ForceNew, Bool) Specifies whether to enable strict spot.
+* `update_type` - (Optional) The update type of the container group.
 
 ### `acr_registry_info`
 
@@ -278,6 +310,7 @@ The environment_vars supports the following:
 * `field_ref` - (Optional) The reference of the environment variable. See [`field_ref`](#init_containers-environment_vars-field_ref) below.
 
 ### `init_containers-environment_vars-field_ref`
+
 * `field_path` - (Optional) The path of the reference.
 
 ### `init_containers-volume_mounts`
@@ -287,6 +320,7 @@ The volume_mounts supports the following:
 * `mount_path` - (Optional) The directory of the mounted volume. Data under this directory will be overwritten by the data in the volume.
 * `name` - (Optional, ForceNew) The name of the mounted volume.
 * `read_only` - (Optional, Bool) Specifies whether the mount path is read-only. Default value: `false`.
+* `mount_propagation` - (Optional) The mount propagation of the volume. Valid values: `None`, `HostToContainer` and `Bidirectional`. Default value: `None`.
 
 ### `init_containers-security_context`
 
@@ -294,6 +328,7 @@ The security_context supports the following:
 
 * `capability` - (Optional, Available since v1.215.0) The permissions that you want to grant to the processes in the containers. See [`capability`](#init_containers-security_context-capability) below.
 * `run_as_user` - (Optional, Long, Available since v1.215.0) The ID of the user who runs the container.
+* `read_only_root_filesystem` - (Optional, Bool) Specifies whether the root filesystem is read-only.
 
 ### `init_containers-security_context-capability`
 
@@ -323,6 +358,9 @@ The containers supports the following:
 * `restart_count` - (Optional, Available since v1.208.0) The number of times that the container restarted.
 * `security_context` - (Optional, Set, Available since v1.215.0) The security context of the container. See [`security_context`](#containers-security_context) below.
 * `lifecycle_pre_stop_handler_exec` - (Optional, List, Available since v1.216.0) The commands to be executed in containers when you use the CLI to specify the preStop callback function.
+* `stdin` - (Optional, Bool) Specifies whether to keep stdin open for the container.
+* `stdin_once` - (Optional, Bool) Specifies whether to close stdin after the first client connects.
+* `tty` - (Optional, Bool) Specifies whether to allocate a TTY for the container.
 
 ### `containers-ports`
 
@@ -340,6 +378,7 @@ The environment_vars supports the following:
 * `field_ref` - (Optional) The reference of the environment variable. See [`field_ref`](#containers-environment_vars-field_ref) below.
 
 ### `containers-environment_vars-field_ref`
+
 * `field_path` - (Optional) The path of the reference.
 
 ### `containers-volume_mounts`
@@ -349,6 +388,8 @@ The volume_mounts supports the following:
 * `mount_path` - (Optional) The directory of the mounted volume. Data under this directory will be overwritten by the data in the volume.
 * `name` - (Optional, ForceNew) The name of the mounted volume.
 * `read_only` - (Optional, Bool) Specifies whether the volume is read-only. Default value: `false`.
+* `sub_path` - (Optional) The sub path within the volume mount.
+* `mount_propagation` - (Optional) The mount propagation of the volume. Valid values: `None`, `HostToContainer` and `Bidirectional`. Default value: `None`.
 
 ### `containers-liveness_probe`
 
@@ -427,11 +468,18 @@ The security_context supports the following:
 * `capability` - (Optional, Available since v1.215.0) The permissions that you want to grant to the processes in the containers. See [`capability`](#containers-security_context-capability) below.
 * `run_as_user` - (Optional, Long, Available since v1.215.0) The ID of the user who runs the container.
 * `privileged` - (Optional, ForceNew, Bool, Available since v1.225.1) Specifies whether to give extended privileges to this container. Default value: `false`. Valid values: `true` and `false`.
+* `read_only_root_filesystem` - (Optional, Bool) Specifies whether the root filesystem is read-only.
 
 ### `containers-security_context-capability`
 
 The capability supports the following:
 * `add` - (Optional, List, Available since v1.215.0) The permissions that you want to grant to the processes in the containers.
+
+### `overhead_reservation_option`
+
+The overhead_reservation_option supports the following:
+
+* `enable_overhead_reservation` - (Optional, ForceNew, Bool) Specifies whether to enable overhead reservation.
 
 ## Attributes Reference
 
@@ -441,6 +489,7 @@ The following attributes are exported:
 * `internet_ip` - (Available since v1.170.0) The Public IP of the container group.
 * `intranet_ip` - (Available since v1.170.0) The Private IP of the container group.
 * `status` - The status of container group.
+* `ipv6_address` - The IPv6 address of the container group.
 
 ## Timeouts
 
