@@ -435,6 +435,28 @@ func dbNodeGet(client *connectivity.AliyunClient, id string, dbClusterId string,
 	return nil, nil
 }
 
+// dbNodeWaitVisible polls dbNodeGet until the DB node becomes visible in
+// DescribeDBClusterAttribute, or the timeout expires. CreateDBNodes returns a
+// DBNodeId immediately, but the new node is not listed in the cluster's DBNodes
+// array until PolarDB finishes processing the add-node order asynchronously.
+func dbNodeWaitVisible(client *connectivity.AliyunClient, id, dbClusterId string, timeout time.Duration) (map[string]interface{}, error) {
+	wait := incrementalWait(5*time.Second, 10*time.Second)
+	deadline := time.Now().Add(timeout)
+	for {
+		object, err := dbNodeGet(client, id, dbClusterId)
+		if err != nil {
+			return nil, err
+		}
+		if object != nil {
+			return object, nil
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("waiting for DBNode %s to become visible via DescribeDBClusterAttribute: timeout after %s", id, timeout)
+		}
+		wait()
+	}
+}
+
 // DBNodeGet describes the DB node by id; exported for external test access.
 func DBNodeGet(client *connectivity.AliyunClient, id string, dbClusterId string, includeSecondary ...bool) (map[string]interface{}, error) {
 	return dbNodeGet(client, id, dbClusterId, includeSecondary...)

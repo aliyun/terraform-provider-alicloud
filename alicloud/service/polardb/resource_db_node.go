@@ -372,7 +372,7 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	object, err := dbNodeGet(r.Client(), id, plan.DBClusterId.ValueString())
+	object, err := dbNodeWaitVisible(r.Client(), id, plan.DBClusterId.ValueString(), operationTimeout)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: reading after create", dbNodeTypeName),
@@ -627,7 +627,7 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 			return
 		}
 	}
-	object, err = dbNodeGet(r.Client(), id, plan.DBClusterId.ValueString())
+	object, err = dbNodeWaitVisible(r.Client(), id, plan.DBClusterId.ValueString(), operationTimeout)
 	if err != nil || object == nil {
 		resp.Diagnostics.AddError("Reading after post-create updates", fmt.Sprint(err))
 		return
