@@ -61,7 +61,12 @@ func Check(filename string, src []byte, resourceName string, r *schema.Resource,
 	}
 	covered := map[string]bool{}
 	suppressedCovered := map[string]bool{}
-	sdk := importName(f, "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource")
+	// The harness import flipped to terraform-plugin-testing; accept either
+	// so pre-flip-shaped sources keep being inspected.
+	sdk := importName(f, "github.com/hashicorp/terraform-plugin-testing/helper/resource")
+	if sdk == "" {
+		sdk = importName(f, "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource")
+	}
 	testing := importName(f, "testing")
 	if sdk != "" && testing != "" {
 		for _, decl := range f.Decls {
