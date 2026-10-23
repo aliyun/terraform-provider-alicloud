@@ -157,14 +157,196 @@ resource "alicloud_eflo_vcc_grant_rule" "default" {
 `, name)
 }
 
+// testAccEfloVccGrantRuleCleanupRIs queries and deletes all router interfaces
+// in the test region to free the RiPerUser quota. Previous VCC creation
+// attempts (successful or failed) may leave dangling router interfaces that
+// exhaust the quota, causing VCC creation to fail with
+// "QuotaExceeded: RiPerUser quota exceeded". This cleanup is best-effort and
+// non-fatal: any error is logged and the function returns nil so the test can
+// proceed (or fail with the original quota error if cleanup was insufficient).
+func testAccEfloVccGrantRuleCleanupRIs(client *connectivity.AliyunClient) {
+	query := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"PageSize":   50,
+		"PageNumber": 1,
+	}
+	for page := 1; ; page++ {
+		query["PageNumber"] = page
+		resp, err := client.RpcPost("Vpc", "2016-04-28", "DescribeRouterInterfaces", query, query, true)
+		if err != nil {
+			fmt.Printf("[RI_CLEANUP] DescribeRouterInterfaces error: %v\n", err)
+			return
+		}
+		riSet, ok := resp["RouterInterfaceSet"].(map[string]interface{})
+		if !ok {
+			fmt.Printf("[RI_CLEANUP] no RouterInterfaceSet in response\n")
+			return
+		}
+		riList, ok := riSet["RouterInterfaceType"].([]interface{})
+		if !ok || len(riList) == 0 {
+			fmt.Printf("[RI_CLEANUP] no router interfaces found in %s\n", client.RegionId)
+			return
+		}
+		for _, ri := range riList {
+			item, ok := ri.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			id, _ := item["RouterInterfaceId"].(string)
+			status, _ := item["Status"].(string)
+			if id == "" {
+				continue
+			}
+			fmt.Printf("[RI_CLEANUP] found RI %s status=%s\n", id, status)
+			// Deactivate if Active before deleting (DeleteRouterInterface
+			// requires Inactive state).
+			if status == "Active" {
+				deactReq := map[string]interface{}{
+					"RegionId":          client.RegionId,
+					"RouterInterfaceId": id,
+				}
+				if _, err := client.RpcPost("Vpc", "2016-04-28", "DeactivateRouterInterface", deactReq, deactReq, true); err != nil {
+					fmt.Printf("[RI_CLEANUP] deactivate RI %s error: %v\n", id, err)
+					continue
+				}
+				fmt.Printf("[RI_CLEANUP] deactivated RI %s, waiting for Inactive...\n", id)
+				deadline := time.Now().Add(2 * time.Minute)
+				for time.Now().Before(deadline) {
+					time.Sleep(10 * time.Second)
+					checkReq := map[string]interface{}{
+						"RegionId":         client.RegionId,
+						"Filter.1.Key":     "RouterInterfaceId",
+						"Filter.1.Value.1": id,
+					}
+					checkResp, checkErr := client.RpcPost("Vpc", "2016-04-28", "DescribeRouterInterfaces", checkReq, checkReq, true)
+					if checkErr != nil {
+						break
+					}
+					checkSet, _ := checkResp["RouterInterfaceSet"].(map[string]interface{})
+					checkList, _ := checkSet["RouterInterfaceType"].([]interface{})
+					if len(checkList) == 0 {
+						break // already gone
+					}
+					if first, ok := checkList[0].(map[string]interface{}); ok {
+						if s, _ := first["Status"].(string); s != "Active" {
+							break // became Inactive
+						}
+					}
+				}
+			}
+			// Delete
+			delReq := map[string]interface{}{
+				"RegionId":          client.RegionId,
+				"RouterInterfaceId": id,
+				"ClientToken":       fmt.Sprintf("tf-ri-cleanup-%s", id),
+			}
+			if _, err := client.RpcPost("Vpc", "2016-04-28", "DeleteRouterInterface", delReq, delReq, true); err != nil {
+				fmt.Printf("[RI_CLEANUP] delete RI %s error: %v\n", id, err)
+			} else {
+				fmt.Printf("[RI_CLEANUP] deleted RI %s\n", id)
+			}
+		}
+		// Check pagination
+		if total, ok := resp["TotalCount"].(float64); ok && float64(page)*50 < total {
+			continue
+		}
+		break
+	}
+	// Wait for deletions to settle
+	time.Sleep(15 * time.Second)
+}
+
+// testAccEfloVccGrantRuleCleanupVccs lists all VCCs in the test region via
+// GetVcc with EnablePage and deletes them. Old VCCs (especially those in
+// "Create Failed" state from previous runs) should be removed before creating
+// a new one. This cleanup is best-effort and non-fatal.
+func testAccEfloVccGrantRuleCleanupVccs(client *connectivity.AliyunClient) {
+	query := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"EnablePage": true,
+		"PageSize":   50,
+		"PageNumber": 1,
+	}
+	resp, err := client.RpcPost("eflo", "2022-05-30", "GetVcc", query, query, true)
+	if err != nil {
+		fmt.Printf("[VCC_CLEANUP] GetVcc(EnablePage) error: %v\n", err)
+		return
+	}
+	content, _ := resp["Content"].(map[string]interface{})
+	if content == nil {
+		fmt.Printf("[VCC_CLEANUP] no Content in GetVcc response\n")
+		return
+	}
+	// GetVcc may return a single object or a list wrapper.
+	var vccList []interface{}
+	for _, key := range []string{"VccList", "Data", "Content"} {
+		if arr, ok := content[key].([]interface{}); ok && len(arr) > 0 {
+			vccList = arr
+			break
+		}
+	}
+	if vccList == nil {
+		// If content itself is the only VCC (single-object response), try it.
+		if vccID, _ := content["VccId"].(string); vccID != "" {
+			vccList = []interface{}{content}
+		}
+	}
+	if vccList == nil {
+		fmt.Printf("[VCC_CLEANUP] no VCC list found, content keys: %v\n", mapKeys(content))
+		return
+	}
+	for _, vcc := range vccList {
+		item, ok := vcc.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		vccID, _ := item["VccId"].(string)
+		status, _ := item["Status"].(string)
+		if vccID == "" {
+			continue
+		}
+		fmt.Printf("[VCC_CLEANUP] deleting VCC %s (status=%s)\n", vccID, status)
+		delReq := map[string]interface{}{
+			"RegionId": client.RegionId,
+			"VccId":    vccID,
+		}
+		if _, err := client.RpcPost("eflo", "2022-05-30", "DeleteVcc", delReq, delReq, true); err != nil {
+			fmt.Printf("[VCC_CLEANUP] DeleteVcc error for %s: %v\n", vccID, err)
+		} else {
+			fmt.Printf("[VCC_CLEANUP] deleted VCC %s\n", vccID)
+		}
+	}
+	// Wait for VCC deletions to settle
+	time.Sleep(30 * time.Second)
+}
+
+// mapKeys returns the keys of a map for diagnostic logging.
+func mapKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // testAccEfloVccGrantRuleCreateVcc creates a VCC instance via the CreateVcc
 // OpenAPI call, stores its ID, and sets the TF_VAR_vcc_id environment variable
 // so the subsequent Terraform step can reference var.vcc_id.  alicloud_eflo_vcc
 // is not a Terraform resource, so the VCC is created out-of-band using the RPC
-// client.
+// client. Before creating a new VCC, old router interfaces and VCCs are
+// cleaned up to avoid "RiPerUser quota exceeded" errors from prior runs.
 func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+
+		// Clean up old router interfaces and VCCs before creating a new VCC.
+		// Previous test runs may have left dangling router interfaces that
+		// exhaust the RiPerUser quota, causing VCC creation to fail with
+		// "QuotaExceeded: RiPerUser quota exceeded".
+		testAccEfloVccGrantRuleCleanupRIs(client)
+		testAccEfloVccGrantRuleCleanupVccs(client)
+		// VCC deletion may free associated router interfaces; clean up again.
+		testAccEfloVccGrantRuleCleanupRIs(client)
 
 		// Retrieve the VPC ID and VSwitch ID from state. VPD is omitted
 		// because CreateVcc with ConnectionType=VPC connects directly to
