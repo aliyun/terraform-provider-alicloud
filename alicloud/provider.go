@@ -262,7 +262,6 @@ func Provider() *schema.Provider {
 			"alicloud_account":                                        dataSourceAlicloudAccount(),
 			"alicloud_caller_identity":                                dataSourceAlicloudCallerIdentity(),
 			"alicloud_images":                                         dataSourceAlicloudImages(),
-			"alicloud_regions":                                        dataSourceAlicloudRegions(),
 			"alicloud_zones":                                          dataSourceAlicloudZones(),
 			"alicloud_db_zones":                                       dataSourceAlicloudDBZones(),
 			"alicloud_instance_type_families":                         dataSourceAlicloudInstanceTypeFamilies(),

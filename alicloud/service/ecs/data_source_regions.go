@@ -1,4 +1,4 @@
-package alicloud
+package ecs
 
 import (
 	"fmt"
@@ -6,12 +6,15 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudRegions() *schema.Resource {
+func DataSourceRegions() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudRegionsRead,
+		Read: dataSourceRegionsRead,
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -58,8 +61,7 @@ func dataSourceAlicloudRegions() *schema.Resource {
 		},
 	}
 }
-
-func dataSourceAlicloudRegionsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceRegionsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := ecs.CreateDescribeRegionsRequest()
 	request.RegionId = client.RegionId
@@ -69,9 +71,9 @@ func dataSourceAlicloudRegionsRead(d *schema.ResourceData, meta interface{}) err
 		return ecsClient.DescribeRegions(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_regions", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_regions", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request)
 	resp, _ := raw.(*ecs.DescribeRegionsResponse)
 	if resp == nil || len(resp.Regions.Region) == 0 {
 		return fmt.Errorf("no matching regions found")
@@ -124,7 +126,7 @@ func regionsDescriptionAttributes(d *schema.ResourceData, regions []ecs.Region) 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("regions", s); err != nil {
 		return err
 	}
@@ -134,7 +136,7 @@ func regionsDescriptionAttributes(d *schema.ResourceData, regions []ecs.Region) 
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

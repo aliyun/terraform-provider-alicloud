@@ -1,20 +1,21 @@
-package alicloud
+package ecs_test
 
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAlicloudRegionsDataSource_regions(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudRegionsDataSourceRegionsConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_regions.region"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_regions.region"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "name", "cn-beijing"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "current", "false"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.region", "regions.#", "1"),
@@ -30,13 +31,13 @@ func TestAccAlicloudRegionsDataSource_regions(t *testing.T) {
 
 func TestAccAlicloudRegionsDataSource_name(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudRegionsDataSourceNameConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_regions.name_filtered_region"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_regions.name_filtered_region"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.name_filtered_region", "name", "cn-hangzhou"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.name_filtered_region", "ids.#", "1"),
 				),
@@ -47,13 +48,13 @@ func TestAccAlicloudRegionsDataSource_name(t *testing.T) {
 
 func TestAccAlicloudRegionsDataSource_current(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudRegionsDataSourceCurrentConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_regions.current_filtered_region"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_regions.current_filtered_region"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.current_filtered_region", "current", "true"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.current_filtered_region", "ids.#", "1"),
 				),
@@ -64,13 +65,13 @@ func TestAccAlicloudRegionsDataSource_current(t *testing.T) {
 
 func TestAccAlicloudRegionsDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudRegionsDataSourceEmptyConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_regions.empty_params_region"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_regions.empty_params_region"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.empty_params_region", "regions.0.id", "cn-qingdao"),
 					resource.TestCheckResourceAttr("data.alicloud_regions.empty_params_region", "regions.0.region_id", "cn-qingdao"),
 					resource.TestCheckResourceAttrSet("data.alicloud_regions.empty_params_region", "ids.#"),
