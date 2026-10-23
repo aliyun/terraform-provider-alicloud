@@ -30,14 +30,14 @@ func resourceAliCloudApigPlugin() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"gateway_name": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"plugin_class_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"gateway_name": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"plugin_class_name": {
 				Type:     schema.TypeString,
@@ -106,21 +106,19 @@ func resourceAliCloudApigPluginRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	gatewayInfoRawObj, _ := jsonpath.Get("$.gatewayInfo", objectRaw)
-	gatewayInfoRaw := make(map[string]interface{})
-	if gatewayInfoRawObj != nil {
-		gatewayInfoRaw = gatewayInfoRawObj.(map[string]interface{})
-	}
-	d.Set("gateway_name", gatewayInfoRaw["name"])
-	d.Set("gateway_id", gatewayInfoRaw["gatewayId"])
+	if gatewayInfo, ok := objectRaw["gatewayInfo"]; ok {
+		gatewayInfoMap := gatewayInfo.(map[string]interface{})
 
-	pluginClassInfoRawObj, _ := jsonpath.Get("$.pluginClassInfo", objectRaw)
-	pluginClassInfoRaw := make(map[string]interface{})
-	if pluginClassInfoRawObj != nil {
-		pluginClassInfoRaw = pluginClassInfoRawObj.(map[string]interface{})
+		d.Set("gateway_name", gatewayInfoMap["name"])
+		d.Set("gateway_id", gatewayInfoMap["gatewayId"])
 	}
-	d.Set("plugin_class_name", pluginClassInfoRaw["name"])
-	d.Set("plugin_class_id", pluginClassInfoRaw["pluginClassId"])
+
+	if pluginClassInfo, ok := objectRaw["pluginClassInfo"]; ok {
+		pluginClassInfoMap := pluginClassInfo.(map[string]interface{})
+
+		d.Set("plugin_class_name", pluginClassInfoMap["name"])
+		d.Set("plugin_class_id", pluginClassInfoMap["pluginClassId"])
+	}
 
 	return nil
 }
