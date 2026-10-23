@@ -2,19 +2,25 @@ package alicloud
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +41,7 @@ func TestAccAliCloudRdsBackup_MySQL(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		CheckDestroy:      testAccCheckAlicloudRdsBackupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -48,6 +54,7 @@ func TestAccAliCloudRdsBackup_MySQL(t *testing.T) {
 						"db_instance_id": CHECKSET,
 						"backup_method":  "Snapshot",
 						"backup_id":      CHECKSET,
+						"backup_job_id":  CHECKSET,
 						"store_status":   CHECKSET,
 					}),
 				),
@@ -56,7 +63,7 @@ func TestAccAliCloudRdsBackup_MySQL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy"},
+				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_job_id"},
 			},
 		},
 	})
@@ -138,7 +145,7 @@ func TestAccAliCloudRdsBackup_PostgreSQL(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		CheckDestroy:      testAccCheckAlicloudRdsBackupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -151,6 +158,7 @@ func TestAccAliCloudRdsBackup_PostgreSQL(t *testing.T) {
 						"db_instance_id": CHECKSET,
 						"backup_method":  "Snapshot",
 						"backup_id":      CHECKSET,
+						"backup_job_id":  CHECKSET,
 						"store_status":   CHECKSET,
 					}),
 				),
@@ -159,7 +167,7 @@ func TestAccAliCloudRdsBackup_PostgreSQL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy"},
+				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_job_id"},
 			},
 		},
 	})
@@ -237,7 +245,7 @@ func TestAccAliCloudRdsBackup_SQLServer(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		CheckDestroy:      testAccCheckAlicloudRdsBackupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -250,6 +258,7 @@ func TestAccAliCloudRdsBackup_SQLServer(t *testing.T) {
 						"db_instance_id": CHECKSET,
 						"backup_method":  "Physical",
 						"backup_id":      CHECKSET,
+						"backup_job_id":  CHECKSET,
 						"store_status":   CHECKSET,
 					}),
 				),
@@ -258,7 +267,7 @@ func TestAccAliCloudRdsBackup_SQLServer(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy"},
+				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_job_id"},
 			},
 		},
 	})
@@ -281,7 +290,7 @@ func TestAccAliCloudRdsBackup_SQLServer1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		CheckDestroy:      testAccCheckAlicloudRdsBackupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -299,6 +308,7 @@ func TestAccAliCloudRdsBackup_SQLServer1(t *testing.T) {
 						"backup_method":  "Physical",
 						"backup_type":    "FullBackup",
 						"backup_id":      CHECKSET,
+						"backup_job_id":  CHECKSET,
 						"store_status":   CHECKSET,
 					}),
 				),
@@ -307,7 +317,7 @@ func TestAccAliCloudRdsBackup_SQLServer1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_retention_period"},
+				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_retention_period", "backup_job_id"},
 			},
 		},
 	})
@@ -582,7 +592,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 	})
 
 	t.Run("DeleteStoreStatusAbnormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdktf.NewInstanceDiff()
 		resourceData, _ := schema.InternalMap(p["alicloud_rds_backup"].Schema).Data(nil, diff)
 		err = resourceData.Set("store_status", "Disabled")
 		err = resourceData.Set("remove_from_state", false)
@@ -634,4 +644,112 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
+}
+
+func testAccCheckAlicloudRdsBackupDestroy(s *terraform.State) error {
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_rds_backup" {
+			continue
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsServiceV2 := RdsServiceV2{client}
+		_, err := rdsServiceV2.DescribeRdsBackup(rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return err
+		}
+		return fmt.Errorf("RDS backup %s still exists", rs.Primary.ID)
+	}
+	return nil
+}
+
+func rdsBackupDeleteTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("rds", endpoint)
+	return client
+}
+
+// The resource ID is the composite "DBInstanceId:BackupId" but DeleteBackup only
+// accepts the bare backup set ID, so these cases fail if Delete regresses to
+// sending d.Id() as BackupId or calls the API without a deletable backup.
+func TestUnitAlicloudRdsBackupDeleteCompositeId(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		id              string
+		storeStatus     string
+		removeFromState bool
+		wantErr         bool
+		wantCalls       int
+	}{
+		{name: "enabled_composite_id", id: "rm-dbtestinstance:2091052", storeStatus: "Enabled", wantCalls: 1},
+		{name: "disabled_remove_from_state", id: "rm-dbtestinstance:2091052", storeStatus: "Disabled", removeFromState: true, wantCalls: 0},
+		{name: "disabled_keep_in_state", id: "rm-dbtestinstance:2091052", storeStatus: "Disabled", removeFromState: false, wantErr: true, wantCalls: 0},
+		{name: "invalid_id", id: "2091052", storeStatus: "Enabled", wantErr: true, wantCalls: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var (
+				mutex          sync.Mutex
+				calls          int
+				lastAction     string
+				lastDBInstance string
+				lastBackupId   string
+			)
+			client := rdsBackupDeleteTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Error(err)
+				}
+				mutex.Lock()
+				calls++
+				lastAction = r.Form.Get("Action")
+				lastDBInstance = r.Form.Get("DBInstanceId")
+				lastBackupId = r.Form.Get("BackupId")
+				mutex.Unlock()
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"RequestId":"test-request-id","BackupId":"2091052"}`))
+			})
+
+			d, _ := schema.InternalMap(Provider().ResourcesMap["alicloud_rds_backup"].Schema).Data(nil, nil)
+			assert.Nil(t, d.Set("db_instance_id", "rm-dbtestinstance"))
+			assert.Nil(t, d.Set("store_status", tc.storeStatus))
+			assert.Nil(t, d.Set("remove_from_state", tc.removeFromState))
+			d.SetId(tc.id)
+
+			err := resourceAliCloudRdsBackupDelete(d, client)
+			if tc.wantErr {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+
+			mutex.Lock()
+			defer mutex.Unlock()
+			assert.Equal(t, tc.wantCalls, calls)
+			if tc.wantCalls > 0 {
+				assert.Equal(t, "DeleteBackup", lastAction)
+				assert.Equal(t, "rm-dbtestinstance", lastDBInstance)
+				assert.Equal(t, "2091052", lastBackupId, "DeleteBackup must receive the bare backup set ID, not the composite resource ID")
+			}
+		})
+	}
 }

@@ -91,8 +91,9 @@ Default value: `Physical`.
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. 
+* `id` - The ID of the resource supplied above.
 * `backup_id` - The backup set ID.
+* `backup_job_id` - (String, Available since v2.2.0) The backup job ID. This is a create-only attribute returned by the CreateBackup API. It cannot be recovered via Read or Import because DescribeBackups does not return this field.
 * `status` - The status of the resource.
 * `store_status` - Indicates whether the backup can be deleted.
 
