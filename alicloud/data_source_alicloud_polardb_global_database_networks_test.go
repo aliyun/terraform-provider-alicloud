@@ -75,6 +75,7 @@ func TestAccAlicloudPolarDBGlobalDatabaseNetworkDataSource(t *testing.T) {
 			"networks.0.id":                          CHECKSET,
 			"networks.0.gdn_id":                      CHECKSET,
 			"networks.0.description":                 CHECKSET,
+			"networks.0.resource_group_id":           CHECKSET,
 			"networks.0.db_type":                     CHECKSET,
 			"networks.0.db_version":                  CHECKSET,
 			"networks.0.create_time":                 CHECKSET,
@@ -108,14 +109,16 @@ func testAccCheckAlicloudPolarDBGlobalDatabaseNetworkDataSourceName(rand int, at
 	variable "name" {
 		default = "tf-testAcc-%d"
 	}
+	data "alicloud_resource_manager_resource_groups" "default" {}
+
 	data "alicloud_vpcs" "default" {
 		name_regex = "^default-NODELETING$"
 	}
-	
+
 	data "alicloud_vswitches" "default" {
 		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
-	
+
 	resource "alicloud_polardb_cluster" "default" {
 		db_type       = "MySQL"
 		db_version    = "8.0"
@@ -125,8 +128,9 @@ func testAccCheckAlicloudPolarDBGlobalDatabaseNetworkDataSourceName(rand int, at
 		description   = "${var.name}"
 	}
 	resource "alicloud_polardb_global_database_network" "default" {
-		db_cluster_id = "${alicloud_polardb_cluster.default.id}"
-		description   = var.name
+		db_cluster_id     = "${alicloud_polardb_cluster.default.id}"
+		description       = var.name
+		resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
 	}
 	data "alicloud_polardb_global_database_networks" "default" {
 		%s
