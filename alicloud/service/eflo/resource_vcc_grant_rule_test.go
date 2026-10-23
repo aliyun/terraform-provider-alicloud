@@ -178,7 +178,7 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 		request := map[string]interface{}{
 			"RegionId":       client.RegionId,
 			"VccName":        name,
-			"ZoneId":         "cn-hangzhou-f",
+			"ZoneId":         "cn-hangzhou-b",
 			"VpdId":          vpdID,
 			"VpcId":          vpcID,
 			"VSwitchId":      vswID,
