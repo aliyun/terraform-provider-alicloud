@@ -465,8 +465,8 @@ func dbNodeCompleteRead(client *connectivity.AliyunClient, object map[string]int
 	object = fwNormalizeResponse(object, []fwMapping{
 		{Source: "$.DBClusterId", Target: "$.DBClusterId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		{Source: "$.DBNodeId", Target: "$.DBNodeId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
-		{Source: "$.DBNodeClass", Target: "$.DBNode[*].TargetClass", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
-		{Source: "$.ZoneId", Target: "$.DBNode[*].ZoneId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
+		{Source: "$.DBNodeClass", Target: "$.DBNode.TargetClass", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
+		{Source: "$.ZoneId", Target: "$.DBNode.ZoneId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		{Source: "$.ImciSwitch", Target: "$.ImciSwitch", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		{Source: "$.DBNodeId", Target: "$.DBNodeId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 	})

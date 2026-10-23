@@ -1154,11 +1154,21 @@ func dbNodeState(object map[string]interface{}, prior *dbNodeResourceModel) dbNo
 		}
 		return cur
 	}
+	dbNodeRaw := lookup("DBNode")
+	if dbNodeRaw == nil {
+		// dbNodeCompleteRead maps DBNodeClass/ZoneId to $.DBNode.TargetClass/ZoneId,
+		// creating a "DBNode" map when the API returns those fields. During
+		// DBNodeCreating transition the API may omit DBNodeClass/ZoneId, so
+		// the "DBNode" key is absent and lookup returns nil. Construct 1 null
+		// block to match the plan's block count, avoiding Framework rejection
+		// "block count changed from 1 to 0". Same pattern as trackedPlan (Create:360-364).
+		dbNodeRaw = map[string]interface{}{}
+	}
 	m := dbNodeResourceModel{
 		FwTimeouts:      types.ObjectNull(fwTimeoutTypes()),
 		Id:              str("DBNodeId"),
 		DBClusterId:     str("DBClusterId"),
-		DBNode:          dbNodeDBNodeToTypeList(lookup("DBNode")),
+		DBNode:          dbNodeDBNodeToTypeList(dbNodeRaw),
 		ImciSwitch:      str("ImciSwitch"),
 		ResourceGroupId: str("ResourceGroupId"),
 		SubCategory:     str("SubCategory"),
