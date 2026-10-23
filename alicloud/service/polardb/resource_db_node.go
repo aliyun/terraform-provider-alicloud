@@ -352,7 +352,16 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 	trackedPlan.AutoUseCoupon = fwKnownValue(trackedPlan.AutoUseCoupon).(types.Bool)
 	trackedPlan.CloudProvider = fwKnownValue(trackedPlan.CloudProvider).(types.String)
 	trackedPlan.DBClusterId = fwKnownValue(trackedPlan.DBClusterId).(types.String)
-	trackedPlan.DBNode = fwKnownValue(trackedPlan.DBNode).(types.List)
+	// plan.DBNode may be unknown because its nested attributes (zone_id,
+	// target_class) are Computed. fwKnownValue on an unknown List returns
+	// ListNull (0 elements), which the Framework rejects as "block count
+	// changed from 1 to 0" (ACC 17943). Construct 1 null block to match
+	// the plan's block count instead.
+	if plan.DBNode.IsUnknown() || plan.DBNode.IsNull() {
+		trackedPlan.DBNode = dbNodeDBNodeToTypeList(map[string]interface{}{})
+	} else {
+		trackedPlan.DBNode = fwKnownValue(plan.DBNode).(types.List)
+	}
 	trackedPlan.DBNodeIds = fwKnownValue(trackedPlan.DBNodeIds).(types.List)
 	trackedPlan.DBNodeTargetClass = fwKnownValue(trackedPlan.DBNodeTargetClass).(types.String)
 	trackedPlan.DBNodeType = fwKnownValue(trackedPlan.DBNodeType).(types.String)
@@ -375,18 +384,32 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	object, err := dbNodeWaitVisible(r.Client(), id, plan.DBClusterId.ValueString(), operationTimeout)
-	if err != nil || object == nil {
-		// CreateDBNodes succeeded and returned a DBNodeId, but the node is not
-		// yet visible in DescribeDBClusterAttribute within the operation
-		// timeout.  The resource exists server-side; persist the identity so
-		// a subsequent Read/refresh can populate the remaining state and
-		// Destroy can locate the node.  Using a warning (not error) ensures
-		// the Framework saves resp.State — returning an error causes the
-		// Framework to discard the state, leaving Destroy without a DBNodeId
-		// (ACC 17886: MissingDBNodeId, RequestId 01A16698-061C-51C7-87F1).
-		resp.Diagnostics.AddWarning(
-			fmt.Sprintf("Creating %s: node not yet visible", dbNodeTypeName),
-			fmt.Sprintf("CreateDBNodes returned DBNodeId %s but the node is not yet visible via DescribeDBClusterAttribute within the operation timeout. The resource has been created; a subsequent apply will refresh its state.", id),
+	if err != nil {
+		// CreateDBNodes succeeded and returned a DBNodeId, but the node is
+		// not yet visible in DescribeDBClusterAttribute. The tracked plan
+		// state (set above) already carries the DBNodeId and a valid 1-block
+		// db_node, so Destroy can locate the node. Distinguish timeout from
+		// API errors: timeout means the resource is created but the async
+		// add-node order hasn't completed — a subsequent Read will populate
+		// the remaining attributes. API errors are real read failures that
+		// the user should investigate.
+		if strings.Contains(err.Error(), "timeout after") {
+			resp.Diagnostics.AddWarning(
+				fmt.Sprintf("Creating %s: node not yet visible", dbNodeTypeName),
+				fmt.Sprintf("CreateDBNodes returned DBNodeId %s but the node is not yet visible via DescribeDBClusterAttribute within the operation timeout (%s). The resource has been created; a subsequent apply will refresh its state.", id, operationTimeout),
+			)
+		} else {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Creating %s: reading after create", dbNodeTypeName),
+				errs.WrapErrorf(err, "Creating %s: reading after create (%s)", dbNodeTypeName, id).Error(),
+			)
+		}
+		return
+	}
+	if object == nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: after create", dbNodeTypeName),
+			fmt.Sprintf("The resource %s is not visible via DescribeDBClusterAttribute right after creation", id),
 		)
 		return
 	}
