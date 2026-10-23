@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudLogAudit_basic(t *testing.T) {
+func TestAccAliCloudLogAudit_basic(t *testing.T) {
 	var v *slsPop.DescribeAppResponse
 	resourceId := "alicloud_log_audit.foo"
 	ra := resourceAttrInit(resourceId, logAuditMap)
@@ -43,6 +43,7 @@ func TestAccAlicloudLogAudit_basic(t *testing.T) {
 						"oss_sync_enabled":    "true",
 						"oss_sync_ttl":        "180",
 					},
+					"resource_directory_type": "all",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -55,6 +56,7 @@ func TestAccAlicloudLogAudit_basic(t *testing.T) {
 						"variable_map.oss_access_ttl":      "155",
 						"variable_map.oss_sync_enabled":    "true",
 						"variable_map.oss_sync_ttl":        "180",
+						"resource_directory_type":          "all",
 					}),
 				),
 			},
@@ -69,21 +71,40 @@ func TestAccAlicloudLogAudit_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"multi_account.#": "3",
+						"multi_account.#":         "3",
+						"resource_directory_type": "all",
 					}),
 				),
 			},
-			// TODO: only when center account is resource directory master or resource directory admin need to check resource type config，otherwise pass it directly
-			// {
-			// 	Config: testAccConfig(map[string]interface{}{
-			// 		"resource_directory_type": "custom",
-			// 	}),
-			// 	Check: resource.ComposeTestCheckFunc(
-			// 		testAccCheck(map[string]string{
-			// 			"resource_directory_type": "custom",
-			// 		}),
-			// 	),
-			// },
+			// Step 4: Modify variable_map values to satisfy the testing coverage rate
+			// check (modified coverage). All 6 keys are retained; actiontrail_enabled
+			// and actiontrail_ttl values are changed. resource_directory_type and
+			// multi_account are carried from earlier steps via the config merge.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"variable_map": map[string]string{
+						"actiontrail_enabled": "true",
+						"actiontrail_ttl":     "20",
+						"oss_access_enabled":  "true",
+						"oss_access_ttl":      "155",
+						"oss_sync_enabled":    "true",
+						"oss_sync_ttl":        "180",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"variable_map.%":                   "6",
+						"variable_map.actiontrail_enabled": "true",
+						"variable_map.actiontrail_ttl":     "20",
+						"variable_map.oss_access_enabled":  "true",
+						"variable_map.oss_access_ttl":      "155",
+						"variable_map.oss_sync_enabled":    "true",
+						"variable_map.oss_sync_ttl":        "180",
+						"resource_directory_type":          "all",
+						"multi_account.#":                  "3",
+					}),
+				),
+			},
 		},
 	})
 }
@@ -98,10 +119,10 @@ var logAuditMap = map[string]string{
 	"display_name": CHECKSET,
 }
 
-// TestGetInitParameter is a table-driven unit test for getInitParameter.
+// TestUnitGetInitParameter is a table-driven unit test for getInitParameter.
 // It does NOT require cloud resources and covers all edge cases related to
 // the displayName fallback fix.
-func TestGetInitParameter(t *testing.T) {
+func TestUnitGetInitParameter(t *testing.T) {
 	// Config is a JSON string value in the real API response (not a raw JSON object).
 	// getInitParameter does configNew.(string) so Config must be a string type.
 	configWithInitParam := `{"initParam":{"aliuid":"1234567890","actiontrail_ttl":"10"}}`
@@ -225,13 +246,13 @@ func TestGetInitParameter(t *testing.T) {
 	}
 }
 
-// TestAccAlicloudLogAudit_display_name_fallback is a minimal acceptance test that
+// TestAccAliCloudLogAudit_display_name_fallback is a minimal acceptance test that
 // verifies the displayName == "" fallback to d.Id() fix.
 //
-// It uses the same data.alicloud_account pattern as TestAccAlicloudLogAudit_basic
+// It uses the same data.alicloud_account pattern as TestAccAliCloudLogAudit_basic
 // but with a minimal variable_map and an additional PlanOnly step to verify
 // no spurious diff after the fix.
-func TestAccAlicloudLogAudit_display_name_fallback(t *testing.T) {
+func TestAccAliCloudLogAudit_display_name_fallback(t *testing.T) {
 	var v *slsPop.DescribeAppResponse
 	resourceId := "alicloud_log_audit.foo"
 	ra := resourceAttrInit(resourceId, logAuditMap)
@@ -253,6 +274,9 @@ func TestAccAlicloudLogAudit_display_name_fallback(t *testing.T) {
 		CheckDestroy: nil,
 		Steps: []resource.TestStep{
 			// Step 1: Create log_audit with minimal config.
+			// resource_directory_type is set to cover the attribute for the testing
+			// coverage rate check. This test has no multi_account, so ResourceDirectory
+			// mode can be safely enabled.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"display_name": name,
@@ -261,12 +285,14 @@ func TestAccAlicloudLogAudit_display_name_fallback(t *testing.T) {
 						"actiontrail_enabled": "false",
 						"actiontrail_ttl":     "10",
 					},
+					"resource_directory_type": "all",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"display_name":                     name,
 						"variable_map.actiontrail_enabled": "false",
 						"variable_map.actiontrail_ttl":     "10",
+						"resource_directory_type":          "all",
 					}),
 				),
 			},
@@ -276,7 +302,30 @@ func TestAccAlicloudLogAudit_display_name_fallback(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// Step 3: Re-plan with same config — expect no diff.
+			// Step 3: Modify resource_directory_type from "all" to "custom" to
+			// satisfy the testing coverage rate check (modified coverage). This
+			// test has no multi_account, so "custom" mode does not trigger account
+			// validation on the server side.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"display_name": name,
+					"aliuid":       "${data.alicloud_account.default.id}",
+					"variable_map": map[string]string{
+						"actiontrail_enabled": "false",
+						"actiontrail_ttl":     "10",
+					},
+					"resource_directory_type": "custom",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"display_name":                     name,
+						"variable_map.actiontrail_enabled": "false",
+						"variable_map.actiontrail_ttl":     "10",
+						"resource_directory_type":          "custom",
+					}),
+				),
+			},
+			// Step 4: Re-plan with same config — expect no diff.
 			// This is the core assertion for the displayName fallback fix.
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -286,6 +335,7 @@ func TestAccAlicloudLogAudit_display_name_fallback(t *testing.T) {
 						"actiontrail_enabled": "false",
 						"actiontrail_ttl":     "10",
 					},
+					"resource_directory_type": "custom",
 				}),
 				PlanOnly: true,
 			},
