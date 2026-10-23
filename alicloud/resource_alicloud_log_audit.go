@@ -147,6 +147,9 @@ func resourceAlicloudLogAuditRead(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
+	if initMap == nil {
+		return WrapError(fmt.Errorf("log audit app configuration is empty, please check your RAM permission for log:GetApp (DescribeApp)"))
+	}
 	if displayName == "" {
 		displayName = d.Id()
 	}
