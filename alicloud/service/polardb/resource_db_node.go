@@ -375,17 +375,18 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	object, err := dbNodeWaitVisible(r.Client(), id, plan.DBClusterId.ValueString(), operationTimeout)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Creating %s: reading after create", dbNodeTypeName),
-			errs.WrapErrorf(err, "Creating %s: reading after create (%s)", dbNodeTypeName, id).Error(),
-		)
-		return
-	}
-	if object == nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Creating %s: after create", dbNodeTypeName),
-			fmt.Sprintf("The resource %s is not visible via DescribeDBClusterAttribute right after creation", id),
+	if err != nil || object == nil {
+		// CreateDBNodes succeeded and returned a DBNodeId, but the node is not
+		// yet visible in DescribeDBClusterAttribute within the operation
+		// timeout.  The resource exists server-side; persist the identity so
+		// a subsequent Read/refresh can populate the remaining state and
+		// Destroy can locate the node.  Using a warning (not error) ensures
+		// the Framework saves resp.State — returning an error causes the
+		// Framework to discard the state, leaving Destroy without a DBNodeId
+		// (ACC 17886: MissingDBNodeId, RequestId 01A16698-061C-51C7-87F1).
+		resp.Diagnostics.AddWarning(
+			fmt.Sprintf("Creating %s: node not yet visible", dbNodeTypeName),
+			fmt.Sprintf("CreateDBNodes returned DBNodeId %s but the node is not yet visible via DescribeDBClusterAttribute within the operation timeout. The resource has been created; a subsequent apply will refresh its state.", id),
 		)
 		return
 	}
