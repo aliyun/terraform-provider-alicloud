@@ -130,6 +130,102 @@ resource "alicloud_polardb_db_node" "default" {
 `, name)
 }
 
+// TestAccAliCloudPolarDBDBNode_createVisibilityTimeout covers the failure path
+// where CreateDBNodes succeeds (returns a DBNodeId) but dbNodeWaitVisible times
+// out — the node is not yet visible in DescribeDBClusterAttribute within the
+// operation timeout. This verifies that:
+//  1. The tracked plan state is persisted with a known DBNodeId and a valid
+//     1-block db_node (not 0 blocks or unknown values that the Framework rejects).
+//  2. A subsequent apply (refresh) populates the remaining Computed attributes
+//     when the node becomes visible.
+//  3. Destroy can locate the node using the persisted DBNodeId.
+//
+// The short create timeout (30s) forces dbNodeWaitVisible to time out when the
+// async add-node order hasn't completed within that window. If the node becomes
+// visible within 30s, the test still passes (happy path) — the failure-path
+// coverage depends on the async order taking longer than the timeout.
+func TestAccAliCloudPolarDBDBNode_createVisibilityTimeout(t *testing.T) {
+	resourceId := "alicloud_polardb_db_node.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := os.Getenv("ALICLOUD_REGION")
+	if region == "" {
+		region = "cn-hangzhou"
+	}
+	name := fmt.Sprintf("tf-testAccPolarDBDBNodeVis%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckPolardbDBNodeDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Short create timeout to force visibility-check timeout.
+				// If the node is not yet visible, AddWarning fires and the
+				// tracked plan state (DBNodeId + 1 null block) is persisted.
+				Config: testAccAliCloudPolarDBDBNodeVisibilityTimeout(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+					resource.TestCheckResourceAttr(resourceId, "db_node.#", "1"),
+				),
+			},
+			{
+				// Default timeout (40m): refresh should find the node visible
+				// and populate Computed attributes (zone_id, target_class).
+				Config: testAccAliCloudPolarDBDBNodeBasic(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+					resource.TestCheckResourceAttr(resourceId, "db_node.#", "1"),
+				),
+			},
+		},
+	})
+}
+
+func testAccAliCloudPolarDBDBNodeVisibilityTimeout(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_polardb_node_classes" "default" {
+  pay_type = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+}
+
+resource "alicloud_polardb_cluster" "default" {
+  db_type       = "MySQL"
+  db_version    = "8.0"
+  db_node_class = "polar.mysql.x4.large"
+  pay_type      = "PostPaid"
+  vswitch_id    = alicloud_vswitch.default.id
+  description   = var.name
+}
+
+resource "alicloud_polardb_db_node" "default" {
+  db_cluster_id = alicloud_polardb_cluster.default.id
+  db_node {
+    target_class = "polar.mysql.x4.large"
+  }
+  timeouts {
+    create = "30s"
+  }
+}
+`, name)
+}
+
 func testAccAliCloudPolarDBDBNodeBasicUpdate(name string) string {
 	return fmt.Sprintf(`
 variable "name" {

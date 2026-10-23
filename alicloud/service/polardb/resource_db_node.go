@@ -414,17 +414,19 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 	// Apply configurable properties represented only by secondary update APIs.
-	state := dbNodeState(object, &plan)
-	state.Id = types.StringValue(id)
-	plan.Id = types.StringValue(id)
 	// db_node_ids is Computed with UseStateForUnknown; on Create there is no prior
 	// state, so it remains unknown in the plan. dbNodeState copies prior.DBNodeIds,
-	// so we must convert it to a known (null) value before passing the plan to
+	// so we must convert it to a known (null) value BEFORE passing the plan to
 	// dbNodeState, otherwise the Framework rejects the response with "Provider
 	// returned invalid result object after apply". ACC 17919 caught this: the 40m
 	// timeout and dbNodeWaitVisible fixes worked, but the Framework still rejected
-	// the response because db_node_ids was unknown.
+	// the response because db_node_ids was unknown. The conversion must precede
+	// dbNodeState — placing it after means state.DBNodeIds is already a copy of
+	// the unknown value and remains unknown in the final state.
 	plan.DBNodeIds = fwKnownValue(plan.DBNodeIds).(types.List)
+	state := dbNodeState(object, &plan)
+	state.Id = types.StringValue(id)
+	plan.Id = types.StringValue(id)
 	planValues := map[string]interface{}{"RegionId": r.Client().RegionId}
 	if !plan.AutoUseCoupon.IsNull() && !plan.AutoUseCoupon.IsUnknown() {
 		planValues["AutoUseCoupon"] = fwValueToInterface(plan.AutoUseCoupon, map[string]fwWireField{}, false)
