@@ -3,6 +3,7 @@ package eflo_test
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -39,7 +40,7 @@ func TestAccAliCloudEfloVccGrantRule_basic12535(t *testing.T) {
 		CheckDestroy:             testAccCheckEfloVccGrantRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				// Create ER + VPD dependencies through Terraform, then
+				// Create ER + VPC + VSwitch through Terraform, then
 				// create the VCC instance via the CreateVcc OpenAPI call.
 				Config: testAccAliCloudEfloVccGrantRule_basic12535_step0(name),
 				Check: resource.ComposeTestCheckFunc(
@@ -48,7 +49,12 @@ func TestAccAliCloudEfloVccGrantRule_basic12535(t *testing.T) {
 			},
 			{
 				// Create the VCC grant rule using the API-created VCC ID.
-				Config: testAccAliCloudEfloVccGrantRule_basic12535_step1(name, testVccGrantRuleVccID),
+				// var.vcc_id has no default; its value comes from the
+				// TF_VAR_vcc_id environment variable set in step 0's Check.
+				// Terraform reads TF_VAR_* at apply time, not when the Go
+				// Steps slice is constructed, so the VCC ID set by the
+				// preceding Check is available here.
+				Config: testAccAliCloudEfloVccGrantRule_basic12535_step1(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("alicloud_eflo_vcc_grant_rule.default", "grant_rule_id"),
 					resource.TestCheckResourceAttrSet("alicloud_eflo_vcc_grant_rule.default", "instance_id"),
@@ -67,6 +73,13 @@ func TestAccAliCloudEfloVccGrantRule_basic12535(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{},
+				// Delete the API-created VCC before Terraform's post-test
+				// destroy runs. The VCC creates a route interface on the
+				// VPC; without deleting the VCC first, DeleteVpc fails with
+				// DependencyViolation.RouteInterface.
+				Check: resource.ComposeTestCheckFunc(
+					testAccEfloVccGrantRuleDeleteVcc(&testVccGrantRuleVccID),
+				),
 			},
 		},
 	})
@@ -104,12 +117,18 @@ resource "alicloud_vswitch" "default" {
 }
 
 // testAccAliCloudEfloVccGrantRule_basic12535_step1 adds the VCC grant rule on
-// top of the ER + VPC + VSwitch dependencies, using the VCC ID created
-// via the API.
-func testAccAliCloudEfloVccGrantRule_basic12535_step1(name, vccID string) string {
+// top of the ER + VPC + VSwitch dependencies. The VCC ID is passed via the
+// TF_VAR_vcc_id environment variable (set in step 0's Check) and referenced
+// as var.vcc_id, which has no default so Terraform reads TF_VAR_vcc_id at
+// apply time.
+func testAccAliCloudEfloVccGrantRule_basic12535_step1(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
+}
+
+variable "vcc_id" {
+  type = string
 }
 
 data "alicloud_account" "default" {
@@ -134,14 +153,16 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_eflo_vcc_grant_rule" "default" {
   grant_tenant_id = data.alicloud_account.default.id
   er_id           = alicloud_eflo_er.default.id
-  instance_id     = "%s"
+  instance_id     = var.vcc_id
 }
-`, name, vccID)
+`, name)
 }
 
 // testAccEfloVccGrantRuleCreateVcc creates a VCC instance via the CreateVcc
-// OpenAPI call and stores its ID.  alicloud_eflo_vcc is not a Terraform
-// resource, so the VCC is created out-of-band using the RPC client.
+// OpenAPI call, stores its ID, and sets the TF_VAR_vcc_id environment variable
+// so the subsequent Terraform step can reference var.vcc_id.  alicloud_eflo_vcc
+// is not a Terraform resource, so the VCC is created out-of-band using the RPC
+// client.
 func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
@@ -184,8 +205,35 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 		}
 		*vccID = id
 
+		// Set TF_VAR_vcc_id so the next test step's Terraform config can
+		// reference var.vcc_id. Terraform reads TF_VAR_* env vars at apply
+		// time, not when the Go Steps slice is constructed.
+		os.Setenv("TF_VAR_vcc_id", id)
+
 		// Poll GetVcc until the VCC reaches a terminal state.
 		return testAccEfloVccGrantRuleWaitVcc(client, id)
+	}
+}
+
+// testAccEfloVccGrantRuleDeleteVcc deletes the API-created VCC instance so
+// that Terraform's post-test destroy can delete the VPC. The VCC creates a
+// route interface on the VPC; without deleting the VCC first, DeleteVpc fails
+// with DependencyViolation.RouteInterface. This Check runs in the import step,
+// before the framework's automatic terraform destroy.
+func testAccEfloVccGrantRuleDeleteVcc(vccID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if *vccID == "" {
+			return nil
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		req := map[string]interface{}{
+			"RegionId": client.RegionId,
+			"VccId":    *vccID,
+		}
+		_, _ = client.RpcPost("eflo", "2022-05-30", "DeleteVcc", req, req, true)
+		*vccID = ""
+		os.Unsetenv("TF_VAR_vcc_id")
+		return nil
 	}
 }
 
@@ -258,8 +306,9 @@ func testAccCheckEfloVccGrantRuleDestroy(s *terraform.State) error {
 		}
 		return fmt.Errorf("VCC grant rule %s still exists", rs.Primary.ID)
 	}
-	// Best-effort VCC cleanup: DeleteVcc may not exist in this API version;
-	// the VCC is expected to be cascade-deleted when the VPD is destroyed.
+	// Best-effort VCC cleanup: if the VCC was not already deleted by the
+	// import step's Check (e.g. test failed before reaching import), try to
+	// delete it now to avoid dangling route interfaces on the VPC.
 	if testVccGrantRuleVccID != "" {
 		req := map[string]interface{}{
 			"RegionId": client.RegionId,
@@ -268,6 +317,7 @@ func testAccCheckEfloVccGrantRuleDestroy(s *terraform.State) error {
 		_, _ = client.RpcPost("eflo", "2022-05-30", "DeleteVcc", req, req, true)
 		testVccGrantRuleVccID = ""
 	}
+	os.Unsetenv("TF_VAR_vcc_id")
 	return nil
 }
 
