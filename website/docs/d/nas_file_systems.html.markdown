@@ -59,6 +59,11 @@ The following attributes are exported in addition to the arguments listed above:
 * `descriptions` - A list of FileSystem descriptions.
 * `systems` - A list of VPCs. Each element contains the following attributes:
   * `id` - ID of the FileSystem.
+  * `auto_upgrade_config` - (List, Available since v2.1.0) The automatic capacity expansion configuration. Each element contains the following attributes:
+    * `capacity_used_ratio` - (Int, Available since v2.1.0) The capacity usage threshold. Unit: percent.
+    * `enabled` - (Bool, Available since v2.1.0) Whether automatic capacity expansion is enabled.
+    * `step` - (Int, Available since v2.1.0) The capacity expansion step. Unit: GiB.
+    * `time` - (Int, Available since v2.1.0) The duration threshold. Unit: minutes.
   * `region_id` - ID of the region where the FileSystem is located.
   * `description` - Description of the FileSystem.
   * `protocol_type` - ProtocolType block of the FileSystem
