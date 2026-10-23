@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCRChartRepository_basic0(t *testing.T) {
+func TestAccAliCloudCRChartRepository_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cr_chart_repository.default"
 	ra := resourceAttrInit(resourceId, AlicloudCRChartRepositoryMap0)
