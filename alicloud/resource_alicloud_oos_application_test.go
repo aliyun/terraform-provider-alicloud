@@ -237,6 +237,99 @@ func TestAccAliCloudOOSApplication_basic1(t *testing.T) {
 
 var AlicloudOOSApplicationMap0 = map[string]string{}
 
+func TestAccAliCloudOOSApplication_alarmConfig(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_application.default"
+	checkoutSupportedRegions(t, true, connectivity.OOSApplicationSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudOOSApplicationMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosApplication")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soosapplication%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOOSApplicationBasicDependence0)
+	// application_source references a real OOS-registered git repository (the
+	// API validates RepoName against registered repos and rejects unknown ones
+	// with EntityNotExists.GitRepo). A real repo cannot be provisioned as an
+	// ACC prerequisite, so the field is left empty (not sent to the API) here;
+	// its CRUD wiring is covered by TestUnitAlicloudOOSApplication and the
+	// attribute is listed in ImportStateVerifyIgnore, mirroring the empty-list
+	// handling of alarm_config.template_ids / contact_groups.
+	appSource := ""
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name":   name,
+					"application_source": appSource,
+					"deployment_type":    "terraform",
+					"service_id":         "service-79538e30e44541b699d8",
+					"alarm_config": []interface{}{
+						map[string]interface{}{
+							"template_ids":     []interface{}{},
+							"health_check_url": "/healthcheck/tcp50122",
+							"contact_groups":   []interface{}{},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name":                name,
+						"alarm_config.0.health_check_url": "/healthcheck/tcp50122",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name":   name,
+					"application_source": appSource,
+					"deployment_type":    "terraform",
+					"service_id":         "service-79538e30e44541b699d8",
+					"alarm_config": []interface{}{
+						map[string]interface{}{
+							"template_ids":     []interface{}{},
+							"health_check_url": "/healthcheck/updated",
+							"contact_groups":   []interface{}{},
+						},
+					},
+					"delete_alarm_rules_before_update": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_config.0.health_check_url": "/healthcheck/updated",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name":   name,
+					"application_source": appSource,
+					"deployment_type":    "terraform",
+					"service_id":         "service-79538e30e44541b699d8",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alarm_config.template_ids", "alarm_config.contact_groups", "application_source", "delete_alarm_rules_before_update"},
+			},
+		},
+	})
+}
+
 func AlicloudOOSApplicationBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
@@ -256,9 +349,20 @@ func TestUnitAlicloudOOSApplication(t *testing.T) {
 	dCreate, _ := schema.InternalMap(p["alicloud_oos_application"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
-		"application_name":  "application_name",
-		"description":       "description",
-		"resource_group_id": "resource_group_id",
+		"application_name":   "application_name",
+		"description":        "description",
+		"resource_group_id":  "resource_group_id",
+		"application_source": `{"Platform":"github"}`,
+		"alarm_config": []interface{}{
+			map[string]interface{}{
+				"template_ids":     []interface{}{"6c7372e9e237463bb9efcb1acd91358d"},
+				"health_check_url": "/healthcheck/tcp50122",
+				"contact_groups":   []interface{}{"alarm-contact-group"},
+			},
+		},
+		"service_id":                       "service-79538e30e44541b699d8",
+		"deployment_type":                  "terraform",
+		"delete_alarm_rules_before_update": true,
 		"tags": map[string]string{
 			"Created": "Tf1",
 			"For":     "test",
@@ -278,9 +382,17 @@ func TestUnitAlicloudOOSApplication(t *testing.T) {
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		"Application": map[string]interface{}{
-			"Description":     "description",
-			"Name":            "MockName",
-			"ResourceGroupId": "resource_group_id",
+			"Description":       "description",
+			"Name":              "MockName",
+			"ResourceGroupId":   "resource_group_id",
+			"ApplicationSource": `{"Platform":"github"}`,
+			"AlarmConfig": map[string]interface{}{
+				"TemplateIds":    []interface{}{"6c7372e9e237463bb9efcb1acd91358d"},
+				"HealthCheckUrl": "/healthcheck/tcp50122",
+				"ContactGroups":  []interface{}{"alarm-contact-group"},
+			},
+			"ServiceId":      "service-79538e30e44541b699d8",
+			"DeploymentType": "terraform",
 			"Tags": map[string]interface{}{
 				"Created": "Tf1",
 				"For":     "test",
