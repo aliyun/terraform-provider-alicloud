@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_polardb_node_classes" "default" {
   db_type    = "MySQL"
   db_version = "8.0"
@@ -47,17 +55,32 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_polardb_cluster" "default" {
-  db_type       = "MySQL"
-  db_version    = "8.0"
-  db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
-  pay_type      = "PostPaid"
-  vswitch_id    = alicloud_vswitch.default.id
-  description   = "terraform-example"
+  db_type    = "MySQL"
+  db_version = "8.0"
+  # Prefer the x4.medium node class when the capability query returns it; fall
+  # back to another x4 class so the example stays portable across regions.
+  db_node_class = try(
+    [for r in data.alicloud_polardb_node_classes.default.classes[0].supported_engines[0].available_resources : r.db_node_class if r.db_node_class == "polar.mysql.x4.medium"][0],
+    [for r in data.alicloud_polardb_node_classes.default.classes[0].supported_engines[0].available_resources : r.db_node_class if can(regex("^polar\\.mysql\\.x4\\.", r.db_node_class))][0]
+  )
+  pay_type    = "PostPaid"
+  vswitch_id  = alicloud_vswitch.default.id
+  description = "terraform-example"
+  # Pin the TDE default explicitly so the configuration stays converged.
+  encrypt_new_tables = "OFF"
+}
+
+resource "alicloud_polardb_account" "default" {
+  db_cluster_id    = alicloud_polardb_cluster.default.id
+  account_name     = "terraform_example"
+  account_password = "Example1234"
 }
 
 resource "alicloud_polardb_database" "default" {
-  db_cluster_id = alicloud_polardb_cluster.default.id
-  db_name       = "terraform-example"
+  db_cluster_id     = alicloud_polardb_cluster.default.id
+  db_name           = "terraform-example"
+  account_name      = alicloud_polardb_account.default.account_name
+  account_privilege = "ReadWrite"
 }
 ```
 
@@ -67,6 +90,9 @@ resource "alicloud_polardb_database" "default" {
 
 The following arguments are supported:
 * `account_name` - (Optional) The name of the account that is authorized to access the database. **NOTE:** From version 1.265.0, `account_name` can be modified. However, only PolarDB for PostgreSQL (Compatible with Oracle) and PolarDB for PostgreSQL cluster can be modified.
+* `account_privilege` - (Optional, ForceNew, String, Available since v2.2.0) The privilege that is granted to the account specified by `account_name` on the database. Valid values: `ReadWrite`, `ReadOnly`, `DMLOnly`, `DDLOnly` and `ReadIndex`. If you do not specify this parameter, the API default value `ReadWrite` is used.
+
+  -> **NOTE:** `account_name` must be set when `account_privilege` is configured, because the privilege is only applied to the specified account. The privilege is applied when the database is created, so changing it forces a new database. The privilege that is currently granted to the account is read back from the database list and stored in the state. For PolarDB for PostgreSQL and PolarDB for PostgreSQL (Compatible with Oracle) clusters (the `PostgreSQL` and `Oracle` engines) the privilege value of the database owner is not returned by the API; the configured value is kept instead. For the same reason the value cannot be recovered on import for these engines: keeping `account_privilege` in the configuration after importing such a database plans a replacement of that database. When the database is imported, no account is inferred from the response because the list order is not guaranteed: `account_name` and `account_privilege` stay empty until they are configured explicitly. If the configured account is no longer authorized for the database, including when the database has no authorized account left, `account_privilege` is cleared from the state so the drift is visible. A missing or malformed account list is not treated as proof of removal and keeps the recorded value.
 * `character_set_name` - (Optional, ForceNew) The character set that is used by the cluster. For more information, see [Character set tables](https://www.alibabacloud.com/help/en/doc-detail/99716.html).
 * `collate` - (Optional, Available since v1.265.0) The language that defines the collation rules in the database.
 
@@ -85,6 +111,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<db_name>`.
 * `status` - (Available since v1.265.0) The state of the database.
+* `engine` - (String, Available since v2.2.0) The database engine of the cluster, such as MySQL, PostgreSQL, or Oracle.
 
 ## Timeouts
 
