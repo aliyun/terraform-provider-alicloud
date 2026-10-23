@@ -1,12 +1,15 @@
 package cms
 
-import (
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
-)
+import "github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
 
-// ServicePackage is a placeholder for the cms service; declarations move here when the product adopts the split layout.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Cms",
+		DataSources: []conns.DataSource{
+			{TypeName: "alicloud_cms_biz_traces", Factory: NewBizTracesDataSource},
+		},
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_cms_biz_trace", Factory: NewBizTraceResource},
+		},
 	}
 }
