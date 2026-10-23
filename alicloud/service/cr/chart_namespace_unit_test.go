@@ -31,10 +31,11 @@ func TestUnitAlicloudCRChartNamespace(t *testing.T) {
 	dCreate, _ := schema.InternalMap(p["alicloud_cr_chart_namespace"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
-		"default_repo_type": "PUBLIC",
-		"instance_id":       "MockInstanceId",
-		"auto_create_repo":  false,
-		"namespace_name":    "namespace_name",
+		"default_repo_type":    "PUBLIC",
+		"instance_id":          "MockInstanceId",
+		"auto_create_repo":     false,
+		"chart_namespace_name": "namespace_name",
+		"resource_group_id":    "rg-mock",
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -50,10 +51,12 @@ func TestUnitAlicloudCRChartNamespace(t *testing.T) {
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		//DescribeCrChartNamespace
-		"default_repo_type": "PUBLIC",
-		"instance_id":       "MockInstanceId",
-		"auto_create_repo":  false,
-		"namespace_name":    "namespace_name",
+		"default_repo_type":    "PUBLIC",
+		"instance_id":          "MockInstanceId",
+		"auto_create_repo":     false,
+		"namespace_name":       "namespace_name",
+		"chart_namespace_name": "namespace_name",
+		"ResourceGroupId":      "rg-mock",
 	}
 
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
@@ -146,7 +149,7 @@ func TestUnitAlicloudCRChartNamespace(t *testing.T) {
 	})
 
 	// Set ID for Update and Delete Method
-	d.SetId(fmt.Sprint(ReadMockResponse["instance_id"], ":", ReadMockResponse["namespace_name"]))
+	d.SetId(fmt.Sprint(ReadMockResponse["instance_id"], ":", ReadMockResponse["chart_namespace_name"]))
 	// Update
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAcrClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
