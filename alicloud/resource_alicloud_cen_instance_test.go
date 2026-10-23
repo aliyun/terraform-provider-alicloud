@@ -64,7 +64,8 @@ func testSweepCenInstances(region string) error {
 			return cenClient.DescribeCens(describeCensRequest)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving CEN Instances: %s", err)
+			log.Printf("[ERROR] Failed to list CEN Instances: %s", err)
+			return nil
 		}
 		describeCensResponse, _ := raw.(*cbn.DescribeCensResponse)
 		if len(describeCensResponse.Cens.Cen) < 1 {
@@ -158,7 +159,8 @@ func testSweepCenInstances(region string) error {
 			}
 			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+				log.Printf("[ERROR] Failed to parse $.TransitRouterAttachments: %s", err)
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
@@ -222,7 +224,8 @@ func testSweepCenInstances(region string) error {
 			}
 			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+				log.Printf("[ERROR] Failed to parse $.TransitRouterAttachments: %s", err)
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
@@ -286,7 +289,8 @@ func testSweepCenInstances(region string) error {
 			}
 			resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
+				log.Printf("[ERROR] Failed to parse $.TransitRouterAttachments: %s", err)
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
@@ -360,7 +364,8 @@ func testSweepCenInstances(region string) error {
 			}
 			resp, err := jsonpath.Get("$.TransitRouters", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouters", response)
+				log.Printf("[ERROR] Failed to parse $.TransitRouters: %s", err)
+				break
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
