@@ -85,6 +85,8 @@ resource "alicloud_nas_file_system" "cpfs" {
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_upgrade_config` - (Optional, Computed, List, Available since v2.1.0) The automatic capacity expansion configuration. Only cpfsse file systems support this feature. See [`auto_upgrade_config`](#auto_upgrade_config) below.
+
 * `capacity` - (Optional, Computed, Int, Available since v1.140.0) File system capacity.
 
   Unit: GiB, required and valid when FileSystemType = extreme or cpfs.
@@ -173,7 +175,7 @@ The following arguments are supported:
 
   This parameter must be configured when FileSystemType = cpfs. When the FileSystemType is standard or extreme, this parameter is reserved for the interface and has not taken effect yet. You do not need to configure it.
 
-  -> **NOTE:** This `vswitch_id` configures the network of the CPFS file system itself and is different from `vswitch_id` in [`alicloud_nas_mount_target`](nas_mount_target.html), which specifies the vSwitch of the mount target used by clients to access a NAS file system. A mount target still requires its own `vswitch_id` regardless of `file_system_type`.
+  -> **NOTE:** This `vswitch_id` configures the network of the CPFS file system itself and is different from `vswitch_id` in [`alicloud_nas_mount_target`](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/nas_mount_target), which specifies the vSwitch of the mount target used by clients to access a NAS file system. A mount target still requires its own `vswitch_id` regardless of `file_system_type`.
 
   -> **NOTE:** For `standard` or `extreme` file systems, `vswitch_id` is reserved by the interface and has no effect; the NAS API does not return it for these file system types, so any configured value is suppressed from the plan diff and will not force a replacement. It is still recommended to leave it unset for `standard` or `extreme` file systems.
 
@@ -192,6 +194,19 @@ The following arguments are supported:
   -> **NOTE:** file systems in different zones in the same region communicate with ECS cloud servers.
 
   -> **NOTE:** We recommend that the file system and the ECS instance belong to the same zone to avoid cross-zone latency.
+
+### `auto_upgrade_config`
+
+The auto_upgrade_config supports the following:
+* `capacity_used_ratio` - (Optional, Computed, Int, Available since v2.1.0) The capacity usage threshold. Valid values: 1 to 99. Unit: percent.
+
+* `enabled` - (Optional, Computed, Bool, Available since v2.1.0) Whether to enable automatic capacity expansion.
+
+* `step` - (Optional, Computed, Int, Available since v2.1.0) The capacity expansion step. Unit: GiB.
+
+* `time` - (Optional, Computed, Int, Available since v2.1.0) The duration threshold. Unit: minutes.
+
+  -> **NOTE:** Automatic capacity expansion is a modify-time feature: it is applied through the NAS ModifyFileSystem API after the file system has been created.
 
 ### `nfs_acl`
 
