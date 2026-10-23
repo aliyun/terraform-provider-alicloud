@@ -72,7 +72,7 @@ func TestAccAliCloudEfloVccGrantRule_basic12535(t *testing.T) {
 	})
 }
 
-// testAccAliCloudEfloVccGrantRule_basic12535_step0 creates ER + VPD + VPC +
+// testAccAliCloudEfloVccGrantRule_basic12535_step0 creates ER + VPC +
 // VSwitch dependencies. The VCC instance is created via the CreateVcc OpenAPI
 // call in the Check function because alicloud_eflo_vcc is not a Terraform
 // resource; CreateVcc requires VpcId and VSwitchId from a regular VPC.
@@ -90,11 +90,6 @@ resource "alicloud_eflo_er" "default" {
   master_zone_id = "cn-wulanchabu-b"
 }
 
-resource "alicloud_eflo_vpd" "default" {
-  cidr     = "10.0.0.0/8"
-  vpd_name = var.name
-}
-
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
@@ -109,7 +104,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 // testAccAliCloudEfloVccGrantRule_basic12535_step1 adds the VCC grant rule on
-// top of the ER + VPD + VPC + VSwitch dependencies, using the VCC ID created
+// top of the ER + VPC + VSwitch dependencies, using the VCC ID created
 // via the API.
 func testAccAliCloudEfloVccGrantRule_basic12535_step1(name, vccID string) string {
 	return fmt.Sprintf(`
@@ -123,11 +118,6 @@ data "alicloud_account" "default" {
 resource "alicloud_eflo_er" "default" {
   er_name        = var.name
   master_zone_id = "cn-wulanchabu-b"
-}
-
-resource "alicloud_eflo_vpd" "default" {
-  cidr     = "10.0.0.0/8"
-  vpd_name = var.name
 }
 
 resource "alicloud_vpc" "default" {
@@ -156,13 +146,9 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 	return func(s *terraform.State) error {
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
 
-		// Retrieve the VPD ID, VPC ID, and VSwitch ID from state.
-		vpdRes, ok := s.RootModule().Resources["alicloud_eflo_vpd.default"]
-		if !ok {
-			return fmt.Errorf("alicloud_eflo_vpd.default not found in state")
-		}
-		vpdID := vpdRes.Primary.ID
-
+		// Retrieve the VPC ID and VSwitch ID from state. VPD is omitted
+		// because CreateVcc with ConnectionType=VPC connects directly to
+		// the VPC without a VPD, and VPD quota in cn-wulanchabu is limited.
 		vpcRes, ok := s.RootModule().Resources["alicloud_vpc.default"]
 		if !ok {
 			return fmt.Errorf("alicloud_vpc.default not found in state")
@@ -179,7 +165,6 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 			"RegionId":       client.RegionId,
 			"VccName":        name,
 			"ZoneId":         "cn-wulanchabu-a",
-			"VpdId":          vpdID,
 			"VpcId":          vpcID,
 			"VSwitchId":      vswID,
 			"Bandwidth":      1000,
