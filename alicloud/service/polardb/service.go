@@ -387,31 +387,31 @@ func dbNodeNotExist(err error) bool {
 }
 
 // dbNodeGet describes the resource by id. Returns (nil, nil) when it is gone.
-// dbClusterId is required by DescribeDBNodes to scope the query.
+// PolarDB has no standalone DescribeDBNodes action; DB node data is returned
+// as part of the DescribeDBClusterAttribute response under the DBNodes array.
+// dbClusterId is required to scope the cluster-level query.
 func dbNodeGet(client *connectivity.AliyunClient, id string, dbClusterId string, includeSecondary ...bool) (map[string]interface{}, error) {
 	completeRead := len(includeSecondary) == 0 || includeSecondary[0]
-	getValues := map[string]interface{}{"RegionId": client.RegionId, "DBNodeId": id, "DBClusterId": dbClusterId}
 	request := map[string]interface{}{}
 	request["RegionId"] = client.RegionId
-	if err := fwApplyMappings(request, getValues, []fwMapping{
+	if err := fwApplyMappings(request, map[string]interface{}{"RegionId": client.RegionId, "DBClusterId": dbClusterId}, []fwMapping{
 		{Source: "$.DBClusterId", Target: "DBClusterId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
-		{Source: "$.DBNodeId", Target: "DBNodeId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 	}, false); err != nil {
-		return nil, fmt.Errorf("building DescribeDBNodes request: %w", err)
+		return nil, fmt.Errorf("building DescribeDBClusterAttribute request: %w", err)
 	}
 	identities := []fwReadIdentity{}
 	identities = append(identities, fwReadIdentity{Path: "$.DBNodeId", Value: id, AllowMissing: false})
-	response, err := retryRpcPost(client, "polardb", "2017-08-01", "DescribeDBNodes", request, 1*time.Minute)
+	response, err := retryRpcPost(client, "polardb", "2017-08-01", "DescribeDBClusterAttribute", request, 1*time.Minute)
 	if err != nil {
-		if isExpectedErrors(err, []string{"ResourceNotFound.DbNode", "ResourceNotFound"}) || dbNodeNotExist(err) {
+		if isExpectedErrors(err, []string{"ResourceNotFound.DbNode", "ResourceNotFound", "InvalidDBClusterId.NotFound", "InvalidDBClusterId.Malformed"}) || dbNodeNotExist(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	// DescribeDBNodes returns Items.DBNode as an array; navigate to it and let
-	// fwSelectReadObject pick the element matching the identity (DBNodeId).
+	// DescribeDBClusterAttribute returns DBNodes as an array; navigate to it
+	// and let fwSelectReadObject pick the element matching the identity (DBNodeId).
 	cur := interface{}(response)
-	for _, seg := range strings.Split("Items.DBNode", ".") {
+	for _, seg := range strings.Split("DBNodes", ".") {
 		m, ok := cur.(map[string]interface{})
 		if !ok {
 			return nil, nil
@@ -423,10 +423,13 @@ func dbNodeGet(client *connectivity.AliyunClient, id string, dbClusterId string,
 	}
 	inner, identityErr := fwSelectReadObject(cur, identities)
 	if identityErr != nil {
-		return nil, fmt.Errorf("selecting DescribeDBNodes resource: %w", identityErr)
+		return nil, fmt.Errorf("selecting DescribeDBClusterAttribute resource: %w", identityErr)
 	}
 	if inner != nil {
-
+		// DescribeDBClusterAttribute returns DBClusterId at the cluster level,
+		// not inside each DBNodes element. Inject it so downstream mappings
+		// that read $.DBClusterId resolve correctly.
+		inner["DBClusterId"] = dbClusterId
 		return dbNodeCompleteRead(client, inner, id, completeRead)
 	}
 	return nil, nil

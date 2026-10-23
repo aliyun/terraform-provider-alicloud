@@ -383,7 +383,7 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 	if object == nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: after create", dbNodeTypeName),
-			fmt.Sprintf("The resource %s is not visible via DescribeDBNodes right after creation", id),
+			fmt.Sprintf("The resource %s is not visible via DescribeDBClusterAttribute right after creation", id),
 		)
 		return
 	}
@@ -645,8 +645,8 @@ func (r *dbNodeResource) Read(ctx context.Context, req resource.ReadRequest, res
 	object, err := dbNodeGet(r.Client(), state.Id.ValueString(), state.DBClusterId.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: calling DescribeDBNodes", dbNodeTypeName),
-			errs.WrapErrorf(err, "Reading %s: calling DescribeDBNodes", dbNodeTypeName).Error(),
+			fmt.Sprintf("Reading %s: calling DescribeDBClusterAttribute", dbNodeTypeName),
+			errs.WrapErrorf(err, "Reading %s: calling DescribeDBClusterAttribute", dbNodeTypeName).Error(),
 		)
 		return
 	}
@@ -917,8 +917,8 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 	object, err := dbNodeGet(r.Client(), state.Id.ValueString(), state.DBClusterId.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s: calling DescribeDBNodes", dbNodeTypeName),
-			errs.WrapErrorf(err, "Reading %s: calling DescribeDBNodes", dbNodeTypeName).Error(),
+			fmt.Sprintf("Reading %s: calling DescribeDBClusterAttribute", dbNodeTypeName),
+			errs.WrapErrorf(err, "Reading %s: calling DescribeDBClusterAttribute", dbNodeTypeName).Error(),
 		)
 		return
 	}
@@ -1053,7 +1053,7 @@ func (r *dbNodeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 }
 
 func (r *dbNodeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// DescribeDBNodes requires DBClusterId to scope the query, but the resource id
+	// DescribeDBClusterAttribute requires DBClusterId to scope the query, but the resource id
 	// is the DBNodeId alone. Users import with "<db_cluster_id>:<db_node_id>" so
 	// Read can recover both identity components from state.
 	id := req.ID
