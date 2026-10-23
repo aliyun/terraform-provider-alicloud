@@ -136,7 +136,7 @@ func resourceAlicloudCrVpcEndpointLinkedVpcRead(d *schema.ResourceData, meta int
 
 func resourceAlicloudCrVpcEndpointLinkedVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudHbrHanaBackupClientRead(d, meta)
+	return resourceAlicloudCrVpcEndpointLinkedVpcRead(d, meta)
 }
 
 func resourceAlicloudCrVpcEndpointLinkedVpcDelete(d *schema.ResourceData, meta interface{}) error {
