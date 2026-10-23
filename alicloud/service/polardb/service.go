@@ -299,13 +299,16 @@ func buildClientToken(action string) string {
 	return token
 }
 
-// incrementalWait mirrors alicloud.incrementalWait: exponential backoff capped at 20s with jitter.
+// incrementalWait mirrors alicloud.incrementalWait: exponential backoff capped at 10s with jitter.
+// The cap is reduced from the upstream 20s to give more retry opportunities within the
+// constrained go test timeout (1800s) for order-bearing actions that must wait for
+// OperationDenied.OrderProcessing to clear.
 func incrementalWait(first, incr time.Duration) func() {
 	retryCount := 0
 	return func() {
 		upper := float64(first) + (math.Pow(2, float64(retryCount))-1)*float64(incr)
-		if upper > float64(20*time.Second) {
-			upper = float64(20 * time.Second)
+		if upper > float64(10*time.Second) {
+			upper = float64(10 * time.Second)
 		}
 		waitTime := time.Duration(upper * (0.8 + 0.4*rand.Float64()))
 		time.Sleep(waitTime)
