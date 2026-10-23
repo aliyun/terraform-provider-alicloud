@@ -58,6 +58,17 @@ The following arguments are supported:
 * `config_rule_trigger_types` - (Optional, Required) The trigger type of the rule. Valid values:  `ConfigurationItemChangeNotification`: The rule is triggered upon configuration changes. `ScheduledNotification`: The rule is triggered as scheduled.
 * `description` - (Optional) The description of the rule.
 * `exclude_resource_ids_scope` - (Optional) The rule monitors excluded resource IDs, multiple of which are separated by commas, only applies to rules created based on managed rules, , custom rule this field is empty.
+* `exclude_region_ids_scope` - (Optional) The rule monitors excluded region IDs, multiple of which are separated by commas, only applies to rules created based on managed rules.
+* `exclude_resource_group_ids_scope` - (Optional) The rule monitors excluded resource group IDs, multiple of which are separated by commas, only applies to rules created based on managed rules.
+* `exclude_tags_scope` - (Optional) The tags that the rule excludes from monitoring. Each element contains the following:
+  * `tag_key` - (Optional) The key of the tag excluded from monitoring.
+  * `tag_value` - (Optional) The value of the tag excluded from monitoring.
+* `extend_content` - (Optional) The extended content of the rule.
+* `resource_ids_scope` - (Optional) The rule monitors resource IDs, multiple of which are separated by commas, only applies to rules created based on managed rules.
+* `tag_key_logic_scope` - (Optional) The logical relationship of the tag keys that the rule monitors. Valid values: `AND`, `OR`.
+* `tags_scope` - (Optional) The tags that the rule monitors. Each element contains the following:
+  * `tag_key` - (Optional) The key of the tag monitored by the rule.
+  * `tag_value` - (Optional) The value of the tag monitored by the rule.
 * `input_parameters` - (Optional, Map) The settings of the input parameters for the rule.
 * `maximum_execution_frequency` - (Optional) The frequency of the compliance evaluations, it is required if the ConfigRuleTriggerTypes value is ScheduledNotification. Valid values:  `One_Hour`, `Three_Hours`, `Six_Hours`, `Twelve_Hours`, `TwentyFour_Hours`.
 * `region_ids_scope` - (Optional) The rule monitors region IDs, separated by commas, only applies to rules created based on managed rules.
