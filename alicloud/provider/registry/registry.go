@@ -22,6 +22,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/antiddospublic"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apig"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/arms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/autoscaling"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bpstudio"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/brainindustrial"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
@@ -185,6 +186,7 @@ var servicePackages = []conns.ServicePackage{
 	antiddospublic.ServicePackage(),
 	apig.ServicePackage(),
 	arms.ServicePackage(),
+	autoscaling.ServicePackage(),
 	bpstudio.ServicePackage(),
 	brainindustrial.ServicePackage(),
 	bssopenapi.ServicePackage(),
