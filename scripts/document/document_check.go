@@ -9,11 +9,14 @@ import (
 )
 
 func main() {
-	docsFileName := strings.TrimSpace(os.Args[1])
+	os.Exit(checkDocument(strings.TrimSpace(os.Args[1])))
+}
+
+func checkDocument(docsFileName string) int {
 	docsFile, err := os.OpenFile(docsFileName, os.O_RDONLY, 0644)
 	if err != nil {
 		log.Printf("open docs file %s failed. Error:%s", docsFileName, err)
-		os.Exit(1)
+		return 1
 	}
 	defer docsFile.Close()
 	scanner := bufio.NewScanner(docsFile)
@@ -333,5 +336,5 @@ func main() {
 		exitCode = 1
 	}
 	fmt.Println("\n--- Finished!")
-	os.Exit(exitCode)
+	return exitCode
 }
