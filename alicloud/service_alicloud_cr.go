@@ -766,6 +766,14 @@ func (s *CrService) DescribeCrVpcEndpointLinkedVpc(id string) (object map[string
 	addDebug(action, response, request)
 
 	if err != nil {
+		// The linked VPC cannot exist after its parent CR EE instance has been
+		// released (INSTANCE_NOT_EXIST). Terraform acceptance tests run
+		// CheckDestroy after all resources have been removed, so treat
+		// parent-not-found as the linked VPC's not-found state so Read/SetId(""),
+		// the Delete stateRefresh and CheckDestroy all converge.
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXIST"}) {
+			return object, WrapErrorf(NotFoundErr("CR:VpcEndpointLinkedVpc", id), NotFoundWithResponse, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

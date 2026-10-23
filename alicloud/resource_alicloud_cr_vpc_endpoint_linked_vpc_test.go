@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudCrVpcEndpointLinkedVpc_basic0(t *testing.T) {
+func TestAccAliCloudCrVpcEndpointLinkedVpc_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cr_vpc_endpoint_linked_vpc.default"
 	ra := resourceAttrInit(resourceId, AlicloudCrVpcEndpointLinkedVpcMap)
@@ -18,8 +18,8 @@ func TestAccAlicloudCrVpcEndpointLinkedVpc_basic0(t *testing.T) {
 	}, "DescribeCrVpcEndpointLinkedVpc")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sCrVpcEndpointLinkedVpc%d", defaultRegionToTest, rand)
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-cr-vpc-ep-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCrVpcEndpointLinkedVpcBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -30,7 +30,7 @@ func TestAccAlicloudCrVpcEndpointLinkedVpc_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":                      "${data.alicloud_cr_ee_instances.default.ids.0}",
+					"instance_id":                      "${alicloud_cr_ee_instance.default.id}",
 					"vpc_id":                           "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_id":                       "${data.alicloud_vswitches.default.ids.0}",
 					"module_name":                      "Registry",
@@ -65,7 +65,12 @@ func AlicloudCrVpcEndpointLinkedVpcBasicDependence0(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_cr_ee_instances" "default" {
+	resource "alicloud_cr_ee_instance" "default" {
+		payment_type   = "Subscription"
+		period         = 1
+		renewal_status = "ManualRenewal"
+		instance_type  = "Advanced"
+		instance_name  = var.name
 	}
 
 	data "alicloud_vpcs" "default" {
