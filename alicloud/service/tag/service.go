@@ -21,18 +21,16 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwutil"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
-
-type fwTimeoutDurationValidator struct{}
 
 type fwWireField struct {
 	Name   string
@@ -185,114 +183,28 @@ func fwJSONDocumentsEqual(left, right string) (bool, error) {
 }
 
 func fwTimeoutTypes() map[string]attr.Type {
-	return map[string]attr.Type{"create": types.StringType, "update": types.StringType, "delete": types.StringType}
+	return fwutil.TimeoutTypes("create", "update", "delete")
 }
 
 func fwTimeoutBlock() schema.SingleNestedBlock {
-	attributes := map[string]schema.Attribute{}
-	for _, operation := range []string{"create", "update", "delete"} {
-		attributes[operation] = schema.StringAttribute{
-			Optional:    true,
-			Description: "Maximum retry and wait duration for this operation, for example 10m.",
-			Validators:  []validator.String{fwTimeoutDurationValidator{}},
-		}
-	}
-	return schema.SingleNestedBlock{Attributes: attributes}
-}
-
-func (fwTimeoutDurationValidator) Description(context.Context) string {
-	return "A positive Go duration, for example 10m or 1h."
-}
-func (v fwTimeoutDurationValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-func (fwTimeoutDurationValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	duration, err := time.ParseDuration(req.ConfigValue.ValueString())
-	if err != nil || duration <= 0 {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid operation timeout", "Use a positive Go duration, for example 10m or 1h.")
-	}
+	return fwutil.TimeoutBlock("create", "update", "delete")
 }
 
 func fwTimeoutDuration(value types.Object, operation string, fallback time.Duration) (time.Duration, diag.Diagnostics) {
-	var diagnostics diag.Diagnostics
-	if value.IsNull() {
-		return fallback, diagnostics
-	}
-	if value.IsUnknown() {
-		diagnostics.AddError("Unknown operation timeout", "Resolve the timeouts block before applying.")
-		return 0, diagnostics
-	}
-	raw, ok := value.Attributes()[operation]
-	if !ok || raw.IsNull() {
-		return fallback, diagnostics
-	}
-	configured, ok := raw.(types.String)
-	if !ok || configured.IsUnknown() {
-		diagnostics.AddError("Invalid operation timeout", "Resolve the operation timeout to a duration string before applying.")
-		return 0, diagnostics
-	}
-	duration, err := time.ParseDuration(configured.ValueString())
-	if err != nil || duration <= 0 {
-		diagnostics.AddError("Invalid operation timeout", "Use a positive Go duration, for example 10m or 1h.")
-		return 0, diagnostics
-	}
-	return duration, diagnostics
+	return fwutil.TimeoutDuration(value, operation, fallback)
 }
 
-// retryRpcPost mirrors alicloud's retry.Retry+NeedRetry wrapper around RpcPost.
-// RpcPost returns *tea.SDKError, so the classifier only handles that path.
+// retryRpcPost mirrors alicloud's retry.RetryContext+NeedRetry wrapper around RpcPost.
 // An explicit endpoint pins the call to a control region that differs from the
 // provider region; an empty endpoint keeps the client's regional resolution.
-func retryRpcPost(client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration, endpoint string) (map[string]interface{}, error) {
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	var response map[string]interface{}
-	err := retry.Retry(timeout, func() *retry.RetryError {
-		var resp map[string]interface{}
-		var e error
+// ctx is the lifecycle context, so cancelling the operation stops the retries.
+func retryRpcPost(ctx context.Context, client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration, endpoint string) (map[string]interface{}, error) {
+	return helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
 		if endpoint == "" {
-			resp, e = client.RpcPost(product, version, action, nil, request, true)
-		} else {
-			resp, e = client.RpcPostWithEndpoint(product, version, action, nil, request, true, endpoint)
+			return client.RpcPost(product, version, action, nil, request, true)
 		}
-		response = resp
-		if e != nil {
-			if needRetry(e) {
-				wait()
-				return retry.RetryableError(e)
-			}
-			return retry.NonRetryableError(e)
-		}
-		return nil
-	})
-	if err != nil {
-		return response, errs.WrapErrorf(err, "calling %s failed", action)
-	}
-	return response, nil
-}
-
-// retryRpcGet preserves query parameters for RPC APIs whose metadata only permits GET.
-func retryRpcGet(client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	var response map[string]interface{}
-	err := retry.Retry(timeout, func() *retry.RetryError {
-		resp, e := client.RpcGet(product, version, action, request, nil)
-		response = resp
-		if e != nil {
-			if needRetry(e) {
-				wait()
-				return retry.RetryableError(e)
-			}
-			return retry.NonRetryableError(e)
-		}
-		return nil
-	})
-	if err != nil {
-		return response, errs.WrapErrorf(err, "calling %s failed", action)
-	}
-	return response, nil
+		return client.RpcPostWithEndpoint(product, version, action, nil, request, true, endpoint)
+	}, timeout, needRetry)
 }
 
 // needRetry mirrors alicloud.NeedRetry for the *tea.SDKError path that RpcPost produces.
@@ -367,7 +279,7 @@ func createdByNotExist(err error) bool {
 
 // createdByGet describes the resource by id. Returns (nil, nil) when it is gone, mirroring
 // v1 GwlbServiceV2.DescribeGwlbListener (Get RPC + retry + ResourceNotFound -> not found).
-func createdByGet(client *connectivity.AliyunClient, id string, includeSecondary ...bool) (map[string]interface{}, error) {
+func createdByGet(ctx context.Context, client *connectivity.AliyunClient, id string, includeSecondary ...bool) (map[string]interface{}, error) {
 	completeRead := len(includeSecondary) == 0 || includeSecondary[0]
 	getValues := map[string]interface{}{"RegionId": id}
 	request := map[string]interface{}{}
@@ -379,7 +291,7 @@ func createdByGet(client *connectivity.AliyunClient, id string, includeSecondary
 	if value, ok := request["RegionId"].(string); !ok || value == "" || value != id {
 		return nil, fmt.Errorf("building CheckCreatedByEnabled request: required identity does not match")
 	}
-	response, err := retryRpcPost(client, "Tag", "2018-08-28", "CheckCreatedByEnabled", request, 1*time.Minute, createdByEndpoint())
+	response, err := retryRpcPost(ctx, client, "Tag", "2018-08-28", "CheckCreatedByEnabled", request, 1*time.Minute, createdByEndpoint())
 	if err != nil {
 		if createdByNotExist(err) {
 			return nil, nil
@@ -422,9 +334,9 @@ func createdByCompleteRead(client *connectivity.AliyunClient, object map[string]
 // createdByStateRefreshFunc polls the status field; mirrors v1 GwlbListenerStateRefreshFunc.
 // A not-found resource returns a nil result; callers waiting for absence must pass an
 // empty Target, because StateChangeConf only treats a nil result as success in that case.
-func createdByStateRefreshFunc(client *connectivity.AliyunClient, id, field string, failStates []string) retry.StateRefreshFunc {
+func createdByStateRefreshFunc(ctx context.Context, client *connectivity.AliyunClient, id, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := createdByGet(client, id, false)
+		object, err := createdByGet(ctx, client, id, false)
 		if err != nil {
 			return nil, "", err
 		}
@@ -446,16 +358,16 @@ func createdByStateRefreshFunc(client *connectivity.AliyunClient, id, field stri
 
 // createdByWaitForState waits for the status field to reach target, mirroring v1 BuildStateConf.
 // Returns the last polled object (nil once the resource disappears).
-func createdByWaitForState(client *connectivity.AliyunClient, id, field string, target, failStates []string, timeout time.Duration) (map[string]interface{}, error) {
+func createdByWaitForState(ctx context.Context, client *connectivity.AliyunClient, id, field string, target, failStates []string, timeout time.Duration) (map[string]interface{}, error) {
 	stateConf := &retry.StateChangeConf{
 		Pending:    []string{},
 		Target:     target,
-		Refresh:    createdByStateRefreshFunc(client, id, field, failStates),
+		Refresh:    createdByStateRefreshFunc(ctx, client, id, field, failStates),
 		Timeout:    timeout,
 		Delay:      5 * time.Second,
 		MinTimeout: 3 * time.Second,
 	}
-	raw, err := stateConf.WaitForState()
+	raw, err := stateConf.WaitForStateContext(ctx)
 	if err != nil {
 		return nil, err
 	}
