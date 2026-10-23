@@ -156,6 +156,70 @@ func TestAccAliCloudPvtzZoneRecord_basic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudPvtzZoneRecord_aaaa(t *testing.T) {
+	var v map[string]interface{}
+
+	resourceId := "alicloud_pvtz_zone_record.default"
+	ra := resourceAttrInit(resourceId, nil)
+
+	serviceFunc := func() interface{} {
+		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneRecordConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rr":      "www",
+					"type":    "AAAA",
+					"value":   "2001:db8::1",
+					"zone_id": "${alicloud_pvtz_zone.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"type":  "AAAA",
+						"value": "2001:db8::1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rr":    "ipv6",
+					"value": "2001:db8::2",
+					"ttl":   "3600",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rr":    "ipv6",
+						"type":  "AAAA",
+						"value": "2001:db8::2",
+						"ttl":   "3600",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPvtzZoneRecord_multi(t *testing.T) {
 	var v map[string]interface{}
 
