@@ -184,7 +184,7 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 		request := map[string]interface{}{
 			"RegionId":       client.RegionId,
 			"VccName":        name,
-			"ZoneId":         "cn-wulanchabu-a",
+			"ZoneId":         "cn-wulanchabu-b",
 			"VpcId":          vpcID,
 			"VSwitchId":      vswID,
 			"Bandwidth":      1000,
@@ -237,47 +237,68 @@ func testAccEfloVccGrantRuleDeleteVcc(vccID *string) resource.TestCheckFunc {
 }
 
 // testAccEfloVccGrantRuleWaitVcc polls GetVcc until the VCC is Available.
-// VCC Status values (per GetVcc API): Available, Not Available, Executing,
-// Deleting. Only "Available" means the VCC is operable for grant rule
-// creation; any other status causes CreateVccGrantRule to fail with
-// Code 1009 (un-operable state). VCC provisioning latency is intermittent
-// in cn-wulanchabu, so the timeout is 10 minutes.
+// VCC Status values (per GetVcc API): Order Placing, Executing, Available,
+// Not Available, Create Failed, Deleting. Only "Available" means the VCC
+// is operable for grant rule creation. "Create Failed" and "Not Available"
+// are terminal failure states — we fail fast after 2 consecutive
+// observations and dump the full VCC object for diagnostics.
 func testAccEfloVccGrantRuleWaitVcc(client *connectivity.AliyunClient, vccID string) error {
 	query := map[string]interface{}{
 		"RegionId": client.RegionId,
 		"VccId":    vccID,
 	}
-	timeout := 10 * time.Minute
+	timeout := 15 * time.Minute
 	deadline := time.Now().Add(timeout)
+	failedCount := 0
+	var status string
 	for time.Now().Before(deadline) {
 		resp, err := client.RpcPost("eflo", "2022-05-30", "GetVcc", query, query, true)
 		if err != nil {
 			// The VCC may not be queryable immediately after creation.
-			time.Sleep(10 * time.Second)
+			fmt.Printf("[VCC_WAIT] GetVcc error for %s: %v\n", vccID, err)
+			time.Sleep(15 * time.Second)
 			continue
 		}
 		content, _ := resp["Content"].(map[string]interface{})
 		if content == nil {
-			time.Sleep(10 * time.Second)
+			fmt.Printf("[VCC_WAIT] GetVcc response missing Content for %s: %v\n", vccID, resp)
+			time.Sleep(15 * time.Second)
 			continue
 		}
 		// GetVcc may return a single object or a list wrapper.
-		if status, ok := content["Status"].(string); ok && status == "Available" {
-			return nil
-		}
-		// Try list-style response: Content contains an array.
-		for _, key := range []string{"Content", "VccList", "Data"} {
-			if arr, ok := content[key].([]interface{}); ok && len(arr) > 0 {
-				if item, ok := arr[0].(map[string]interface{}); ok {
-					if status, ok := item["Status"].(string); ok && status == "Available" {
-						return nil
+		status, _ = content["Status"].(string)
+		if status == "" {
+			// Try list-style response: Content contains an array.
+			for _, key := range []string{"Content", "VccList", "Data"} {
+				if arr, ok := content[key].([]interface{}); ok && len(arr) > 0 {
+					if item, ok := arr[0].(map[string]interface{}); ok {
+						if s, ok := item["Status"].(string); ok {
+							status = s
+							break
+						}
 					}
 				}
 			}
 		}
-		time.Sleep(10 * time.Second)
+		fmt.Printf("[VCC_WAIT] VCC %s status=%q (remaining %v)\n", vccID, status, time.Until(deadline).Round(time.Second))
+		if status == "Available" {
+			return nil
+		}
+		// "Create Failed" and "Not Available" are terminal failure states.
+		if status == "Create Failed" || status == "Not Available" {
+			failedCount++
+			if failedCount == 1 {
+				fmt.Printf("[VCC_WAIT] VCC %s entered terminal state %q, full content: %v\n", vccID, status, content)
+			}
+			if failedCount >= 2 {
+				return fmt.Errorf("VCC %s is in terminal state %q (observed %d times), content: %v", vccID, status, failedCount, content)
+			}
+		} else {
+			failedCount = 0
+		}
+		time.Sleep(15 * time.Second)
 	}
-	return fmt.Errorf("timed out waiting for VCC %s to become Available", vccID)
+	return fmt.Errorf("timed out waiting for VCC %s to become Available (last status: %q)", vccID, status)
 }
 
 // testAccCheckEfloVccGrantRuleDestroy verifies the grant rule is gone (error
