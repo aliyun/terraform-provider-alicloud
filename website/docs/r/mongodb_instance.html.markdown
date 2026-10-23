@@ -119,6 +119,9 @@ The following arguments are supported:
 * `restore_time` - (Optional, Available since v1.271.0) The point in time to which you want to restore the instance. You can specify any point in time within the last seven days. The time must be in the yyyy-MM-ddTHH:mm:ssZ format and in UTC.
 
   -> **NOTE:** You must specify `src_db_instance_id` and `restore_time` only when you clone an instance based on a point in time.
+* `backup_id` - (Optional, ForceNew, String, Available since v2.1.1) The ID of the backup set.
+
+  -> **NOTE:** When you restore an instance from the recycle bin, `src_db_instance_id` and `backup_id` must be specified together. You can query the backup set ID of a released instance by calling the `DescribeBackups` operation.
 * `backup_time` - (Optional, Available since v1.42.0) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday].
 * `backup_retention_period` - (Optional, Int, Available since v1.213.1) The retention period of full backups.

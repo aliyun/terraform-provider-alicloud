@@ -201,6 +201,16 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"backup_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				// RequiredWith is evaluated on the attribute that carries it, so it
+				// has to sit on backup_id: CreateDBInstance rejects BackupId without
+				// SrcDBInstanceId, while src_db_instance_id + restore_time alone stays
+				// valid for point-in-time clones.
+				RequiredWith: []string{"src_db_instance_id"},
+			},
 			"backup_time": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -550,6 +560,10 @@ func resourceAliCloudMongoDBInstanceCreate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOk("src_db_instance_id"); ok {
 		request["SrcDBInstanceId"] = v
+	}
+
+	if v, ok := d.GetOk("backup_id"); ok {
+		request["BackupId"] = v
 	}
 
 	if v, ok := d.GetOk("restore_time"); ok {
@@ -1007,6 +1021,15 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		stateConf = BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging", "NodeCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
+		}
+
+		// The order and status waits above can already be satisfied by the
+		// previous order's terminal state, so wait for the new class itself.
+		if d.HasChange("db_instance_class") {
+			stateConf = BuildStateConf([]string{"Pending"}, []string{"Applied"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ddsService.RdsMongodbDBInstanceAttributeRefreshFunc(d.Id(), "DBInstanceClass", d.Get("db_instance_class").(string)))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapError(err)
+			}
 		}
 
 	}
