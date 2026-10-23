@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -26,6 +27,10 @@ func resourceAliCloudRdsBackup() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"backup_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"backup_job_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -127,6 +132,7 @@ func resourceAliCloudRdsBackupCreate(d *schema.ResourceData, meta interface{}) e
 	time.Sleep(1 * time.Minute)
 	object, err := rdsService.DescribeBackupTasks(d.Get("db_instance_id").(string), response["BackupJobId"].(string))
 	d.SetId(fmt.Sprint(request["DBInstanceId"], ":", object["BackupId"].(string)))
+	d.Set("backup_job_id", response["BackupJobId"].(string))
 
 	return resourceAliCloudRdsBackupRead(d, meta)
 }
@@ -176,7 +182,13 @@ func resourceAliCloudRdsBackupDelete(d *schema.ResourceData, meta interface{}) e
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["BackupId"] = d.Id()
+	// The resource ID is a composite "DBInstanceId:BackupId"; extract the BackupId
+	// for the DeleteBackup API instead of sending the full composite ID.
+	if parts := strings.Split(d.Id(), ":"); len(parts) == 2 {
+		request["BackupId"] = parts[1]
+	} else {
+		request["BackupId"] = d.Id()
+	}
 	request["RegionId"] = client.RegionId
 
 	request["DBInstanceId"] = d.Get("db_instance_id")
