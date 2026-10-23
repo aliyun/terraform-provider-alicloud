@@ -549,3 +549,124 @@ func TestAccAliCloudPolarDbAccount_passwordWo(t *testing.T) {
 		},
 	})
 }
+
+// Test PolarDb Account property coverage for CreateAccount (db_name, priv_for_all_db, node_type) and ModifyAccountPassword (password_type).
+func TestAccAliCloudPolarDbAccount_propertyCoverage(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_polardb_account.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"account_lock_state":          CHECKSET,
+		"account_password_valid_time": CHECKSET,
+		"status":                      CHECKSET,
+	})
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PolarDbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePolarDbAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPolarDbAccountBasicDependencePropertyCoverage)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":    "${alicloud_polardb_cluster.default.id}",
+					"account_name":     name,
+					"account_password": "YourPassword123!",
+					"db_name":          "${alicloud_polardb_database.default.db_name}",
+					"priv_for_all_db":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id":   CHECKSET,
+						"account_name":    name,
+						"account_type":    CHECKSET,
+						"db_name":         "tf_testacc_db",
+						"priv_for_all_db": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword123!update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password_valid_time": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"account_password", "db_name", "node_type", "password_type", "priv_for_all_db",
+				},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword123!update2",
+					"password_type":    "Tair",
+				}),
+				ExpectError: regexp.MustCompile("InvalidParam|tair account not exists"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"node_type": "Search",
+				}),
+				ExpectError: regexp.MustCompile("OperationDenied|InvalidNodeType|InvalidParameter"),
+			},
+		},
+	})
+}
+
+func AliCloudPolarDbAccountBasicDependencePropertyCoverage(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_polardb_node_classes" "default" {
+  db_type    = "MySQL"
+  db_version = "8.0"
+  pay_type   = "PostPaid"
+  category   = "Normal"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "tf-testAcc-polardb-account-%s"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+  cidr_block   = "172.16.0.0/24"
+  vswitch_name = "tf-testAcc-polardb-account-%s"
+}
+
+resource "alicloud_polardb_cluster" "default" {
+  db_type            = "MySQL"
+  db_version         = "8.0"
+  db_node_class      = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+  pay_type           = "PostPaid"
+  vswitch_id         = alicloud_vswitch.default.id
+  description        = "tf-testAcc-polardb-account-%s"
+  encrypt_new_tables = "OFF"
+}
+
+resource "alicloud_polardb_database" "default" {
+  db_cluster_id = alicloud_polardb_cluster.default.id
+  db_name       = "tf_testacc_db"
+}
+`, name, name, name, name)
+}

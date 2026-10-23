@@ -87,6 +87,27 @@ func resourceAliCloudPolarDbAccount() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"db_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"node_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Search"}, false),
+			},
+			"password_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"priv_for_all_db": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -165,11 +186,20 @@ func resourceAliCloudPolarDbAccountCreate(d *schema.ResourceData, meta interface
 	} else {
 		request["AccountType"] = "Normal"
 	}
+	if v, ok := d.GetOk("db_name"); ok {
+		request["DBName"] = v
+	}
+	if v, ok := d.GetOk("node_type"); ok {
+		request["NodeType"] = v
+	}
+	if v, ok := d.GetOk("priv_for_all_db"); ok {
+		request["PrivForAllDB"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OutofUsage", "InstanceConnectTimeoutFault", "OperationDenied.DBInstanceStatus", "ConcurrentTaskExceeded", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "Database.ConnectError", "LockTimeout"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OutofUsage", "InstanceConnectTimeoutFault", "OperationDenied.DBInstanceStatus", "ConcurrentTaskExceeded", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "Database.ConnectError", "LockTimeout", "EngineMigration.ActionDisabled"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -332,12 +362,25 @@ func resourceAliCloudPolarDbAccountUpdate(d *schema.ResourceData, meta interface
 			request["NewAccountPassword"] = woValue.AsString()
 		}
 	}
+	if !d.IsNewResource() && d.HasChange("password_type") {
+		update = true
+	}
+	if v, ok := d.GetOk("password_type"); ok {
+		request["PasswordType"] = v
+	}
+	if update && request["NewAccountPassword"] == nil {
+		if password := d.Get("account_password").(string); password != "" {
+			request["NewAccountPassword"] = password
+		} else {
+			return WrapError(Error("The 'password_type' can only be changed together with 'account_password', 'kms_encrypted_password' or 'account_password_wo_version'."))
+		}
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OutofUsage", "InstanceConnectTimeoutFault", "OperationDenied.DBInstanceStatus", "ConcurrentTaskExceeded", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "Database.ConnectError", "LockTimeout"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OutofUsage", "InstanceConnectTimeoutFault", "OperationDenied.DBInstanceStatus", "ConcurrentTaskExceeded", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "Database.ConnectError", "LockTimeout", "EngineMigration.ActionDisabled"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}

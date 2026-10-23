@@ -20,6 +20,8 @@ For information about Polar Db Account and how to use it, see [What is Account](
 
 -> **NOTE:** The DynamoDB type account does not support deletion. When destroying the Terraform resource, the DynamoDB account will be removed from state but not deleted from the cloud.
 
+-> **NOTE:** The `db_name`, `node_type`, `password_type` and `priv_for_all_db` arguments are only used when the account is created or its password is updated and are not returned by the query API, so they cannot be restored by import.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -49,12 +51,13 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_polardb_cluster" "default" {
-  db_type       = "MySQL"
-  db_version    = "8.0"
-  db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
-  pay_type      = "PostPaid"
-  vswitch_id    = alicloud_vswitch.default.id
-  description   = "terraform-example"
+  db_type            = "MySQL"
+  db_version         = "8.0"
+  db_node_class      = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+  pay_type           = "PostPaid"
+  vswitch_id         = alicloud_vswitch.default.id
+  description        = "terraform-example"
+  encrypt_new_tables = "OFF"
 }
 
 resource "alicloud_polardb_account" "default" {
@@ -86,10 +89,14 @@ The following arguments are supported:
 * `account_password_wo` - (Optional, Available since v2.0.0-beta5) The write-only password of the account. It is only sent to the server when the resource is created or the `account_password_wo_version` changes and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `account_password_wo_version`. It conflicts with `account_password` and `kms_encrypted_password`, and one of `account_password`, `kms_encrypted_password` and `account_password_wo` must be set.
 * `account_password_wo_version` - (Optional, Available since v2.0.0-beta5) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `account_password_wo` changes.
 * `account_password_valid_time` - (Optional, Available since v1.265.0) The time when the password for the database account expires.
-* `account_type` - (Optional, ForceNew) The account type. Default value:`Normal`. Valid values: `Normal`, `Super`.
+* `account_type` - (Optional, ForceNew) The account type. Default value:`Normal`. Valid values: `Normal`, `Super`. The API may report another type for accounts created with `db_name` or `priv_for_all_db`, for example `ReadOnly` for a globally read-only account, so do not set `account_type` together with them.
 * `db_cluster_id` - (Required, ForceNew) The cluster ID.
+* `db_name` - (Optional, ForceNew, Available since v2.1.1) The names of the databases that the account is allowed to access. Separate multiple database names with commas (,). Only standard accounts of PolarDB for MySQL clusters support this parameter. It is only sent when the account is created and is not read back by the query API.
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. It conflicts with `account_password` and `account_password_wo`, and one of `account_password`, `kms_encrypted_password` and `account_password_wo` must be set.
 * `kms_encryption_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `node_type` - (Optional, ForceNew, Available since v2.1.1) The node type. Valid value: `Search`. This parameter is required only when the account is created for a PolarDB Search node. It is only sent when the account is created and is not read back by the query API.
+* `password_type` - (Optional, Available since v2.1.1) The password type of the account, for example, `Tair`. It is sent together with the new password when the account password is updated. The API only accepts it for Tair accounts; for accounts of other types the password update is rejected with `InvalidParam`.
+* `priv_for_all_db` - (Optional, ForceNew, Available since v2.1.1) Specifies whether to grant the account permissions on all databases of the cluster and on all databases that are added later. Valid values: `0` and `1`. The API applies it only when the account is created with database privileges (`AccountPrivilege`), which this resource does not support. It is only sent when the account is created and is not read back by the query API.
 
 ## Attributes Reference
 
