@@ -401,6 +401,11 @@ func testAccEfloVccGrantRuleCreateVcc(name string, vccID *string) resource.TestC
 // route interface on the VPC; without deleting the VCC first, DeleteVpc fails
 // with DependencyViolation.RouteInterface. This Check runs in the import step,
 // before the framework's automatic terraform destroy.
+//
+// After calling DeleteVcc, we poll GetVcc until the VCC is no longer queryable
+// (deletion is async) and then run RI cleanup to remove any remaining route
+// interfaces on the VPC. This ensures DeleteVpc succeeds during terraform
+// destroy.
 func testAccEfloVccGrantRuleDeleteVcc(vccID *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if *vccID == "" {
@@ -412,6 +417,31 @@ func testAccEfloVccGrantRuleDeleteVcc(vccID *string) resource.TestCheckFunc {
 			"VccId":    *vccID,
 		}
 		_, _ = client.RpcPost("eflo", "2022-05-30", "DeleteVcc", req, req, true)
+
+		// Poll GetVcc until the VCC is no longer queryable — VCC deletion
+		// is async, and the route interface on the VPC is removed as part
+		// of the VCC deletion process.
+		deadline := time.Now().Add(5 * time.Minute)
+		for time.Now().Before(deadline) {
+			query := map[string]interface{}{
+				"RegionId": client.RegionId,
+				"VccId":    *vccID,
+			}
+			resp, err := client.RpcPost("eflo", "2022-05-30", "GetVcc", query, query, true)
+			if err != nil {
+				// VCC no longer queryable — deletion complete.
+				break
+			}
+			content, _ := resp["Content"].(map[string]interface{})
+			status, _ := content["Status"].(string)
+			fmt.Printf("[VCC_DELETE] VCC %s status=%q, waiting for deletion...\n", *vccID, status)
+			time.Sleep(15 * time.Second)
+		}
+
+		// Clean up any remaining route interfaces on the VPC to prevent
+		// DependencyViolation.RouteInterface during terraform destroy.
+		testAccEfloVccGrantRuleCleanupRIs(client)
+
 		*vccID = ""
 		os.Unsetenv("TF_VAR_vcc_id")
 		return nil
@@ -518,8 +548,13 @@ func testAccCheckEfloVccGrantRuleDestroy(s *terraform.State) error {
 			"VccId":    testVccGrantRuleVccID,
 		}
 		_, _ = client.RpcPost("eflo", "2022-05-30", "DeleteVcc", req, req, true)
+		// Wait for VCC deletion to settle.
+		time.Sleep(30 * time.Second)
 		testVccGrantRuleVccID = ""
 	}
+	// Safety-net RI cleanup: remove any remaining route interfaces to
+	// prevent DependencyViolation.RouteInterface during terraform destroy.
+	testAccEfloVccGrantRuleCleanupRIs(client)
 	os.Unsetenv("TF_VAR_vcc_id")
 	return nil
 }
