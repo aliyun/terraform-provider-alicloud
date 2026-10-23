@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -82,6 +83,10 @@ func resourceAliCloudCrInstance() *schema.Resource {
 					},
 				},
 			},
+			"instance_issue": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"instance_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -92,20 +97,19 @@ func resourceAliCloudCrInstance() *schema.Resource {
 				Required:     true,
 				ValidateFunc: StringInSlice([]string{"Basic", "Standard", "Advanced", "Economy"}, false),
 			},
-			"namespace_quota": {
-				Type:     schema.TypeInt,
+			"logistics": {
+				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v < 0 || v > 100000 {
-						errs = append(errs, fmt.Errorf("%q must be between 0 and 100000 inclusive, and multiple of 5, got: %d", key, v))
-					}
-
-					if !skipResourceSchemaValidation() && (v > 0 && v%5 != 0) {
-						errs = append(errs, fmt.Errorf("%q must be multiple of 5, got: %d", key, v))
-					}
-					return
-				},
+				ForceNew: true,
+			},
+			"modified_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"namespace_quota": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 100000),
 			},
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
@@ -152,18 +156,9 @@ func resourceAliCloudCrInstance() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
 			},
 			"repo_quota": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v < 0 || v > 1000000 {
-						errs = append(errs, fmt.Errorf("%q must be between 0 and 1000000 inclusive, multiple of 1000: %d", key, v))
-					}
-					if !skipResourceSchemaValidation() && (v > 0 && v%1000 != 0) {
-						errs = append(errs, fmt.Errorf("%q must be multiple of 1000, got: %d", key, v))
-					}
-					return
-				},
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 1000000),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -176,15 +171,9 @@ func resourceAliCloudCrInstance() *schema.Resource {
 			},
 			"tags": tagsSchema(),
 			"vpc_quota": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(int)
-					if v < 0 || v > 100 {
-						errs = append(errs, fmt.Errorf("%q must be between 0 and 100 inclusive, got: %d", key, v))
-					}
-					return
-				},
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 100),
 			},
 			"created_time": {
 				Type:       schema.TypeString,
@@ -209,12 +198,6 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	request["ClientToken"] = buildClientToken(action)
 
 	parameterMapList := make([]map[string]interface{}, 0)
-	if v, ok := d.GetOk("vpc_quota"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "vpc_num",
-			"Value": fmt.Sprint(v),
-		})
-	}
 	if v, ok := d.GetOk("custom_oss_bucket"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "InstanceStorageName",
@@ -227,10 +210,28 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 			"Value": v,
 		})
 	}
+	if v, ok := d.GetOk("image_scanner"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "image_scanner",
+			"Value": v,
+		})
+	}
 	if v, ok := d.GetOk("instance_name"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "InstanceName",
 			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("instance_type"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "InstanceType",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("namespace_quota"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "NamespaceQuota",
+			"Value": fmt.Sprint(v),
 		})
 	}
 	parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -243,35 +244,26 @@ func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) 
 			"Value": fmt.Sprint(v),
 		})
 	}
-	if v, ok := d.GetOk("namespace_quota"); ok {
+	if v, ok := d.GetOk("vpc_quota"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "NamespaceQuota",
+			"Code":  "vpc_num",
 			"Value": fmt.Sprint(v),
-		})
-	}
-	if v, ok := d.GetOk("instance_type"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "InstanceType",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("image_scanner"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "image_scanner",
-			"Value": v,
 		})
 	}
 	request["Parameter"] = parameterMapList
 
-	request["SubscriptionType"] = d.Get("payment_type")
-	if v, ok := d.GetOk("renewal_status"); ok {
-		request["RenewalStatus"] = v
+	if v, ok := d.GetOk("logistics"); ok {
+		request["Logistics"] = v
 	}
+	request["SubscriptionType"] = d.Get("payment_type")
 	if v, ok := d.GetOkExists("period"); ok {
 		request["Period"] = v
 	}
 	if v, ok := d.GetOkExists("renew_period"); ok {
 		request["RenewPeriod"] = v
+	}
+	if v, ok := d.GetOk("renewal_status"); ok {
+		request["RenewalStatus"] = v
 	}
 	var endpoint string
 	request["ProductCode"] = "acr"
@@ -333,7 +325,11 @@ func resourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("instance_issue", objectRaw["InstanceIssue"])
 	d.Set("instance_name", objectRaw["InstanceName"])
+	if v, ok := objectRaw["ModifiedTime"].(json.Number); ok {
+		d.Set("modified_time", v.String())
+	}
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	if objectRaw["InstanceSpecification"] != nil {
 		d.Set("instance_type", strings.TrimPrefix(objectRaw["InstanceSpecification"].(string), "Enterprise_"))
@@ -358,8 +354,7 @@ func resourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	endpointsRaw, _ := jsonpath.Get("$.Endpoints", objectRaw)
-
+	endpointsRaw := objectRaw["Endpoints"]
 	instanceEndpointsMaps := make([]map[string]interface{}, 0)
 	if endpointsRaw != nil {
 		for _, endpointsChildRaw := range convertToInterfaceArray(endpointsRaw) {

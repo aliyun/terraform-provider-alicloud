@@ -104,6 +104,14 @@ func dataSourceAlicloudCrEEInstances() *schema.Resource {
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
+						"instance_issue": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"modified_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -243,6 +251,8 @@ func dataSourceAlicloudCrEEInstancesRead(d *schema.ResourceData, meta interface{
 		mapping["vpc_endpoints"] = vpcDomains
 		mapping["public_endpoints"] = publicDomains
 		mapping["tags"] = instanceTags
+		// InstancesItem.ModifiedTime is a string epoch in milliseconds.
+		mapping["modified_time"] = instance.ModifiedTime
 
 		ids = append(ids, instance.InstanceId)
 		names = append(names, instance.InstanceName)
@@ -271,6 +281,15 @@ func dataSourceAlicloudCrEEInstancesRead(d *schema.ResourceData, meta interface{
 		}
 		mapping["authorization_token"] = response.AuthorizationToken
 		mapping["temp_username"] = response.TempUsername
+
+		// InstanceIssue is sparse: the API only returns it when the instance has an
+		// active issue, and the typed cr_ee.GetInstanceResponse does not model it, so
+		// read it through the untyped service call.
+		objectRaw, err := crServiceV2.DescribeCrInstance(instance.InstanceId)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "data_alicloud_cr_ee_instances", "GetInstance", AlibabaCloudSdkGoERROR)
+		}
+		mapping["instance_issue"] = objectRaw["InstanceIssue"]
 
 		instanceMaps = append(instanceMaps, mapping)
 	}

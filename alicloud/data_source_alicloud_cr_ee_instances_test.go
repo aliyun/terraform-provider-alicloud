@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudCREEInstancesDataSource(t *testing.T) {
+func TestAccAliCloudCrEEInstancesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_cr_ee_instances.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc-basic-%d", rand)
@@ -83,6 +83,7 @@ func TestAccAlicloudCREEInstancesDataSource(t *testing.T) {
 			"instances.0.public_endpoints.#":  CHECKSET,
 			"instances.0.authorization_token": CHECKSET,
 			"instances.0.temp_username":       CHECKSET,
+			"instances.0.modified_time":       CHECKSET,
 			"instances.0.tags.%":              "2",
 			"instances.0.tags.Created":        "TF",
 			"instances.0.tags.For":            "Test",
