@@ -60,6 +60,12 @@ func resourceAlicloudEssLifecycleHook() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Active", "InActive"}, false),
+			},
 		},
 	}
 }
@@ -84,7 +90,7 @@ func resourceAliyunEssLifeCycleHookCreate(d *schema.ResourceData, meta interface
 		d.SetId(response.LifecycleHookId)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_lifecyclehook", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_lifecycle_hook", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return resourceAliyunEssLifeCycleHookRead(d, meta)
@@ -111,6 +117,7 @@ func resourceAliyunEssLifeCycleHookRead(d *schema.ResourceData, meta interface{}
 	d.Set("default_result", object.DefaultResult)
 	d.Set("notification_arn", object.NotificationArn)
 	d.Set("notification_metadata", object.NotificationMetadata)
+	d.Set("status", object.LifecycleHookStatus)
 
 	return nil
 }
@@ -139,6 +146,12 @@ func resourceAliyunEssLifeCycleHookUpdate(d *schema.ResourceData, meta interface
 
 	if d.HasChange("notification_metadata") {
 		request.NotificationMetadata = d.Get("notification_metadata").(string)
+	}
+
+	if d.HasChange("status") {
+		if v := d.Get("status").(string); v != "" {
+			request.LifecycleHookStatus = v
+		}
 	}
 
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
