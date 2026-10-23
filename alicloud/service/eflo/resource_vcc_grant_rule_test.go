@@ -236,22 +236,18 @@ func testAccEfloVccGrantRuleDeleteVcc(vccID *string) resource.TestCheckFunc {
 	}
 }
 
-// testAccEfloVccGrantRuleWaitVcc polls GetVcc until the VCC leaves a transient
-// provisioning state. CreateVccGrantRule only needs the VCC ID, not a specific
-// VCC status, so after the timeout the function proceeds best-effort rather
-// than failing the test — VCC provisioning latency is intermittent in
-// cn-wulanchabu.
+// testAccEfloVccGrantRuleWaitVcc polls GetVcc until the VCC is Available.
+// VCC Status values (per GetVcc API): Available, Not Available, Executing,
+// Deleting. Only "Available" means the VCC is operable for grant rule
+// creation; any other status causes CreateVccGrantRule to fail with
+// Code 1009 (un-operable state). VCC provisioning latency is intermittent
+// in cn-wulanchabu, so the timeout is 10 minutes.
 func testAccEfloVccGrantRuleWaitVcc(client *connectivity.AliyunClient, vccID string) error {
 	query := map[string]interface{}{
 		"RegionId": client.RegionId,
 		"VccId":    vccID,
 	}
-	// transient states that indicate the VCC is still being provisioned.
-	transient := map[string]bool{
-		"Creating": true, "Configuring": true, "Pending": true,
-		"Deploying": true, "Initializing": true, "Provisioning": true,
-	}
-	timeout := 8 * time.Minute
+	timeout := 10 * time.Minute
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		resp, err := client.RpcPost("eflo", "2022-05-30", "GetVcc", query, query, true)
@@ -266,28 +262,22 @@ func testAccEfloVccGrantRuleWaitVcc(client *connectivity.AliyunClient, vccID str
 			continue
 		}
 		// GetVcc may return a single object or a list wrapper.
-		if status, ok := content["Status"].(string); ok && status != "" {
-			if !transient[status] {
-				return nil
-			}
+		if status, ok := content["Status"].(string); ok && status == "Available" {
+			return nil
 		}
 		// Try list-style response: Content contains an array.
 		for _, key := range []string{"Content", "VccList", "Data"} {
 			if arr, ok := content[key].([]interface{}); ok && len(arr) > 0 {
 				if item, ok := arr[0].(map[string]interface{}); ok {
-					if status, ok := item["Status"].(string); ok && status != "" {
-						if !transient[status] {
-							return nil
-						}
+					if status, ok := item["Status"].(string); ok && status == "Available" {
+						return nil
 					}
 				}
 			}
 		}
 		time.Sleep(10 * time.Second)
 	}
-	// Best-effort: proceed even if the VCC hasn't left a transient state.
-	// CreateVccGrantRule only requires the VCC ID, not a specific status.
-	return nil
+	return fmt.Errorf("timed out waiting for VCC %s to become Available", vccID)
 }
 
 // testAccCheckEfloVccGrantRuleDestroy verifies the grant rule is gone (error
