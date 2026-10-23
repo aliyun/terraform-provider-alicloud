@@ -433,7 +433,7 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 		if err != nil {
-			if (NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"})) && internalErrRetryCount < 2 {
+			if (NeedRetry(err) || IsExpectedErrors(err, []string{"SocketTimeout.Exception", "InternalError"})) && internalErrRetryCount < 2 {
 				wait()
 				internalErrRetryCount++
 				return retry.RetryableError(err)
