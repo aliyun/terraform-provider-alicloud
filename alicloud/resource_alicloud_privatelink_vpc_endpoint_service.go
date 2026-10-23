@@ -66,13 +66,32 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				MaxItems: 10,
-				// Hash an element on resource_id + resource_type only, so the
-				// server-assigned zone_id (Optional + Computed) never changes an
-				// element's identity after Read. This keeps the set order- and
-				// value-independent and avoids perpetual diff / detach-attach churn.
+				// Hash an element on resource_id + resource_type + zone_id. A
+				// single backend (e.g. an ALB/NLB) may be attached to the endpoint
+				// service in more than one availability zone; the upstream treats
+				// each (ResourceId, ZoneId) pair as a distinct attachment
+				// (AttachResourceToVpcEndpointService and the standalone
+				// alicloud_privatelink_vpc_endpoint_service_resource both key on
+				// ServiceId:ResourceId:ZoneId, except slb which is zone-less).
+				// Excluding zone_id collapsed two cross-zone blocks for the same
+				// backend into one, which made cross-region endpoint services
+				// (the server requires ≥2 zones for cross-region) impossible to
+				// create in a single apply and triggered
+				// "Provider produced inconsistent final plan".
+				//
+				// zone_id is Optional + Computed, so including it in the hash
+				// could in principle churn when the field is omitted in config
+				// but read back from the server. In practice this cannot happen:
+				// for alb/nlb/gwlb the upstream API makes ZoneId required on
+				// attach, so users always specify it and the read-back value
+				// matches the configured one; for slb the upstream returns no
+				// zone, and Read normalizes the absent value to "" via
+				// vpcEndpointServiceResourceZoneId so both sides hash "" and the
+				// single-attachment behavior is unchanged. No perpetual diff /
+				// detach-attach churn is introduced.
 				Set: func(v interface{}) int {
 					m := v.(map[string]interface{})
-					return helper.Hashcode(fmt.Sprintf("%s|%s", m["resource_id"], m["resource_type"]))
+					return helper.Hashcode(fmt.Sprintf("%s|%s|%s", m["resource_id"], m["resource_type"], vpcEndpointServiceResourceZoneId(m["zone_id"])))
 				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
