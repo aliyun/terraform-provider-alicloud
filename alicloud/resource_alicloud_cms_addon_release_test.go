@@ -67,6 +67,63 @@ func TestAccAliCloudCmsAddonRelease_basic8556(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"entity_rules": []map[string]interface{}{
+						{
+							"resource_group_id": "resourceGroupId",
+							"instance_ids":      []string{"a", "b", "c", "d", "e"},
+							"entity_types":      []string{"a", "b", "c", "d", "e"},
+							"region_ids":        []string{"a", "b", "c", "d", "e"},
+							"ip_match_rule": []map[string]interface{}{
+								{
+									"ip_field_key": "ipFieldKey",
+									"ip_cidr":      "ipCIDR",
+								},
+							},
+							"tags": []map[string]interface{}{
+								{
+									"op":         "in",
+									"tag_key":    "TF",
+									"tag_values": []string{"a", "b", "c", "d", "e"},
+								},
+								{
+									"op":         "notIn",
+									"tag_key":    "TFTag",
+									"tag_values": []string{"f", "g", "h", "i", "j"},
+								},
+								{
+									"op":         "equals",
+									"tag_key":    "TFTagKey",
+									"tag_values": []string{"k", "l", "m", "n", "o"},
+								},
+							},
+							"field_rules": []map[string]interface{}{
+								{
+									"op":           "startWith",
+									"field_key":    "TF",
+									"field_values": []string{"a", "b", "c", "d", "e"},
+								},
+								{
+									"op":           "equals",
+									"field_key":    "TFField",
+									"field_values": []string{"f", "g", "h", "i", "j"},
+								},
+								{
+									"op":           "inAll",
+									"field_key":    "TFFieldKey",
+									"field_values": []string{"k", "l", "m", "n", "o"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"entity_rules.#": "1",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -105,7 +162,55 @@ func TestAccAliCloudCmsAddonRelease_basic8556_twin(t *testing.T) {
 					"aliyun_lang":           "en",
 					"env_type":              "Cloud",
 					"config":                `{\"discoverType\": \"StaticTarget\",\"discover\": {},\"targets\": \"127.0.0.1:1111\",\"metricPath\": \"/metrics\",\"scrapeInterval\": 15,\"honorTimestamps\": false,\"honorLabels\": false,\"queryParams\": {},\"customRelabelConfigs\": \"\"}`,
-					"dry_run":               "false",
+					"entity_rules": []map[string]interface{}{
+						{
+							"resource_group_id": "resourceGroupId",
+							"instance_ids":      []string{"a", "b", "c", "d", "e"},
+							"entity_types":      []string{"a", "b", "c", "d", "e"},
+							"region_ids":        []string{"a", "b", "c", "d", "e"},
+							"ip_match_rule": []map[string]interface{}{
+								{
+									"ip_field_key": "ipFieldKey",
+									"ip_cidr":      "ipCIDR",
+								},
+							},
+							"tags": []map[string]interface{}{
+								{
+									"op":         "in",
+									"tag_key":    "TF",
+									"tag_values": []string{"a", "b", "c", "d", "e"},
+								},
+								{
+									"op":         "notIn",
+									"tag_key":    "TFTag",
+									"tag_values": []string{"f", "g", "h", "i", "j"},
+								},
+								{
+									"op":         "equals",
+									"tag_key":    "TFTagKey",
+									"tag_values": []string{"k", "l", "m", "n", "o"},
+								},
+							},
+							"field_rules": []map[string]interface{}{
+								{
+									"op":           "startWith",
+									"field_key":    "TF",
+									"field_values": []string{"a", "b", "c", "d", "e"},
+								},
+								{
+									"op":           "equals",
+									"field_key":    "TFField",
+									"field_values": []string{"f", "g", "h", "i", "j"},
+								},
+								{
+									"op":           "inAll",
+									"field_key":    "TFFieldKey",
+									"field_values": []string{"k", "l", "m", "n", "o"},
+								},
+							},
+						},
+					},
+					"dry_run": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -117,6 +222,7 @@ func TestAccAliCloudCmsAddonRelease_basic8556_twin(t *testing.T) {
 						"aliyun_lang":           "en",
 						"env_type":              "Cloud",
 						"config":                CHECKSET,
+						"entity_rules.#":        "1",
 					}),
 				),
 			},
