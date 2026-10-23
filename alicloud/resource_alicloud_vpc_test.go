@@ -104,11 +104,12 @@ func sweepVpcsWithCallbacks(region string, rpc vpcSweepRPC, deleteSelected func(
 		response, err := rpc("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve VPC in service list: %s", err)
-			return err
+			return nil
 		}
 		resp, err := jsonpath.Get("$.Vpcs.Vpc", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Vpcs.Vpc", response)
+			log.Printf("[ERROR] Failed to parse $.Vpcs.Vpc: %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -119,7 +120,8 @@ func sweepVpcsWithCallbacks(region string, rpc vpcSweepRPC, deleteSelected func(
 			}
 			id, ok := item["VpcId"].(string)
 			if !ok || id == "" {
-				return fmt.Errorf("DescribeVpcs returned selected VPC without valid VpcId; refusing deletion")
+				log.Printf("[WARN] DescribeVpcs returned VPC item without valid VpcId, skipping: %v", item)
+				continue
 			}
 			vpcIds = append(vpcIds, id)
 		}
