@@ -45,8 +45,8 @@ resource "alicloud_cr_ee_instance" "example" {
 }
 
 resource "alicloud_cr_chart_namespace" "example" {
-  instance_id    = alicloud_cr_ee_instance.example.id
-  namespace_name = "${var.name}-${random_integer.default.result}"
+  instance_id          = alicloud_cr_ee_instance.example.id
+  chart_namespace_name = "${var.name}-${random_integer.default.result}"
 }
 ```
 
@@ -59,15 +59,17 @@ The following arguments are supported:
 * `auto_create_repo` - (Optional) Specifies whether to automatically create repositories in the namespace. Valid values:
   * `true` - automatically creates repositories in the namespace.
   * `false` - does not automatically create repositories in the namespace.
-* `default_repo_type` - (Optional) DefaultRepoType. Valid values: `PRIVATE`, `PUBLIC`.
-* `instance_id` - (Required, ForceNew) The ID of the Container Registry instance.
-* `namespace_name` - (Required, ForceNew) The name of the namespace that you want to create.
+* `chart_namespace_name` - (Optional, ForceNew, Computed) The name of the chart namespace that you want to create. Conflicts with `namespace_name`.
+* `default_repo_type` - (Optional) The default type of the repository. Valid values: `PRIVATE`, `PUBLIC`.
+* `instance_id` - (Required, ForceNew) The ID of the instance.
+* `namespace_name` - (Optional, ForceNew, Computed, **Deprecated**) `namespace_name` has been deprecated from provider version 1.240.0. New field `chart_namespace_name` instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID of Chart Namespace. The value formats as `<instance_id>:<namespace_name>`.
+* `resource_group_id` - The ID of the resource group.
 
 ## Import
 
