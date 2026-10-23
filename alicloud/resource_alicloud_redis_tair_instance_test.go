@@ -2196,7 +2196,7 @@ func TestAccAliCloudRedisTairInstance_basic8732(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "connection_string_prefix"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "connection_string_prefix"},
 			},
 		},
 	})
