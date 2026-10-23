@@ -25,5 +25,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceDisk,
 			},
 		},
+		SDKDataSources: []conns.SDKDataSource{
+			{
+				TypeName: "alicloud_regions",
+				Factory:  DataSourceRegions,
+			},
+		},
 	}
 }
