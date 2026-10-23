@@ -14,5 +14,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  DataSourceNodeClasses,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_polardb_db_node",
+				Factory:  NewDbNodeResource,
+			},
+		},
 	}
 }
