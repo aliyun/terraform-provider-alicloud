@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccAlicloudEssLifecycleHookBasic(t *testing.T) {
+func TestAccAliCloudEssLifecycleHookBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.LifecycleHook
 	resourceId := "alicloud_ess_lifecycle_hook.default"
@@ -41,7 +41,10 @@ func TestAccAlicloudEssLifecycleHookBasic(t *testing.T) {
 			{
 				Config: testAccEssLifecycleHook(EcsInstanceCommonTestCase, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"scaling_group_id": CHECKSET,
+						"name":             CHECKSET,
+					}),
 				),
 			},
 			{
@@ -86,6 +89,22 @@ func TestAccAlicloudEssLifecycleHookBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"default_result": "ABANDON",
+					}),
+				),
+			},
+			{
+				Config: testAccEssLifecycleHookUpdateStatus(EcsInstanceCommonTestCase, rand, "InActive"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "InActive",
+					}),
+				),
+			},
+			{
+				Config: testAccEssLifecycleHookUpdateStatus(EcsInstanceCommonTestCase, rand, "Active"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Active",
 					}),
 				),
 			},
@@ -363,4 +382,38 @@ func testAccEssLifecycleHookUpdateNotificationArn(common string, rand int) strin
 		notification_arn = "acs:mns:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:queue/${alicloud_mns_queue.default.name}"
 	}
 	`, common, rand)
+}
+
+func testAccEssLifecycleHookUpdateStatus(common string, rand int, status string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssLifecycleHook-%d"
+	}
+
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  vswitch_name = "${var.name}"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}","${alicloud_vswitch.default2.id}"]
+	}
+
+	resource "alicloud_ess_lifecycle_hook" "default"{
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		name = "${var.name}"
+		lifecycle_transition = "SCALE_IN"
+		heartbeat_timeout = 400
+		notification_metadata = "helloterraform"
+		default_result = "ABANDON"
+		status = "%s"
+	}
+	`, common, rand, status)
 }
