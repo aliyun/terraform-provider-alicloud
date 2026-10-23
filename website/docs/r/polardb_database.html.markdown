@@ -85,6 +85,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<db_name>`.
 * `status` - (Available since v1.265.0) The state of the database.
+* `engine` - (Available since v2.1.1) The database engine of the cluster, such as MySQL, PostgreSQL, or Oracle.
 
 ## Timeouts
 

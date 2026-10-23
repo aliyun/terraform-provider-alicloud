@@ -1648,7 +1648,6 @@ func Provider() *schema.Provider {
 			"alicloud_polardb_cluster":                                       resourceAlicloudPolarDBCluster(),
 			"alicloud_polardb_cluster_endpoint":                              resourceAlicloudPolarDBClusterEndpoint(),
 			"alicloud_polardb_backup_policy":                                 resourceAlicloudPolarDBBackupPolicy(),
-			"alicloud_polardb_database":                                      resourceAliCloudPolarDbDatabase(),
 			"alicloud_polardb_account":                                       resourceAliCloudPolarDbAccount(),
 			"alicloud_polardb_account_privilege":                             resourceAlicloudPolarDBAccountPrivilege(),
 			"alicloud_polardb_endpoint":                                      resourceAlicloudPolarDBEndpoint(),
