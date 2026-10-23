@@ -66,9 +66,20 @@ jobs:
             const labelByName = new Map(
               repoLabels.map(({ name }) => [name.toLowerCase(), name])
             );
+            // Service dirs whose product label exists under a different name.
+            const serviceLabelAliases = {
+              alidns: "DNS",
+              apig: "API GW",
+              cloudapi: "API GW",
+              cloudfw: "cloudfirewall",
+              eipanycast: "EIP",
+              rkvstore: "KVStore",
+              smartag: "SAG",
+            };
             const serviceLabels = [];
             for (const service of services) {
-              const label = labelByName.get(service.toLowerCase());
+              const labelName = serviceLabelAliases[service] || service;
+              const label = labelByName.get(labelName.toLowerCase());
               if (label) {
                 serviceLabels.push(label);
               } else {
@@ -139,6 +150,7 @@ jobs:
               "size/M",
               "size/L",
               "size/XL",
+              "size/XXL",
             ];
             const sizeLabel =
               modifications < 30
@@ -149,7 +161,9 @@ jobs:
                     ? "size/M"
                     : modifications < 1500
                       ? "size/L"
-                      : "size/XL";
+                      : modifications < 5000
+                        ? "size/XL"
+                        : "size/XXL";
 
             const currentLabels = await github.paginate(
               github.rest.issues.listLabelsOnIssue,

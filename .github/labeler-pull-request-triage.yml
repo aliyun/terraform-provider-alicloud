@@ -1,7 +1,11 @@
-IMS:
+ci:
   - changed-files:
       - any-glob-to-any-file:
-          - alicloud/service/ims/**
+          - .github/**
+          - .aoneci/**
+          - ci/**
+          - scripts/**
+          - GNUmakefile
 dependencies:
   - changed-files:
       - any-glob-to-any-file:
