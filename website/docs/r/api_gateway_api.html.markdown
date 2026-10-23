@@ -152,6 +152,17 @@ The following arguments are supported:
 * `force_nonce_check` - (Optional, Type: bool, Available in v1.140+) Whether to prevent API replay attack. Default value: `false`.
 * `backend_id` - (Optional, Available since v1.279.0) The ID of the API Gateway Backend. When specified, the API references an existing backend created by `alicloud_api_gateway_backend`.
 * `backend_enabled` - (Optional, Available since v1.279.0) Specifies whether to enable the backend service. When set to `true`, the `backend_id` will be sent to the API.
+* `visibility` - (Optional, Computed) The visibility of the API. Valid values: `PUBLIC` and `PRIVATE`. Default value: `PRIVATE`.
+* `allow_signature_method` - (Optional, Computed) The signature method. Valid values: `HmacSHA256` and `HmacSHA1,HmacSHA256`. Default value: `HmacSHA256`.
+* `result_type` - (Optional, Computed) The return type. Valid values: `JSON`, `TEXT`, `BINARY`, `XML`, `HTML`. Default value: `JSON`.
+* `result_sample` - (Optional, Computed) The result sample of the API. Default value: `Result Sample`.
+* `web_socket_api_type` - (Optional, Computed) The WebSocket API type. Valid values: `COMMON`. Default value: `COMMON`.
+* `fail_result_sample` - (Optional) The failure result sample of the API.
+* `result_body_model` - (Optional, Computed) The JSON schema of the result body model.
+* `disable_internet` - (Optional, Computed) Specifies whether to disable internet access. Default value: `false`.
+* `open_id_connect_config` - (Optional, List) The OpenID Connect configuration. See [`open_id_connect_config`](#open_id_connect_config) below. **Note: The parameter is immutable after resource creation. The OpenID Connect configuration is persisted by `CreateApi` and is not updated by `ModifyApi`.**
+* `error_code_samples` - (Optional, Set) The error code samples of the API. See [`error_code_samples`](#error_code_samples) below.
+* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource. Tags are set when the API is created via the `CreateApi` `Tag` parameters; modifying tags forces a new resource.
 
 ### `request_config`
 
@@ -162,6 +173,8 @@ The request_config mapping supports the following:
 * `path` - (Required) The request path of the api.
 * `mode` - (Required) The mode of the parameters between request parameters and service parameters, which support the values of 'MAPPING' and 'PASSTHROUGH'.
 * `body_format` - (Optional) The body format of the api, which support the values of 'STREAM' and 'FORM'.
+* `post_body_description` - (Optional, Computed) The description of the request body.
+* `body_model` - (Optional, Computed) The JSON schema of the request body model.
 
 ### `http_service_config`
 
@@ -229,6 +242,17 @@ The request_parameters mapping supports the following:
 * `name_service` - (Required) Backend service's parameter name.
 * `description` - (Optional) The description of parameter.
 * `default_value` - (Optional) The default value of the parameter.
+* `demo_value` - (Optional, Computed) The demo value of the parameter.
+* `max_value` - (Optional, Computed) The maximum value of the parameter.
+* `min_value` - (Optional, Computed) The minimum value of the parameter.
+* `max_length` - (Optional, Computed) The maximum length of the parameter.
+* `min_length` - (Optional, Computed) The minimum length of the parameter.
+* `regular_expression` - (Optional, Computed) The regular expression for validating the parameter.
+* `json_scheme` - (Optional, Computed) The JSON schema of the parameter.
+* `enum_value` - (Optional, Computed) The enumeration values of the parameter.
+* `doc_show` - (Optional, Computed) Whether to show in documentation. Valid values: `PUBLIC` and `PRIVATE`.
+* `doc_order` - (Optional, Computed) The order of the parameter in documentation.
+* `array_items_type` - (Optional, Computed) The type of array items.
 
 ### `constant_parameters`
 
@@ -246,6 +270,25 @@ The system_parameters mapping supports the following:
 * `name` - (Required) System parameter name which supports values including in [system parameter list](https://www.alibabacloud.com/help/doc-detail/43677.html).
 * `in` - (Required) System parameter location; values: 'HEAD' and 'QUERY'.
 * `name_service` - (Required) Backend service's parameter name.
+* `demo_value` - (Optional, Computed) The demo value of the system parameter.
+* `description` - (Optional, Computed) The description of the system parameter.
+
+### `open_id_connect_config`
+
+The open_id_connect_config mapping supports the following:
+
+* `id_token_param_name` - (Optional) The name of the ID token parameter.
+* `public_key_id` - (Optional) The ID of the public key.
+* `open_id_api_type` - (Optional, Computed) The OpenID API type.
+
+### `error_code_samples`
+
+The error_code_samples mapping supports the following:
+
+* `code` - (Required) The error code.
+* `message` - (Required) The error message.
+* `description` - (Optional) The description of the error code.
+* `model` - (Optional) The model of the error code.
 
 ## Attributes Reference
 
@@ -253,6 +296,31 @@ The following attributes are exported:
 
 * `id` - The ID of the api resource of api gateway.
 * `api_id` - The ID of the api of api gateway.
+* `model_name` - The model name of the api.
+* `auth_valid_time` - The valid time of the authorization.
+* `stage_id` - The ID of the stage.
+* `create_time` - The creation time of the api.
+* `group_name` - The name of the api group.
+* `region_id` - The region ID of the api.
+* `traffic_control_id` - The ID of the traffic control.
+* `ip_control_id` - The ID of the IP control.
+* `signature_id` - The ID of the signature.
+* `app_id` - The ID of the app.
+* `backend_name` - The name of the backend service.
+* `use_backend_service` - Whether to use the backend service.
+* `deployed_infos` - The deployed information of the api.
+  * `deployed_status` - The deployed status.
+  * `effective_version` - The effective version.
+  * `stage_name` - The name of the stage.
+* `result_descriptions` - The result descriptions of the api.
+  * `key` - The key of the result description.
+  * `name` - The name of the result description.
+  * `type` - The type of the result description.
+  * `description` - The description of the result description.
+* `custom_system_parameters` - The custom system parameters of the api.
+  * `parameter_name` - The name of the parameter.
+  * `service_parameter_name` - The name of the service parameter.
+  * `location` - The location of the parameter.
 
 ## Import
 
