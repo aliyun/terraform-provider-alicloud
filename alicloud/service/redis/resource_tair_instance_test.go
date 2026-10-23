@@ -1,15 +1,21 @@
-package alicloud
+package redis_test
 
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
 	tea "github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,19 +26,21 @@ func TestAccAliCloudRedisTairInstance_basic3314(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3314)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := testRegion()
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3314)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -247,19 +255,21 @@ func TestAccAliCloudRedisTairInstance_basic3340(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3340)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := testRegion()
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3340)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -500,19 +510,21 @@ func TestAccAliCloudRedisTairInstance_basic3549(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3549)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := testRegion()
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3549)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -726,19 +738,21 @@ func TestAccAliCloudRedisTairInstance_basic3314_twin(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3314)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := testRegion()
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3314)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -808,20 +822,21 @@ func TestAccAliCloudRedisTairInstance_basic3340_twin(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3340)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-guangzhou")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3340)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -877,19 +892,21 @@ func TestAccAliCloudRedisTairInstance_basic3549_twin(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3549)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := testRegion()
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3549)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -943,20 +960,21 @@ func TestAccAliCloudRedisTairInstance_basic4491_twin(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap4491)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-hangzhou")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence4491)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1218,20 +1236,21 @@ func TestAccAliCloudRedisTairInstance_basic6500_raw(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap6500)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence6500)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1301,20 +1320,21 @@ func TestAccAliCloudRedisTairInstance_basic6639_raw(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap6639)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence6639)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1376,20 +1396,21 @@ func TestAccAliCloudRedisTairInstance_basic6473_raw(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap6473)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence6473)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1562,20 +1583,21 @@ func TestAccAliCloudRedisTairInstance_basic6823_raw(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap6823)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence6823)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1678,20 +1700,21 @@ func TestAccAliCloudRedisTairInstance_basic8747(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap8747)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence8747)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1813,20 +1836,21 @@ func TestAccAliCloudRedisTairInstance_basic8703(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap8703)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence8703)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1957,20 +1981,21 @@ func TestAccAliCloudRedisTairInstance_basic8729(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap8729)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence8729)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2120,20 +2145,21 @@ func TestAccAliCloudRedisTairInstance_basic8732(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap8732)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-hangzhou")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence8732)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2310,20 +2336,21 @@ func TestAccAliCloudRedisTairInstance_multiSecurityGroup(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMultiSecurityGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-hangzhou")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceMultiSecurityGroupDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				// Step 0: create bound to a single security group.
@@ -2402,7 +2429,7 @@ func TestUnitRedisTairInstanceCreateRetryLogic(t *testing.T) {
 		errCode string
 	}
 
-	// buildRetryFunc mirrors the retry closure in resourceAliCloudRedisTairInstanceCreate.
+	// buildRetryFunc mirrors the retry closure in resourceTairInstanceCreate.
 	// waitFn replaces the real wait() (180s sleep) so tests can count invocations
 	// without actually sleeping.
 	buildRetryFunc := func(results []callResult, waitFn func()) (callCount int, finalErr error) {
@@ -2427,7 +2454,7 @@ func TestUnitRedisTairInstanceCreateRetryLogic(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 
-			if (NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"})) && internalErrRetryCount < 2 {
+			if (helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"InternalError"})) && internalErrRetryCount < 2 {
 				waitFn()
 				internalErrRetryCount++
 				return retry.RetryableError(err)
@@ -2469,7 +2496,7 @@ func TestUnitRedisTairInstanceCreateRetryLogic(t *testing.T) {
 			func() { waitCalls++ },
 		)
 		assert.Error(t, err)
-		assert.True(t, IsExpectedErrors(err, []string{"InternalError"}))
+		assert.True(t, errs.IsExpectedErrors(err, []string{"InternalError"}))
 		assert.Equal(t, 3, callCount)
 		assert.Equal(t, 2, waitCalls, "third InternalError hits the counter limit and is returned as non-retryable")
 	})
@@ -2595,20 +2622,21 @@ func TestAccAliCloudRedisTairInstance_tdeUnsupported(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMapTdeUnsupported)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependenceTdeUnsupported)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2710,20 +2738,21 @@ func TestAccAliCloudRedisTairInstance_cloneFromBackup(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMapCloneFromBackup)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairclone%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairclone%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependenceCloneFromBackup)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2807,22 +2836,23 @@ func TestAccAliCloudRedisTairInstance_restoreFromClusterBackup(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMapClusterRestore)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairclusterrestore%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testacc%sredistairclusterrestore%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependenceClusterRestore)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 			testAccPreCheckWithEnvVariable(t, "KVSTORE_CLUSTER_SRC_INSTANCE_ID")
 			testAccPreCheckWithEnvVariable(t, "KVSTORE_CLUSTER_BACKUP_ID")
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2861,8 +2891,9 @@ func TestAccAliCloudRedisTairInstance_restoreFromClusterBackup(t *testing.T) {
 }
 
 // TestUnitRedisTairInstanceTDEStatusErrorExemption deterministically verifies the error
-// classification used by the two DescribeInstanceTDEStatus service wrappers (RedisServiceV2
-// and RKvstoreService): a 400 InstanceType.NotSupport (the "instance does not support TDE"
+// classification used by the DescribeInstanceTDEStatus service wrappers (Service's
+// DescribeTairInstanceDescribeInstanceTDEStatus and the root RKvstoreService): a 400
+// InstanceType.NotSupport (the "instance does not support TDE"
 // rejection reported in GitHub issue #9971) must match the exemption predicate so the
 // wrappers return an empty object instead of a fatal error, InvalidInstanceId.NotFound must
 // match the NotFound predicate checked before it, and any other error code must match
@@ -2879,8 +2910,8 @@ func TestUnitRedisTairInstanceTDEStatusErrorExemption(t *testing.T) {
 		}
 	}
 
-	notFound := func(err error) bool { return IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) }
-	exempted := func(err error) bool { return IsExpectedErrors(err, []string{"InstanceType.NotSupport"}) }
+	notFound := func(err error) bool { return errs.IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) }
+	exempted := func(err error) bool { return errs.IsExpectedErrors(err, []string{"InstanceType.NotSupport"}) }
 
 	t.Run("InstanceType.NotSupport hits the exemption, not the NotFound branch", func(t *testing.T) {
 		err := sdkErr("InstanceType.NotSupport")
@@ -2902,7 +2933,7 @@ func TestUnitRedisTairInstanceTDEStatusErrorExemption(t *testing.T) {
 	})
 
 	t.Run("wrapped ComplexError keeps matching the exemption", func(t *testing.T) {
-		err := WrapErrorf(sdkErr("InstanceType.NotSupport"), DefaultErrorMsg, "r-test", "DescribeInstanceTDEStatus", AlibabaCloudSdkGoERROR)
+		err := errs.WrapErrorf(sdkErr("InstanceType.NotSupport"), errs.DefaultErrorMsg, "r-test", "DescribeInstanceTDEStatus", errs.AlibabaCloudSdkGoERROR)
 		assert.True(t, exempted(err))
 	})
 }
@@ -2913,19 +2944,21 @@ func TestAccAliCloudRedisTairInstance_config(t *testing.T) {
 	resourceId := "alicloud_redis_tair_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3314)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeRedisTairInstance")
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := testRegion()
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", region, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3314)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+
 		Steps: []resource.TestStep{
 			{
 				// Create the instance without config first. config is applied via Update (ModifyInstanceConfig),
@@ -2989,6 +3022,208 @@ func TestAccAliCloudRedisTairInstance_config(t *testing.T) {
 						"payment_type": "PayAsYouGo",
 					}),
 				),
+			},
+		},
+	})
+}
+
+var AlicloudRedisTairInstanceMapBackupPolicy = map[string]string{
+	"port":           CHECKSET,
+	"status":         CHECKSET,
+	"engine_version": CHECKSET,
+	"payment_type":   "PayAsYouGo",
+	"backup_time":    CHECKSET,
+}
+
+// TestAccAliCloudRedisTairInstance_backupPolicy covers the update path of
+// backup_time/backup_period: an instance created without a backup policy is
+// left untouched by Create (the pair is incomplete, so ModifyBackupPolicy must
+// not be called and no 400 may surface), then both values are applied and
+// changed together and the result is read back from DescribeBackupPolicy.
+func TestAccAliCloudRedisTairInstance_backupPolicy(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMapBackupPolicy)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testAcc%sredistairbackuppolicy%d", region, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependenceTdeUnsupported)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		// IDRefreshIgnore covers the stock tags asymmetry: tags is Optional
+		// (not Computed) and only Read sets it, so refresh gains tags.% = 0
+		// that apply never persists. The backup pair stays in the check.
+		IDRefreshName:            resourceId,
+		IDRefreshIgnore:          []string{"tags"},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${alicloud_vswitch.defaultVSwitch.zone_id}",
+					"instance_class":     "tair.rdb.1g",
+					"tair_instance_name": name,
+					"vswitch_id":         "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":             "${alicloud_vpc.defaultVpc.id}",
+					"password":           "123456Tf",
+					"engine_version":     "5.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": CHECKSET,
+					}),
+					resource.TestCheckResourceAttrSet(resourceId, "backup_period.#"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Monday", "Tuesday"},
+					"backup_time":   "02:00Z-03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "2",
+						"backup_time":     "02:00Z-03:00Z",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Monday"),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Tuesday"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Wednesday"},
+					"backup_time":   "04:00Z-05:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "1",
+						"backup_time":     "04:00Z-05:00Z",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Wednesday"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRedisTairInstance_backupPolicyOnCreate verifies that a pair
+// configured at create time is applied by the tail Update call (matching
+// alicloud_kvstore_instance), survives a no-op re-plan and is readable on
+// import.
+func TestAccAliCloudRedisTairInstance_backupPolicyOnCreate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMapBackupPolicy)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testAcc%sredistairbackupcreate%d", region, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependenceTdeUnsupported)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		// IDRefreshIgnore covers the stock tags asymmetry: tags is Optional
+		// (not Computed) and only Read sets it, so refresh gains tags.% = 0
+		// that apply never persists. The backup pair stays in the check.
+		IDRefreshName:            resourceId,
+		IDRefreshIgnore:          []string{"tags"},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${alicloud_vswitch.defaultVSwitch.zone_id}",
+					"instance_class":     "tair.rdb.1g",
+					"tair_instance_name": name,
+					"vswitch_id":         "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":             "${alicloud_vpc.defaultVpc.id}",
+					"password":           "123456Tf",
+					"engine_version":     "5.0",
+					"backup_period":      []string{"Monday", "Thursday"},
+					"backup_time":        "01:00Z-02:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "2",
+						"backup_time":     "01:00Z-02:00Z",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Monday"),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Thursday"),
+				),
+			},
+			{
+				Config:             testAccConfig(map[string]interface{}{}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRedisTairInstance_backupPolicyRequiresPair verifies that a
+// configuration carrying only one half of the backup policy pair is rejected at
+// plan time, so ModifyBackupPolicy is never called with incomplete parameters.
+func TestAccAliCloudRedisTairInstance_backupPolicyRequiresPair(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMapBackupPolicy)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return redis.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	region := pinTestRegion("cn-beijing")
+	name := fmt.Sprintf("tf-testAcc%sredistairbackuppair%d", region, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependenceTdeUnsupported)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${alicloud_vswitch.defaultVSwitch.zone_id}",
+					"instance_class":     "tair.rdb.1g",
+					"tair_instance_name": name,
+					"vswitch_id":         "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":             "${alicloud_vpc.defaultVpc.id}",
+					"password":           "123456Tf",
+					"engine_version":     "5.0",
+					"backup_time":        "02:00Z-03:00Z",
+				}),
+				ExpectError: regexp.MustCompile("all of `backup_period,backup_time` must be specified"),
 			},
 		},
 	})

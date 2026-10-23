@@ -1405,7 +1405,6 @@ func Provider() *schema.Provider {
 			"alicloud_eip_segment_address":                                  resourceAliCloudEipSegmentAddress(),
 			"alicloud_fcv2_function":                                        resourceAliCloudFcv2Function(),
 			"alicloud_quotas_template_quota":                                resourceAliCloudQuotasTemplateQuota(),
-			"alicloud_redis_tair_instance":                                  resourceAliCloudRedisTairInstance(),
 			"alicloud_vpc_vswitch_cidr_reservation":                         resourceAliCloudVpcVswitchCidrReservation(),
 			"alicloud_vpc_ha_vip":                                           resourceAliCloudVpcHaVip(),
 			"alicloud_config_remediation":                                   resourceAliCloudConfigRemediation(),
