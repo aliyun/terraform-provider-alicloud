@@ -63,9 +63,6 @@ resource "alicloud_rocketmq_instance" "createInstance" {
   sub_series_code = "cluster_ha"
   remark          = "example"
   ip_whitelists   = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
-  software {
-    maintain_time = "02:00-06:00"
-  }
   tags = {
     Created = "TF"
     For     = "example"
@@ -106,7 +103,7 @@ resource "alicloud_rocketmq_consumer_group" "default" {
 The following arguments are supported:
 * `consume_retry_policy` - (Required, Set) Consumption retry strategy. See [`consume_retry_policy`](#consume_retry_policy) below.
 * `consumer_group_id` - (Required, ForceNew) The first ID of the resource.
-* `delivery_order_type` - (Optional) Delivery order.
+* `delivery_order_type` - (Optional, ForceNew) Delivery order. **Note: The parameter is immutable after resource creation.**
 * `instance_id` - (Required, ForceNew) Instance ID.
 * `max_receive_tps` - (Optional, Int, Available since v1.247.0) Maximum received message tps.
 * `remark` - (Optional) Custom remarks.
@@ -116,7 +113,7 @@ The following arguments are supported:
 The consume_retry_policy supports the following:
 * `dead_letter_target_topic` - (Optional, Available since v1.247.0) The dead-letter topic. If the consumer fails to consume a message in an abnormal situation and the message is still unsuccessful after retrying, the message will be delivered to the dead letter Topic for subsequent business recovery or backtracking.
 * `max_retry_times` - (Optional) Maximum number of retries.
-* `retry_policy` - (Optional) Consume retry policy.
+* `retry_policy` - (Optional, ForceNew) Consume retry policy. **Note: The parameter is immutable after resource creation.**
 
 ## Attributes Reference
 

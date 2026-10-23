@@ -1385,7 +1385,6 @@ func Provider() *schema.Provider {
 			"alicloud_threat_detection_client_file_protect":                 resourceAliCloudThreatDetectionClientFileProtect(),
 			"alicloud_rocketmq_topic":                                       resourceAliCloudRocketmqTopic(),
 			"alicloud_rocketmq_consumer_group":                              resourceAliCloudRocketmqConsumerGroup(),
-			"alicloud_rocketmq_instance":                                    resourceAliCloudRocketmqInstance(),
 			"alicloud_dms_enterprise_authority_template":                    resourceAliCloudDMSEnterpriseAuthorityTemplate(),
 			"alicloud_kms_application_access_point":                         resourceAliCloudKmsApplicationAccessPoint(),
 			"alicloud_kms_client_key":                                       resourceAliCloudKmsClientKey(),

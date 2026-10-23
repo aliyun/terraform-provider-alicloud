@@ -1,10 +1,13 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -262,3 +265,59 @@ func TestAccAliCloudRocketmqConsumerGroup_basic4419_twin(t *testing.T) {
 }
 
 // Test Rocketmq ConsumerGroup. <<< Resource test cases, automatically generated.
+
+func rocketmqConsumerGroupUnitConfig() map[string]interface{} {
+	return map[string]interface{}{
+		"instance_id":         "rmq-cn-unit-test",
+		"consumer_group_id":   "GID-unit-test",
+		"delivery_order_type": "Concurrently",
+		"remark":              "unit",
+		"max_receive_tps":     1000,
+		"consume_retry_policy": []interface{}{
+			map[string]interface{}{
+				"retry_policy":    "DefaultRetryPolicy",
+				"max_retry_times": 10,
+			},
+		},
+	}
+}
+
+func TestUnitAliCloudRocketmqConsumerGroupPlanAction(t *testing.T) {
+	cases := []struct {
+		name        string
+		change      func(config map[string]interface{})
+		requiresNew bool
+	}{
+		{"delivery_order_type_replaces", func(c map[string]interface{}) { c["delivery_order_type"] = "Orderly" }, true},
+		{"retry_policy_replaces", func(c map[string]interface{}) {
+			c["consume_retry_policy"].([]interface{})[0].(map[string]interface{})["retry_policy"] = "FixedRetryPolicy"
+		}, true},
+		{"remark_updates_in_place", func(c map[string]interface{}) { c["remark"] = "changed" }, false},
+		{"max_receive_tps_updates_in_place", func(c map[string]interface{}) { c["max_receive_tps"] = 1500 }, false},
+		{"max_retry_times_updates_in_place", func(c map[string]interface{}) {
+			c["consume_retry_policy"].([]interface{})[0].(map[string]interface{})["max_retry_times"] = 5
+		}, false},
+		{"dead_letter_target_topic_updates_in_place", func(c map[string]interface{}) {
+			c["consume_retry_policy"].([]interface{})[0].(map[string]interface{})["dead_letter_target_topic"] = "DLQ_unit"
+		}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			r := resourceAliCloudRocketmqConsumerGroup()
+			old := schema.TestResourceDataRaw(t, r.Schema, rocketmqConsumerGroupUnitConfig())
+			old.SetId("rmq-cn-unit-test:GID-unit-test")
+			config := rocketmqConsumerGroupUnitConfig()
+			tc.change(config)
+			diff, err := r.Diff(context.Background(), old.State(), sdktf.NewResourceConfigRaw(config), nil)
+			if err != nil {
+				t.Fatalf("unexpected diff error: %s", err)
+			}
+			if diff == nil || diff.Empty() {
+				t.Fatalf("expected a planned change")
+			}
+			if diff.RequiresNew() != tc.requiresNew {
+				t.Fatalf("RequiresNew() = %v, want %v", diff.RequiresNew(), tc.requiresNew)
+			}
+		})
+	}
+}

@@ -41,6 +41,7 @@ func resourceAliCloudRocketmqConsumerGroup() *schema.Resource {
 						"retry_policy": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							ForceNew:     true,
 							ValidateFunc: StringInSlice([]string{"DefaultRetryPolicy", "FixedRetryPolicy", "BackoffRetryPolicy"}, false),
 						},
 						"max_retry_times": {
@@ -63,6 +64,7 @@ func resourceAliCloudRocketmqConsumerGroup() *schema.Resource {
 			"delivery_order_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Concurrently", "Orderly"}, false),
 			},
 			"instance_id": {
@@ -229,9 +231,6 @@ func resourceAliCloudRocketmqConsumerGroupUpdate(d *schema.ResourceData, meta in
 		request["remark"] = v
 	}
 
-	if d.HasChange("delivery_order_type") {
-		update = true
-	}
 	if v, ok := d.GetOk("delivery_order_type"); ok {
 		request["deliveryOrderType"] = v
 	}

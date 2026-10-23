@@ -71,9 +71,6 @@ resource "alicloud_rocketmq_instance" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   remark            = "example"
   ip_whitelists     = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"]
-  software {
-    maintain_time = "02:00-06:00"
-  }
   tags = {
     Created = "TF"
     For     = "example"
@@ -117,7 +114,9 @@ The following arguments are supported:
 
   Next: Serverless instances
 * `instance_name` - (Optional) The name of instance
-* `ip_whitelists` - (Optional, List, Available since v1.245.0) The ip whitelist.
+* `ip_whitelists` - (Optional, Set, Available since v1.245.0) The ip whitelist.
+
+  -> **NOTE:** When `ip_whitelists` is configured, the configured entries are treated as the complete whitelist of the instance and any other entries, including the default `0.0.0.0/0` entry added when the instance is created, are removed. Setting `ip_whitelists` to an empty set (`[]`) therefore clears all entries of the instance whitelist. When `ip_whitelists` is not configured, the instance whitelist is left unchanged and the attribute reflects the actual entries of the instance.
 * `network_info` - (Required, Set) Instance network configuration information See [`network_info`](#network_info) below.
 * `payment_type` - (Required, ForceNew) The payment type for the instance. Alibaba Cloud Message Queue RocketMQ version supports two types of payment:
 
