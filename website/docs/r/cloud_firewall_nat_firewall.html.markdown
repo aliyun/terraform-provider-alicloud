@@ -104,6 +104,9 @@ resource "alicloud_cloud_firewall_nat_firewall" "default" {
 
 The following arguments are supported:
 * `firewall_switch` - (Optional) Safety protection switch. Value:-**open**: open-**close**: close.
+* `firewall_service_mode` - (Optional, ForceNew) The deployment mode of the firewall service. Valid values: `PrimaryStandby` (primary/standby mode) and `MultiPrimary` (dual-active mode).
+* `firewall_service_zones` - (Optional, ForceNew) The list of available zone IDs used by the firewall service.
+* `fw_vswitch_zone_id` - (Optional, ForceNew) The available zone of the firewall vSwitch.
 * `lang` - (Optional) Lang.
 * `nat_gateway_id` - (Required, ForceNew) NAT gateway ID.
 * `nat_route_entry_list` - (Required, ForceNew) The list of routes to be switched by the NAT gateway. See [`nat_route_entry_list`](#nat_route_entry_list) below.
