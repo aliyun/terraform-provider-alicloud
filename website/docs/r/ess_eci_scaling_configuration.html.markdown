@@ -154,6 +154,14 @@ The following arguments are supported:
 * `instance_types` - (Optional, Available since v1.223.0) The specified ECS instance types. You can specify up to five ECS instance types.
 * `cost_optimization` - (Optional, Available since v1.232.0) Indicates whether the Cost Optimization feature is enabled. Valid values: true,false.
 * `instance_family_level` - (Optional, Available since v1.232.0) The level of the instance family, which is used to filter instance types that meet the specified criteria. This parameter takes effect only if you set CostOptimization to true. Valid values: EntryLevel, EnterpriseLevel, CreditEntryLevel.
+* `ntp_servers` - (Optional, Available since v1.295.0) The NTP servers.
+* `dns_config_name_servers` - (Optional, Available since v1.295.0) The list of IP addresses of the DNS servers.
+* `dns_config_search` - (Optional, Available since v1.295.0) The DNS search domain list.
+* `data_cache_pl` - (Optional, Available since v1.295.0) The performance level of the cloud disk used by the data cache. We recommend that you use ESSD cloud disks. Valid values: PL0, PL1, PL2, and PL3. Default value: PL1.
+* `data_cache_bucket` - (Optional, Available since v1.295.0) The data cache bucket.
+* `data_cache_provisioned_iops` - (Optional, Available since v1.295.0) The preconfigured read/write IOPS of the ESSD AutoPL cloud disk that is used for data cache. Valid values: 0 to min{50000, 1000 × capacity - baseline performance}, where baseline performance = min{1800 + 50 × capacity, 50000}.
+* `data_cache_bursting_enabled` - (Optional, Available since v1.295.0) Specifies whether to enable Burst (performance bursting) when the ESSD AutoPL cloud disk is used for data cache. Valid values: true, false.
+* `containers_update_type` - (Optional, Available since v1.295.0) The parameter that controls the update method of the Containers parameter. Valid values: RenewUpdate and IncrementalUpdate. Default value: RenewUpdate. This parameter takes effect only when you update the resource.
 
 ### `volumes`
 
@@ -319,6 +327,7 @@ The container supports the following:
 * `security_context_run_as_user` - (Optional, Available since 1.215.0) Specifies user ID  under which all processes run.
 * `tty` - (Optional, Available since v1.232.0) Specifies whether to enable the Interaction feature. Valid values: true, false.
 * `stdin` - (Optional, Available since v1.232.0) Specifies whether container N allocates buffer resources to standard input streams during its active runtime. If you do not specify this parameter, an end-of-file (EOF) error occurs.
+* `stdin_once` - (Optional, Available since v1.295.0) Specifies whether the standard input stream is closed when the clients that are attached to the container are disconnected.
 
 ### `containers-environment_vars`
 
