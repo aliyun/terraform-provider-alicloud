@@ -452,6 +452,7 @@ func GetCenChildInstanceType(id string) (c string, e error) {
 	}
 }
 
+// Migrated to alicloud/acctest.NewInstanceDiff.
 // lintignore: R001
 func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
 	p := Provider().ResourcesMap

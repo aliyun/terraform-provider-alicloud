@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -692,4 +694,77 @@ func CheckAlicloudDataSourceID(n string) resource.TestCheckFunc {
 		}
 		return nil
 	}
+}
+
+// lintignore: R001
+// Migrated from alicloud.newInstanceDiff (alicloud/common.go). The SDKv2
+// terraform types are load-bearing: schema.InternalMap(...).Data only accepts
+// the SDKv2 InstanceState, so this helper stays on that fork even though the
+// rest of the package runs on terraform-plugin-testing.
+func NewInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *sdktf.InstanceState) (*sdktf.InstanceDiff, error) {
+	p := Provider.ResourcesMap
+	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	for key, value := range attributes {
+		err := dOld.Set(key, value)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+	for key, value := range attributesDiff {
+		attributes[key] = value
+	}
+
+	for key, value := range attributes {
+		err := dNew.Set(key, value)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+
+	diff := sdktf.NewInstanceDiff()
+	objectKey := ""
+	for _, key := range helper.MapSort(dNew.State().Attributes) {
+		newValue := dNew.State().Attributes[key]
+		if objectKey != "" && !strings.HasPrefix(key, objectKey) {
+			objectKey = ""
+		}
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+					break
+				}
+			}
+		}
+		oldValue, ok := dOld.State().Attributes[key]
+		if ok && oldValue == newValue {
+			continue
+		}
+		if oldValue == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					oldValue = "0"
+				}
+			}
+		}
+		diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: oldValue, New: newValue}
+
+		if objectKey != "" {
+			for removeKey, removeValue := range dOld.State().Attributes {
+				if strings.HasPrefix(removeKey, objectKey) {
+					if _, ok := dNew.State().Attributes[removeKey]; !ok {
+						// If the attribue has complex elements, there should remove the key, not setting it to empty
+						if len(strings.Split(removeKey, ".")) > 2 {
+							delete(diff.Attributes, removeKey)
+						} else {
+							diff.Attributes[removeKey] = &sdktf.ResourceAttrDiff{Old: removeValue, New: ""}
+						}
+					}
+				}
+			}
+			objectKey = ""
+		}
+	}
+	return diff, nil
 }
