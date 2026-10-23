@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudCmsDynamicTagGroup() *schema.Resource {
@@ -25,10 +26,11 @@ func resourceAliCloudCmsDynamicTagGroup() *schema.Resource {
 				ForceNew: true,
 			},
 			"match_express_filter_relation": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"and", "or"}, false),
 			},
 			"contact_group_list": {
 				Type:     schema.TypeList,
