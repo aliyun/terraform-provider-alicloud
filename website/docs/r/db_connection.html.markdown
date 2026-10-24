@@ -25,6 +25,14 @@ Provides an RDS connection resource to allocate an Internet connection string fo
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf_example"
 }
@@ -73,6 +81,12 @@ The following arguments are supported:
 * `babelfish_port` - (Optional, Available since v1.176.0) The Tabular Data Stream (TDS) port of the instance for which Babelfish is enabled.
 
   -> **NOTE:** This parameter applies only to ApsaraDB RDS for PostgreSQL instances. For more information about Babelfish for ApsaraDB RDS for PostgreSQL, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
+* `pgbouncer_port` - (Optional, String, Available since v2.2.0) The PgBouncer port of the connection string.
+
+  -> **NOTE:** This parameter applies only to ApsaraDB RDS for PostgreSQL instances. The value is sent with `AllocateInstancePublicConnection` and `ModifyDBInstanceConnectionString` when it is configured, and read back from `DescribeDBInstanceNetInfo`. On PostgreSQL the provider waits until the instance reports PgBouncer as enabled and until the API returns the port; if that state or the port cannot be confirmed within the retry window, the apply fails instead of recording an unconfirmed value. When PgBouncer is explicitly disabled the parameter is not applicable and the configured value is kept.
+* `general_group_name` - (Optional, String, Available since v2.2.0) The name of the group to which the instance belongs.
+
+  -> **NOTE:** This parameter applies only to instances created in an ApsaraDB MyBase cluster that runs MySQL on Standard Edition. `DescribeDBInstanceAttribute` only returns the value for such instances; otherwise the configured value is kept.
 
 ## Attributes Reference
 

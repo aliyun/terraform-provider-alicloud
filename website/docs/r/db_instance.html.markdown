@@ -19,6 +19,8 @@ For information about RDS and how to use it, see [What is ApsaraDB for RDS](http
 
 -> **NOTE:** Destroying a `PrePaid` instance fails with an error since v2.1.0. To destroy it, set `force_delete` to `true` to convert the instance to `PostPaid` before deletion, or convert it by setting `instance_charge_type` to `PostPaid` and re-applying. To remove the instance from the state only, run `terraform state rm`.
 
+-> **NOTE:** An imported state has no values for the write-only creation parameters (`auto_create_proxy`, `auto_pay`, `business_info`, `promotion_code`, `user_backup_id`). Remove them from the configuration after importing, because the provider rejects changing them on an existing instance.
+
 ## Example Usage
 
 ### Create RDS MySQL instance
@@ -30,11 +32,19 @@ For information about RDS and how to use it, see [What is ApsaraDB for RDS](http
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_db_zones" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_charge_type     = "PostPaid"
-  category                 = "Basic"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
 }
 
@@ -42,7 +52,7 @@ data "alicloud_db_instance_classes" "example" {
   zone_id                  = data.alicloud_db_zones.example.zones.0.id
   engine                   = "MySQL"
   engine_version           = "8.0"
-  category                 = "Basic"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
   instance_charge_type     = "PostPaid"
 }
@@ -67,8 +77,9 @@ resource "alicloud_security_group" "example" {
 resource "alicloud_db_instance" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
+  category                 = "HighAvailability"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = "terraform-example"
   vswitch_id               = alicloud_vswitch.example.id
@@ -88,11 +99,19 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_db_zones" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_charge_type     = "PostPaid"
-  category                 = "Basic"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
 }
 
@@ -100,7 +119,7 @@ data "alicloud_db_instance_classes" "example" {
   zone_id                  = data.alicloud_db_zones.example.zones.0.id
   engine                   = "MySQL"
   engine_version           = "8.0"
-  category                 = "Basic"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
   instance_charge_type     = "PostPaid"
 }
@@ -125,8 +144,9 @@ resource "alicloud_security_group" "example" {
 resource "alicloud_db_instance" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
+  category                 = "HighAvailability"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = "terraform-example"
   vswitch_id               = alicloud_vswitch.example.id
@@ -153,11 +173,19 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_db_zones" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_charge_type     = "PostPaid"
-  category                 = "Basic"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
 }
 
@@ -165,7 +193,7 @@ data "alicloud_db_instance_classes" "example" {
   zone_id                  = data.alicloud_db_zones.example.zones.0.id
   engine                   = "MySQL"
   engine_version           = "8.0"
-  category                 = "Basic"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
   instance_charge_type     = "PostPaid"
 }
@@ -191,8 +219,9 @@ resource "alicloud_security_group" "example" {
 resource "alicloud_db_instance" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
+  category                 = "HighAvailability"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = "terraform-example"
   vswitch_id               = join(",", alicloud_vswitch.example.*.id)
@@ -214,6 +243,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf_example"
 }
@@ -258,7 +295,7 @@ resource "alicloud_db_instance" "example" {
   engine_version           = "8.0"
   category                 = "HighAvailability"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = var.name
   vswitch_id               = join(",", alicloud_vswitch.example.*.id)
@@ -278,6 +315,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -340,6 +385,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-accdbinstance"
 }
@@ -381,7 +434,7 @@ resource "alicloud_vswitch" "example" {
 resource "alicloud_db_instance" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
@@ -408,6 +461,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-accdbinstance"
 }
@@ -445,7 +506,7 @@ data "alicloud_vswitches" "default" {
 resource "alicloud_db_instance" "example" {
   engine                   = "PostgreSQL"
   engine_version           = "14.0"
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
@@ -469,6 +530,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-accdbinstance"
 }
@@ -510,7 +579,7 @@ resource "alicloud_vswitch" "example" {
 resource "alicloud_db_instance" "example" {
   engine                   = "SQLServer"
   engine_version           = "2019_std_sl"
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
@@ -576,7 +645,7 @@ The following arguments are supported:
   - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
   - general_essd: general essd.
 
-* `template_id_list` - (Optional, Available since v1.254.0)  Whitelist Template ID List.
+* `template_id_list` - (Optional, List, Available since v1.254.0)  Whitelist Template ID List. The order of member IDs is not significant; the provider treats the list as a set, so reordering members produces no diff.
 
 * `cold_data_enabled` - (Optional, Available since 1.254.0) High performance cloud disk data archiving function switch.Example value:
   - true: Enable high-performance cloud disk data archiving function.
@@ -848,12 +917,63 @@ The following arguments are supported:
   - true
   - false
 
+* `auto_create_proxy` - (Optional, Bool, Available since v2.2.0) Specifies whether to automatically create a database proxy when you create an instance. Valid values:
+  - `true`
+  - `false`
+
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward. Changing it on an existing instance is rejected during plan.
+* `auto_pay` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable automatic payment for the instance. Valid values:
+  - `true`
+  - `false`
+
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward. Changing it on an existing instance is rejected during plan.
+* `business_info` - (Optional, String, Available since v2.2.0) The additional business information about the instance.
+
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward. Changing it on an existing instance is rejected during plan.
+* `connection_mode` - (Optional, ForceNew, String, Available since v2.2.0) The connection mode of the instance. Valid values: `Standard`, `Safe`.
+
+  -> **NOTE:** Changing this argument forces a new `alicloud_db_instance` to be created: the connection mode cannot be changed on an existing instance, so plan and apply destroy and recreate the database. Set it when the instance is created; migrate any data before applying a change to this argument.
+
+  -> **NOTE:** `CreateDBInstance` accepts `Safe` only for engines that support it. ApsaraDB RDS for SQL Server 2012, 2016 and 2017 accepts only `Standard`. Because changing this argument replaces the instance, verify that the engine and version support the requested value before applying a change.
+* `io_acceleration_enabled` - (Optional, String, Available since v2.2.0) Specifies whether to enable Buffer Pool Extension (BPE) of Premium ESSDs. Valid values:
+  - `1`: enables BPE.
+  - `0`: disables BPE.
+
+  -> **NOTE:** The value is read back from the instance. When BPE is not supported by the instance, `DescribeDBInstanceAttribute` omits the field and the provider defaults it to `0`, so omitting the argument does not produce a plan diff.
+* `promotion_code` - (Optional, String, Available since v2.2.0) The coupon code.
+
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward. Changing it on an existing instance is rejected during plan.
+* `user_backup_id` - (Optional, String, Available since v2.2.0) The ID of the full backup file used to create the instance. You can query user backup files with the `ListUserBackupFiles` operation.
+
+  -> **NOTE:** This is a write-only parameter. It can only be specified when creating the instance and cannot be modified or queried afterward. Changing it on an existing instance is rejected during plan.
+
+  -> **NOTE:** `user_backup_id` is accepted only when `instance_charge_type` is `Postpaid`, `engine` is `MySQL`, `engine_version` is `5.7` and `category` is `Basic`. The provider validates the combination locally before calling `CreateDBInstance`.
+* `compression_mode` - (Optional, String, Available since v2.2.0) Specifies whether to enable the storage compression feature for the ApsaraDB RDS for MySQL instance. Valid values: `on`, `off`.
+
+  -> **NOTE:** `CreateDBInstance` does not accept this parameter, so an initial `compression_mode = "on"` is applied through `ModifyDBInstanceSpec` after the instance is created and waited to convergence. The value is read back from the instance; when the API omits it the provider keeps the last confirmed value instead of assuming `off`, so an imported instance or one whose value has not been confirmed yet must not be assumed to have compression disabled.
+
+  -> **NOTE:** Storage compression can be enabled but not disabled: once `compression_mode` is `on`, setting it back to `off` is rejected by the server. The parameter applies to ApsaraDB RDS for MySQL instances only.
+
+  -> **NOTE:** Storage compression requires an ApsaraDB RDS for MySQL 5.6, 5.7 or 8.0 instance with the High-availability or Cluster edition, a dedicated (non-shared) instance type, premium ESSD (`general_essd`) or premium local SSD (`local_ssd`) storage, and the subscription or pay-as-you-go billing method. The storage capacity must be 1,000 to 25,000 GB for premium ESSD and 1,000 to 2,400 GB for premium local SSD. Other engines and configurations are not supported, and the server rejects enabling compression when these conditions are not met.
+
+  -> **NOTE:** After storage compression is enabled, the following changes are rejected: changing a dedicated instance type to a general-purpose instance type, changing a pay-as-you-go instance to serverless, changing premium local SSD storage to cloud disk, reducing the storage capacity below 1,000 GB, and performing an elastic upgrade on a cloud disk instance.
+
+* `allow_major_version_upgrade` - (Optional, Bool, Available since v2.2.0) Specifies whether to upgrade the major engine version when `engine_version` is changed. Defaults to `true`. Valid values:
+  - `true`
+  - `false`
+
+  -> **NOTE:** This parameter applies only to ApsaraDB RDS for SQL Server instances. It is a write-only parameter: `DescribeDBInstanceAttribute` does not return it, so it is never refreshed from the remote instance.
+
+  -> **NOTE:** Changing `engine_version` of an SQL Server instance requires `category`, `zone_id` and `vswitch_id` because `ModifyDBInstanceSpec` requires `Category`, `ZoneId` and `VSwitchId` for a major version upgrade. For the `HighAvailability` and `AlwaysOn` categories the request also carries `ZoneIdSlave1`, taken from `zone_id_slave_a` and defaulting to `zone_id` (single-AZ deployment); when `zone_id_slave_a` differs from `zone_id`, `vswitch_id` must contain two vSwitch IDs separated by a comma.
+
 * `node_id` - (Optional, Available since v1.213.1) The globally unique identifier (GUID) of the secondary instance. You can call the DescribeDBInstanceHAConfig operation to query the GUID of the secondary instance.
 * `force` - (Optional, ForceNew, Available since v1.213.1) Specifies whether to enable forcible switching. Valid values:
   - Yes
   - No
 
-* `db_param_group_id` - (Optional, Available since v1.222.0) Parameter template ID. Only MySQL and PostgreSQL support this parameter. If this parameter is not specified, the default parameter template is used. You can also customize a parameter template and use it here.
+* `db_param_group_id` - (Optional, String, Available since v1.222.0) Parameter template ID. Only MySQL and PostgreSQL support this parameter. If this parameter is not specified, the default parameter template is used. You can also customize a parameter template and use it here.
+
+  -> **NOTE:** The parameter is immutable after resource creation: it is consumed by `CreateDBInstance` only, and the provider has no supported operation to change the parameter template of an existing instance. Changing it in configuration produces a permanent diff instead of an update; remove it from the configuration (or create a new instance) instead.
 
 ### `parameters`
 
@@ -925,6 +1045,8 @@ The following attributes are exported:
 * `status` - (Available since v1.204.1) The status of db instance.
 * `create_time` - (Available since v1.204.1) The creation time of db instance.
 * `templates` - (Computed, Available since v1.254.0) Whitelist Template Details.
+* `network_type` - (String, Available since v2.2.0) The network type of the instance. Valid values: `Classic`, `VPC`.
+* `db_instance_net_type` - (String, Available since v2.2.0) The network connection type of the instance. Valid values: `Internet`, `Intranet`.
 
 ## Timeouts
 

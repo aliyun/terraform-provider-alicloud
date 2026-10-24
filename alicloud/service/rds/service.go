@@ -794,22 +794,42 @@ func (s *RdsService) DescribeDBConnection(id string) (map[string]interface{}, er
 	object, err := s.DescribeDBInstanceNetInfo(parts[0])
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidCurrentConnectionString.NotFound"}) {
+		// The connection is gone together with its instance: DescribeDBInstanceNetInfo
+		// answers InvalidDBInstanceName.NotFound once the instance has been released.
+		if IsExpectedErrors(err, []string{"InvalidCurrentConnectionString.NotFound", "InvalidDBInstanceName.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapError(err)
 	}
 
 	if object != nil {
-		for _, o := range object {
-			o := o.(map[string]interface{})
-			if strings.HasPrefix(o["ConnectionString"].(string), parts[1]) {
-				return o, nil
-			}
+		if netInfo, ok := matchDBConnectionNetInfo(object, parts[1]); ok {
+			return netInfo, nil
 		}
 	}
 
 	return nil, WrapErrorf(NotFoundErr("DBConnection", id), NotFoundMsg, ProviderERROR)
+}
+
+// matchDBConnectionNetInfo returns the connection whose first DNS label equals
+// the connection prefix exactly. A prefix match would let "abc" select
+// "abcdef" depending on the response order, and the same object is used to
+// update and release the connection.
+func matchDBConnectionNetInfo(netInfos []interface{}, prefix string) (map[string]interface{}, bool) {
+	for _, item := range netInfos {
+		netInfo, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		connectionString, ok := netInfo["ConnectionString"].(string)
+		if !ok {
+			continue
+		}
+		if strings.Split(connectionString, ".")[0] == prefix {
+			return netInfo, true
+		}
+	}
+	return nil, false
 }
 func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (map[string]interface{}, error) {
 	object, err := s.DescribeDBInstanceRwNetInfoByMssql(id)
@@ -1670,8 +1690,8 @@ func (s *RdsService) RdsTaskStateRefreshFunc(id string, taskAction string) retry
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeTasks(id)
 		if err != nil {
-			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
+			if rdsInstanceMissingCode(err) {
+				// The task history is gone because the instance itself is gone.
 				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
@@ -1684,8 +1704,65 @@ func (s *RdsService) RdsTaskStateRefreshFunc(id string, taskAction string) retry
 			}
 		}
 
+		// A finished task can disappear from DescribeTasks (or never be recorded
+		// for some instance types) once the instance is gone. Confirm the
+		// instance itself with an explicit result instead of polling until the
+		// timeout.
+		_, exists, err := s.lookupDBInstanceForDelete(id)
+		if err != nil {
+			return nil, "", WrapError(err)
+		}
+		if !exists {
+			return nil, "", nil
+		}
+
 		return object, "Pending", nil
 	}
+}
+
+// rdsInstanceNotFoundCodes are the RDS error codes that specifically mean the DB
+// instance does not exist. A generic 404 such as Request.NotFound, a permission
+// error or any other failure must not be read as an absence.
+var rdsInstanceNotFoundCodes = []string{
+	"InvalidDBInstanceId.NotFound",
+	"InvalidDBInstanceName.NotFound",
+	"InvalidDBInstanceId.NotFoundError",
+	"Forbidden.InstanceNotFound",
+}
+
+func rdsInstanceMissingCode(err error) bool {
+	return rdsErrorHasCode(err, rdsInstanceNotFoundCodes...)
+}
+
+// lookupDBInstanceForDelete returns the instance and whether it exists. Absence
+// is proven only by an instance-specific NotFound code or by an empty
+// DescribeDBInstanceAttribute result; every other error is returned so a delete
+// never reports success for an unconfirmed instance.
+func (s *RdsService) lookupDBInstanceForDelete(id string) (map[string]interface{}, bool, error) {
+	action := "DescribeDBInstanceAttribute"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	response, err := s.client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+	if err != nil {
+		if rdsInstanceMissingCode(err) {
+			return nil, false, nil
+		}
+		return nil, false, WrapError(err)
+	}
+	addDebug(action, response, request)
+	items, err := jsonpath.Get("$.Items.DBInstanceAttribute", response)
+	if err != nil {
+		return nil, false, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
+	}
+	list, _ := items.([]interface{})
+	if len(list) < 1 {
+		return nil, false, nil
+	}
+	instance, _ := list[0].(map[string]interface{})
+	return instance, true, nil
 }
 
 // WaitForDBParameter waits for instance parameter to given value.
