@@ -61,6 +61,10 @@ func resourceAliCloudEsaCacheReserveInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"order_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -111,6 +115,7 @@ func resourceAliCloudEsaCacheReserveInstanceCreate(d *schema.ResourceData, meta 
 	}
 
 	d.SetId(fmt.Sprint(response["InstanceId"]))
+	d.Set("order_id", response["OrderId"])
 
 	esaServiceV2 := EsaServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, esaServiceV2.EsaCacheReserveInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
@@ -187,6 +192,7 @@ func resourceAliCloudEsaCacheReserveInstanceUpdate(d *schema.ResourceData, meta 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		d.Set("order_id", response["OrderId"])
 		esaServiceV2 := EsaServiceV2{client}
 		stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, esaServiceV2.EsaCacheReserveInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
