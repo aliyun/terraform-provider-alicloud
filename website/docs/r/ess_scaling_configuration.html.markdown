@@ -159,8 +159,8 @@ The following arguments are supported:
 * `instance_type_override` - (Optional, Available since v1.216.0) specify the weight of instance type.  See [`instance_type_override`](#instance_type_override) below for details.
 * `instance_ids` - (Deprecated) It has been deprecated from version 1.6.0. New resource `alicloud_ess_attachment` replaces it.
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be a null string.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be a null string.
 * `override` - (Optional, Available since v1.46.0) Indicates whether to overwrite the existing data. Default to false.
 * `password_inherit` - (Optional, Available since v1.62.0) Specifies whether to use the password that is predefined in the image. If the PasswordInherit parameter is set to true, the `password` and `kms_encrypted_password` will be ignored. You must ensure that the selected image has a password configured.
 * `password` - (Optional, ForceNew, Available since v1.60.0) The password of the ECS instance. The password must be 8 to 30 characters in length. It must contains at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include `() ~!@#$%^&*-_+=\|{}[]:;'<>,.?/`, The password of Windows-based instances cannot start with a forward slash (/).
@@ -179,6 +179,22 @@ The following arguments are supported:
   - `PrivatePoolOnly`: Launches instances only from a specific private pool. You must specify ResourcePoolOptions.PrivatePoolIds. If the specified private pool has insufficient capacity, the launch fails.
   - `PublicPoolFirst`: Public pool first. The system prioritizes the public pool to create instances. If the public pool has insufficient resources, the system uses private pool resources as a supplement. The system first tries to automatically match an open private pool. If no suitable private pool is found, the system uses the Target-type private pool specified by ResourcePoolOptions.PrivatePoolIds or a Target-type private pool that meets the conditions of PrivatePoolTags.
   - `None`: Does not use a resource pool policy.
+* `spot_interruption_behavior` - (Optional) The interruption mode of the preemptible instance when inventory is insufficient. Valid values: `Terminate`, `Stop`.
+* `load_balancer_weight` - (Optional) The weight of the backend server. Valid values: 1 to 100. Default value: 50.
+* `memory` - (Optional) The memory size of the ECS instance. Unit: GiB.
+* `cpu` - (Optional) The number of vCPUs of the ECS instance.
+* `image_family` - (Optional) The name of the image family to which the image belongs.
+* `tenancy` - (Optional) Whether the ECS instance is hosted on a dedicated host. Valid values: `default`, `host`.
+* `affinity` - (Optional) Whether to keep the instance on the same dedicated host when the instance is restarted. Valid values: `default`, `host`.
+* `deployment_set_id` - (Optional) The ID of the deployment set to which the ECS instance belongs.
+* `ipv6_address_count` - (Optional) The number of randomly generated IPv6 addresses to assign to the primary ENI of the ECS instance.
+* `hpc_cluster_id` - (Optional) The ID of the HPC cluster to which the ECS instance belongs.
+* `dedicated_host_id` - (Optional) The ID of the dedicated host on which the ECS instance is deployed.
+* `zone_id` - (Optional) The ID of the zone in which to deploy the ECS instance.
+* `system_disk_categories` - (Optional) The list of system disk categories. The system selects a category in sequence based on inventory.
+* `system_disk_bursting_enabled` - (Optional) Whether to enable the bursting mode for the system disk.
+* `private_pool_options` - (Optional) The options of the private pool. See [`private_pool_options`](#private_pool_options) below for details.
+* `scheduler_options` - (Optional) The scheduler options. See [`scheduler_options`](#scheduler_options) below for details.
 
   -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
@@ -186,11 +202,11 @@ The following arguments are supported:
 
   -> **NOTE:** Restrictions on attaching ECS instances:
 
-   - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
-   - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
-   - The attached ECS instances must in the running state.
-   - The attached ECS instances has not been attached to other scaling groups.
-   - The attached ECS instances supports Subscription and Pay-As-You-Go payment methods.
+  - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
+  - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
+  - The attached ECS instances must in the running state.
+  - The attached ECS instances has not been attached to other scaling groups.
+  - The attached ECS instances supports Subscription and Pay-As-You-Go payment methods.
 
   -> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
 
@@ -211,6 +227,8 @@ The datadisk mapping supports the following:
 * `description` - (Optional, Available since v1.92.0) The description of data disk N. Valid values of N: 1 to 16. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `auto_snapshot_policy_id` - (Optional, Available since v1.92.0) The id of auto snapshot policy for data disk.
 * `performance_level` - (Optional, Available since v1.124.3) The performance level of the ESSD used as data disk.
+* `categories` - (Optional) The list of data disk categories. The system selects a category in sequence based on inventory.
+* `bursting_enabled` - (Optional) Whether to enable the bursting mode for the data disk.
 
 ### `network_interfaces`
 
@@ -276,6 +294,19 @@ The resourcePoolOptionsPrivatePoolTags mapping supports the following:
 
 * `key` - (Optional, Available since v1.282.0) The key of the private pool tag. Filters available Target-mode private pools by tag.
 * `value` - (Optional, Available since v1.282.0) The value of the private pool tag.
+
+### `private_pool_options`
+
+The privatePoolOptions mapping supports the following:
+
+* `match_criteria` - (Optional) The matching mode of the private pool. Valid values: `Open`, `Target`.
+* `pool_id` - (Optional) The ID of the private pool.
+
+### `scheduler_options`
+
+The schedulerOptions mapping supports the following:
+
+* `managed_private_space_id` - (Optional) The ID of the managed private space.
 
 ## Attributes Reference
 
