@@ -191,12 +191,6 @@ func resourceAlicloudOosParameterUpdate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	if d.HasChange("resource_group_id") {
-		update = true
-		if v, ok := d.GetOk("resource_group_id"); ok {
-			request["ResourceGroupId"] = v
-		}
-	}
 	if d.HasChange("tags") {
 		update = true
 		if v, ok := d.GetOk("tags"); ok {
@@ -224,6 +218,33 @@ func resourceAlicloudOosParameterUpdate(d *schema.ResourceData, meta interface{}
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	if d.HasChange("resource_group_id") {
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			action := "ChangeResourceGroup"
+			request := map[string]interface{}{
+				"RegionId":           client.RegionId,
+				"ResourceId":         d.Id(),
+				"NewResourceGroupId": v,
+				"ResourceType":       "parameter",
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
 		}
 	}
 	return resourceAlicloudOosParameterRead(d, meta)
