@@ -1,4 +1,4 @@
-package alicloud
+package nas
 
 import (
 	"fmt"
@@ -6,13 +6,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudFileSystems() *schema.Resource {
+func DataSourceFileSystems() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudFileSystemsRead,
+		Read: dataSourceFileSystemsRead,
 
 		Schema: map[string]*schema.Schema{
 			"storage_type": {
@@ -59,6 +63,30 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"auto_upgrade_config": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"capacity_used_ratio": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"enabled": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"step": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"time": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+								},
+							},
 						},
 						"region_id": {
 							Type:     schema.TypeString,
@@ -111,13 +139,13 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceFileSystemsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeFileSystems"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.Region
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	if v, ok := d.GetOk("file_system_type"); ok {
 		request["FileSystemType"] = v
@@ -137,7 +165,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("description_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		filesystemDescriptionRegex = r
 	}
@@ -146,12 +174,12 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	for {
 		response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_file_systems", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_nas_file_systems", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		resp, err := jsonpath.Get("$.FileSystems.FileSystem", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.FileSystems.FileSystem", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.FileSystems.FileSystem", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -174,7 +202,7 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -184,43 +212,77 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		metered_sizeVal, err := formatInt(object["MeteredSize"])
+		metered_sizeVal, err := convert.FormatInt(object["MeteredSize"])
 		if err != nil {
 			return err
 		}
+		autoUpgradeConfig := make([]map[string]interface{}, 0)
+		if autoUpgradeConfigRaw, ok := object["AutoUpgradeConfig"].(map[string]interface{}); ok && len(autoUpgradeConfigRaw) > 0 {
+			autoUpgradeConfigMap := make(map[string]interface{})
+			if v, ok := autoUpgradeConfigRaw["enabled"]; ok {
+				enabled, err := convert.FormatBool(v)
+				if err != nil {
+					return err
+				}
+				autoUpgradeConfigMap["enabled"] = enabled
+			}
+			if v, ok := autoUpgradeConfigRaw["capacityUsedRatio"]; ok {
+				capacityUsedRatio, err := convert.FormatInt(v)
+				if err != nil {
+					return err
+				}
+				autoUpgradeConfigMap["capacity_used_ratio"] = capacityUsedRatio
+			}
+			if v, ok := autoUpgradeConfigRaw["step"]; ok {
+				step, err := convert.FormatInt(v)
+				if err != nil {
+					return err
+				}
+				autoUpgradeConfigMap["step"] = step
+			}
+			if v, ok := autoUpgradeConfigRaw["time"]; ok {
+				upgradeTime, err := convert.FormatInt(v)
+				if err != nil {
+					return err
+				}
+				autoUpgradeConfigMap["time"] = upgradeTime
+			}
+			autoUpgradeConfig = append(autoUpgradeConfig, autoUpgradeConfigMap)
+		}
 		mapping := map[string]interface{}{
-			"id":               fmt.Sprint(object["FileSystemId"]),
-			"region_id":        object["RegionId"],
-			"create_time":      object["CreateTime"],
-			"description":      object["Description"],
-			"protocol_type":    object["ProtocolType"],
-			"storage_type":     object["StorageType"],
-			"metered_size":     metered_sizeVal,
-			"encrypt_type":     object["EncryptType"],
-			"file_system_type": object["FileSystemType"],
-			"capacity":         object["Capacity"],
-			"kms_key_id":       object["KMSKeyId"],
-			"zone_id":          object["ZoneId"],
+			"id":                  fmt.Sprint(object["FileSystemId"]),
+			"auto_upgrade_config": autoUpgradeConfig,
+			"region_id":           object["RegionId"],
+			"create_time":         object["CreateTime"],
+			"description":         object["Description"],
+			"protocol_type":       object["ProtocolType"],
+			"storage_type":        object["StorageType"],
+			"metered_size":        metered_sizeVal,
+			"encrypt_type":        object["EncryptType"],
+			"file_system_type":    object["FileSystemType"],
+			"capacity":            object["Capacity"],
+			"kms_key_id":          object["KMSKeyId"],
+			"zone_id":             object["ZoneId"],
 		}
 		ids = append(ids, fmt.Sprint(object["FileSystemId"]))
 		descriptions = append(descriptions, object["Description"])
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("descriptions", descriptions); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("systems", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
