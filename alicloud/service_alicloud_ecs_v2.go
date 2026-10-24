@@ -756,6 +756,21 @@ func (s *EcsServiceV2) EcsRamRoleAttachmentStateRefreshFunc(id string, field str
 // DescribeEcsElasticityAssurance <<< Encapsulated get interface for Ecs ElasticityAssurance.
 
 func (s *EcsServiceV2) DescribeEcsElasticityAssurance(id string) (object map[string]interface{}, err error) {
+	// PackageType defaults to ElasticityAssurance on the service side, so a time-division
+	// elasticity assurance is invisible unless the type is requested explicitly.
+	for _, packageType := range []string{"", "TimeDivisionElasticityAssurance"} {
+		object, err = s.describeEcsElasticityAssuranceByPackageType(id, packageType)
+		if err == nil {
+			return object, nil
+		}
+		if !NotFoundError(err) {
+			return object, err
+		}
+	}
+	return object, err
+}
+
+func (s *EcsServiceV2) describeEcsElasticityAssuranceByPackageType(id string, packageType string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -764,6 +779,9 @@ func (s *EcsServiceV2) DescribeEcsElasticityAssurance(id string) (object map[str
 	query = make(map[string]interface{})
 	request["PrivatePoolOptions.Ids"] = convertListToJsonString([]interface{}{id})
 	request["RegionId"] = client.RegionId
+	if packageType != "" {
+		request["PackageType"] = packageType
+	}
 	action := "DescribeElasticityAssurances"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
