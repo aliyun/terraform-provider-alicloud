@@ -205,6 +205,18 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Optional:     true,
 				Default:      DiskCloudEfficiency,
 				ValidateFunc: StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency", "cloud_essd_xc1"}, false),
+				// SystemDisk.Category is mutually exclusive with SystemDiskCategories in
+				// the ESS API. system_disk_category carries a schema default, so d.Get is
+				// non-empty even when the user only configures system_disk_categories; a
+				// Describe response created from the plural returns no singular category,
+				// which would otherwise produce a perpetual drift. Suppress the singular
+				// diff whenever the plural categories is configured.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if cats, ok := d.GetOk("system_disk_categories"); ok && len(cats.([]interface{})) > 0 {
+						return true
+					}
+					return false
+				},
 			},
 			"security_enhancement_strategy": {
 				Type:         schema.TypeString,
@@ -250,6 +262,21 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
+							// DataDisk.N.Category is mutually exclusive with
+							// DataDisk.N.Categories per disk; suppress the singular diff
+							// for this disk when its plural categories is configured, so a
+							// Describe response that omits the singular (created from the
+							// plural) does not drift against a configured singular value.
+							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+								// k is like "data_disk.<index>.category"
+								parts := strings.Split(k, ".")
+								if len(parts) >= 3 && parts[0] == "data_disk" {
+									if cats, ok := d.GetOk(fmt.Sprintf("data_disk.%s.categories", parts[1])); ok && len(cats.([]interface{})) > 0 {
+										return true
+									}
+								}
+								return false
+							},
 						},
 						"snapshot_id": {
 							Type:     schema.TypeString,
@@ -288,6 +315,16 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 						},
 						"performance_level": {
 							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"categories": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"bursting_enabled": {
+							Type:     schema.TypeBool,
 							Optional: true,
 						},
 					},
@@ -587,6 +624,109 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					},
 				},
 			},
+			"spot_interruption_behavior": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"load_balancer_weight": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"memory": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"cpu": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"image_family": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"tenancy": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"affinity": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"deployment_set_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"ipv6_address_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"hpc_cluster_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"dedicated_host_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"private_pool_options": {
+				Optional: true,
+				Type:     schema.TypeList,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"match_criteria": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"pool_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"scheduler_options": {
+				Optional: true,
+				Type:     schema.TypeList,
+				MaxItems: 1,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"managed_private_space_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"system_disk_categories": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"system_disk_bursting_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -711,8 +851,14 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		request["SystemDisk.ProvisionedIops"] = v
 	}
 
-	if v := d.Get("system_disk_category").(string); v != "" {
-		request["SystemDisk.Category"] = d.Get("system_disk_category")
+	// SystemDisk.Category is mutually exclusive with SystemDiskCategories in the ESS API.
+	// Send the singular category only when the plural categories is not configured, otherwise
+	// the API rejects the request with InvalidParameter.Conflict. Note system_disk_category
+	// has a schema default, so d.Get is non-empty even when the user only sets categories.
+	if cats, ok := d.GetOk("system_disk_categories"); !ok || len(cats.([]interface{})) == 0 {
+		if v := d.Get("system_disk_category").(string); v != "" {
+			request["SystemDisk.Category"] = d.Get("system_disk_category")
+		}
 	}
 	if v, ok := d.GetOk("security_enhancement_strategy"); ok && v.(string) != "" {
 		request["SecurityEnhancementStrategy"] = v
@@ -777,6 +923,69 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("http_endpoint"); ok && v.(string) != "" {
 		request["HttpEndpoint"] = v
 	}
+	if v, ok := d.GetOk("spot_interruption_behavior"); ok && v.(string) != "" {
+		request["SpotInterruptionBehavior"] = v
+	}
+	if v, ok := d.GetOkExists("load_balancer_weight"); ok {
+		request["LoadBalancerWeight"] = requests.NewInteger(v.(int))
+	}
+	if v, ok := d.GetOkExists("memory"); ok {
+		request["Memory"] = requests.NewInteger(v.(int))
+	}
+	if v, ok := d.GetOkExists("cpu"); ok {
+		request["Cpu"] = requests.NewInteger(v.(int))
+	}
+	if v, ok := d.GetOk("image_family"); ok && v.(string) != "" {
+		request["ImageFamily"] = v
+	}
+	if v, ok := d.GetOk("tenancy"); ok && v.(string) != "" {
+		request["Tenancy"] = v
+	}
+	if v, ok := d.GetOk("affinity"); ok && v.(string) != "" {
+		request["Affinity"] = v
+	}
+	if v, ok := d.GetOk("deployment_set_id"); ok && v.(string) != "" {
+		request["DeploymentSetId"] = v
+	}
+	if v, ok := d.GetOkExists("ipv6_address_count"); ok {
+		request["Ipv6AddressCount"] = requests.NewInteger(v.(int))
+	}
+	if v, ok := d.GetOk("hpc_cluster_id"); ok && v.(string) != "" {
+		request["HpcClusterId"] = v
+	}
+	if v, ok := d.GetOk("dedicated_host_id"); ok && v.(string) != "" {
+		request["DedicatedHostId"] = v
+	}
+	if v, ok := d.GetOk("zone_id"); ok && v.(string) != "" {
+		request["ZoneId"] = v
+	}
+	if v, ok := d.GetOk("private_pool_options"); ok {
+		pp := v.([]interface{})
+		if len(pp) > 0 {
+			item := pp[0].(map[string]interface{})
+			if mc, ok := item["match_criteria"].(string); ok && mc != "" {
+				request["PrivatePoolOptions.MatchCriteria"] = mc
+			}
+			if pid, ok := item["pool_id"].(string); ok && pid != "" {
+				request["PrivatePoolOptions.Id"] = pid
+			}
+		}
+	}
+	if v, ok := d.GetOk("system_disk_categories"); ok && len(v.([]interface{})) > 0 {
+		request["SystemDiskCategories"] = v
+	}
+	if v, ok := d.GetOkExists("system_disk_bursting_enabled"); ok {
+		request["SystemDisk.BurstingEnabled"] = v.(bool)
+	}
+	if v, ok := d.GetOk("scheduler_options"); ok {
+		so := v.([]interface{})
+		if len(so) > 0 {
+			item := so[0].(map[string]interface{})
+			if mps, ok := item["managed_private_space_id"].(string); ok && mps != "" {
+				request["SchedulerOptions.ManagedPrivateSpaceId"] = mps
+			}
+		}
+	}
 	if v, ok := d.GetOk("user_data"); ok {
 		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
 		if base64DecodeError == nil {
@@ -803,8 +1012,12 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			disksMap["Size"] = item["size"].(int)
 			disksMap["ProvisionedIops"] = item["provisioned_iops"].(int)
 
+			// DataDisk.N.Category is mutually exclusive with DataDisk.N.Categories in the ESS API;
+			// send the singular only when the plural is not configured for this disk.
 			if category, ok := item["category"].(string); ok && category != "" {
-				disksMap["Category"] = category
+				if cats, ok := item["categories"].([]interface{}); !ok || len(cats) == 0 {
+					disksMap["Category"] = category
+				}
 			}
 			if snapshotId, ok := item["snapshot_id"].(string); ok && snapshotId != "" {
 				disksMap["SnapshotId"] = snapshotId
@@ -828,6 +1041,12 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			}
 			if performanceLevel, ok := item["performance_level"].(string); ok && performanceLevel != "" {
 				disksMap["PerformanceLevel"] = performanceLevel
+			}
+			if categories, ok := item["categories"].([]interface{}); ok && len(categories) > 0 {
+				disksMap["Categories"] = categories
+			}
+			if burstingEnabled, ok := item["bursting_enabled"].(bool); ok && burstingEnabled {
+				disksMap["BurstingEnabled"] = burstingEnabled
 			}
 			disksMaps = append(disksMaps, disksMap)
 		}
@@ -1143,7 +1362,11 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if d.HasChange("system_disk_category") {
-		request["SystemDisk.Category"] = d.Get("system_disk_category")
+		// SystemDisk.Category is mutually exclusive with SystemDiskCategories; skip the
+		// singular when the plural is configured so ModifyScalingConfiguration does not conflict.
+		if cats, ok := d.GetOk("system_disk_categories"); !ok || len(cats.([]interface{})) == 0 {
+			request["SystemDisk.Category"] = d.Get("system_disk_category")
+		}
 		update = true
 	}
 
@@ -1226,6 +1449,90 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("http_endpoint") {
 		request["HttpEndpoint"] = d.Get("http_endpoint")
+		update = true
+	}
+
+	if d.HasChange("spot_interruption_behavior") {
+		request["SpotInterruptionBehavior"] = d.Get("spot_interruption_behavior")
+		update = true
+	}
+	if d.HasChange("load_balancer_weight") {
+		if v, ok := d.GetOkExists("load_balancer_weight"); ok {
+			request["LoadBalancerWeight"] = requests.NewInteger(v.(int))
+			update = true
+		}
+	}
+	if d.HasChange("memory") {
+		if v, ok := d.GetOkExists("memory"); ok {
+			request["Memory"] = requests.NewInteger(v.(int))
+			update = true
+		}
+	}
+	if d.HasChange("cpu") {
+		if v, ok := d.GetOkExists("cpu"); ok {
+			request["Cpu"] = requests.NewInteger(v.(int))
+			update = true
+		}
+	}
+	if d.HasChange("image_family") {
+		request["ImageFamily"] = d.Get("image_family")
+		update = true
+	}
+	if d.HasChange("tenancy") {
+		request["Tenancy"] = d.Get("tenancy")
+		update = true
+	}
+	if d.HasChange("affinity") {
+		request["Affinity"] = d.Get("affinity")
+		update = true
+	}
+	if d.HasChange("deployment_set_id") {
+		request["DeploymentSetId"] = d.Get("deployment_set_id")
+		update = true
+	}
+	if d.HasChange("ipv6_address_count") {
+		if v, ok := d.GetOkExists("ipv6_address_count"); ok {
+			request["Ipv6AddressCount"] = requests.NewInteger(v.(int))
+			update = true
+		}
+	}
+	if d.HasChange("hpc_cluster_id") {
+		request["HpcClusterId"] = d.Get("hpc_cluster_id")
+		update = true
+	}
+	if d.HasChange("dedicated_host_id") {
+		request["DedicatedHostId"] = d.Get("dedicated_host_id")
+		update = true
+	}
+	if d.HasChange("zone_id") {
+		request["ZoneId"] = d.Get("zone_id")
+		update = true
+	}
+	if d.HasChange("private_pool_options") {
+		if v, ok := d.GetOk("private_pool_options"); ok {
+			pp := v.([]interface{})
+			if len(pp) > 0 {
+				item := pp[0].(map[string]interface{})
+				if mc, ok := item["match_criteria"].(string); ok && mc != "" {
+					request["PrivatePoolOptions.MatchCriteria"] = mc
+				}
+				if pid, ok := item["pool_id"].(string); ok && pid != "" {
+					request["PrivatePoolOptions.Id"] = pid
+				}
+			}
+		}
+		update = true
+	}
+	if d.HasChange("scheduler_options") {
+		if v, ok := d.GetOk("scheduler_options"); ok {
+			so := v.([]interface{})
+			if len(so) > 0 {
+				item := so[0].(map[string]interface{})
+				if mps, ok := item["managed_private_space_id"].(string); ok && mps != "" {
+					request["SchedulerOptions.ManagedPrivateSpaceId"] = mps
+				}
+			}
+		}
 		update = true
 	}
 
@@ -1459,10 +1766,9 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 			dataDisks := make([]map[string]interface{}, 0, len(disks))
 			for _, e := range disks {
 				pack := e.(map[string]interface{})
-				dataDisks = append(dataDisks, map[string]interface{}{
+				dataDiskMap := map[string]interface{}{
 					"Size":                 pack["size"],
 					"ProvisionedIops":      pack["provisioned_iops"],
-					"Category":             pack["category"],
 					"SnapshotId":           pack["snapshot_id"],
 					"DeleteWithInstance":   pack["delete_with_instance"],
 					"Device":               pack["device"],
@@ -1472,7 +1778,18 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 					"Description":          pack["description"],
 					"AutoSnapshotPolicyId": pack["auto_snapshot_policy_id"],
 					"PerformanceLevel":     pack["performance_level"],
-				})
+				}
+				if categories, ok := pack["categories"].([]interface{}); ok && len(categories) > 0 {
+					dataDiskMap["Categories"] = categories
+				} else {
+					// DataDisk.N.Category is mutually exclusive with Categories; send the singular
+					// only when the plural is not configured for this disk.
+					dataDiskMap["Category"] = pack["category"]
+				}
+				if burstingEnabled, ok := pack["bursting_enabled"].(bool); ok && burstingEnabled {
+					dataDiskMap["BurstingEnabled"] = burstingEnabled
+				}
+				dataDisks = append(dataDisks, dataDiskMap)
 			}
 			request["DataDisk"] = dataDisks
 		}
@@ -1496,6 +1813,18 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("system_disk_kms_key_id") {
 		request["SystemDisk.KMSKeyId"] = d.Get("system_disk_kms_key_id")
+		update = true
+	}
+
+	if d.HasChange("system_disk_categories") {
+		if v, ok := d.GetOk("system_disk_categories"); ok && len(v.([]interface{})) > 0 {
+			request["SystemDiskCategories"] = v
+		}
+		update = true
+	}
+
+	if d.HasChange("system_disk_bursting_enabled") {
+		request["SystemDisk.BurstingEnabled"] = d.Get("system_disk_bursting_enabled").(bool)
 		update = true
 	}
 
@@ -1678,6 +2007,55 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("spot_strategy", response["SpotStrategy"])
 	d.Set("dedicated_host_cluster_id", response["DedicatedHostClusterId"])
 	d.Set("http_endpoint", response["HttpEndpoint"])
+	d.Set("spot_interruption_behavior", response["SpotInterruptionBehavior"])
+	if v := response["LoadBalancerWeight"]; v != nil {
+		d.Set("load_balancer_weight", v)
+	}
+	if v := response["Memory"]; v != nil {
+		d.Set("memory", v)
+	}
+	if v := response["Cpu"]; v != nil {
+		d.Set("cpu", v)
+	}
+	d.Set("image_family", response["ImageFamily"])
+	d.Set("tenancy", response["Tenancy"])
+	d.Set("affinity", response["Affinity"])
+	d.Set("deployment_set_id", response["DeploymentSetId"])
+	if v := response["Ipv6AddressCount"]; v != nil {
+		d.Set("ipv6_address_count", v)
+	}
+	d.Set("hpc_cluster_id", response["HpcClusterId"])
+	d.Set("dedicated_host_id", response["DedicatedHostId"])
+	d.Set("zone_id", response["ZoneId"])
+	if v := response["PrivatePoolOptions"]; v != nil {
+		m := v.(map[string]interface{})
+		result := make([]map[string]interface{}, 0, 1)
+		item := map[string]interface{}{
+			"match_criteria": m["MatchCriteria"],
+			"pool_id":        m["Id"],
+		}
+		result = append(result, item)
+		d.Set("private_pool_options", result)
+	}
+	if v := response["SchedulerOptions"]; v != nil {
+		m := v.(map[string]interface{})
+		result := make([]map[string]interface{}, 0, 1)
+		item := map[string]interface{}{
+			"managed_private_space_id": m["ManagedPrivateSpaceId"],
+		}
+		result = append(result, item)
+		d.Set("scheduler_options", result)
+	}
+	if v := response["SystemDiskCategories"]; v != nil {
+		if m, ok := v.(map[string]interface{}); ok {
+			if cats, ok := m["SystemDiskCategory"].([]interface{}); ok {
+				d.Set("system_disk_categories", cats)
+			}
+		}
+	}
+	if v := response["SystemDisk.BurstingEnabled"]; v != nil {
+		d.Set("system_disk_bursting_enabled", v)
+	}
 
 	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
 		d.Set("security_group_id", response["SecurityGroupId"])
@@ -1740,13 +2118,21 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 				"category":                r["Category"],
 				"snapshot_id":             r["SnapshotId"],
 				"device":                  r["Device"],
-				"delete_with_instance":    r["DeleteWithInstance"],
-				"encrypted":               r["Encrypted"],
+				"delete_with_instance":    formatBool(r["DeleteWithInstance"]),
+				"encrypted":               formatBool(r["Encrypted"]),
 				"kms_key_id":              r["KMSKeyId"],
-				"disk_name":               r["DiskName"],
+				"name":                    r["DiskName"],
 				"description":             r["Description"],
 				"auto_snapshot_policy_id": r["AutoSnapshotPolicyId"],
 				"performance_level":       r["PerformanceLevel"],
+				"bursting_enabled":        formatBool(r["BurstingEnabled"]),
+			}
+			if categories, ok := r["Categories"]; ok && categories != nil {
+				if cm, ok := categories.(map[string]interface{}); ok {
+					if cats, ok := cm["Category"].([]interface{}); ok {
+						l["categories"] = cats
+					}
+				}
 			}
 			result = append(result, l)
 		}
