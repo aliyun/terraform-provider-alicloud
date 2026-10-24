@@ -1,14 +1,20 @@
 package alicloud
 
 import (
+	"encoding/base64"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+// collection-order: bypass instance_ids -- pre-existing deprecated TypeList (deprecated since provider 1.6.0; this change only moves its suppressor to a named function and keeps the legacy semantics); the suppressor intentionally returns true for every change, including member additions and removals, because CreateScalingConfiguration, ModifyScalingConfiguration and DescribeScalingConfigurations do not carry instance ids at all. A reorder apply cannot surface a diff, and a bounded suppressor unit net cannot have the required no-suppression membership case without changing that legacy behaviour.
 
 // kms限制
 func TestAccAliCloudEssScalingConfiguration_override(t *testing.T) {
@@ -4353,4 +4359,505 @@ func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_userDataTagsConvergence covers the
+// four regression scenarios of the perpetual-diff fix for issue #2079:
+//  1. user_data/tags written out of band (for example by the ACK cluster
+//     autoscaler) are preserved on refresh and the following plans stay empty.
+//  2. an explicit configuration update of user_data/tags takes effect.
+//  3. user_data/tags that are not configured are not cleared on the cloud side;
+//     the remote values survive and no clear request is sent (contract R1).
+//  4. removing user_data/tags from the configuration keeps the remote values
+//     and converges instead of producing a perpetual diff.
+func TestAccAliCloudEssScalingConfiguration_userDataTagsConvergence(t *testing.T) {
+	var v ess.ScalingConfiguration
+	var scalingConfigurationId string
+	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"instance_type":     CHECKSET,
+		"security_group_id": CHECKSET,
+		"image_name":        CHECKSET,
+		"override":          "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", acctest.RandIntRange(1000, 999999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationUserDataTagsDependence)
+
+	externalUserData := base64.StdEncoding.EncodeToString([]byte("#!/bin/bash\necho external-autoscaler"))
+	externalUserDataPlain := "#!/bin/bash\necho external-autoscaler"
+	updatedUserData := base64.StdEncoding.EncodeToString([]byte("#!/bin/bash\necho terraform-updated"))
+	externalTags := map[string]string{"external": "ack", "managed-by": "autoscaler"}
+
+	testAccConfig(map[string]interface{}{
+		"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+		"image_name":           "${data.alicloud_images.default.images.0.name}",
+		"instance_type":        "${data.alicloud_instance_types.compatible.instance_types.0.id}",
+		"security_group_id":    "${alicloud_security_group.default.id}",
+		"system_disk_category": "cloud_essd",
+		"force_delete":         "true",
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(nil),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force_delete": "true",
+					}),
+					func(state *terraform.State) error {
+						rs, ok := state.RootModule().Resources[resourceId]
+						if !ok {
+							return fmt.Errorf("resource %s not found in state", resourceId)
+						}
+						scalingConfigurationId = rs.Primary.ID
+						return nil
+					},
+				),
+			},
+			{
+				PreConfig: func() {
+					modifyEssScalingConfigurationOutOfBand(t, scalingConfigurationId, externalUserData, externalTags)
+				},
+				Config: testAccConfig(nil),
+				Check: testAccCheck(map[string]string{
+					"tags.external":   "ack",
+					"tags.managed-by": "autoscaler",
+					"user_data":       externalUserDataPlain,
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]interface{}{
+						"external":   "ack",
+						"managed-by": "autoscaler",
+						"created":    "tf",
+					},
+					"user_data": updatedUserData,
+				}),
+				Check: testAccCheck(map[string]string{
+					"tags.external":   "ack",
+					"tags.managed-by": "autoscaler",
+					"tags.created":    "tf",
+					"user_data":       updatedUserData,
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags":      REMOVEKEY,
+					"user_data": REMOVEKEY,
+				}),
+				Check: testAccCheck(map[string]string{
+					"tags.external":   "ack",
+					"tags.managed-by": "autoscaler",
+					"tags.created":    "tf",
+					"user_data":       updatedUserData,
+				}),
+			},
+			{
+				// Explicit empty values are not a supported way of clearing the
+				// remote data (contract R1): the provider sends no clear request,
+				// the remote values survive, and a diff keeps showing up.
+				Config: testAccConfig(map[string]interface{}{
+					"tags":      CLEARMAP,
+					"user_data": "",
+				}),
+				ExpectNonEmptyPlan: true,
+				Check: testAccCheck(map[string]string{
+					"tags.external":   "ack",
+					"tags.managed-by": "autoscaler",
+					"tags.created":    "tf",
+					"user_data":       updatedUserData,
+				}),
+			},
+		},
+	})
+}
+
+// modifyEssScalingConfigurationOutOfBand simulates a managed service such as
+// the ACK cluster autoscaler writing user_data and tags directly through the
+// ESS API, bypassing Terraform and its state entirely.
+func modifyEssScalingConfigurationOutOfBand(t *testing.T, scalingConfigurationId, userData string, tags map[string]string) {
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+
+	tagPairs := make([]string, 0, len(tags))
+	for key, value := range tags {
+		tagPairs = append(tagPairs, fmt.Sprintf("%q:%q", key, value))
+	}
+	request := ess.CreateModifyScalingConfigurationRequest()
+	request.RegionId = client.RegionId
+	request.ScalingConfigurationId = scalingConfigurationId
+	request.UserData = userData
+	request.Tags = "{" + strings.Join(tagPairs, ",") + "}"
+	if _, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ModifyScalingConfiguration(request)
+	}); err != nil {
+		t.Fatalf("failed to modify scaling configuration %s out of band: %s", scalingConfigurationId, err)
+	}
+
+	deadline := time.Now().Add(2 * time.Minute)
+	for {
+		config, err := (&EssService{client}).DescribeEssScalingConfiguration(scalingConfigurationId)
+		if err == nil && essUserDataMatches(config.UserData, userData) {
+			remoteTags := make(map[string]string)
+			for _, tag := range config.Tags.Tag {
+				remoteTags[tag.Key] = tag.Value
+			}
+			matched := true
+			for key, value := range tags {
+				if remoteTags[key] != value {
+					matched = false
+					break
+				}
+			}
+			if matched {
+				return
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for the out-of-band modification of scaling configuration %s, last error: %v", scalingConfigurationId, err)
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func essUserDataMatches(remote, submitted string) bool {
+	if remote == submitted {
+		return true
+	}
+	// The API may echo user data base64-decoded instead of verbatim.
+	decoded, err := base64.StdEncoding.DecodeString(submitted)
+	return err == nil && remote == string(decoded)
+}
+
+func resourceEssScalingConfigurationUserDataTagsDependence(name string) string {
+	return fmt.Sprintf(`
+	%s
+
+	variable "name" {
+		default = "%s"
+	}
+	data "alicloud_instance_types" "compatible" {
+		availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+		image_id             = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_essd"
+	}
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+// TestAccAliCloudEssScalingConfiguration_TypeListOrderConvergence proves that
+// reordering the multi-member TypeList attributes of the scaling configuration
+// converges. Every consecutive step permutes exactly one list and relies on the
+// SDK post-apply plan check, so a canonicalizing API that does not echo the
+// submitted order fails here instead of drifting silently in user plans.
+func TestAccAliCloudEssScalingConfiguration_TypeListOrderConvergence(t *testing.T) {
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	basicMap := map[string]string{
+		"scaling_group_id":     CHECKSET,
+		"instance_types.#":     "2",
+		"security_group_ids.#": "2",
+		"override":             "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", acctest.RandIntRange(1000, 999999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationTypeListOrderDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_types":       []string{"${data.alicloud_instance_types.compatible.instance_types.0.id}", "${data.alicloud_instance_types.compatible.instance_types.1.id}"},
+					"security_group_ids":   []string{"${alicloud_security_group.default.id}", "${alicloud_security_group.default1.id}"},
+					"system_disk_category": "cloud_essd",
+					"force_delete":         "true",
+					"data_disk": []map[string]string{
+						{
+							"size":     "40",
+							"category": "cloud_essd",
+							"name":     "${var.name}-1",
+						},
+						{
+							"size":     "50",
+							"category": "cloud_essd",
+							"name":     "${var.name}-2",
+						},
+					},
+				}),
+				Check: testAccCheck(map[string]string{
+					"instance_types.#":     "2",
+					"security_group_ids.#": "2",
+					"data_disk.#":          "2",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_types": []string{"${data.alicloud_instance_types.compatible.instance_types.1.id}", "${data.alicloud_instance_types.compatible.instance_types.0.id}"},
+				}),
+				Check: testAccCheck(map[string]string{
+					"instance_types.#": "2",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids": []string{"${alicloud_security_group.default1.id}", "${alicloud_security_group.default.id}"},
+				}),
+				Check: testAccCheck(map[string]string{
+					"security_group_ids.#": "2",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]string{
+						{
+							"size":     "50",
+							"category": "cloud_essd",
+							"name":     "${var.name}-2",
+						},
+						{
+							"size":     "40",
+							"category": "cloud_essd",
+							"name":     "${var.name}-1",
+						},
+					},
+				}),
+				Check: testAccCheck(map[string]string{
+					"data_disk.#":      "2",
+					"data_disk.0.size": "50",
+					"data_disk.1.size": "40",
+				}),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_InstancePatternInfoOrder covers the
+// member order of the TypeLists nested in instance_pattern_info: a single outer
+// set member keeps the container identity stable while architectures and
+// excluded_instance_types are permuted in separate applies.
+func TestAccAliCloudEssScalingConfiguration_InstancePatternInfoOrder(t *testing.T) {
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	basicMap := map[string]string{
+		"scaling_group_id":        CHECKSET,
+		"security_group_id":       CHECKSET,
+		"image_id":                REGEXMATCH + "^debian",
+		"override":                "false",
+		"instance_pattern_info.#": "1",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", acctest.RandIntRange(1000, 999999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigDependenceOnlyInstancePatternInfo)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+					"image_id":          "${data.alicloud_images.default2.images.0.id}",
+					"security_group_id": "${alicloud_security_group.default.id}",
+					"force_delete":      "true",
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "4",
+							"memory":                  "8.00",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86", "Arm"},
+							"excluded_instance_types": []string{"ecs.c6.large", "ecs.c6.xlarge"},
+						},
+					},
+				}),
+				Check: testAccCheck(map[string]string{
+					"instance_pattern_info.#": "1",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "4",
+							"memory":                  "8.00",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"Arm", "X86"},
+							"excluded_instance_types": []string{"ecs.c6.large", "ecs.c6.xlarge"},
+						},
+					},
+				}),
+				Check: testAccCheck(map[string]string{
+					"instance_pattern_info.#": "1",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "4",
+							"memory":                  "8.00",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"Arm", "X86"},
+							"excluded_instance_types": []string{"ecs.c6.xlarge", "ecs.c6.large"},
+						},
+					},
+				}),
+				Check: testAccCheck(map[string]string{
+					"instance_pattern_info.#": "1",
+				}),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudEssScalingConfiguration_NetworkInterfaceSecurityGroupOrder
+// covers the TypeList nested in the network_interfaces set: the outer member
+// keeps its identity while its security_group_ids members are permuted.
+func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceSecurityGroupOrder(t *testing.T) {
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	basicMap := map[string]string{
+		"scaling_group_id": CHECKSET,
+		"override":         "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", acctest.RandIntRange(1000, 999999))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationTypeListOrderDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
+					"image_id":             "${data.alicloud_images.default.images.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.compatible.instance_types.0.id}",
+					"security_group_id":    "${alicloud_security_group.default.id}",
+					"system_disk_category": "cloud_essd",
+					"force_delete":         "true",
+				}),
+				Check: testAccCheck(map[string]string{
+					"security_group_id": CHECKSET,
+				}),
+			},
+			{
+				// ESS rejects NetworkInterfaces.N for the primary ENI together with the
+				// top-level SecurityGroupId/SecurityGroupIds, so the primary ENI moves
+				// into NetworkInterfaces by removing security_group_id.
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": REMOVEKEY,
+					"network_interfaces": []map[string]interface{}{
+						{
+							"instance_type":                  "Primary",
+							"network_interface_traffic_mode": "Standard",
+							"security_group_ids":             []string{"${alicloud_security_group.default.id}", "${alicloud_security_group.default1.id}"},
+						},
+					},
+				}),
+				Check: testAccCheck(map[string]string{
+					"security_group_id":    "",
+					"network_interfaces.#": "1",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_interfaces": []map[string]interface{}{
+						{
+							"instance_type":                  "Primary",
+							"network_interface_traffic_mode": "Standard",
+							"security_group_ids":             []string{"${alicloud_security_group.default1.id}", "${alicloud_security_group.default.id}"},
+						},
+					},
+				}),
+				Check: testAccCheck(map[string]string{
+					"network_interfaces.#": "1",
+				}),
+			},
+		},
+	})
+}
+
+func resourceEssScalingConfigurationTypeListOrderDependence(name string) string {
+	return fmt.Sprintf(`
+	%s
+
+	variable "name" {
+		default = "%s"
+	}
+	data "alicloud_instance_types" "compatible" {
+		availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+		image_id             = "${data.alicloud_images.default.images.0.id}"
+		system_disk_category = "cloud_essd"
+	}
+	resource "alicloud_security_group" "default1" {
+		name   = "${var.name}-1"
+		vpc_id = "${alicloud_vpc.default.id}"
+	}
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}`, EcsInstanceCommonTestCase, name)
 }
