@@ -91,6 +91,7 @@ func sweepVpcsWithCallbacks(region string, rpc vpcSweepRPC, deleteSelected func(
 		"testAcc",
 		"tf-example",
 		"tf-test",
+		"terraform-example",
 	}
 
 	vpcIds := make([]string, 0)

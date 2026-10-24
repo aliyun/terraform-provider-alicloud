@@ -242,7 +242,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                           name,
 					"version":                        "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.2.version}",
-					"master_vswitch_ids":             []string{"${alicloud_vswitch.vswitches.id}", "${alicloud_vswitch.vswitches.id}", "${alicloud_vswitch.vswitches.id}"},
+					"master_vswitch_ids":             []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
 					"master_instance_types":          []string{"${var.instance_type}", "${var.instance_type}", "${var.instance_type}"},
 					"master_disk_category":           "cloud_essd",
 					"master_disk_size":               "80",
@@ -255,7 +255,6 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"security_group_id":              "${alicloud_security_group.default.id}",
 					"deletion_protection":            "false",
-					"timezone":                       "Asia/Shanghai",
 					"os_type":                        "Linux",
 					"platform":                       "AliyunLinux4ContainerOptimized",
 					"image_id":                       "aliyun_4_x64_20G_container_optimized_alibase_20260402.vhd",
@@ -287,7 +286,6 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 						"resource_group_id":              CHECKSET,
 						"security_group_id":              CHECKSET,
 						"deletion_protection":            "false",
-						"timezone":                       "Asia/Shanghai",
 						"os_type":                        "Linux",
 						"platform":                       "AliyunLinux4ContainerOptimized",
 						"cluster_domain":                 "cluster.local",
@@ -351,6 +349,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 						"Platform": "TF",
 						"Env":      "Pre",
 					},
+					"name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -413,11 +412,11 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 			{
 				// upgrade
 				Config: testAccConfig(map[string]interface{}{
-					"version": "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.1.version}",
+					"version": "1.36.2-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": CHECKSET,
+						"version": "1.36.2-aliyun.1",
 					}),
 				),
 			},
@@ -503,7 +502,6 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 					"install_cloud_monitor":          "true",
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"deletion_protection":            "false",
-					"timezone":                       "Asia/Shanghai",
 					"os_type":                        "Linux",
 					"platform":                       "AliyunLinux4ContainerOptimized",
 					"cluster_domain":                 "cluster.local",
@@ -532,7 +530,6 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 						"install_cloud_monitor":          "true",
 						"resource_group_id":              CHECKSET,
 						"deletion_protection":            "false",
-						"timezone":                       "Asia/Shanghai",
 						"os_type":                        "Linux",
 						"platform":                       "AliyunLinux4ContainerOptimized",
 						"cluster_domain":                 "cluster.local",
@@ -552,6 +549,506 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 			},
 		},
 	})
+}
+
+// collection-order: bypass pod_vswitch_ids -- Pre-existing schema; Read preserves creation Parameters order and ModifyCluster has no reorder parameter.
+func TestAccAliCloudCSKubernetes_collectionOrder(t *testing.T) {
+	var v *cs.KubernetesClusterDetail
+
+	resourceId := "alicloud_cs_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"name":                          CHECKSET,
+		"version":                       "1.32.7-aliyun.1",
+		"timezone":                      "Asia/Shanghai",
+		"master_disk_performance_level": "PL1",
+		"image_id":                      CHECKSET,
+		"master_vswitch_ids.#":          "3",
+		"master_instance_types.#":       "3",
+		"api_audiences.#":               "2",
+	})
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKubernetes_collectionOrder-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSKubernetesConfigDependenceOrder)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions)
+		},
+		// module name
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                          name,
+					"version":                       "1.32.7-aliyun.1",
+					"master_vswitch_ids":            []string{"${local.vswitch_id_0}", "${local.vswitch_id_1}", "${local.vswitch_id_2}"},
+					"master_instance_types":         []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.1.id}", "${data.alicloud_instance_types.default.instance_types.2.id}"},
+					"master_disk_category":          "cloud_essd",
+					"master_disk_size":              "80",
+					"master_disk_performance_level": "PL1",
+					"service_cidr":                  "172.18.0.0/16",
+					"pod_vswitch_ids":               []string{"${local.vswitch_id_0}", "${local.vswitch_id_1}"},
+					"proxy_mode":                    "ipvs",
+					"addons": []map[string]string{
+						{"name": "terway-eniip", "config": "", "version": "", "disabled": "false"},
+						{"name": "nginx-ingress-controller", "config": "{\\\"IngressSlbNetworkType\\\":\\\"internet\\\"}", "version": "", "disabled": "false"},
+					},
+					"new_nat_gateway":        "false",
+					"security_group_id":      "${alicloud_security_group.group.id}",
+					"timezone":               "Asia/Shanghai",
+					"image_id":               "${data.alicloud_images.default.images.0.id}",
+					"api_audiences":          []string{"https://kubernetes.default.svc", "https://kubernetes.default.svc.cluster.local"},
+					"service_account_issuer": "https://kubernetes.default.svc",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pod_vswitch_ids.#": "2",
+						"addons.#":          "2",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "addons.0.name", "terway-eniip"),
+					resource.TestCheckResourceAttr(resourceId, "addons.1.name", "nginx-ingress-controller"),
+					resource.TestCheckResourceAttr(resourceId, "addons.1.config", `{"IngressSlbNetworkType":"internet"}`),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"master_vswitch_ids": []string{"${local.vswitch_id_1}", "${local.vswitch_id_2}", "${local.vswitch_id_0}"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"master_instance_types": []string{"${data.alicloud_instance_types.default.instance_types.1.id}", "${data.alicloud_instance_types.default.instance_types.2.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"api_audiences": []string{"https://kubernetes.default.svc.cluster.local", "https://kubernetes.default.svc"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			// RDS, addons and runtime assertions observe retained state, not cloud updates; stock Read does not independently refresh these fields.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rds_instances": []string{"${alicloud_db_instance.default.id}", "${alicloud_db_instance.extra.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rds_instances.#": "2",
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "rds_instances.0", "alicloud_db_instance.default", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "rds_instances.1", "alicloud_db_instance.extra", "id"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rds_instances": []string{"${alicloud_db_instance.extra.id}", "${alicloud_db_instance.default.id}"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+					resource.TestCheckResourceAttrPair(resourceId, "rds_instances.0", "alicloud_db_instance.extra", "id"),
+					resource.TestCheckResourceAttrPair(resourceId, "rds_instances.1", "alicloud_db_instance.default", "id"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retain_resources": []string{"${alicloud_security_group.group.id}", "${alicloud_vpc.vpc.0.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retain_resources.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retain_resources": []string{"${alicloud_vpc.vpc.0.id}", "${alicloud_security_group.group.id}"},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_options": []map[string]string{
+						{
+							"resource_type": "SLB",
+							"delete_mode":   "delete",
+						},
+						{
+							"resource_type": "ALB",
+							"delete_mode":   "delete",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delete_options.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_options": []map[string]string{
+						{
+							"resource_type": "ALB",
+							"delete_mode":   "delete",
+						},
+						{
+							"resource_type": "SLB",
+							"delete_mode":   "delete",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"addons": []map[string]string{
+						{
+							"name":     "terway-eniip",
+							"config":   "",
+							"version":  "",
+							"disabled": "false",
+						},
+						{
+							"name":     "nginx-ingress-controller",
+							"config":   "{\\\"IngressSlbNetworkType\\\":\\\"internet\\\"}",
+							"version":  "",
+							"disabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"addons.#": "2",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "addons.0.name", "terway-eniip"),
+					resource.TestCheckResourceAttr(resourceId, "addons.1.name", "nginx-ingress-controller"),
+					resource.TestCheckResourceAttr(resourceId, "addons.1.config", `{"IngressSlbNetworkType":"internet"}`),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"addons": []map[string]string{
+						{
+							"name":     "nginx-ingress-controller",
+							"config":   "{\\\"IngressSlbNetworkType\\\":\\\"internet\\\"}",
+							"version":  "",
+							"disabled": "false",
+						},
+						{
+							"name":     "terway-eniip",
+							"config":   "",
+							"version":  "",
+							"disabled": "false",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+					resource.TestCheckResourceAttr(resourceId, "addons.0.name", "nginx-ingress-controller"),
+					resource.TestCheckResourceAttr(resourceId, "addons.0.config", `{"IngressSlbNetworkType":"internet"}`),
+					resource.TestCheckResourceAttr(resourceId, "addons.1.name", "terway-eniip"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"addons": []map[string]string{
+						{
+							"name":     "terway-eniip",
+							"config":   "",
+							"version":  "",
+							"disabled": "false",
+						},
+						{
+							"name":     "logtail-ds",
+							"config":   "",
+							"version":  "1.0.0",
+							"disabled": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"addons.#": "2",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "addons.0.config", ""),
+					resource.TestCheckResourceAttr(resourceId, "addons.1.name", "logtail-ds"),
+					resource.TestCheckResourceAttr(resourceId, "addons.1.version", "1.0.0"),
+					resource.TestCheckResourceAttr(resourceId, "addons.1.disabled", "true"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"runtime": []map[string]interface{}{
+						{"name": "docker", "version": "19.03.15"},
+						{"name": "containerd", "version": "1.6.28"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+					resource.TestCheckResourceAttr(resourceId, "runtime.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "runtime.0.name", "docker"),
+					resource.TestCheckResourceAttr(resourceId, "runtime.0.version", "19.03.15"),
+					resource.TestCheckResourceAttr(resourceId, "runtime.1.name", "containerd"),
+					resource.TestCheckResourceAttr(resourceId, "runtime.1.version", "1.6.28"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"runtime": []map[string]interface{}{
+						{"name": "containerd", "version": "1.6.28"},
+						{"name": "docker", "version": "19.03.15"},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+					resource.TestCheckResourceAttr(resourceId, "runtime.#", "2"),
+					resource.TestCheckResourceAttr(resourceId, "runtime.0.name", "containerd"),
+					resource.TestCheckResourceAttr(resourceId, "runtime.0.version", "1.6.28"),
+					resource.TestCheckResourceAttr(resourceId, "runtime.1.name", "docker"),
+					resource.TestCheckResourceAttr(resourceId, "runtime.1.version", "19.03.15"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCSKubernetes_kms(t *testing.T) {
+	var v *cs.KubernetesClusterDetail
+
+	resourceId := "alicloud_cs_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"kms_encrypted_password": CHECKSET,
+	})
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKubernetes_kms-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSKubernetesConfigDependenceKms)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions)
+		},
+		// module name
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                   name,
+					"version":                "1.32.7-aliyun.1",
+					"master_vswitch_ids":     []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
+					"master_instance_types":  []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"master_disk_category":   "cloud_essd",
+					"master_disk_size":       "80",
+					"service_cidr":           "172.18.0.0/16",
+					"pod_cidr":               "10.72.0.0/16",
+					"new_nat_gateway":        "false",
+					"security_group_id":      "${alicloud_security_group.default.id}",
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{"name": "kms-ctx"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+		},
+	})
+}
+
+func resourceCSKubernetesConfigDependenceOrder(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+  available_disk_category     = "cloud_essd"
+}
+
+data "alicloud_db_zones" "rds" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  db_instance_storage_type = "cloud_essd"
+  category                 = "Basic"
+}
+
+data "alicloud_db_instance_classes" "rds" {
+  zone_id                  = data.alicloud_db_zones.rds.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  db_instance_storage_type = "cloud_essd"
+  category                 = "Basic"
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 4
+  memory_size          = 8
+  system_disk_category = "cloud_essd"
+}
+
+data "alicloud_images" "default" {
+  name_regex = "^aliyun_3_x64_20G_alibase*"
+  owners     = "system"
+}
+
+resource "alicloud_vpc" "vpc" {
+  count      = 1
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "vswitches" {
+  count        = 3
+  vpc_id       = alicloud_vpc.vpc.0.id
+  cidr_block   = format("192.168.%%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_zones.default.zones[count.index].id
+  vswitch_name = var.name
+}
+
+resource "alicloud_vswitch" "rds" {
+  count        = 1
+  vpc_id       = alicloud_vpc.vpc.0.id
+  cidr_block   = "192.168.30.0/24"
+  zone_id      = data.alicloud_db_zones.rds.zones.0.id
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id_0       = alicloud_vswitch.vswitches.0.id
+  vswitch_id_1       = alicloud_vswitch.vswitches.1.id
+  vswitch_id_2       = alicloud_vswitch.vswitches.2.id
+  rds_instance_class = [for c in data.alicloud_db_instance_classes.rds.instance_classes : c.instance_class if startswith(c.instance_class, "mysql")][0]
+}
+
+resource "alicloud_security_group" "group" {
+  security_group_name = var.name
+  vpc_id              = alicloud_vpc.vpc.0.id
+}
+
+resource "alicloud_db_instance" "default" {
+  engine               = "MySQL"
+  engine_version       = "8.0"
+  instance_type        = local.rds_instance_class
+  instance_storage     = "30"
+  instance_charge_type = "Postpaid"
+  instance_name        = "tf-testacckubernetes"
+  vswitch_id           = alicloud_vswitch.rds.0.id
+  monitoring_period    = "60"
+}
+
+resource "alicloud_db_instance" "extra" {
+  engine               = "MySQL"
+  engine_version       = "8.0"
+  instance_type        = local.rds_instance_class
+  instance_storage     = "30"
+  instance_charge_type = "Postpaid"
+  instance_name        = "tf-testacckubernetes-extra"
+  vswitch_id           = alicloud_vswitch.rds.0.id
+  monitoring_period    = "60"
+}
+`, name)
+}
+
+func resourceCSKubernetesConfigDependenceKms(name string) string {
+	return fmt.Sprintf(`%s
+
+data "alicloud_instance_types" "default" {
+  availability_zone    = local.zone_id
+  cpu_core_count       = 4
+  memory_size          = 8
+  system_disk_category = "cloud_essd"
+}
+
+resource "alicloud_kms_key" "default" {
+  description            = var.name
+  status                 = "Enabled"
+  pending_window_in_days = 7
+}
+
+resource "alicloud_kms_ciphertext" "default" {
+  key_id    = alicloud_kms_key.default.id
+  plaintext = "Yourpassword1234"
+  encryption_context = {
+    "name" = "kms-ctx"
+  }
+}
+`, resourceCSKubernetesConfigDependence(name))
 }
 
 func CreateTempFiles() (*os.File, *os.File, *os.File, error) {
@@ -600,6 +1097,8 @@ locals {
     "cn-beijing"  = "cn-beijing-f"
   }
   zone_id = contains(keys(local.zone_by_region), data.alicloud_regions.current.regions.0.id) ? local.zone_by_region[data.alicloud_regions.current.regions.0.id] : sort(data.alicloud_zones.default.zones[*].id)[0]
+  # The cluster and node-pool steps below all place their vswitches in this zone.
+  vswitch_id = alicloud_vswitch.vswitches.id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -669,7 +1168,7 @@ resource "alicloud_ecs_auto_snapshot_policy" "default" {
 resource "alicloud_cs_kubernetes_node_pool" "default" {
   cluster_id                    = alicloud_cs_kubernetes.default.id
   node_pool_name                = var.name
-  vswitch_ids                   = [alicloud_vswitch.vswitches.id]
+  vswitch_ids                   = [local.vswitch_id]
   instance_types                = [var.instance_type]
   password                      = "Test12345"
   system_disk_size              = 50
@@ -1201,6 +1700,166 @@ func TestUnitFlattenCsMasterNodes(t *testing.T) {
 			got := flattenCsMasterNodes(tt.nodes)
 			if !reflect.DeepEqual(tt.want, got) {
 				t.Errorf("flattenCsMasterNodes() want %v got %v", tt.want, got)
+			}
+		})
+	}
+}
+
+const testKubeConfigYaml = `apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==
+    server: https://1.2.3.4:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==
+    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+`
+
+func TestUnit_flattenAlicloudCSCertificate(t *testing.T) {
+	normal := map[string]string{
+		"cluster_cert": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==",
+		"client_cert":  "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==",
+		"client_key":   "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQo=",
+	}
+	body := func(config string) *roacs.DescribeClusterUserKubeconfigResponseBody {
+		return &roacs.DescribeClusterUserKubeconfigResponseBody{Config: tea.String(config)}
+	}
+	tests := []struct {
+		name        string
+		certificate *roacs.DescribeClusterUserKubeconfigResponseBody
+		want        map[string]string
+		wantErr     bool
+	}{
+		{
+			name:        "nil response body",
+			certificate: nil,
+			wantErr:     true,
+		},
+		{
+			name:        "empty config",
+			certificate: body(""),
+			wantErr:     true,
+		},
+		{
+			name:        "invalid yaml",
+			certificate: body(": ["),
+			wantErr:     true,
+		},
+		{
+			name: "missing clusters",
+			certificate: body(`users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "missing users",
+			certificate: body(`clusters:
+- cluster:
+    certificate-authority-data: Yw==
+  name: kubernetes
+`),
+			wantErr: true,
+		},
+		{
+			name: "empty clusters array",
+			certificate: body(`clusters: []
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "clusters not a list",
+			certificate: body(`clusters: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "leaf field has wrong type",
+			certificate: body(`clusters:
+- cluster:
+    certificate-authority-data: 123456
+  name: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "missing leaf field",
+			certificate: body(`clusters:
+- cluster:
+    server: https://1.2.3.4:6443
+  name: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name: "empty leaf field",
+			certificate: body(`clusters:
+- cluster:
+    certificate-authority-data: ""
+  name: kubernetes
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: YQ==
+    client-key-data: Yg==
+`),
+			wantErr: true,
+		},
+		{
+			name:        "normal kubeconfig",
+			certificate: body(testKubeConfigYaml),
+			want:        normal,
+			wantErr:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := flattenAlicloudCSCertificate(tt.certificate)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("flattenAlicloudCSCertificate(%v) want error got nil", tt.certificate)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("flattenAlicloudCSCertificate(%v) unexpected error: %v", tt.certificate, err)
+				return
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("flattenAlicloudCSCertificate(%v) want %v got %v", tt.certificate, tt.want, got)
 			}
 		})
 	}
