@@ -1830,6 +1830,13 @@ func (s *PolarDBService) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) 
 
 		for _, e := range removed.(*schema.Set).List() {
 			pack := e.(map[string]interface{})
+			// SecurityGroup whitelists are managed by the top-level
+			// security_group_ids attribute; the db_cluster_ip_array block only
+			// carries IP-type arrays, so a security-group entry is not deleted
+			// through this IP channel.
+			if v, ok := pack["white_list_type"]; ok && v.(string) == "SecurityGroup" {
+				continue
+			}
 			if fmt.Sprint(pack["db_cluster_ip_array_name"]) == "default" || targetIpArrayNames[pack["db_cluster_ip_array_name"].(string)] {
 				continue
 			}
@@ -1839,9 +1846,10 @@ func (s *PolarDBService) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) 
 			request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
 			request.RegionId = s.client.RegionId
 			request.DBClusterId = d.Id()
-			request.SecurityIps = ipstr
 			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
 			request.ModifyMode = "Delete"
+			request.WhiteListType = "IP"
+			request.SecurityIps = ipstr
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
@@ -1866,19 +1874,32 @@ func (s *PolarDBService) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) 
 		}
 		for _, e := range added.(*schema.Set).List() {
 			pack := e.(map[string]interface{})
+			// SecurityGroup whitelists are managed by the top-level
+			// security_group_ids attribute; the db_cluster_ip_array block only
+			// carries IP-type arrays, so a security-group entry is not written
+			// through this IP channel. SecurityIps, DBClusterIPArrayName and
+			// DBClusterIPArrayAttribute are only valid for the IP type per the
+			// OpenAPI contract, so they must not be sent on a security-group path.
+			if v, ok := pack["white_list_type"]; ok && v.(string) == "SecurityGroup" {
+				continue
+			}
 			//ips expand string list
 			ipList := expandStringList(pack["security_ips"].(*schema.Set).List())
 			ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+			request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
+			request.RegionId = s.client.RegionId
+			request.DBClusterId = d.Id()
+			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
+			request.ModifyMode = pack["modify_mode"].(string)
 			// default disable connect from outside
 			if ipstr == "" {
 				ipstr = LOCAL_HOST_IP
 			}
-			request := polardb.CreateModifyDBClusterAccessWhitelistRequest()
-			request.RegionId = s.client.RegionId
-			request.DBClusterId = d.Id()
 			request.SecurityIps = ipstr
-			request.DBClusterIPArrayName = pack["db_cluster_ip_array_name"].(string)
-			request.ModifyMode = pack["modify_mode"].(string)
+			request.WhiteListType = "IP"
+			if v, ok := pack["db_cluster_ip_array_attribute"]; ok && v.(string) != "" {
+				request.DBClusterIPArrayAttribute = v.(string)
+			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {

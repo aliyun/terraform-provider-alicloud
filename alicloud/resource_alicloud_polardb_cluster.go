@@ -151,12 +151,34 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
+				// A whitelist group is identified by its array name together with
+				// the managed IP list. db_cluster_ip_array_attribute is
+				// Optional+Computed and read back from the Describe API, so per
+				// R3.10 it must not be part of the element identity hash: a
+				// backfilled value would shift the element and break convergence.
+				// modify_mode and white_list_type are write-only instructions the
+				// Describe API does not return and are likewise excluded.
+				Set: func(v interface{}) int {
+					m := v.(map[string]interface{})
+					buf := []string{m["db_cluster_ip_array_name"].(string)}
+					if ips, ok := m["security_ips"].(*schema.Set); ok && ips != nil {
+						ipList := expandStringList(ips.List())
+						sort.Strings(ipList)
+						buf = append(buf, strings.Join(ipList, ","))
+					}
+					return schema.HashString(strings.Join(buf, "|"))
+				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"db_cluster_ip_array_name": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Default:  "default",
+						},
+						"db_cluster_ip_array_attribute": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
 						},
 						"security_ips": {
 							Type:     schema.TypeSet,
@@ -167,6 +189,11 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: StringInSlice([]string{"Cover", "Append", "Delete"}, false),
+						},
+						"white_list_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"IP", "SecurityGroup"}, false),
 						},
 					},
 				},
@@ -349,6 +376,32 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				ValidateFunc: IntBetween(20, 100000),
 				Computed:     true,
 			},
+			"architecture": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"X86", "ARM"}, false),
+			},
+			"cluster_network_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"VPC"}, false),
+			},
+			"storage_auto_scale": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
+			},
+			"storage_upper_bound": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(0, 32000),
+			},
 			"hot_standby_cluster": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -458,6 +511,10 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed: true,
 			},
 			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"deploy_unit": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -1240,6 +1297,42 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 
+	if d.HasChanges("storage_auto_scale", "storage_upper_bound") {
+		action := "ModifyDBCluster"
+		request := map[string]interface{}{
+			"DBClusterId": d.Id(),
+		}
+		if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
+			request["StorageAutoScale"] = v.(string)
+		}
+		if v, ok := d.GetOk("storage_upper_bound"); ok && v.(int) != 0 {
+			request["StorageUpperBound"] = v.(int)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, ProviderERROR)
+		}
+		stateConf := BuildStateConf([]string{"ConfigSwitching"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 4*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	if d.HasChanges("scale_min", "scale_max", "allow_shut_down", "scale_ro_num_min", "scale_ro_num_max", "seconds_until_auto_pause", "scale_ap_ro_num_min", "scale_ap_ro_num_max", "serverless_rule_mode", "serverless_rule_cpu_shrink_threshold", "serverless_rule_cpu_enlarge_threshold") {
 		action := "ModifyDBClusterServerlessConf"
 		request := map[string]interface{}{
@@ -1702,13 +1795,34 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 			inDBClusterIPArrays = append(inDBClusterIPArrays, e.(map[string]interface{}))
 		}
 	}
+	// Collect the whitelist array names declared in the configuration. A hidden
+	// array is system-internal and should not leak into state when the user did
+	// not configure it, but a user-managed hidden array (attribute "hidden" with
+	// a matching configured name) must be preserved so the group does not get
+	// dropped from state and cause a non-convergent plan.
+	configuredArrayNames := make(map[string]bool)
+	for _, temp := range inDBClusterIPArrays {
+		if name, ok := temp["db_cluster_ip_array_name"].(string); ok && name != "" {
+			configuredArrayNames[name] = true
+		}
+	}
 	for _, white := range whiteList.Items.DBClusterIPArray {
-		if white.DBClusterIPArrayAttribute == "hidden" {
-			continue
+		if white.DBClusterIPArrayAttribute == "hidden" && !configuredArrayNames[white.DBClusterIPArrayName] {
+			// A hidden array not declared in the configuration is skipped
+			// during normal apply so it does not leak into state and produce
+			// a non-convergent plan. On import the configuration is
+			// unavailable, so hidden arrays are preserved instead: a
+			// user-managed hidden group (created with attribute "hidden")
+			// must survive import to stay convergent, and db_cluster_ip_array
+			// is Computed when unconfigured so extra entries do not diff.
+			if len(inDBClusterIPArrays) > 0 {
+				continue
+			}
 		}
 		// Judge whether input parameters are passed into modify_mode, if there is a modify_mode parameter is based on
 		// db_cluster_ip_array_name、security_ips determines whether the whitelist is the same and assigns a local modify_mode
 		modifyMode := ""
+		whiteListType := ""
 		for _, temp := range inDBClusterIPArrays {
 			if temp["db_cluster_ip_array_name"] == nil || temp["security_ips"] == nil {
 				continue
@@ -1718,14 +1832,21 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 				if temp["modify_mode"] != nil {
 					modifyMode = temp["modify_mode"].(string)
 				}
+				if temp["white_list_type"] != nil && temp["white_list_type"].(string) != "" {
+					whiteListType = temp["white_list_type"].(string)
+				}
 			}
 		}
 		clusterIdItem := map[string]interface{}{
-			"db_cluster_ip_array_name": white.DBClusterIPArrayName,
-			"security_ips":             convertPolarDBIpsSetToString(white.SecurityIps),
+			"db_cluster_ip_array_name":      white.DBClusterIPArrayName,
+			"db_cluster_ip_array_attribute": white.DBClusterIPArrayAttribute,
+			"security_ips":                  convertPolarDBIpsSetToString(white.SecurityIps),
 		}
 		if modifyMode != "" {
 			clusterIdItem["modify_mode"] = modifyMode
+		}
+		if whiteListType != "" {
+			clusterIdItem["white_list_type"] = whiteListType
 		}
 		dbClusterIPArrays = append(dbClusterIPArrays, clusterIdItem)
 		if white.DBClusterIPArrayName == "default" {
@@ -1794,6 +1915,9 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("vpc_id", clusterAttribute.VPCId)
 	d.Set("status", clusterAttribute.DBClusterStatus)
 	d.Set("create_time", clusterAttribute.CreationTime)
+	d.Set("architecture", clusterAttribute.Architecture)
+	d.Set("cluster_network_type", clusterAttribute.DBClusterNetworkType)
+	d.Set("deploy_unit", clusterAttribute.DeployUnit)
 
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
@@ -1993,6 +2117,21 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 	if clusterInfo["StoragePayType"] != nil {
 		d.Set("storage_pay_type", getChargeType(clusterInfo["StoragePayType"].(string)))
+	}
+	if clusterInfo["StorageAutoScale"] != nil {
+		d.Set("storage_auto_scale", clusterInfo["StorageAutoScale"])
+	}
+	if clusterInfo["StorageUpperBound"] != nil {
+		// 标准版 (ESSDPL*/ESSDAUTOPL, raw storage type "essdpl*" or "essdautopl")
+		// returns StorageUpperBound in GB, matching the schema unit.
+		// 企业版 (PSL5/PSL4, raw storage type "HighPerformance"/"Standard")
+		// returns it in MB; convert to GB to keep the round-trip consistent.
+		resultStorageUpperBound, _ := clusterInfo["StorageUpperBound"].(json.Number).Int64()
+		if rawStorageType, ok := clusterInfo["StorageType"].(string); ok && (strings.HasPrefix(rawStorageType, "essdpl") || rawStorageType == "essdautopl") {
+			d.Set("storage_upper_bound", resultStorageUpperBound)
+		} else {
+			d.Set("storage_upper_bound", resultStorageUpperBound/1024)
+		}
 	}
 	if clusterInfo["DynamoDB"] != nil {
 		d.Set("enable_dynamodb", convertPolarDBEnableDynamoDBReadResponse(clusterInfo["DynamoDB"].(string)))
@@ -2255,6 +2394,18 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	}
 	if v, ok := d.GetOk("storage_space"); ok && v.(int) != 0 {
 		request["StorageSpace"] = d.Get("storage_space").(int)
+	}
+	if v, ok := d.GetOk("architecture"); ok && v.(string) != "" {
+		request["Architecture"] = v.(string)
+	}
+	if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) != "" {
+		request["StorageAutoScale"] = v.(string)
+	}
+	if v, ok := d.GetOk("storage_upper_bound"); ok && v.(int) != 0 {
+		request["StorageUpperBound"] = v.(int)
+	}
+	if v, ok := d.GetOk("cluster_network_type"); ok && v.(string) != "" {
+		request["ClusterNetworkType"] = v.(string)
 	}
 	if v, ok := d.GetOk("storage_pay_type"); ok && v.(string) != "" {
 		if v.(string) == string(PrePaid) {
