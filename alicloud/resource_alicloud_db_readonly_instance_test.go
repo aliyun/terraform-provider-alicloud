@@ -1285,7 +1285,7 @@ resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
  	db_instance_storage_type = "cloud_essd"
-	instance_type = "mysql.x2.large.2c"
+	instance_type = "mysql.x4.large.2c"
 	instance_storage = 20
 	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = var.name
