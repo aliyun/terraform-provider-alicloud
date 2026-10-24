@@ -38,9 +38,7 @@ This resource will help you to manage node pool in Kubernetes Cluster, see [What
 
 -> **NOTE:** From version 1.177.0+, Support `kms_encryption_context`, `rds_instances`, `system_disk_snapshot_policy_id` and `cpu_policy`, add spot strategy `SpotAsPriceGo` and `NoSpot`.
 
--> **NOTE:** From version 1.180.0+, Support worker nodes customized kubelet parameters by field `kubelet_configuration` and `rollout_policy`.
-
--> **NOTE:** From version 1.185.0+, Field `rollout_policy` will be deprecated and please use field `rolling_policy` instead.
+-> **NOTE:** From version 1.180.0+, Support worker nodes customized kubelet parameters by field `kubelet_configuration`.
 
 For information about Container Service for Kubernetes (ACK) Nodepool and how to use it, see [What is Nodepool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools).
 
@@ -315,6 +313,24 @@ resource "alicloud_cs_kubernetes_node_pool" "customized_kubelet" {
     ]
 
     insecure_registries = ["registry.example.com", "192.168.1.1:5000"]
+  }
+
+  # OS configuration parameters (requires ACK 1.28 or later)
+  os_config {
+    # sysctl parameters; e.g. raise the per-user user namespace limit
+    sysctl = {
+      "user.max_user_namespaces" = "65535"
+    }
+
+    # transparent hugepage configuration
+    hugepage {
+      transparent_enabled              = "always"
+      transparent_defrag               = "always"
+      khugepaged_defrag                = "0"
+      khugepaged_alloc_sleep_millisecs = "60000"
+      khugepaged_scan_sleep_millisecs  = "10000"
+      khugepaged_pages_to_scan         = "4096"
+    }
   }
 
   # rolling policy: works when updating
@@ -835,6 +851,7 @@ The following arguments are supported:
 * `containerd_config` - (Optional, Set, Available since v1.288.0) Containerd configuration parameters for worker nodes.
 
   -> **NOTE:** Setting `containerd_config` at creation time takes effect through an extra node_config update call issued after the node pool has been created. Removing the whole `containerd_config` block clears all custom containerd configuration on the cloud side (the API uses full-replacement semantics); an empty block is equivalent to omitting the parameter. See [`containerd_config`](#containerd_config) below.
+* `os_config` - (Optional, List, Available since v2.1.1) OS configuration parameters (sysctl and transparent hugepage) for worker nodes. See [`os_config`](#os_config) below for lifecycle and state semantics. Supported on ACK clusters of version 1.28 or later.
 * `labels` - (Optional, List) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument. Detailed below. More information in [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/). See [`labels`](#labels) below.
 * `login_as_non_root` - (Optional, ForceNew) Whether the ECS instance is logged on as a ecs-user user. Valid value: `true` and `false`.
 * `management` - (Optional, Computed, Set) Managed node pool configuration. See [`management`](#management) below.
@@ -937,7 +954,6 @@ The following arguments are supported:
 * `instances` - (Optional, Available since v1.127.0) The instance list. Add existing nodes under the same cluster VPC to the node pool. 
 * `node_count` (Optional, Deprecated) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
 * `keep_instance_name` - (Optional, Available since v1.127.0) Add an existing instance to the node pool, whether to keep the original instance name. It is recommended to set to `true`.
-* `rollout_policy` - (Optional, Deprecated since 1.185.0) Rollout policy is used to specify the strategy when the node pool is rolling update. This field works when node pool updating. Please use `rolling_policy` to instead it from provider version 1.185.0. See [`rollout_policy`](#rollout_policy) below.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated since v1.219.0). Field 'name' has been deprecated from provider version 1.219.0. New field 'node_pool_name' instead.
@@ -1105,6 +1121,28 @@ The containerd_config supports the following:
 * `registry_mirrors` - (Optional, List of String) Configure mirror sites for container image registries to accelerate image pulls. Each string follows the format `registry=mirror1[&override_path],mirror2[&override_path],...`. The part before `=` is the container image registry, which must be a domain name or IP address without protocol prefix (optionally including a port number), e.g., `docker.io`, `192.168.1.1:5000`. The part after `=` is one or more mirror sites separated by commas; each mirror must start with `http://` or `https://` followed by an IP address or domain name (optionally including a port number), e.g., `https://registry.cn-hangzhou.aliyuncs.com`. Append `&override_path` to a mirror to enable path override for that mirror.
 * `insecure_registries` - (Optional, List) Allow the container runtime to skip TLS certificate verification when pulling images. Typically used in test environments with self-signed certificate registries. The format is domain name or IP address without protocol prefix (e.g., `registry.example.com`, `192.168.1.1:5000`).
 
+### `os_config`
+
+-> **NOTE:** The CreateNodePool API does not support `os_config`. When `os_config` is set at creation time, it takes effect through an extra node_config update call issued after the node pool has been created.
+
+-> **NOTE:** The API uses full-replacement semantics for `os_config`: removing the whole `os_config` block clears all custom OS configuration on the cloud side, and an empty `os_config {}` block applies no parameters (any previously applied values are cleared) while remaining in the state as an empty block. Removing a key from the `sysctl` map or from the `hugepage` block removes the corresponding parameter from the cloud-side configuration.
+
+-> **NOTE:** `os_config` is supported only on ACK clusters of version 1.28 or later.
+
+The os_config supports the following:
+* `sysctl` - (Optional, Map, Available since v2.1.1) The sysctl parameters applied to worker nodes. The map key is the sysctl name and the value is the sysctl value as a string, e.g. `user.max_user_namespaces = "65535"`. Only sysctl parameters on the API whitelist are accepted. The `sysctl` parameter is write-only on the API: its value is not returned by read operations, so the provider mirrors the configured value into the state and drift cannot be detected.
+* `hugepage` - (Optional, List, Available since v2.1.1) The transparent hugepage configuration. See [`hugepage`](#os_config-hugepage) below. The API returns only explicitly set parameters. A parameter absent from the response is removed from state during refresh; if it remains configured, the next plan proposes sending the configured full value again.
+
+### `os_config-hugepage`
+
+The os_config-hugepage supports the following:
+* `transparent_enabled` - (Optional, String, Available since v2.1.1) Whether to enable transparent hugepages. Valid values: `always`, `never`, `madvise`.
+* `transparent_defrag` - (Optional, String, Available since v2.1.1) The transparent hugepage defragmentation mode. Valid values: `always`, `defer`, `madvise`, `defer+madvise`, `never`.
+* `khugepaged_defrag` - (Optional, String, Available since v2.1.1) Whether to enable khugepaged defragmentation. Valid values: `""`, `"0"`, `"1"`. An empty string means the parameter is not sent.
+* `khugepaged_alloc_sleep_millisecs` - (Optional, String, Available since v2.1.1) The sleep time of khugepaged between allocation attempts, in milliseconds. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"`.
+* `khugepaged_scan_sleep_millisecs` - (Optional, String, Available since v2.1.1) The sleep time of khugepaged between scans, in milliseconds. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"`.
+* `khugepaged_pages_to_scan` - (Optional, String, Available since v2.1.1) The number of memory pages that khugepaged scans at a time. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"`.
+
 ### `labels`
 
 The labels supports the following:
@@ -1212,11 +1250,6 @@ The upgrade_policy supports the following:
 * `use_replace` - (Optional, Available since v1.269.0) Whether to use replacement disk upgrade. Valid values:
   - `true`: Use replacement disk upgrade. Nodes in the node pool will be upgraded by replacing the system disk, and ACK will reinitialize the nodes according to the current node pool configuration (such as node login method, labels, taints, OS image, and runtime version).
   - `false`: Do not use replacement disk upgrade.
-
-### `rollout_policy`
-
-The rollout_policy mapping supports the following:
-* `max_unavailable` - (Optional, Deprecated since 1.185.0) Maximum number of unavailable nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used. Please use `max_parallelism` to instead it from provider version 1.185.0.
 
 ## Attributes Reference
 
