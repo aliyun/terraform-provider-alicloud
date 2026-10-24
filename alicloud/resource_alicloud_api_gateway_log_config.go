@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -9,6 +10,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+// apiGatewaySlsLogStorePrefix is the prefix the CloudAPI service prepends to a
+// SlsLogStore value that does not already start with it. CreateLogConfig accepts
+// the bare name while DescribeLogConfig returns the canonical (prefixed) value,
+// causing an input/output mismatch and a perpetual diff. Read strips the prefix
+// so state matches the configured value, and the diff suppress func keeps plans
+// stable for users who configure the value with the prefix already set.
+const apiGatewaySlsLogStorePrefix = "acs_apigateway-"
+
+// normalizeApiGatewaySlsLogStore removes the service-side prefix from the
+// SlsLogStore value returned by DescribeLogConfig. Non-string values are
+// treated as empty so an absent field does not produce a "<nil>" placeholder.
+func normalizeApiGatewaySlsLogStore(v interface{}) string {
+	s, _ := v.(string)
+	return strings.TrimPrefix(s, apiGatewaySlsLogStorePrefix)
+}
+
+// apiGatewayLogConfigSlsLogStoreDiffSuppressFunc treats the bare and prefixed
+// forms of sls_log_store as equivalent so plans stay stable regardless of
+// whether the user configured the value with or without the service prefix.
+func apiGatewayLogConfigSlsLogStoreDiffSuppressFunc(_, old, new string, _ *schema.ResourceData) bool {
+	return normalizeApiGatewaySlsLogStore(old) == normalizeApiGatewaySlsLogStore(new)
+}
 
 func resourceAlicloudApiGatewayLogConfig() *schema.Resource {
 	return &schema.Resource{
@@ -30,8 +54,9 @@ func resourceAlicloudApiGatewayLogConfig() *schema.Resource {
 				Required: true,
 			},
 			"sls_log_store": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:             schema.TypeString,
+				Required:         true,
+				DiffSuppressFunc: apiGatewayLogConfigSlsLogStoreDiffSuppressFunc,
 			},
 			"log_type": {
 				Type:         schema.TypeString,
@@ -89,7 +114,7 @@ func resourceAlicloudApiGatewayLogConfigRead(d *schema.ResourceData, meta interf
 	}
 
 	d.Set("sls_project", object["SlsProject"])
-	d.Set("sls_log_store", object["SlsLogStore"])
+	d.Set("sls_log_store", normalizeApiGatewaySlsLogStore(object["SlsLogStore"]))
 	d.Set("log_type", object["LogType"])
 
 	return nil
