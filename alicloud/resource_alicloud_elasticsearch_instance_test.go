@@ -83,6 +83,7 @@ func testSweepElasticsearch(region string) error {
 		"",
 		"tf-testAcc",
 		"tf_testAcc",
+		"terraform-example",
 	}
 
 	var instances []elasticsearch.Instance
