@@ -12,9 +12,10 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +36,7 @@ func TestAccAliCloudRdsBackup_MySQL(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		CheckDestroy:      testAccCheckAlicloudRdsBackupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -48,6 +49,7 @@ func TestAccAliCloudRdsBackup_MySQL(t *testing.T) {
 						"db_instance_id": CHECKSET,
 						"backup_method":  "Snapshot",
 						"backup_id":      CHECKSET,
+						"backup_job_id":  CHECKSET,
 						"store_status":   CHECKSET,
 					}),
 				),
@@ -56,7 +58,7 @@ func TestAccAliCloudRdsBackup_MySQL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy"},
+				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_job_id"},
 			},
 		},
 	})
@@ -138,7 +140,7 @@ func TestAccAliCloudRdsBackup_PostgreSQL(t *testing.T) {
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		CheckDestroy:      testAccCheckAlicloudRdsBackupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -151,6 +153,7 @@ func TestAccAliCloudRdsBackup_PostgreSQL(t *testing.T) {
 						"db_instance_id": CHECKSET,
 						"backup_method":  "Snapshot",
 						"backup_id":      CHECKSET,
+						"backup_job_id":  CHECKSET,
 						"store_status":   CHECKSET,
 					}),
 				),
@@ -159,7 +162,7 @@ func TestAccAliCloudRdsBackup_PostgreSQL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy"},
+				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_job_id"},
 			},
 		},
 	})
@@ -237,7 +240,7 @@ func TestAccAliCloudRdsBackup_SQLServer(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		CheckDestroy:      testAccCheckAlicloudRdsBackupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -250,6 +253,7 @@ func TestAccAliCloudRdsBackup_SQLServer(t *testing.T) {
 						"db_instance_id": CHECKSET,
 						"backup_method":  "Physical",
 						"backup_id":      CHECKSET,
+						"backup_job_id":  CHECKSET,
 						"store_status":   CHECKSET,
 					}),
 				),
@@ -258,7 +262,7 @@ func TestAccAliCloudRdsBackup_SQLServer(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy"},
+				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_job_id"},
 			},
 		},
 	})
@@ -281,7 +285,7 @@ func TestAccAliCloudRdsBackup_SQLServer1(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		CheckDestroy:      testAccCheckAlicloudRdsBackupDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -299,6 +303,7 @@ func TestAccAliCloudRdsBackup_SQLServer1(t *testing.T) {
 						"backup_method":  "Physical",
 						"backup_type":    "FullBackup",
 						"backup_id":      CHECKSET,
+						"backup_job_id":  CHECKSET,
 						"store_status":   CHECKSET,
 					}),
 				),
@@ -307,7 +312,7 @@ func TestAccAliCloudRdsBackup_SQLServer1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_retention_period"},
+				ImportStateVerifyIgnore: []string{"remove_from_state", "db_name", "backup_strategy", "backup_retention_period", "backup_job_id"},
 			},
 		},
 	})
@@ -582,7 +587,7 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 	})
 
 	t.Run("DeleteStoreStatusAbnormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdktf.NewInstanceDiff()
 		resourceData, _ := schema.InternalMap(p["alicloud_rds_backup"].Schema).Data(nil, diff)
 		err = resourceData.Set("store_status", "Disabled")
 		err = resourceData.Set("remove_from_state", false)
@@ -634,4 +639,23 @@ func TestUnitAlicloudRdsBackup(t *testing.T) {
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
+}
+
+func testAccCheckAlicloudRdsBackupDestroy(s *terraform.State) error {
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_rds_backup" {
+			continue
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		rdsServiceV2 := RdsServiceV2{client}
+		_, err := rdsServiceV2.DescribeRdsBackup(rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return err
+		}
+		return fmt.Errorf("RDS backup %s still exists", rs.Primary.ID)
+	}
+	return nil
 }
