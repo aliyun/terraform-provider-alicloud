@@ -11,6 +11,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// A newly created Lindorm instance can stay unreadable for a while; observed
+// around 18 minutes before GetLindormInstance recovered. The tolerance is at
+// most this upper bound and never more than three quarters of the create
+// timeout, so the wait always keeps a margin to surface the original error.
+const lindormPostCreateReadTolerance = 20 * time.Minute
+
+func lindormPostCreateReadToleranceFor(createTimeout time.Duration) time.Duration {
+	tolerance := createTimeout - createTimeout/4
+	if tolerance > lindormPostCreateReadTolerance {
+		tolerance = lindormPostCreateReadTolerance
+	}
+	return tolerance
+}
+
 func resourceAliCloudLindormInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudLindormInstanceCreate,
@@ -473,8 +487,13 @@ func resourceAliCloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 	}
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 	hitsdbService := HitsdbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, hitsdbService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
+	var readTolerance LindormPostCreateReadTolerance
+	readToleranceDeadline := time.Now().Add(lindormPostCreateReadToleranceFor(d.Timeout(schema.TimeoutCreate)))
+	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, hitsdbService.LindormInstanceStateRefreshFuncWithPostCreateReadTolerance(d.Id(), []string{}, readToleranceDeadline, &readTolerance))
 	if _, err := stateConf.WaitForState(); err != nil {
+		if lastTolerated := readTolerance.last(); lastTolerated != nil {
+			return WrapErrorf(err, IdMsg+" last tolerated GetLindormInstance error: %v", d.Id(), lastTolerated)
+		}
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
@@ -822,7 +841,7 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	}
 
-	if (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification")) && !d.IsNewResource() {
+	if (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification") || d.HasChange("log_num")) && !d.IsNewResource() {
 		newLindormSpec := d.Get("table_engine_specification")
 		newLindormNum := d.Get("table_engine_node_count")
 		enabled := d.Get("enabled_table_engine").(bool)
@@ -830,7 +849,7 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if currentInstanceStorageErr != nil {
 			return currentInstanceStorageErr
 		}
-		if !enabled {
+		if !enabled && (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification")) {
 			upgradeLindormInstanceTableReq := map[string]interface{}{}
 			upgradeLindormInstanceTableReq["UpgradeType"] = "open-lindorm-engine"
 			upgradeLindormInstanceTableReq["LindormSpec"] = newLindormSpec
@@ -853,8 +872,8 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		if enabled && d.HasChange("table_engine_node_count") {
-			if !d.IsNewResource() && d.HasChange("log_num") && d.HasChange("table_engine_node_count") {
+		if enabled && (d.HasChange("table_engine_node_count") || d.HasChange("log_num")) {
+			if !d.IsNewResource() && d.HasChange("log_num") {
 				upgradeLindormLogNumReq := map[string]interface{}{}
 				upgradeLindormLogNumReq["UpgradeType"] = "upgrade-lindorm-core-num"
 				upgradeLindormLogNumReq["LogNum"] = d.Get("log_num")
@@ -874,7 +893,6 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 				}
 			}
 		}
-
 	}
 
 	if (d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification") || d.HasChange("time_series_engine_specification")) && !d.IsNewResource() {
