@@ -504,6 +504,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			"db_param_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"storage_auto_scale": {
 				Type:         schema.TypeString,
@@ -654,10 +655,50 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"optimized", "none"}, false),
 			},
-			"template_id_list": {
-				Type:     schema.TypeList,
+			"auto_create_proxy": {
+				Type:     schema.TypeBool,
 				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
+			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"business_info": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"connection_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Standard", "Safe"}, false),
+			},
+			"io_acceleration_enabled": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
+			"promotion_code": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"user_backup_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"compression_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
+			"template_id_list": {
+				Type:             schema.TypeList,
+				Optional:         true,
+				Elem:             &schema.Schema{Type: schema.TypeInt},
+				DiffSuppressFunc: templateIdListOrderDiffSuppressFunc,
 			},
 			// lintignore: S006
 			"templates": {
@@ -1675,6 +1716,68 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if d.IsNewResource() {
+		// RDS-02: CreateDBInstance does not honour compression_mode (the instance
+		// is always created with compression disabled), so an initial
+		// compression_mode="on" would be silently dropped on the first apply and
+		// only take effect on a second apply. Apply it through ModifyDBInstanceSpec
+		// once the instance is running and wait for the value to converge before
+		// the Read below picks it up. compression_mode="off" matches the server
+		// default and needs no extra call; an omitted value leaves the instance
+		// untouched.
+		if v, ok := d.GetOk("compression_mode"); ok && v.(string) == "on" {
+			action := "ModifyDBInstanceSpec"
+			request := map[string]interface{}{
+				"RegionId":          client.RegionId,
+				"DBInstanceId":      d.Id(),
+				"PayType":           d.Get("instance_charge_type"),
+				"DBInstanceClass":   d.Get("instance_type"),
+				"DBInstanceStorage": d.Get("instance_storage"),
+				"CompressionMode":   v.(string),
+				"SourceIp":          client.SourceIp,
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			// wait for compression_mode to converge so the Read below reflects "on"
+			expected := v.(string)
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				object, err := rdsService.DescribeDBInstance(d.Id())
+				if err != nil {
+					if NeedRetry(err) {
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				actual := ""
+				if cv, ok := object["CompressionMode"]; ok && cv != nil {
+					actual = fmt.Sprint(cv)
+				}
+				if actual != expected {
+					return retry.RetryableError(fmt.Errorf("compression_mode not converged: expected %s, got %q", expected, actual))
+				}
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
 		d.Partial(false)
 		return resourceAliCloudDBInstanceRead(d, meta)
 	}
@@ -1801,6 +1904,20 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if v, ok := d.GetOkExists("bursting_enabled"); ok {
 		request["BurstingEnabled"] = v
+	}
+
+	if d.HasChange("io_acceleration_enabled") {
+		update = true
+	}
+	if v, ok := d.GetOk("io_acceleration_enabled"); ok && v.(string) != "" {
+		request["IoAccelerationEnabled"] = v
+	}
+
+	if d.HasChange("compression_mode") {
+		update = true
+	}
+	if v, ok := d.GetOk("compression_mode"); ok && v.(string) != "" {
+		request["CompressionMode"] = v
 	}
 
 	if d.HasChange("serverless_config") {
@@ -2250,6 +2367,16 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("status", instance["DBInstanceStatus"])
 	d.Set("create_time", instance["CreationTime"])
 	d.Set("bursting_enabled", instance["BurstingEnabled"])
+	// DescribeDBInstanceAttribute omits IoAccelerationEnabled when BPE is disabled;
+	// default to "0" so the state stays consistent instead of an empty string that
+	// would cause a perpetual plan diff.
+	if v, ok := instance["IoAccelerationEnabled"]; ok && v != nil {
+		d.Set("io_acceleration_enabled", v)
+	} else {
+		d.Set("io_acceleration_enabled", "0")
+	}
+	d.Set("connection_mode", instance["ConnectionMode"])
+	d.Set("compression_mode", instance["CompressionMode"])
 	d.Set("pg_bouncer_enabled", instance["PGBouncerEnabled"])
 	if v, ok := instance["OptimizedWritesInfo"]; ok {
 		value := ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(v))
@@ -2460,7 +2587,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
-	if paramGroupId, ok := parseDBInstanceParamGroupId(response); ok {
+	if paramGroupId, ok := parseDBInstanceParamGroupId(response); ok && paramGroupId != "" {
 		d.Set("db_param_group_id", paramGroupId)
 	}
 
@@ -2614,6 +2741,27 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOk("optimized_writes"); ok && v.(string) != "" {
 		request["OptimizedWrites"] = v
+	}
+	if v, ok := d.GetOkExists("auto_create_proxy"); ok {
+		request["AutoCreateProxy"] = v
+	}
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		request["AutoPay"] = v
+	}
+	if v, ok := d.GetOk("business_info"); ok && v.(string) != "" {
+		request["BusinessInfo"] = v
+	}
+	if v, ok := d.GetOk("connection_mode"); ok && v.(string) != "" {
+		request["ConnectionMode"] = v
+	}
+	if v, ok := d.GetOk("io_acceleration_enabled"); ok && v.(string) != "" {
+		request["IoAccelerationEnabled"] = v
+	}
+	if v, ok := d.GetOk("promotion_code"); ok && v.(string) != "" {
+		request["PromotionCode"] = v
+	}
+	if v, ok := d.GetOk("user_backup_id"); ok && v.(string) != "" {
+		request["UserBackupId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		count := 1
@@ -2848,6 +2996,77 @@ func getDifference(a, b map[int]struct{}) []int {
 		}
 	}
 	return result
+}
+
+// templateIdListOrderDiffSuppressFunc suppresses order-only differences for
+// template_id_list. The AttachWhitelistTemplate/DetachWhitelistTemplate
+// operations use set-based comparison, so member order is semantically
+// meaningless. Returns true when old and new contain the same members
+// regardless of order, and false when membership changes.
+func templateIdListOrderDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d == nil {
+		// unit-test path: compare serialized comma-separated values
+		return templateIdListStringEqualIgnoringOrder(old, new)
+	}
+	oldValue, newValue := d.GetChange("template_id_list")
+	return templateIdListEqualIgnoringOrder(oldValue, newValue)
+}
+
+// templateIdListEqualIgnoringOrder compares two []interface{} lists of ints
+// for member equality ignoring order.
+func templateIdListEqualIgnoringOrder(old, new interface{}) bool {
+	oldList, ok := old.([]interface{})
+	newList, ok2 := new.([]interface{})
+	if !ok || !ok2 {
+		return false
+	}
+	if len(oldList) != len(newList) {
+		return false
+	}
+	counter := make(map[int]int, len(oldList))
+	for _, item := range oldList {
+		if v, ok := item.(int); ok {
+			counter[v]++
+		}
+	}
+	for _, item := range newList {
+		if v, ok := item.(int); ok {
+			counter[v]--
+			if counter[v] < 0 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// templateIdListStringEqualIgnoringOrder compares two comma-separated strings
+// for member equality ignoring order. Used by the unit-test path of the
+// DiffSuppressFunc when *schema.ResourceData is nil.
+func templateIdListStringEqualIgnoringOrder(old, new string) bool {
+	if old == new {
+		return true
+	}
+	if old == "" || new == "" {
+		return false
+	}
+	oldMembers := strings.Split(old, ",")
+	newMembers := strings.Split(new, ",")
+	if len(oldMembers) != len(newMembers) {
+		return false
+	}
+	counter := make(map[string]int, len(oldMembers))
+	for _, m := range oldMembers {
+		counter[strings.TrimSpace(m)]++
+	}
+	for _, m := range newMembers {
+		m = strings.TrimSpace(m)
+		counter[m]--
+		if counter[m] < 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func ConvertMySQLInstanceOptimizedWritesResponse(source string) string {
