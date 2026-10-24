@@ -134,7 +134,7 @@ func dataSourceNodeClassesRead(d *schema.ResourceData, meta interface{}) error {
 			return polardbClient.DescribeDBClusterAvailableResources(request)
 		})
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"InternalError"}) || helper.NeedRetry(err) {
 				time.Sleep(time.Duration(5) * time.Second)
 				return retry.RetryableError(err)
 			}
