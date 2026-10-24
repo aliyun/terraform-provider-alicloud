@@ -66,11 +66,12 @@ func testSweepDBInstances(region string) error {
 		addDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %v", action, err)
-			continue
+			break
 		}
 		resp, err := jsonpath.Get("$.Items.DBInstance", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBInstance", response)
+			log.Printf("[ERROR] Failed to parse DB Instances: %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		objects = append(objects, result...)
@@ -85,6 +86,12 @@ func testSweepDBInstances(region string) error {
 		item := v.(map[string]interface{})
 		name := fmt.Sprint(item["DBInstanceDescription"])
 		id := fmt.Sprint(item["DBInstanceId"])
+		// Name-based do-not-delete protection (NODELETING etc.) applies in both
+		// prefix and SWEEP_ALL modes so SWEEP_ALL never sweeps a marked resource.
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping RDS Instance (do-not-delete marker): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
