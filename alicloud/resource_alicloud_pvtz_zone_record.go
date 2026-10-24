@@ -75,7 +75,7 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 			"type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"A", "CNAME", "MX", "PTR", "SRV", "TXT"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"A", "AAAA", "CNAME", "MX", "PTR", "SRV", "TXT"}, false),
 			},
 			"user_client_ip": {
 				Type:     schema.TypeString,

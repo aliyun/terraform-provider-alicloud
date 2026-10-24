@@ -13,6 +13,8 @@ Provides a Private Zone Record resource.
 
 -> **NOTE:** Terraform will auto Create a Private Zone Record while it uses `alicloud_pvtz_zone_record` to build a Private Zone Record resource.
 
+-> **NOTE:** Available since v1.13.0.
+
 ## Example Usage
 
 Basic Usage
@@ -25,7 +27,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_pvtz_zone" "zone" {
-  zone_name = "foo.test.com"
+  zone_name = "terraform-example.com"
 }
 
 resource "alicloud_pvtz_zone_record" "foo" {
@@ -33,6 +35,23 @@ resource "alicloud_pvtz_zone_record" "foo" {
   rr      = "www"
   type    = "CNAME"
   value   = "bbb.test.com"
+  ttl     = 60
+}
+
+```
+
+AAAA (IPv6) Record
+
+```terraform
+resource "alicloud_pvtz_zone" "zone" {
+  zone_name = "terraform-example-aaaa.com"
+}
+
+resource "alicloud_pvtz_zone_record" "foo" {
+  zone_id = alicloud_pvtz_zone.zone.id
+  rr      = "www"
+  type    = "AAAA"
+  value   = "2001:db8::1"
   ttl     = 60
 }
 
@@ -48,14 +67,22 @@ The following arguments are supported:
 * `lang` - (Optional, Available since v1.109.0) User language.
 * `resource_record` - (Optional, ForceNew, Deprecated since v1.109.0) The resource record of the Private Zone Record.
 * `rr` - (Optional, ForceNew) The rr of the Private Zone Record.
-* `type` - (Required) The type of the Private Zone Record. Valid values: A, CNAME, TXT, MX, PTR, SRV.
+* `type` - (Required, String) The type of the Private Zone Record. Valid values: `A`, `AAAA`, `CNAME`, `MX`, `PTR`, `SRV`, `TXT`.
 * `value` - (Required) The value of the Private Zone Record.
 * `ttl` - (Optional) The ttl of the Private Zone Record. Default to `60`.
 * `priority` - (Optional) The priority of the Private Zone Record. At present, only can "MX" record support it. Valid values: [1-99]. Default to 1.
 * `remark` - (Optional, Available since v1.103.2) The remark of the Private Zone Record.
 * `status` - (Optional, Available since v1.109.0) Resolve record status. Value:
-    - ENABLE: enable resolution.
-    - DISABLE: pause parsing.
+  - ENABLE: enable resolution.
+  - DISABLE: pause parsing.
+* `user_client_ip` - (Optional, String, Available since v1.109.0) The user client ip of the Private Zone Record.
+
+## Attributes Reference
+
+The following attributes are exported:
+
+* `id` - This ID of this resource. The value is formate as `<record_id>:<zone_id>`.
+* `record_id` - The Private Zone Record ID.
 
 ## Timeouts
 
@@ -65,14 +92,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 * `create` - (Defaults to 1 mins) Used when creating the Private Zone Record.
 * `update` - (Defaults to 1 mins) Used when updating the Private Zone Record.
-* `delete` - (Defaults to 1 mins) Used when terminating the Private Zone Record. 
-
-## Attributes Reference
-
-The following attributes are exported:
-
-* `id` - This ID of this resource. The value is formate as `<record_id>:<zone_id>`.
-* `record_id` - The Private Zone Record ID.
+* `delete` - (Defaults to 1 mins) Used when terminating the Private Zone Record.
 
 ## Import
 
