@@ -7,6 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -726,10 +727,10 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		if messageRetentionTime1 != nil && (d.HasChange("product_info.0.message_retention_time") || messageRetentionTime1 != "") {
 			objectDataLocalMap["messageRetentionTime"] = messageRetentionTime1
 		}
-		traceOn1, _ := jsonpath.Get("$[0].trace_on", v)
-		if traceOn1 != nil && (d.HasChange("product_info.0.trace_on") || traceOn1 != "") {
+		// trace_on is Optional+Computed, so state always has a value; only send it when the config sets it explicitly.
+		if traceOn, configured := rocketmqTraceOnFromConfig(d); configured && (d.IsNewResource() || d.HasChange("product_info.0.trace_on")) {
 			update = true
-			objectDataLocalMap["traceOn"] = traceOn1
+			objectDataLocalMap["traceOn"] = traceOn
 		}
 
 		request["productInfo"] = objectDataLocalMap
@@ -1045,4 +1046,24 @@ func resourceAliCloudRocketmqInstanceDelete(d *schema.ResourceData, meta interfa
 	}
 
 	return nil
+}
+
+func rocketmqTraceOnFromConfig(d *schema.ResourceData) (bool, bool) {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return false, false
+	}
+	productInfo := rawConfig.GetAttr("product_info")
+	if productInfo.IsNull() || !productInfo.IsKnown() || productInfo.LengthInt() == 0 {
+		return false, false
+	}
+	element := productInfo.Index(cty.NumberIntVal(0))
+	if element.IsNull() || !element.IsKnown() {
+		return false, false
+	}
+	traceOn := element.GetAttr("trace_on")
+	if traceOn.IsNull() || !traceOn.IsKnown() {
+		return false, false
+	}
+	return traceOn.True(), true
 }
