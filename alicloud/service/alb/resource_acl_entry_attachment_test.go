@@ -1,4 +1,4 @@
-package alicloud
+package alb_test
 
 import (
 	"fmt"
@@ -6,8 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/alb"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -15,21 +18,21 @@ import (
 func TestAccAliCloudALBAclEntryAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_acl_entry_attachment.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbAclEntryAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAclEntryAttachment")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccAlbAclEntryAttachment%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlbAclEntryAttachmentBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AclEntryAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -39,7 +42,7 @@ func TestAccAliCloudALBAclEntryAttachment_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"acl_id":      CHECKSET,
+						"acl_id":      acctest.CHECKSET,
 						"entry":       "10.10.10.0/24",
 						"description": name,
 					}),
@@ -57,16 +60,16 @@ func TestAccAliCloudALBAclEntryAttachment_basic0(t *testing.T) {
 func TestAccAliCloudALBAclEntryAttachment_entries(t *testing.T) {
 	var entries []map[string]interface{}
 	resourceId := "alicloud_alb_acl_entry_attachment.default"
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccAlbAclEntryAttachment%d", rand)
 	updatedName := fmt.Sprintf("%s-updated", name)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlbAclEntryAttachmentBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AclEntryAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlbAclEntryAttachmentBatchDestroy,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckAclEntryAttachmentBatchDestroy,
 		Steps: []resource.TestStep{
 			{
 				// exactly one of `entry` and `entries` must be specified: a config
@@ -94,11 +97,11 @@ func TestAccAliCloudALBAclEntryAttachment_entries(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlbAclEntryAttachmentBatchExists(resourceId, &entries),
+					testAccCheckAclEntryAttachmentBatchExists(resourceId, &entries),
 					resource.TestCheckResourceAttr(resourceId, "entries.#", "3"),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.10.10.0/24", name),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.10.11.0/24", name),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.10.12.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.10.10.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.10.11.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.10.12.0/24", name),
 				),
 			},
 			{
@@ -120,11 +123,11 @@ func TestAccAliCloudALBAclEntryAttachment_entries(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlbAclEntryAttachmentBatchExists(resourceId, &entries),
+					testAccCheckAclEntryAttachmentBatchExists(resourceId, &entries),
 					resource.TestCheckResourceAttr(resourceId, "entries.#", "3"),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.10.10.0/24", name),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.10.11.0/24", updatedName),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.10.13.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.10.10.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.10.11.0/24", updatedName),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.10.13.0/24", name),
 				),
 			},
 			{
@@ -148,11 +151,11 @@ func TestAccAliCloudALBAclEntryAttachment_entries(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlbAclEntryAttachmentBatchExists(resourceId, &entries),
+					testAccCheckAclEntryAttachmentBatchExists(resourceId, &entries),
 					resource.TestCheckResourceAttr(resourceId, "entries.#", "3"),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.10.10.0/24", name),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.10.11.0/24", updatedName),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.10.13.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.10.10.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.10.11.0/24", updatedName),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.10.13.0/24", name),
 				),
 			},
 			{
@@ -167,9 +170,9 @@ func TestAccAliCloudALBAclEntryAttachment_entries(t *testing.T) {
 func TestAccAliCloudALBAclEntryAttachment_entriesChunking(t *testing.T) {
 	var entries []map[string]interface{}
 	resourceId := "alicloud_alb_acl_entry_attachment.default"
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccAlbAclEntryAttachment%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlbAclEntryAttachmentBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AclEntryAttachmentBasicDependence0)
 	// the api accepts at most 20 entries per call: volumes above that are
 	// chunked, so the scenarios below cross the chunk boundary in every
 	// direction (create, add, remove and destroy)
@@ -185,10 +188,10 @@ func TestAccAliCloudALBAclEntryAttachment_entriesChunking(t *testing.T) {
 	}
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAlbAclEntryAttachmentBatchDestroy,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckAclEntryAttachmentBatchDestroy,
 		Steps: []resource.TestStep{
 			{
 				// exactly 20 entries: the single-call boundary of the api
@@ -197,10 +200,10 @@ func TestAccAliCloudALBAclEntryAttachment_entriesChunking(t *testing.T) {
 					"entries": entryBlocks(20, 20),
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlbAclEntryAttachmentBatchExists(resourceId, &entries),
+					testAccCheckAclEntryAttachmentBatchExists(resourceId, &entries),
 					resource.TestCheckResourceAttr(resourceId, "entries.#", "20"),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.20.0.0/24", name),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.20.19.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.20.0.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.20.19.0/24", name),
 				),
 			},
 			{
@@ -210,10 +213,10 @@ func TestAccAliCloudALBAclEntryAttachment_entriesChunking(t *testing.T) {
 					"entries": entryBlocks(43, 20),
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlbAclEntryAttachmentBatchExists(resourceId, &entries),
+					testAccCheckAclEntryAttachmentBatchExists(resourceId, &entries),
 					resource.TestCheckResourceAttr(resourceId, "entries.#", "43"),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.20.20.0/24", name),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.20.42.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.20.20.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.20.42.0/24", name),
 				),
 			},
 			{
@@ -224,49 +227,49 @@ func TestAccAliCloudALBAclEntryAttachment_entriesChunking(t *testing.T) {
 					"entries": append(entryBlocks(22, 20), entryBlocks(22, 21)...),
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlbAclEntryAttachmentBatchExists(resourceId, &entries),
+					testAccCheckAclEntryAttachmentBatchExists(resourceId, &entries),
 					resource.TestCheckResourceAttr(resourceId, "entries.#", "44"),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.20.0.0/24", name),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.20.21.0/24", name),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.21.0.0/24", name),
-					testAccCheckAlbAclEntryAttachmentEntry(resourceId, "10.21.21.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.20.0.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.20.21.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.21.0.0/24", name),
+					testAccCheckAclEntryAttachmentEntry(resourceId, "10.21.21.0/24", name),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckAlbAclEntryAttachmentBatchExists(n string, entries *[]map[string]interface{}) resource.TestCheckFunc {
+func testAccCheckAclEntryAttachmentBatchExists(n string, entries *[]map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return WrapError(Error("Not found: %s", n))
+			return errs.WrapError(errs.Error("Not found: %s", n))
 		}
 		if rs.Primary.ID == "" {
-			return WrapError(Error("No alicloud_alb_acl_entry_attachment ID is set"))
+			return errs.WrapError(errs.Error("No alicloud_alb_acl_entry_attachment ID is set"))
 		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		albService := AlbService{client}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		albService := alb.NewService(client)
 		list, err := albService.ListAclEntries(rs.Primary.ID)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if len(list) == 0 {
-			return WrapError(Error("the acl %s has no entries", rs.Primary.ID))
+			return errs.WrapError(errs.Error("the acl %s has no entries", rs.Primary.ID))
 		}
 		*entries = list
 		return nil
 	}
 }
 
-// testAccCheckAlbAclEntryAttachmentEntry asserts that one `entries` set element
+// testAccCheckAclEntryAttachmentEntry asserts that one `entries` set element
 // with the given entry and description and the Available status exists in the
 // resource state.
-func testAccCheckAlbAclEntryAttachmentEntry(n, entry, description string) resource.TestCheckFunc {
+func testAccCheckAclEntryAttachmentEntry(n, entry, description string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return WrapError(Error("Not found: %s", n))
+			return errs.WrapError(errs.Error("Not found: %s", n))
 		}
 		for attributeName, attributeValue := range rs.Primary.Attributes {
 			if !strings.HasPrefix(attributeName, "entries.") || !strings.HasSuffix(attributeName, ".entry") || attributeValue != entry {
@@ -275,40 +278,40 @@ func testAccCheckAlbAclEntryAttachmentEntry(n, entry, description string) resour
 			hash := strings.TrimSuffix(strings.TrimPrefix(attributeName, "entries."), ".entry")
 			actual := rs.Primary.Attributes[fmt.Sprintf("entries.%s.description", hash)]
 			if actual != description {
-				return WrapError(Error("entry %s has description %q, expected %q", entry, actual, description))
+				return errs.WrapError(errs.Error("entry %s has description %q, expected %q", entry, actual, description))
 			}
 			status := rs.Primary.Attributes[fmt.Sprintf("entries.%s.status", hash)]
 			if status != "Available" {
-				return WrapError(Error("entry %s has status %q, expected %q", entry, status, "Available"))
+				return errs.WrapError(errs.Error("entry %s has status %q, expected %q", entry, status, "Available"))
 			}
 			return nil
 		}
-		return WrapError(Error("entry %s not found in resource %s", entry, n))
+		return errs.WrapError(errs.Error("entry %s not found in resource %s", entry, n))
 	}
 }
 
-func testAccCheckAlbAclEntryAttachmentBatchDestroy(s *terraform.State) error {
+func testAccCheckAclEntryAttachmentBatchDestroy(s *terraform.State) error {
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_alb_acl_entry_attachment" {
 			continue
 		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		albService := AlbService{client}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		albService := alb.NewService(client)
 		entries, err := albService.ListAclEntries(rs.Primary.ID)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				continue
 			}
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if len(entries) > 0 {
-			return WrapError(Error("the acl %s still has %d entries", rs.Primary.ID, len(entries)))
+			return errs.WrapError(errs.Error("the acl %s still has %d entries", rs.Primary.ID, len(entries)))
 		}
 	}
 	return nil
 }
 
-func AlicloudAlbAclEntryAttachmentBasicDependence0(name string) string {
+func AclEntryAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"

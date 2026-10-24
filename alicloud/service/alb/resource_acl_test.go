@@ -1,130 +1,35 @@
-package alicloud
+package alb_test
 
 import (
 	"fmt"
-	"log"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/alb"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
-
-func init() {
-	resource.AddTestSweepers(
-		"alicloud_alb_acl",
-		&resource.Sweeper{
-			Name: "alicloud_alb_acl",
-			F:    testSweepAlbAcl,
-		})
-}
-
-func testSweepAlbAcl(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-	action := "ListAcls"
-	request := map[string]interface{}{}
-
-	request["MaxResults"] = PageSizeXLarge
-
-	var response map[string]interface{}
-	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
-		}
-
-		resp, err := jsonpath.Get("$.Acls", response)
-		totalCount, formatErr := formatInt(response["TotalCount"])
-		if formatErr != nil {
-			return formatErr
-		}
-		if totalCount != 0 && err != nil {
-			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Acls", action, err)
-			return nil
-		}
-		result, _ := resp.([]interface{})
-		for _, v := range result {
-			item := v.(map[string]interface{})
-
-			if _, ok := item["AclName"]; !ok {
-				continue
-			}
-			skip := true
-			if !sweepAll() {
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(item["AclName"].(string)), strings.ToLower(prefix)) {
-						skip = false
-					}
-				}
-				if skip {
-					log.Printf("[INFO] Skipping Alb Acl: %s", item["AclName"].(string))
-					continue
-				}
-			}
-			action := "DeleteAcl"
-			request := map[string]interface{}{
-				"AclId": item["AclId"],
-			}
-			request["ClientToken"] = buildClientToken("DeleteAcl")
-			_, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, false)
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete Alb Acl (%s): %s", item["AclId"].(string), err)
-			}
-			log.Printf("[INFO] Delete Alb Acl success: %s ", item["AclId"].(string))
-		}
-		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
-			request["NextToken"] = nextToken
-		} else {
-			break
-		}
-	}
-	return nil
-}
 
 func TestAccAliCloudALBAcl_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_acl.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBAclMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbAcl")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AclMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAcl")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccalbacl%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBAclBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AclBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{}),
@@ -336,7 +241,7 @@ func TestAccAliCloudALBAcl_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -385,22 +290,22 @@ func TestAccAliCloudALBAcl_basic0(t *testing.T) {
 func TestAccAliCloudALBAcl_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_acl.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBAclMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbAcl")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AclMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAcl")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccalbacl%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBAclBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AclBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -412,7 +317,7 @@ func TestAccAliCloudALBAcl_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						"acl_name":          name,
 						"dry_run":           "false",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -426,15 +331,15 @@ func TestAccAliCloudALBAcl_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudALBAclMap0 = map[string]string{
-	"tags.%":            NOSET,
-	"dry_run":           NOSET,
-	"resource_group_id": CHECKSET,
-	"acl_entries.#":     CHECKSET,
-	"status":            CHECKSET,
+var AclMap0 = map[string]string{
+	"tags.%":            acctest.NOSET,
+	"dry_run":           acctest.NOSET,
+	"resource_group_id": acctest.CHECKSET,
+	"acl_entries.#":     acctest.CHECKSET,
+	"status":            acctest.CHECKSET,
 }
 
-func AlicloudALBAclBasicDependence0(name string) string {
+func AclBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
