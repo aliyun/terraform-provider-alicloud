@@ -55,7 +55,7 @@ func testAliCloudEcsNetworkInterface(region string) error {
 		resp, err := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", response)
 		if err != nil {
 			log.Printf("[ERROR] jsonpath Get NetworkInterface failed, %#v", err)
-			continue
+			break
 		}
 
 		result, _ := resp.([]interface{})
