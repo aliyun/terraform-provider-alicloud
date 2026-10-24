@@ -249,6 +249,94 @@ func TestAccAliCloudPolarDBNewBackupPolicy(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudPolarDBBackupPolicy_advanced(t *testing.T) {
+	resourceId := "alicloud_polardb_backup_policy.default"
+	testAccConfig := resourceTestAccConfigFunc(
+		resourceId,
+		"tf-testAccPolarDBAdvancedBackupPolicy",
+		resourcePolarDBBackupPolicyConfigDependence,
+	)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		ProviderFactories: testAccProviderFactory,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":       "${alicloud_polardb_cluster.default.id}",
+					"backup_policy_level": "Normal",
+					"backup_retention_policy_on_cluster_deletion": "NONE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "backup_policy_level", "Normal"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_policy_level": "Advanced",
+					"advanced_data_policies": []map[string]interface{}{
+						{
+							"retention_type":  "delay",
+							"retention_value": "7",
+							"filter_type":     "crontab",
+							"filter_key":      "dayOfWeek",
+							"filter_value":    "1,2,3,4,5,6,7",
+							"src_type":        "db",
+							"dest_type":       "level1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "backup_policy_level", "Advanced"),
+					resource.TestCheckResourceAttr(resourceId, "advanced_data_policies.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceId, "advanced_data_policies.0.policy_id"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"advanced_data_policies": []map[string]interface{}{
+						{
+							"retention_type":  "delay",
+							"retention_value": "14",
+							"filter_type":     "crontab",
+							"filter_key":      "dayOfWeek",
+							"filter_value":    "1,2,3,4,5,6,7",
+							"src_type":        "db",
+							"dest_type":       "level1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "advanced_data_policies.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "advanced_data_policies.0.retention_value", "14"),
+					resource.TestCheckResourceAttrSet(resourceId, "advanced_data_policies.0.policy_id"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"advanced_data_policies": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "advanced_data_policies.#", "0"),
+					resource.TestCheckResourceAttr(resourceId, "backup_policy_level", "Advanced"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"log_backup_another_region_region", "log_backup_another_region_retention_period"},
+			},
+			{
+				Config:   testAccConfig(nil),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func resourcePolarDBBackupPolicyConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -272,12 +360,13 @@ func resourcePolarDBBackupPolicyConfigDependence(name string) string {
 		category   = "Normal"
 	}
 	resource "alicloud_polardb_cluster" "default" {
-		db_type       = "MySQL"
-		db_version    = "8.0"
-		pay_type      = "PostPaid"
-		db_node_class = "polar.mysql.x4.large"
-		vswitch_id    = alicloud_vswitch.default.id
-		description   = "${var.name}"
+		db_type            = "MySQL"
+		db_version         = "8.0"
+		pay_type           = "PostPaid"
+		db_node_class      = "polar.mysql.x4.large"
+		vswitch_id         = alicloud_vswitch.default.id
+		description        = "${var.name}"
+		encrypt_new_tables = "OFF"
 	}
 	`, name)
 }
