@@ -119,6 +119,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ots"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/paiflow"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/paiplugin"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardbx"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatelink"
@@ -282,6 +283,7 @@ var servicePackages = []conns.ServicePackage{
 	oss.ServicePackage(),
 	ots.ServicePackage(),
 	paiflow.ServicePackage(),
+	paiplugin.ServicePackage(),
 	polardb.ServicePackage(),
 	polardbx.ServicePackage(),
 	privatelink.ServicePackage(),
