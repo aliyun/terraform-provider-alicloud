@@ -237,6 +237,13 @@ func resourceAlicloudThreatDetectionHoneypotProbeRead(d *schema.ResourceData, me
 			d.SetId("")
 			return nil
 		}
+		// install_failed 时 GetHoneypotProbe 返回 HoneypotProbeNotReady;保留 state 并标记 status=install_failed,
+		// 使 plan 无 diff(资源仍受管)且后续 destroy 可触达 DeleteHoneypotProbe,避免生命周期全阻塞。
+		if IsExpectedErrors(err, []string{"HoneypotProbeNotReady"}) {
+			log.Printf("[DEBUG] Resource alicloud_threat_detection_honeypot_probe is in install_failed state, keep state: %s", err)
+			d.Set("status", "install_failed")
+			return nil
+		}
 		return WrapError(err)
 	}
 	d.Set("arp", object["Arp"])

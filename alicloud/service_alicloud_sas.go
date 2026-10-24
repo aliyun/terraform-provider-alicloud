@@ -374,7 +374,12 @@ func (s *SasService) DescribeThreatDetectionHoneypotProbe(id string) (object map
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("Sas", "2018-12-03", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"HoneypotProbeNotReady"}) || NeedRetry(err) {
+			// install_failed 时 GetHoneypotProbe 返回 HoneypotProbeNotReady,该状态不可恢复重试,
+			// 快速返回原始错误,供上层 Read/StateRefresh 映射为 install_failed 终态,避免 plan/Read 阻塞 5 分钟。
+			if IsExpectedErrors(err, []string{"HoneypotProbeNotReady"}) {
+				return retry.NonRetryableError(err)
+			}
+			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -407,6 +412,11 @@ func (s *SasService) ThreatDetectionHoneypotProbeStateRefreshFunc(d *schema.Reso
 		if err != nil {
 			if NotFoundError(err) {
 				return nil, "", nil
+			}
+			// install_failed 时 GetHoneypotProbe 返回 HoneypotProbeNotReady,映射为 install_failed 终态,
+			// 使 BuildStateConf 将其识别为失败状态(Create 快速失败)而非持续报错或超时。
+			if IsExpectedErrors(err, []string{"HoneypotProbeNotReady"}) {
+				return nil, "install_failed", WrapError(Error("honeypot probe [%s] is in install_failed state: %s", d.Id(), err.Error()))
 			}
 			return nil, "", WrapError(err)
 		}
