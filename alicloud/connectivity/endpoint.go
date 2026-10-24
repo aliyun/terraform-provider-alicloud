@@ -501,6 +501,8 @@ var regularProductEndpoint = map[string]string{
 	"dds":                  "mongodb.%s.aliyuncs.com",
 	"cloudcontrol":         "cloudcontrol.aliyuncs.com",
 	"bpstudio":             "bpstudio.cn-hangzhou.aliyuncs.com",
+	"bailian":              "bailian.%s.aliyuncs.com",
+	"modelstudio":          "modelstudio.%s.aliyuncs.com",
 }
 
 // regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
