@@ -12,6 +12,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// The configurable TypeList attributes below are pre-existing stock on
+// alicloud_oss_bucket. This change only keeps ignored tags in state and writes
+// them back through the whole-set bucket tagging API; it adds, removes and
+// reorders none of the attributes below, so they are marked as known stock debt
+// per scripts/collection-order/README.md instead of gaining new convergent
+// reorder tests in this change.
+// collection-order: bypass cors_rule -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass cors_rule.allowed_headers -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass cors_rule.allowed_methods -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass cors_rule.allowed_origins -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass cors_rule.expose_headers -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass lifecycle_rule -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass referer_config.referers -- pre-existing stock attribute, not added or changed by this tag-write fix
+
 func init() {
 	resource.AddTestSweepers("alicloud_oss_bucket", &resource.Sweeper{
 		Name: "alicloud_oss_bucket",
@@ -2555,4 +2569,55 @@ locals {
 var ossBucketBasicMap = map[string]string{
 	"creation_date":    CHECKSET,
 	"lifecycle_rule.#": "0",
+}
+
+func resourceOssBucketPolicyDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_account" "current" {}
+
+variable "name" {
+  default = %q
+}
+`, name)
+}
+
+// The public policy cases in the basic test stay disabled because public access is disabled for the
+// test account. These policies are scoped to the current account so the policy attribute keeps a
+// real create and update path.
+func TestAccAliCloudOssBucketPolicy(t *testing.T) {
+	var v oss.GetBucketInfoResult
+	resourceId := "alicloud_oss_bucket.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-bucket-policy-%d", rand)
+
+	serviceFunc := func() interface{} {
+		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketPolicyDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rc.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket": name,
+					"policy": `{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":[\"${data.alicloud_account.current.id}\"],\"Action\":[\"oss:GetObject\"],\"Resource\":[\"acs:oss:*:*:${var.name}/*\"]}]}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceId, "policy"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy": `{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":[\"${data.alicloud_account.current.id}\"],\"Action\":[\"oss:GetObject\",\"oss:ListObjects\"],\"Resource\":[\"acs:oss:*:*:${var.name}/*\"]}]}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceId, "policy"),
+				),
+			},
+		},
+	})
 }

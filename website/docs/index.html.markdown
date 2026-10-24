@@ -369,6 +369,8 @@ In addition to [generic `provider` arguments](https://developer.hashicorp.com/te
 
 * `features` - (Optional, Available since v1.289.0) A [`features`](#features) block that changes how certain resources behave. Only one `features` block may be in the configuration.
 
+* `ignore_tags` - (Optional, Available since v2.1.1) An [`ignore_tags`](#ignore_tags) block that keeps tag keys out of resource state. Only one `ignore_tags` block may be in the configuration.
+
 * `configuration_source` - (Optional, Available since v1.56.0) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
 The length should not more than 1024(Before 1.283.0, it should not more than 128. Before 1.207.2, it should not more than 64). Since the version 1.145.0, it supports to be set by environment variable `TF_APPEND_USER_AGENT`. See `Custom User-Agent Information`.
 
@@ -431,7 +433,7 @@ The `sign_version` configuration block overrides the signature version used by t
 
 ### `features`
 
-The `features` configuration block groups the arguments that change how a resource behaves, as opposed to which account, region or endpoint the provider talks to. Every argument in it is optional, so leaving the block out keeps the provider's default behaviour. The arguments of this block have no environment variable equivalent, and can only be set in the `provider` block.
+The `features` configuration block groups the arguments that change how a resource behaves, as opposed to which account, region or endpoint the provider talks to. Every argument in it is optional, so leaving the block out keeps the provider's default behavior. The arguments of this block have no environment variable equivalent, and can only be set in the `provider` block.
 
 ```terraform
 provider "alicloud" {
@@ -458,6 +460,28 @@ The `ecs_instance` configuration block applies to the [alicloud_instance](https:
   -> **NOTE:** The system disk is created anew from the image either way, so its data never survives an `image_id` change. Setting this argument to `true` gives up the instance ID, the private IP address and the data disks as well, and requires the instance to be destroyable: a `prevent_destroy` lifecycle rule turns the planned replacement into an error, the provider refuses to destroy an instance whose `instance_charge_type` is `PrePaid` unless `force_delete` is `true`, and ECS rejects the deletion itself while `deletion_protection` is `true`.
 
   -> **NOTE:** A new `image_id` that is not known until apply time, because it is read from a resource or a data source that has yet to be created, is applied in place: `terraform plan` cannot report a replacement for a value it does not have. Run `terraform apply` again after the new image exists to get the replacement.
+
+### `ignore_tags`
+
+The `ignore_tags` configuration block keeps the tag keys that match out of a resource's state. The ignored tags stay on the cloud resource and the provider does not manage their values: it never calls Tag or Untag because of an ignored key, and when a resource writes tags through an API that replaces the whole tag set, the ignored tags are written back unchanged. Leaving the block out keeps the provider's default behavior.
+
+```terraform
+provider "alicloud" {
+  ignore_tags {
+    keys         = ["created-by", "owner"]
+    key_prefixes = ["cost-"]
+  }
+}
+```
+
+The following arguments are supported:
+
+* `keys` - (Optional) A set of tag keys to ignore. A tag is ignored when its key equals one of these values, case sensitively.
+* `key_prefixes` - (Optional) A set of tag key prefixes to ignore. A tag is ignored when its key starts with one of these values, case sensitively.
+
+The rules apply to the `provider` block they are declared in, so two provider aliases can ignore different keys. Only resources are filtered; data sources and tag blocks nested inside another resource are not affected. The filter reads the resource's top level `tags` attribute, so only resources that expose that attribute are affected. The keys are matched together with the system tag prefixes the provider already hides (`aliyun`, `acs:`, `http://`, `https://` and `sae.do.not.delete`), and a resource that declares none of the matching keys behaves exactly as before.
+
+~> **IMPORTANT:** Do not declare an ignored key in a resource's `tags` argument. The provider cannot suppress the difference between that configuration and the filtered state for a single alias, so the key would be planned for addition on every run, sent to the cloud by the resource, and filtered out of the state again — an endless diff. On resources whose `tags` argument forces replacement, that diff replaces the resource on every apply. Remove ignored keys from resource `tags` instead.
 
 ### `endpoints`
 

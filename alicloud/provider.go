@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -114,7 +115,8 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SKIP_REGION_VALIDATION", false),
 				Description: descriptions["skip_region_validation"],
 			},
-			"features": featuresSchema(),
+			"features":    featuresSchema(),
+			"ignore_tags": ignoreTagsSchema(),
 			"configuration_source": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -2368,6 +2370,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		TerraformVersion:     p.TerraformVersion,
 	}
 	config.Features = expandFeatures(d.Get("features").([]interface{}))
+	config.IgnoreTags = expandIgnoreTags(d.Get("ignore_tags").([]interface{}))
 	if credential != nil {
 		config.Credential = credential
 	}
@@ -2722,6 +2725,8 @@ func init() {
 		"skip_region_validation": "Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet). It can also be sourced from the `ALICLOUD_SKIP_REGION_VALIDATION` environment variable.",
 
 		"features": "Customize the behaviour of certain resources. Every toggle it holds is optional, and leaving the block out keeps the provider's default behaviour.",
+
+		"ignore_tags": "Keep the tag keys that match from entering a resource's state. Only this provider instance is affected, so aliases can ignore different keys. It never removes a tag from the cloud and never changes a tag value.",
 
 		"configuration_source": "Use this to mark a terraform configuration file source.",
 
@@ -3162,6 +3167,65 @@ func expandFeatures(featuresList []interface{}) features.Features {
 		}
 	}
 	return expanded
+}
+
+// ignoreTagsSchema returns the provider's ignore_tags block: the tag keys a resource Read keeps
+// out of state. The two match rules are separate so a key and a prefix can never be confused.
+func ignoreTagsSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		MaxItems: 1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"keys": {
+					Type:     schema.TypeSet,
+					Optional: true,
+					Elem: &schema.Schema{
+						Type:         schema.TypeString,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+					Description: "Tag keys to ignore, matched exactly and case sensitively.",
+				},
+				"key_prefixes": {
+					Type:     schema.TypeSet,
+					Optional: true,
+					Elem: &schema.Schema{
+						Type:         schema.TypeString,
+						ValidateFunc: validation.StringIsNotEmpty,
+					},
+					Description: "Tag key prefixes to ignore, matched case sensitively.",
+				},
+			},
+		},
+		Description: descriptions["ignore_tags"],
+	}
+}
+
+// expandIgnoreTags reads the ignore_tags block into the value the client carries. A missing or
+// empty block ignores nothing, so an existing configuration keeps its baseline behaviour.
+func expandIgnoreTags(ignoreTagsList []interface{}) features.IgnoreTags {
+	expanded := features.IgnoreTags{}
+	if len(ignoreTagsList) == 0 || ignoreTagsList[0] == nil {
+		return expanded
+	}
+	ignoreTagsMap := ignoreTagsList[0].(map[string]interface{})
+	expanded.Keys = expandIgnoreTagSet(ignoreTagsMap["keys"])
+	expanded.KeyPrefixes = expandIgnoreTagSet(ignoreTagsMap["key_prefixes"])
+	return expanded
+}
+
+func expandIgnoreTagSet(value interface{}) []string {
+	set, ok := value.(*schema.Set)
+	if !ok || set.Len() == 0 {
+		return nil
+	}
+	values := make([]string, 0, set.Len())
+	for _, v := range set.List() {
+		values = append(values, v.(string))
+	}
+	sort.Strings(values)
+	return values
 }
 
 func endpointsSchema() *schema.Schema {

@@ -224,8 +224,35 @@ func resourceAliCloudSslCertificatesServiceCertificateUpdate(d *schema.ResourceD
 	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("tags") {
 		update = true
+		// CreateCertificateName replaces the whole tag set when Tags is present, so the ignored
+		// tags already on the certificate have to be sent back when ignore_tags is configured;
+		// without the configuration the configured tags are sent as-is.
+		tagsPayload := make(map[string]interface{})
 		if v, ok := d.GetOk("tags"); ok {
-			tagsMap := ConvertTags(v.(map[string]interface{}))
+			tagsPayload = v.(map[string]interface{})
+		}
+		if !client.IgnoreTags.Empty() {
+			sslCertificatesServiceServiceV2 := SslCertificatesServiceServiceV2{client}
+			object, err := sslCertificatesServiceServiceV2.DescribeSslCertificatesServiceCertificate(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			current := make(map[string]string)
+			for key, value := range tagsToMap(object["Tags"]) {
+				current[key] = value.(string)
+			}
+			desired := make(map[string]string)
+			for key, value := range tagsPayload {
+				desired[key] = value.(string)
+			}
+			merged := mergeIgnoredTags(desired, current, client.IgnoreTags)
+			tagsPayload = make(map[string]interface{}, len(merged))
+			for key, value := range merged {
+				tagsPayload[key] = value
+			}
+		}
+		if len(tagsPayload) > 0 {
+			tagsMap := ConvertTags(tagsPayload)
 			request = expandTagsToMapWithTags(request, tagsMap)
 		} else {
 			request["Tags.1.Key"] = ""

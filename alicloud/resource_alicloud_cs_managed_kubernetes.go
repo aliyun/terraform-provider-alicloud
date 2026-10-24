@@ -1302,9 +1302,30 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 
-	var modifyClusterTagsRequest []cs.Tag
-	if tags, err := ConvertCsTags(d); err == nil {
-		modifyClusterTagsRequest = tags
+	desired := make(map[string]string)
+	for key, value := range d.Get("tags").(map[string]interface{}) {
+		if v, ok := value.(string); ok {
+			desired[key] = v
+		}
+	}
+	// ModifyClusterTags replaces the whole tag set, so when ignore_tags is configured the ignored
+	// tags already on the cluster have to be sent back; otherwise the update would delete them.
+	// Without the configuration the write keeps its baseline form: the configured tags are sent
+	// as-is and the current set is not read at all.
+	merged := desired
+	if !client.IgnoreTags.Empty() {
+		current, err := describeKubernetesClusterTags(client, d.Id())
+		if err != nil {
+			return err
+		}
+		merged = mergeIgnoredTags(desired, current, client.IgnoreTags)
+	}
+	modifyClusterTagsRequest := make([]cs.Tag, 0, len(merged))
+	for key, value := range merged {
+		modifyClusterTagsRequest = append(modifyClusterTagsRequest, cs.Tag{
+			Key:   key,
+			Value: value,
+		})
 	}
 	conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
 	if err != nil {
@@ -1333,6 +1354,27 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	return nil
+}
+
+// describeKubernetesClusterTags returns every tag on the cluster, including the keys Terraform
+// ignores, because ModifyClusterTags replaces the whole tag set.
+func describeKubernetesClusterTags(client *connectivity.AliyunClient, id string) (map[string]string, error) {
+	rosClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	object, err := (&CsClient{rosClient}).DescribeClusterDetail(id)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	tagsMap := make(map[string]string)
+	if object == nil {
+		return tagsMap, nil
+	}
+	for _, tag := range object.Tags {
+		tagsMap[tea.StringValue(tag.Key)] = tea.StringValue(tag.Value)
+	}
+	return tagsMap, nil
 }
 
 func updateControlPlaneLog(d *schema.ResourceData, meta interface{}) error {

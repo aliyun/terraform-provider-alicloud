@@ -14,6 +14,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// The configurable TypeList attributes below are pre-existing stock on
+// alicloud_cs_managed_kubernetes. This change only keeps ignored tags in state
+// and writes them back through the whole-set cluster tag API; it adds, removes
+// and reorders none of the attributes below, so they are marked as known stock
+// debt per scripts/collection-order/README.md instead of gaining new convergent
+// reorder tests in this change.
+// collection-order: bypass addons -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass api_audiences -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass control_plane_endpoints_config.internal_dns_config.bind_vpcs -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass control_plane_endpoints_config.load_balancers_config -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass control_plane_log_components -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass delete_options -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass pod_vswitch_ids -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass retain_resources -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass vswitch_ids -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass worker_vswitch_ids -- pre-existing stock attribute, not added or changed by this tag-write fix
+// collection-order: bypass zone_ids -- pre-existing stock attribute, not added or changed by this tag-write fix
+
 func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 	var v *cs.KubernetesClusterDetail
 

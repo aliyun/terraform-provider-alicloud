@@ -45,6 +45,7 @@ var (
 	tagsFromMap                    = tags.TagsFromMap
 	tagsMapEqual                   = tags.TagsMapEqual
 	ignoredTags                    = tags.IgnoredTags
+	mergeIgnoredTags               = tags.MergeIgnoredTags
 )
 
 func setCdnTags(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {

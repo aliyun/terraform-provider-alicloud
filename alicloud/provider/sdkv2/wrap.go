@@ -20,14 +20,26 @@ import (
 )
 
 func WrapResource(name string, r *schema.Resource, chain []intercept.Interceptor) *schema.Resource {
-	if r == nil || len(chain) == 0 {
+	if r == nil {
+		return r
+	}
+	filterTags := hasTopLevelTags(r)
+	if len(chain) == 0 && !filterTags {
 		return r
 	}
 	cp := *r
-	wrapCreate(&cp, name, chain)
-	wrapRead(&cp, name, chain)
-	wrapUpdate(&cp, name, chain)
-	wrapDelete(&cp, name, chain)
+	if filterTags {
+		wrapCreateWithTagFilter(&cp, name, chain)
+		wrapUpdateWithTagFilter(&cp, name, chain)
+		wrapReadWithTagFilter(&cp, name, chain)
+	} else {
+		wrapCreate(&cp, name, chain)
+		wrapUpdate(&cp, name, chain)
+		wrapRead(&cp, name, chain)
+	}
+	if len(chain) > 0 {
+		wrapDelete(&cp, name, chain)
+	}
 	return &cp
 }
 

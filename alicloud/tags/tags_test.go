@@ -3,8 +3,66 @@ package tags
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestUnitMergeIgnoredTags(t *testing.T) {
+	ignore := features.IgnoreTags{Keys: []string{"env"}, KeyPrefixes: []string{"tf-"}}
+
+	// The desired set wins over managed keys on the resource, but an ignored key never wins over the
+	// value already in the cloud, and current ignored or system-owned keys survive.
+	got := MergeIgnoredTags(
+		map[string]string{"team": "core", "env": "should-not-win"},
+		map[string]string{"env": "prod", "tf-created-by": "acc", "acs:system": "owned", "stale": "gone"},
+		ignore,
+	)
+	assert.Equal(t, map[string]string{
+		"team":          "core",
+		"env":           "prod",
+		"tf-created-by": "acc",
+		"acs:system":    "owned",
+	}, got)
+}
+
+func TestUnitMergeIgnoredTagsKeepsIgnoredTagsWhenDesiredIsEmpty(t *testing.T) {
+	ignore := features.IgnoreTags{Keys: []string{"env"}}
+	got := MergeIgnoredTags(
+		map[string]string{},
+		map[string]string{"env": "prod", "team": "core"},
+		ignore,
+	)
+	assert.Equal(t, map[string]string{"env": "prod"}, got)
+}
+
+// Baseline semantics: before ignore_tags existed, whole-set writes sent the configured tags as-is.
+// The current set was neither read nor merged back, and a configured key won over the value in the
+// cloud even when it matches the system-prefix filter, so an unconfigured provider must keep
+// writing the desired value instead of the current one.
+func TestUnitMergeIgnoredTagsWithoutConfigurationKeepsBaselineWrite(t *testing.T) {
+	got := MergeIgnoredTags(
+		map[string]string{"sae.do.not.delete": "new", "team": "core"},
+		map[string]string{"sae.do.not.delete": "old", "team": "old", "acs:system": "owned"},
+		features.IgnoreTags{},
+	)
+	assert.Equal(t, map[string]string{"sae.do.not.delete": "new", "team": "core"}, got)
+}
+
+func TestUnitMergeIgnoredTagsWithoutConfigurationKeepsBaselineDelete(t *testing.T) {
+	assert.Empty(t, MergeIgnoredTags(
+		map[string]string{},
+		map[string]string{"env": "prod", "acs:system": "owned"},
+		features.IgnoreTags{},
+	))
+}
+
+func TestUnitMergeIgnoredTagsHandlesNilMaps(t *testing.T) {
+	assert.Empty(t, MergeIgnoredTags(nil, nil, features.IgnoreTags{Keys: []string{"env"}}))
+	assert.Equal(t, map[string]string{"env": "prod"}, MergeIgnoredTags(nil, map[string]string{"env": "prod"}, features.IgnoreTags{Keys: []string{"env"}}))
+	assert.Equal(t, map[string]string{"team": "core"}, MergeIgnoredTags(map[string]string{"team": "core"}, nil, features.IgnoreTags{Keys: []string{"env"}}))
+	assert.Empty(t, MergeIgnoredTags(nil, nil, features.IgnoreTags{}))
+	assert.Equal(t, map[string]string{"team": "core"}, MergeIgnoredTags(map[string]string{"team": "core"}, nil, features.IgnoreTags{}))
+}
 
 // Tests for the tag helpers moved from the root package
 // (alicloud/tags.go); test names are unchanged from

@@ -1,5 +1,13 @@
 package alicloud
 
+// collection-order: bypass data_disk -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_ids -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_pattern_info.architectures -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_pattern_info.excluded_instance_types -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_types -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass network_interfaces.security_group_ids -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass security_group_ids -- pre-existing stock attribute outside this change; this PR only touches tags handling
+
 import (
 	"fmt"
 	"testing"

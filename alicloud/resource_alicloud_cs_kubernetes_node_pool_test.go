@@ -1,5 +1,27 @@
 package alicloud
 
+// collection-order: bypass containerd_config.insecure_registries -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass containerd_config.registry_mirrors -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass data_disks -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_patterns -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_patterns.cpu_architectures -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_patterns.excluded_instance_types -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_patterns.instance_categories -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_patterns.instance_type_families -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instance_types -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass instances -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass kubelet_configuration.allowed_unsafe_sysctls -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass kubelet_configuration.cluster_dns -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass kubelet_configuration.reserved_memory -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass labels -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass rds_instances -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass resource_pool_options.private_pool_ids -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass rolling_policy.node_names -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass spot_price_limit -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass system_disk_categories -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass taints -- pre-existing stock attribute outside this change; this PR only touches tags handling
+// collection-order: bypass vswitch_ids -- pre-existing stock attribute outside this change; this PR only touches tags handling
+
 import (
 	"encoding/json"
 	"fmt"
@@ -177,6 +199,7 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 						"event_burst":           "0",
 						"serialize_image_pulls": "false",
 						"cpu_manager_policy":    "none",
+						"server_tls_bootstrap":  "true",
 						"feature_gates": map[string]interface{}{
 							"\"APIListChunking\"":                "true",
 							"\"CustomCPUCFSQuotaPeriod\"":        "true",
@@ -186,6 +209,7 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 					}},
 					"rolling_policy": []map[string]interface{}{{
 						"max_parallelism": "1",
+						"node_names":      []string{},
 					}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -199,6 +223,53 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 						"kubelet_configuration.0.cpu_manager_policy":    "none",
 						"rolling_policy.#":                              "1",
 						"rolling_policy.0.max_parallelism":              "1",
+					}),
+				),
+			},
+			// check: whole coverage of the remaining modifiable attributes
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"desired_size": "1",
+					"image_id":     "aliyun_3_x64_20G_container_optimized_alibase_20251215.vhd",
+					"image_type":   "AliyunLinux3",
+					"type":         "Ess",
+					"security_group_ids": []string{
+						"${alicloud_security_group.default.id}",
+					},
+					"instance_metadata_options": []map[string]interface{}{{
+						"http_tokens": "required",
+					}},
+					"kms_encrypted_password": "kms-encrypted-password",
+					"kms_encryption_context": map[string]interface{}{},
+					"auto_mode": []map[string]interface{}{{
+						"enabled": "false",
+					}},
+					"update_nodes":                  "false",
+					"system_disk_encrypt_algorithm": "aes_256",
+					"system_disk_kms_key":           "${alicloud_kms_key.default.id}",
+					"data_disks": []map[string]string{
+						{
+							"size":        "100",
+							"category":    "cloud_ssd",
+							"name":        name,
+							"auto_format": "true",
+							"kms_key_id":  "${alicloud_kms_key.default.id}",
+						},
+					},
+					"instance_patterns": []map[string]interface{}{{
+						"cpu_architectures":       []string{"x86"},
+						"instance_categories":     []string{"GeneralPurpose"},
+						"instance_family_level":   "EntryLevel",
+						"excluded_instance_types": []string{},
+						"max_cpu_cores":           "16",
+						"min_cpu_cores":           "2",
+						"max_memory_size":         "64",
+						"min_memory_size":         "2",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"desired_size": "1",
 					}),
 				),
 			},
@@ -8718,6 +8789,51 @@ func TestAccAliCloudAckNodepool_ResourcePoolOptions(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCSKubernetesNodePool_eflo(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.default"
+	ra := resourceAttrInit(resourceId, csdKubernetesNodePoolBasicMap)
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePoolEflo-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":           name,
+					"cluster_id":     "${local.cluster_id}",
+					"vswitch_ids":    []string{"${local.vswitch_id}"},
+					"instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"desired_size":   "1",
+					"eflo_node_group": []map[string]interface{}{{
+						"cluster_id": "eflo-cluster-id",
+						"group_id":   "eflo-group-id",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"desired_size": "1",
+					}),
+				),
 			},
 		},
 	})

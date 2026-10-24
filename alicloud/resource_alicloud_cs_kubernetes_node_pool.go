@@ -2711,10 +2711,33 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 	if d.HasChange("tags") {
 		update = true
-		if v := d.Get("tags"); v != nil {
-			tagsMap := ConvertTags(v.(map[string]interface{}))
-			scaling_group["tags"] = tagsMap
+		// ModifyClusterNodePool replaces the whole scaling_group.tags set, so the ignored tags
+		// already on the node pool have to be sent back when ignore_tags is configured; without
+		// the configuration the configured tags are sent as-is.
+		tagsPayload := d.Get("tags").(map[string]interface{})
+		if !client.IgnoreTags.Empty() {
+			ackServiceV2 := AckServiceV2{client}
+			objectRaw, err := ackServiceV2.DescribeAckNodepool(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			tagsMaps, _ := jsonpath.Get("$.scaling_group.tags", objectRaw)
+			current := make(map[string]string)
+			for key, value := range tagsToMap(tagsMaps) {
+				current[key] = value.(string)
+			}
+			desired := make(map[string]string)
+			for key, value := range tagsPayload {
+				desired[key] = value.(string)
+			}
+			merged := mergeIgnoredTags(desired, current, client.IgnoreTags)
+			tagsPayload = make(map[string]interface{}, len(merged))
+			for key, value := range merged {
+				tagsPayload[key] = value
+			}
 		}
+		tagsMap := ConvertTags(tagsPayload)
+		scaling_group["tags"] = tagsMap
 	}
 
 	if d.HasChange("multi_az_policy") {

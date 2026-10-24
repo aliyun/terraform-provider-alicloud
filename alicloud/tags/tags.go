@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -529,4 +530,33 @@ func ExpandTagsToMapWithTags(originMap map[string]interface{}, tags []map[string
 	}
 
 	return originMap
+}
+
+// MergeIgnoredTags returns the tag set a whole-set write must send: the desired tags plus every
+// current tag this provider ignores or that the cloud owns. APIs that replace the entire tag set,
+// instead of tagging or untagging individual keys, would otherwise delete the ignored tags whenever
+// Terraform writes its own set.
+// Without a provider ignore_tags configuration the write keeps its baseline semantics: the desired
+// set is sent as-is and nothing is merged back, so a configured key still wins over the value
+// currently in the cloud even when the system-prefix filter would otherwise retain it.
+func MergeIgnoredTags(desired, current map[string]string, ignore features.IgnoreTags) map[string]string {
+	merged := make(map[string]string, len(desired)+len(current))
+	if ignore.Empty() {
+		for key, value := range desired {
+			merged[key] = value
+		}
+		return merged
+	}
+	for key, value := range current {
+		if ignore.Match(key) || TagIgnored(key, value) {
+			merged[key] = value
+		}
+	}
+	for key, value := range desired {
+		if ignore.Match(key) || TagIgnored(key, value) {
+			continue
+		}
+		merged[key] = value
+	}
+	return merged
 }
