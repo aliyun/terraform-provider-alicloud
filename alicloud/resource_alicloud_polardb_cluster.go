@@ -242,6 +242,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
 				Optional:     true,
+				Computed:     true,
 			},
 			"encryption_key": {
 				Type:             schema.TypeString,
