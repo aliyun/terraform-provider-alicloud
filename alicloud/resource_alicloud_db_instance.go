@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -24,6 +26,17 @@ func resourceAliCloudDBInstance() *schema.Resource {
 		Delete: resourceAliCloudDBInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+
+		CustomizeDiff: func(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+			// A plan without state is either a brand-new instance or the
+			// creation half of a replacement: in both cases the create-only
+			// parameters are legitimate. Only an in-place update of an existing
+			// instance must reject a change to them.
+			if d.Id() == "" || dbInstancePlanReplacesInstance(d) {
+				return nil
+			}
+			return validateDBInstanceCreateOnlyFieldsUnchanged(d)
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -504,6 +517,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			"db_param_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"storage_auto_scale": {
 				Type:         schema.TypeString,
@@ -654,10 +668,63 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"optimized", "none"}, false),
 			},
-			"template_id_list": {
-				Type:     schema.TypeList,
+			"auto_create_proxy": {
+				Type:     schema.TypeBool,
 				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
+			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"business_info": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"connection_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Standard", "Safe"}, false),
+			},
+			"io_acceleration_enabled": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
+			"promotion_code": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"user_backup_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"compression_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
+			"network_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"db_instance_net_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"allow_major_version_upgrade": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"template_id_list": {
+				Type:             schema.TypeList,
+				Optional:         true,
+				Elem:             &schema.Schema{Type: schema.TypeInt},
+				DiffSuppressFunc: templateIdListOrderDiffSuppressFunc,
 			},
 			// lintignore: S006
 			"templates": {
@@ -744,7 +811,22 @@ func resourceAliCloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
-	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+	// One ClientToken for the whole retry loop: a retried CreateDBInstance is
+	// idempotent and cannot place a second order.
+	request["ClientToken"] = buildClientToken(action)
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+		if err != nil {
+			if isDBInstanceCreateWaitError(err) || NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
@@ -1063,25 +1145,16 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if !d.IsNewResource() && d.HasChange("engine_version") && d.Get("engine").(string) == string(SQLServer) {
 		action := "ModifyDBInstanceSpec"
-		request := map[string]interface{}{
-			"RegionId":                 client.RegionId,
-			"DBInstanceId":             d.Id(),
-			"PayType":                  d.Get("instance_charge_type"),
-			"EngineVersion":            d.Get("engine_version"),
-			"DBInstanceClass":          d.Get("instance_type"),
-			"AllowMajorVersionUpgrade": true,
-			"ClientToken":              buildClientToken(action),
-			"SourceIp":                 client.SourceIp,
-		}
-		if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
-			request["EffectiveTime"] = v
+		request, err := buildDBInstanceSQLServerMajorVersionUpgradeRequest(d, client)
+		if err != nil {
+			return WrapError(err)
 		}
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if isDBInstanceModifyWaitError(err) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1677,6 +1750,63 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if d.IsNewResource() {
+		// RDS-02: CreateDBInstance does not honour compression_mode (the instance
+		// is always created with compression disabled), so an initial
+		// compression_mode="on" would be silently dropped on the first apply and
+		// only take effect on a second apply. Apply it through ModifyDBInstanceSpec
+		// once the instance is running and wait for the value to converge before
+		// the Read below picks it up. compression_mode="off" matches the server
+		// default and needs no extra call; an omitted value leaves the instance
+		// untouched.
+		if v, ok := d.GetOk("compression_mode"); ok && v.(string) == "on" {
+			action := "ModifyDBInstanceSpec"
+			request := map[string]interface{}{
+				"RegionId":          client.RegionId,
+				"DBInstanceId":      d.Id(),
+				"PayType":           d.Get("instance_charge_type"),
+				"DBInstanceClass":   d.Get("instance_type"),
+				"DBInstanceStorage": d.Get("instance_storage"),
+				"CompressionMode":   v.(string),
+				"SourceIp":          client.SourceIp,
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+				if err != nil {
+					if isDBInstanceModifyWaitError(err) || NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			// wait for compression_mode to converge so the Read below reflects "on"
+			if err := waitDBInstanceCompressionModeConverged(d, rdsService, v.(string)); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+		// CreateDBInstance does not accept pg_bouncer_enabled and the code below
+		// returns before the PgBouncer handler of the update path runs, so an
+		// initial pg_bouncer_enabled would never reach the cloud. Apply it here
+		// and wait until the API confirms the requested state.
+		if d.Get("engine").(string) == "PostgreSQL" && d.HasChange("pg_bouncer_enabled") {
+			pgBouncerEnabled := d.Get("pg_bouncer_enabled").(bool)
+			if err := modifyDBInstanceConfig(d, client, "pgbouncer", pgBouncerEnabled); err != nil {
+				return err
+			}
+			if err := waitDBInstancePgBouncerConverged(d, rdsService, pgBouncerEnabled); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
 		d.Partial(false)
 		return resourceAliCloudDBInstanceRead(d, meta)
 	}
@@ -1805,6 +1935,20 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		request["BurstingEnabled"] = v
 	}
 
+	if d.HasChange("io_acceleration_enabled") {
+		update = true
+		if v, ok := d.GetOk("io_acceleration_enabled"); ok && v.(string) != "" {
+			request["IoAccelerationEnabled"] = v
+		}
+	}
+
+	if d.HasChange("compression_mode") {
+		update = true
+		if v, ok := d.GetOk("compression_mode"); ok && v.(string) != "" {
+			request["CompressionMode"] = v
+		}
+	}
+
 	if d.HasChange("serverless_config") {
 		update = true
 		if v, ok := d.GetOk("serverless_config"); ok {
@@ -1875,7 +2019,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"InvalidOrderTask.NotSupport"}) || isDBInstanceModifyWaitError(err) || NeedRetry(err) {
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
@@ -1916,6 +2060,14 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+
+		if d.HasChange("compression_mode") {
+			if v, ok := d.GetOk("compression_mode"); ok && v.(string) != "" {
+				if err := waitDBInstanceCompressionModeConverged(d, rdsService, v.(string)); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
 			}
 		}
 	}
@@ -1987,7 +2139,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if isDBInstanceModifyWaitError(err) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -2252,7 +2404,32 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("status", instance["DBInstanceStatus"])
 	d.Set("create_time", instance["CreationTime"])
 	d.Set("bursting_enabled", instance["BurstingEnabled"])
-	d.Set("pg_bouncer_enabled", instance["PGBouncerEnabled"])
+	// DescribeDBInstanceAttribute omits IoAccelerationEnabled when BPE is disabled;
+	// default to "0" so the state stays consistent instead of an empty string that
+	// would cause a perpetual plan diff.
+	if v, ok := instance["IoAccelerationEnabled"]; ok && v != nil {
+		d.Set("io_acceleration_enabled", v)
+	} else {
+		d.Set("io_acceleration_enabled", "0")
+	}
+	// connection_mode and compression_mode are Optional+Computed; overwriting a
+	// known value with the empty string when the API omits the field would make
+	// connection_mode (ForceNew) propose a replacement and compression_mode a
+	// permanent diff. Keep the last known value in that case.
+	if v, ok := nonEmptyStringAttr(instance, "ConnectionMode"); ok {
+		d.Set("connection_mode", v)
+	}
+	if v, ok := nonEmptyStringAttr(instance, "CompressionMode"); ok {
+		d.Set("compression_mode", v)
+	}
+	d.Set("network_type", instance["InstanceNetworkType"])
+	d.Set("db_instance_net_type", instance["DBInstanceNetType"])
+	// DescribeDBInstanceAttribute returns PGBouncerEnabled as the string "true"/"false",
+	// while the schema is a bool; convert it so the read-back cannot panic. An
+	// omitted or unparsable value means the PgBouncer state is not confirmed by
+	// the API, so it is reset to false instead of keeping a configured true that
+	// was never applied.
+	d.Set("pg_bouncer_enabled", pgBouncerEnabledFromInstance(instance))
 	if v, ok := instance["OptimizedWritesInfo"]; ok {
 		value := ConvertMySQLInstanceOptimizedWritesResponse(fmt.Sprint(v))
 		if value != "" {
@@ -2462,7 +2639,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
-	if paramGroupId, ok := parseDBInstanceParamGroupId(response); ok {
+	if paramGroupId, ok := parseDBInstanceParamGroupId(response); ok && paramGroupId != "" {
 		d.Set("db_param_group_id", paramGroupId)
 	}
 
@@ -2583,6 +2760,289 @@ func resourceAliCloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
+// dbInstanceCreateOnlyFields are accepted by CreateDBInstance only: no RDS
+// OpenAPI operation updates or returns them afterwards.
+var dbInstanceCreateOnlyFields = []string{"auto_create_proxy", "auto_pay", "business_info", "promotion_code", "user_backup_id"}
+
+// dbInstanceFieldChangeReporter is the subset of *schema.ResourceDiff the
+// create-only validation needs, so it can be exercised by a unit test.
+type dbInstanceFieldChangeReporter interface {
+	HasChange(string) bool
+}
+
+// dbInstanceForceNewFields are the arguments that replace the instance when
+// they change. When one of them changes in the same plan, the create-only
+// parameters are applied to the new instance rather than to an update.
+var dbInstanceForceNewFields = []string{
+	"babelfish_config",
+	"connection_mode",
+	"db_time_zone",
+	"engine",
+	"vpc_id",
+	"vswitch_id",
+	"zone_id",
+	"zone_id_slave_a",
+	"zone_id_slave_b",
+}
+
+func dbInstancePlanReplacesInstance(d dbInstanceFieldChangeReporter) bool {
+	for _, field := range dbInstanceForceNewFields {
+		if d.HasChange(field) {
+			return true
+		}
+	}
+	return false
+}
+
+// validateDBInstanceCreateOnlyFieldsUnchanged rejects a plan that changes a
+// write-only creation parameter of an existing instance. Applying such a change
+// would only rewrite the local state while the cloud value stayed the same.
+func validateDBInstanceCreateOnlyFieldsUnchanged(d dbInstanceFieldChangeReporter) error {
+	for _, field := range dbInstanceCreateOnlyFields {
+		if d.HasChange(field) {
+			return fmt.Errorf("`%s` can only be specified when the DB instance is created and cannot be changed afterwards; revert the change to `%s` or create a new instance", field, field)
+		}
+	}
+	return nil
+}
+
+// dbInstanceConcurrentErrorCodes are the transient concurrent-operation codes
+// shared by every RDS write used by this resource. The refund-order code is
+// returned by CreateDBInstance and the duration-limit code by
+// ModifyDBInstanceSpec, so each write surface adds only the code that can
+// actually occur there instead of retrying unrelated 4xx answers.
+var dbInstanceConcurrentErrorCodes = []string{
+	"InvalidConcurrentOperate",
+	"System.ConcurrentConflict",
+	"OperationDenied.SystemConcurrent",
+}
+
+var dbInstanceCreateWaitErrorCodes = append(append([]string{}, dbInstanceConcurrentErrorCodes...), "Order.UnfinishedRefundOrder")
+
+var dbInstanceModifyWaitErrorCodes = append(append([]string{}, dbInstanceConcurrentErrorCodes...), "OperationDenied.DurationLimit")
+
+func isDBInstanceConcurrentError(err error) bool {
+	return IsExpectedErrors(err, dbInstanceConcurrentErrorCodes)
+}
+
+// isDBInstanceCreateWaitError adds the create-only wait-and-retry code.
+func isDBInstanceCreateWaitError(err error) bool {
+	return IsExpectedErrors(err, dbInstanceCreateWaitErrorCodes)
+}
+
+// isDBInstanceModifyWaitError adds the modify-only wait-and-retry code.
+func isDBInstanceModifyWaitError(err error) bool {
+	return IsExpectedErrors(err, dbInstanceModifyWaitErrorCodes)
+}
+
+// modifyDBInstanceConfig sends ModifyDBInstanceConfig and retries the transient
+// concurrent-operation failures of the write path.
+func modifyDBInstanceConfig(d *schema.ResourceData, client *connectivity.AliyunClient, configName string, configValue interface{}) error {
+	action := "ModifyDBInstanceConfig"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
+		"ConfigName":   configName,
+		"ConfigValue":  configValue,
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		if err != nil {
+			if isDBInstanceModifyWaitError(err) || NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+// waitDBInstancePgBouncerConverged waits until DescribeDBInstanceAttribute
+// reports the requested PGBouncerEnabled value. A response that omits the field
+// or returns an unparsable value is not treated as confirmation.
+// dbInstancePgBouncerConvergeTimeout bounds the PgBouncer enable wait. The
+// config switch normally finishes in minutes; a much longer budget only delays
+// the failure report and leaves the instance switching while the apply hangs.
+const dbInstancePgBouncerConvergeTimeout = 15 * time.Minute
+
+func waitDBInstancePgBouncerConverged(d *schema.ResourceData, rdsService RdsService, expected bool) error {
+	wait := incrementalWait(5*time.Second, 5*time.Second)
+	return retry.RetryContext(context.Background(), dbInstancePgBouncerConvergeTimeout, func() *retry.RetryError {
+		object, err := rdsService.DescribeDBInstance(d.Id())
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		raw, ok := object["PGBouncerEnabled"]
+		if !ok || raw == nil {
+			wait()
+			return retry.RetryableError(fmt.Errorf("pg_bouncer_enabled not confirmed yet: DescribeDBInstanceAttribute omits PGBouncerEnabled (instance status %v)", object["DBInstanceStatus"]))
+		}
+		actual, err := strconv.ParseBool(fmt.Sprint(raw))
+		if err != nil {
+			wait()
+			return retry.RetryableError(fmt.Errorf("pg_bouncer_enabled not confirmed yet: unexpected PGBouncerEnabled %q", fmt.Sprint(raw)))
+		}
+		if actual != expected {
+			wait()
+			return retry.RetryableError(fmt.Errorf("pg_bouncer_enabled not converged: want %t, got %t (instance status %v)", expected, actual, object["DBInstanceStatus"]))
+		}
+		return nil
+	})
+}
+
+// nonEmptyStringAttr returns the string form of an instance attribute when it
+// is present and non-empty. Optional+Computed attributes use it so a field that
+// the API omits keeps its last known state instead of being reset to "".
+func nonEmptyStringAttr(instance map[string]interface{}, key string) (string, bool) {
+	value, ok := instance[key]
+	if !ok || value == nil {
+		return "", false
+	}
+	text := fmt.Sprint(value)
+	if text == "" {
+		return "", false
+	}
+	return text, true
+}
+
+// waitDBInstanceCompressionModeConverged waits until
+// DescribeDBInstanceAttribute reports the requested CompressionMode. A
+// successful ModifyDBInstanceSpec only means the order was accepted; the
+// instance attribute lags behind it, so without this wait the Read right after
+// the update can still return the previous value and every plan re-sends the
+// same ModifyDBInstanceSpec.
+func waitDBInstanceCompressionModeConverged(d *schema.ResourceData, rdsService RdsService, expected string) error {
+	return retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		object, err := rdsService.DescribeDBInstance(d.Id())
+		if err != nil {
+			if NeedRetry(err) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		actual := ""
+		if cv, ok := object["CompressionMode"]; ok && cv != nil {
+			actual = fmt.Sprint(cv)
+		}
+		if actual != expected {
+			return retry.RetryableError(fmt.Errorf("compression_mode not converged: expected %s, got %q", expected, actual))
+		}
+		return nil
+	})
+}
+
+// pgBouncerEnabledFromInstance converts PGBouncerEnabled from
+// DescribeDBInstanceAttribute into the boolean schema value. An omitted,
+// unparsable or unsupported value is reported as false so an unconfirmed state
+// is never presented as enabled.
+func pgBouncerEnabledFromInstance(instance map[string]interface{}) bool {
+	raw, ok := instance["PGBouncerEnabled"]
+	if !ok || raw == nil {
+		return false
+	}
+	enabled, err := strconv.ParseBool(fmt.Sprint(raw))
+	if err != nil {
+		return false
+	}
+	return enabled
+}
+
+// dbInstanceBoolFromConfig returns a boolean attribute of the raw resource
+// configuration and whether it is present at all. New code must not use the
+// deprecated GetOkExists, and an explicit false must stay distinct from an
+// omitted value (CreateDBInstance defaults AutoPay differently).
+func dbInstanceBoolFromConfig(config cty.Value, key string) (bool, bool) {
+	if config.IsNull() || !config.IsKnown() {
+		return false, false
+	}
+	configType := config.Type()
+	if !configType.IsObjectType() || !configType.HasAttribute(key) {
+		return false, false
+	}
+	value := config.GetAttr(key)
+	if value.IsNull() || !value.IsKnown() || !value.Type().Equals(cty.Bool) {
+		return false, false
+	}
+	return value.True(), true
+}
+
+// validateDBInstanceUserBackupId enforces the CreateDBInstance contract for
+// UserBackupId: the parameter is valid only for a pay-as-you-go MySQL 5.7
+// Basic instance that is created from a user backup file.
+func validateDBInstanceUserBackupId(d *schema.ResourceData) error {
+	payType := Trim(d.Get("instance_charge_type").(string))
+	engine := Trim(d.Get("engine").(string))
+	engineVersion := Trim(d.Get("engine_version").(string))
+	category := d.Get("category").(string)
+	if payType == string(Postpaid) && engine == "MySQL" && engineVersion == "5.7" && category == "Basic" {
+		return nil
+	}
+	return Error(fmt.Sprintf("`user_backup_id` can only be used when `instance_charge_type` is \"Postpaid\", `engine` is \"MySQL\", `engine_version` is \"5.7\" and `category` is \"Basic\"; got instance_charge_type=%q, engine=%q, engine_version=%q, category=%q", payType, engine, engineVersion, category))
+}
+
+// buildDBInstanceSQLServerMajorVersionUpgradeRequest builds the
+// ModifyDBInstanceSpec request for an SQL Server major version upgrade. The
+// API requires Category, ZoneId and VSwitchId in addition to the instance ID,
+// engine version and instance class, plus ZoneIdSlave1 when the target category
+// is HighAvailability or AlwaysOn. When ZoneIdSlave1 differs from ZoneId the
+// request must carry both vSwitch IDs.
+func buildDBInstanceSQLServerMajorVersionUpgradeRequest(d *schema.ResourceData, client *connectivity.AliyunClient) (map[string]interface{}, error) {
+	category := d.Get("category").(string)
+	zoneId := d.Get("zone_id").(string)
+	vswitchId := d.Get("vswitch_id").(string)
+	if category == "" {
+		return nil, Error("`category` is required to change `engine_version` of an SQL Server instance because ModifyDBInstanceSpec requires Category for a major version upgrade")
+	}
+	if zoneId == "" {
+		return nil, Error("`zone_id` is required to change `engine_version` of an SQL Server instance because ModifyDBInstanceSpec requires ZoneId for a major version upgrade")
+	}
+	if vswitchId == "" {
+		return nil, Error("`vswitch_id` is required to change `engine_version` of an SQL Server instance because ModifyDBInstanceSpec requires VSwitchId for a major version upgrade")
+	}
+
+	request := map[string]interface{}{
+		"RegionId":                 client.RegionId,
+		"DBInstanceId":             d.Id(),
+		"PayType":                  d.Get("instance_charge_type"),
+		"EngineVersion":            d.Get("engine_version"),
+		"DBInstanceClass":          d.Get("instance_type"),
+		"AllowMajorVersionUpgrade": d.Get("allow_major_version_upgrade"),
+		"Category":                 category,
+		"ZoneId":                   zoneId,
+		"VSwitchId":                vswitchId,
+		"ClientToken":              buildClientToken("ModifyDBInstanceSpec"),
+		"SourceIp":                 client.SourceIp,
+	}
+	if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+		request["EffectiveTime"] = v
+	}
+
+	if category == "HighAvailability" || category == "AlwaysOn" {
+		slaveZoneId := d.Get("zone_id_slave_a").(string)
+		if slaveZoneId == "" {
+			// Same zone on both nodes: a single-AZ deployment.
+			slaveZoneId = zoneId
+		}
+		if slaveZoneId != zoneId && len(strings.Split(vswitchId, COMMA_SEPARATED)) < 2 {
+			return nil, Error(fmt.Sprintf("`vswitch_id` must contain two vSwitch IDs separated by a comma when `zone_id_slave_a` (%s) differs from `zone_id` (%s) for an SQL Server major version upgrade", slaveZoneId, zoneId))
+		}
+		request["ZoneIdSlave1"] = slaveZoneId
+	}
+
+	return request, nil
+}
+
 func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -2616,6 +3076,30 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOk("optimized_writes"); ok && v.(string) != "" {
 		request["OptimizedWrites"] = v
+	}
+	if v, ok := dbInstanceBoolFromConfig(d.GetRawConfig(), "auto_create_proxy"); ok {
+		request["AutoCreateProxy"] = v
+	}
+	if v, ok := dbInstanceBoolFromConfig(d.GetRawConfig(), "auto_pay"); ok {
+		request["AutoPay"] = v
+	}
+	if v, ok := d.GetOk("business_info"); ok && v.(string) != "" {
+		request["BusinessInfo"] = v
+	}
+	if v, ok := d.GetOk("connection_mode"); ok && v.(string) != "" {
+		request["ConnectionMode"] = v
+	}
+	if v, ok := d.GetOk("io_acceleration_enabled"); ok && v.(string) != "" {
+		request["IoAccelerationEnabled"] = v
+	}
+	if v, ok := d.GetOk("promotion_code"); ok && v.(string) != "" {
+		request["PromotionCode"] = v
+	}
+	if v, ok := d.GetOk("user_backup_id"); ok && v.(string) != "" {
+		if err := validateDBInstanceUserBackupId(d); err != nil {
+			return nil, WrapError(err)
+		}
+		request["UserBackupId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
 		count := 1
@@ -2850,6 +3334,44 @@ func getDifference(a, b map[int]struct{}) []int {
 		}
 	}
 	return result
+}
+
+// templateIdListOrderDiffSuppressFunc suppresses order-only differences for
+// template_id_list. The AttachWhitelistTemplate/DetachWhitelistTemplate
+// operations use set-based comparison, so member order is semantically
+// meaningless. Returns true when old and new contain the same members
+// regardless of order, and false when membership changes.
+func templateIdListOrderDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldValue, newValue := d.GetChange("template_id_list")
+	return templateIdListEqualIgnoringOrder(oldValue, newValue)
+}
+
+// templateIdListEqualIgnoringOrder compares two []interface{} lists of ints
+// for member equality ignoring order.
+func templateIdListEqualIgnoringOrder(old, new interface{}) bool {
+	oldList, ok := old.([]interface{})
+	newList, ok2 := new.([]interface{})
+	if !ok || !ok2 {
+		return false
+	}
+	if len(oldList) != len(newList) {
+		return false
+	}
+	counter := make(map[int]int, len(oldList))
+	for _, item := range oldList {
+		if v, ok := item.(int); ok {
+			counter[v]++
+		}
+	}
+	for _, item := range newList {
+		if v, ok := item.(int); ok {
+			counter[v]--
+			if counter[v] < 0 {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func ConvertMySQLInstanceOptimizedWritesResponse(source string) string {

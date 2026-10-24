@@ -1,18 +1,29 @@
 package alicloud
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -195,6 +206,11 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 	name := fmt.Sprintf("tf-testAccDBInstanceConfig%d", rand.Intn(1000))
 	connectionStringPrefix := acctest.RandString(8) + "rm"
 	connectionStringPrefixSecond := acctest.RandString(8) + "rm"
+	// Mysql_8_0 exercises encryption_key in Step 18, so it uses the KMS
+	// fixture (resourceDBInstanceConfigDependence) which declares
+	// alicloud_kms_key.default. The KMS key omits dkms_instance_id so it
+	// is a standard key that does not require a pre-existing DKMS instance.
+	// Tests that do not touch encryption use resourceDBInstanceConfigDependenceNoKMS.
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -219,6 +235,11 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 					"db_instance_storage_type": "cloud_ssd",
 					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"db_is_ignore_case":        "false",
+					"auto_create_proxy":        "false",
+					"auto_pay":                 "false",
+					"connection_mode":          "Standard",
+					"force":                    "No",
+					"sql_collector_status":     "Disabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -230,15 +251,19 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 						"auto_upgrade_minor_version": "Auto",
 						"db_instance_storage_type":   "cloud_ssd",
 						"resource_group_id":          CHECKSET,
+						"connection_mode":            "Standard",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_param_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"sql_collector_status":     "Enabled",
 					"ssl_connection_string":    "",
 					"db_instance_storage_type": "cloud_essd",
+					"io_acceleration_enabled":  "0",
+					"compression_mode":         "off",
+					"server_cert":              "",
+					"server_key":               "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -270,7 +295,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "force", "db_is_ignore_case", "auto_create_proxy", "auto_pay", "business_info", "promotion_code", "user_backup_id", "allow_major_version_upgrade"},
 			},
 			// test default port and there should not changes
 			{
@@ -499,7 +524,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound"},
+				ImportStateVerifyIgnore: []string{"force_restart", "force", "db_is_ignore_case", "auto_create_proxy", "auto_pay", "business_info", "promotion_code", "user_backup_id", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -552,24 +577,100 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-data "alicloud_kms_instances" "default" {
 }
 
 data "alicloud_kms_service" "default" {
   enable = "On"
 }
 
+// Standard KMS key (dkms_instance_id omitted) so creation does not depend on
+// a pre-existing DKMS instance in the test account. The alicloud_kms_service
+// data source above calls OpenKmsService to enable KMS before the key is
+// created, making this fixture self-contained for encryption_key tests.
 resource "alicloud_kms_key" "default" {
-  description = var.name
+  description             = var.name
   pending_window_in_days  = 7
-  status               = "Enabled"
-  dkms_instance_id        = data.alicloud_kms_instances.default.ids.0
+  status                  = "Enabled"
 }
 `, name)
+}
+
+// resourceDBInstanceConfigDependenceNoKMS is identical to
+// resourceDBInstanceConfigDependence but omits the KMS data sources and key
+// resource. Tests that do not exercise encryption (encryption_key /
+// tde_encryption_key) use this fixture to avoid requiring a KMS instance in
+// the test account.
+func resourceDBInstanceConfigDependenceNoKMS(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PostPaid"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ vswitch_name = var.name
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_db_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_db_zones.default.ids.0
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+resource "alicloud_security_group" "default" {
+	security_group_name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+`, name)
+}
+
+// resourceDBInstanceConfigDependenceWhitelistTemplate extends the non-KMS
+// fixture with two whitelist template resources used by the template_id_list
+// reorder convergence test.
+func resourceDBInstanceConfigDependenceWhitelistTemplate(name string) string {
+	return resourceDBInstanceConfigDependenceNoKMS(name) + fmt.Sprintf(`
+resource "alicloud_rds_whitelist_template" "first" {
+  template_name = "%s-first"
+  ip_white_list = "10.10.10.10/32"
+}
+
+resource "alicloud_rds_whitelist_template" "second" {
+  template_name = "%s-second"
+  ip_white_list = "10.10.20.20/32"
+  depends_on = [alicloud_rds_whitelist_template.first]
+}
+`, name, name)
 }
 
 func resourceDBInstanceConfigDependenceSwitchDBInstanceHA(name string) string {
@@ -725,7 +826,7 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "role_arn", "tde_encryption_key"},
+				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "role_arn", "tde_encryption_key", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -842,7 +943,7 @@ data "alicloud_ram_roles" "default" {
   name_regex = "${alicloud_ram_role_policy_attachment.default.policy_name}"
 }
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -926,7 +1027,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_5_7_HighAvailabilityInstance(t *testing.
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "effective_time"},
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "effective_time", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -979,7 +1080,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 `, name)
@@ -1273,7 +1374,7 @@ locals {
 
 resource "alicloud_security_group" "default" {
 	count = 2
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 `, name)
@@ -1533,7 +1634,7 @@ locals {
 
 resource "alicloud_security_group" "default" {
 	count = 2
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -1640,7 +1741,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "allow_major_version_upgrade"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1925,7 +2026,7 @@ locals {
 }
 resource "alicloud_security_group" "default" {
 	count = 2
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 `, name)
@@ -2198,7 +2299,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_15_0_Babelfish(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "fresh_white_list_readins", "released_keep_policy",
 					"client_ca_enabled", "client_crl_enabled", "db_instance_ip_array_name", "encryption_key", "security_group_id", "modify_mode", "security_ip_type",
 					"whitelist_network_type", "babelfish_config.2289427611.babelfish_enabled", "babelfish_config.2289427611.master_user_password", "babelfish_config.2289427611.master_username",
-					"babelfish_config.2289427611.migration_mode"},
+					"babelfish_config.2289427611.migration_mode", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -2254,7 +2355,7 @@ locals {
 
 resource "alicloud_security_group" "default" {
 	count = 2
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 `, name)
@@ -2464,7 +2565,7 @@ locals {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -2596,7 +2697,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "db_is_ignore_case", "allow_major_version_upgrade"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2689,7 +2790,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaidForceDelete(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "force_delete", "encryption_key", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "force_delete", "encryption_key", "db_is_ignore_case", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -2746,7 +2847,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_Cluster(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "encryption_key", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "encryption_key", "db_is_ignore_case", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -2893,7 +2994,7 @@ func TestAccAliCloudRdsDBInstance_MySQL_8_0_ServerlessBasic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart"},
+				ImportStateVerifyIgnore: []string{"force_restart", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -2942,7 +3043,7 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -3112,7 +3213,7 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_14_0_Serverless(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart"},
+				ImportStateVerifyIgnore: []string{"force_restart", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -3151,7 +3252,7 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -3268,7 +3369,7 @@ func TestAccAliCloudRdsDBInstanceMySQL_ServerlessStandard(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart"},
+				ImportStateVerifyIgnore: []string{"force_restart", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -3311,7 +3412,7 @@ data "alicloud_vswitches" "vswitche2" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -3506,7 +3607,7 @@ func TestAccAliCloudRdsDBInstance_SQLServer_2019_ServerlessHA(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart"},
+				ImportStateVerifyIgnore: []string{"force_restart", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -3623,7 +3724,7 @@ func TestAccAliCloudRdsDBInstanceMysql_Downgrade(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period", "upgrade_time"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period", "upgrade_time", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -3703,7 +3804,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -3734,14 +3835,15 @@ func TestAccAliCloudRdsDBInstanceMysql_DBParamGroupId(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "MySQL",
 					"engine_version":           "8.0",
-					"instance_type":            "mysql.n4.medium.2c",
-					"instance_storage":         "100",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min}",
+					"category":                 "HighAvailability",
 					"instance_charge_type":     "Prepaid",
 					"period":                   "1",
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"monitoring_period":        "60",
-					"db_instance_storage_type": "cloud_ssd",
+					"db_instance_storage_type": "cloud_essd",
 					"db_param_group_id":        "${local.db_param_group_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -3753,7 +3855,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBParamGroupId(t *testing.T) {
 						"instance_charge_type":       CHECKSET,
 						"instance_name":              name,
 						"auto_upgrade_minor_version": "Auto",
-						"db_instance_storage_type":   "cloud_ssd",
+						"db_instance_storage_type":   "cloud_essd",
 						"resource_group_id":          CHECKSET,
 						"node_id":                    CHECKSET,
 						"db_param_group_id":          CHECKSET,
@@ -3785,7 +3887,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBParamGroupId(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -3801,6 +3903,15 @@ data "alicloud_db_zones" "default"{
 	instance_charge_type = "PrePaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+	zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+	category = "HighAvailability"
+	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PrePaid"
 }
 
 data "alicloud_vpcs" "default" {
@@ -3869,7 +3980,7 @@ data "alicloud_vswitches" "vswitche2" {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -3926,18 +4037,18 @@ resource "alicloud_security_group" "default" {
    vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
-data "alicloud_kms_instances" "default" {
-}
-
 data "alicloud_kms_service" "default" {
   enable = "On"
 }
 
+// Standard KMS key (dkms_instance_id omitted) so creation does not depend on
+// a pre-existing DKMS instance in the test account. The alicloud_kms_service
+// data source above calls OpenKmsService to enable KMS before the key is
+// created, making this fixture self-contained for encryption_key tests.
 resource "alicloud_kms_key" "default" {
-  description = var.name
+  description             = var.name
   pending_window_in_days  = 7
-  status               = "Enabled"
-  dkms_instance_id        = data.alicloud_kms_instances.default.ids.0
+  status                  = "Enabled"
 }
 
 `, name)
@@ -3983,7 +4094,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-   name   = var.name
+   security_group_name   = var.name
    vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -4034,7 +4145,7 @@ locals {
 }
 
 resource "alicloud_security_group" "default" {
-	name   = var.name
+	security_group_name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
@@ -4065,6 +4176,22 @@ data "alicloud_db_zones" "default"{
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_auto"
+}
+
+data "alicloud_db_instance_classes" "default" {
+	zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+	category = "HighAvailability"
+	db_instance_storage_type = "general_essd"
+	instance_charge_type = "PostPaid"
+}
+
+locals {
+	# Storage compression requires a dedicated (x4) instance family; the class is
+	# resolved from the data source so a retired class or a sold-out zone does not
+	# turn into a non-semantic test failure.
+	compression_instance_class = [for c in data.alicloud_db_instance_classes.default.instance_classes : c.instance_class if can(regex("^mysql\\.x4\\.", c.instance_class))][0]
 }
 
 data "alicloud_vpcs" "default" {
@@ -4191,7 +4318,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "direction", "auto_renew", "auto_renew_period"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "direction", "auto_renew", "auto_renew_period", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -4249,7 +4376,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd_supplement(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "direction", "auto_renew", "auto_renew_period"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "direction", "auto_renew", "auto_renew_period", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -4345,7 +4472,7 @@ func TestAccAliCloudRdsDBInstancePostgreSQL(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "tde_encryption_key", "collect_stat_mode"},
+				ImportStateVerifyIgnore: []string{"force_restart", "tde_encryption_key", "collect_stat_mode", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -4416,7 +4543,7 @@ func TestAccAliCloudRdsDBInstance_PG_MajorVersionUpgrade_Prepaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "collect_stat_mode", "auto_renew", "auto_renew_period"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "collect_stat_mode", "auto_renew", "auto_renew_period", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -4578,7 +4705,7 @@ func TestAccAliCloudRdsDBInstanceSqlService_general_essd(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart"},
+				ImportStateVerifyIgnore: []string{"force_restart", "allow_major_version_upgrade"},
 			},
 		},
 	})
@@ -4782,6 +4909,76 @@ var instanceBasicMap9 = map[string]string{
 	"create_time":          CHECKSET,
 }
 
+// TestAccAliCloudRdsDBInstance_networkAttributes verifies the network related
+// attributes that are read back from DescribeDBInstanceAttribute
+// (network_type from InstanceNetworkType, db_instance_net_type from
+// DBInstanceNetType) and the write-only allow_major_version_upgrade switch.
+func TestAccAliCloudRdsDBInstance_networkAttributes(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"engine":               "MySQL",
+		"engine_version":       "8.0",
+		"instance_type":        CHECKSET,
+		"instance_storage":     CHECKSET,
+		"instance_name":        CHECKSET,
+		"instance_charge_type": "Postpaid",
+		"status":               CHECKSET,
+	})
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceNet%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependenceNoKMS)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min}",
+					"category":                 "HighAvailability",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${local.vswitch_id}",
+					"db_instance_storage_type": "cloud_essd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_type":         "VPC",
+						"db_instance_net_type": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_major_version_upgrade": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_major_version_upgrade": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "allow_major_version_upgrade"},
+			},
+		},
+	})
+}
+
 // TestUnitParseDBInstanceParamGroupId is a regression test for the provider
 // panic reported when creating alicloud_db_instance.
 //
@@ -4839,5 +5036,818 @@ func TestUnitParseDBInstanceParamGroupId(t *testing.T) {
 				t.Fatalf("parseDBInstanceParamGroupId(%v) id = %q, want %q", c.response, id, c.wantID)
 			}
 		})
+	}
+}
+
+type fakeFieldChangeReporter map[string]bool
+
+func (f fakeFieldChangeReporter) HasChange(field string) bool {
+	return f[field]
+}
+
+func TestUnitDBInstanceCreateOnlyFieldsUnchanged(t *testing.T) {
+	if err := validateDBInstanceCreateOnlyFieldsUnchanged(fakeFieldChangeReporter{}); err != nil {
+		t.Fatalf("expected no error when no create-only field changes, got %v", err)
+	}
+	for _, field := range dbInstanceCreateOnlyFields {
+		err := validateDBInstanceCreateOnlyFieldsUnchanged(fakeFieldChangeReporter{field: true})
+		if err == nil {
+			t.Fatalf("expected an error when %s changes on an existing instance", field)
+		}
+		if !strings.Contains(err.Error(), "`"+field+"`") {
+			t.Fatalf("error %q does not name %s", err, field)
+		}
+	}
+}
+
+// TestUnitDBInstanceBoolFromConfig pins the replacement for the deprecated
+// GetOkExists on auto_create_proxy/auto_pay: an explicit false must be sent while
+// an omitted or unknown value must not be sent at all.
+func TestUnitDBInstanceBoolFromConfig(t *testing.T) {
+	cases := []struct {
+		name      string
+		config    cty.Value
+		expected  bool
+		present   bool
+		attribute string
+	}{
+		{name: "explicit false", config: cty.ObjectVal(map[string]cty.Value{"auto_pay": cty.False}), attribute: "auto_pay", expected: false, present: true},
+		{name: "explicit true", config: cty.ObjectVal(map[string]cty.Value{"auto_pay": cty.True}), attribute: "auto_pay", expected: true, present: true},
+		{name: "null value", config: cty.ObjectVal(map[string]cty.Value{"auto_pay": cty.NullVal(cty.Bool)}), attribute: "auto_pay"},
+		{name: "unknown value", config: cty.ObjectVal(map[string]cty.Value{"auto_pay": cty.UnknownVal(cty.Bool)}), attribute: "auto_pay"},
+		{name: "absent attribute", config: cty.ObjectVal(map[string]cty.Value{"auto_create_proxy": cty.True}), attribute: "auto_pay"},
+		{name: "nil config", config: cty.NilVal, attribute: "auto_pay"},
+		{name: "null config", config: cty.NullVal(cty.EmptyObject), attribute: "auto_pay"},
+	}
+	for _, c := range cases {
+		got, present := dbInstanceBoolFromConfig(c.config, c.attribute)
+		if present != c.present || got != c.expected {
+			t.Fatalf("case %s: dbInstanceBoolFromConfig() = (%v, %v), want (%v, %v)", c.name, got, present, c.expected, c.present)
+		}
+	}
+}
+
+// TestUnitNonEmptyStringAttr covers the Read guard used for
+// Optional+Computed attributes: an omitted, null or empty API value must not
+// overwrite the last known state.
+func TestUnitNonEmptyStringAttr(t *testing.T) {
+	cases := []struct {
+		name     string
+		instance map[string]interface{}
+		expected string
+		present  bool
+	}{
+		{name: "present", instance: map[string]interface{}{"ConnectionMode": "Safe"}, expected: "Safe", present: true},
+		{name: "absent", instance: map[string]interface{}{}},
+		{name: "null", instance: map[string]interface{}{"ConnectionMode": nil}},
+		{name: "empty", instance: map[string]interface{}{"ConnectionMode": ""}},
+	}
+	for _, c := range cases {
+		got, present := nonEmptyStringAttr(c.instance, "ConnectionMode")
+		if got != c.expected || present != c.present {
+			t.Fatalf("case %s: nonEmptyStringAttr() = (%q, %v), want (%q, %v)", c.name, got, present, c.expected, c.present)
+		}
+	}
+}
+
+// TestUnitDBInstancePgBouncerEnabledFromInstance covers the Read conversion of
+// the PgBouncer flag: only an explicit "true"/"false" from the API is trusted,
+// while an omitted or unparsable value is reported as false instead of keeping
+// an unconfirmed configured true.
+func TestUnitDBInstancePgBouncerEnabledFromInstance(t *testing.T) {
+	cases := []struct {
+		name     string
+		instance map[string]interface{}
+		want     bool
+	}{
+		{name: "enabled", instance: map[string]interface{}{"PGBouncerEnabled": "true"}, want: true},
+		{name: "disabled", instance: map[string]interface{}{"PGBouncerEnabled": "false"}},
+		{name: "boolean true", instance: map[string]interface{}{"PGBouncerEnabled": true}, want: true},
+		{name: "omitted", instance: map[string]interface{}{}},
+		{name: "null", instance: map[string]interface{}{"PGBouncerEnabled": nil}},
+		{name: "unparsable", instance: map[string]interface{}{"PGBouncerEnabled": "unsupported"}},
+	}
+	for _, c := range cases {
+		if got := pgBouncerEnabledFromInstance(c.instance); got != c.want {
+			t.Fatalf("case %s: pgBouncerEnabledFromInstance() = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestUnitDBInstanceUserBackupIdValidation(t *testing.T) {
+	legal := map[string]interface{}{
+		"engine":               "MySQL",
+		"engine_version":       "5.7",
+		"instance_charge_type": "Postpaid",
+		"category":             "Basic",
+	}
+	cases := []struct {
+		name    string
+		raw     map[string]interface{}
+		wantErr bool
+	}{
+		{name: "legal combination", raw: legal},
+		{name: "prepaid", raw: copyWith(legal, "instance_charge_type", "Prepaid"), wantErr: true},
+		{name: "non MySQL", raw: copyWith(legal, "engine", "PostgreSQL"), wantErr: true},
+		{name: "non 5.7", raw: copyWith(legal, "engine_version", "8.0"), wantErr: true},
+		{name: "non Basic category", raw: copyWith(legal, "category", "HighAvailability"), wantErr: true},
+		{name: "category unset", raw: copyWith(legal, "category", ""), wantErr: true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, resourceAliCloudDBInstance().Schema, c.raw)
+			err := validateDBInstanceUserBackupId(d)
+			if (err != nil) != c.wantErr {
+				t.Fatalf("validateDBInstanceUserBackupId() error = %v, wantErr %v", err, c.wantErr)
+			}
+		})
+	}
+}
+
+func copyWith(src map[string]interface{}, key string, value interface{}) map[string]interface{} {
+	dst := make(map[string]interface{}, len(src))
+	for k, v := range src {
+		dst[k] = v
+	}
+	dst[key] = value
+	return dst
+}
+
+func TestUnitDBInstanceSQLServerMajorVersionUpgradeRequest(t *testing.T) {
+	client := &connectivity.AliyunClient{RegionId: "cn-hangzhou", SourceIp: "127.0.0.1"}
+	base := map[string]interface{}{
+		"engine":                      "SQLServer",
+		"engine_version":              "2019_std_ha",
+		"instance_type":               "mssql.x4.medium.s2",
+		"instance_charge_type":        "Postpaid",
+		"category":                    "Basic",
+		"zone_id":                     "cn-hangzhou-k",
+		"vswitch_id":                  "vsw-primary",
+		"allow_major_version_upgrade": true,
+	}
+
+	build := func(raw map[string]interface{}) (map[string]interface{}, error) {
+		d := schema.TestResourceDataRaw(t, resourceAliCloudDBInstance().Schema, raw)
+		d.SetId("rm-test123")
+		return buildDBInstanceSQLServerMajorVersionUpgradeRequest(d, client)
+	}
+
+	t.Run("basic category carries the required parameters", func(t *testing.T) {
+		request, err := build(base)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for key, want := range map[string]interface{}{
+			"Category":        "Basic",
+			"ZoneId":          "cn-hangzhou-k",
+			"VSwitchId":       "vsw-primary",
+			"EngineVersion":   "2019_std_ha",
+			"DBInstanceId":    "rm-test123",
+			"DBInstanceClass": "mssql.x4.medium.s2",
+		} {
+			if got := request[key]; got != want {
+				t.Fatalf("request[%s] = %v, want %v", key, got, want)
+			}
+		}
+		if _, ok := request["ZoneIdSlave1"]; ok {
+			t.Fatalf("ZoneIdSlave1 must not be sent for a Basic category instance")
+		}
+		if token, _ := request["ClientToken"].(string); token == "" {
+			t.Fatalf("ClientToken must be set for an idempotent retry")
+		}
+	})
+
+	t.Run("explicit false is forwarded", func(t *testing.T) {
+		request, err := build(copyWith(base, "allow_major_version_upgrade", false))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		got, ok := request["AllowMajorVersionUpgrade"]
+		if !ok || got != false {
+			t.Fatalf("AllowMajorVersionUpgrade = %v (present %v), want false", got, ok)
+		}
+	})
+
+	t.Run("high availability without a slave zone stays single AZ", func(t *testing.T) {
+		request, err := build(copyWith(base, "category", "HighAvailability"))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got := request["ZoneIdSlave1"]; got != "cn-hangzhou-k" {
+			t.Fatalf("ZoneIdSlave1 = %v, want the primary zone for a single-AZ deployment", got)
+		}
+	})
+
+	t.Run("high availability with a different slave zone needs two vswitches", func(t *testing.T) {
+		raw := copyWith(copyWith(base, "category", "HighAvailability"), "zone_id_slave_a", "cn-hangzhou-j")
+		if _, err := build(raw); err == nil {
+			t.Fatalf("expected an error when the slave zone differs but only one vSwitch is configured")
+		}
+		raw = copyWith(raw, "vswitch_id", "vsw-primary,vsw-standby")
+		request, err := build(raw)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got := request["ZoneIdSlave1"]; got != "cn-hangzhou-j" {
+			t.Fatalf("ZoneIdSlave1 = %v, want cn-hangzhou-j", got)
+		}
+		if got := request["VSwitchId"]; got != "vsw-primary,vsw-standby" {
+			t.Fatalf("VSwitchId = %v, want both vSwitch IDs", got)
+		}
+	})
+
+	for _, tc := range []struct {
+		name  string
+		raw   map[string]interface{}
+		field string
+	}{
+		{name: "missing category", raw: copyWith(base, "category", ""), field: "category"},
+		{name: "missing zone", raw: copyWith(base, "zone_id", ""), field: "zone_id"},
+		{name: "missing vswitch", raw: copyWith(base, "vswitch_id", ""), field: "vswitch_id"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := build(tc.raw); err == nil || !strings.Contains(err.Error(), "`"+tc.field+"` is required") {
+				t.Fatalf("expected a %s required error, got %v", tc.field, err)
+			}
+		})
+	}
+}
+
+func TestUnitDBInstanceConcurrentErrorClassification(t *testing.T) {
+	// The codes are listed explicitly (not taken from the production slices) so
+	// the test fails when a documented wait-and-retry code is dropped, and so the
+	// create-only / modify-only split is asserted in both directions.
+	shared := []string{
+		"InvalidConcurrentOperate",
+		"System.ConcurrentConflict",
+		"OperationDenied.SystemConcurrent",
+	}
+	for _, code := range shared {
+		err := &tea.SDKError{Code: tea.String(code), Message: tea.String("concurrent"), Data: tea.String("")}
+		if !isDBInstanceConcurrentError(err) || !isDBInstanceCreateWaitError(err) || !isDBInstanceModifyWaitError(err) {
+			t.Fatalf("expected %s to be classified on every write surface", code)
+		}
+	}
+
+	createOnly := &tea.SDKError{Code: tea.String("Order.UnfinishedRefundOrder"), Message: tea.String("refund"), Data: tea.String("")}
+	if !isDBInstanceCreateWaitError(createOnly) {
+		t.Fatal("Order.UnfinishedRefundOrder must be retried on create")
+	}
+	if isDBInstanceModifyWaitError(createOnly) {
+		t.Fatal("Order.UnfinishedRefundOrder must not be retried on modify")
+	}
+
+	modifyOnly := &tea.SDKError{Code: tea.String("OperationDenied.DurationLimit"), Message: tea.String("duration"), Data: tea.String("")}
+	if !isDBInstanceModifyWaitError(modifyOnly) {
+		t.Fatal("OperationDenied.DurationLimit must be retried on modify")
+	}
+	if isDBInstanceCreateWaitError(modifyOnly) {
+		t.Fatal("OperationDenied.DurationLimit must not be retried on create")
+	}
+
+	permanent := &tea.SDKError{Code: tea.String("InvalidDBInstanceId.NotFound"), Message: tea.String("not found"), Data: tea.String("")}
+	if isDBInstanceCreateWaitError(permanent) || isDBInstanceModifyWaitError(permanent) || isDBInstanceConcurrentError(permanent) {
+		t.Fatal("a permanent error must not be classified as retryable")
+	}
+	if isDBInstanceCreateWaitError(nil) || isDBInstanceModifyWaitError(nil) {
+		t.Fatal("nil must not be classified as retryable")
+	}
+}
+
+// TestAccAliCloudRdsDBInstance_createOnlyFields verifies that the write-only
+// creation parameters reach CreateDBInstance with real values, and that a later
+// change to one of them is rejected at plan time instead of silently changing
+// only the local state.
+func TestAccAliCloudRdsDBInstance_createOnlyFields(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"engine":                   "MySQL",
+		"engine_version":           "8.0",
+		"instance_charge_type":     "Postpaid",
+		"db_instance_storage_type": "cloud_essd",
+		"status":                   CHECKSET,
+		"connection_string":        CHECKSET,
+	})
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceCreateOnly%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependenceNoKMS)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min}",
+					"category":                 "HighAvailability",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${local.vswitch_id}",
+					"db_instance_storage_type": "cloud_essd",
+					"auto_create_proxy":        "false",
+					"auto_pay":                 "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_storage_type": "cloud_essd",
+						"auto_create_proxy":        "false",
+						"auto_pay":                 "false",
+					}),
+				),
+			},
+			{
+				// business_info is exercised through the create-only guard only:
+				// CreateDBInstance rejects the value documented for BusinessInfo
+				// (InvalidBusinessInfo.Malformed, request id
+				// 01A182E3-08A3-5AFF-9D9F-39471F56EBC1), so no valid value could be
+				// sent from the test account.
+				Config: testAccConfig(map[string]interface{}{
+					"business_info": "121436975448952",
+				}),
+				ExpectError: regexp.MustCompile("`business_info` can only be specified when the DB instance is created"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					// Drop business_info so this step fails on promotion_code only:
+					// the step config map is accumulated across steps.
+					"business_info":  REMOVEKEY,
+					"promotion_code": "aliwood-1688-mobile-promotion",
+				}),
+				ExpectError: regexp.MustCompile("`promotion_code` can only be specified when the DB instance is created"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"promotion_code": REMOVEKEY,
+					"user_backup_id": "backup-121436975448952",
+				}),
+				ExpectError: regexp.MustCompile("`user_backup_id` can only be specified when the DB instance is created"),
+			},
+			{
+				// The boolean write-only fields must be rejected on an existing
+				// instance through the same plan-time guard, so a later apply can
+				// never silently rewrite only the local state.
+				Config: testAccConfig(map[string]interface{}{
+					"user_backup_id":    REMOVEKEY,
+					"auto_create_proxy": "true",
+				}),
+				ExpectError: regexp.MustCompile("`auto_create_proxy` can only be specified when the DB instance is created"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					// Restore auto_create_proxy so this step fails on auto_pay only:
+					// the step config map is accumulated across steps and the
+					// previous step was rejected without changing state.
+					"auto_create_proxy": "false",
+					"auto_pay":          "true",
+				}),
+				ExpectError: regexp.MustCompile("`auto_pay` can only be specified when the DB instance is created"),
+			},
+		},
+	})
+}
+
+// TestUnitDBInstanceTemplateIdListOrderSuppress exercises the bounded-suppressor
+// unit net for template_id_list. The AttachWhitelistTemplate/Detach operations
+// use set-based comparison, so order-only changes are semantically meaningless.
+// The cases run the same algorithm the SDK reaches through the DiffSuppressFunc
+// (templateIdListEqualIgnoringOrder with the values from d.GetChange), so the
+// production path is verified.
+func TestUnitDBInstanceTemplateIdListOrderSuppress(t *testing.T) {
+	listCases := []struct {
+		name     string
+		old      []interface{}
+		new      []interface{}
+		expected bool
+	}{
+		{"ReorderOnly", []interface{}{1, 2}, []interface{}{2, 1}, true},
+		{"ReorderOnlyLonger", []interface{}{1, 2, 3}, []interface{}{3, 1, 2}, true},
+		{"MemberAdded", []interface{}{1, 2}, []interface{}{1, 2, 3}, false},
+		{"MemberRemoved", []interface{}{1, 2, 3}, []interface{}{1, 2}, false},
+		{"MemberReplaced", []interface{}{1, 2}, []interface{}{1, 3}, false},
+		{"DuplicateCollapses", []interface{}{1, 1}, []interface{}{1}, false},
+		{"DuplicateReorder", []interface{}{1, 1, 2}, []interface{}{2, 1, 1}, true},
+		{"SameOrder", []interface{}{1, 2}, []interface{}{1, 2}, true},
+		{"Empty", []interface{}{}, []interface{}{}, true},
+	}
+	for _, tc := range listCases {
+		if got := templateIdListEqualIgnoringOrder(tc.old, tc.new); got != tc.expected {
+			t.Fatalf("list case %s: got %v, expected %v", tc.name, got, tc.expected)
+		}
+	}
+}
+
+// TestAccAliCloudRdsDBInstance_templateIdListOrder verifies that reordering
+// template_id_list members converges: apply members in one order, then apply
+// the same members in a different order, and require the post-apply plan to be
+// empty. The schema carries a DiffSuppressFunc because the RDS
+// AttachWhitelistTemplate/DetachWhitelistTemplate operations use set-based
+// comparison and member order is semantically meaningless.
+func TestAccAliCloudRdsDBInstance_templateIdListOrder(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	name := fmt.Sprintf("tf-testAccDBInstanceTplOrder%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependenceWhitelistTemplate)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min}",
+					"category":                 "HighAvailability",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${local.vswitch_id}",
+					"db_instance_storage_type": "cloud_essd",
+					"template_id_list": []interface{}{
+						"${alicloud_rds_whitelist_template.first.id}",
+						"${alicloud_rds_whitelist_template.second.id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "engine", "MySQL"),
+					resource.TestCheckResourceAttr(resourceId, "engine_version", "8.0"),
+					resource.TestCheckResourceAttr(resourceId, "template_id_list.#", "2"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_id_list": []interface{}{
+						"${alicloud_rds_whitelist_template.second.id}",
+						"${alicloud_rds_whitelist_template.first.id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "template_id_list.#", "2"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRdsDBInstance_compressionMode verifies that
+// compression_mode="on" is applied during create via ModifyDBInstanceSpec
+// (RDS-02: CreateDBInstance does not honour compression_mode). Uses a
+// HighAvailability dedicated instance (mysql.x4.medium.2c) with general_essd
+// and 1000 GB storage — the minimum prerequisites for RDS storage
+// compression. Once enabled, compression cannot be disabled, so no on→off
+// update is performed.
+func TestAccAliCloudRdsDBInstance_compressionMode(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceCompression%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependenceDBGeneralEssd)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "${local.compression_instance_class}",
+					"instance_storage":         "1000",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+					"compression_mode":         "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                   "MySQL",
+						"engine_version":           "8.0",
+						"instance_type":            CHECKSET,
+						"instance_storage":         CHECKSET,
+						"instance_charge_type":     CHECKSET,
+						"instance_name":            name,
+						"db_instance_storage_type": "general_essd",
+						"compression_mode":         "on",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "force", "db_is_ignore_case", "auto_create_proxy", "auto_pay", "business_info", "promotion_code", "user_backup_id", "allow_major_version_upgrade"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRdsDBInstance_compressionModeUpdate verifies the in-place
+// off -> on path: an existing instance created with compression disabled is
+// updated to "on" and must converge (the post-apply plan is required to be
+// empty). on -> off is not exercised because the server does not support
+// disabling storage compression.
+func TestAccAliCloudRdsDBInstance_compressionModeUpdate(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceCompressionUpd%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependenceDBGeneralEssd)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "${local.compression_instance_class}",
+					"instance_storage":         "1000",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+					"compression_mode":         "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                   "MySQL",
+						"engine_version":           "8.0",
+						"instance_type":            CHECKSET,
+						"instance_storage":         CHECKSET,
+						"instance_charge_type":     CHECKSET,
+						"instance_name":            name,
+						"db_instance_storage_type": "general_essd",
+						"compression_mode":         "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compression_mode": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compression_mode": "on",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// dbInstanceMockClient builds an AliyunClient whose RDS endpoint is an isolated
+// in-process HTTP server, so request-level tests exercise the same code path
+// Terraform uses without touching the cloud.
+func dbInstanceMockClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		handler(w, r)
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("rds", endpoint)
+	return client
+}
+
+func dbInstanceRawConfig(values map[string]interface{}) cty.Value {
+	attrs := map[string]cty.Value{}
+	for key, value := range values {
+		switch typed := value.(type) {
+		case bool:
+			attrs[key] = cty.BoolVal(typed)
+		case int:
+			attrs[key] = cty.NumberIntVal(int64(typed))
+		case string:
+			attrs[key] = cty.StringVal(typed)
+		default:
+			attrs[key] = cty.NullVal(cty.DynamicPseudoType)
+		}
+	}
+	return cty.ObjectVal(attrs)
+}
+
+func dbInstanceMockCreateConfig(extra map[string]interface{}) map[string]interface{} {
+	config := map[string]interface{}{
+		"engine":                   "MySQL",
+		"engine_version":           "8.0",
+		"instance_type":            "mysql.n2.small.2c",
+		"instance_storage":         20,
+		"category":                 "Basic",
+		"instance_charge_type":     "Postpaid",
+		"db_instance_storage_type": "cloud_ssd",
+	}
+	for key, value := range extra {
+		config[key] = value
+	}
+	return config
+}
+
+// TestUnitDBInstanceCreateWireWriteOnlyBooleans drives the public Create entry
+// point against an isolated HTTP endpoint and asserts the serialized
+// CreateDBInstance form. An omitted value must not be sent (the API default is
+// true), while an explicit false/true must reach the wire unchanged.
+func TestUnitDBInstanceCreateWireWriteOnlyBooleans(t *testing.T) {
+	cases := []struct {
+		name        string
+		extra       map[string]interface{}
+		want        map[string]string
+		wantMissing []string
+	}{
+		{
+			name:        "omitted",
+			extra:       map[string]interface{}{},
+			wantMissing: []string{"AutoPay", "AutoCreateProxy"},
+		},
+		{
+			name:  "explicit false",
+			extra: map[string]interface{}{"auto_pay": false, "auto_create_proxy": false},
+			want:  map[string]string{"AutoPay": "false", "AutoCreateProxy": "false"},
+		},
+		{
+			name:  "explicit true",
+			extra: map[string]interface{}{"auto_pay": true, "auto_create_proxy": true},
+			want:  map[string]string{"AutoPay": "true", "AutoCreateProxy": "true"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := dbInstanceMockCreateConfig(tc.extra)
+			var captured url.Values
+			client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if action := r.Form.Get("Action"); action != "CreateDBInstance" {
+					t.Errorf("unexpected action %q", action)
+				}
+				captured = r.Form
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Code":    "InvalidParameter",
+					"Message": "stop after request capture",
+				})
+			})
+
+			res := resourceAliCloudDBInstance()
+			diff, err := res.Diff(context.Background(), nil, sdkterraform.NewResourceConfigRaw(config), nil)
+			if err != nil {
+				t.Fatalf("diff failed: %v", err)
+			}
+			if diff == nil {
+				t.Fatal("expected a create diff")
+			}
+			diff.RawConfig = dbInstanceRawConfig(config)
+			if _, diags := res.Apply(context.Background(), nil, diff, client); !diags.HasError() {
+				t.Fatal("expected the mocked CreateDBInstance failure")
+			}
+			if captured == nil {
+				t.Fatal("CreateDBInstance was not called")
+			}
+			for key, want := range tc.want {
+				if got := captured.Get(key); got != want {
+					t.Fatalf("%s = %q, want %q", key, got, want)
+				}
+			}
+			for _, key := range tc.wantMissing {
+				if _, ok := captured[key]; ok {
+					t.Fatalf("%s must not be sent when omitted, got %q", key, captured.Get(key))
+				}
+			}
+		})
+	}
+}
+
+// TestUnitDBInstanceCreateOnlyFieldsPlanGuard drives the real CustomizeDiff
+// path with a prior state, so the create-only rejection is proven for the
+// boolean write-only fields and not only through a fake HasChange reporter.
+func TestUnitDBInstanceCreateOnlyFieldsPlanGuard(t *testing.T) {
+	cases := []struct {
+		field string
+		from  interface{}
+		to    interface{}
+	}{
+		{field: "auto_create_proxy", from: false, to: true},
+		{field: "auto_pay", from: false, to: true},
+		{field: "business_info", from: "", to: "info-1"},
+		{field: "promotion_code", from: "", to: "CODE-1"},
+		{field: "user_backup_id", from: "", to: "backup-1"},
+	}
+
+	baseAttributes := func(field string, value interface{}) map[string]string {
+		return map[string]string{
+			"engine":                   "MySQL",
+			"engine_version":           "8.0",
+			"instance_type":            "mysql.n2.small.2c",
+			"instance_storage":         "20",
+			"category":                 "Basic",
+			"instance_charge_type":     "Postpaid",
+			"db_instance_storage_type": "cloud_ssd",
+			"connection_mode":          "Standard",
+			field:                      fmt.Sprint(value),
+		}
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.field+"/in_place_rejected", func(t *testing.T) {
+			config := dbInstanceMockCreateConfig(map[string]interface{}{tc.field: tc.to})
+			state := &sdkterraform.InstanceState{ID: "rm-existing", Attributes: baseAttributes(tc.field, tc.from)}
+
+			res := resourceAliCloudDBInstance()
+			_, err := res.Diff(context.Background(), state, sdkterraform.NewResourceConfigRaw(config), nil)
+			if err == nil || !strings.Contains(err.Error(), tc.field) {
+				t.Fatalf("expected a plan-time rejection for %s, got %v", tc.field, err)
+			}
+		})
+
+		t.Run(tc.field+"/replacement_allowed", func(t *testing.T) {
+			// An independent ForceNew change replaces the instance, so the
+			// create-only parameter is applied to the new instance and the plan
+			// must not be rejected.
+			config := dbInstanceMockCreateConfig(map[string]interface{}{
+				tc.field:          tc.to,
+				"connection_mode": "Safe",
+			})
+			state := &sdkterraform.InstanceState{ID: "rm-existing", Attributes: baseAttributes(tc.field, tc.from)}
+
+			res := resourceAliCloudDBInstance()
+			if _, err := res.Diff(context.Background(), state, sdkterraform.NewResourceConfigRaw(config), nil); err != nil {
+				t.Fatalf("a replacement plan must accept the create-only change on %s, got %v", tc.field, err)
+			}
+		})
+	}
+}
+
+// TestUnitDBInstanceForceNewFieldListMatchesSchema keeps the replacement list in
+// sync with the schema: a ForceNew attribute missing from the list would bring
+// back the create-only false rejection, and a listed field that lost ForceNew
+// would silently bypass the guard.
+func TestUnitDBInstanceForceNewFieldListMatchesSchema(t *testing.T) {
+	schemaMap := resourceAliCloudDBInstance().Schema
+	listed := make(map[string]bool, len(dbInstanceForceNewFields))
+	for _, field := range dbInstanceForceNewFields {
+		if _, ok := schemaMap[field]; !ok {
+			t.Fatalf("listed ForceNew field %q does not exist in the schema", field)
+		}
+		listed[field] = true
+	}
+	for name, item := range schemaMap {
+		if item.ForceNew != listed[name] {
+			t.Fatalf("ForceNew mismatch for %q: schema=%v list=%v", name, item.ForceNew, listed[name])
+		}
 	}
 }
