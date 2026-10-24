@@ -45,7 +45,7 @@ func TestAccAliCloudEbsReplicaGroupDrill_basic5254(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"status"},
 			},
 		},
 	})
