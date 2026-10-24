@@ -1813,6 +1813,7 @@ func Provider() *schema.Provider {
 			"alicloud_ssl_certificates_service_certificate":                  resourceAliCloudSslCertificatesServiceCertificate(),
 			"alicloud_arms_alert_contact":                                    resourceAlicloudArmsAlertContact(),
 			"alicloud_arms_alert_robot":                                      resourceAlicloudArmsAlertRobot(),
+			"alicloud_arms_notification_policy":                              resourceAliCloudArmsNotificationPolicy(),
 			"alicloud_event_bridge_slr":                                      resourceAliCloudEventBridgeServiceLinkedRole(),
 			"alicloud_event_bridge_rule":                                     resourceAliCloudEventBridgeRule(),
 			"alicloud_cloud_firewall_control_policy":                         resourceAliCloudCloudFirewallControlPolicy(),
