@@ -78,7 +78,7 @@ resource "alicloud_lindorm_instance_v2" "default" {
   primary_vswitch_id = alicloud_vswitch.default9umuzwH.id
   arbiter_vswitch_id = alicloud_vswitch.defaultTAbr2pJ.id
   vpc_id             = alicloud_vpc.defaultR8vXlP.id
-  instance_alias     = "preTest-MZ"
+  instance_alias     = var.name
   payment_type       = "POSTPAY"
   arbiter_zone_id    = "cn-beijing-j"
   auto_renewal       = false
@@ -95,9 +95,9 @@ The following arguments are supported:
 * `arch_version` - (Required) Deployment Scenario
 
 Enumeration value:
-  - **1.0**: Single Zone
-  - **2.0**: Multi-AZ Basic Edition
-  - **3.0**: Multi-AZ High Availability Edition
+- **1.0**: Single Zone
+- **2.0**: Multi-AZ Basic Edition
+- **3.0**: Multi-AZ High Availability Edition
 
 -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
@@ -128,9 +128,9 @@ The default value is false
 * `cloud_storage_type` - (Optional, ForceNew) Cloud storage type, the sales page storage type supports cloud storage and local sites. If you select cloud storage, this parameter is required.
 
 Enumeration value:
-  - `StandardStorage`: Standard cloud storage
-  - **Performance storage**: Performance-based cloud storage
-  - **Capacity Storage**: Capacity-based cloud storage
+- `StandardStorage`: Standard cloud storage
+- **Performance storage**: Performance-based cloud storage
+- **Capacity Storage**: Capacity-based cloud storage
 * `deletion_protection` - (Optional, Computed) Whether to enable deletion protection
 * `duration` - (Optional, Int, Available since v1.262.0) The specified duration when the resource is purchased. Only the subscription instances are valid.
 
@@ -141,8 +141,8 @@ Enumeration value:
 * `payment_type` - (Required) Resource attribute fields representing payment types
 
 Enumeration value:
-  - `PREPAY`: Prepaid mode
-  - `POSTPAY`: Postpay mode
+- `PREPAY`: Prepaid mode
+- `POSTPAY`: Postpay mode
 * `pricing_cycle` - (Optional, Available since v1.262.0) Purchase duration unit: Month, Year
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
@@ -153,7 +153,7 @@ Enumeration value:
 * `standby_zone_id` - (Optional, ForceNew) Standby zone ZoneID
 * `vpc_id` - (Required, ForceNew) VpcId
 * `vswitch_id` - (Required, ForceNew) VswitchId
-* `white_ip_list` - (Optional, List, Available since v1.266.0) Instance whitelist list See [`white_ip_list`](#white_ip_list) below.
+* `white_ip_list` - (Optional, Computed, List, Available since v1.266.0) Instance whitelist list. The server returns a default whitelist when this attribute is not explicitly configured. See [`white_ip_list`](#white_ip_list) below.
 * `zone_id` - (Required, ForceNew) The zone ID  of the resource
 
 ### `engine_list`
@@ -162,17 +162,18 @@ The engine_list supports the following:
 * `engine_type` - (Required) Engine
 
 Enumeration value:
-  - `TABLE`: Wide table engine
-  - `TSDB`: Time series Engine
-  - `LSEARCH`: Search engine
-  - `LTS`: LTS engine
-  - `LVECTOR`: Vector engine
-  - `LCOLUMN`: Column-store engine
-  - `LAI`: AI engine
-  - `FILE`: The underlying file engine
-  - `LMESSAGE`: Message engine
-  - `LROW`: Wide table Engine 3.0
-  - `LSTREAM`: Stream engine
+- `TABLE`: Wide table engine
+- `TSDB`: Time series Engine
+- `LSEARCH`: Search engine
+- `LTS`: LTS engine
+- `LVECTOR`: Vector engine
+- `LCOLUMN`: Column-store engine
+- `LAI`: AI engine
+- `FILE`: The underlying file engine
+- `LMESSAGE`: Message engine
+- `LROW`: Wide table Engine 3.0
+- `LSTREAM`: Stream engine
+
 * `node_group` - (Optional, Set) Node Group List See [`node_group`](#engine_list-node_group) below.
 
 ### `engine_list-node_group`
@@ -230,6 +231,12 @@ The white_ip_list supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
+* `ali_uid` - The 16-digit AliUid of the Alibaba Cloud primary account that owns the instance.
+* `create_milliseconds` - Instance creation time in milliseconds since 1970-01-01 00:00:00 UTC.
+* `expired_milliseconds` - Instance expiration time in milliseconds since 1970-01-01 00:00:00 UTC.
+* `instance_status` - Instance status. Valid values include `CREATING`, `ACTIVATION` (running), `DELETING`, `LOCKED` (expired), and transitional states such as `RESIZING`, `SHRINKING`, `CLASS_CHANGING`, and `RESTARTING`.
+* `network_type` - Network type of the instance (e.g., `VPC`).
+* `service_type` - Instance architecture type. Valid values: `lindorm_v2` (single-zone), `lindorm_v2_multizone` (multi-zone basic), `lindorm_v2_multizone_ha` (multi-zone high availability).
 * `engine_list` - Engine List
   * `connect_address_list` - Connect Address List
     * `address` - Connect Address
@@ -245,7 +252,7 @@ The following attributes are exported:
     * `spec_id` - Spec Id
     * `status` - Node Status
   * `version` - Engine Version
-* `region_id` - The region ID of the resource
+* `region_id` - The region ID of the resource.
 
 ## Timeouts
 

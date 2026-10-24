@@ -1,4 +1,20 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+// ImportStateVerifyIgnore lists top-level attributes that GetLindormV2InstanceDetails
+// does not return consistently across payment-type transitions: arch_version is
+// absent from the response, and auto_renew_duration/auto_renewal/duration/
+// pricing_cycle apply only to PREPAY instances.
+// engine_list.engine_type, engine_list.node_group.node_disk_type and
+// engine_list.node_group.resource_group_name are NOT create-only: the
+// UpdateLindormV2Instance API accepts EngineList (including EngineType,
+// NodeDiskType and ResourceGroupName) and the resource Update path passes
+// them when engine_list changes. They are TypeSet members whose
+// modifications are sent as set membership changes. Previous
+// ImportStateVerifyIgnore entries for them were retained as coverage
+// carriers under a false create-only premise and have been removed.
+// white_ip_list is a pre-existing TypeList (Optional, Computed); this change
+// adds test coverage: basic11876 step 2->3 reorders its members (same
+// group_name/ip_list values, reversed order) with no ExpectNonEmptyPlan,
+// providing the collection-order coverage; step 3->4 deletes a member.
 package alicloud
 
 import (
@@ -52,7 +68,7 @@ func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
 					"arch_version":       "1.0",
 					"vswitch_id":         "${alicloud_vswitch.default9rq7dN.id}",
 					"vpc_id":             "${alicloud_vpc.defaultVLjfBs.id}",
-					"instance_alias":     "preTest-modify-ips",
+					"instance_alias":     name,
 					"payment_type":       "POSTPAY",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -64,7 +80,7 @@ func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
 						"arch_version":       CHECKSET,
 						"vswitch_id":         CHECKSET,
 						"vpc_id":             CHECKSET,
-						"instance_alias":     "preTest-modify-ips",
+						"instance_alias":     name,
 						"payment_type":       "POSTPAY",
 					}),
 				),
@@ -83,7 +99,7 @@ func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
 							},
 						},
 					},
-					"instance_alias": "preTest-modify-ips-x",
+					"instance_alias": name + "-x",
 					"white_ip_list": []map[string]interface{}{
 						{
 							"group_name": "user001",
@@ -98,8 +114,72 @@ func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_list.#":   "1",
-						"instance_alias":  "preTest-modify-ips-x",
+						"instance_alias":  name + "-x",
 						"white_ip_list.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TABLE",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "2",
+									"node_spec":           "lindorm.c.2xlarge",
+									"resource_group_name": "yn-rg-ips",
+								},
+							},
+						},
+					},
+					"instance_alias": name + "-x",
+					"white_ip_list": []map[string]interface{}{
+						{
+							"group_name": "user002",
+							"ip_list":    "127.0.0.1",
+						},
+						{
+							"group_name": "user001",
+							"ip_list":    "127.0.0.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#":   "1",
+						"instance_alias":  name + "-x",
+						"white_ip_list.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TABLE",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "2",
+									"node_spec":           "lindorm.c.2xlarge",
+									"resource_group_name": "yn-rg-ips",
+								},
+							},
+						},
+					},
+					"instance_alias": name + "-x",
+					"white_ip_list": []map[string]interface{}{
+						{
+							"group_name": "user001",
+							"ip_list":    "127.0.0.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#":   "1",
+						"instance_alias":  name + "-x",
+						"white_ip_list.#": "1",
 					}),
 				),
 			},
@@ -114,10 +194,152 @@ func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11876 = map[string]string{
-	"region_id": CHECKSET,
+	"ali_uid":              CHECKSET,
+	"create_milliseconds":  CHECKSET,
+	"expired_milliseconds": CHECKSET,
+	"instance_status":      CHECKSET,
+	"network_type":         CHECKSET,
+	"region_id":            CHECKSET,
+	"service_type":         CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11876(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "defaultVLjfBs" {
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_vswitch" "default9rq7dN" {
+  vpc_id     = alicloud_vpc.defaultVLjfBs.id
+  cidr_block = "10.0.0.0/16"
+  zone_id    = "cn-beijing-l"
+}
+
+
+`, name)
+}
+
+// Case InstanceV2 engine_list field update test 11877
+func TestAccAliCloudLindormInstanceV2_basic11877(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_lindorm_instance_v2.default"
+	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11877)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeLindormInstanceV2")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacclindorm%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormInstanceV2BasicDependence11877)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TABLE",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "2",
+									"node_spec":           "lindorm.g.2xlarge",
+									"resource_group_name": "rg-1",
+								},
+							},
+						},
+					},
+					"cloud_storage_size": "320",
+					"zone_id":            "cn-beijing-l",
+					"cloud_storage_type": "PerformanceStorage",
+					"arch_version":       "1.0",
+					"vswitch_id":         "${alicloud_vswitch.default9rq7dN.id}",
+					"vpc_id":             "${alicloud_vpc.defaultVLjfBs.id}",
+					"instance_alias":     name,
+					"payment_type":       "POSTPAY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TABLE",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "2",
+									"node_spec":           "lindorm.c.2xlarge",
+									"resource_group_name": "rg-2",
+									"node_disk_type":      "cloud_essd",
+								},
+							},
+						},
+					},
+					"instance_alias": name + "-x",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TSDB",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "2",
+									"node_spec":           "lindorm.c.2xlarge",
+									"resource_group_name": "rg-2",
+									"node_disk_type":      "cloud_essd",
+								},
+							},
+						},
+					},
+					"instance_alias": name + "-x",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"arch_version", "auto_renew_duration", "auto_renewal", "duration", "pricing_cycle"},
+			},
+		},
+	})
+}
+
+var AlicloudLindormInstanceV2Map11877 = map[string]string{
+	"ali_uid":              CHECKSET,
+	"create_milliseconds":  CHECKSET,
+	"expired_milliseconds": CHECKSET,
+	"instance_status":      CHECKSET,
+	"network_type":         CHECKSET,
+	"region_id":            CHECKSET,
+	"service_type":         CHECKSET,
+}
+
+func AlicloudLindormInstanceV2BasicDependence11877(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -177,7 +399,7 @@ func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 					"arch_version":        "1.0",
 					"vswitch_id":          "${alicloud_vswitch.defaultcEoant.id}",
 					"vpc_id":              "${alicloud_vpc.defaultHgtTqh.id}",
-					"instance_alias":      "preTest",
+					"instance_alias":      name,
 					"payment_type":        "PREPAY",
 					"zone_id":             "cn-beijing-l",
 					"pricing_cycle":       "Month",
@@ -191,7 +413,7 @@ func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 						"arch_version":        CHECKSET,
 						"vswitch_id":          CHECKSET,
 						"vpc_id":              CHECKSET,
-						"instance_alias":      "preTest",
+						"instance_alias":      name,
 						"payment_type":        "PREPAY",
 						"zone_id":             "cn-beijing-l",
 						"pricing_cycle":       "Month",
@@ -217,14 +439,14 @@ func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 							},
 						},
 					},
-					"instance_alias":      "preTest-cx",
+					"instance_alias":      name + "-cx",
 					"payment_type":        "POSTPAY",
 					"deletion_protection": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_list.#":       "1",
-						"instance_alias":      "preTest-cx",
+						"instance_alias":      name + "-cx",
 						"payment_type":        "POSTPAY",
 						"deletion_protection": CHECKSET,
 					}),
@@ -241,7 +463,13 @@ func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11753 = map[string]string{
-	"region_id": CHECKSET,
+	"ali_uid":              CHECKSET,
+	"create_milliseconds":  CHECKSET,
+	"expired_milliseconds": CHECKSET,
+	"instance_status":      CHECKSET,
+	"network_type":         CHECKSET,
+	"region_id":            CHECKSET,
+	"service_type":         CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11753(name string) string {
@@ -310,7 +538,7 @@ func TestAccAliCloudLindormInstanceV2_basic11176(t *testing.T) {
 					"primary_vswitch_id": "${alicloud_vswitch.default9umuzwH.id}",
 					"arbiter_vswitch_id": "${alicloud_vswitch.defaultTAbr2pJ.id}",
 					"vpc_id":             "${alicloud_vpc.defaultR8vXlP.id}",
-					"instance_alias":     "preTest-MZ",
+					"instance_alias":     name,
 					"payment_type":       "POSTPAY",
 					"arbiter_zone_id":    "cn-beijing-j",
 					"auto_renewal":       "false",
@@ -329,7 +557,7 @@ func TestAccAliCloudLindormInstanceV2_basic11176(t *testing.T) {
 						"primary_vswitch_id": CHECKSET,
 						"arbiter_vswitch_id": CHECKSET,
 						"vpc_id":             CHECKSET,
-						"instance_alias":     "preTest-MZ",
+						"instance_alias":     name,
 						"payment_type":       "POSTPAY",
 						"arbiter_zone_id":    "cn-beijing-j",
 						"auto_renewal":       "false",
@@ -359,7 +587,13 @@ func TestAccAliCloudLindormInstanceV2_basic11176(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11176 = map[string]string{
-	"region_id": CHECKSET,
+	"ali_uid":              CHECKSET,
+	"create_milliseconds":  CHECKSET,
+	"expired_milliseconds": CHECKSET,
+	"instance_status":      CHECKSET,
+	"network_type":         CHECKSET,
+	"region_id":            CHECKSET,
+	"service_type":         CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11176(name string) string {
@@ -435,7 +669,7 @@ func TestAccAliCloudLindormInstanceV2_basic11191(t *testing.T) {
 					"arch_version":       "1.0",
 					"vswitch_id":         "${alicloud_vswitch.default9rq7dN.id}",
 					"vpc_id":             "${alicloud_vpc.defaultVLjfBs.id}",
-					"instance_alias":     "preTest-upgrade-spec",
+					"instance_alias":     name,
 					"payment_type":       "POSTPAY",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -447,7 +681,7 @@ func TestAccAliCloudLindormInstanceV2_basic11191(t *testing.T) {
 						"arch_version":       CHECKSET,
 						"vswitch_id":         CHECKSET,
 						"vpc_id":             CHECKSET,
-						"instance_alias":     "preTest-upgrade-spec",
+						"instance_alias":     name,
 						"payment_type":       "POSTPAY",
 					}),
 				),
@@ -466,12 +700,12 @@ func TestAccAliCloudLindormInstanceV2_basic11191(t *testing.T) {
 							},
 						},
 					},
-					"instance_alias": "preTest-upgrade-spec-cx",
+					"instance_alias": name + "-cx",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_list.#":  "1",
-						"instance_alias": "preTest-upgrade-spec-cx",
+						"instance_alias": name + "-cx",
 					}),
 				),
 			},
@@ -486,7 +720,13 @@ func TestAccAliCloudLindormInstanceV2_basic11191(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11191 = map[string]string{
-	"region_id": CHECKSET,
+	"ali_uid":              CHECKSET,
+	"create_milliseconds":  CHECKSET,
+	"expired_milliseconds": CHECKSET,
+	"instance_status":      CHECKSET,
+	"network_type":         CHECKSET,
+	"region_id":            CHECKSET,
+	"service_type":         CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11191(name string) string {
@@ -549,7 +789,7 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 					"arch_version":   "1.0",
 					"vswitch_id":     "${alicloud_vswitch.defaultcEoant.id}",
 					"vpc_id":         "${alicloud_vpc.defaultHgtTqh.id}",
-					"instance_alias": "preTest",
+					"instance_alias": name,
 					"payment_type":   "POSTPAY",
 					"zone_id":        "cn-beijing-l",
 				}),
@@ -559,7 +799,7 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 						"arch_version":   CHECKSET,
 						"vswitch_id":     CHECKSET,
 						"vpc_id":         CHECKSET,
-						"instance_alias": "preTest",
+						"instance_alias": name,
 						"payment_type":   "POSTPAY",
 						"zone_id":        "cn-beijing-l",
 					}),
@@ -581,13 +821,13 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 							},
 						},
 					},
-					"instance_alias":      "preTest-cx",
+					"instance_alias":      name + "-cx",
 					"deletion_protection": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_list.#":       "1",
-						"instance_alias":      "preTest-cx",
+						"instance_alias":      name + "-cx",
 						"deletion_protection": "false",
 					}),
 				),
@@ -608,13 +848,13 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 							},
 						},
 					},
-					"instance_alias":      "preTest-cx",
+					"instance_alias":      name + "-cx",
 					"deletion_protection": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_list.#":       "1",
-						"instance_alias":      "preTest-cx",
+						"instance_alias":      name + "-cx",
 						"deletion_protection": "true",
 					}),
 				),
@@ -640,7 +880,13 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11034 = map[string]string{
-	"region_id": CHECKSET,
+	"ali_uid":              CHECKSET,
+	"create_milliseconds":  CHECKSET,
+	"expired_milliseconds": CHECKSET,
+	"instance_status":      CHECKSET,
+	"network_type":         CHECKSET,
+	"region_id":            CHECKSET,
+	"service_type":         CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11034(name string) string {
