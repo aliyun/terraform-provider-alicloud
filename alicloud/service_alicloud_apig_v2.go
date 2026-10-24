@@ -515,54 +515,62 @@ func (s *ApigServiceV2) DescribeApigPlugin(id string) (object map[string]interfa
 
 	action := fmt.Sprintf("/v1/plugins")
 
-	pageNumber := 1
-	query["pageSize"] = StringPointer(fmt.Sprintf("%d", PageSizeLarge))
-	query["pageNumber"] = StringPointer(fmt.Sprintf("%d", pageNumber))
-
-	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-			response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
-
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-		if response == nil {
-			return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
-		}
-		code, _ := jsonpath.Get("$.code", response)
-		if InArray(fmt.Sprint(code), []string{"DatabaseError.RecordNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
-		}
-
-		v, err := jsonpath.Get("$.data.items[*]", response)
-		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.items[*]", response)
-		}
-
-		result, _ := v.([]interface{})
-		for _, vv := range result {
-			item := vv.(map[string]interface{})
-			if fmt.Sprint(item["pluginId"]) == id {
-				return item, nil
-			}
-		}
-
-		if len(result) < PageSizeLarge {
-			break
-		}
-		pageNumber += 1
+	// ListPlugins (GET /v1/plugins) does not return AI gateway plugins unless
+	// gatewayType is specified. Iterate over both AI and API gateway types so the
+	// plugin can be located by id alone; ImportStatePassthrough only carries the
+	// plugin id, so gatewayId cannot be used to narrow the query here.
+	gatewayTypes := []string{"AI", "API"}
+	for _, gatewayType := range gatewayTypes {
+		pageNumber := 1
+		query["pageSize"] = StringPointer(fmt.Sprintf("%d", PageSizeLarge))
 		query["pageNumber"] = StringPointer(fmt.Sprintf("%d", pageNumber))
+		query["gatewayType"] = StringPointer(gatewayType)
+
+		for {
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+				response, err = client.RoaGet("APIG", "2024-03-27", action, query, nil, nil)
+
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			}
+			if response == nil {
+				break
+			}
+			code, _ := jsonpath.Get("$.code", response)
+			if InArray(fmt.Sprint(code), []string{"DatabaseError.RecordNotFound"}) {
+				break
+			}
+
+			v, err := jsonpath.Get("$.data.items[*]", response)
+			if err != nil {
+				return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.items[*]", response)
+			}
+
+			result, _ := v.([]interface{})
+			for _, vv := range result {
+				item := vv.(map[string]interface{})
+				if fmt.Sprint(item["pluginId"]) == id {
+					return item, nil
+				}
+			}
+
+			if len(result) < PageSizeLarge {
+				break
+			}
+			pageNumber += 1
+			query["pageNumber"] = StringPointer(fmt.Sprintf("%d", pageNumber))
+		}
 	}
 
 	return object, WrapErrorf(NotFoundErr("Plugin", id), NotFoundMsg, response)
