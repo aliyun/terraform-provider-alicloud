@@ -1,7 +1,9 @@
 package helper
 
 import (
+	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -67,5 +69,61 @@ func TestIncrementalWait(t *testing.T) {
 			t.Errorf("wait call %d: backoff did not accumulate; expected >= %v, measured %v (observed sequence %v)",
 				i+1, expected[i]-tolerance, elapsed[i], elapsed)
 		}
+	}
+}
+
+// RetryRpcPost is the shared write path, so a cancelled lifecycle must stop it instead of letting
+// the next multi-second backoff run to completion. The first backoff is 3s, which makes the old
+// sleep-based behaviour unmistakably slower than the cancellation below.
+func TestUnitRetryRpcPostStopsOnCancelledContext(t *testing.T) {
+	originalJitter := incrementalWaitJitter
+	incrementalWaitJitter = func() float64 { return 1.0 }
+	t.Cleanup(func() { incrementalWaitJitter = originalJitter })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	calls := 0
+	done := make(chan error, 1)
+	go func() {
+		_, err := RetryRpcPost(ctx, "Test", func() (map[string]interface{}, error) {
+			calls++
+			return nil, errors.New("transient")
+		}, time.Minute, func(error) bool { return true })
+		done <- err
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("RetryRpcPost returned no error after cancellation")
+		}
+		if !strings.Contains(err.Error(), context.Canceled.Error()) {
+			t.Fatalf("the cancellation was not reported: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("RetryRpcPost kept waiting out its backoff after the context was cancelled")
+	}
+	if calls > 1 {
+		t.Fatalf("expected no retry after cancellation, got %d calls", calls)
+	}
+}
+
+func TestUnitIncrementalWaitContextStopsWhenCancelled(t *testing.T) {
+	originalJitter := incrementalWaitJitter
+	incrementalWaitJitter = func() float64 { return 1.0 }
+	t.Cleanup(func() { incrementalWaitJitter = originalJitter })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wait := incrementalWaitContext(ctx, 3*time.Second, 5*time.Second)
+	cancel()
+
+	start := time.Now()
+	if wait() {
+		t.Fatal("incrementalWaitContext reported a completed wait after cancellation")
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("incrementalWaitContext slept %s after cancellation", elapsed)
 	}
 }
