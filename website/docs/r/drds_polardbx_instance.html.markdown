@@ -65,6 +65,7 @@ resource "alicloud_drds_polardbx_instance" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_renew` - (Optional, ForceNew) Whether to enable auto-renewal for a prepaid instance. Takes effect only when `payment_type` is `PREPAY`.
 * `cn_class` - (Required) Compute node (CN) specifications. Since v1.285.0 the field is mutable and supports in-place class change. Refer to the `CnClass` parameter in the [CreateDBInstance API reference](https://www.alibabacloud.com/help/en/polardb/polardb-for-xscale/api-createdbinstance-1) for the list of valid values.
 * `cn_node_count` - (Required, Int) Number of computing nodes.
 * `description` - (Optional, Available since v1.268.0) Instance remarks
@@ -78,6 +79,8 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
+* `payment_type` - (Optional, ForceNew) The billing method of the instance. Valid values: `POSTPAY` (pay-as-you-go, default) and `PREPAY` (subscription/prepaid). When `PREPAY`, `period`, `used_time` and `auto_renew` take effect.
+* `period` - (Optional, ForceNew) The billing period unit for a prepaid instance. Valid values: `Month`, `Year`. Takes effect only when `payment_type` is `PREPAY`.
 * `primary_db_instance_name` - (Optional, Available since v1.268.0) If the instance is a read-only instance, you must specify the primary instance.
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
@@ -101,6 +104,7 @@ The following arguments are supported:
 * `topology_type` - (Required, ForceNew) Topology type:
   - `3azones`: three available areas;
   - `1azone`: Single zone.
+* `used_time` - (Optional, ForceNew, Int) The purchase duration for a prepaid instance. Takes effect only when `payment_type` is `PREPAY`: when `period` is `Month` it is the number of months, and when `period` is `Year` it is the number of years. Minimum: `1`.
 * `vswitch_id` - (Required, ForceNew) The ID of the virtual switch.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 
