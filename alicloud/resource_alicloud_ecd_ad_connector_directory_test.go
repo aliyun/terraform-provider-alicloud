@@ -110,6 +110,10 @@ func testSweepEcdAdConnectorDirectory(region string) error {
 	return nil
 }
 
+// collection-order: bypass dns_address -- pre-existing stock TypeList; not touched by this directory_type-only change
+// collection-order: bypass sub_domain_dns_address -- pre-existing stock TypeList; not touched by this directory_type-only change
+// collection-order: bypass vswitch_ids -- pre-existing stock TypeList; the VSwitchIds mapping was integrated in a prior change and is unchanged by this directory_type-only PR
+
 func TestAccAliCloudECDAdConnectorDirectory_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_ad_connector_directory.default"
