@@ -135,6 +135,50 @@ output "output_calicloud_fcv3_trigger_intranet" {
 }
 ```
 
+EventBridge Trigger
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+variable "function_name" {
+  default = "TerraformTriggerResourceAPI"
+}
+
+variable "trigger_name" {
+  default = "TerraformTrigger_EventBridge"
+}
+
+resource "alicloud_fcv3_function" "function" {
+  memory_size = "512"
+  cpu         = 0.5
+  handler     = "index.Handler"
+  code {
+    zip_file = "UEsDBBQACAAIAAAAAAAAAAAAAAAAAAAAAAAIAAAAaW5kZXgucHmEkEFKxEAQRfd9ig9ZTCJOooIwDMwNXLqXnnQlaalUhU5lRj2KZ/FOXkESGR114bJ/P/7jV4b1xRq1hijtFpM1682cuNgPmgysbRulPT0fRxXnMtwrSPyeCdYRokSLnuMLJTTkbUqEvDMbxm1VdcRD6Tk+T1LW2ldB66knsYdA5iNX17ebm6tN2VnPhcswMPmREPuBacb+CiapLarAj9gT6/H97dVlCNScY3mtYvRkxdZlwDKDEnanPWVLdrdkeXEGlFEazVdfPVHaVeHc3N15CUwppwOJXeK7HshAB8NuOU7J6sP4SRXuH/EvbUfMiqMmDqv5M5FNSfAj/wgAAP//UEsHCPl//NYAAQAArwEAAFBLAQIUABQACAAIAAAAAAD5f/zWAAEAAK8BAAAIAAAAAAAAAAAAAAAAAAAAAABpbmRleC5weVBLBQYAAAAAAQABADYAAAA2AQAAAAA="
+  }
+  function_name = var.name
+  runtime       = "python3.9"
+  disk_size     = "512"
+  log_config {
+    log_begin_rule = "None"
+  }
+}
+
+resource "alicloud_fcv3_trigger" "default" {
+  trigger_type   = "eventbridge"
+  trigger_name   = var.name
+  description    = "create"
+  qualifier      = "LATEST"
+  trigger_config = jsonencode({ "eventSourceConfig" : { "eventSourceType" : "Default" }, "eventRuleFilterPattern" : "{}" })
+  function_name  = alicloud_fcv3_function.function.function_name
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_fcv3_trigger&spm=docs.r.fcv3_trigger.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -144,7 +188,10 @@ The following arguments are supported:
 * `function_name` - (Required, ForceNew) Function Name
 * `invocation_role` - (Optional) The role required by the event source (such as OSS) to call the function.
 * `qualifier` - (Required, ForceNew) The version or alias of the function
-* `source_arn` - (Optional, ForceNew) Trigger Event source ARN
+* `source_arn` - (Optional, Computed, ForceNew) Trigger Event source ARN. For `eventbridge` triggers, the FC server backfills `source_arn` after creation; leave it unset and Terraform will ignore the server-backfilled value.
+
+  -> **NOTE:** For `eventbridge` triggers, the FC server backfills `source_arn` after creation when the configuration leaves it unset. Omit `source_arn` in your configuration; setting it is unnecessary and, because the field is create-only (`ForceNew`), changing it forces a replacement. Terraform ignores the server-backfilled value when `source_arn` is unset, so a subsequent `terraform plan` no longer reports a diff or forces a replacement.
+
 * `trigger_config` - (Optional) Trigger configuration. The configuration varies for different types of triggers.
 * `trigger_name` - (Optional, ForceNew, Computed) Trigger Name
 * `trigger_type` - (Required, ForceNew) The type of the trigger. Currently, the supported types include oss, log, http, timer, tablestore, cdn_events, mns_topic and eventbridge.
