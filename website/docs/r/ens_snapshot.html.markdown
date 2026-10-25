@@ -52,7 +52,7 @@ resource "alicloud_ens_snapshot" "default" {
 The following arguments are supported:
 * `description` - (Optional) Snapshot Description Information.
 * `disk_id` - (Required, ForceNew) Cloud Disk ID.
-* `ens_region_id` - (Required, ForceNew) The node ID of ENS.
+* `ens_region_id` - (Required, ForceNew) The ID of the ENS node. You can query the node ID by calling the DescribeEnsRegions operation.
 * `snapshot_name` - (Optional) Name of the snapshot instance.
 
 ## Attributes Reference
