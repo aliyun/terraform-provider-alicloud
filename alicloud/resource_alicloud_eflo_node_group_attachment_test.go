@@ -34,13 +34,14 @@ func TestAccAliCloudEfloNodeGroupAttachment_basic11092(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":     "vsw-uf63gbmvwgreao66opmie",
-					"hostname":       "attachment-test-e01-cn-smw4d1bzd0a",
-					"login_password": "G7f$2kL9@vQx3Zp5*",
-					"cluster_id":     "i118976621753269898628",
-					"node_group_id":  "i127582271753269898630",
-					"node_id":        "e01-cn-smw4d1bzd0a",
-					"vpc_id":         "vpc-uf6t73bb01dfprb2qvpqa",
+					"vswitch_id":        "vsw-uf63gbmvwgreao66opmie",
+					"hostname":          "attachment-test-e01-cn-smw4d1bzd0a",
+					"login_password":    "G7f$2kL9@vQx3Zp5*",
+					"cluster_id":        "i118976621753269898628",
+					"node_group_id":     "i127582271753269898630",
+					"node_id":           "e01-cn-smw4d1bzd0a",
+					"vpc_id":            "vpc-uf6t73bb01dfprb2qvpqa",
+					"security_group_id": "${alicloud_security_group.create_security_group.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -58,7 +59,7 @@ func TestAccAliCloudEfloNodeGroupAttachment_basic11092(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"data_disk", "login_password", "user_data"},
+				ImportStateVerifyIgnore: []string{"data_disk", "login_password", "user_data", "security_group_id"},
 			},
 		},
 	})
@@ -72,6 +73,12 @@ variable "name" {
     default = "%s"
 }
 
+resource "alicloud_security_group" "create_security_group" {
+  description         = "sg"
+  security_group_name = "ng-attachment-test-11092"
+  security_group_type = "normal"
+  vpc_id              = "vpc-uf6t73bb01dfprb2qvpqa"
+}
 
 `, name)
 }
@@ -113,14 +120,15 @@ func TestAccAliCloudEfloNodeGroupAttachment_basic11072(t *testing.T) {
 							"performance_level": "PL0",
 						},
 					},
-					"vswitch_id":     "vsw-2zewbiowk4qgd7cbcj3gj",
-					"hostname":       "attachment-test-e01-cn-62l4ccwfx2i",
-					"login_password": "G7f$2kL9@vQx3Zp5*",
-					"cluster_id":     "i116429021752634788999",
-					"node_group_id":  "i123439231752634789001",
-					"node_id":        "e01-cn-oo04e28330o",
-					"vpc_id":         "vpc-2ze9znsls3gm3xr17mnrv",
-					"user_data":      "ZWNobyAiaGVsbG8i",
+					"vswitch_id":        "vsw-2zewbiowk4qgd7cbcj3gj",
+					"hostname":          "attachment-test-e01-cn-62l4ccwfx2i",
+					"login_password":    "G7f$2kL9@vQx3Zp5*",
+					"cluster_id":        "i116429021752634788999",
+					"node_group_id":     "i123439231752634789001",
+					"node_id":           "e01-cn-oo04e28330o",
+					"vpc_id":            "vpc-2ze9znsls3gm3xr17mnrv",
+					"user_data":         "ZWNobyAiaGVsbG8i",
+					"security_group_id": "${alicloud_security_group.create_security_group.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -140,7 +148,7 @@ func TestAccAliCloudEfloNodeGroupAttachment_basic11072(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"data_disk", "login_password", "user_data"},
+				ImportStateVerifyIgnore: []string{"data_disk", "login_password", "user_data", "security_group_id"},
 			},
 		},
 	})
@@ -169,7 +177,14 @@ resource "alicloud_eflo_node_group_attachment" "default0" {
   }
   
   vswitch_id = "vsw-2zewbiowk4qgd7cbcj3gj"
-} 
+}
+
+resource "alicloud_security_group" "create_security_group" {
+  description         = "sg"
+  security_group_name = "ng-attachment-test-11072"
+  security_group_type = "normal"
+  vpc_id              = "vpc-2ze9znsls3gm3xr17mnrv"
+}
 `, name)
 }
 

@@ -92,6 +92,11 @@ func resourceAliCloudEfloNodeGroupAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -135,6 +140,9 @@ func resourceAliCloudEfloNodeGroupAttachmentCreate(d *schema.ResourceData, meta 
 	}
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		node["VSwitchId"] = v
+	}
+	if v, ok := d.GetOk("security_group_id"); ok {
+		node["SecurityGroupId"] = v
 	}
 	if v, ok := d.GetOk("data_disk"); ok {
 		dataDisks := make([]map[string]interface{}, 0)
