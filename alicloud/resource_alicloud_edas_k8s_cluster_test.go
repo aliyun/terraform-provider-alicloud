@@ -102,7 +102,7 @@ func testSweepEdasK8sCluster(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
+func TestAccAliCloudEdasK8sCluster_basic(t *testing.T) {
 	var v *edas.Cluster
 	resourceId := "alicloud_edas_k8s_cluster.default"
 	ra := resourceAttrInit(resourceId, edasK8sClusterBasicMap)
@@ -127,6 +127,8 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 		CheckDestroy:      testAccCheckEdasK8sClusterDestroy,
 		Steps: []resource.TestStep{
 			{
+				// Create with namespace_id set explicitly; Read populates it
+				// from the EDAS GetCluster RegionId.
 				Config: testAccConfig(map[string]interface{}{
 					"cs_cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
 					"namespace_id":  region,
@@ -139,6 +141,18 @@ func TestAccAlicloudEdasK8sCluster_basic(t *testing.T) {
 						"namespace_id":  region,
 					}),
 				),
+			},
+			{
+				// Mirrors the documented example: namespace_id is removed
+				// from config. With namespace_id now Computed the SDKv2
+				// framework uses the read-back RegionId from state instead of
+				// an empty config-side value, so this plan must be empty: no
+				// diff, no ForceNew. Before marking namespace_id Computed this
+				// step failed with a persistent recreate diff.
+				Config: testAccConfig(map[string]interface{}{
+					"namespace_id": REMOVEKEY,
+				}),
+				ExpectNonEmptyPlan: false,
 			},
 			{
 				ResourceName:      resourceId,
@@ -210,6 +224,13 @@ func resourceEdasK8sClusterConfigDependence(name string) string {
 		  cpu_core_count       = 2
 		  memory_size          = 4
 		  kubernetes_node_role = "Worker"
+		  # Constrain to instance types that support cloud_essd, matching
+		  # the node pool's system_disk_category below. cloud_essd avoids the
+		  # shared test account's disk-encryption enforcement failure
+		  # (NotSupportSnapshotEncrypted.DiskCategory) seen with
+		  # cloud_efficiency; cloud_essd without this filter fails with
+		  # "instanceTypes are not matched with systemDiskCategory".
+		  system_disk_category = "cloud_essd"
 		}
 
 		data "alicloud_cs_kubernetes_version" "default" {
@@ -222,21 +243,25 @@ func resourceEdasK8sClusterConfigDependence(name string) string {
 		  name_regex = "^default-NODELETING$"
 		}
 
-		data "alicloud_vswitches" "default" {
-		  vpc_id  = data.alicloud_vpcs.default.ids.0
-		  zone_id = data.alicloud_zones.default.zones.0.id
-		}
-
+		# Always create a dedicated vswitch for this test. The original config
+		# used a count tied to data.alicloud_vswitches.default.ids to reuse a
+		# pre-existing vswitch, but that data source is re-read during
+		# the post-apply plan: once this test creates its own vswitch the data
+		# source returns it, flipping count 1 -> 0 and producing a non-empty
+		# "destroy" plan (index [0] out of range). Creating unconditionally with a
+		# collision-free cidr index makes Step 1's post-apply plan empty.
 		resource "alicloud_vswitch" "vswitch" {
-		  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
 		  vpc_id       = data.alicloud_vpcs.default.ids.0
-		  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+		  # index 16 -> 172.17.0.0/20. The original fixed index 8 collides with a
+		  # stuck tf-testacc vswitch (172.16.128.0/20) whose zombie RDS dependency
+		  # cannot be safely cleaned from the shared test account.
+		  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 16)
 		  zone_id      = data.alicloud_zones.default.zones.0.id
 		  vswitch_name = var.name
 		}
 
 		locals {
-		  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+		  vswitch_id = alicloud_vswitch.vswitch.id
 		}
 
 		resource "alicloud_cs_managed_kubernetes" "default" {
@@ -264,7 +289,11 @@ func resourceEdasK8sClusterConfigDependence(name string) string {
 		  cluster_id           = alicloud_cs_managed_kubernetes.default.id
 		  vswitch_ids          = [local.vswitch_id]
 		  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
-		  system_disk_category = "cloud_efficiency"
+		  # cloud_essd supports KMS encryption; cloud_efficiency does not support
+		  # re-encrypting a disk from a snapshot with a new KMSKeyId, which the
+		  # shared test account's disk-encryption enforcement triggers
+		  # (NotSupportSnapshotEncrypted.DiskCategory).
+		  system_disk_category = "cloud_essd"
 		  system_disk_size     = 40
 		  password             = "Test12345"
 		  desired_size         = 2
