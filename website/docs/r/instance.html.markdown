@@ -100,6 +100,135 @@ resource "alicloud_instance" "instance" {
 You can use the existing [ecs-instance module](https://registry.terraform.io/modules/alibaba/ecs-instance/alicloud)
 to create several ECS instances one-click.
 
+## Encrypting data disks bundled in a custom image with a KMS key
+
+When the `image_id` points at a custom image that already contains data disks, configuring `system_disk_kms_key_id` only encrypts the system disk. The data disks that the image brings along are **not** covered by `system_disk_kms_key_id`. To encrypt them with a KMS key you manage, declare each image-bundled data disk explicitly in a `data_disks` block and set `encrypted = true` together with `kms_key_id` and `device`.
+
+This configuration can only be applied **when the instance is created**. `data_disks` is immutable after creation (see [`data_disks`](#data_disks) below); an existing data disk cannot be re-encrypted in place to switch it to a different KMS key. To change the KMS key of an already-created data disk, create a new disk encrypted with the target key (for example from a re-encrypted snapshot) and attach it separately.
+
+### Matching the image's data disk mount points
+
+For each data disk the image brings, the `device` set in `data_disks` **must match** the mount point recorded in the image's `disk_device_mappings`, and the `size` **must be greater than or equal to** the size of the snapshot that backs that image data disk. You can discover these values with the [`alicloud_images`](../d/images.html.markdown) data source, whose `disk_device_mappings` block exposes `device`, `size`, and `snapshot_id` for every disk in the image.
+
+### Scheme 1 — declare `data_disks` directly on the instance
+
+Use this when you create one instance (or a small, fixed set) and the image's data disk mount points are known ahead of time. Declare one `data_disks` block per image-bundled data disk, with `device`, `encrypted`, and `kms_key_id`.
+
+```terraform
+variable "image_id" {
+  # A custom image that already contains data disks.
+  default = "m-xxxxxxxxxxxxxxxx" # replace with your custom image ID
+}
+
+variable "vswitch_id" {
+  default = "vsw-xxxxxxxxxxxxxxxx" # replace with your vSwitch ID
+}
+
+resource "alicloud_kms_key" "disk_key" {
+  description            = "KMS key for image-bundled data disks"
+  pending_window_in_days = "7"
+  status                 = "Enabled"
+}
+
+resource "alicloud_security_group" "example" {
+  vpc_id = "vpc-xxxxxxxxxxxxxxxx" # replace with your VPC ID
+}
+
+resource "alicloud_instance" "encrypted_data_disks" {
+  image_id               = var.image_id
+  instance_type          = "ecs.g6.large"
+  system_disk_category   = "cloud_essd"
+  system_disk_size       = 40
+  system_disk_encrypted  = true
+  system_disk_kms_key_id = alicloud_kms_key.disk_key.id
+  vswitch_id             = var.vswitch_id
+  security_groups        = [alicloud_security_group.example.id]
+
+  # The image brings a data disk mounted at /dev/xvdb.
+  data_disks {
+    device     = "/dev/xvdb" # must match the image disk_device_mappings device
+    size       = 60          # must be >= the image data disk snapshot size
+    category   = "cloud_essd"
+    encrypted  = true
+    kms_key_id = alicloud_kms_key.disk_key.id
+  }
+}
+```
+
+### Scheme 2 — read mount points dynamically from the image
+
+Use this when you create instances in batches, or when the image — and therefore its data disk mount points — is not fixed at authoring time. Resolve the image's `disk_device_mappings` with `data.alicloud_images` and build the `data_disks` entries with a `dynamic` block, so the same configuration works across images whose data disks differ.
+
+> **NOTE:** `disk_device_mappings` exposed by `data.alicloud_images` currently carries only `device`, `size`, and `snapshot_id` — it does not expose a disk type. A custom image's `DescribeImages` response can legitimately contain a `Type=system` entry for the image's system disk (for example on `/dev/xvda`), and because the data source does not surface that type, a blanket `for_each` over every mapping regenerates the system disk as a `data_disks` entry whose `device` collides with the `system_disk_*` arguments. Do **not** filter by device name to work around this: data disk mount points are not stable across images, so a device name cannot reliably identify the system disk. Use Scheme 2 only when you have confirmed the image's `disk_device_mappings` holds no system-disk entry; otherwise use [Scheme 1](#scheme-1--declare-data_disks-directly-on-the-instance) and declare the image-bundled data disks explicitly.
+
+```terraform
+variable "image_id" {
+  default = "m-xxxxxxxxxxxxxxxx" # replace with your custom image ID
+}
+
+variable "vswitch_id" {
+  default = "vsw-xxxxxxxxxxxxxxxx" # replace with your vSwitch ID
+}
+
+# Resolve the image and its data disk mount points.
+data "alicloud_images" "selected" {
+  image_id = var.image_id
+  owners   = "self" # custom images belong to your own account
+}
+
+resource "alicloud_kms_key" "disk_key" {
+  description            = "KMS key for image-bundled data disks"
+  pending_window_in_days = "7"
+  status                 = "Enabled"
+}
+
+resource "alicloud_security_group" "example" {
+  vpc_id = "vpc-xxxxxxxxxxxxxxxx" # replace with your VPC ID
+}
+
+resource "alicloud_instance" "encrypted_data_disks" {
+  image_id               = var.image_id
+  instance_type          = "ecs.g6.large"
+  system_disk_category   = "cloud_essd"
+  system_disk_size       = 40
+  system_disk_encrypted  = true
+  system_disk_kms_key_id = alicloud_kms_key.disk_key.id
+  vswitch_id             = var.vswitch_id
+  security_groups        = [alicloud_security_group.example.id]
+
+  # The data disks come straight from the image's disk_device_mappings,
+  # so device and minimum size always match the image, whatever it is.
+  dynamic "data_disks" {
+    for_each = {
+      for d in data.alicloud_images.selected.images.0.disk_device_mappings : d.device => d
+    }
+    content {
+      device     = data_disks.value.device
+      size       = data_disks.value.size
+      category   = "cloud_essd"
+      encrypted  = true
+      kms_key_id = alicloud_kms_key.disk_key.id
+    }
+  }
+}
+```
+
+For batch creation, the same lookup can feed a launch template (see `launch_template_id` / `launch_template_version` above) so that many instances share one encrypted-disk configuration.
+
+### Scheme 3 — encrypt the image itself (image-layer encryption)
+
+Instead of declaring each data disk at instance creation, you can encrypt the whole image — the system disk and the image-bundled data disks together — by [copying the source image with an encryption configuration](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/copycustomimage). After the copy is encrypted, every instance created from it inherits encrypted system and data disks without per-disk `data_disks` encryption blocks.
+
+### Choosing a scheme
+
+| Scheme | When to use | Limits |
+| --- | --- | --- |
+| Declare `data_disks` on the instance (Scheme 1) | One instance, or a fixed set, with image mount points known ahead of time. | Must keep `device` / `size` in sync with the image; only applies at creation. |
+| Dynamic `data_disks` from `data.alicloud_images` (Scheme 2) | Batch creation, or images whose data disk mount points are not fixed. | Requires the image's `disk_device_mappings` to be readable and to contain no system-disk entry; the data source does not expose disk type, so a system-disk mapping would collide with `system_disk_*` (use Scheme 1 otherwise); still only at creation. |
+| Image-layer encryption (Scheme 3) | You want the system disk and all image-bundled data disks encrypted together, for every instance. | Requires creating and maintaining an encrypted image copy; an existing image cannot be re-encrypted in place. |
+
+In all three schemes, encryption of image-bundled data disks is decided **at instance/image creation time**. Switching an already-created data disk to a different KMS key is not supported through `data_disks`; create a new encrypted disk and attach it instead.
+
 ## Argument Reference
 
 The following arguments are supported:
