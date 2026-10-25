@@ -610,10 +610,16 @@ The following arguments are supported:
 * `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 10, 60, 300. Defaults to 300.
 * `auto_renew` - (Optional, Available since v1.34.0) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
 * `auto_renew_period` - (Optional, Available since v1.34.0) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
-* `zone_id` - (ForceNew, Optional) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
+* `zone_id` - (Optional) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
   If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
   The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
-* `vswitch_id` - (ForceNew, Optional) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
+  Changing `zone_id` on an existing instance triggers an in-place zone migration via `MigrateToOtherZone`
+  (preserving the instance ID) instead of recreating the instance; the target zone must differ from the
+  current primary zone and have a reachable vSwitch (see `vswitch_id`).
+* `vswitch_id` - (Optional) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
+  Changing `vswitch_id` (or `private_ip_address`) on an existing instance is applied in place via
+  `SwitchDBInstanceVpc`; when combined with a zone migration, the vSwitch is forwarded to
+  `MigrateToOtherZone` so the instance lands in the target zone's vSwitch.
 * `private_ip_address` - (Optional, Available since v1.125.0) The private IP address of the instance. The private IP address must be within the Classless Inter-Domain Routing (CIDR) block of the vSwitch that is specified by the VSwitchId parameter.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `db_instance_ip_array_name` - (Optional, Available since v1.125.0) The name of the IP address whitelist. Default value: Default.
@@ -688,8 +694,8 @@ The following arguments are supported:
   - SQLServer: <Minor engine version>. Example: 15.0.4073.23.
 
   -> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
-* `zone_id_slave_a` - (Optional, ForceNew, Available since v1.101.0) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
-* `zone_id_slave_b` - (Optional, ForceNew, Available since v1.232.0) RDS MySQL Cluster series instances support creating 1 to 2 secondary nodes at the same time when establishing a new instance. If you have this requirement, you can use this parameter to specify the availability zone for the second secondary node.
+* `zone_id_slave_a` - (Optional, Available since v1.101.0) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones. Changing this attribute on an existing instance, together with a `zone_id`/`category` change, triggers an in-place `MigrateToOtherZone` migration (the instance ID is preserved) instead of a replacement.
+* `zone_id_slave_b` - (Optional, Available since v1.232.0) RDS MySQL Cluster series instances support creating 1 to 2 secondary nodes at the same time when establishing a new instance. If you have this requirement, you can use this parameter to specify the availability zone for the second secondary node. Like `zone_id_slave_a`, it is applied in place via `MigrateToOtherZone` when changed on an existing instance.
 * `ssl_action` - (Optional, Available since v1.90.0) Actions performed on SSL functions. Valid values: 
   `Open`: turn on SSL encryption; 
   `Close`: turn off SSL encryption; 
