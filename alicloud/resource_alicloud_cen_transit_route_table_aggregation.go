@@ -32,9 +32,10 @@ func resourceAliCloudCenTransitRouteTableAggregation() *schema.Resource {
 				Computed: true,
 			},
 			"transit_route_table_aggregation_cidr": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: ipv6CidrDiffSuppressFunc,
 			},
 			"transit_route_table_aggregation_description": {
 				Type:     schema.TypeString,
