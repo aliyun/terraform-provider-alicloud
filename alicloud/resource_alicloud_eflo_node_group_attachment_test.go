@@ -199,7 +199,7 @@ func TestAccAliCloudEfloNodeGroupAttachment_dataDiskOrder(t *testing.T) {
 		return &EfloServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEfloNodeGroupAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	_ = rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceflo%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEfloNodeGroupAttachmentDataDiskOrderDependence)
