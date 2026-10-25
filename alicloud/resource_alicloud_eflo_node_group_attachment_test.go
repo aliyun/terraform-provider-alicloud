@@ -188,4 +188,94 @@ resource "alicloud_security_group" "create_security_group" {
 `, name)
 }
 
+// Case data_disk TypeList 收敛 reorder 覆盖 (TypeListOrderCoverage)
+// 见 scripts/collection-order/README.md: apply 两个 distinct members 后,
+// 重排顺序再 apply, post-apply plan 必须为空, 不设 ExpectNonEmptyPlan.
+func TestAccAliCloudEfloNodeGroupAttachment_dataDiskOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eflo_node_group_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudEfloNodeGroupAttachmentMapDataDiskOrder)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EfloServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEfloNodeGroupAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfacceflo%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEfloNodeGroupAttachmentDataDiskOrderDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]interface{}{
+						{
+							"delete_with_node":  "false",
+							"category":          "cloud_essd",
+							"size":              "40",
+							"performance_level": "PL0",
+						},
+						{
+							"delete_with_node":  "true",
+							"category":          "cloud_essd",
+							"size":              "100",
+							"performance_level": "PL1",
+						},
+					},
+					"vswitch_id":     "vsw-2zewbiowk4qgd7cbcj3gj",
+					"hostname":       "attachment-test-e01-cn-62l4ccwfx2i",
+					"login_password": "G7f$2kL9@vQx3Zp5*",
+					"cluster_id":     "i116429021752634788999",
+					"node_group_id":  "i123439231752634789001",
+					"node_id":        "e01-cn-oo04e28330o",
+					"vpc_id":         "vpc-2ze9znsls3gm3xr17mnrv",
+					"user_data":      "ZWNobyAiaGVsbG8i",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]interface{}{
+						{
+							"delete_with_node":  "true",
+							"category":          "cloud_essd",
+							"size":              "100",
+							"performance_level": "PL1",
+						},
+						{
+							"delete_with_node":  "false",
+							"category":          "cloud_essd",
+							"size":              "40",
+							"performance_level": "PL0",
+						},
+					},
+					"vswitch_id":     "vsw-2zewbiowk4qgd7cbcj3gj",
+					"hostname":       "attachment-test-e01-cn-62l4ccwfx2i",
+					"login_password": "G7f$2kL9@vQx3Zp5*",
+					"cluster_id":     "i116429021752634788999",
+					"node_group_id":  "i123439231752634789001",
+					"node_id":        "e01-cn-oo04e28330o",
+					"vpc_id":         "vpc-2ze9znsls3gm3xr17mnrv",
+					"user_data":      "ZWNobyAiaGVsbG8i",
+				}),
+			},
+		},
+	})
+}
+
+var AlicloudEfloNodeGroupAttachmentMapDataDiskOrder = map[string]string{}
+
+func AlicloudEfloNodeGroupAttachmentDataDiskOrderDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+`, name)
+}
+
 // Test Eflo NodeGroupAttachment. <<< Resource test cases, automatically generated.
