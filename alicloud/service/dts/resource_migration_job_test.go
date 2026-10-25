@@ -182,11 +182,19 @@ func TestAccAliCloudDTSMigrationJob_basic0(t *testing.T) {
 		CheckDestroy:             checkMigrationJobDestroy(migrationJobResourceId),
 		Steps: []resource.TestStep{
 			{
-				Config: migrationJobBasicDependence(name) + migrationJobBody(name, "MySQL", ""),
-				Check:  migrationJobBasicChecks(name, "MySQL"),
+				Config: migrationJobBasicDependence(name) + migrationJobBody(name, "MySQL", `
+  data_check_configure = "{\"fullDataCheck\":true,\"incrementalDataCheck\":false,\"fullCheckModel\":2,\"dataCheckDbList\":{\"tftestdatabase\":{\"name\":\"tftestdatabase\",\"all\":true}}}"
+`),
+				Check: migrationJobBasicChecks(name, "MySQL",
+					resource.TestCheckResourceAttr(migrationJobResourceId, "data_check_configure", `{"fullDataCheck":true,"incrementalDataCheck":false,"fullCheckModel":2,"dataCheckDbList":{"tftestdatabase":{"name":"tftestdatabase","all":true}}}`),
+				),
 			},
 			{
+				// data_check_configure is ForceNew; dropping it here would replace the job, and
+				// DeleteDtsJob releases the shared dts_instance_id before the new job is configured.
+				// Keep the same value so this step only exercises the status transition in place.
 				Config: migrationJobBasicDependence(name) + migrationJobBody(name, "MySQL", `
+  data_check_configure = "{\"fullDataCheck\":true,\"incrementalDataCheck\":false,\"fullCheckModel\":2,\"dataCheckDbList\":{\"tftestdatabase\":{\"name\":\"tftestdatabase\",\"all\":true}}}"
   status = "Migrating"
 `),
 				Check: migrationJobBasicChecks(name, "MySQL",
@@ -197,7 +205,7 @@ func TestAccAliCloudDTSMigrationJob_basic0(t *testing.T) {
 				ResourceName:            migrationJobResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"destination_endpoint_password", "source_endpoint_password"},
+				ImportStateVerifyIgnore: []string{"destination_endpoint_password", "source_endpoint_password", "data_check_configure"},
 			},
 		},
 	})
@@ -698,6 +706,11 @@ resource "alicloud_db_instance" "default" {
   vswitch_id               = alicloud_vswitch.default.id
   instance_name            = join("", [var.name, count.index])
   ssl_action               = "Open"
+
+  timeouts {
+    create = "60m"
+    update = "60m"
+  }
 }
 
 resource "alicloud_rds_account" "default" {
@@ -1303,4 +1316,132 @@ func TestUnitAlicloudDTSMigrationJob(t *testing.T) {
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
+}
+
+// lintignore: R001
+func TestUnitAlicloudDTSMigrationJobResumeAcceptsFinished(t *testing.T) {
+	resourceSchema := dts.ResourceMigrationJob()
+	d, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	d.SetId("dts_job_id")
+	assert.Nil(t, d.Set("dts_instance_id", "dts_instance_id"))
+	assert.Nil(t, d.Set("dts_job_name", "dts_job_name"))
+
+	rawClient, err := dtsTestClientForRegion(dtsTestRegion())
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+
+	// A job without incremental synchronization can leave Suspending and reach
+	// Finished without ever reporting Migrating. The resume waiter must accept
+	// Finished rather than time out on a status the job will never show again.
+	var mu sync.Mutex
+	describeCalls := 0
+	startCalls := 0
+	describePatch := gomonkey.ApplyMethod(reflect.TypeOf(&dts.Service{}), "DescribeMigrationJob", func(*dts.Service, string) (map[string]interface{}, error) {
+		mu.Lock()
+		describeCalls++
+		status := "Finished"
+		if describeCalls == 1 {
+			status = "Suspending"
+		}
+		mu.Unlock()
+		return map[string]interface{}{
+			"DtsJobId": "dts_job_id",
+			"Status":   status,
+			"DtsJobList": []interface{}{
+				map[string]interface{}{
+					"DtsJobId":      "dts_job_id",
+					"DtsInstanceID": "dts_instance_id",
+					"DtsJobName":    "dts_job_name",
+					"Status":        status,
+					"MigrationMode": map[string]interface{}{
+						"DataInitialization":      false,
+						"DataSynchronization":     false,
+						"StructureInitialization": false,
+					},
+					"SourceEndpoint":      map[string]interface{}{},
+					"DestinationEndpoint": map[string]interface{}{},
+				},
+			},
+		}, nil
+	})
+	defer describePatch.Reset()
+
+	requestPatch := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if action != nil && *action == "StartDtsJob" {
+			mu.Lock()
+			startCalls++
+			mu.Unlock()
+		}
+		return map[string]interface{}{"Success": true}, nil
+	})
+	defer requestPatch.Reset()
+
+	diff := sdkterraform.NewInstanceDiff()
+	diff.Attributes["status"] = &sdkterraform.ResourceAttrDiff{Old: "Suspending", New: "Migrating"}
+	resourceData, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
+	resourceData.SetId(d.Id())
+
+	err = resourceSchema.Update(resourceData, rawClient)
+	assert.Nil(t, err)
+	assert.Equal(t, "Finished", resourceData.Get("status"))
+	mu.Lock()
+	assert.Equal(t, 1, startCalls)
+	mu.Unlock()
+}
+
+// A migration that has only finished its precheck is not running yet. Read must keep
+// PreCheckPass in state: folding it into Migrating makes a later explicit status = "Migrating"
+// match the state, Terraform schedules no update, and StartDtsJob is never called.
+func TestUnitAlicloudDTSMigrationJobReadPreservesPreCheckPass(t *testing.T) {
+	resourceSchema := dts.ResourceMigrationJob()
+	// A fully built client keeps every call on the patched DoRequest; a zero value would fail in
+	// endpoint resolution before the fake is reached.
+	meta := dtsUnitTestAPIClient(t)
+
+	d, err := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	assert.Nil(t, err)
+	d.SetId("dts-job-precheckpass")
+
+	readPatch := gomonkey.ApplyMethod(reflect.TypeOf(&dts.Service{}), "DescribeMigrationJob", func(*dts.Service, string) (map[string]interface{}, error) {
+		return map[string]interface{}{"Status": "PreCheckPass", "DtsInstanceID": "dts-instance-precheckpass"}, nil
+	})
+	err = resourceSchema.Read(d, meta)
+	readPatch.Reset()
+	assert.Nil(t, err)
+	assert.Equal(t, "PreCheckPass", d.Get("status"), "an unstarted migration must not be reported as Migrating")
+
+	// Setting status = "Migrating" afterwards has to produce an update that starts the migration.
+	diff := sdkterraform.NewInstanceDiff()
+	diff.Attributes["status"] = &sdkterraform.ResourceAttrDiff{Old: "PreCheckPass", New: "Migrating"}
+	resourceData, err := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
+	assert.Nil(t, err)
+	resourceData.SetId("dts-job-precheckpass")
+
+	var mu sync.Mutex
+	startCalls := 0
+	currentStatus := "PreCheckPass"
+	describePatch := gomonkey.ApplyMethod(reflect.TypeOf(&dts.Service{}), "DescribeMigrationJob", func(*dts.Service, string) (map[string]interface{}, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		return map[string]interface{}{"Status": currentStatus, "DtsInstanceID": "dts-instance-precheckpass"}, nil
+	})
+	defer describePatch.Reset()
+	requestPatch := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "StartDtsJob" {
+			mu.Lock()
+			startCalls++
+			currentStatus = "Migrating"
+			mu.Unlock()
+		}
+		return map[string]interface{}{"Success": true}, nil
+	})
+	defer requestPatch.Reset()
+
+	err = resourceSchema.Update(resourceData, meta)
+	assert.Nil(t, err)
+	mu.Lock()
+	assert.Equal(t, 1, startCalls, "an explicit status change must start the migration")
+	mu.Unlock()
+	assert.Equal(t, "Migrating", resourceData.Get("status"))
 }

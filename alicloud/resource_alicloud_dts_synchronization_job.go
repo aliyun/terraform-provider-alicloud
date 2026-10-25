@@ -1,13 +1,12 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"sort"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -810,44 +809,9 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 
 	if !d.IsNewResource() && d.HasChange("job_parameters") {
 		oldRaw, newRaw := d.GetChange("job_parameters")
-		var normalize = func(raw any) string {
-			switch t := raw.(type) {
-			case string:
-				var arr []map[string]interface{}
-				if err := json.Unmarshal([]byte(t), &arr); err != nil {
-					return t
-				}
-				sort.Slice(arr, func(i, j int) bool {
-					n1, _ := arr[i]["name"].(string)
-					n2, _ := arr[j]["name"].(string)
-					return n1 < n2
-				})
-				b, _ := json.Marshal(arr)
-				return string(b)
-			case []interface{}:
-				// 直接转成 []map
-				var arr []map[string]interface{}
-				for _, v := range t {
-					m, ok := v.(map[string]interface{})
-					if ok {
-						arr = append(arr, m)
-					}
-				}
-				sort.Slice(arr, func(i, j int) bool {
-					n1, _ := arr[i]["name"].(string)
-					n2, _ := arr[j]["name"].(string)
-					return n1 < n2
-				})
-				b, _ := json.Marshal(arr)
-				return string(b)
-			default:
-				// 无法解析，原样字符串化
-				return fmt.Sprintf("%v", raw)
-			}
-		}
 
-		normOld := normalize(oldRaw)
-		normNew := normalize(newRaw)
+		normOld := convert.NormalizeJsonObjectSliceByName(oldRaw)
+		normNew := convert.NormalizeJsonObjectSliceByName(newRaw)
 
 		if normOld != normNew {
 			modifyJobConfigReq := map[string]interface{}{

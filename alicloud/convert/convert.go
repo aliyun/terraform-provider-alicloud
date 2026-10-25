@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -473,5 +474,48 @@ func NormalizeValue(value interface{}) (interface{}, error) {
 
 	default:
 		return val, nil
+	}
+}
+
+// NormalizeJsonObjectSliceByName normalizes a JSON object slice so that
+// HasChange comparisons are not affected by element ordering. It accepts either
+// a JSON-encoded string or a []interface{} of map[string]interface{}, sorts the
+// objects by their "name" field with a stable sort, and returns the
+// re-serialized JSON string.
+// A JSON string that cannot be unmarshalled is returned unchanged. Any other
+// type is rendered via fmt.Sprintf("%v") so the caller still gets a stable,
+// non-empty string.
+func NormalizeJsonObjectSliceByName(raw interface{}) string {
+	switch t := raw.(type) {
+	case string:
+		var arr []map[string]interface{}
+		if err := json.Unmarshal([]byte(t), &arr); err != nil {
+			return t
+		}
+		sort.SliceStable(arr, func(i, j int) bool {
+			n1, _ := arr[i]["name"].(string)
+			n2, _ := arr[j]["name"].(string)
+			return n1 < n2
+		})
+		b, _ := json.Marshal(arr)
+		return string(b)
+	case []interface{}:
+		// directly convert to []map
+		var arr []map[string]interface{}
+		for _, v := range t {
+			m, ok := v.(map[string]interface{})
+			if ok {
+				arr = append(arr, m)
+			}
+		}
+		sort.SliceStable(arr, func(i, j int) bool {
+			n1, _ := arr[i]["name"].(string)
+			n2, _ := arr[j]["name"].(string)
+			return n1 < n2
+		})
+		b, _ := json.Marshal(arr)
+		return string(b)
+	default:
+		return fmt.Sprintf("%v", raw)
 	}
 }

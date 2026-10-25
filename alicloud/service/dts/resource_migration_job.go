@@ -48,6 +48,11 @@ func ResourceMigrationJob() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"data_check_configure": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"dts_job_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -223,6 +228,12 @@ func ResourceMigrationJob() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validators.StringInSlice([]string{"Suspending", "Migrating"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// A migration without incremental synchronization runs once and stays
+					// Finished; the terminal state already satisfies a requested running
+					// state and cannot be started or suspended again.
+					return old == "Finished" && (new == "Migrating" || new == "Suspending")
+				},
 			},
 		},
 	}
@@ -324,6 +335,9 @@ func resourceMigrationJobCreate(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	request["JobType"] = "MIGRATION"
+	if v, ok := d.GetOk("data_check_configure"); ok {
+		request["DataCheckConfigure"] = v
+	}
 	request["RegionId"] = client.RegionId
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -403,7 +417,7 @@ func resourceMigrationJobRead(d *schema.ResourceData, meta interface{}) error {
 			d.Set("source_endpoint_ssl", ssl)
 		}
 	}
-	d.Set("status", object["Status"])
+	d.Set("status", convertMigrationJobStatusResponse(object["Status"]))
 	return nil
 }
 func resourceMigrationJobUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -440,11 +454,15 @@ func resourceMigrationJobUpdate(d *schema.ResourceData, meta interface{}) error 
 				if err != nil {
 					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				stateConf := helper.BuildStateConf([]string{}, []string{"Migrating"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.MigrationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "MigrationFailed"}))
+				// StartDtsJob only submits the request; a job with data_check_configure
+				// stays Prechecking for a while. Waiting here keeps the post-apply plan
+				// empty instead of leaving the server-driven status mid-transition.
+				// A job without incremental synchronization legitimately completes
+				// without ever reporting Migrating, so Finished also satisfies the wait.
+				stateConf := helper.BuildStateConf([]string{}, []string{"Migrating", "Finished"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.MigrationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed", "MigrationFailed"}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
-
 			}
 			if target == "Suspending" {
 				request := map[string]interface{}{
@@ -468,7 +486,9 @@ func resourceMigrationJobUpdate(d *schema.ResourceData, meta interface{}) error 
 				if err != nil {
 					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				stateConf := helper.BuildStateConf([]string{}, []string{"Suspending"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.MigrationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "MigrationFailed"}))
+				// SuspendDtsJob is asynchronous as well; without the wait the refreshed
+				// status can still be Migrating when the post-apply plan is computed.
+				stateConf := helper.BuildStateConf([]string{}, []string{"Suspending"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.MigrationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed", "MigrationFailed"}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
