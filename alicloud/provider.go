@@ -549,6 +549,7 @@ func Provider() *schema.Provider {
 			"alicloud_eipanycast_anycast_eip_addresses":                 dataSourceAlicloudEipanycastAnycastEipAddresses(),
 			"alicloud_brain_industrial_pid_projects":                    dataSourceAlicloudBrainIndustrialPidProjects(),
 			"alicloud_cms_monitor_groups":                               dataSourceAlicloudCmsMonitorGroups(),
+			"alicloud_cms_alert_metrics":                                dataSourceAliCloudCmsAlertMetrics(),
 			"alicloud_ram_saml_providers":                               dataSourceAlicloudRamSamlProviders(),
 			"alicloud_quotas_quotas":                                    dataSourceAlicloudQuotasQuotas(),
 			"alicloud_quotas_application_infos":                         dataSourceAlicloudQuotasQuotaApplications(),
