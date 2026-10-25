@@ -4698,3 +4698,35 @@ func TestUnitCommonEsDataNodeDiskPerformanceLevelDiffSuppressFunc(t *testing.T) 
 		})
 	}
 }
+
+func TestUnitCommonIpv6CidrDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name     string
+		old      string
+		new      string
+		expected bool
+	}{
+		{"SameString", "2001:db8::/48", "2001:db8::/48", true},
+		{"FullFormEquivalent", "2001:0db8:0000::/48", "2001:db8::/48", true},
+		{"ShortenedVsFull", "2001:db8::/48", "2001:0db8:0000::/48", true},
+		{"LeadingZeroOneGroup", "2001:0db8::/48", "2001:db8::/48", true},
+		{"FullAddressFormEquivalent", "2001:0db8:0000:0000:0000:0000:0000:0001/128", "2001:db8::1/128", true},
+		{"DifferentPrefixLength", "2001:db8::/32", "2001:db8::/48", false},
+		{"DifferentAddress", "2001:db8::/48", "2001:db9::/48", false},
+		{"IPv4Same", "192.168.10.0/24", "192.168.10.0/24", true},
+		{"IPv4Different", "192.168.10.0/24", "192.168.20.0/24", false},
+		{"IPv4VsIPv6", "192.168.10.0/24", "2001:db8::/48", false},
+		{"InvalidOld", "not-a-cidr", "2001:db8::/48", false},
+		{"InvalidNew", "2001:db8::/48", "not-a-cidr", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := initTestData(t, nil)
+			result := ipv6CidrDiffSuppressFunc("", tc.old, tc.new, d)
+			if result != tc.expected {
+				t.Errorf("ipv6CidrDiffSuppressFunc(%q, %q): expected %v got %v", tc.old, tc.new, tc.expected, result)
+			}
+		})
+	}
+}

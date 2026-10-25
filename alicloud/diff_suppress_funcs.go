@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"net"
 	"sort"
 	"strconv"
 	"strings"
@@ -848,4 +849,34 @@ func esDataNodeDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schem
 		return true
 	}
 	return false
+}
+
+// ipv6CidrDiffSuppressFunc suppresses the diff between equivalent IPv6 CIDR
+// notations so that a Required + ForceNew CIDR field does not produce a
+// permanent diff (and a needless replacement) when the API returns the
+// shortened form of an IPv6 CIDR block that the user configured in full form,
+// e.g. config "2001:0db8:0000::/48" vs state "2001:db8::/48".
+func ipv6CidrDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return ipv6CidrEquivalent(old, new)
+}
+
+// ipv6CidrEquivalent reports whether old and new denote the same IPv6 CIDR
+// block, tolerating full-form vs shortened notation. IPv4 CIDR blocks are
+// never suppressed, preserving the existing diff behaviour for IPv4.
+func ipv6CidrEquivalent(old, new string) bool {
+	if old == new {
+		return true
+	}
+	_, oldNet, errOld := net.ParseCIDR(old)
+	_, newNet, errNew := net.ParseCIDR(new)
+	if errOld != nil || errNew != nil {
+		return false
+	}
+	// Keep IPv4 diff behaviour untouched; only normalise IPv6 notation.
+	if oldNet.IP.To4() != nil || newNet.IP.To4() != nil {
+		return false
+	}
+	oldOnes, _ := oldNet.Mask.Size()
+	newOnes, _ := newNet.Mask.Size()
+	return oldNet.IP.Equal(newNet.IP) && oldOnes == newOnes
 }
