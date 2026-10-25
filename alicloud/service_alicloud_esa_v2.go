@@ -1947,14 +1947,14 @@ func (s *EsaServiceV2) DescribeEsaImageTransform(id string) (object map[string]i
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["ConfigId"] = parts[1]
-	query["SiteId"] = parts[0]
+	request["SiteId"] = parts[0]
+	request["ConfigId"] = parts[1]
 
 	action := "GetImageTransform"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+		response, err = client.RpcGet("ESA", "2024-09-10", action, request, query)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Site.ServiceBusy", "TooManyRequests"}) || NeedRetry(err) {
@@ -1966,11 +1966,23 @@ func (s *EsaServiceV2) DescribeEsaImageTransform(id string) (object map[string]i
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	return response, nil
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	if object["ConfigId"] == nil {
+		return object, WrapErrorf(NotFoundErr("ImageTransform", id), NotFoundWithResponse, response)
+	}
+
+	return object, nil
 }
 
 func (s *EsaServiceV2) EsaImageTransformStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
@@ -1986,6 +1998,7 @@ func (s *EsaServiceV2) EsaImageTransformStateRefreshFuncWithApi(id string, field
 			}
 			return nil, "", WrapError(err)
 		}
+
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
@@ -2001,6 +2014,7 @@ func (s *EsaServiceV2) EsaImageTransformStateRefreshFuncWithApi(id string, field
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
+
 		return object, currentStatus, nil
 	}
 }

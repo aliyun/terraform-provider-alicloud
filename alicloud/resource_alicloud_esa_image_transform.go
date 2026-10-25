@@ -2,8 +2,10 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,13 +29,27 @@ func resourceAliCloudEsaImageTransform() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_avif": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
+			"auto_webp": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
 			"config_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
+			"config_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"enable": {
 				Type:         schema.TypeString,
-				Optional:     true,
+				Required:     true,
 				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"rule": {
@@ -82,6 +98,12 @@ func resourceAliCloudEsaImageTransformCreate(d *schema.ResourceData, meta interf
 		request["SiteId"] = v
 	}
 
+	if v, ok := d.GetOk("auto_avif"); ok {
+		request["AutoAvif"] = v
+	}
+	if v, ok := d.GetOk("auto_webp"); ok {
+		request["AutoWebp"] = v
+	}
 	if v, ok := d.GetOkExists("sequence"); ok {
 		request["Sequence"] = v
 	}
@@ -100,7 +122,7 @@ func resourceAliCloudEsaImageTransformCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("enable"); ok {
 		request["Enable"] = v
 	}
-	wait := incrementalWait(5*time.Second, 3*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
@@ -137,13 +159,21 @@ func resourceAliCloudEsaImageTransformRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
+	d.Set("auto_avif", objectRaw["AutoAvif"])
+	d.Set("auto_webp", objectRaw["AutoWebp"])
+	d.Set("config_type", objectRaw["ConfigType"])
 	d.Set("enable", objectRaw["Enable"])
 	d.Set("rule", objectRaw["Rule"])
 	d.Set("rule_enable", objectRaw["RuleEnable"])
 	d.Set("rule_name", objectRaw["RuleName"])
 	d.Set("sequence", objectRaw["Sequence"])
 	d.Set("site_version", objectRaw["SiteVersion"])
-	d.Set("config_id", objectRaw["ConfigId"])
+
+	configId, err := strconv.ParseInt(objectRaw["ConfigId"].(json.Number).String(), 10, 64)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("config_id", configId)
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("site_id", fmt.Sprint(parts[0]))
@@ -165,6 +195,16 @@ func resourceAliCloudEsaImageTransformUpdate(d *schema.ResourceData, meta interf
 	query = make(map[string]interface{})
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
+
+	if !d.IsNewResource() && d.HasChange("auto_avif") {
+		update = true
+		request["AutoAvif"] = d.Get("auto_avif")
+	}
+
+	if !d.IsNewResource() && d.HasChange("auto_webp") {
+		update = true
+		request["AutoWebp"] = d.Get("auto_webp")
+	}
 
 	if !d.IsNewResource() && d.HasChange("sequence") {
 		update = true
@@ -192,7 +232,7 @@ func resourceAliCloudEsaImageTransformUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if update {
-		wait := incrementalWait(5*time.Second, 3*time.Second)
+		wait := incrementalWait(5*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
@@ -226,7 +266,7 @@ func resourceAliCloudEsaImageTransformDelete(d *schema.ResourceData, meta interf
 	request["ConfigId"] = parts[1]
 	request["SiteId"] = parts[0]
 
-	wait := incrementalWait(5*time.Second, 3*time.Second)
+	wait := incrementalWait(5*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
