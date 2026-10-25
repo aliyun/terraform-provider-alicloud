@@ -64,11 +64,12 @@ func testSweepDBDdrInstances(region string) error {
 		addDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %v", action, err)
-			continue
+			break
 		}
 		resp, err := jsonpath.Get("$.Items.DBInstance", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBInstance", response)
+			log.Printf("[ERROR] Failed to parse $.Items.DBInstance (treat as empty): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		objects = append(objects, result...)
@@ -83,26 +84,33 @@ func testSweepDBDdrInstances(region string) error {
 		item := v.(map[string]interface{})
 		name := fmt.Sprint(item["DBInstanceDescription"])
 		id := fmt.Sprint(item["DBInstanceId"])
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		// If a rds name is set by other service, it should be fetched by vswitch name and deleted.
-		if skip {
-			if need, err := vpcService.needSweepVpc(fmt.Sprint(item["VpcId"]), fmt.Sprint(item["VSwitchId"])); err == nil {
-				skip = !need
-			}
-		}
-
-		if skip {
-			log.Printf("[INFO] Skipping RDS Instance: %s (%s)", name, id)
+		// Name-based do-not-delete protection (NODELETING etc.) applies in both
+		// prefix and SWEEP_ALL modes so SWEEP_ALL never sweeps a marked resource.
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping RDS DDR Instance (do-not-delete marker): %s (%s)", name, id)
 			continue
 		}
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			// If a rds name is set by other service, it should be fetched by vswitch name and deleted.
+			if skip {
+				if need, err := vpcService.needSweepVpc(fmt.Sprint(item["VpcId"]), fmt.Sprint(item["VSwitchId"])); err == nil {
+					skip = !need
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping RDS DDR Instance: %s (%s)", name, id)
+				continue
+			}
+		}
 
-		log.Printf("[INFO] Deleting RDS Instance: %s (%s)", name, id)
+		log.Printf("[INFO] Deleting RDS DDR Instance: %s (%s)", name, id)
 		if len(item["ReadOnlyDBInstanceIds"].(map[string]interface{})["ReadOnlyDBInstanceId"].([]interface{})) > 0 {
 			action := "ReleaseReadWriteSplittingConnection"
 			request := map[string]interface{}{
