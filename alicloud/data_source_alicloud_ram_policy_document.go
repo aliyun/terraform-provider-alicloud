@@ -33,7 +33,14 @@ func dataSourceAliCloudRamPolicyDocument() *schema.Resource {
 						},
 						"action": {
 							Type:     schema.TypeList,
-							Required: true,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"not_action": {
+							Type:     schema.TypeList,
+							Optional: true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -125,17 +132,37 @@ func dataSourceAliCloudRamPolicyDocumentRead(d *schema.ResourceData, meta interf
 
 func AssembleDataSourcePolicyDocument(statements []interface{}, version string) (string, error) {
 	var statementsList []PolicyDocumentStatement
-	for _, v := range statements {
+	for idx, v := range statements {
 		statementMap := v.(map[string]interface{})
-
-		actions, err := getOneStringOrAllStringSlice(statementMap["action"].([]interface{}), "action")
-		if err != nil {
-			return "", WrapError(err)
-		}
 
 		statement := PolicyDocumentStatement{
 			Effect: Effect(statementMap["effect"].(string)),
-			Action: actions,
+		}
+
+		// RAM policy requires Action or NotAction as alternative required
+		// elements (https://help.aliyun.com/zh/ram/policy-elements); they are
+		// mutually exclusive. ExactlyOneOf does not resolve across nested
+		// statement-block fields in SDKv2, so the constraint is enforced here.
+		actions, _ := statementMap["action"].([]interface{})
+		notActions, _ := statementMap["not_action"].([]interface{})
+		if len(actions) > 0 && len(notActions) > 0 {
+			return "", fmt.Errorf("statement[%d]: only one of action or not_action can be specified", idx)
+		}
+		if len(actions) == 0 && len(notActions) == 0 {
+			return "", fmt.Errorf("statement[%d]: one of action or not_action must be specified", idx)
+		}
+		if len(actions) > 0 {
+			actionList, err := getOneStringOrAllStringSlice(actions, "action")
+			if err != nil {
+				return "", WrapError(err)
+			}
+			statement.Action = actionList
+		} else {
+			notActionList, err := getOneStringOrAllStringSlice(notActions, "not_action")
+			if err != nil {
+				return "", WrapError(err)
+			}
+			statement.NotAction = notActionList
 		}
 
 		if resources := statementMap["resource"].([]interface{}); len(resources) > 0 {
