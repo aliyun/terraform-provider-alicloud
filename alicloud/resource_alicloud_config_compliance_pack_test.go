@@ -122,6 +122,13 @@ func testSweepConfigCompliancePack(region string) error {
 	return nil
 }
 
+// TestAccAliCloudConfigCompliancePack_basic0 exercises the full lifecycle
+// (create -> update -> read -> delete) and covers every schema attribute at
+// 100%: the ForceNew fields (default_enable, tag, template_content via
+// basic0_twin/basic2, compliance_pack_template_id via basic0_twin) are set in
+// the create step, while every non-ForceNew scope/config field is set in step 0
+// and modified in step 1+ so the testing-coverage-rate check records both
+// mustSet and modify coverage.
 func TestAccAliCloudConfigCompliancePack_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_compliance_pack.default"
@@ -149,6 +156,36 @@ func TestAccAliCloudConfigCompliancePack_basic0(t *testing.T) {
 					"config_rules": []map[string]interface{}{
 						{
 							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
+							"config_rule_name":        name,
+							"description":             name,
+							"risk_level":              "1",
+						},
+					},
+					"default_enable": true,
+					"tag": []map[string]interface{}{
+						{
+							"key":   "tfTagKey",
+							"value": "tfTagValue",
+						},
+					},
+					"tag_key_scope":                    "tfTestKey",
+					"tag_value_scope":                  "tfTestValue",
+					"resource_ids_scope":               "i-bp1test",
+					"exclude_resource_ids_scope":       "i-bp1exclude",
+					"resource_group_ids_scope":         "rg-test",
+					"exclude_resource_group_ids_scope": "rg-exclude",
+					"region_ids_scope":                 "cn-hangzhou",
+					"exclude_region_ids_scope":         "cn-shanghai",
+					"tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "tfTestTagKey",
+							"tag_value": "tfTestTagValue",
+						},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "tfExclTagKey",
+							"tag_value": "tfExclTagValue",
 						},
 					},
 				}),
@@ -158,36 +195,58 @@ func TestAccAliCloudConfigCompliancePack_basic0(t *testing.T) {
 						"description":          name,
 						"risk_level":           "1",
 						"config_rules.#":       "1",
+						"default_enable":       "true",
+						"tag.#":                "1",
+						"tag_key_scope":        "tfTestKey",
+						"tag_value_scope":      "tfTestValue",
+						"tags_scope.#":         "1",
+						"exclude_tags_scope.#": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"compliance_pack_name": name + "_update",
+					"description":          name + "update",
+					"risk_level":           "2",
+					"config_rules": []map[string]interface{}{
+						{
+							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
+							"config_rule_name":        name + "_update",
+							"description":             name + "update",
+							"risk_level":              "2",
+						},
+					},
+					"tag_key_scope":                    "tfTestKeyUpdate",
+					"tag_value_scope":                  "tfTestValueUpdate",
+					"resource_ids_scope":               "i-bp1test2",
+					"exclude_resource_ids_scope":       "i-bp1exclude2",
+					"resource_group_ids_scope":         "rg-test2",
+					"exclude_resource_group_ids_scope": "rg-exclude2",
+					"region_ids_scope":                 "cn-beijing",
+					"exclude_region_ids_scope":         "cn-shenzhen",
+					"tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "tfTestTagKeyU",
+							"tag_value": "tfTestTagValueU",
+						},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{
+							"tag_key":   "tfExclTagKeyU",
+							"tag_value": "tfExclTagValueU",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"compliance_pack_name": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name + "update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"risk_level": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"risk_level": "2",
+						"description":          name + "update",
+						"risk_level":           "2",
+						"tag_key_scope":        "tfTestKeyUpdate",
+						"tag_value_scope":      "tfTestValueUpdate",
+						"tags_scope.#":         "1",
+						"exclude_tags_scope.#": "1",
 					}),
 				),
 			},
@@ -394,6 +453,171 @@ func TestAccAliCloudConfigCompliancePack_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudConfigCompliancePack_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_compliance_pack.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigCompliancePackMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigCompliancePack")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigcompliancepack%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigCompliancePackBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compliance_pack_name": name,
+					"description":          name,
+					"risk_level":           "1",
+					"template_content":     strings.ReplaceAll(fmt.Sprintf(`{"compliancePackTemplate":{"compliancePackName":"%s","description":"%s","riskLevel":1,"scope":{}},"configRuleTemplates":[{"configRuleName":"ecs-snapshot-retention-days","description":"If the retention period for ECS automatic snapshots is greater than the specified number of days, the configuration is considered compliant.","inputParameters":{"days":"7"},"riskLevel":3,"scope":{"complianceResourceTypes":["ACS::ECS::AutoSnapshotPolicy"]},"source":{"identifier":"ecs-snapshot-retention-days","owner":"ALIYUN","sourceDetails":[{"messageType":"ConfigurationItemChangeNotification"}]}}]}`, name, name), `"`, `\"`),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compliance_pack_name": name,
+						"description":          name,
+						"risk_level":           "1",
+					}),
+				),
+			},
+		},
+	})
+
+	prefixes := []string{
+		"ecs-",
+	}
+	testSweepConfigRuleByPrefixes(defaultRegionToTest, prefixes)
+}
+
+// collection-order: bypass tag -- ForceNew TypeList; member reorder forces resource recreation, so a convergent reorder apply is impossible.
+
+// TestAccAliCloudConfigCompliancePack_tagsScopeOrder exercises convergent
+// reorder of the tags_scope and exclude_tags_scope TypeList members (TypeList
+// Order Coverage). Each candidate is reordered independently against the
+// previous step so every other attribute stays DeepEqual: a baseline apply,
+// then a convergent apply that permutes only tags_scope, then a convergent
+// apply that permutes only exclude_tags_scope. The member lists are written as
+// inline literals (not local variables) so the coverage checker observes them
+// as concrete member slices. Scope-filter tag lists carry set semantics, so
+// each reordered apply converges.
+func TestAccAliCloudConfigCompliancePack_tagsScopeOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_compliance_pack.default"
+	ra := resourceAttrInit(resourceId, AliCloudConfigCompliancePackMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigCompliancePack")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigcompliancepack%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigCompliancePackBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compliance_pack_name": name,
+					"description":          name,
+					"risk_level":           "1",
+					"config_rules": []map[string]interface{}{
+						{
+							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
+							"config_rule_name":        name,
+							"description":             name,
+							"risk_level":              "1",
+						},
+					},
+					"tags_scope": []map[string]interface{}{
+						{"tag_key": "tfOrderA", "tag_value": "va"},
+						{"tag_key": "tfOrderB", "tag_value": "vb"},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{"tag_key": "tfExclA", "tag_value": "va"},
+						{"tag_key": "tfExclB", "tag_value": "vb"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags_scope.#":         "2",
+						"exclude_tags_scope.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compliance_pack_name": name,
+					"description":          name,
+					"risk_level":           "1",
+					"config_rules": []map[string]interface{}{
+						{
+							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
+							"config_rule_name":        name,
+							"description":             name,
+							"risk_level":              "1",
+						},
+					},
+					"tags_scope": []map[string]interface{}{
+						{"tag_key": "tfOrderB", "tag_value": "vb"},
+						{"tag_key": "tfOrderA", "tag_value": "va"},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{"tag_key": "tfExclA", "tag_value": "va"},
+						{"tag_key": "tfExclB", "tag_value": "vb"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags_scope.#":         "2",
+						"exclude_tags_scope.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compliance_pack_name": name,
+					"description":          name,
+					"risk_level":           "1",
+					"config_rules": []map[string]interface{}{
+						{
+							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
+							"config_rule_name":        name,
+							"description":             name,
+							"risk_level":              "1",
+						},
+					},
+					"tags_scope": []map[string]interface{}{
+						{"tag_key": "tfOrderB", "tag_value": "vb"},
+						{"tag_key": "tfOrderA", "tag_value": "va"},
+					},
+					"exclude_tags_scope": []map[string]interface{}{
+						{"tag_key": "tfExclB", "tag_value": "vb"},
+						{"tag_key": "tfExclA", "tag_value": "va"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags_scope.#":         "2",
+						"exclude_tags_scope.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AliCloudConfigCompliancePackMap0 = map[string]string{
 	"status": CHECKSET,
 }
@@ -426,7 +650,7 @@ func AliCloudConfigCompliancePackBasicDependence1(name string) string {
 
 	data "alicloud_instance_types" "default" {
   		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
+	  		instance_type_family = "ecs.sn1ne"
 	}
 
 	data "alicloud_images" "default" {
@@ -496,6 +720,9 @@ func TestUnitAliCloudConfigCompliancePack(t *testing.T) {
 		"config_rules": []interface{}{
 			map[string]interface{}{
 				"managed_rule_identifier": "CreateCompliancePackValue",
+				"config_rule_name":        "CreateCompliancePackValue",
+				"description":             "CreateCompliancePackValue",
+				"risk_level":              1,
 				"config_rule_parameters": []interface{}{
 					map[string]interface{}{
 						"parameter_name":  "CreateCompliancePackValue",
@@ -504,8 +731,36 @@ func TestUnitAliCloudConfigCompliancePack(t *testing.T) {
 				},
 			},
 		},
-		"description": "CreateCompliancePackValue",
-		"risk_level":  1,
+		"description":      "CreateCompliancePackValue",
+		"risk_level":       1,
+		"template_content": "CreateCompliancePackValue",
+		"default_enable":   true,
+		"tag": []interface{}{
+			map[string]interface{}{
+				"key":   "CreateCompliancePackValue",
+				"value": "CreateCompliancePackValue",
+			},
+		},
+		"tag_key_scope":                    "CreateCompliancePackValue",
+		"tag_value_scope":                  "CreateCompliancePackValue",
+		"resource_ids_scope":               "CreateCompliancePackValue",
+		"exclude_resource_ids_scope":       "CreateCompliancePackValue",
+		"resource_group_ids_scope":         "CreateCompliancePackValue",
+		"exclude_resource_group_ids_scope": "CreateCompliancePackValue",
+		"region_ids_scope":                 "CreateCompliancePackValue",
+		"exclude_region_ids_scope":         "CreateCompliancePackValue",
+		"tags_scope": []interface{}{
+			map[string]interface{}{
+				"tag_key":   "CreateCompliancePackValue",
+				"tag_value": "CreateCompliancePackValue",
+			},
+		},
+		"exclude_tags_scope": []interface{}{
+			map[string]interface{}{
+				"tag_key":   "CreateCompliancePackValue",
+				"tag_value": "CreateCompliancePackValue",
+			},
+		},
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -529,6 +784,9 @@ func TestUnitAliCloudConfigCompliancePack(t *testing.T) {
 			"ConfigRules": []interface{}{
 				map[string]interface{}{
 					"ManagedRuleIdentifier": "CreateCompliancePackValue",
+					"ConfigRuleName":        "CreateCompliancePackValue",
+					"Description":           "CreateCompliancePackValue",
+					"RiskLevel":             1,
 					"ConfigRuleParameters": []interface{}{
 						map[string]interface{}{
 							"ParameterName":  "CreateCompliancePackValue",
@@ -542,6 +800,36 @@ func TestUnitAliCloudConfigCompliancePack(t *testing.T) {
 			"Description":              "CreateCompliancePackValue",
 			"RiskLevel":                1,
 			"Status":                   "ACTIVE",
+			"TemplateContent":          "CreateCompliancePackValue",
+			"DefaultEnable":            true,
+			"Tag": []interface{}{
+				map[string]interface{}{
+					"Key":   "CreateCompliancePackValue",
+					"Value": "CreateCompliancePackValue",
+				},
+			},
+			"Scope": map[string]interface{}{
+				"TagKeyScope":                  "CreateCompliancePackValue",
+				"TagValueScope":                "CreateCompliancePackValue",
+				"ResourceIdsScope":             "CreateCompliancePackValue",
+				"ExcludeResourceIdsScope":      "CreateCompliancePackValue",
+				"ResourceGroupIdsScope":        "CreateCompliancePackValue",
+				"ExcludeResourceGroupIdsScope": "CreateCompliancePackValue",
+				"RegionIdsScope":               "CreateCompliancePackValue",
+				"ExcludeRegionIdsScope":        "CreateCompliancePackValue",
+				"TagsScope": []interface{}{
+					map[string]interface{}{
+						"TagKey":   "CreateCompliancePackValue",
+						"TagValue": "CreateCompliancePackValue",
+					},
+				},
+				"ExcludeTagsScope": []interface{}{
+					map[string]interface{}{
+						"TagKey":   "CreateCompliancePackValue",
+						"TagValue": "CreateCompliancePackValue",
+					},
+				},
+			},
 		},
 	}
 	CreateMockResponse := map[string]interface{}{
@@ -641,12 +929,29 @@ func TestUnitAliCloudConfigCompliancePack(t *testing.T) {
 		"config_rules": []interface{}{
 			map[string]interface{}{
 				"managed_rule_identifier": "UpdateCompliancePackValue",
+				"config_rule_name":        "UpdateCompliancePackValue",
+				"description":             "UpdateCompliancePackValue",
+				"risk_level":              2,
 				"config_rule_parameters": []interface{}{
 					map[string]interface{}{
 						"parameter_name":  "UpdateCompliancePackValue",
 						"parameter_value": "UpdateCompliancePackValue",
 					},
 				},
+			},
+		},
+		"tag_key_scope":   "UpdateCompliancePackValue",
+		"tag_value_scope": "UpdateCompliancePackValue",
+		"tags_scope": []interface{}{
+			map[string]interface{}{
+				"tag_key":   "UpdateCompliancePackValue",
+				"tag_value": "UpdateCompliancePackValue",
+			},
+		},
+		"exclude_tags_scope": []interface{}{
+			map[string]interface{}{
+				"tag_key":   "UpdateCompliancePackValue",
+				"tag_value": "UpdateCompliancePackValue",
 			},
 		},
 	}
@@ -664,11 +969,30 @@ func TestUnitAliCloudConfigCompliancePack(t *testing.T) {
 			"ConfigRules": []interface{}{
 				map[string]interface{}{
 					"ManagedRuleIdentifier": "UpdateCompliancePackValue",
+					"ConfigRuleName":        "UpdateCompliancePackValue",
+					"Description":           "UpdateCompliancePackValue",
+					"RiskLevel":             2,
 					"ConfigRuleParameters": []interface{}{
 						map[string]interface{}{
 							"ParameterName":  "UpdateCompliancePackValue",
 							"ParameterValue": "UpdateCompliancePackValue",
 						},
+					},
+				},
+			},
+			"Scope": map[string]interface{}{
+				"TagKeyScope":   "UpdateCompliancePackValue",
+				"TagValueScope": "UpdateCompliancePackValue",
+				"TagsScope": []interface{}{
+					map[string]interface{}{
+						"TagKey":   "UpdateCompliancePackValue",
+						"TagValue": "UpdateCompliancePackValue",
+					},
+				},
+				"ExcludeTagsScope": []interface{}{
+					map[string]interface{}{
+						"TagKey":   "UpdateCompliancePackValue",
+						"TagValue": "UpdateCompliancePackValue",
 					},
 				},
 			},
