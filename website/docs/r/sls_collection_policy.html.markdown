@@ -16,6 +16,8 @@ For information about Log Service (SLS) Collection Policy and how to use it, see
 
 -> **NOTE:** Available since v1.232.0.
 
+-> **NOTE:** The Collection Policy API endpoint is available only in the `cn-shanghai` (China East 2/Shanghai), `ap-southeast-1` (Singapore) and `cn-heyuan-acdr-1` regions. Set the provider `region` to one of these regions. For more information, see [UpsertCollectionPolicy](https://www.alibabacloud.com/help/zh/sls/developer-reference/api-sls-2020-12-30-upsertcollectionpolicy).
+
 ## Example Usage
 
 Basic Usage
@@ -152,6 +154,55 @@ resource "alicloud_sls_collection_policy" "default" {
 }
 ```
 
+Enable CloudLens for SLS
+
+CloudLens for SLS collects the global logs of the Log Service (SLS) itself. Enabling the SLS global log types (`audit_log`, `error_log` and `monitor_metric`) with `product_code = "sls"` and `enabled = true` corresponds to "立即开启 CloudLens for SLS" (enable CloudLens for SLS) in the SLS console. Each SLS global log type requires `data_config` with a `data_region` and `policy_config.resource_mode = "all"`; a built-in rule `internal_cloudlens_sls_<data_code>` is created automatically. For the valid `product_code` and `data_code` values, see [云产品采集注意事项](https://help.aliyun.com/zh/sls/cloud-product-configuration-considerations).
+
+```terraform
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
+resource "alicloud_sls_collection_policy" "cloudlens_audit" {
+  product_code = "sls"
+  data_code    = "audit_log"
+  policy_name  = "tf-example-cloudlens-sls-audit"
+  enabled      = true
+  data_config {
+    data_region = "cn-shanghai"
+  }
+  policy_config {
+    resource_mode = "all"
+  }
+}
+
+resource "alicloud_sls_collection_policy" "cloudlens_error" {
+  product_code = "sls"
+  data_code    = "error_log"
+  policy_name  = "tf-example-cloudlens-sls-error"
+  enabled      = true
+  data_config {
+    data_region = "cn-shanghai"
+  }
+  policy_config {
+    resource_mode = "all"
+  }
+}
+
+resource "alicloud_sls_collection_policy" "cloudlens_monitor" {
+  product_code = "sls"
+  data_code    = "monitor_metric"
+  policy_name  = "tf-example-cloudlens-sls-monitor"
+  enabled      = true
+  data_config {
+    data_region = "cn-shanghai"
+  }
+  policy_config {
+    resource_mode = "all"
+  }
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_sls_collection_policy&spm=docs.r.sls_collection_policy.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -159,7 +210,7 @@ resource "alicloud_sls_collection_policy" "default" {
 The following arguments are supported:
 * `centralize_config` - (Optional, Computed, Set) Centralized forwarding configuration. See [`centralize_config`](#centralize_config) below.
 * `centralize_enabled` - (Optional) Specifies whether to enable centralized forwarding. Default value: false.
-* `data_code` - (Required, ForceNew) Log type code.
+* `data_code` - (Required, ForceNew) Log type code. The valid values are defined by the cloud product and are not enumerated by the API. For example, when `product_code` is `sls` (Log Service), the valid values are `audit_log`, `error_log` and `monitor_metric`; when `product_code` is `project`, the valid values are `operation_log` and `run_log`; when `product_code` is `oss`, the valid values are `access_log` and `metering_log`. For the full list of product and log type codes, see [云产品采集注意事项](https://help.aliyun.com/zh/sls/cloud-product-configuration-considerations). The SLS global log types (`audit_log`, `error_log` and `monitor_metric` for `product_code = "sls"`) require `data_config`.
 * `data_config` - (Optional, ForceNew, Computed, Set) This parameter can be configured only when the log type is a global log type—for example, when productCode is sls. It indicates that global logs will be collected to the specified region upon initial configuration. See [`data_config`](#data_config) below.
 * `enabled` - (Required) Whether enabled.
 * `policy_config` - (Required, Set) Collection rule configuration. See [`policy_config`](#policy_config) below.
@@ -167,7 +218,7 @@ The following arguments are supported:
   - It can contain only lowercase letters, digits, hyphens (-), and underscores (_).
   - It must start with a letter.
   - Its length must be between 3 and 63 characters.
-* `product_code` - (Required, ForceNew) Product code.
+* `product_code` - (Required, ForceNew) Product code. For example, `sls` for Log Service and `oss` for OSS. The valid values are defined by the cloud product and are not enumerated by the API; for the full list, see [云产品采集注意事项](https://help.aliyun.com/zh/sls/cloud-product-configuration-considerations).
 * `resource_directory` - (Optional, Computed, Set) Resource Directory configuration. The account must have Resource Directory enabled and be either a management account or a delegated administrator. See [`resource_directory`](#resource_directory) below.
 
 ### `centralize_config`
