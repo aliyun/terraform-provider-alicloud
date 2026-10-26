@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
@@ -52,7 +51,7 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"HA", "SINGLE"}, false),
+				ValidateFunc: StringInSlice([]string{"HA", "SINGLE"}, false),
 			},
 			"db_instance_description": {
 				Type:     schema.TypeString,
@@ -62,35 +61,35 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"vpc"}, false),
+				ValidateFunc: StringInSlice([]string{"vpc"}, false),
 			},
 			"db_instance_storage_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_essd", "cloud_ssd"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud_essd", "cloud_ssd"}, false),
 			},
 			"db_node_class": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"gdb.r.xlarge", "gdb.r.2xlarge", "gdb.r.4xlarge", "gdb.r.8xlarge", "gdb.r.16xlarge", "gdb.r.xlarge_basic", "gdb.r.2xlarge_basic", "gdb.r.4xlarge_basic", "gdb.r.8xlarge_basic", "gdb.r.16xlarge_basic"}, false),
+				ValidateFunc: StringInSlice([]string{"gdb.r.xlarge", "gdb.r.2xlarge", "gdb.r.4xlarge", "gdb.r.8xlarge", "gdb.r.16xlarge", "gdb.r.xlarge_basic", "gdb.r.2xlarge_basic", "gdb.r.4xlarge_basic", "gdb.r.8xlarge_basic", "gdb.r.16xlarge_basic"}, false),
 			},
 			"db_node_storage": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(20, 32000),
+				ValidateFunc: IntBetween(20, 32000),
 			},
 			"db_version": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"1.0", "1.0-OpenCypher"}, false),
+				ValidateFunc: StringInSlice([]string{"1.0", "1.0-OpenCypher"}, false),
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
