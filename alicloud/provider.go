@@ -1622,6 +1622,7 @@ func Provider() *schema.Provider {
 			"alicloud_common_bandwidth_package_attachment":                   resourceAliCloudCbwpCommonBandwidthPackageAttachment(),
 			"alicloud_drds_instance":                                         resourceAlicloudDRDSInstance(),
 			"alicloud_elasticsearch_instance":                                resourceAliCloudElasticsearchInstance(),
+			"alicloud_elasticsearch_snapshot_policy":                         resourceAliCloudElasticsearchSnapshotPolicy(),
 			"alicloud_cas_certificate":                                       resourceAliCloudSslCertificatesServiceCertificate(),
 			"alicloud_ssl_certificates_service_pca_cert_sync":                resourceAliCloudSslCertificatesServicePcaCertSync(),
 			"alicloud_ddoscoo_instance":                                      resourceAliCloudDdoscooInstance(),
