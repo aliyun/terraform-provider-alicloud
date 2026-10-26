@@ -24,6 +24,7 @@ on:
       - .go-version
       - alicloud/*.go
       - alicloud/service/**/*.go
+      - alicloud/provider/core/*.go
 
 permissions: {}
 

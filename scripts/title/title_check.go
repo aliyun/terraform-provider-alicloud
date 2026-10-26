@@ -147,7 +147,7 @@ func classify(name string) (testcase, docs, service, flat bool) {
 	if strings.HasPrefix(name, "website/docs") {
 		return false, true, false, false
 	}
-	if strings.HasPrefix(name, "alicloud/service/") && strings.HasSuffix(name, ".go") {
+	if _, split := splitlayout.ServiceProduct(name); split && strings.HasSuffix(name, ".go") {
 		return false, false, true, false
 	}
 	if strings.HasPrefix(name, "alicloud/resource_alicloud") || strings.HasPrefix(name, "alicloud/data_source_alicloud") {
@@ -285,7 +285,7 @@ func loadBaseIndex(base string) (*baseIndex, error) {
 		return nil, err
 	}
 	sources := make(map[string][]byte)
-	if serviceFiles, err := gitLines("ls-tree", "-r", "--name-only", base, "--", "alicloud/service"); err != nil {
+	if serviceFiles, err := gitLines("ls-tree", "-r", "--name-only", base, "--", "alicloud/service", "alicloud/provider/core"); err != nil {
 		return nil, err
 	} else {
 		for _, path := range serviceFiles {

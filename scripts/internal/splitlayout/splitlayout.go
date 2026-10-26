@@ -1,5 +1,5 @@
-// Package splitlayout maps files in the alicloud/service/<product>/ split
-// layout to the registrations they implement.
+// Package splitlayout maps product and provider/core source files to the
+// registrations they implement.
 //
 // A split-layout path cannot yield the resource name on its own: the product
 // slug only coincidentally matches the resource-name prefix (alicloud_cen_*
@@ -24,19 +24,20 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
 
 var (
-	// serviceSourceRegex matches alicloud/service/<product>/<basename>.go for
+	// serviceSourceRegex matches product and provider/core source paths for
 	// resource, data-source, ephemeral, action and list-resource
 	// implementation and test files. The product segment is a literal
 	// character class so a diff path can never smuggle in path separators or
 	// traversal segments.
-	serviceSourceRegex = regexp.MustCompile(`^alicloud/service/([0-9A-Za-z_-]+)/((?:resource|data_source|ephemeral|action|list)_[0-9A-Za-z_]+?)(_test)?\.go$`)
-	// servicePathRegex matches any file directly inside a product package.
-	servicePathRegex = regexp.MustCompile(`^alicloud/service/([0-9A-Za-z_-]+)/[0-9A-Za-z_.-]+$`)
+	serviceSourceRegex = regexp.MustCompile(`^alicloud/(?:service/([0-9A-Za-z_-]+)|(provider/core))/((?:resource|data_source|ephemeral|action|list)_[0-9A-Za-z_]+?)(_test)?\.go$`)
+	// servicePathRegex matches files directly inside a product or core package.
+	servicePathRegex = regexp.MustCompile(`^alicloud/(?:service/([0-9A-Za-z_-]+)|(provider/core))/[0-9A-Za-z_.-]+$`)
 )
 
 // Kind classifies a registration by the kind of provider entity it names.
@@ -76,28 +77,59 @@ func (r Resolved) IsResource() bool { return r.Kind == KindResource }
 // IsSplitSource reports whether path is a split-layout resource, data-source,
 // ephemeral, action or list-resource source file (implementation or test),
 // and returns the product directory and the implementation basename stem
-// (without the _test suffix).
+// (without the _test suffix). Provider-level core files use "provider/core"
+// as their package key, rather than a product name.
 func IsSplitSource(path string) (product, stem string, isTest bool, ok bool) {
 	m := serviceSourceRegex.FindStringSubmatch(path)
 	if m == nil {
 		return "", "", false, false
 	}
-	return m[1], m[2], m[3] == "_test", true
+	product = m[1]
+	if product == "" {
+		product = m[2]
+	}
+	return product, m[3], m[4] == "_test", true
 }
 
-// ServiceProduct returns the product segment of any file directly inside
-// alicloud/service/<product>/. The second return value reports whether the
-// path is a service-package file at all.
+// ServiceProduct returns the package key for a file directly inside a product
+// directory or provider/core. Core uses the distinct key "provider/core", so it
+// cannot collide with a product named core. Other provider internals are excluded.
 func ServiceProduct(path string) (string, bool) {
 	m := servicePathRegex.FindStringSubmatch(path)
 	if m == nil {
 		return "", false
 	}
+	if m[1] == "" {
+		return m[2], true
+	}
 	return m[1], true
 }
 
-// IsServiceRegister reports whether path is a product's register.go, and
-// returns the product. A register.go is a registration source the way
+// PackageDir maps a package key to its source directory. provider/core is
+// reserved for provider-level entities; product keys keep their service path.
+func PackageDir(product string) string {
+	if product == "provider/core" {
+		return "alicloud/provider/core"
+	}
+	return "alicloud/service/" + product
+}
+
+// RegisterPaths lists the supported product and provider-level registrations.
+func RegisterPaths() ([]string, error) {
+	var paths []string
+	for _, pattern := range []string{"alicloud/service/*/register.go", "alicloud/provider/core/register.go"} {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return nil, err
+		}
+		paths = append(paths, matches...)
+	}
+	sort.Strings(paths)
+	return paths, nil
+}
+
+// IsServiceRegister reports whether path is a supported register.go, and
+// returns its package key. A register.go is a registration source the way
 // provider.go is.
 func IsServiceRegister(path string) (string, bool) {
 	product, ok := ServiceProduct(path)
@@ -207,7 +239,7 @@ func FrameworkRegisteredIn(registerSrc []byte, typeName string) bool {
 // typeName as framework-native. It lets the SDKv2 diff checkers tell a
 // framework registration (outside their scope) from an unregistered name.
 func FrameworkRegistered(typeName string) bool {
-	registers, err := filepath.Glob("alicloud/service/*/register.go")
+	registers, err := RegisterPaths()
 	if err != nil {
 		return false
 	}
@@ -241,7 +273,7 @@ func FrameworkResolve(product, stem string) ([]Resolved, error) {
 }
 
 func resolve(product, stem string, framework bool) ([]Resolved, error) {
-	registerSrc, err := os.ReadFile("alicloud/service/" + product + "/register.go")
+	registerSrc, err := os.ReadFile(PackageDir(product) + "/register.go")
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +281,7 @@ func resolve(product, stem string, framework bool) ([]Resolved, error) {
 	if len(entries) == 0 {
 		return nil, nil
 	}
-	implPath := "alicloud/service/" + product + "/" + stem + ".go"
+	implPath := PackageDir(product) + "/" + stem + ".go"
 	implSrc, err := os.ReadFile(implPath)
 	if err != nil {
 		return nil, err
@@ -290,7 +322,7 @@ func FrameworkFindByTypeName(typeName string) *Resolved {
 }
 
 func findByTypeName(typeName string, framework bool) *Resolved {
-	registers, err := filepath.Glob("alicloud/service/*/register.go")
+	registers, err := RegisterPaths()
 	if err != nil {
 		return nil
 	}
@@ -303,8 +335,8 @@ func findByTypeName(typeName string, framework bool) *Resolved {
 			if e.TypeName != typeName {
 				continue
 			}
-			product := strings.Split(register, "/")[2]
-			impls, err := filepath.Glob("alicloud/service/" + product + "/*.go")
+			product, _ := IsServiceRegister(register)
+			impls, err := filepath.Glob(PackageDir(product) + "/*.go")
 			if err != nil {
 				continue
 			}

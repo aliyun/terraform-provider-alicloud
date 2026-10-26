@@ -12,6 +12,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/collection-order/internal/coverage"
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 )
 
 func main() {
@@ -39,7 +40,7 @@ func run(base, head, resourceName string) error {
 		return err
 	}
 	sources := map[string][]byte{}
-	for _, pattern := range []string{"alicloud/resource_alicloud_*.go", "alicloud/service/*/resource_*.go"} {
+	for _, pattern := range []string{"alicloud/resource_alicloud_*.go", "alicloud/service/*/resource_*.go", "alicloud/provider/core/resource_*.go"} {
 		files, err := filepath.Glob(pattern)
 		if err != nil {
 			return err
@@ -172,9 +173,9 @@ func git(args ...string) ([]byte, error) {
 	return output, nil
 }
 
-// currentRegisters reads every product register.go in the working tree.
+// currentRegisters reads supported product and core registrations.
 func currentRegisters() (map[string][]byte, error) {
-	files, err := filepath.Glob("alicloud/service/*/register.go")
+	files, err := splitlayout.RegisterPaths()
 	if err != nil {
 		return nil, err
 	}
