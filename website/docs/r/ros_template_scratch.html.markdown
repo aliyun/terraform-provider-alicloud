@@ -54,36 +54,37 @@ The following arguments are supported:
 * `description` - (Optional) The Description of the Template Scratch.
 * `execution_mode` - (Optional) The execution mode. Valid Values: `Async` or `Sync`.
 * `logical_id_strategy` - (Optional) Logical ID generation strategy. Valid Values: `LongTypePrefixAndIndexSuffix`, `LongTypePrefixAndHashSuffix` and `ShortTypePrefixAndHashSuffix`.
-* `preference_parameters` - (Optional) Priority parameter. See the following `Block preference_parameters`.
-* `source_tag` - (Optional) Source tag. See the following `Block source_tag`.
-* `source_resource_group` - (Optional) Source resource grouping. See the following `Block source_resource_group`.
-* `source_resources` - (Optional) Source resource. See the following `Block source_resources`.
+* `preference_parameters` - (Optional, Set) Priority parameter. See [`preference_parameters`](#preference_parameters) below.
+* `resource_group_id` - (Optional, String, Available since v2.2.0) The ID of the resource group to which the Template Scratch belongs. If not specified, the default resource group is used.
+* `source_tag` - (Optional, Set) Source tag. See [`source_tag`](#source_tag) below.
+* `source_resource_group` - (Optional, Set) Source resource grouping. See [`source_resource_group`](#source_resource_group) below.
+* `source_resources` - (Optional, Set) Source resource. See [`source_resources`](#source_resources) below.
 * `template_scratch_type` - (Required, ForceNew) The type of the Template scan. Valid Values: `ResourceImport` or `ArchitectureReplication`.
 
-#### Block source_resources
+### `source_resources`
 
-The source_resources supports the following: 
+The source_resources supports the following:
 
 * `resource_id` - (Required) The ID of the Source Resource.
 * `resource_type` - (Required) The type of the Source resource.
 
-#### Block source_resource_group
+### `source_resource_group`
 
-The source_resource_group supports the following: 
+The source_resource_group supports the following:
 
 * `resource_group_id` - (Required) The ID of the Source Resource Group.
 * `resource_type_filter` - (Optional) Source resource type filter list. If the resource type list is specified, it means to scan the resources of the specified resource type and in the specified resource group; Otherwise, it means to scan all resources in the specified resource group. **NOTE:** A maximum of `20` resource type filter can be configured.
 
-#### Block source_tag
+### `source_tag`
 
-The source_tag supports the following: 
+The source_tag supports the following:
 
 * `resource_tags` - (Required) Source label. **NOTE:** A maximum of 10 source labels can be configured.
 * `resource_type_filter` - (Optional) Source resource type filter list. If the resource type list is specified, it means to scan the resources of the specified resource type and in the specified resource group; Otherwise, it means to scan all resources in the specified resource group. **NOTE:** A maximum of `20` resource type filter can be configured.
 
-#### Block preference_parameters
+### `preference_parameters`
 
-The preference_parameters supports the following: 
+The preference_parameters supports the following:
 
 * `parameter_key` - (Required) Priority parameter key. For more information about values, see [supplementary instructions for request parameters](https://www.alibabacloud.com/help/zh/doc-detail/358846.html#h2-url-4).
 * `parameter_value` - (Required) Priority parameter value. For more information about values, see [supplementary instructions for request parameters](https://www.alibabacloud.com/help/zh/doc-detail/358846.html#h2-url-4).
@@ -93,7 +94,15 @@ The preference_parameters supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Template Scratch.
+* `stacks` - (Set, Available since v2.2.0) The stacks associated with the Template Scratch. See [`stacks`](#stacks) below.
 * `status` - The status of the resource.
+
+### `stacks`
+
+The stacks supports the following:
+
+* `region_id` - (String, Available since v2.2.0) The ID of the region to which the stack belongs.
+* `stack_id` - (String, Available since v2.2.0) The ID of the stack.
 
 ## Timeouts
 
