@@ -25,7 +25,7 @@ func resourceAliCloudThreatDetectionSasTrail() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"create_time": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"service_trail": {
@@ -38,7 +38,7 @@ func resourceAliCloudThreatDetectionSasTrail() *schema.Resource {
 							Computed: true,
 						},
 						"update_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -99,12 +99,12 @@ func resourceAliCloudThreatDetectionSasTrailRead(d *schema.ResourceData, meta in
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("create_time", tsString(objectRaw["CreateTime"]))
 	serviceTrailMaps := make([]map[string]interface{}, 0)
 	serviceTrailMap := make(map[string]interface{})
 
 	serviceTrailMap["config"] = objectRaw["Config"]
-	serviceTrailMap["update_time"] = objectRaw["UpdateTime"]
+	serviceTrailMap["update_time"] = tsString(objectRaw["UpdateTime"])
 	serviceTrailMaps = append(serviceTrailMaps, serviceTrailMap)
 	err = d.Set("service_trail", serviceTrailMaps)
 	if err != nil {

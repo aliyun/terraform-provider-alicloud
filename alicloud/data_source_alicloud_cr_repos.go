@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -117,11 +118,11 @@ func dataSourceAlicloudCRRepos() *schema.Resource {
 										Computed: true,
 									},
 									"image_update": {
-										Type:     schema.TypeInt,
+										Type:     schema.TypeString,
 										Computed: true,
 									},
 									"image_create": {
-										Type:     schema.TypeInt,
+										Type:     schema.TypeString,
 										Computed: true,
 									},
 								},
@@ -267,8 +268,8 @@ func dataSourceAlicloudCRReposRead(d *schema.ResourceData, meta interface{}) err
 				"digest":       tag.Digest,
 				"status":       tag.Status,
 				"image_size":   tag.ImageSize,
-				"image_update": tag.ImageUpdate,
-				"image_create": tag.ImageCreate,
+				"image_update": fmt.Sprint(tag.ImageUpdate),
+				"image_create": fmt.Sprint(tag.ImageCreate),
 			})
 		}
 		mapping["tags"] = tagList

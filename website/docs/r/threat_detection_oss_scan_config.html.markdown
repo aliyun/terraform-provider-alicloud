@@ -108,7 +108,7 @@ The following arguments are supported:
 * `end_time` - (Required) The end time of the check. The time is in the HH:mm:ss format.
 * `key_prefix_list` - (Optional, List) The prefixes of the objects.
 * `key_suffix_list` - (Required, List) The suffixes of the objects that are checked.
-* `last_modified_start_time` - (Optional, Int, Available since v1.255.0) The timestamp when the object was last modified. The time must be later than the timestamp that you specify. Unit: milliseconds.
+* `last_modified_start_time` - (Optional, String, Available since v1.255.0) The timestamp when the object was last modified. The time must be later than the timestamp that you specify. Unit: milliseconds.
 * `oss_scan_config_name` - (Optional) The policy name.
 * `scan_day_list` - (Required, List) The days when the check is performed. The value indicates the days of the week.
 * `start_time` - (Required) The start time of the check. The time is in the HH:mm:ss format.

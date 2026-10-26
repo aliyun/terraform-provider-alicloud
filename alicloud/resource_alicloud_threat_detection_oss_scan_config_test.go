@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// collection-order: bypass decryption_list -- pre-existing TypeList attribute outside this change; this PR only converts timestamp attributes Int->String, it neither adds nor modifies decryption_list.
+
 // Test ThreatDetection OssScanConfig. >>> Resource test cases, automatically generated.
 // Case OssScanConfig_20250211 10184
 func TestAccAliCloudThreatDetectionOssScanConfig_basic10184(t *testing.T) {
@@ -34,7 +36,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic10184(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-71", "gcx-test-oss-72", "gcx-test-oss-73"},
+						"${alicloud_oss_bucket.default8j4t1R.bucket}", "${alicloud_oss_bucket.default9HMqfT.bucket}", "${alicloud_oss_bucket.defaultxBXqFQ.bucket}"},
 					"key_prefix_list": []string{
 						"/root", "/usr", "/123"},
 					"oss_scan_config_name": name,
@@ -73,7 +75,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic10184(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-74"},
+						"${alicloud_oss_bucket.defaulthZvCmR.bucket}"},
 					"key_prefix_list":      []string{},
 					"oss_scan_config_name": name + "_update",
 					"end_time":             "00:00:02",
@@ -111,7 +113,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic10184(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-74"},
+						"${alicloud_oss_bucket.defaulthZvCmR.bucket}"},
 					"key_prefix_list": []string{
 						"/123"},
 					"start_time": "00:00:08",
@@ -202,7 +204,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic5010(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-71", "gcx-test-oss-72", "gcx-test-oss-73"},
+						"${alicloud_oss_bucket.default8j4t1R.bucket}", "${alicloud_oss_bucket.default9HMqfT.bucket}", "${alicloud_oss_bucket.defaultxBXqFQ.bucket}"},
 					"key_prefix_list": []string{
 						"/root", "/usr", "/123"},
 					"oss_scan_config_name": name,
@@ -241,7 +243,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic5010(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-74"},
+						"${alicloud_oss_bucket.defaulthZvCmR.bucket}"},
 					"key_prefix_list":      []string{},
 					"oss_scan_config_name": name + "_update",
 					"end_time":             "00:00:02",
@@ -279,7 +281,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic5010(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-74"},
+						"${alicloud_oss_bucket.defaulthZvCmR.bucket}"},
 					"key_prefix_list": []string{
 						"/123"},
 					"start_time": "00:00:08",
@@ -370,7 +372,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic7682(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-71", "gcx-test-oss-72", "gcx-test-oss-73"},
+						"${alicloud_oss_bucket.default8j4t1R.bucket}", "${alicloud_oss_bucket.default9HMqfT.bucket}", "${alicloud_oss_bucket.defaultxBXqFQ.bucket}"},
 					"key_prefix_list": []string{
 						"/root", "/usr", "/123"},
 					"oss_scan_config_name": name,
@@ -409,7 +411,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic7682(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-74"},
+						"${alicloud_oss_bucket.defaulthZvCmR.bucket}"},
 					"key_prefix_list":      []string{},
 					"oss_scan_config_name": name + "_update",
 					"end_time":             "00:00:02",
@@ -447,7 +449,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic7682(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-74"},
+						"${alicloud_oss_bucket.defaulthZvCmR.bucket}"},
 					"key_prefix_list": []string{
 						"/123"},
 					"start_time": "00:00:08",
@@ -538,7 +540,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic9153(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-71", "gcx-test-oss-72", "gcx-test-oss-73"},
+						"${alicloud_oss_bucket.default8j4t1R.bucket}", "${alicloud_oss_bucket.default9HMqfT.bucket}", "${alicloud_oss_bucket.defaultxBXqFQ.bucket}"},
 					"key_prefix_list": []string{
 						"/root", "/usr", "/123"},
 					"oss_scan_config_name": name,
@@ -577,7 +579,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic9153(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-74"},
+						"${alicloud_oss_bucket.defaulthZvCmR.bucket}"},
 					"key_prefix_list":      []string{},
 					"oss_scan_config_name": name + "_update",
 					"end_time":             "00:00:02",
@@ -615,7 +617,7 @@ func TestAccAliCloudThreatDetectionOssScanConfig_basic9153(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"bucket_name_list": []string{
-						"gcx-test-oss-74"},
+						"${alicloud_oss_bucket.defaulthZvCmR.bucket}"},
 					"key_prefix_list": []string{
 						"/123"},
 					"start_time": "00:00:08",

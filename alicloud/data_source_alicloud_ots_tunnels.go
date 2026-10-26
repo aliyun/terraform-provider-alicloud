@@ -71,7 +71,7 @@ func dataSourceAlicloudOtsTunnels() *schema.Resource {
 							Computed: true,
 						},
 						"tunnel_rpo": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"tunnel_type": {
@@ -87,7 +87,7 @@ func dataSourceAlicloudOtsTunnels() *schema.Resource {
 							Computed: true,
 						},
 						"create_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"channels": {
@@ -112,7 +112,7 @@ func dataSourceAlicloudOtsTunnels() *schema.Resource {
 										Computed: true,
 									},
 									"channel_rpo": {
-										Type:     schema.TypeInt,
+										Type:     schema.TypeString,
 										Computed: true,
 									},
 								},
@@ -217,11 +217,11 @@ func otsTunnelDescriptionAttributes(d *schema.ResourceData, tunnelInfos []*OtsTu
 			"table_name":    tunnel.tableName,
 			"tunnel_name":   tunnel.tunnelName,
 			"tunnel_id":     tunnel.tunnelId,
-			"tunnel_rpo":    tunnel.tunnelRpo,
+			"tunnel_rpo":    fmt.Sprint(tunnel.tunnelRpo),
 			"tunnel_type":   tunnel.tunnelType,
 			"tunnel_stage":  tunnel.tunnelStage,
 			"expired":       tunnel.expired,
-			"create_time":   tunnel.createTime,
+			"create_time":   fmt.Sprint(tunnel.createTime),
 		}
 
 		channels := make([]map[string]interface{}, 0, len(tunnel.channels))
@@ -231,7 +231,7 @@ func otsTunnelDescriptionAttributes(d *schema.ResourceData, tunnelInfos []*OtsTu
 			channel["channel_type"] = c.ChannelType
 			channel["channel_status"] = c.ChannelStatus
 			channel["client_id"] = c.ClientId
-			channel["channel_rpo"] = c.ChannelRPO
+			channel["channel_rpo"] = fmt.Sprint(c.ChannelRPO)
 			channels = append(channels, channel)
 		}
 		mapping["channels"] = channels

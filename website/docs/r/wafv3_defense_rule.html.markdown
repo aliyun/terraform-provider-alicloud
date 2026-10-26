@@ -99,19 +99,19 @@ The following arguments are supported:
 * `defense_scene` - (Required, ForceNew) The WAF protection scenario to be created.
 
 When the protection rule type `DefenseType` is set to `template`, the value is as follows:
-  - `waf_base`: (Available since v1.269.0) indicates new web core protection.
-  - `ip_blacklist`: indicates the IP address blacklist.
-  - `custom_acl`: indicates a custom rule.
-  - `whitelist`: indicates the whitelist.
-  - `region_block`: indicates that the region is blocked.
-  - `cc`: indicates CC protection.
-  - `tamperproof`: Indicates that the web page is tamper-proof.
-  - `dlp`: Indicates information leakage protection.
-  - `spike_throttle`: indicates peak current limit.
+- `waf_base`: (Available since v1.269.0) indicates new web core protection.
+- `ip_blacklist`: indicates the IP address blacklist.
+- `custom_acl`: indicates a custom rule.
+- `whitelist`: indicates the whitelist.
+- `region_block`: indicates that the region is blocked.
+- `cc`: indicates CC protection.
+- `tamperproof`: Indicates that the web page is tamper-proof.
+- `dlp`: Indicates information leakage protection.
+- `spike_throttle`: indicates peak current limit.
 
 When the protection rule type `DefenseType` is set to `resource`, the value is as follows:
-  - `account_identifier`: indicates account extraction.
-  - `waf_codec`: indicates decode setting.
+- `account_identifier`: indicates account extraction.
+- `waf_codec`: indicates decode setting.
 * `defense_type` - (Required, ForceNew) The protection rule type. Value:
   - `template` (default): indicates the template protection rule.
   - `resource`: indicates the rule of the protected object dimension.
@@ -355,8 +355,8 @@ The config-waf_base_config-rule_detail supports the following:
 ### `config-time_config-time_periods`
 
 The config-time_config-time_periods supports the following:
-* `end` - (Optional, Int) The end time of the rule. This is a UNIX timestamp in milliseconds.
-* `start` - (Optional, Int) The start time of the rule. This is a UNIX timestamp in milliseconds.
+* `end` - (Optional, String) The end time of the rule. This is a UNIX timestamp in milliseconds.
+* `start` - (Optional, String) The start time of the rule. This is a UNIX timestamp in milliseconds.
 
 ### `config-time_config-week_time_periods`
 

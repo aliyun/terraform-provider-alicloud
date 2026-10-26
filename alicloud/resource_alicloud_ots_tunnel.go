@@ -56,7 +56,7 @@ func resourceAlicloudOtsTunnel() *schema.Resource {
 				Computed: true,
 			},
 			"tunnel_rpo": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"tunnel_stage": {
@@ -68,7 +68,7 @@ func resourceAlicloudOtsTunnel() *schema.Resource {
 				Computed: true,
 			},
 			"create_time": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"channels": {
@@ -93,7 +93,7 @@ func resourceAlicloudOtsTunnel() *schema.Resource {
 							Computed: true,
 						},
 						"channel_rpo": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -174,10 +174,10 @@ func resourceAliyunOtsTunnelRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("tunnel_name", object.Tunnel.TunnelName)
 	d.Set("tunnel_id", object.Tunnel.TunnelId)
 	d.Set("tunnel_type", object.Tunnel.TunnelType)
-	d.Set("tunnel_rpo", object.TunnelRPO)
+	d.Set("tunnel_rpo", fmt.Sprint(object.TunnelRPO))
 	d.Set("tunnel_stage", object.Tunnel.Stage)
 	d.Set("expired", object.Tunnel.Expired)
-	d.Set("create_time", object.Tunnel.CreateTime.UnixNano())
+	d.Set("create_time", fmt.Sprint(object.Tunnel.CreateTime.UnixNano()))
 
 	channels := make([]map[string]interface{}, len(object.Channels))
 	for i, channel := range object.Channels {
@@ -186,7 +186,7 @@ func resourceAliyunOtsTunnelRead(d *schema.ResourceData, meta interface{}) error
 		item["channel_type"] = channel.ChannelType
 		item["channel_status"] = channel.ChannelStatus
 		item["client_id"] = channel.ClientId
-		item["channel_rpo"] = channel.ChannelRPO
+		item["channel_rpo"] = fmt.Sprint(channel.ChannelRPO)
 
 		channels[i] = item
 	}

@@ -87,11 +87,11 @@ func dataSourceAlicloudMessageServiceTopics() *schema.Resource {
 							Computed: true,
 						},
 						"last_modify_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"create_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -204,14 +204,6 @@ func dataSourceAlicloudMessageServiceTopicsRead(d *schema.ResourceData, meta int
 			return err
 		}
 
-		last_modify_timeVal, err := formatInt(object["LastModifyTime"])
-		if err != nil {
-			return err
-		}
-		create_timeVal, err := formatInt(object["CreateTime"])
-		if err != nil {
-			return err
-		}
 		mapping := map[string]interface{}{
 			"id":                       fmt.Sprint(object["TopicName"]),
 			"topic_name":               fmt.Sprint(object["TopicName"]),
@@ -221,8 +213,8 @@ func dataSourceAlicloudMessageServiceTopicsRead(d *schema.ResourceData, meta int
 			"logging_enabled":          object["LoggingEnabled"],
 			"topic_url":                object["TopicUrl"],
 			"topic_inner_url":          object["TopicInnerUrl"],
-			"last_modify_time":         last_modify_timeVal,
-			"create_time":              create_timeVal,
+			"last_modify_time":         tsString(object["LastModifyTime"]),
+			"create_time":              tsString(object["CreateTime"]),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["TopicName"])

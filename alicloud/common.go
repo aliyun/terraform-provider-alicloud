@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -561,4 +562,24 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	sort.Strings(y1)
 	sort.Strings(y2)
 	return reflect.DeepEqual(y1, y2), nil
+}
+
+// tsString coerces a timestamp API value (float64, json.Number, string, int64, int)
+// to a plain decimal string. float64 from a JSON decode without UseNumber is printed
+// with strconv.FormatFloat('f', -1, 64) to avoid scientific notation (e.g.
+// 1.760171804e+12 -> "1760171804000"); json.Number/int64/string go through fmt.Sprint,
+// which yields the decimal form without platform-width int overflow. Used for TypeString
+// timestamp attributes so d.Set never receives a float64 and panics on a nested
+// mapstructure decode, and so scalar Sets do not silently drop the value.
+func tsString(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	if f, ok := v.(float64); ok {
+		return strconv.FormatFloat(f, 'f', -1, 64)
+	}
+	if f, ok := v.(float32); ok {
+		return strconv.FormatFloat(float64(f), 'f', -1, 32)
+	}
+	return fmt.Sprint(v)
 }

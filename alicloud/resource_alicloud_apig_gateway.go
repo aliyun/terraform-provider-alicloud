@@ -32,7 +32,7 @@ func resourceAliCloudApigGateway() *schema.Resource {
 				Computed: true,
 			},
 			"create_time": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"environments": {
@@ -56,7 +56,7 @@ func resourceAliCloudApigGateway() *schema.Resource {
 				},
 			},
 			"expire_time": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"gateway_edition": {
@@ -219,7 +219,7 @@ func resourceAliCloudApigGateway() *schema.Resource {
 				Computed: true,
 			},
 			"update_time": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"vswitch": {
@@ -453,8 +453,8 @@ func resourceAliCloudApigGatewayRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.Set("create_from", objectRaw["createFrom"])
-	d.Set("create_time", objectRaw["createTimestamp"])
-	d.Set("expire_time", objectRaw["expireTimestamp"])
+	d.Set("create_time", tsString(objectRaw["createTimestamp"]))
+	d.Set("expire_time", tsString(objectRaw["expireTimestamp"]))
 	d.Set("gateway_edition", objectRaw["gatewayEdition"])
 	d.Set("gateway_name", objectRaw["name"])
 	d.Set("gateway_type", objectRaw["gatewayType"])
@@ -463,7 +463,7 @@ func resourceAliCloudApigGatewayRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("spec", objectRaw["spec"])
 	d.Set("status", objectRaw["status"])
 	d.Set("target_version", objectRaw["targetVersion"])
-	d.Set("update_time", objectRaw["updateTimestamp"])
+	d.Set("update_time", tsString(objectRaw["updateTimestamp"]))
 	d.Set("version", objectRaw["version"])
 
 	environmentsRaw := objectRaw["environments"]

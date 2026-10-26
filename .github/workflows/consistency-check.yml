@@ -133,6 +133,21 @@ jobs:
             git diff "$DIFF_BASE" "$DIFF_HEAD" > diff.out
             go run scripts/consistency/consistency_check.go -fileNames="diff.out"
           fi
+      - name: Timestamp overflow regression check
+        # Pure go/ast static guard (no provider compilation) for the 32-bit (386/arm)
+        # integer-overflow panic in timestamp attributes. Runs on the changed alicloud/*.go
+        # files only; R1/R2/R3-new failures block the PR. See
+        # scripts/consistency/ts_overflow_check/main.go for the rule definitions.
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          git diff --name-only "$DIFF_BASE" "$DIFF_HEAD" -- alicloud/ > ts_overflow.out
+          if [[ -s ts_overflow.out ]]; then
+            go run scripts/consistency/ts_overflow_check/main.go -fileNames="ts_overflow.out"
+          else
+            echo "timestamp_overflow_check: no changed alicloud/*.go files; shipped."
+          fi
       - name: Save master Go cache
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.cache-restore.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudOtsTunnel_basic(t *testing.T) {
+func TestAccAliCloudOtsTunnel_basic(t *testing.T) {
 	var v *otsTunnel.DescribeTunnelResponse
 
 	resourceId := "alicloud_ots_tunnel.default"
