@@ -103,7 +103,7 @@ func testSweepNetworkAclAttachment(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCNetworkAclAttachment_basic(t *testing.T) {
+func TestAccAliCloudVPCNetworkAclAttachment_basic(t *testing.T) {
 	resourceId := "alicloud_network_acl_attachment.default"
 	ra := resourceAttrInit(resourceId, map[string]string{
 		"network_acl_id": CHECKSET,
@@ -133,8 +133,10 @@ func TestAccAlicloudVPCNetworkAclAttachment_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkAclAttachmentExists(resourceId),
 					testAccCheck(map[string]string{
-						"network_acl_id": CHECKSET,
-						"resources.#":    "2",
+						"network_acl_id":            CHECKSET,
+						"resources.#":               "2",
+						"resources.0.resource_id":   CHECKSET,
+						"resources.0.resource_type": "VSwitch",
 					}),
 				),
 			},
@@ -232,6 +234,93 @@ func testAccCheckNetworkAclAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
+// TestAccAliCloudVPCNetworkAclAttachment_multiInstance reproduces the
+// "inconsistent result after apply" reported in #3350: two attachment instances
+// share the same network_acl_id, each managing a different VSwitch. The ACL
+// returns every bound resource, so each instance only owns a subset. The
+// previous DescribeNetworkAclAttachment logic required all bound resources to
+// belong to a single instance and reported the coexisting attachment as absent.
+func TestAccAliCloudVPCNetworkAclAttachment_multiInstance(t *testing.T) {
+	resourceId1 := "alicloud_network_acl_attachment.default"
+	resourceId2 := "alicloud_network_acl_attachment.default2"
+	ra1 := resourceAttrInit(resourceId1, map[string]string{
+		"network_acl_id": CHECKSET,
+	})
+	ra2 := resourceAttrInit(resourceId2, map[string]string{
+		"network_acl_id": CHECKSET,
+	})
+	rand := acctest.RandInt()
+	testAccCheck1 := ra1.resourceAttrMapUpdateSet()
+	testAccCheck2 := ra2.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      testAccCheckNetworkAclAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNetworkAclAttachment_multiInstance(rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckNetworkAclAttachmentExists(resourceId1),
+					testAccCheckNetworkAclAttachmentExists(resourceId2),
+					// Each attachment manages a single VSwitch while the ACL has both
+					// VSwitches bound; this is the scenario that produced "inconsistent
+					// result after apply" when matching required every bound resource to
+					// belong to a single instance.
+					testAccCheckNetworkAclAttachmentExistsForVSwitch(resourceId1, "alicloud_vswitch.default"),
+					testAccCheckNetworkAclAttachmentExistsForVSwitch(resourceId2, "alicloud_vswitch.default2"),
+					testAccCheck1(map[string]string{
+						"network_acl_id": CHECKSET,
+						"resources.#":    "1",
+					}),
+					testAccCheck2(map[string]string{
+						"network_acl_id": CHECKSET,
+						"resources.#":    "1",
+					}),
+				),
+			},
+			{
+				Config:   testAccNetworkAclAttachment_multiInstance(rand),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+// testAccCheckNetworkAclAttachmentExistsForVSwitch verifies that the single
+// VSwitch managed by an attachment instance is still bound to the shared ACL.
+// It passes only that subset to DescribeNetworkAclAttachment, exercising the
+// multi-instance matching path instead of the full bound-resource list used by
+// testAccCheckNetworkAclAttachmentExists.
+func testAccCheckNetworkAclAttachmentExistsForVSwitch(attResource, vswitchResource string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		attRs, ok := s.RootModule().Resources[attResource]
+		if !ok {
+			return WrapError(Error("Not found: %s", attResource))
+		}
+		if attRs.Primary.ID == "" {
+			return WrapError(Error("No Network Acl Attachment ID is set"))
+		}
+		vswRs, ok := s.RootModule().Resources[vswitchResource]
+		if !ok {
+			return WrapError(Error("Not found: %s", vswitchResource))
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		vpcService := VpcService{client}
+
+		parts, err := ParseResourceId(attRs.Primary.ID, 2)
+		if err != nil {
+			return WrapError(err)
+		}
+		vpcResources := []vpc.Resource{{
+			ResourceId:   vswRs.Primary.ID,
+			ResourceType: "VSwitch",
+		}}
+		return vpcService.DescribeNetworkAclAttachment(parts[0], vpcResources)
+	}
+}
+
 func testAccNetworkAclAttachment_create(randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -318,6 +407,62 @@ resource "alicloud_network_acl_attachment" "default" {
     resource_id   = "${alicloud_vswitch.default.id}"
     resource_type = "VSwitch"
   }
+  resources {
+    resource_id   = "${alicloud_vswitch.default2.id}"
+    resource_type = "VSwitch"
+  }
+}
+`, randInt)
+}
+
+func testAccNetworkAclAttachment_multiInstance(randInt int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "tf-testAcc_network_acl"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_network_acl" "default" {
+  vpc_id           = "${alicloud_vpc.default.id}"
+  network_acl_name = "${var.name}%d"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = "${alicloud_vpc.default.id}"
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_name = "${var.name}"
+}
+
+resource "alicloud_vswitch" "default2" {
+  vpc_id       = "${alicloud_vpc.default.id}"
+  cidr_block   = "172.16.1.0/24"
+  zone_id      = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_name = "${var.name}"
+}
+
+resource "alicloud_network_acl_attachment" "default" {
+  network_acl_id = "${alicloud_network_acl.default.id}"
+  resources {
+    resource_id   = "${alicloud_vswitch.default.id}"
+    resource_type = "VSwitch"
+  }
+}
+
+resource "alicloud_network_acl_attachment" "default2" {
+  network_acl_id = "${alicloud_network_acl.default.id}"
+  // Serialize creation against the first attachment so both VSwitches are bound
+  // to the shared ACL by the time this instance is read back, and to avoid
+  // TaskConflict from concurrent AssociateNetworkAcl calls on the same ACL.
+  depends_on = [alicloud_network_acl_attachment.default]
   resources {
     resource_id   = "${alicloud_vswitch.default2.id}"
     resource_type = "VSwitch"

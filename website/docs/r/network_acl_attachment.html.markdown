@@ -64,11 +64,11 @@ resource "alicloud_network_acl_attachment" "default" {
 The following arguments are supported:
 
 * `network_acl_id` - (Required, ForceNew) The id of the network acl, the field can't be changed.
-* `resources` - (Required) List of the resources associated with the network acl. The details see Block Resources.
+* `resources` - (Required) List of the resources associated with the network acl. See [`resources`](#resources) below.
 
-### Block Resources
+### `resources`
 
-The resources mapping supports the following:
+The resources supports the following:
 
 * `resource_id` - (Required) The resource id that the network acl will associate with.
 * `resource_type` - (Required) The resource id that the network acl will associate with. Only support `VSwitch` now.

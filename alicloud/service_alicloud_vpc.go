@@ -655,16 +655,26 @@ func (s *VpcService) DescribeNetworkAclAttachment(id string, vpcResources []vpc.
 		if len(resources) < 1 {
 			return WrapErrorf(NotFoundErr("Network Acl Attachment", id), NotFoundMsg, ProviderERROR)
 		}
-		success := true
-		for _, source := range resources {
-			success = false
-			for _, res := range vpcResources {
+		// An ACL may be shared by multiple alicloud_network_acl_attachment
+		// instances, each managing a subset of the resources bound to the ACL.
+		// DescribeNetworkAcl returns every bound resource, so verify that the
+		// resources managed by this attachment are still bound instead of
+		// requiring all bound resources to belong to this instance. The previous
+		// logic reported coexisting attachments as NotFound and caused
+		// "inconsistent result after apply".
+		if len(vpcResources) == 0 {
+			return WrapErrorf(NotFoundErr("Network Acl Attachment", id), NotFoundMsg, ProviderERROR)
+		}
+		for _, res := range vpcResources {
+			found := false
+			for _, source := range resources {
 				item := source.(map[string]interface{})
 				if fmt.Sprint(item["ResourceId"]) == res.ResourceId {
-					success = true
+					found = true
+					break
 				}
 			}
-			if success == false {
+			if !found {
 				return WrapErrorf(NotFoundErr("Network Acl Attachment", id), NotFoundMsg, ProviderERROR)
 			}
 		}
