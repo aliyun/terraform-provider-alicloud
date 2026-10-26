@@ -32,6 +32,7 @@ func testSweepPvtzZones(region string) error {
 		"tf_test_",
 		"tf-test-",
 		"tftest",
+		"terraform-example",
 	}
 	action := "DescribeZones"
 	request := make(map[string]interface{})
