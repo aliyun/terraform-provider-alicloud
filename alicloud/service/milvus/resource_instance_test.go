@@ -1,12 +1,14 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package milvus_test. This file is generated automatically. Please do not modify it manually, thank you!
+package milvus_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/milvus"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -67,23 +69,23 @@ func testAccMilvusInstanceStandardComponents() []map[string]interface{} {
 func TestAccAliCloudMilvusInstance_basic11774(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_milvus_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudMilvusInstanceMap11774)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MilvusServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMilvusInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMilvusInstanceMap11774)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return milvus.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccmilvus%d", rand)
 	password := testAccMilvusInstancePassword(rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMilvusInstanceBasicDependence11774)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMilvusInstanceBasicDependence11774)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -109,13 +111,13 @@ func TestAccAliCloudMilvusInstance_basic11774(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":               CHECKSET,
+						"zone_id":               acctest.CHECKSET,
 						"vswitch_ids.#":         "1",
 						"db_admin_password":     password,
 						"components.#":          "5",
 						"instance_name":         name,
-						"db_version":            CHECKSET,
-						"vpc_id":                CHECKSET,
+						"db_version":            acctest.CHECKSET,
+						"vpc_id":                acctest.CHECKSET,
 						"ha":                    "false",
 						"payment_type":          "Subscription",
 						"multi_zone_mode":       "Single",
@@ -158,13 +160,13 @@ func TestAccAliCloudMilvusInstance_basic11774(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -179,13 +181,13 @@ func TestAccAliCloudMilvusInstance_basic11774(t *testing.T) {
 }
 
 var AliCloudMilvusInstanceMap11774 = map[string]string{
-	"status":               CHECKSET,
-	"create_time":          CHECKSET,
-	"region_id":            CHECKSET,
-	"order_id":             CHECKSET,
-	"security_group_ids.#": CHECKSET,
-	"expire_time":          CHECKSET,
-	"running_time":         CHECKSET,
+	"status":               acctest.CHECKSET,
+	"create_time":          acctest.CHECKSET,
+	"region_id":            acctest.CHECKSET,
+	"order_id":             acctest.CHECKSET,
+	"security_group_ids.#": acctest.CHECKSET,
+	"expire_time":          acctest.CHECKSET,
+	"running_time":         acctest.CHECKSET,
 }
 
 func AliCloudMilvusInstanceBasicDependence11774(name string) string {
@@ -221,23 +223,23 @@ resource "alicloud_vswitch" "defaultN80M7S" {
 func TestAccAliCloudMilvusInstance_basic11770(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_milvus_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudMilvusInstanceMap11770)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MilvusServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMilvusInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMilvusInstanceMap11770)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return milvus.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccmilvus%d", rand)
 	password := testAccMilvusInstancePassword(rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMilvusInstanceBasicDependence11770)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMilvusInstanceBasicDependence11770)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -296,19 +298,19 @@ func TestAccAliCloudMilvusInstance_basic11770(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":             CHECKSET,
+						"zone_id":             acctest.CHECKSET,
 						"vswitch_ids.#":       "1",
 						"db_admin_password":   password,
 						"components.#":        "5",
 						"instance_name":       name,
-						"db_version":          CHECKSET,
-						"vpc_id":              CHECKSET,
+						"db_version":          acctest.CHECKSET,
+						"vpc_id":              acctest.CHECKSET,
 						"ha":                  "false",
 						"payment_type":        "PayAsYouGo",
 						"multi_zone_mode":     "Single",
 						"kms_key_id":          "key-test-milvus",
 						"encrypted":           "false",
-						"resource_group_id":   CHECKSET,
+						"resource_group_id":   acctest.CHECKSET,
 						"auto_backup":         "false",
 						"is_multi_az_storage": "true",
 						"configuration":       "rootCoord:\n    maxDatabaseNum: 64 # Maximum number of database",
@@ -451,7 +453,7 @@ func TestAccAliCloudMilvusInstance_basic11770(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name":     name + "_更新资源组",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -537,13 +539,13 @@ func TestAccAliCloudMilvusInstance_basic11770(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -558,13 +560,13 @@ func TestAccAliCloudMilvusInstance_basic11770(t *testing.T) {
 }
 
 var AliCloudMilvusInstanceMap11770 = map[string]string{
-	"status":               CHECKSET,
-	"create_time":          CHECKSET,
-	"region_id":            CHECKSET,
-	"order_id":             CHECKSET,
-	"security_group_ids.#": CHECKSET,
-	"expire_time":          CHECKSET,
-	"running_time":         CHECKSET,
+	"status":               acctest.CHECKSET,
+	"create_time":          acctest.CHECKSET,
+	"region_id":            acctest.CHECKSET,
+	"order_id":             acctest.CHECKSET,
+	"security_group_ids.#": acctest.CHECKSET,
+	"expire_time":          acctest.CHECKSET,
+	"running_time":         acctest.CHECKSET,
 }
 
 func AliCloudMilvusInstanceBasicDependence11770(name string) string {
@@ -602,23 +604,23 @@ resource "alicloud_vswitch" "defaultN80M7S" {
 func TestAccAliCloudMilvusInstance_basic11772(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_milvus_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudMilvusInstanceMap11772)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MilvusServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMilvusInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMilvusInstanceMap11772)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return milvus.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccmilvus%d", rand)
 	password := testAccMilvusInstancePassword(rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMilvusInstanceBasicDependence11772)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMilvusInstanceBasicDependence11772)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -647,13 +649,13 @@ func TestAccAliCloudMilvusInstance_basic11772(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":               CHECKSET,
+						"zone_id":               acctest.CHECKSET,
 						"vswitch_ids.#":         "1",
 						"db_admin_password":     password,
 						"components.#":          "5",
 						"instance_name":         name,
-						"db_version":            CHECKSET,
-						"vpc_id":                CHECKSET,
+						"db_version":            acctest.CHECKSET,
+						"vpc_id":                acctest.CHECKSET,
 						"ha":                    "false",
 						"payment_type":          "Subscription",
 						"multi_zone_mode":       "Single",
@@ -699,13 +701,13 @@ func TestAccAliCloudMilvusInstance_basic11772(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -720,13 +722,13 @@ func TestAccAliCloudMilvusInstance_basic11772(t *testing.T) {
 }
 
 var AliCloudMilvusInstanceMap11772 = map[string]string{
-	"status":               CHECKSET,
-	"create_time":          CHECKSET,
-	"region_id":            CHECKSET,
-	"order_id":             CHECKSET,
-	"security_group_ids.#": CHECKSET,
-	"expire_time":          CHECKSET,
-	"running_time":         CHECKSET,
+	"status":               acctest.CHECKSET,
+	"create_time":          acctest.CHECKSET,
+	"region_id":            acctest.CHECKSET,
+	"order_id":             acctest.CHECKSET,
+	"security_group_ids.#": acctest.CHECKSET,
+	"expire_time":          acctest.CHECKSET,
+	"running_time":         acctest.CHECKSET,
 }
 
 func AliCloudMilvusInstanceBasicDependence11772(name string) string {
@@ -762,23 +764,23 @@ resource "alicloud_vswitch" "defaultN80M7S" {
 func TestAccAliCloudMilvusInstance_basic11771(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_milvus_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudMilvusInstanceMap11771)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MilvusServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMilvusInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMilvusInstanceMap11771)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return milvus.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccmilvus%d", rand)
 	password := testAccMilvusInstancePassword(rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMilvusInstanceBasicDependence11771)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMilvusInstanceBasicDependence11771)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -803,13 +805,13 @@ func TestAccAliCloudMilvusInstance_basic11771(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":           CHECKSET,
+						"zone_id":           acctest.CHECKSET,
 						"vswitch_ids.#":     "1",
 						"db_admin_password": password,
 						"components.#":      "5",
 						"instance_name":     name,
-						"db_version":        CHECKSET,
-						"vpc_id":            CHECKSET,
+						"db_version":        acctest.CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
 						"ha":                "false",
 						"payment_type":      "PayAsYouGo",
 						"multi_zone_mode":   "Single",
@@ -863,13 +865,13 @@ func TestAccAliCloudMilvusInstance_basic11771(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -884,13 +886,13 @@ func TestAccAliCloudMilvusInstance_basic11771(t *testing.T) {
 }
 
 var AliCloudMilvusInstanceMap11771 = map[string]string{
-	"status":               CHECKSET,
-	"create_time":          CHECKSET,
-	"region_id":            CHECKSET,
-	"order_id":             CHECKSET,
-	"security_group_ids.#": CHECKSET,
-	"expire_time":          CHECKSET,
-	"running_time":         CHECKSET,
+	"status":               acctest.CHECKSET,
+	"create_time":          acctest.CHECKSET,
+	"region_id":            acctest.CHECKSET,
+	"order_id":             acctest.CHECKSET,
+	"security_group_ids.#": acctest.CHECKSET,
+	"expire_time":          acctest.CHECKSET,
+	"running_time":         acctest.CHECKSET,
 }
 
 func AliCloudMilvusInstanceBasicDependence11771(name string) string {
@@ -926,23 +928,23 @@ resource "alicloud_vswitch" "defaultN80M7S" {
 func TestAccAliCloudMilvusInstance_autoPay(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_milvus_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudMilvusInstanceMapAutoPay)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MilvusServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMilvusInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMilvusInstanceMapAutoPay)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return milvus.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccmilvus%d", rand)
 	password := testAccMilvusInstancePassword(rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMilvusInstanceBasicDependence11771)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMilvusInstanceBasicDependence11771)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -970,13 +972,13 @@ func TestAccAliCloudMilvusInstance_autoPay(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_id":             CHECKSET,
+						"zone_id":             acctest.CHECKSET,
 						"vswitch_ids.#":       "1",
 						"db_admin_password":   password,
 						"components.#":        "5",
 						"instance_name":       name,
-						"db_version":          CHECKSET,
-						"vpc_id":              CHECKSET,
+						"db_version":          acctest.CHECKSET,
+						"vpc_id":              acctest.CHECKSET,
 						"ha":                  "false",
 						"payment_type":        "PayAsYouGo",
 						"multi_zone_mode":     "Single",
@@ -1000,13 +1002,171 @@ func TestAccAliCloudMilvusInstance_autoPay(t *testing.T) {
 }
 
 var AliCloudMilvusInstanceMapAutoPay = map[string]string{
-	"status":               CHECKSET,
-	"create_time":          CHECKSET,
-	"region_id":            CHECKSET,
-	"order_id":             CHECKSET,
-	"security_group_ids.#": CHECKSET,
-	"expire_time":          CHECKSET,
-	"running_time":         CHECKSET,
+	"status":               acctest.CHECKSET,
+	"create_time":          acctest.CHECKSET,
+	"region_id":            acctest.CHECKSET,
+	"order_id":             acctest.CHECKSET,
+	"security_group_ids.#": acctest.CHECKSET,
+	"expire_time":          acctest.CHECKSET,
+	"running_time":         acctest.CHECKSET,
+}
+
+// Case instance-双可用区vswitch_ids换序覆盖 (TypeList order coverage for vswitch_ids).
+// cn-hangzhou supports Milvus availability zones J and I (see the region-and-zone
+// document); multi_zone_mode="Two" is the documented dual-availability-zone mode.
+// vswitch_ids is a ForceNew TypeList, so reordering members triggers replacement,
+// which the order-coverage checker permits. The convergent second apply reorders
+// the two distinct vswitch members and requires an empty post-apply plan.
+func TestAccAliCloudMilvusInstance_vswitchIdsOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_milvus_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMilvusInstanceMapMultiZone)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return milvus.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccmilvus%d", rand)
+	password := testAccMilvusInstancePassword(rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMilvusInstanceBasicDependenceMultiZone)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id": "${var.primary_zone_id}",
+					"vswitch_ids": []map[string]interface{}{
+						{
+							"vsw_id":  "${alicloud_vswitch.primaryVswitch.id}",
+							"zone_id": "${alicloud_vswitch.primaryVswitch.zone_id}",
+						},
+						{
+							"vsw_id":  "${alicloud_vswitch.secondaryVswitch.id}",
+							"zone_id": "${alicloud_vswitch.secondaryVswitch.zone_id}",
+						},
+					},
+					"db_admin_password": password,
+					"components":        testAccMilvusInstanceStandardComponents(),
+					"instance_name":     name,
+					"db_version":        "2.4",
+					"vpc_id":            "${alicloud_vpc.defaultILXuit.id}",
+					"ha":                "false",
+					"payment_type":      "PayAsYouGo",
+					"multi_zone_mode":   "Two",
+					"auto_pay":          "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":           acctest.CHECKSET,
+						"vswitch_ids.#":     "2",
+						"db_admin_password": password,
+						"components.#":      "5",
+						"instance_name":     name,
+						"db_version":        acctest.CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
+						"ha":                "false",
+						"payment_type":      "PayAsYouGo",
+						"multi_zone_mode":   "Two",
+						"auto_pay":          "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id": "${var.primary_zone_id}",
+					"vswitch_ids": []map[string]interface{}{
+						{
+							"vsw_id":  "${alicloud_vswitch.secondaryVswitch.id}",
+							"zone_id": "${alicloud_vswitch.secondaryVswitch.zone_id}",
+						},
+						{
+							"vsw_id":  "${alicloud_vswitch.primaryVswitch.id}",
+							"zone_id": "${alicloud_vswitch.primaryVswitch.zone_id}",
+						},
+					},
+					"db_admin_password": password,
+					"components":        testAccMilvusInstanceStandardComponents(),
+					"instance_name":     name,
+					"db_version":        "2.4",
+					"vpc_id":            "${alicloud_vpc.defaultILXuit.id}",
+					"ha":                "false",
+					"payment_type":      "PayAsYouGo",
+					"multi_zone_mode":   "Two",
+					"auto_pay":          "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":           acctest.CHECKSET,
+						"vswitch_ids.#":     "2",
+						"db_admin_password": password,
+						"components.#":      "5",
+						"instance_name":     name,
+						"db_version":        acctest.CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
+						"ha":                "false",
+						"payment_type":      "PayAsYouGo",
+						"multi_zone_mode":   "Two",
+						"auto_pay":          "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AliCloudMilvusInstanceMapMultiZone = map[string]string{
+	"status":               acctest.CHECKSET,
+	"create_time":          acctest.CHECKSET,
+	"region_id":            acctest.CHECKSET,
+	"order_id":             acctest.CHECKSET,
+	"security_group_ids.#": acctest.CHECKSET,
+	"expire_time":          acctest.CHECKSET,
+	"running_time":         acctest.CHECKSET,
+}
+
+func AliCloudMilvusInstanceBasicDependenceMultiZone(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-hangzhou"
+}
+
+variable "primary_zone_id" {
+  default = "cn-hangzhou-j"
+}
+
+variable "secondary_zone_id" {
+  default = "cn-hangzhou-i"
+}
+
+resource "alicloud_vpc" "defaultILXuit" {
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "primaryVswitch" {
+  vpc_id       = alicloud_vpc.defaultILXuit.id
+  zone_id      = var.primary_zone_id
+  cidr_block   = "172.16.1.0/24"
+  vswitch_name = "milvus-primary"
+}
+
+resource "alicloud_vswitch" "secondaryVswitch" {
+  vpc_id       = alicloud_vpc.defaultILXuit.id
+  zone_id      = var.secondary_zone_id
+  cidr_block   = "172.16.2.0/24"
+  vswitch_name = "milvus-secondary"
+}
+
+`, name)
 }
 
 // Test Milvus Instance. <<< Resource test cases, automatically generated.
