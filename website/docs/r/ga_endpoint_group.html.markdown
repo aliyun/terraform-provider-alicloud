@@ -225,7 +225,7 @@ The following arguments are supported:
 * `endpoint_configurations` - (Required, Set) The endpointConfigurations of the endpoint group. See [`endpoint_configurations`](#endpoint_configurations) below.
 * `port_overrides` - (Optional, Set) Mapping between listening port and forwarding port of boarding point. See [`port_overrides`](#port_overrides) below.
 
-  -> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
+  -> **NOTE:** Port mapping is supported for listeners of `HTTP`, `HTTPS`, `TCP`, and `UDP` protocols. For a `TCP` listener, the `virtual` endpoint group does not support port mapping: if `virtual` endpoint groups already exist under the listener, the `default` endpoint group cannot configure port mapping; if the `default` endpoint group has already configured port mapping, `virtual` endpoint groups cannot be added. After port mapping is configured, the listener protocol cannot be changed, except for switching between `HTTP` and `HTTPS`. The `listener_port` in the port map must be within the listener port range of the current listener.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
 ### `endpoint_configurations`
