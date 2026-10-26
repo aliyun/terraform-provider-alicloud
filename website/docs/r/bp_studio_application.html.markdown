@@ -11,7 +11,7 @@ description: |-
 
 Provides a Cloud Architect Design Tools Application resource.
 
-For information about Cloud Architect Design Tools Application and how to use it, see [What is Application](https://help.aliyun.com/document_detail/428263.html).
+For information about Cloud Architect Design Tools Application and how to use it, see [What is Application](https://www.alibabacloud.com/help/en/cadt/developer-reference/api-bpstudio-2021-09-31-createapplication).
 
 -> **NOTE:** Available since v1.192.0.
 
@@ -47,8 +47,8 @@ resource "alicloud_bp_studio_application" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   area_id           = "cn-hangzhou"
   instances {
-    id        = "data.alicloud_instances.default.instances.0.id"
-    node_name = "data.alicloud_instances.default.instances.0.name"
+    id        = data.alicloud_instances.default.instances.0.id
+    node_name = data.alicloud_instances.default.instances.0.name
     node_type = "ecs"
   }
   configuration = {
@@ -70,11 +70,11 @@ The following arguments are supported:
 * `template_id` - (Required, ForceNew) The id of the template.
 * `resource_group_id` - (Optional, ForceNew, Computed) The id of the resource group.
 * `area_id` - (Optional, ForceNew) The id of the area.
-* `instances` - (Optional, ForceNew) The instance list. Support the creation of instances in the existing vpc under the application. See the following `Block instances`.
+* `instances` - (Optional, ForceNew) The instance list. Support the creation of instances in the existing vpc under the application. See [`instances`](#instances) below.
 * `configuration` - (Optional, ForceNew) The configuration of the application.
 * `variables` - (Optional, ForceNew) The variables of the application.
 
-#### Block instances
+### `instances`
 
 The instances supports the following:
 

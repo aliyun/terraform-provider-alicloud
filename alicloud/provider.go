@@ -282,9 +282,6 @@ func Provider() *schema.Provider {
 			"alicloud_bastionhost_host_accounts":   dataSourceAlicloudBastionhostHostAccounts(),
 			"alicloud_bastionhost_host_share_keys": dataSourceAlicloudBastionhostHostShareKeys(),
 
-			// bp
-			"alicloud_bp_studio_applications": dataSourceAlicloudBpStudioApplications(),
-
 			// brain
 			"alicloud_brain_industrial_service":           dataSourceAlicloudBrainIndustrialService(),
 			"alicloud_brain_industrial_pid_organizations": dataSourceAlicloudBrainIndustrialPidOrganizations(),
@@ -1450,9 +1447,6 @@ func Provider() *schema.Provider {
 			"alicloud_bastionhost_host_group_account_user_group_attachment": resourceAlicloudBastionhostHostGroupAccountUserGroupAttachment(),
 			"alicloud_bastionhost_host_share_key":                           resourceAlicloudBastionhostHostShareKey(),
 			"alicloud_bastionhost_host_account_share_key_attachment":        resourceAlicloudBastionhostHostAccountShareKeyAttachment(),
-
-			// bp
-			"alicloud_bp_studio_application": resourceAlicloudBpStudioApplication(),
 
 			// brain
 			"alicloud_brain_industrial_pid_organization": resourceAlicloudBrainIndustrialPidOrganization(),
