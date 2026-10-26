@@ -1,33 +1,35 @@
-package alicloud
+package servicecatalog_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/servicecatalog"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudServiceCatalogPortfolio_basic2593(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
 	resourceId := "alicloud_service_catalog_portfolio.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceCatalogPortfolioMap2593)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicecatalogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceCatalogPortfolioMap2593)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicecatalog.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceCatalogPortfolio")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sServiceCatalogPortfolio%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceCatalogPortfolioBasicDependence2593)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sServiceCatalogPortfolio%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceCatalogPortfolioBasicDependence2593)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -100,22 +102,22 @@ variable "name" {
 func TestAccAliCloudServiceCatalogPortfolio_basic7495(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_catalog_portfolio.default"
-	checkoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudServiceCatalogPortfolioMap7495)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServiceCatalogServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceCatalogPortfolioMap7495)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicecatalog.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceCatalogPortfolio")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sservicecatalogportfolio%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceCatalogPortfolioBasicDependence7495)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sservicecatalogportfolio%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceCatalogPortfolioBasicDependence7495)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -156,8 +158,8 @@ func TestAccAliCloudServiceCatalogPortfolio_basic7495(t *testing.T) {
 }
 
 var AlicloudServiceCatalogPortfolioMap7495 = map[string]string{
-	"portfolio_arn": CHECKSET,
-	"create_time":   CHECKSET,
+	"portfolio_arn": acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
 }
 
 func AlicloudServiceCatalogPortfolioBasicDependence7495(name string) string {
@@ -174,22 +176,22 @@ variable "name" {
 func TestAccAliCloudServiceCatalogPortfolio_basic5466(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_catalog_portfolio.default"
-	checkoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudServiceCatalogPortfolioMap5466)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServiceCatalogServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceCatalogPortfolioMap5466)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicecatalog.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceCatalogPortfolio")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sservicecatalogportfolio%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceCatalogPortfolioBasicDependence5466)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sservicecatalogportfolio%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceCatalogPortfolioBasicDependence5466)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -230,8 +232,8 @@ func TestAccAliCloudServiceCatalogPortfolio_basic5466(t *testing.T) {
 }
 
 var AlicloudServiceCatalogPortfolioMap5466 = map[string]string{
-	"portfolio_arn": CHECKSET,
-	"create_time":   CHECKSET,
+	"portfolio_arn": acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
 }
 
 func AlicloudServiceCatalogPortfolioBasicDependence5466(name string) string {

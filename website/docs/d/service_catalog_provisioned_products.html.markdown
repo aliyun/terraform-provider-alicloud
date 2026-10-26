@@ -48,42 +48,60 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Provisioned Product IDs.
 * `names` - A list of name of Provisioned Products.
 * `provisioned_products` - (Available since v1.197.0) A list of Provisioned Product Entries. Each element contains the following attributes:
+  * `id` - The ID of the provisioned product.
   * `create_time` - The creation time of the product instance
   * `last_provisioning_task_id` - The ID of the last instance operation task
   * `last_successful_provisioning_task_id` - The ID of the last successful instance operation task
   * `last_task_id` - The ID of the last task
+  * `outputs` - The output value of the template.
+    * `description` - Description of the output value defined in the template.
+    * `output_key` - The name of the output value defined in the template.
+    * `output_value` - The content of the output value defined in the template.
   * `owner_principal_id` - The RAM entity ID of the owner
   * `owner_principal_type` - The RAM entity type of the owner
-  * `portfolio_id` - Product mix ID.> When there is a default Startup option, there is no need to fill in the portfolio. When there is no default Startup option, you must fill in the portfolio. 
+  * `parameters` - The template parameters entered by the user.
+    * `parameter_key` - The name of the parameter defined in the template.
+    * `parameter_value` - The Template parameter value entered by the user.
+  * `portfolio_id` - Product mix ID.
   * `product_id` - Product ID.
   * `product_name` - The name of the product
   * `product_version_id` - Product version ID.
   * `product_version_name` - The name of the product version
   * `provisioned_product_arn` - The ARN of the product instance
   * `provisioned_product_id` - The ID of the instance.
-  * `provisioned_product_name` - The name of the instance.The length is 1~128 characters.
-  * `provisioned_product_type` - Instance type.The value is RosStack, which indicates the stack of Alibaba Cloud resource orchestration service (ROS).
+  * `provisioned_product_name` - The name of the instance.
+  * `provisioned_product_type` - Instance type.
   * `stack_id` - The ID of the ROS stack
-  * `stack_region_id` - The ID of the region to which the resource stack of the Alibaba Cloud resource orchestration service (ROS) belongs.
+  * `stack_region_id` - The ID of the region to which the resource stack belongs.
   * `status` - Instance status
   * `status_message` - The status message of the product instance
+  * `tags` - A mapping of tags of the provisioned product.
 * `products` - (Deprecated since v1.197.0) A list of Provisioned Product Entries. Each element contains the following attributes:
+  * `id` - The ID of the provisioned product.
   * `create_time` - The creation time of the product instance
   * `last_provisioning_task_id` - The ID of the last instance operation task
   * `last_successful_provisioning_task_id` - The ID of the last successful instance operation task
   * `last_task_id` - The ID of the last task
+  * `outputs` - The output value of the template.
+    * `description` - Description of the output value defined in the template.
+    * `output_key` - The name of the output value defined in the template.
+    * `output_value` - The content of the output value defined in the template.
   * `owner_principal_id` - The RAM entity ID of the owner
   * `owner_principal_type` - The RAM entity type of the owner
-  * `portfolio_id` - Product mix ID.> When there is a default Startup option, there is no need to fill in the portfolio. When there is no default Startup option, you must fill in the portfolio.
+  * `parameters` - The template parameters entered by the user.
+    * `parameter_key` - The name of the parameter defined in the template.
+    * `parameter_value` - The Template parameter value entered by the user.
+  * `portfolio_id` - Product mix ID.
   * `product_id` - Product ID.
   * `product_name` - The name of the product
   * `product_version_id` - Product version ID.
   * `product_version_name` - The name of the product version
   * `provisioned_product_arn` - The ARN of the product instance
   * `provisioned_product_id` - The ID of the instance.
-  * `provisioned_product_name` - The name of the instance.The length is 1~128 characters.
-  * `provisioned_product_type` - Instance type.The value is RosStack, which indicates the stack of Alibaba Cloud resource orchestration service (ROS).
+  * `provisioned_product_name` - The name of the instance.
+  * `provisioned_product_type` - Instance type.
   * `stack_id` - The ID of the ROS stack
-  * `stack_region_id` - The ID of the region to which the resource stack of the Alibaba Cloud resource orchestration service (ROS) belongs.
+  * `stack_region_id` - The ID of the region to which the resource stack belongs.
   * `status` - Instance status
   * `status_message` - The status message of the product instance
+  * `tags` - A mapping of tags of the provisioned product.

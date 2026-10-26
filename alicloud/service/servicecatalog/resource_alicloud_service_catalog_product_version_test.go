@@ -1,11 +1,13 @@
-package alicloud
+package servicecatalog_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/servicecatalog"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudServiceCatalogProductVersion_basic7448(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_catalog_product_version.default"
-	checkoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudServiceCatalogProductVersionMap7448)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServiceCatalogServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceCatalogProductVersionMap7448)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicecatalog.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceCatalogProductVersion")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sservicecatalogproductversion%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceCatalogProductVersionBasicDependence7448)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sservicecatalogproductversion%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceCatalogProductVersionBasicDependence7448)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -48,7 +50,7 @@ func TestAccAliCloudServiceCatalogProductVersion_basic7448(t *testing.T) {
 						"active":               "true",
 						"description":          "产品版本测试",
 						"product_version_name": name,
-						"product_id":           CHECKSET,
+						"product_id":           acctest.CHECKSET,
 						"template_type":        "RosTerraformTemplate",
 					}),
 				),
@@ -80,7 +82,7 @@ func TestAccAliCloudServiceCatalogProductVersion_basic7448(t *testing.T) {
 }
 
 var AlicloudServiceCatalogProductVersionMap7448 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudServiceCatalogProductVersionBasicDependence7448(name string) string {
@@ -103,22 +105,22 @@ resource "alicloud_service_catalog_product" "defaultmaeTcE" {
 func TestAccAliCloudServiceCatalogProductVersion_basic5655(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_catalog_product_version.default"
-	checkoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudServiceCatalogProductVersionMap5655)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServiceCatalogServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceCatalogProductVersionMap5655)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicecatalog.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceCatalogProductVersion")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sservicecatalogproductversion%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceCatalogProductVersionBasicDependence5655)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sservicecatalogproductversion%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceCatalogProductVersionBasicDependence5655)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -136,7 +138,7 @@ func TestAccAliCloudServiceCatalogProductVersion_basic5655(t *testing.T) {
 						"template_url":         "oss://servicecatalog-cn-hangzhou/1466115886172051/terraform/template/tpl-bp1c23hk4fv1bq/template.json",
 						"description":          "产品版本测试",
 						"product_version_name": name,
-						"product_id":           CHECKSET,
+						"product_id":           acctest.CHECKSET,
 						"template_type":        "RosTerraformTemplate",
 						"active":               "true",
 					}),
@@ -167,7 +169,7 @@ func TestAccAliCloudServiceCatalogProductVersion_basic5655(t *testing.T) {
 }
 
 var AlicloudServiceCatalogProductVersionMap5655 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudServiceCatalogProductVersionBasicDependence5655(name string) string {

@@ -1,59 +1,60 @@
-package alicloud
+package servicecatalog_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudServiceCatalogPortfolioDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
-	rand := acctest.RandIntRange(1000000, 9999999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ServiceCatalogProvisionedProductSupportRegions)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_service_catalog_portfolio.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_service_catalog_portfolio.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_service_catalog_portfolio.default.portfolio_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_service_catalog_portfolio.default.portfolio_name}_fake"`,
 		}),
 	}
-	scopeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
+	scopeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
 			"ids":   `["${alicloud_service_catalog_portfolio.default.id}"]`,
 			"scope": `"Local"`,
 		}),
-		fakeConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
 			"ids":   `["${alicloud_service_catalog_portfolio.default.id}_fake"]`,
 			"scope": `"Import"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_service_catalog_portfolio.default.id}"]`,
 			"name_regex": `"${alicloud_service_catalog_portfolio.default.portfolio_name}"`,
 			"scope":      `"Local"`,
 		}),
-		fakeConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_service_catalog_portfolio.default.id}_fake"]`,
 			"name_regex": `"${alicloud_service_catalog_portfolio.default.portfolio_name}_fake"`,
 			"scope":      `"Import"`,
 		}),
 	}
 
-	ServiceCatalogPortfolioCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, scopeConf, allConf)
+	ServiceCatalogPortfolioCheckInfo.DataSourceTestCheck(t, rand, idsConf, nameRegexConf, scopeConf, allConf)
 }
 
 var existServiceCatalogPortfolioMapFunc = func(rand int) map[string]string {
@@ -61,13 +62,13 @@ var existServiceCatalogPortfolioMapFunc = func(rand int) map[string]string {
 		"ids.#":                       "1",
 		"names.#":                     "1",
 		"portfolios.#":                "1",
-		"portfolios.0.id":             CHECKSET,
-		"portfolios.0.create_time":    CHECKSET,
-		"portfolios.0.description":    CHECKSET,
-		"portfolios.0.portfolio_arn":  CHECKSET,
-		"portfolios.0.portfolio_id":   CHECKSET,
-		"portfolios.0.portfolio_name": CHECKSET,
-		"portfolios.0.provider_name":  CHECKSET,
+		"portfolios.0.id":             acctest.CHECKSET,
+		"portfolios.0.create_time":    acctest.CHECKSET,
+		"portfolios.0.description":    acctest.CHECKSET,
+		"portfolios.0.portfolio_arn":  acctest.CHECKSET,
+		"portfolios.0.portfolio_id":   acctest.CHECKSET,
+		"portfolios.0.portfolio_name": acctest.CHECKSET,
+		"portfolios.0.provider_name":  acctest.CHECKSET,
 	}
 }
 
@@ -79,10 +80,10 @@ var fakeServiceCatalogPortfolioMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var ServiceCatalogPortfolioCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_service_catalog_portfolios.default",
-	existMapFunc: existServiceCatalogPortfolioMapFunc,
-	fakeMapFunc:  fakeServiceCatalogPortfolioMapFunc,
+var ServiceCatalogPortfolioCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_service_catalog_portfolios.default",
+	ExistMapFunc: existServiceCatalogPortfolioMapFunc,
+	FakeMapFunc:  fakeServiceCatalogPortfolioMapFunc,
 }
 
 func testAccCheckAlicloudServiceCatalogPortfolioSourceConfig(rand int, attrMap map[string]string) string {

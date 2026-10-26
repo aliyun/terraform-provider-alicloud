@@ -1137,15 +1137,9 @@ func Provider() *schema.Provider {
 			"alicloud_selectdb_db_instances": dataSourceAlicloudSelectDBDbInstances(),
 
 			// service
-			"alicloud_service_mesh_service_meshes":          dataSourceAlicloudServiceMeshServiceMeshes(),
-			"alicloud_service_mesh_versions":                dataSourceAlicloudServiceMeshVersions(),
-			"alicloud_service_mesh_extension_providers":     dataSourceAlicloudServiceMeshExtensionProviders(),
-			"alicloud_service_catalog_provisioned_products": dataSourceAlicloudServiceCatalogProvisionedProducts(),
-			"alicloud_service_catalog_product_as_end_users": dataSourceAlicloudServiceCatalogProductAsEndUsers(),
-			"alicloud_service_catalog_product_versions":     dataSourceAlicloudServiceCatalogProductVersions(),
-			"alicloud_service_catalog_launch_options":       dataSourceAlicloudServiceCatalogLaunchOptions(),
-			"alicloud_service_catalog_end_user_products":    dataSourceAlicloudServiceCatalogEndUserProducts(),
-			"alicloud_service_catalog_portfolios":           dataSourceAlicloudServiceCatalogPortfolios(),
+			"alicloud_service_mesh_service_meshes":      dataSourceAlicloudServiceMeshServiceMeshes(),
+			"alicloud_service_mesh_versions":            dataSourceAlicloudServiceMeshVersions(),
+			"alicloud_service_mesh_extension_providers": dataSourceAlicloudServiceMeshExtensionProviders(),
 
 			// simple
 			"alicloud_simple_application_server_instances":      dataSourceAlicloudSimpleApplicationServerInstances(),
@@ -2634,15 +2628,9 @@ func Provider() *schema.Provider {
 			"alicloud_selectdb_db_instance": resourceAliCloudSelectDBDbInstance(),
 
 			// service
-			"alicloud_service_catalog_principal_portfolio_association": resourceAliCloudServiceCatalogPrincipalPortfolioAssociation(),
-			"alicloud_service_catalog_product_version":                 resourceAliCloudServiceCatalogProductVersion(),
-			"alicloud_service_catalog_product_portfolio_association":   resourceAliCloudServiceCatalogProductPortfolioAssociation(),
-			"alicloud_service_catalog_product":                         resourceAliCloudServiceCatalogProduct(),
-			"alicloud_service_mesh_service_mesh":                       resourceAliCloudServiceMeshServiceMesh(),
-			"alicloud_service_mesh_user_permission":                    resourceAliCloudServiceMeshUserPermission(),
-			"alicloud_service_mesh_extension_provider":                 resourceAlicloudServiceMeshExtensionProvider(),
-			"alicloud_service_catalog_provisioned_product":             resourceAlicloudServiceCatalogProvisionedProduct(),
-			"alicloud_service_catalog_portfolio":                       resourceAliCloudServiceCatalogPortfolio(),
+			"alicloud_service_mesh_service_mesh":       resourceAliCloudServiceMeshServiceMesh(),
+			"alicloud_service_mesh_user_permission":    resourceAliCloudServiceMeshUserPermission(),
+			"alicloud_service_mesh_extension_provider": resourceAlicloudServiceMeshExtensionProvider(),
 
 			// simple
 			"alicloud_simple_application_server_disk":          resourceAliCloudSimpleApplicationServerDisk(),
