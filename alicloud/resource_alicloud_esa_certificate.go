@@ -87,7 +87,7 @@ func resourceAliCloudEsaCertificate() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"lets_encrypt", "digicert_single", "digicert_wildcard"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("created_type"); ok && v.(string) == "free" {
+					if old != "" && new != "" && old != new {
 						return true
 					}
 					return false
@@ -160,20 +160,20 @@ func resourceAliCloudEsaCertificateCreate(d *schema.ResourceData, meta interface
 		var err error
 		request = make(map[string]interface{})
 		if v, ok := d.GetOk("site_id"); ok {
-			query["SiteId"] = v
+			request["SiteId"] = v
 		}
 
 		if v, ok := d.GetOk("domains"); ok {
-			query["Domains"] = v.(string)
+			request["Domains"] = v.(string)
 		}
 
 		if v, ok := d.GetOk("type"); ok {
-			query["Type"] = v.(string)
+			request["Type"] = v.(string)
 		}
 
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
-			response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+			response, err = client.RpcGet("ESA", "2024-09-10", action, request, query)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -190,7 +190,7 @@ func resourceAliCloudEsaCertificateCreate(d *schema.ResourceData, meta interface
 		}
 
 		ResultIdVar, _ := jsonpath.Get("$.Result[0].Id", response)
-		d.SetId(fmt.Sprintf("%v:%v", query["SiteId"], ResultIdVar))
+		d.SetId(fmt.Sprintf("%v:%v", request["SiteId"], ResultIdVar))
 
 	}
 

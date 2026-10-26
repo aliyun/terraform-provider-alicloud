@@ -36,17 +36,15 @@ func TestAccAliCloudESACertificateresource_Certificate_apply_test(t *testing.T) 
 				Config: testAccConfig(map[string]interface{}{
 					"domains":      "101.gositecdn.cn",
 					"site_id":      "${data.alicloud_esa_sites.default.sites.0.id}",
-					"type":         "lets_encrypt",
+					"type":         "digicert_single",
 					"created_type": "free",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"domains": "101.gositecdn.cn",
+						"site_id": CHECKSET,
+						"type":    CHECKSET,
+					}),
 				),
 			},
 			{
@@ -70,7 +68,6 @@ variable "name" {
 }
 
 data "alicloud_esa_sites" "default" {
-  plan_subscribe_type = "enterpriseplan"
   site_name = "gositecdn.cn"
 }
 
