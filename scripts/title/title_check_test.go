@@ -412,3 +412,41 @@ var ServicePackage = c.ServicePackage{
 		t.Error("baseIndexFromSources invented alicloud_missing")
 	}
 }
+
+func TestUnitCoreTitleResolution(t *testing.T) {
+	t.Chdir(t.TempDir())
+	dir := "alicloud/provider/core"
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	register := []byte(`package core
+func ServicePackage() conns.ServicePackage { return conns.ServicePackage{
+ SDKDataSources: []conns.SDKDataSource{{TypeName: "alicloud_account", Factory: DataSourceAccount}},
+} }`)
+	if err := os.WriteFile(dir+"/register.go", register, 0644); err != nil {
+		t.Fatal(err)
+	}
+	path := dir + "/data_source_account.go"
+	if err := os.WriteFile(path, []byte("package core; func DataSourceAccount() {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	_, _, split, flat := classify(path)
+	if !split || flat {
+		t.Fatal("core implementation bypassed entity title checks")
+	}
+	index := baseIndexFromSources(nil, map[string][]byte{dir + "/register.go": register})
+	entities := serviceEntities(path, index)
+	if len(entities) != 1 || entities[0].typeName != "alicloud_account" || !entities[0].dataSource || !entities[0].existing {
+		t.Fatalf("core entity classified incorrectly: %+v", entities)
+	}
+	files := []titleFile{serviceFile(path, entities...)}
+	if checkTitle("testcase: unrelated change", files) {
+		t.Fatal("core type announcement was not required")
+	}
+	if !checkTitle("data-source/alicloud_account: migrate to core package", files) {
+		t.Fatal("valid core title rejected")
+	}
+	if got := resolveLines(path); len(got) != 1 || got[0] != path+"\talicloud_account\tdata_source" {
+		t.Fatalf("core documentation mapping missing: %v", got)
+	}
+}

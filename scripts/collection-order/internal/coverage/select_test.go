@@ -166,3 +166,24 @@ func ServicePackage() conns.ServicePackage {
 		t.Fatal("duplicate declaration passed")
 	}
 }
+
+func TestUnitFullySplitRegistry(t *testing.T) {
+	empty := []byte(`package alicloud; var p = Provider{ResourcesMap: map[string]*Resource{}}`)
+	register := []byte(`package example
+func ServicePackage() conns.ServicePackage { return conns.ServicePackage{
+ SDKResources: []conns.SDKResource{{TypeName: "alicloud_example", Factory: ResourceExample}},
+} }`)
+	got, err := RegistryUnion(empty, map[string][]byte{"alicloud/service/example/register.go": register})
+	if err != nil || got["alicloud_example"] != "example.ResourceExample" {
+		t.Fatalf("fully split registry: %v, %v", got, err)
+	}
+	for _, src := range []string{
+		`package alicloud; var p = Provider{}`,
+		`package alicloud; var p = Provider{ResourcesMap: dynamic()}`,
+		`package alicloud; var p = Provider{ResourcesMap: map[string]*Resource{}, ResourcesMap: map[string]*Resource{}}`,
+	} {
+		if _, err := Registry([]byte(src)); err == nil {
+			t.Fatalf("invalid root registration passed: %s", src)
+		}
+	}
+}

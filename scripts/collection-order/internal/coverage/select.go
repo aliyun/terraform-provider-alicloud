@@ -19,11 +19,17 @@ func Registry(src []byte) (map[string]string, error) {
 	}
 	result := map[string]string{}
 	var parseErr error
+	found := false
 	ast.Inspect(f, func(n ast.Node) bool {
 		kv, ok := n.(*ast.KeyValueExpr)
 		if !ok || ident(kv.Key) != "ResourcesMap" {
 			return true
 		}
+		if found {
+			parseErr = fmt.Errorf("multiple ResourcesMap declarations")
+			return false
+		}
+		found = true
 		entries := fields(kv.Value)
 		if entries == nil {
 			parseErr = fmt.Errorf("ResourcesMap must be a literal map")
@@ -42,8 +48,8 @@ func Registry(src []byte) (map[string]string, error) {
 	if parseErr != nil {
 		return nil, parseErr
 	}
-	if len(result) == 0 {
-		return nil, fmt.Errorf("ResourcesMap is missing or empty")
+	if !found {
+		return nil, fmt.Errorf("ResourcesMap is missing")
 	}
 	return result, nil
 }
