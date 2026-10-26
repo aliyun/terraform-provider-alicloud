@@ -321,6 +321,15 @@ if echo "$CHANGED_FILES" | grep -q "\.go$\|website/docs"; then
     || true
 fi
 
+# 1.6 Production Dependency Graph Check
+# Runs unconditionally: the production dependency graph of the root main is a
+# global guarantee (no SDK v2 helper/resource), independent of the diff range.
+# `go list -deps` resolves the import graph without compiling the provider; it
+# loads package metadata, so on local runs it uses the same Go toolchain as vet.
+run_check "Production Dependency Graph Check (no SDK v2 helper/resource)" \
+  "make -C \"$PROJECT_ROOT\" check-production-deps" \
+  || true
+
 # ============================================================================
 # 2. Testing Coverage Rate Check
 # ============================================================================
