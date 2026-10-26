@@ -45,6 +45,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/das"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/databasegateway"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/datahub"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworkspublic"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbfs"
@@ -55,7 +56,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/devopsrdc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dfs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dg"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dm"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dmsenterprise"
@@ -218,7 +218,7 @@ var servicePackages = []conns.ServicePackage{
 	dds.ServicePackage(),
 	devopsrdc.ServicePackage(),
 	dfs.ServicePackage(),
-	dg.ServicePackage(),
+	databasegateway.ServicePackage(),
 	dm.ServicePackage(),
 	dms.ServicePackage(),
 	dmsenterprise.ServicePackage(),

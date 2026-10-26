@@ -1,4 +1,4 @@
-package alicloud
+package databasegateway
 
 import (
 	"fmt"
@@ -6,204 +6,163 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
-	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	resource.AddTestSweepers("alicloud_database_gateway_gateway", &resource.Sweeper{
-		Name: "alicloud_database_gateway_gateway",
-		F:    testSweepDatabaseGatewayGateway,
-	})
+// unitTestProviderResources supplies the schema the migrated tests inspect;
+// the root alicloud package cannot be imported here.
+func unitTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_database_gateway_gateway": ResourceGateway(),
+	}
 }
 
-func testSweepDatabaseGatewayGateway(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.DatabaseGatewaySupportRegions) {
-		log.Printf("[INFO] Skipping DatabaseGatewayGateway unsupported region: %s", region)
-		return nil
+var unitTestEndpoints sync.Map
+var unitTestSignVersion sync.Map
+
+// unitTestSharedClientForRegion mirrors the root test helper so the unit test
+// can be skipped when no cloud credentials are configured.
+func unitTestSharedClientForRegion(region string) (interface{}, error) {
+	var accessKey, secretKey, securityToken string
+	if accessKey = os.Getenv("ALICLOUD_ACCESS_KEY"); accessKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_ACCESS_KEY")
 	}
-	rawClient, err := sharedClientForRegion(region)
+
+	if secretKey = os.Getenv("ALICLOUD_SECRET_KEY"); secretKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_SECRET_KEY")
+	}
+
+	securityToken = os.Getenv("ALICLOUD_SECURITY_TOKEN")
+
+	conf := connectivity.Config{
+		Region:      connectivity.Region(region),
+		RegionId:    region,
+		AccessKey:   accessKey,
+		SecretKey:   secretKey,
+		Protocol:    "HTTPS",
+		Endpoints:   &unitTestEndpoints,
+		SignVersion: &unitTestSignVersion,
+	}
+	if securityToken != "" {
+		conf.SecurityToken = securityToken
+	}
+	accountId := os.Getenv("ALICLOUD_ACCOUNT_ID")
+	if accountId == "" {
+		accountId = os.Getenv("ALIBABA_CLOUD_ACCOUNT_ID")
+	}
+	if accountId != "" {
+		conf.AccountId = accountId
+	}
+	accountType := os.Getenv("ALICLOUD_ACCOUNT_TYPE")
+	if accountType == "" {
+		accountType = os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")
+	}
+	if accountType != "" {
+		conf.AccountType = accountType
+	}
+	credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
+	if v := strings.TrimSpace(securityToken); v != "" {
+		credentialConfig.SetType("sts").SetSecurityToken(v)
+	}
+	credential, err := credentials.NewCredential(credentialConfig)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return nil, err
 	}
-	client := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-	action := "GetUserGateways"
-	request := map[string]interface{}{
-		"RegionId":   client.RegionId,
-		"PageSize":   PageSizeLarge,
-		"PageNumber": 1,
+	conf.Credential = credential
+
+	client, err := conf.Client()
+	if err != nil {
+		return nil, err
 	}
 
-	var response map[string]interface{}
-	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			response, err = client.RpcPost("dg", "2019-03-27", action, nil, request, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
+	return client, nil
+}
+
+// newInstanceDiff mirrors the root helper for the migrated resource.
+// lintignore: R001
+func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
+	p := unitTestProviderResources()
+	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	for key, value := range attributes {
+		err := dOld.Set(key, value)
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
 		}
+	}
+	for key, value := range attributesDiff {
+		attributes[key] = value
+	}
 
-		if fmt.Sprint(response["Success"]) == "false" {
-			log.Printf("[ERROR] Getting resource %s  failed!!!  Body: %v.", action, err)
-			return nil
-		}
-
-		m, err := jsonpath.Get("$.Data", response)
+	for key, value := range attributes {
+		err := dNew.Set(key, value)
 		if err != nil {
-			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Data", action, err)
-			return nil
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
 		}
-		v, err := convertJsonStringToList(m.(string))
-		for _, v := range v {
-			item := v.(map[string]interface{})
-			if _, ok := item["gatewayName"]; !ok {
-				continue
-			}
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["gatewayName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+	}
+
+	diff := terraform.NewInstanceDiff()
+	objectKey := ""
+	for _, key := range helper.MapSort(dNew.State().Attributes) {
+		newValue := dNew.State().Attributes[key]
+		if objectKey != "" && !strings.HasPrefix(key, objectKey) {
+			objectKey = ""
+		}
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+					break
 				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping DatabaseGateway Gateway: %s", item["gatewayName"].(string))
-				continue
-			}
-
-			action := "DeleteGateway"
-			request := map[string]interface{}{
-				"GatewayId": item["gatewayId"],
-			}
-			_, err = client.RpcPost("dg", "2019-03-27", action, nil, request, false)
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete DatabaseGateway Gateway (%s): %s", item["gatewayId"].(string), err)
-			}
-			log.Printf("[INFO] Delete DatabaseGateway Gateway success: %s ", item["gatewayId"].(string))
 		}
-
-		if len(v) < request["PageSize"].(int) {
-			break
+		oldValue, ok := dOld.State().Attributes[key]
+		if ok && oldValue == newValue {
+			continue
 		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
+		if oldValue == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					oldValue = "0"
+				}
+			}
+		}
+		diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: oldValue, New: newValue}
+
+		if objectKey != "" {
+			for removeKey, removeValue := range dOld.State().Attributes {
+				if strings.HasPrefix(removeKey, objectKey) {
+					if _, ok := dNew.State().Attributes[removeKey]; !ok {
+						if len(strings.Split(removeKey, ".")) > 2 {
+							delete(diff.Attributes, removeKey)
+						} else {
+							diff.Attributes[removeKey] = &terraform.ResourceAttrDiff{Old: removeValue, New: ""}
+						}
+					}
+				}
+			}
+			objectKey = ""
+		}
 	}
-	return nil
-}
-
-func TestAccAliCloudDatabaseGatewayGateway_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_database_gateway_gateway.default"
-	ra := resourceAttrInit(resourceId, AlicloudDatabaseGatewayGatewayMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DgService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDatabaseGatewayGateway")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdatabasegatewaygateway%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDatabaseGatewayGatewayBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatabaseGatewaySupportRegions)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"gateway_name": name,
-					"gateway_desc": name + "Desc",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"gateway_name": name,
-						"gateway_desc": name + "Desc",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"gateway_name": name + "Update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"gateway_name": name + "Update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"gateway_desc": name + "DescUpdate",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"gateway_desc": name + "DescUpdate",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"gateway_name": name,
-					"gateway_desc": name + "Desc",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"gateway_name": name,
-						"gateway_desc": name + "Desc",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AlicloudDatabaseGatewayGatewayMap0 = map[string]string{
-	"status": CHECKSET,
-}
-
-func AlicloudDatabaseGatewayGatewayBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-`, name)
+	return diff, nil
 }
 
 // lintignore: R001
 func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_database_gateway_gateway"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_database_gateway_gateway"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -221,7 +180,7 @@ func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -239,18 +198,18 @@ func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_database_gateway_gateway", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_database_gateway_gateway", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -258,13 +217,13 @@ func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDgClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDatabaseGatewayGatewayCreate(dInit, rawClient)
+	err = resourceGatewayCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -291,7 +250,7 @@ func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDatabaseGatewayGatewayCreate(dInit, rawClient)
+		err := resourceGatewayCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -312,13 +271,13 @@ func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDgClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDatabaseGatewayGatewayUpdate(dExisted, rawClient)
+	err = resourceGatewayUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyGateway
@@ -354,7 +313,7 @@ func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDatabaseGatewayGatewayUpdate(dExisted, rawClient)
+		err := resourceGatewayUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -393,7 +352,7 @@ func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDatabaseGatewayGatewayRead(dExisted, rawClient)
+		err := resourceGatewayRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -406,13 +365,13 @@ func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDgClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDatabaseGatewayGatewayDelete(dExisted, rawClient)
+	err = resourceGatewayDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -436,7 +395,7 @@ func TestUnitAlicloudDatabaseGatewayGateway(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDatabaseGatewayGatewayDelete(dExisted, rawClient)
+		err := resourceGatewayDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

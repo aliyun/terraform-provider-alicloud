@@ -1,4 +1,4 @@
-package alicloud
+package databasegateway
 
 import (
 	"fmt"
@@ -6,16 +6,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudDatabaseGatewayGateway() *schema.Resource {
+func ResourceGateway() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDatabaseGatewayGatewayCreate,
-		Read:   resourceAlicloudDatabaseGatewayGatewayRead,
-		Update: resourceAlicloudDatabaseGatewayGatewayUpdate,
-		Delete: resourceAlicloudDatabaseGatewayGatewayDelete,
+		Create: resourceGatewayCreate,
+		Read:   resourceGatewayRead,
+		Update: resourceGatewayUpdate,
+		Delete: resourceGatewayDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -36,7 +39,7 @@ func resourceAlicloudDatabaseGatewayGateway() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDatabaseGatewayGatewayCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateGateway"
@@ -47,11 +50,11 @@ func resourceAlicloudDatabaseGatewayGatewayCreate(d *schema.ResourceData, meta i
 	}
 	request["GatewayName"] = d.Get("gateway_name")
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("dg", "2019-03-27", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -59,36 +62,36 @@ func resourceAlicloudDatabaseGatewayGatewayCreate(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_database_gateway_gateway", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_database_gateway_gateway", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(response["Data"]))
 
-	return resourceAlicloudDatabaseGatewayGatewayRead(d, meta)
+	return resourceGatewayRead(d, meta)
 }
-func resourceAlicloudDatabaseGatewayGatewayRead(d *schema.ResourceData, meta interface{}) error {
+func resourceGatewayRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dgService := DgService{client}
+	dgService := NewService(client)
 	object, err := dgService.DescribeDatabaseGatewayGateway(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_database_gateway_gateway dgService.DescribeDatabaseGatewayGateway Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("gateway_desc", object["gatewayDesc"])
 	d.Set("gateway_name", object["gatewayName"])
 	d.Set("status", object["status"])
 	return nil
 }
-func resourceAlicloudDatabaseGatewayGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var err error
 	var response map[string]interface{}
@@ -108,11 +111,11 @@ func resourceAlicloudDatabaseGatewayGatewayUpdate(d *schema.ResourceData, meta i
 	request["GatewayName"] = d.Get("gateway_name")
 	if update {
 		action := "ModifyGateway"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("dg", "2019-03-27", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -120,17 +123,17 @@ func resourceAlicloudDatabaseGatewayGatewayUpdate(d *schema.ResourceData, meta i
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
-	return resourceAlicloudDatabaseGatewayGatewayRead(d, meta)
+	return resourceGatewayRead(d, meta)
 }
-func resourceAlicloudDatabaseGatewayGatewayDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceGatewayDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteGateway"
 	var response map[string]interface{}
@@ -139,11 +142,11 @@ func resourceAlicloudDatabaseGatewayGatewayDelete(d *schema.ResourceData, meta i
 		"GatewayId": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("dg", "2019-03-27", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -151,12 +154,12 @@ func resourceAlicloudDatabaseGatewayGatewayDelete(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	return nil
 }

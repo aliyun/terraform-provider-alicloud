@@ -1,4 +1,4 @@
-package alicloud
+package databasegateway
 
 import (
 	"fmt"
@@ -7,14 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudDatabaseGatewayGateways() *schema.Resource {
+func DataSourceGateways() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDatabaseGatewayGatewaysRead,
+		Read: dataSourceGatewaysRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -146,7 +150,7 @@ func dataSourceAlicloudDatabaseGatewayGateways() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudDatabaseGatewayGatewaysRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceGatewaysRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "GetUserGateways"
@@ -155,14 +159,14 @@ func dataSourceAlicloudDatabaseGatewayGatewaysRead(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("search_key"); ok {
 		request["SearchKey"] = v
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 	var gatewayNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		gatewayNameRegex = r
 	}
@@ -180,11 +184,11 @@ func dataSourceAlicloudDatabaseGatewayGatewaysRead(d *schema.ResourceData, meta 
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("dg", "2019-03-27", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -192,18 +196,18 @@ func dataSourceAlicloudDatabaseGatewayGatewaysRead(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_database_gateway_gateways", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_database_gateway_gateways", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 		resp, err := jsonpath.Get("$.Data", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data", response)
 		}
-		result, _ := convertJsonStringToList(resp.(string))
+		result, _ := convert.ConvertJsonStringToList(resp.(string))
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if gatewayNameRegex != nil && !gatewayNameRegex.MatchString(fmt.Sprint(item["gatewayName"])) {
@@ -219,7 +223,7 @@ func dataSourceAlicloudDatabaseGatewayGatewaysRead(d *schema.ResourceData, meta 
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -247,10 +251,10 @@ func dataSourceAlicloudDatabaseGatewayGatewaysRead(d *schema.ResourceData, meta 
 		}
 
 		id := fmt.Sprint(object["gatewayId"])
-		dgService := DgService{client}
+		dgService := NewService(client)
 		getResp, err := dgService.GetUserGatewayInstances(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		gatewayInstances := make([]map[string]interface{}, 0)
@@ -275,20 +279,20 @@ func dataSourceAlicloudDatabaseGatewayGatewaysRead(d *schema.ResourceData, meta 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("gateways", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
