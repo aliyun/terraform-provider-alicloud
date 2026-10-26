@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -22,6 +23,7 @@ func resourceAlicloudOtsTable() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: resourceAlicloudOtsTableCustomizeDiff,
 
 		Schema: map[string]*schema.Schema{
 			"instance_name": {
@@ -54,9 +56,19 @@ func resourceAlicloudOtsTable() *schema.Resource {
 							ValidateFunc: validation.StringInSlice([]string{
 								string(IntegerType), string(BinaryType), string(StringType)}, false),
 						},
+						"auto_increment": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
 					},
 				},
 				MaxItems: 4,
+				ForceNew: true,
+			},
+			"enable_local_txn": {
+				Type:     schema.TypeBool,
+				Optional: true,
 				ForceNew: true,
 			},
 			"defined_column": {
@@ -127,6 +139,41 @@ func resourceAlicloudOtsTable() *schema.Resource {
 	}
 }
 
+func resourceAlicloudOtsTableCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	primaryKeys, ok := d.Get("primary_key").([]interface{})
+	if !ok || len(primaryKeys) == 0 {
+		return nil
+	}
+	autoIncrementCount := 0
+	for i, pkRaw := range primaryKeys {
+		pk, ok := pkRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		autoIncrement, _ := pk["auto_increment"].(bool)
+		if !autoIncrement {
+			continue
+		}
+		pkType, _ := pk["type"].(string)
+		if pkType != string(IntegerType) {
+			return fmt.Errorf("the primary_key with auto_increment set to true must be of type Integer, got %q", pkType)
+		}
+		if i == 0 {
+			return fmt.Errorf("the auto_increment primary key must not be the partition key (the first primary_key)")
+		}
+		autoIncrementCount++
+	}
+	if autoIncrementCount > 1 {
+		return fmt.Errorf("at most one primary_key can be set to auto_increment, got %d", autoIncrementCount)
+	}
+	if autoIncrementCount > 0 {
+		if enableLocalTxn, _ := d.Get("enable_local_txn").(bool); enableLocalTxn {
+			return fmt.Errorf("enable_local_txn cannot be set to true when any primary_key has auto_increment set to true")
+		}
+	}
+	return nil
+}
+
 func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) error {
 	tableMeta := new(tablestore.TableMeta)
 	instanceName := d.Get("instance_name").(string)
@@ -149,7 +196,11 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	for _, primaryKey := range d.Get("primary_key").([]interface{}) {
 		pk := primaryKey.(map[string]interface{})
 		pkValue := otsService.getPrimaryKeyType(pk["type"].(string))
-		tableMeta.AddPrimaryKeyColumn(pk["name"].(string), pkValue)
+		if pk["auto_increment"].(bool) {
+			tableMeta.AddPrimaryKeyColumnOption(pk["name"].(string), pkValue, tablestore.AUTO_INCREMENT)
+		} else {
+			tableMeta.AddPrimaryKeyColumn(pk["name"].(string), pkValue)
+		}
 	}
 
 	if v, ok := d.GetOk("defined_column"); ok {
@@ -178,6 +229,8 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	request.TableMeta = tableMeta
 	request.TableOption = tableOption
 	request.ReservedThroughput = reservedThroughput
+	enableLocalTxn := d.Get("enable_local_txn").(bool)
+	request.EnableLocalTxn = &enableLocalTxn
 
 	if enableSSE, ok := d.GetOkExists("enable_sse"); ok {
 		sseSpec := new(tablestore.SSESpecification)
@@ -258,6 +311,11 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 		item := make(map[string]interface{})
 		item["name"] = *v.Name
 		item["type"] = otsService.convertPrimaryKeyType(*v.Type)
+		if v.Option != nil && *v.Option == tablestore.AUTO_INCREMENT {
+			item["auto_increment"] = true
+		} else {
+			item["auto_increment"] = false
+		}
 		pks = append(pks, item)
 	}
 	d.Set("primary_key", pks)
