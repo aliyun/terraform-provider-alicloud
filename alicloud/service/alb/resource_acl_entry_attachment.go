@@ -1,4 +1,4 @@
-package alicloud
+package alb
 
 import (
 	"fmt"
@@ -7,17 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudAlbAclEntryAttachment() *schema.Resource {
+func ResourceAclEntryAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAlbAclEntryAttachmentCreate,
-		Read:   resourceAlicloudAlbAclEntryAttachmentRead,
-		Update: resourceAlicloudAlbAclEntryAttachmentUpdate,
-		Delete: resourceAlicloudAlbAclEntryAttachmentDelete,
+		Create: resourceAclEntryAttachmentCreate,
+		Read:   resourceAclEntryAttachmentRead,
+		Update: resourceAclEntryAttachmentUpdate,
+		Delete: resourceAclEntryAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -76,13 +79,13 @@ func resourceAlicloudAlbAclEntryAttachment() *schema.Resource {
 	}
 }
 
-func resourceAlicloudAlbAclEntryAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAclEntryAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	// batch mode: the attachment owns all entries of the acl and its ID is the acl ID
 	if _, ok := d.GetOk("entries"); ok {
-		return resourceAlicloudAlbAclEntryAttachmentCreateBatch(d, meta)
+		return resourceAclEntryAttachmentCreateBatch(d, meta)
 	}
-	albService := AlbService{client}
+	albService := NewService(client)
 	var response map[string]interface{}
 	var err error
 	action := "AddEntriesToAcl"
@@ -98,12 +101,12 @@ func resourceAlicloudAlbAclEntryAttachmentCreate(d *schema.ResourceData, meta in
 	aclEntriesMap["Entry"] = d.Get("entry")
 	aclEntriesMaps = append(aclEntriesMaps, aclEntriesMap)
 	request["AclEntries"] = aclEntriesMaps
-	request["ClientToken"] = buildClientToken("AddEntriesToAcl")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("AddEntriesToAcl")
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "IncorrectStatus.Acl", "ResourceInConfiguring"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "IncorrectStatus.Acl", "ResourceInConfiguring", "AclStatusNotStable"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -111,55 +114,55 @@ func resourceAlicloudAlbAclEntryAttachmentCreate(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["AclId"], ":", aclEntriesMap["Entry"]))
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbAclEntryAttachmentStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AclEntryAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	// The acl entry turns Available before the acl itself leaves Configuring status.
 	// Wait for the acl to become Available, so that dependent resources (e.g. alicloud_alb_listener_acl_attachment)
 	// will not be created while the server side still considers the acl Configuring.
-	stateConf = BuildStateConf([]string{"Creating", "Configuring"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbAclStateRefreshFunc(fmt.Sprint(request["AclId"]), []string{}))
+	stateConf = helper.BuildStateConf([]string{"Creating", "Configuring"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AclStateRefreshFunc(fmt.Sprint(request["AclId"]), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
-	return resourceAlicloudAlbAclEntryAttachmentRead(d, meta)
+	return resourceAclEntryAttachmentRead(d, meta)
 }
 
-func resourceAlicloudAlbAclEntryAttachmentCreateBatch(d *schema.ResourceData, meta interface{}) error {
+func resourceAclEntryAttachmentCreateBatch(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	aclId := d.Get("acl_id").(string)
 	entries := d.Get("entries").(*schema.Set).List()
 	if len(entries) == 0 {
 		// the exactly-one-of constraint rejects zero entry blocks at plan time;
 		// keep an explicit error here in case an empty set reaches the apply path anyway
-		return WrapError(Error("at least one entry block is required, to remove all entries please remove the resource"))
+		return errs.WrapError(errs.Error("at least one entry block is required, to remove all entries please remove the resource"))
 	}
-	if err := addAlbAclEntries(client, aclId, entries, d.Timeout(schema.TimeoutCreate)); err != nil {
+	if err := addAclEntries(client, aclId, entries, d.Timeout(schema.TimeoutCreate)); err != nil {
 		return err
 	}
 	d.SetId(aclId)
-	return resourceAlicloudAlbAclEntryAttachmentRead(d, meta)
+	return resourceAclEntryAttachmentRead(d, meta)
 }
 
-func resourceAlicloudAlbAclEntryAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAclEntryAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	albService := AlbService{client}
+	albService := NewService(client)
 	// batch mode: the ID is the acl ID and the attachment owns all entries of the acl
 	if !strings.Contains(d.Id(), ":") {
 		entries, err := albService.ListAclEntries(d.Id())
 		if err != nil {
-			if NotFoundError(err) {
-				log.Printf("[DEBUG] Resource alicloud_alb_acl_entry_attachment AlbService.ListAclEntries Failed!!! %s", err)
+			if errs.NotFoundError(err) {
+				log.Printf("[DEBUG] Resource alicloud_alb_acl_entry_attachment albService.ListAclEntries Failed!!! %s", err)
 				d.SetId("")
 				return nil
 			}
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if len(entries) == 0 {
 			log.Printf("[DEBUG] Resource alicloud_alb_acl_entry_attachment batch attachment %s has no entries", d.Id())
@@ -178,19 +181,19 @@ func resourceAlicloudAlbAclEntryAttachmentRead(d *schema.ResourceData, meta inte
 		d.Set("entries", entriesMaps)
 		return nil
 	}
-	object, err := albService.DescribeAlbAclEntryAttachment(d.Id())
+	object, err := albService.DescribeAclEntryAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_alb_acl_entry_attachment AlbService.DescribeAlbAclEntryAttachment Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_alb_acl_entry_attachment albService.DescribeAclEntryAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("acl_id", parts[0])
@@ -200,7 +203,7 @@ func resourceAlicloudAlbAclEntryAttachmentRead(d *schema.ResourceData, meta inte
 	return nil
 }
 
-func resourceAlicloudAlbAclEntryAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAclEntryAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	// `acl_id`, `entry` and `description` are ForceNew: in-place update only applies to `entries` (batch mode)
 	if !d.HasChange("entries") {
@@ -215,29 +218,29 @@ func resourceAlicloudAlbAclEntryAttachmentUpdate(d *schema.ResourceData, meta in
 		for _, item := range remove {
 			entries = append(entries, item.(map[string]interface{})["entry"])
 		}
-		if err := removeAlbAclEntries(client, d.Id(), entries, d.Timeout(schema.TimeoutUpdate)); err != nil {
+		if err := removeAclEntries(client, d.Id(), entries, d.Timeout(schema.TimeoutUpdate)); err != nil {
 			return err
 		}
 	}
 	if len(create) > 0 {
-		if err := addAlbAclEntries(client, d.Id(), create, d.Timeout(schema.TimeoutUpdate)); err != nil {
+		if err := addAclEntries(client, d.Id(), create, d.Timeout(schema.TimeoutUpdate)); err != nil {
 			return err
 		}
 	}
-	return resourceAlicloudAlbAclEntryAttachmentRead(d, meta)
+	return resourceAclEntryAttachmentRead(d, meta)
 }
 
-func resourceAlicloudAlbAclEntryAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAclEntryAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	albService := AlbService{client}
+	albService := NewService(client)
 	// batch mode: remove all entries owned by this attachment from the acl
 	if !strings.Contains(d.Id(), ":") {
 		entries, err := albService.ListAclEntries(d.Id())
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil
 			}
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if len(entries) == 0 {
 			return nil
@@ -246,15 +249,15 @@ func resourceAlicloudAlbAclEntryAttachmentDelete(d *schema.ResourceData, meta in
 		for _, entry := range entries {
 			entryList = append(entryList, entry["Entry"])
 		}
-		return removeAlbAclEntries(client, d.Id(), entryList, d.Timeout(schema.TimeoutDelete))
+		return removeAclEntries(client, d.Id(), entryList, d.Timeout(schema.TimeoutDelete))
 	}
 	action := "RemoveEntriesFromAcl"
 	var response map[string]interface{}
 	var err error
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request := map[string]interface{}{
 		"AclId":    parts[0],
@@ -264,12 +267,12 @@ func resourceAlicloudAlbAclEntryAttachmentDelete(d *schema.ResourceData, meta in
 	aclEntriesMaps := make([]string, 0)
 	aclEntriesMaps = append(aclEntriesMaps, parts[1])
 	request["Entries"] = aclEntriesMaps
-	request["ClientToken"] = buildClientToken("RemoveEntriesFromAcl")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("RemoveEntriesFromAcl")
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus.Acl", "OperationFailed.ResourceGroupStatusCheckFail", "ResourceInConfiguring"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"IncorrectStatus.Acl", "OperationFailed.ResourceGroupStatusCheckFail", "ResourceInConfiguring", "AclStatusNotStable"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -277,26 +280,26 @@ func resourceAlicloudAlbAclEntryAttachmentDelete(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound.AclEntry"}) {
+		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.AclEntry"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albService.AlbAclEntryAttachmentStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albService.AclEntryAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
 
-// addAlbAclEntries adds the given acl entries in batches of at most 20 entries
+// addAclEntries adds the given acl entries in batches of at most 20 entries
 // per call, which is the limit of the AddEntriesToAcl API.
-func addAlbAclEntries(client *connectivity.AliyunClient, aclId string, entries []interface{}, timeout time.Duration) error {
-	albService := AlbService{client}
+func addAclEntries(client *connectivity.AliyunClient, aclId string, entries []interface{}, timeout time.Duration) error {
+	albService := NewService(client)
 	action := "AddEntriesToAcl"
-	for _, item := range SplitSlice(entries, 20) {
+	for _, item := range helper.SplitSlice(entries, 20) {
 		aclEntriesMaps := make([]map[string]interface{}, 0)
 		for _, aclEntry := range item {
 			aclEntryArg := aclEntry.(map[string]interface{})
@@ -311,15 +314,15 @@ func addAlbAclEntries(client *connectivity.AliyunClient, aclId string, entries [
 		request := map[string]interface{}{
 			"AclId":       aclId,
 			"AclEntries":  aclEntriesMaps,
-			"ClientToken": buildClientToken(action),
+			"ClientToken": helper.BuildClientToken(action),
 		}
 		var response map[string]interface{}
 		var err error
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(timeout, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "IncorrectStatus.Acl", "ResourceInConfiguring"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"OperationFailed.ResourceGroupStatusCheckFail", "IncorrectStatus.Acl", "ResourceInConfiguring", "AclStatusNotStable"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -327,29 +330,29 @@ func addAlbAclEntries(client *connectivity.AliyunClient, aclId string, entries [
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			// an entry already on the acl is kept as it is: it either belongs to this
 			// full-set attachment or will converge on the next apply
-			if IsExpectedErrors(err, []string{"ResourceAlreadyExist.AclEntry"}) {
+			if errs.IsExpectedErrors(err, []string{"ResourceAlreadyExist.AclEntry"}) {
 				continue
 			}
-			return WrapErrorf(err, DefaultErrorMsg, aclId, action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, aclId, action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, timeout, 5*time.Second, albService.AlbAclStateRefreshFunc(aclId, []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, timeout, 5*time.Second, albService.AclStateRefreshFunc(aclId, []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, aclId)
+			return errs.WrapErrorf(err, errs.IdMsg, aclId)
 		}
 	}
 	return nil
 }
 
-// removeAlbAclEntries removes the given acl entries in batches of at most 20
+// removeAclEntries removes the given acl entries in batches of at most 20
 // entries per call, which is the limit of the RemoveEntriesFromAcl API.
-func removeAlbAclEntries(client *connectivity.AliyunClient, aclId string, entries []interface{}, timeout time.Duration) error {
-	albService := AlbService{client}
+func removeAclEntries(client *connectivity.AliyunClient, aclId string, entries []interface{}, timeout time.Duration) error {
+	albService := NewService(client)
 	action := "RemoveEntriesFromAcl"
-	for _, item := range SplitSlice(entries, 20) {
+	for _, item := range helper.SplitSlice(entries, 20) {
 		aclEntriesMaps := make([]string, 0)
 		for _, aclEntry := range item {
 			aclEntriesMaps = append(aclEntriesMaps, fmt.Sprint(aclEntry))
@@ -358,15 +361,15 @@ func removeAlbAclEntries(client *connectivity.AliyunClient, aclId string, entrie
 			"AclId":       aclId,
 			"RegionId":    client.RegionId,
 			"Entries":     aclEntriesMaps,
-			"ClientToken": buildClientToken(action),
+			"ClientToken": helper.BuildClientToken(action),
 		}
 		var response map[string]interface{}
 		var err error
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(timeout, func() *retry.RetryError {
 			response, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectStatus.Acl", "OperationFailed.ResourceGroupStatusCheckFail", "ResourceInConfiguring"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"IncorrectStatus.Acl", "OperationFailed.ResourceGroupStatusCheckFail", "ResourceInConfiguring", "AclStatusNotStable"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -374,16 +377,16 @@ func removeAlbAclEntries(client *connectivity.AliyunClient, aclId string, entrie
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ResourceNotFound.AclEntry"}) {
+			if errs.IsExpectedErrors(err, []string{"ResourceNotFound.AclEntry"}) {
 				continue
 			}
-			return WrapErrorf(err, DefaultErrorMsg, aclId, action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, aclId, action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, timeout, 5*time.Second, albService.AlbAclStateRefreshFunc(aclId, []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, timeout, 5*time.Second, albService.AclStateRefreshFunc(aclId, []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, aclId)
+			return errs.WrapErrorf(err, errs.IdMsg, aclId)
 		}
 	}
 	return nil
