@@ -158,25 +158,32 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 		}
 
 		for _, domain := range response.CustomDomains {
+			// The FC ListCustomDomains response may omit several domain-level
+			// and route pointer fields. Dereferencing them directly triggered a
+			// nil pointer panic (see GitHub issue #9166); resolve them
+			// nil-safely so empty values surface as empty strings instead.
+			domainName := derefString(domain.DomainName)
 			mapping := map[string]interface{}{
-				"id":                 *domain.DomainName,
-				"domain_name":        *domain.DomainName,
-				"account_id":         *domain.AccountID,
-				"protocol":           *domain.Protocol,
-				"api_version":        *domain.APIVersion,
+				"id":                 domainName,
+				"domain_name":        domainName,
+				"account_id":         derefString(domain.AccountID),
+				"protocol":           derefString(domain.Protocol),
+				"api_version":        derefString(domain.APIVersion),
 				"created_time":       domain.CreatedTime,
 				"last_modified_time": domain.LastModifiedTime,
 			}
 
 			var routeConfigMappings []map[string]interface{}
-			for _, v := range domain.RouteConfig.Routes {
-				routeConfigMappings = append(routeConfigMappings, map[string]interface{}{
-					"path":          *v.Path,
-					"service_name":  *v.ServiceName,
-					"function_name": *v.FunctionName,
-					"qualifier":     *v.Qualifier,
-					"methods":       v.Methods,
-				})
+			if domain.RouteConfig != nil {
+				for _, v := range domain.RouteConfig.Routes {
+					routeConfigMappings = append(routeConfigMappings, map[string]interface{}{
+						"path":          derefString(v.Path),
+						"service_name":  derefString(v.ServiceName),
+						"function_name": derefString(v.FunctionName),
+						"qualifier":     derefString(v.Qualifier),
+						"methods":       v.Methods,
+					})
+				}
 			}
 			mapping["route_config"] = routeConfigMappings
 
@@ -184,7 +191,7 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 			if domain.CertConfig != nil && domain.CertConfig.CertName != nil {
 				certConfigMappings = append(certConfigMappings, map[string]interface{}{
 					"cert_name":   *domain.CertConfig.CertName,
-					"certificate": *domain.CertConfig.Certificate,
+					"certificate": derefString(domain.CertConfig.Certificate),
 				})
 			}
 			mapping["cert_config"] = certConfigMappings
@@ -199,19 +206,19 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 						return WrapError(err)
 					}
 				}
-				if r != nil && !r.MatchString(mapping["domain_name"].(string)) {
+				if r != nil && !r.MatchString(domainName) {
 					continue
 				}
 			}
 			// Filter by id.
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[*domain.DomainName]; !ok {
+				if _, ok := idsMap[domainName]; !ok {
 					continue
 				}
 			}
 			customDomainMappings = append(customDomainMappings, mapping)
-			ids = append(ids, *domain.DomainName)
-			names = append(names, *domain.DomainName)
+			ids = append(ids, domainName)
+			names = append(names, domainName)
 		}
 
 		nextToken = ""
@@ -239,4 +246,15 @@ func dataSourceAlicloudFcCustomDomainsRead(d *schema.ResourceData, meta interfac
 		writeToFile(output.(string), customDomainMappings)
 	}
 	return nil
+}
+
+// derefString safely dereferences an FC custom domain pointer string field,
+// returning an empty string when the pointer is nil. The ListCustomDomains
+// response may omit domain-level and route pointer fields; direct dereferences
+// caused a nil pointer panic in the data source Read (GitHub issue #9166).
+func derefString(p *string) string {
+	if p != nil {
+		return *p
+	}
+	return ""
 }
