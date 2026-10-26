@@ -157,6 +157,128 @@ resource "alicloud_log_project" "default" {
 `, name)
 }
 
+// Regression coverage for the OSS-only delivery path: the OSS fields must not depend on delivery_sls_enabled.
+func TestAccAliCloudOOSServiceSetting_ossOnly(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_service_setting.default"
+	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudOOSServiceSettingMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosServiceSetting")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soosonly%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOOSServiceSettingBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_enabled": "false",
+					"delivery_sls_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_enabled": "false",
+						"delivery_sls_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_enabled":     "true",
+					"delivery_oss_key_prefix":  "oosexample1/",
+					"delivery_oss_bucket_name": "${alicloud_oss_bucket.default.bucket}",
+					"delivery_sls_enabled":     "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_enabled":    "true",
+						"delivery_oss_key_prefix": "oosexample1/",
+						"delivery_sls_enabled":    "false",
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "delivery_oss_bucket_name", "alicloud_oss_bucket.default", "bucket"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_key_prefix": "oosexample2/",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_key_prefix": "oosexample2/",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_key_prefix": "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_key_prefix": "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_bucket_name": "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_enabled": "true",
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "delivery_oss_bucket_name", "alicloud_oss_bucket.default", "bucket"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_bucket_name": "tf-testacc-oos-not-sent",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_enabled": "false",
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "delivery_oss_bucket_name", "alicloud_oss_bucket.default", "bucket"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func AlicloudOOSServiceSettingBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = var.name
+}
+`, name)
+}
+
 // lintignore: R001
 func TestUnitAliCloudOOSServiceSetting(t *testing.T) {
 	p := Provider().ResourcesMap

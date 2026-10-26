@@ -26,10 +26,12 @@ func resourceAlicloudOosServiceSetting() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOkExists("delivery_sls_enabled"); ok && v.(bool) {
-						return false
+					// The API has no documented way to clear the bucket name and removal never takes
+					// effect, so suppress it instead of repeating the diff forever.
+					if new == "" {
+						return true
 					}
-					return true
+					return !d.Get("delivery_oss_enabled").(bool)
 				},
 			},
 			"delivery_oss_enabled": {
@@ -40,10 +42,7 @@ func resourceAlicloudOosServiceSetting() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOkExists("delivery_sls_enabled"); ok && v.(bool) {
-						return false
-					}
-					return true
+					return !d.Get("delivery_oss_enabled").(bool)
 				},
 			},
 			"delivery_sls_enabled": {
@@ -54,10 +53,7 @@ func resourceAlicloudOosServiceSetting() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOkExists("delivery_sls_enabled"); ok && v.(bool) {
-						return false
-					}
-					return true
+					return !d.Get("delivery_sls_enabled").(bool)
 				},
 			},
 		},
@@ -123,7 +119,6 @@ func resourceAlicloudOosServiceSettingRead(d *schema.ResourceData, meta interfac
 	d.Set("delivery_oss_key_prefix", object["DeliveryOssKeyPrefix"])
 	d.Set("delivery_sls_enabled", object["DeliverySlsEnabled"])
 	d.Set("delivery_sls_project_name", object["DeliverySlsProjectName"])
-	d.Set("rdc_enterprise_id", object["RdcEnterpriseId"])
 	return nil
 }
 func resourceAlicloudOosServiceSettingUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -146,9 +141,8 @@ func resourceAlicloudOosServiceSettingUpdate(d *schema.ResourceData, meta interf
 	}
 	if d.HasChange("delivery_oss_key_prefix") {
 		update = true
-		if v, ok := d.GetOk("delivery_oss_key_prefix"); ok {
-			request["DeliveryOssKeyPrefix"] = v
-		}
+		// An empty key prefix is the documented way to clear the delivery directory.
+		request["DeliveryOssKeyPrefix"] = d.Get("delivery_oss_key_prefix")
 	}
 	if d.HasChange("delivery_sls_enabled") {
 		update = true

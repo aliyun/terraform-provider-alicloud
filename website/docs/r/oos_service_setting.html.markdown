@@ -13,7 +13,7 @@ Provides a OOS Service Setting resource.
 
 For information about OOS Service Setting and how to use it, see [What is Service Setting](https://www.alibabacloud.com/help/en/doc-detail/268700.html).
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testaccoossetting"
+  default = "oos-setting-example"
 }
 
 resource "alicloud_oss_bucket" "default" {
@@ -58,7 +58,7 @@ resource "alicloud_oos_service_setting" "default" {
 
 The following arguments are supported:
 
-* `delivery_oss_bucket_name` - (Optional) The name of the OSS bucket. **NOTE:** When the `delivery_oss_enabled` is `true`, The `delivery_oss_bucket_name` is valid.
+* `delivery_oss_bucket_name` - (Optional) The name of the OSS bucket. **NOTE:** When the `delivery_oss_enabled` is `true`, The `delivery_oss_bucket_name` is valid. The bucket name cannot be cleared once set; to stop delivering, set `delivery_oss_enabled` to `false`.
 * `delivery_oss_enabled` - (Optional) Is the recording function for the OSS delivery template enabled.  
 * `delivery_oss_key_prefix` - (Optional) The Directory of the OSS bucket. **NOTE:** When the `delivery_oss_enabled` is `true`, The `delivery_oss_bucket_name` is valid.
 * `delivery_sls_enabled` - (Optional) Is the execution record function to SLS delivery Template turned on.
