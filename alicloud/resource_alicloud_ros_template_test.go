@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -102,7 +104,7 @@ func TestAccAliCloudROSTemplate_basic(t *testing.T) {
 	}, "DescribeRosTemplate")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := acctest.RandIntRange(100000, 999999)
 	name := fmt.Sprintf("tf-testAcc%sAlicloudRosTemplate%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosTemplateBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -138,7 +140,7 @@ func TestAccAliCloudROSTemplate_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"template_url", "template_body"},
+				ImportStateVerifyIgnore: []string{"template_url", "template_body", "rotate_strategy", "validation_options"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -187,6 +189,48 @@ func TestAccAliCloudROSTemplate_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${alicloud_resource_manager_resource_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.default", "id"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"validation_options": []string{"BasicValidation"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"validation_options.#": "1",
+						"validation_options.0": "BasicValidation",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rotate_strategy": "DeleteOldestNonSharedVersionWhenLimitExceeded",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rotate_strategy": "DeleteOldestNonSharedVersionWhenLimitExceeded",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rotate_strategy": "None",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rotate_strategy": "None",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"template_name": name,
 					"template_body": `{\"ROSTemplateFormatVersion\":\"2015-09-01\", \"Parameters\": {\"VpcName\": {\"Type\": \"String\"},\"InstanceType\": {\"Type\": \"String\"}}}`,
 					"tags": map[string]string{
@@ -208,10 +252,184 @@ func TestAccAliCloudROSTemplate_basic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudROSTemplate_templateUrl(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ros_template.default"
+	ra := resourceAttrInit(resourceId, AlicloudRosTemplateMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRosTemplate")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(100000, 999999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudRosTemplate%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRosTemplateUrlDependence)
+	url := fmt.Sprintf("oss://${alicloud_oss_bucket.default.bucket}/${alicloud_oss_bucket_object.default.key}?RegionId=%s", defaultRegionToTest)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_name": name,
+					"template_url":  url,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					rac.checkResourceExists(),
+					resource.TestCheckResourceAttr(resourceId, "template_name", name),
+					resource.TestCheckResourceAttrSet(resourceId, "template_url"),
+					resource.TestCheckResourceAttr(resourceId, "template_body", ""),
+					testAccCheckRosTemplateVersionCount(resourceId, 1),
+				),
+			},
+			{
+				// Re-applying the same URL-backed configuration must not produce a diff.
+				Config: testAccConfig(map[string]interface{}{
+					"template_name": name,
+					"template_url":  url,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceId, "template_url"),
+					resource.TestCheckResourceAttr(resourceId, "template_body", ""),
+					testAccCheckRosTemplateVersionCount(resourceId, 1),
+				),
+			},
+			{
+				// Updating unrelated attributes must not re-send TemplateURL and bump the version.
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test for ros template url update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "description", "test for ros template url update"),
+					resource.TestCheckResourceAttr(resourceId, "template_body", ""),
+					testAccCheckRosTemplateVersionCount(resourceId, 1),
+				),
+			},
+			{
+				// Switching to an inline body must not send an empty TemplateURL.
+				Config: testAccConfig(map[string]interface{}{
+					"template_body": `{\"ROSTemplateFormatVersion\":\"2015-09-01\"}`,
+					"template_url":  REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceId, "template_body"),
+					resource.TestCheckResourceAttr(resourceId, "template_url", ""),
+					testAccCheckRosTemplateVersionCount(resourceId, 2),
+				),
+			},
+			{
+				// Switching back to a URL must not send an empty TemplateBody.
+				Config: testAccConfig(map[string]interface{}{
+					"template_url":  url,
+					"template_body": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceId, "template_url"),
+					resource.TestCheckResourceAttr(resourceId, "template_body", ""),
+					testAccCheckRosTemplateVersionCount(resourceId, 3),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"template_url", "template_body", "rotate_strategy", "validation_options"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudROSTemplate_templateUrlNegative(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ros_template.default"
+	ra := resourceAttrInit(resourceId, AlicloudRosTemplateMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRosTemplate")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(100000, 999999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudRosTemplate%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+		return ""
+	})
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_name": name,
+					"template_url":  "https://tfacc.example.com/ros-template-not-exist.json",
+				}),
+				ExpectError: regexp.MustCompile(`CreateTemplate Failed`),
+			},
+		},
+	})
+}
+
+func testAccCheckRosTemplateVersionCount(resourceId string, expected int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		response, err := client.RpcPost("ROS", "2019-09-10", "ListTemplateVersions", nil, map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"TemplateId": rs.Primary.ID,
+		}, false)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, resourceId, "ListTemplateVersions", AlibabaCloudSdkGoERROR)
+		}
+		versions, ok := response["Versions"].([]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected ListTemplateVersions response: %v", response)
+		}
+		if len(versions) != expected {
+			return fmt.Errorf("expected %d template versions, got %d", expected, len(versions))
+		}
+		return nil
+	}
+}
+
 var AlicloudRosTemplateMap = map[string]string{}
 
+func AlicloudRosTemplateUrlDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = "tf-testacc-ros-url-${lower(substr(var.name, length(var.name) - 10, 10))}"
+}
+
+resource "alicloud_oss_bucket_object" "default" {
+  bucket  = alicloud_oss_bucket.default.bucket
+  key     = "template.json"
+  content = "{\"ROSTemplateFormatVersion\":\"2015-09-01\"}"
+}
+`, name)
+}
+
 func AlicloudRosTemplateBasicDependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_resource_manager_resource_group" "default" {
+  resource_group_name = "tf-testAcc-ros-${substr(var.name, length(var.name) - 6, 6)}"
+  display_name        = "tf-testAcc-ros-${substr(var.name, length(var.name) - 6, 6)}"
+}
+`, name)
 }
 
 // lintignore: R001
@@ -221,10 +439,12 @@ func TestUnitAlicloudROSTemplate(t *testing.T) {
 	dExisted, _ := schema.InternalMap(p["alicloud_ros_template"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"template_name": "CreateTemplateValue",
-		"template_body": "CreateTemplateValue",
-		"template_url":  "CreateTemplateValue",
-		"description":   "CreateTemplateValue",
+		"template_name":      "CreateTemplateValue",
+		"template_body":      "CreateTemplateValue",
+		"description":        "CreateTemplateValue",
+		"resource_group_id":  "CreateTemplateValue",
+		"validation_options": []interface{}{"BasicValidation"},
+		"rotate_strategy":    "None",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -244,9 +464,10 @@ func TestUnitAlicloudROSTemplate(t *testing.T) {
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// GetTemplate
-		"TemplateBody": "CreateTemplateValue",
-		"Description":  "CreateTemplateValue",
-		"TemplateName": "CreateTemplateValue",
+		"TemplateBody":    "CreateTemplateValue",
+		"Description":     "CreateTemplateValue",
+		"TemplateName":    "CreateTemplateValue",
+		"ResourceGroupId": "CreateTemplateValue",
 		"TagResources": []interface{}{
 			map[string]interface{}{
 				"TagKey":   "TagResourcesValue_1",
@@ -411,7 +632,6 @@ func TestUnitAlicloudROSTemplate(t *testing.T) {
 	attributesDiff = map[string]interface{}{
 		"template_name": "UpdateTemplateValue",
 		"template_body": "UpdateTemplateValue",
-		"template_url":  "UpdateTemplateValue",
 		"description":   "UpdateTemplateValue",
 	}
 	diff, err = newInstanceDiff("alicloud_ros_template", attributes, attributesDiff, dExisted.State())
@@ -491,6 +711,28 @@ func TestUnitAlicloudROSTemplate(t *testing.T) {
 			assert.Nil(t, err)
 		}
 	}
+
+	// Read with template_url configured: the URL content is not tracked, so the body stays empty
+	dUrlOnly, _ := schema.InternalMap(p["alicloud_ros_template"].Schema).Data(nil, nil)
+	assert.Nil(t, dUrlOnly.Set("template_name", "CreateTemplateValue"))
+	assert.Nil(t, dUrlOnly.Set("template_url", "oss://bucket/template.json"))
+	dUrlOnly.SetId("CreateTemplateValue")
+	urlReadResponse := map[string]interface{}{
+		"TemplateBody":    "CreateTemplateValue",
+		"Description":     "CreateTemplateValue",
+		"TemplateName":    "CreateTemplateValue",
+		"ResourceGroupId": "CreateTemplateValue",
+		"TemplateId":      "CreateTemplateValue",
+		"TagResources":    []interface{}{},
+	}
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		return urlReadResponse, nil
+	})
+	err = resourceAlicloudRosTemplateRead(dUrlOnly, rawClient)
+	patches.Reset()
+	assert.Nil(t, err)
+	assert.Equal(t, "", dUrlOnly.Get("template_body"))
+	assert.Equal(t, "oss://bucket/template.json", dUrlOnly.Get("template_url"))
 
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewRosClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {

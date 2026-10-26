@@ -28,10 +28,22 @@ func resourceAlicloudRosTemplate() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"rotate_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "None",
+				ValidateFunc: validation.StringInSlice([]string{"None", "DeleteOldestNonSharedVersionWhenLimitExceeded"}, false),
+			},
 			"tags": tagsSchema(),
 			"template_body": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ExactlyOneOf: []string{"template_body", "template_url"},
 				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
@@ -43,8 +55,18 @@ func resourceAlicloudRosTemplate() *schema.Resource {
 				Required: true,
 			},
 			"template_url": {
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ExactlyOneOf: []string{"template_body", "template_url"},
+			},
+			"validation_options": {
+				Type:     schema.TypeList,
 				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringInSlice([]string{"BasicValidation"}, false),
+				},
 			},
 		},
 	}
@@ -65,8 +87,19 @@ func resourceAlicloudRosTemplateCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	request["TemplateName"] = d.Get("template_name")
+	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("template_url"); ok {
 		request["TemplateURL"] = v
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+
+	if v, ok := d.GetOk("validation_options"); ok {
+		for i, option := range v.([]interface{}) {
+			request[fmt.Sprintf("ValidationOptions.%d", i+1)] = option.(string)
+		}
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -103,7 +136,14 @@ func resourceAlicloudRosTemplateRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 	d.Set("description", object["Description"])
-	d.Set("template_body", object["TemplateBody"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
+	if _, ok := d.GetOk("template_url"); ok {
+		// TemplateURL content is not tracked in state; keep the body empty so a
+		// URL-only configuration does not drift against the body returned by GetTemplate.
+		d.Set("template_body", "")
+	} else {
+		d.Set("template_body", object["TemplateBody"])
+	}
 	d.Set("template_name", object["TemplateName"])
 
 	listTagResourcesObject, err := rosService.ListTagResources(d.Id(), "template")
@@ -128,29 +168,47 @@ func resourceAlicloudRosTemplateUpdate(d *schema.ResourceData, meta interface{})
 	update := false
 	request := map[string]interface{}{
 		"TemplateId": d.Id(),
+		"RegionId":   client.RegionId,
 	}
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
 	}
 	if !d.IsNewResource() && d.HasChange("template_body") {
-		update = true
-		request["TemplateBody"] = d.Get("template_body")
+		// TemplateBody and TemplateURL are mutually exclusive; never send an empty body.
+		if v, ok := d.GetOk("template_body"); ok {
+			update = true
+			request["TemplateBody"] = v
+		}
 	}
 	if !d.IsNewResource() && d.HasChange("template_name") {
 		update = true
 		request["TemplateName"] = d.Get("template_name")
 	}
+	if d.HasChange("rotate_strategy") && (!d.IsNewResource() || d.Get("rotate_strategy") != "None") {
+		update = true
+		request["RotateStrategy"] = d.Get("rotate_strategy")
+	}
+	if !d.IsNewResource() && d.HasChange("template_url") {
+		// TemplateURL and TemplateBody are mutually exclusive; never send an empty URL.
+		if v, ok := d.GetOk("template_url"); ok {
+			update = true
+			request["TemplateURL"] = v
+		}
+	}
 	if update {
-		if _, ok := d.GetOk("template_url"); ok {
-			request["TemplateURL"] = d.Get("template_url")
+		// ValidationOptions only affects the content carried by the same call.
+		if v, ok := d.GetOk("validation_options"); ok {
+			for i, option := range v.([]interface{}) {
+				request[fmt.Sprintf("ValidationOptions.%d", i+1)] = option.(string)
+			}
 		}
 		action := "UpdateTemplate"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"TemplateBeingProcessed"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -161,6 +219,31 @@ func resourceAlicloudRosTemplateUpdate(d *schema.ResourceData, meta interface{})
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		moveAction := "MoveResourceGroup"
+		moveRequest := map[string]interface{}{
+			"RegionId":           client.RegionId,
+			"ResourceId":         d.Id(),
+			"ResourceType":       "template",
+			"NewResourceGroupId": d.Get("resource_group_id"),
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ROS", "2019-09-10", moveAction, nil, moveRequest, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			addDebug(moveAction, response, moveRequest)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), moveAction, AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.Partial(false)
