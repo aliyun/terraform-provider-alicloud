@@ -1,12 +1,14 @@
-package alicloud
+package kvcachestore_test
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kvcachestore"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -25,34 +27,34 @@ func testAccPreCheckKvcachestoreRegion(t *testing.T) {
 		os.Setenv("ALICLOUD_REGION", "cn-shanghai-cloudspe")
 		os.Setenv("ALICLOUD_SKIP_REGION_VALIDATION", "true")
 	}
-	testAccPreCheck(t)
+	acctest.PreCheck(t)
 }
 
 var AliCloudKvcachestoreKvCacheStoreMap = map[string]string{
-	"id":           CHECKSET,
-	"create_time":  CHECKSET,
-	"status":       CHECKSET,
-	"payment_type": CHECKSET,
+	"id":           acctest.CHECKSET,
+	"create_time":  acctest.CHECKSET,
+	"status":       acctest.CHECKSET,
+	"payment_type": acctest.CHECKSET,
 }
 
 func TestAccAliCloudKvcachestoreKvCacheStore_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kvcachestore_kv_cache_store.default"
-	ra := resourceAttrInit(resourceId, AliCloudKvcachestoreKvCacheStoreMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &KvcachestoreServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeKvcachestoreKvCacheStore")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudKvcachestoreKvCacheStoreMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return kvcachestore.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeKvCacheStore")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacckvcs%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKvcachestoreKvCacheStoreBasicDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudKvcachestoreKvCacheStoreBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckKvcachestoreRegion(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

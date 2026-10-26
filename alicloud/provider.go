@@ -847,9 +847,6 @@ func Provider() *schema.Provider {
 			"alicloud_kms_secrets":         dataSourceAlicloudKmsSecrets(),
 			"alicloud_kms_secret_versions": dataSourceAlicloudKmsSecretVersions(),
 
-			// kvcachestore
-			"alicloud_kvcachestore_kv_cache_stores": dataSourceAliCloudKvcachestoreKvCacheStores(),
-
 			// kvstore
 			"alicloud_kvstore_instances":        dataSourceAlicloudKvstoreInstances(),
 			"alicloud_kvstore_zones":            dataSourceAlicloudKVStoreZones(),
@@ -2187,9 +2184,6 @@ func Provider() *schema.Provider {
 			"alicloud_kms_secret":                   resourceAliCloudKmsSecret(),
 			"alicloud_kms_alias":                    resourceAlicloudKmsAlias(),
 			"alicloud_kms_key_version":              resourceAlicloudKmsKeyVersion(),
-
-			// kvcachestore
-			"alicloud_kvcachestore_kv_cache_store": resourceAliCloudKvcachestoreKvCacheStore(),
 
 			// kvstore
 			"alicloud_kvstore_instance":         resourceAliCloudKvstoreInstance(),

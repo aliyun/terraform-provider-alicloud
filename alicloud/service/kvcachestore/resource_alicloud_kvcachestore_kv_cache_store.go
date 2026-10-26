@@ -1,4 +1,4 @@
-package alicloud
+package kvcachestore
 
 import (
 	"fmt"
@@ -6,16 +6,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudKvcachestoreKvCacheStore() *schema.Resource {
+func ResourceKvCacheStore() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudKvcachestoreKvCacheStoreCreate,
-		Read:   resourceAliCloudKvcachestoreKvCacheStoreRead,
-		Update: resourceAliCloudKvcachestoreKvCacheStoreUpdate,
-		Delete: resourceAliCloudKvcachestoreKvCacheStoreDelete,
+		Create: resourceKvCacheStoreCreate,
+		Read:   resourceKvCacheStoreRead,
+		Update: resourceKvCacheStoreUpdate,
+		Delete: resourceKvCacheStoreDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -65,7 +68,7 @@ func resourceAliCloudKvcachestoreKvCacheStore() *schema.Resource {
 	}
 }
 
-func resourceAliCloudKvcachestoreKvCacheStoreCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceKvCacheStoreCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateKVCacheStore"
@@ -75,7 +78,7 @@ func resourceAliCloudKvcachestoreKvCacheStoreCreate(d *schema.ResourceData, meta
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("payment_type"); ok {
 		request["PaymentType"] = v
@@ -89,11 +92,11 @@ func resourceAliCloudKvcachestoreKvCacheStoreCreate(d *schema.ResourceData, meta
 	if v, ok := d.GetOk("name"); ok {
 		request["Name"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Kvcachestore", "2026-06-17", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -101,35 +104,35 @@ func resourceAliCloudKvcachestoreKvCacheStoreCreate(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvcachestore_kv_cache_store", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_kvcachestore_kv_cache_store", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["KvcsId"]))
 
-	kvcachestoreServiceV2 := KvcachestoreServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, kvcachestoreServiceV2.KvcachestoreKvCacheStoreStateRefreshFunc(d.Id(), "Status", []string{}))
+	kvCacheStoreService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, kvCacheStoreService.KvCacheStoreStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudKvcachestoreKvCacheStoreRead(d, meta)
+	return resourceKvCacheStoreRead(d, meta)
 }
 
-func resourceAliCloudKvcachestoreKvCacheStoreRead(d *schema.ResourceData, meta interface{}) error {
+func resourceKvCacheStoreRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kvcachestoreServiceV2 := KvcachestoreServiceV2{client}
+	kvCacheStoreService := NewService(client)
 
-	objectRaw, err := kvcachestoreServiceV2.DescribeKvcachestoreKvCacheStore(d.Id())
+	objectRaw, err := kvCacheStoreService.DescribeKvCacheStore(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_kvcachestore_kv_cache_store DescribeKvcachestoreKvCacheStore Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_kvcachestore_kv_cache_store DescribeKvCacheStore Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("capacity", objectRaw["Capacity"])
@@ -144,7 +147,7 @@ func resourceAliCloudKvcachestoreKvCacheStoreRead(d *schema.ResourceData, meta i
 	return nil
 }
 
-func resourceAliCloudKvcachestoreKvCacheStoreUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceKvCacheStoreUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -162,14 +165,14 @@ func resourceAliCloudKvcachestoreKvCacheStoreUpdate(d *schema.ResourceData, meta
 		query = make(map[string]interface{})
 		request["KvcsId"] = d.Id()
 		request["RegionId"] = client.RegionId
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 		request["Capacity"] = d.Get("capacity")
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Kvcachestore", "2026-06-17", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -177,9 +180,9 @@ func resourceAliCloudKvcachestoreKvCacheStoreUpdate(d *schema.ResourceData, meta
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -188,7 +191,7 @@ func resourceAliCloudKvcachestoreKvCacheStoreUpdate(d *schema.ResourceData, meta
 	query = make(map[string]interface{})
 	request["KvcsId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
@@ -199,11 +202,11 @@ func resourceAliCloudKvcachestoreKvCacheStoreUpdate(d *schema.ResourceData, meta
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Kvcachestore", "2026-06-17", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -211,18 +214,18 @@ func resourceAliCloudKvcachestoreKvCacheStoreUpdate(d *schema.ResourceData, meta
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	kvcachestoreServiceV2 := KvcachestoreServiceV2{client}
+	kvCacheStoreService := NewService(client)
 
 	// UpdateKVCacheStore applies Name and Description asynchronously; wait until
 	// GetKVCacheStore reflects the target values before finishing the update.
 	if d.HasChange("name") || d.HasChange("description") {
 		if rerr := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			objectRaw, derr := kvcachestoreServiceV2.DescribeKvcachestoreKvCacheStore(d.Id())
+			objectRaw, derr := kvCacheStoreService.DescribeKvCacheStore(d.Id())
 			if derr != nil {
 				return retry.NonRetryableError(derr)
 			}
@@ -231,19 +234,19 @@ func resourceAliCloudKvcachestoreKvCacheStoreUpdate(d *schema.ResourceData, meta
 			}
 			return retry.RetryableError(fmt.Errorf("waiting for KvCacheStore %s name/description update to propagate", d.Id()))
 		}); rerr != nil {
-			return WrapError(rerr)
+			return errs.WrapError(rerr)
 		}
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, kvcachestoreServiceV2.KvcachestoreKvCacheStoreStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, kvCacheStoreService.KvCacheStoreStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudKvcachestoreKvCacheStoreRead(d, meta)
+	return resourceKvCacheStoreRead(d, meta)
 }
 
-func resourceAliCloudKvcachestoreKvCacheStoreDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceKvCacheStoreDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteKVCacheStore"
 	var request map[string]interface{}
@@ -254,11 +257,11 @@ func resourceAliCloudKvcachestoreKvCacheStoreDelete(d *schema.ResourceData, meta
 	request["KvcsId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Kvcachestore", "2026-06-17", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -266,36 +269,36 @@ func resourceAliCloudKvcachestoreKvCacheStoreDelete(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	// Deletion is asynchronous: GetKVCacheStore keeps returning the instance in
 	// "Deleting" status after DeleteKVCacheStore succeeds. Wait until the read
 	// reports the instance as gone. The refresh func must return a literal nil
 	// result on NotFound so WaitForState treats it as absence.
-	kvcachestoreServiceV2 := KvcachestoreServiceV2{client}
+	kvCacheStoreService := NewService(client)
 	deleteRefresh := func() (interface{}, string, error) {
-		objectRaw, derr := kvcachestoreServiceV2.DescribeKvcachestoreKvCacheStore(d.Id())
+		objectRaw, derr := kvCacheStoreService.DescribeKvCacheStore(d.Id())
 		if derr != nil {
-			if NotFoundError(derr) {
+			if errs.NotFoundError(derr) {
 				return nil, "", nil
 			}
 			return nil, "", derr
 		}
 		return objectRaw, fmt.Sprint(objectRaw["Status"]), nil
 	}
-	stateConf := BuildStateConf([]string{"Creating", "Available", "InUse", "Stopping", "Stopped", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, deleteRefresh)
+	stateConf := helper.BuildStateConf([]string{"Creating", "Available", "InUse", "Stopping", "Stopped", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, deleteRefresh)
 	if _, err := stateConf.WaitForState(); err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
