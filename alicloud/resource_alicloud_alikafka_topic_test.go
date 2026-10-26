@@ -3,12 +3,14 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -560,3 +562,221 @@ func AliCloudAlikafkaTopicBasicDependence10065(name string) string {
 }
 
 // Test Alikafka Topic. <<< Resource test cases, automatically generated.
+
+// TestUnitAlikafkaTopicConfigsSchemaDiffSuppress drives the comparison through the resource
+// schema so that the configs attribute is proven to stay wired to the subset comparator.
+func TestUnitAlikafkaTopicConfigsSchemaDiffSuppress(t *testing.T) {
+	configsSchema := resourceAliCloudAlikafkaTopic().Schema["configs"]
+	if configsSchema.DiffSuppressFunc == nil {
+		t.Fatal("configs has no DiffSuppressFunc")
+	}
+
+	// The service reports the whole effective configuration, which on a serverless instance
+	// contains keys that the configuration never declares.
+	serverReported := `{"cloud.native.topic.type":"true","replication-factor":"3","retention.hours":"72","max.message.bytes":"1048576"}`
+
+	testCases := []struct {
+		name        string
+		old         string
+		new         string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "ServerInjectedKeysIgnored",
+			old:         serverReported,
+			new:         `{"retention.hours":"72","max.message.bytes":"1048576"}`,
+			expected:    true,
+			description: "keys injected by the service must not produce a diff",
+		},
+		{
+			name:        "DeclaredKeyChanged",
+			old:         serverReported,
+			new:         `{"retention.hours":"72","max.message.bytes":"10485760"}`,
+			expected:    false,
+			description: "a change on a declared key must still be planned",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{"configs": configsSchema}, map[string]interface{}{
+				"configs": tc.old,
+			})
+			if result := configsSchema.DiffSuppressFunc("configs", tc.old, tc.new, d); result != tc.expected {
+				t.Errorf("%s: expected %v got %v", tc.description, tc.expected, result)
+			}
+		})
+	}
+}
+
+var AliCloudAlikafkaTopicServerlessConfigsMap = map[string]string{
+	"instance_id": CHECKSET,
+	"create_time": CHECKSET,
+	"status":      CHECKSET,
+}
+
+func AliCloudAlikafkaTopicServerlessConfigsDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_vswitches" "default" {
+		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+		vpc_id = data.alicloud_vswitches.default.vswitches.0.vpc_id
+	}
+
+	resource "alicloud_alikafka_instance" "default" {
+		name            = var.name
+		deploy_type     = "4"
+		instance_type   = "alikafka_serverless"
+		vswitch_id      = data.alicloud_vswitches.default.vswitches.0.id
+		spec_type       = "normal"
+		service_version = "3.3.1"
+		security_group  = alicloud_security_group.default.id
+		serverless_config {
+			reserved_publish_capacity   = 60
+			reserved_subscribe_capacity = 60
+		}
+	}
+
+	resource "alicloud_alikafka_topic" "no_configs" {
+		instance_id = alicloud_alikafka_instance.default.id
+		topic       = "${var.name}2"
+		remark      = "${var.name}2"
+	}
+`, name)
+}
+
+// TestAccAliCloudAlikafkaTopic_serverlessConfigs covers the configs attribute of a topic on a
+// serverless instance, where the service reports configuration keys that were never declared
+// (cloud.native.topic.type and replication-factor). The defect guarded against is a plan that
+// never converges rather than an apply that fails, so every applied configuration is followed by
+// a plan-only step: those steps refresh from the service first and then require an empty plan.
+func TestAccAliCloudAlikafkaTopic_serverlessConfigs(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alikafka_topic.default"
+	ra := resourceAttrInit(resourceId, AliCloudAlikafkaTopicServerlessConfigsMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlikafkaTopic")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-alikafka%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaTopicServerlessConfigsDependence)
+
+	// Only keys accepted by a serverless instance are declared: retention.hours allows 24-8760
+	// and max.message.bytes allows 1048576-10485760.
+	declaredConfigs := `{\"retention.hours\":\"72\",\"max.message.bytes\":\"1048576\"}`
+	updatedConfigs := `{\"retention.hours\":\"72\",\"max.message.bytes\":\"10485760\"}`
+	// The same configuration with a numeric value, which is what jsonencode produces for a number
+	// while the service keeps reporting the value as a string.
+	updatedConfigsAsNumber := `{\"retention.hours\":\"72\",\"max.message.bytes\":10485760}`
+	// A topic that declares no configs at all: importing it must not produce a plan on its own,
+	// which is the reported symptom when a topic is imported instead of created by Terraform.
+	noConfigsTopicId := "alicloud_alikafka_topic.no_configs"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": "${alicloud_alikafka_instance.default.id}",
+					"topic":       name,
+					"remark":      name,
+					"configs":     declaredConfigs,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": CHECKSET,
+						"topic":       name,
+						"remark":      name,
+						"configs":     REGEXMATCH + `"max\.message\.bytes":\s*"?1048576"?[,}]`,
+					}),
+					// The service reports keys that were never declared, which is the
+					// precondition that makes the following empty-plan step discriminate
+					// this fix from the whole-document comparison it replaces.
+					resource.TestMatchResourceAttr(resourceId, "configs", regexp.MustCompile(`"(cloud\.native\.topic\.type|replication-factor)"`)),
+				),
+			},
+			{
+				// The reported configuration is a superset of the declared one, so planning the
+				// configuration that was just applied must still produce an empty plan.
+				Config: testAccConfig(map[string]interface{}{
+					"configs": declaredConfigs,
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				// A real change on a declared key must still be planned and applied.
+				Config: testAccConfig(map[string]interface{}{
+					"configs": updatedConfigs,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"configs": REGEXMATCH + `"max\.message\.bytes":\s*"?10485760"?[,}]`,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configs": updatedConfigs,
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				// Values are compared through their literal text, so declaring the same value as a
+				// number must not produce a diff either.
+				Config: testAccConfig(map[string]interface{}{
+					"configs": updatedConfigsAsNumber,
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+			{
+				// After importing, the configuration must still converge.
+				Config: testAccConfig(map[string]interface{}{
+					"configs": updatedConfigs,
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				// A topic that never declared configs is imported as well: the service reports its
+				// whole effective configuration into the state and that must plan empty.
+				ResourceName:      noConfigsTopicId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configs": updatedConfigs,
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
