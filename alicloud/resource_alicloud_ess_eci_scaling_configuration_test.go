@@ -2176,6 +2176,154 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudEssEciScalingConfigurationFieldRef verifies that the
+// field_ref_field_path attribute is correctly sent (下发) and read back (回读)
+// for both containers and init_containers across the Create and Update paths.
+// It uses real Kubernetes downward-API field paths (metadata.uid / status.podIP)
+// instead of placeholders so the round-trip exercises the same field_ref form
+// (FieldRef.FieldPath, matching alicloud_eci_container_group) that the customer
+// reported as unable to retrieve a value from.
+func TestAccAliCloudEssEciScalingConfigurationFieldRef(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ess_eci_scaling_configuration.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudEssEciScalingConfigurationMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEssEciScalingConfiguration")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-test-acc-ess-eci-fieldref%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssEciScalingConfiguration)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create: containers -> metadata.uid, init_containers -> status.podIP
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":           "${alicloud_ess_scaling_group.default.id}",
+					"scaling_configuration_name": name,
+					"security_group_id":          "${local.alicloud_security_group_id}",
+					"container_group_name":       name,
+					"restart_policy":             "Always",
+					"cpu":                        "1",
+					"memory":                     "2",
+					"containers": []map[string]interface{}{
+						{
+							"name":   "main",
+							"image":  "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"cpu":    "1",
+							"memory": "1",
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":                  "__CS_POD_UID",
+									"field_ref_field_path": "metadata.uid",
+								},
+							},
+						},
+					},
+					"init_containers": []map[string]interface{}{
+						{
+							"name":   "init",
+							"image":  "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"cpu":    "1",
+							"memory": "1",
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":                  "__CS_INIT_POD_IP",
+									"field_ref_field_path": "status.podIP",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					// environment_vars is a schema.TypeSet (no custom Set func), so its
+					// elements live under .<hash>. keys, not positional .0.; count via
+					// testAccCheck, and per-element field_ref_field_path via TypeSet-aware
+					// TestCheckTypeSetElemNestedAttrs (containers/init_containers are
+					// TypeList, so .0. is the single list element; .* iterates the set).
+					testAccCheck(map[string]string{
+						"containers.#":                         "1",
+						"containers.0.environment_vars.#":      "1",
+						"init_containers.#":                    "1",
+						"init_containers.0.environment_vars.#": "1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "containers.0.environment_vars.*", map[string]string{
+						"key":                  "__CS_POD_UID",
+						"field_ref_field_path": "metadata.uid",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "init_containers.0.environment_vars.*", map[string]string{
+						"key":                  "__CS_INIT_POD_IP",
+						"field_ref_field_path": "status.podIP",
+					}),
+				),
+			},
+			{
+				// Update: swap field_ref_field_path values to cover the Update path
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":           "${alicloud_ess_scaling_group.default.id}",
+					"scaling_configuration_name": name,
+					"security_group_id":          "${local.alicloud_security_group_id}",
+					"container_group_name":       name,
+					"restart_policy":             "Always",
+					"cpu":                        "1",
+					"memory":                     "2",
+					"containers": []map[string]interface{}{
+						{
+							"name":   "main",
+							"image":  "registry-vpc.aliyuncs.com/eci_open/alpine:3.6",
+							"cpu":    "1",
+							"memory": "1",
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":                  "__CS_POD_IP",
+									"field_ref_field_path": "status.podIP",
+								},
+							},
+						},
+					},
+					"init_containers": []map[string]interface{}{
+						{
+							"name":   "init",
+							"image":  "registry-vpc.aliyuncs.com/eci_open/alpine:3.6",
+							"cpu":    "1",
+							"memory": "1",
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":                  "__CS_INIT_POD_UID",
+									"field_ref_field_path": "metadata.uid",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containers.#":                         "1",
+						"containers.0.environment_vars.#":      "1",
+						"init_containers.#":                    "1",
+						"init_containers.0.environment_vars.#": "1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "containers.0.environment_vars.*", map[string]string{
+						"key":                  "__CS_POD_IP",
+						"field_ref_field_path": "status.podIP",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "init_containers.0.environment_vars.*", map[string]string{
+						"key":                  "__CS_INIT_POD_UID",
+						"field_ref_field_path": "metadata.uid",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AlicloudEssEciScalingConfigurationMap = map[string]string{}
 
 func resourceEssEciScalingConfiguration(name string) string {

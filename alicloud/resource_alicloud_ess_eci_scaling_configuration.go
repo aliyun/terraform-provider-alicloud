@@ -864,7 +864,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
 			}
 			if EnvironmentVarsMap["field_ref_field_path"] != nil {
-				EnvironmentVars[i]["FieldRefFieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+				EnvironmentVars[i]["FieldRef.FieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
 			}
 		}
 		Containers[i]["EnvironmentVar"] = EnvironmentVars
@@ -980,7 +980,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 					EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
 				}
 				if EnvironmentVarsMap["field_ref_field_path"] != nil {
-					EnvironmentVars[i]["FieldRefFieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
+					EnvironmentVars[i]["FieldRef.FieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
 				}
 			}
 			InitContainers[i]["InitContainerEnvironmentVar"] = EnvironmentVars
@@ -1260,8 +1260,12 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 						if environmentVars["Value"] != nil {
 							environmentVarsMap["value"] = environmentVars["Value"]
 						}
-						if environmentVars["FieldRefFieldPath"] != nil {
-							environmentVarsMap["field_ref_field_path"] = environmentVars["FieldRefFieldPath"]
+						if v := environmentVars["FieldRef.FieldPath"]; v != nil {
+							environmentVarsMap["field_ref_field_path"] = v
+						} else if v := environmentVars["FieldRefFieldPath"]; v != nil {
+							environmentVarsMap["field_ref_field_path"] = v
+						} else if fieldRef, ok := environmentVars["FieldRef"].(map[string]interface{}); ok && fieldRef["FieldPath"] != nil {
+							environmentVarsMap["field_ref_field_path"] = fieldRef["FieldPath"]
 						}
 						environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 					}
@@ -1334,8 +1338,12 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 						if environmentVars["Value"] != nil {
 							environmentVarsMap["value"] = environmentVars["Value"]
 						}
-						if environmentVars["FieldRefFieldPath"] != nil {
-							environmentVarsMap["field_ref_field_path"] = environmentVars["FieldRefFieldPath"]
+						if v := environmentVars["FieldRef.FieldPath"]; v != nil {
+							environmentVarsMap["field_ref_field_path"] = v
+						} else if v := environmentVars["FieldRefFieldPath"]; v != nil {
+							environmentVarsMap["field_ref_field_path"] = v
+						} else if fieldRef, ok := environmentVars["FieldRef"].(map[string]interface{}); ok && fieldRef["FieldPath"] != nil {
+							environmentVarsMap["field_ref_field_path"] = fieldRef["FieldPath"]
 						}
 						environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 					}
