@@ -136,6 +136,96 @@ func TestAccAliCloudOOSServiceSetting_basic0(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudOOSServiceSetting_ossOnly verifies that the OSS delivery fields
+// (delivery_oss_bucket_name / delivery_oss_key_prefix) are sent to
+// SetServiceSettings when delivery_oss_enabled=true and delivery_sls_enabled=false.
+// Previously the DiffSuppressFunc of these two fields mistakenly checked
+// delivery_sls_enabled, so an SLS-disabled apply suppressed the OSS fields and the
+// API returned 400 "DeliveryOssBucketName is not provided".
+// See https://github.com/aliyun/terraform-provider-alicloud/issues/11154
+func TestAccAliCloudOOSServiceSetting_ossOnly(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_service_setting.default"
+	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudOOSServiceSettingMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosServiceSetting")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soos%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOOSServiceSettingBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				// OSS-only delivery: delivery_oss_enabled=true, delivery_sls_enabled=false.
+				// The OSS fields must be sent (no 400) and read back consistently.
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_enabled":     "true",
+					"delivery_oss_key_prefix":  "ossonly/",
+					"delivery_oss_bucket_name": "${alicloud_oss_bucket.default.0.bucket}",
+					"delivery_sls_enabled":     "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_enabled":     "true",
+						"delivery_oss_key_prefix":  "ossonly/",
+						"delivery_oss_bucket_name": CHECKSET,
+						"delivery_sls_enabled":     "false",
+					}),
+				),
+			},
+			{
+				// Update the OSS key prefix while SLS stays disabled; Update must carry DeliveryOssKeyPrefix.
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_key_prefix": "ossonly2/",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_key_prefix": "ossonly2/",
+					}),
+				),
+			},
+			{
+				// Switch the OSS bucket while SLS stays disabled; Update must carry DeliveryOssBucketName.
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_bucket_name": "${alicloud_oss_bucket.default.1.bucket}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_bucket_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Cleanup: disable OSS delivery so destroying the OSS buckets does not leave a
+				// stale DeliveryOssBucketName reference that would block later SetServiceSettings.
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_oss_enabled": "false",
+					"delivery_sls_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_oss_enabled": "false",
+						"delivery_sls_enabled": "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AlicloudOOSServiceSettingMap0 = map[string]string{}
 
 func AlicloudOOSServiceSettingBasicDependence0(name string) string {

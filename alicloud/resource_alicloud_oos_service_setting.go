@@ -26,7 +26,7 @@ func resourceAlicloudOosServiceSetting() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOkExists("delivery_sls_enabled"); ok && v.(bool) {
+					if v, ok := d.GetOkExists("delivery_oss_enabled"); ok && v.(bool) {
 						return false
 					}
 					return true
@@ -40,7 +40,7 @@ func resourceAlicloudOosServiceSetting() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOkExists("delivery_sls_enabled"); ok && v.(bool) {
+					if v, ok := d.GetOkExists("delivery_oss_enabled"); ok && v.(bool) {
 						return false
 					}
 					return true
@@ -123,64 +123,48 @@ func resourceAlicloudOosServiceSettingRead(d *schema.ResourceData, meta interfac
 	d.Set("delivery_oss_key_prefix", object["DeliveryOssKeyPrefix"])
 	d.Set("delivery_sls_enabled", object["DeliverySlsEnabled"])
 	d.Set("delivery_sls_project_name", object["DeliverySlsProjectName"])
-	d.Set("rdc_enterprise_id", object["RdcEnterpriseId"])
 	return nil
 }
 func resourceAlicloudOosServiceSettingUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var err error
 	var response map[string]interface{}
-	update := false
 	request := map[string]interface{}{}
-	if d.HasChange("delivery_oss_enabled") {
-		update = true
-		if v, ok := d.GetOkExists("delivery_oss_enabled"); ok {
-			request["DeliveryOssEnabled"] = v
-		}
+	// SetServiceSettings is a full-replace operation: send the whole delivery
+	// config (mirroring Create) so that changing a single OSS field does not
+	// leave the other delivery fields unset and drift on the next Read.
+	if v, ok := d.GetOk("delivery_oss_bucket_name"); ok {
+		request["DeliveryOssBucketName"] = v
 	}
-	if d.HasChange("delivery_oss_bucket_name") {
-		update = true
-		if v, ok := d.GetOk("delivery_oss_bucket_name"); ok {
-			request["DeliveryOssBucketName"] = v
-		}
+	if v, ok := d.GetOkExists("delivery_oss_enabled"); ok {
+		request["DeliveryOssEnabled"] = v
 	}
-	if d.HasChange("delivery_oss_key_prefix") {
-		update = true
-		if v, ok := d.GetOk("delivery_oss_key_prefix"); ok {
-			request["DeliveryOssKeyPrefix"] = v
-		}
+	if v, ok := d.GetOk("delivery_oss_key_prefix"); ok {
+		request["DeliveryOssKeyPrefix"] = v
 	}
-	if d.HasChange("delivery_sls_enabled") {
-		update = true
-		if v, ok := d.GetOkExists("delivery_sls_enabled"); ok {
-			request["DeliverySlsEnabled"] = v
-		}
+	if v, ok := d.GetOkExists("delivery_sls_enabled"); ok {
+		request["DeliverySlsEnabled"] = v
 	}
-	if d.HasChange("delivery_sls_project_name") {
-		update = true
-		if v, ok := d.GetOk("delivery_sls_project_name"); ok {
-			request["DeliverySlsProjectName"] = v
-		}
+	if v, ok := d.GetOk("delivery_sls_project_name"); ok {
+		request["DeliverySlsProjectName"] = v
 	}
-	if update {
-		action := "SetServiceSettings"
-		request["RegionId"] = client.RegionId
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, false)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
+	action := "SetServiceSettings"
+	request["RegionId"] = client.RegionId
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, false)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
 		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return resourceAlicloudOosServiceSettingRead(d, meta)
 }
