@@ -1,0 +1,46 @@
+name: CI Policy Test
+on:
+  # Standalone unit tests for the route policy action. This workflow runs
+  # independently of the Basic Policy route job (it tests the routing logic
+  # itself, so depending on routing would be circular). It runs on
+  # ubuntu-latest with no secrets, the same sandbox used for external PR
+  # consumer jobs, so PR-controlled JavaScript cannot reach credentials.
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - master
+    paths:
+      - .github/actions/terraform-ci-select-policy/**
+      - .github/workflows/ci-policy-test.yml
+  push:
+    branches:
+      - master
+    paths:
+      - .github/actions/terraform-ci-select-policy/**
+      - .github/workflows/ci-policy-test.yml
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  route-policy-test:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout event head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          persist-credentials: false
+      - name: Run route policy unit tests
+        run: node --test .github/actions/terraform-ci-select-policy/route.test.js
