@@ -45,24 +45,29 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 					"name":        name,
 					"cluster_id":  "${local.cluster_id}",
 					"vswitch_ids": []string{"${local.vswitch_id}"},
+					// instance_types order round-trips through the ACK API, so the pair
+					// has to be stable across reads to keep the post-apply plan empty.
+					// The IDs come from the fixture data source and are sorted, because
+					// its price order can change between reads; the ESSD-only disk
+					// categories below follow the filtered generations.
 					"instance_types": []string{
-						"${data.alicloud_instance_types.default.instance_types.0.id}",
-						"${data.alicloud_instance_types.default.instance_types.1.id}",
+						"${local.basic_instance_types.0}",
+						"${local.basic_instance_types.1}",
 					},
 					"desired_size":          "1",
 					"key_name":              "${alicloud_key_pair.default.key_name}",
-					"system_disk_category":  "cloud_efficiency",
+					"system_disk_category":  "cloud_essd",
 					"system_disk_size":      "40",
 					"install_cloud_monitor": "false",
 					"data_disks": []map[string]string{
 						{
 							"size":     "100",
-							"category": "cloud_ssd",
+							"category": "cloud_essd",
 							"name":     name,
 						},
 					},
 					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
-					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "surge_percentage": "10", "max_unavailable": "0"}},
+					"management":            []map[string]string{{"auto_repair": "false", "auto_upgrade": "true", "surge": "0", "surge_percentage": "10", "max_unavailable": "0"}},
 					"image_type":            "AliyunLinux3ContainerOptimized",
 					"security_hardening_os": "true",
 					"cpu_policy":            "none",
@@ -77,18 +82,18 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 						"instance_types.#":              "2",
 						"desired_size":                  "1",
 						"key_name":                      CHECKSET,
-						"system_disk_category":          "cloud_efficiency",
+						"system_disk_category":          "cloud_essd",
 						"system_disk_size":              "40",
 						"install_cloud_monitor":         "false",
 						"data_disks.#":                  "1",
 						"data_disks.0.size":             "100",
-						"data_disks.0.category":         "cloud_ssd",
+						"data_disks.0.category":         "cloud_essd",
 						"data_disks.0.name":             name,
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.Foo":                      "Bar",
 						"management.#":                  "1",
-						"management.0.auto_repair":      "true",
+						"management.0.auto_repair":      "false",
 						"management.0.auto_upgrade":     "true",
 						"management.0.surge":            "0",
 						"management.0.surge_percentage": "10",
@@ -128,6 +133,17 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 					}),
 				),
 			},
+			// rds_instances: same two instances, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rds_instances": []string{"${alicloud_db_instance.default.1.id}", "${alicloud_db_instance.default.0.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rds_instances.#": "2",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"desired_size": "2",
@@ -135,7 +151,7 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 					"data_disks": []map[string]string{
 						{
 							"size":     "40",
-							"category": "cloud_ssd",
+							"category": "cloud_essd",
 							"name":     name + "_update",
 						},
 					},
@@ -145,7 +161,7 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 						"desired_size":                  "2",
 						"data_disks.#":                  "1",
 						"data_disks.0.size":             "40",
-						"data_disks.0.category":         "cloud_ssd",
+						"data_disks.0.category":         "cloud_essd",
 						"data_disks.0.name":             name + "_update",
 						"management.#":                  "1",
 						"management.0.auto_repair":      "true",
@@ -177,6 +193,7 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 						"event_burst":           "0",
 						"serialize_image_pulls": "false",
 						"cpu_manager_policy":    "none",
+						"server_tls_bootstrap":  "true",
 						"feature_gates": map[string]interface{}{
 							"\"APIListChunking\"":                "true",
 							"\"CustomCPUCFSQuotaPeriod\"":        "true",
@@ -197,6 +214,7 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 						"kubelet_configuration.0.event_burst":           "0",
 						"kubelet_configuration.0.serialize_image_pulls": "false",
 						"kubelet_configuration.0.cpu_manager_policy":    "none",
+						"kubelet_configuration.0.server_tls_bootstrap":  "true",
 						"rolling_policy.#":                              "1",
 						"rolling_policy.0.max_parallelism":              "1",
 					}),
@@ -596,7 +614,7 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccNodePool-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence_Spot)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -609,10 +627,15 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                       name,
-					"cluster_id":                 "${local.cluster_id}",
-					"vswitch_ids":                []string{"${local.vswitch_id}"},
-					"instance_types":             []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"name":       name,
+					"cluster_id": "${local.cluster_id}",
+					"vswitch_ids": []string{
+						"${local.vswitch_id}",
+					},
+					"instance_types": []string{
+						"${data.alicloud_instance_types.spot.instance_types.0.id}",
+						"${data.alicloud_instance_types.spot.instance_types.1.id}",
+					},
 					"image_id":                   "aliyun_3_x64_20G_container_optimized_alibase_20251215.vhd",
 					"system_disk_category":       "cloud_efficiency",
 					"system_disk_size":           "120",
@@ -623,9 +646,15 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 					"internet_charge_type":       "PayByTraffic",
 					"internet_max_bandwidth_out": "5",
 					"spot_strategy":              "SpotWithPriceLimit",
+					"multi_az_policy":            "COST_OPTIMIZED",
+					"compensate_with_on_demand":  "true",
 					"spot_price_limit": []map[string]string{
 						{
-							"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
+							"instance_type": "${data.alicloud_instance_types.spot.instance_types.0.id}",
+							"price_limit":   "0.57",
+						},
+						{
+							"instance_type": "${data.alicloud_instance_types.spot.instance_types.1.id}",
 							"price_limit":   "0.57",
 						},
 					},
@@ -636,7 +665,7 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 						"name":                             name,
 						"cluster_id":                       CHECKSET,
 						"vswitch_ids.#":                    "1",
-						"instance_types.#":                 "1",
+						"instance_types.#":                 "2",
 						"image_id":                         "aliyun_3_x64_20G_container_optimized_alibase_20251215.vhd",
 						"system_disk_category":             "cloud_efficiency",
 						"system_disk_size":                 "120",
@@ -647,9 +676,13 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 						"internet_charge_type":             "PayByTraffic",
 						"internet_max_bandwidth_out":       "5",
 						"spot_strategy":                    "SpotWithPriceLimit",
-						"spot_price_limit.#":               "1",
+						"multi_az_policy":                  "COST_OPTIMIZED",
+						"compensate_with_on_demand":        "true",
+						"spot_price_limit.#":               "2",
 						"spot_price_limit.0.instance_type": CHECKSET,
 						"spot_price_limit.0.price_limit":   "0.57",
+						"spot_price_limit.1.instance_type": CHECKSET,
+						"spot_price_limit.1.price_limit":   "0.57",
 						"cpu_policy":                       "none",
 					}),
 				),
@@ -676,7 +709,11 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 					"internet_max_bandwidth_out": "10",
 					"spot_price_limit": []map[string]string{
 						{
-							"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
+							"instance_type": "${data.alicloud_instance_types.spot.instance_types.0.id}",
+							"price_limit":   "0.60",
+						},
+						{
+							"instance_type": "${data.alicloud_instance_types.spot.instance_types.1.id}",
 							"price_limit":   "0.60",
 						},
 					},
@@ -686,9 +723,55 @@ func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 						"internet_charge_type":             "PayByTraffic",
 						"internet_max_bandwidth_out":       "10",
 						"spot_strategy":                    "SpotWithPriceLimit",
-						"spot_price_limit.#":               "1",
+						"multi_az_policy":                  "COST_OPTIMIZED",
+						"compensate_with_on_demand":        "true",
+						"spot_price_limit.#":               "2",
 						"spot_price_limit.0.instance_type": CHECKSET,
 						"spot_price_limit.0.price_limit":   "0.60",
+						"spot_price_limit.1.price_limit":   "0.60",
+					}),
+				),
+			},
+			// spot_price_limit: one priced spec changes, then the same two specs are reordered.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"spot_price_limit": []map[string]string{
+						{
+							"instance_type": "${data.alicloud_instance_types.spot.instance_types.0.id}",
+							"price_limit":   "0.60",
+						},
+						{
+							"instance_type": "${data.alicloud_instance_types.spot.instance_types.1.id}",
+							"price_limit":   "1.00",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_price_limit.#":             "2",
+						"spot_price_limit.1.price_limit": "1.00",
+					}),
+				),
+			},
+			// spot_price_limit: same two specs, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"spot_price_limit": []map[string]string{
+						{
+							"instance_type": "${data.alicloud_instance_types.spot.instance_types.1.id}",
+							"price_limit":   "1.00",
+						},
+						{
+							"instance_type": "${data.alicloud_instance_types.spot.instance_types.0.id}",
+							"price_limit":   "0.60",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_price_limit.#":             "2",
+						"spot_price_limit.0.price_limit": "1.00",
+						"spot_price_limit.1.price_limit": "0.60",
 					}),
 				),
 			},
@@ -799,6 +882,58 @@ func TestAccAliCloudCSKubernetesNodePool_KMS(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"system_disk_encrypted": "false",
+					}),
+				),
+			},
+			// re-enable system disk encryption with an explicit algorithm and rotate the KMS key.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_encrypted":         "true",
+					"system_disk_encrypt_algorithm": "aes-256",
+					"system_disk_kms_key":           "${data.alicloud_kms_keys.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_encrypted":         "true",
+						"system_disk_encrypt_algorithm": "aes-256",
+						"system_disk_kms_key":           CHECKSET,
+					}),
+				),
+			},
+			// data_disks: mount the encrypted data disk and rotate its KMS key.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disks": []map[string]string{
+						{
+							"size":         "100",
+							"category":     "cloud_essd",
+							"encrypted":    "true",
+							"kms_key_id":   "${data.alicloud_kms_keys.default.ids.1}",
+							"auto_format":  "true",
+							"file_system":  "xfs",
+							"mount_target": "/mnt/data1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disks.#":              "1",
+						"data_disks.0.auto_format":  "true",
+						"data_disks.0.file_system":  "xfs",
+						"data_disks.0.mount_target": "/mnt/data1",
+						"data_disks.0.kms_key_id":   CHECKSET,
+					}),
+				),
+			},
+			// image_id: use an explicit container-optimized image instead of image_type.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_type": REMOVEKEY,
+					"image_id":   "${data.alicloud_images.nodepool.images.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_id": CHECKSET,
 					}),
 				),
 			},
@@ -1160,6 +1295,17 @@ func TestAccAliCloudCSKubernetesNodePool_AttachInstances(t *testing.T) {
 					testAccCheck(map[string]string{}),
 				),
 			},
+			// instances: same two instances, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instances":          []string{"${alicloud_instance.default.1.id}", "${alicloud_instance.default.0.id}"},
+					"format_disk":        true,
+					"keep_instance_name": false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
 			// remove instance
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
@@ -1308,6 +1454,22 @@ locals {
   cluster_id =  length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
 }
 `, name)
+}
+
+// resourceCSNodePoolConfigDependence_Spot narrows the instance-type lookup to
+// types that actually support a spot price limit, so the spot case never picks
+// a spec without spot capacity.
+func resourceCSNodePoolConfigDependence_Spot(name string) string {
+	return resourceCSNodePoolConfigDependence(name) + `
+data "alicloud_instance_types" "spot" {
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  kubernetes_node_role = "Worker"
+  system_disk_category = "cloud_efficiency"
+  eni_amount           = 2
+  spot_strategy        = "SpotWithPriceLimit"
+  sorted_by            = "Price"
+}
+`
 }
 
 func resourceCSNodePoolConfigDependence_Auto(name string) string {
@@ -1509,6 +1671,11 @@ data "alicloud_kms_keys" "default" {
   filters = "[{\"Key\":\"CreatorType\", \"Values\":[\"User\"]}]"
 }
 
+data "alicloud_images" "nodepool" {
+  name_regex = "^aliyun_3_x64_20G_container_optimized_alibase_"
+  owners     = "system"
+}
+
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_instance_types" "default" {
@@ -1655,15 +1822,27 @@ data "alicloud_zones" "default" {
   available_resource_creation  = "VSwitch"
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {}
-
-data "alicloud_instance_types" "default" {
-	availability_zone          = data.alicloud_zones.default.zones.0.id
-	kubernetes_node_role       = "Worker"
-    system_disk_category       = "cloud_efficiency"
-    eni_amount           = 2
-    sorted_by            = "Price"
+data "alicloud_instance_types" "c7" {
+  availability_zone    = local.zone_id
+  cpu_core_count       = 4
+  memory_size          = 8
+  kubernetes_node_role = "Worker"
+  system_disk_category = "cloud_essd"
+  eni_amount           = 2
+  instance_type_family = "ecs.c7"
 }
+
+data "alicloud_instance_types" "c7_small" {
+  availability_zone    = local.zone_id
+  cpu_core_count       = 2
+  memory_size          = 4
+  kubernetes_node_role = "Worker"
+  system_disk_category = "cloud_essd"
+  eni_amount           = 2
+  instance_type_family = "ecs.c7"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
@@ -1673,7 +1852,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "vswitch" {
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
+  zone_id           = local.zone_id
   vswitch_name      = var.name
 }
 
@@ -1698,25 +1877,51 @@ resource "alicloud_key_pair" "default2" {
 	key_name_prefix = var.name
 }
 
-data "alicloud_cs_managed_kubernetes_clusters" "default" {
-  name_regex = "^Default"
-}
-
+# The managed node pool always runs on a cluster owned by this test. Reusing a
+# cluster matched by "^Default" would install (and later uninstall) the add-on
+# on a shared cluster, so the test would change state it does not restore.
 resource "alicloud_cs_managed_kubernetes" "default" {
-  count                = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? 0 : 1
   name                 = var.name
   cluster_spec         = "ack.pro.small"
   worker_vswitch_ids   = [local.vswitch_id]
-  new_nat_gateway      = false
+  new_nat_gateway      = true
   pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
   is_enterprise_security_group = true
   slb_internet_enabled = true
+
+  maintenance_window {
+    enable           = true
+    maintenance_time = "2025-07-07T00:00:00.000+08:00"
+    duration         = "3h"
+    weekly_period    = "Monday"
+  }
+}
+
+resource "alicloud_cs_kubernetes_addon" "node_problem_detector" {
+  cluster_id = alicloud_cs_managed_kubernetes.default.id
+  name       = "ack-node-problem-detector"
 }
 
 locals {
   vswitch_id = alicloud_vswitch.vswitch.id
-  cluster_id =  length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
+  # Taking the cluster id from the add-on makes the node pool depend on it, so
+  # the ack-node-problem-detector is installed before the managed node pool is
+  # created.
+  cluster_id = alicloud_cs_kubernetes_addon.node_problem_detector.cluster_id
+  # zones.0 is not a stable pick: the data source order changes between reads,
+  # which changes the zone and with it the available instance types. The
+  # alphabetically first resolved zone is used for both the vSwitch and the
+  # instance type lookup, so they always agree.
+  zone_id = element(sort(data.alicloud_zones.default.zones[*].id), 0)
+  # A family filter keeps each candidate set small and stable; the unfiltered
+  # result of alicloud_instance_types is capped and price ordered, so which IDs
+  # land in it changes between reads. Two sizes of one family give the pool the
+  # two entries the assertions expect without pinning literal IDs.
+  basic_instance_types = [
+    element(sort(data.alicloud_instance_types.c7.instance_types[*].id), 0),
+    element(sort(data.alicloud_instance_types.c7_small.instance_types[*].id), 0),
+  ]
 }
 
 
@@ -8259,6 +8464,1743 @@ func TestAccAliCloudCSKubernetesNodePool_containerdConfigCreate(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudCSKubernetesNodePool_osConfig covers the os_config block (sysctl +
+// hugepage) over the full lifecycle: add, update, explicit zero, sysctl removal and
+// whole-block removal. The hugepage-only steps use the framework's config generator;
+// the sysctl steps use hand-written HCL because sysctl keys contain dots
+// (user.max_user_namespaces), which the generator cannot emit as bare HCL identifiers.
+// The sysctl map is read back from the API like the hugepage fields, so both sections
+// are drift-detected and an import reconstructs the whole block.
+func TestAccAliCloudCSKubernetesNodePool_osConfig(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.os_config"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-osconfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ackNodepoolOsConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		// SDKv2 stores empty collections as null after apply but as empty after refresh, so only their count keys differ.
+		IDRefreshName:     resourceId,
+		IDRefreshIgnore:   []string{"tags.%", "rds_instances.#", "os_config.#", "os_config.0.sysctl.%", "os_config.0.hugepage.#"},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"cluster_id":  "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{"${alicloud_vswitch.defaultT8D8ss.id}"},
+					"instance_types": []string{
+						"${data.alicloud_instance_types.os_config.instance_types.0.id}",
+					},
+					"desired_size":         "1",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":       name,
+						"cluster_id": CHECKSET,
+						// Guard: an unconfigured node pool must not surface server-side
+						// defaults as os_config, otherwise it produces a spurious diff.
+						"os_config.#": "0",
+					}),
+				),
+			},
+			// check: os_config basic (hugepage only; explicit zero khugepaged_defrag)
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": []map[string]interface{}{{
+						"hugepage": []map[string]interface{}{{
+							"transparent_enabled":              "always",
+							"transparent_defrag":               "always",
+							"khugepaged_defrag":                "0",
+							"khugepaged_alloc_sleep_millisecs": "60000",
+						}},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":                                             "1",
+						"os_config.0.sysctl.%":                                    "0",
+						"os_config.0.hugepage.#":                                  "1",
+						"os_config.0.hugepage.0.transparent_enabled":              "always",
+						"os_config.0.hugepage.0.transparent_defrag":               "always",
+						"os_config.0.hugepage.0.khugepaged_defrag":                "0",
+						"os_config.0.hugepage.0.khugepaged_alloc_sleep_millisecs": "60000",
+					}),
+				),
+			},
+			// check: os_config hugepage update
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": []map[string]interface{}{{
+						"hugepage": []map[string]interface{}{{
+							"transparent_enabled":              "madvise",
+							"transparent_defrag":               "defer+madvise",
+							"khugepaged_defrag":                "1",
+							"khugepaged_alloc_sleep_millisecs": "120000",
+							"khugepaged_scan_sleep_millisecs":  "10000",
+							"khugepaged_pages_to_scan":         "4096",
+						}},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":                                             "1",
+						"os_config.0.hugepage.#":                                  "1",
+						"os_config.0.hugepage.0.transparent_enabled":              "madvise",
+						"os_config.0.hugepage.0.transparent_defrag":               "defer+madvise",
+						"os_config.0.hugepage.0.khugepaged_defrag":                "1",
+						"os_config.0.hugepage.0.khugepaged_alloc_sleep_millisecs": "120000",
+						"os_config.0.hugepage.0.khugepaged_scan_sleep_millisecs":  "10000",
+						"os_config.0.hugepage.0.khugepaged_pages_to_scan":         "4096",
+					}),
+				),
+			},
+			// check (regression): importing while os_config is still configured proves
+			// that the hugepage settings are restored from the API rather than from the
+			// configuration. This step runs before sysctl is introduced so that the whole
+			// block is compared without ignored attributes; the sysctl import path is
+			// covered by the dedicated import step below.
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+			// check: sysctl map added via hand-written HCL (dotted key); the sysctl map
+			// is sent through the update path and read back from the API, and the
+			// hugepage values from the previous step are preserved.
+			{
+				Config: ackNodepoolOsConfigDependence(name) + testAccAckNodepoolOsConfigSysctl("os_config", name, "65535"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":          "1",
+						"os_config.0.sysctl.%": "1",
+						"os_config.0.sysctl.user.max_user_namespaces":             "65535",
+						"os_config.0.hugepage.#":                                  "1",
+						"os_config.0.hugepage.0.transparent_enabled":              "madvise",
+						"os_config.0.hugepage.0.transparent_defrag":               "defer+madvise",
+						"os_config.0.hugepage.0.khugepaged_defrag":                "1",
+						"os_config.0.hugepage.0.khugepaged_alloc_sleep_millisecs": "120000",
+						"os_config.0.hugepage.0.khugepaged_scan_sleep_millisecs":  "10000",
+						"os_config.0.hugepage.0.khugepaged_pages_to_scan":         "4096",
+					}),
+				),
+			},
+			// check: sysctl update
+			{
+				Config: ackNodepoolOsConfigDependence(name) + testAccAckNodepoolOsConfigSysctl("os_config", name, "131072"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.0.sysctl.user.max_user_namespaces": "131072",
+					}),
+				),
+			},
+			// check (regression, F-09): importing while sysctl is configured proves that
+			// the sysctl map is reconstructed from the API response alone. Import has no
+			// configuration to mirror, so a state that keeps the entry can only come from
+			// the read-back; before the fix the API sysctl was dropped and the imported
+			// state failed with os_config.0.sysctl.% 0 vs 1.
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+			// check: removing sysctl from the configuration drops it from state and
+			// clears it on the cloud side under the API's full-replacement semantics;
+			// hugepage stays as configured.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": []map[string]interface{}{{
+						"hugepage": []map[string]interface{}{{
+							"transparent_enabled":              "madvise",
+							"transparent_defrag":               "defer+madvise",
+							"khugepaged_defrag":                "1",
+							"khugepaged_alloc_sleep_millisecs": "120000",
+							"khugepaged_scan_sleep_millisecs":  "10000",
+							"khugepaged_pages_to_scan":         "4096",
+						}},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.0.sysctl.%":                        "0",
+						"os_config.0.sysctl.user.max_user_namespaces": REMOVEKEY,
+						"os_config.0.hugepage.#":                      "1",
+						"os_config.0.hugepage.0.transparent_enabled":  "madvise",
+					}),
+				),
+			},
+			// check (regression): an explicitly declared empty os_config block must
+			// converge. Update sends an empty map (clearing the cloud side) and Read
+			// mirrors the empty block back, so state keeps os_config.# = 1 and the
+			// framework's post-apply plan check asserts an empty follow-up plan
+			// (ExpectNonEmptyPlan must NOT be set on this step). Previously the Read
+			// flattened the block away, producing a perpetual os_config.#: 0 -> 1 diff.
+			// The check helper accumulates expectations across steps, so the hugepage
+			// field expectations left over from the steps above must be dropped with
+			// REMOVEKEY: after clearing, state no longer carries those attributes.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": []map[string]interface{}{{}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":                                             "1",
+						"os_config.0.sysctl.%":                                    "0",
+						"os_config.0.hugepage.#":                                  "0",
+						"os_config.0.hugepage.0.transparent_enabled":              REMOVEKEY,
+						"os_config.0.hugepage.0.transparent_defrag":               REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_defrag":                REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_alloc_sleep_millisecs": REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_scan_sleep_millisecs":  REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_pages_to_scan":         REMOVEKEY,
+					}),
+				),
+			},
+			// check (regression): an explicitly declared empty hugepage block also
+			// converges; the empty element shape is mirrored while its (unset) values
+			// are not, so only the shape keys are asserted — the state does not
+			// materialize any os_config.0.hugepage.0.<field> attribute for an empty
+			// element, and the previous step already dropped those expectations.
+			// Must run before the whole-block removal below so that the final
+			// ImportStateVerify compares against a state with os_config.# = 0 (import
+			// has no configuration to mirror and always yields an empty list).
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": []map[string]interface{}{{
+						"hugepage": []map[string]interface{}{{}},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":            "1",
+						"os_config.0.sysctl.%":   "0",
+						"os_config.0.hugepage.#": "1",
+					}),
+				),
+			},
+			// check: removing the whole os_config block clears all custom OS
+			// configuration (an empty map is sent) and state shows os_config.# = 0.
+			// The six hugepage field expectations were already dropped by the empty
+			// os_config step above; repeating REMOVEKEY for these absent keys would
+			// re-add them to the accumulated checkMap as literal expectations.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_config": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":            "0",
+						"os_config.0.sysctl.%":   REMOVEKEY,
+						"os_config.0.hugepage.#": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudCSKubernetesNodePool_osConfigCreate verifies the Create-time apply
+// path: CreateClusterNodePool accepts node_config.node_os_config, but this resource sends
+// os_config through ModifyNodePoolNodeConfig after the node pool becomes active. The first
+// apply already declares sysctl + hugepage; if the follow-up call were missing, the
+// configuration would be silently dropped and the first Read would leave a non-empty plan.
+// A follow-up step removes the block (full-replacement clears the cloud side) and the
+// import then verifies the cleared state.
+func TestAccAliCloudCSKubernetesNodePool_osConfigCreate(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.os_config_create"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-osconfig-create-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ackNodepoolOsConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		// SDKv2 stores empty collections as null after apply but as empty after refresh, so only their count keys differ.
+		IDRefreshName:     resourceId,
+		IDRefreshIgnore:   []string{"tags.%", "rds_instances.#", "os_config.#", "os_config.0.sysctl.%", "os_config.0.hugepage.#"},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			// check: the os_config block declared at Create time is applied through the
+			// post-send call; the sysctl map and the hugepage fields are read back from
+			// the API, so the first apply converges without a follow-up diff.
+			{
+				Config: ackNodepoolOsConfigDependence(name) + testAccAckNodepoolOsConfigCreate("os_config_create", name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"cluster_id":           CHECKSET,
+						"os_config.#":          "1",
+						"os_config.0.sysctl.%": "1",
+						"os_config.0.sysctl.user.max_user_namespaces": "65535",
+						"os_config.0.hugepage.#":                      "1",
+						"os_config.0.hugepage.0.transparent_enabled":  "always",
+						"os_config.0.hugepage.0.transparent_defrag":   "madvise",
+						"os_config.0.hugepage.0.khugepaged_defrag":    "0",
+					}),
+				),
+			},
+			// check: removing the block clears the cloud-side configuration and state.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"cluster_id":  "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{"${alicloud_vswitch.defaultT8D8ss.id}"},
+					"instance_types": []string{
+						"${data.alicloud_instance_types.os_config.instance_types.0.id}",
+					},
+					"desired_size":         "1",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_config.#":          "0",
+						"os_config.0.sysctl.%": REMOVEKEY,
+						"os_config.0.sysctl.user.max_user_namespaces": REMOVEKEY,
+						"os_config.0.hugepage.#":                      REMOVEKEY,
+						"os_config.0.hugepage.0.transparent_enabled":  REMOVEKEY,
+						"os_config.0.hugepage.0.transparent_defrag":   REMOVEKEY,
+						"os_config.0.hugepage.0.khugepaged_defrag":    REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"eflo_node_group", "password", "rolling_policy", "update_nodes", "upgrade_policy"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudCSKubernetesNodePool_autoModeAndMetadata covers the configuration
+// blocks that only exist at creation time: auto_mode (Smart Managed Configuration
+// switch, explicitly disabled here) and instance_metadata_options.http_tokens (ECS
+// metadata hardening mode). Both are ForceNew, so switching http_tokens replaces the
+// node pool. The last two steps move the pool from instance_types to instance_patterns
+// and change instance_family_level, which is an in-place update of the scaling group.
+func TestAccAliCloudCSKubernetesNodePool_autoModeAndMetadata(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.auto_mode"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-automode-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ackNodepoolOsConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"cluster_id":  "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{"${alicloud_vswitch.defaultT8D8ss.id}"},
+					"instance_types": []string{
+						"${data.alicloud_instance_types.os_config.instance_types.0.id}",
+					},
+					"desired_size":         "0",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+					"auto_mode": []map[string]interface{}{{
+						"enabled": "false",
+					}},
+					"instance_metadata_options": []map[string]interface{}{{
+						"http_tokens": "optional",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                        name,
+						"cluster_id":                  CHECKSET,
+						"instance_types.#":            "1",
+						"auto_mode.#":                 "1",
+						"auto_mode.0.enabled":         "false",
+						"instance_metadata_options.#": "1",
+						"instance_metadata_options.0.http_tokens": "optional",
+					}),
+				),
+			},
+			// check: http_tokens is ForceNew, so switching to the hardened mode replaces the pool.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_metadata_options": []map[string]interface{}{{
+						"http_tokens": "required",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_metadata_options.0.http_tokens": "required",
+					}),
+				),
+			},
+			// check: instance_types and instance_patterns are mutually exclusive; switching
+			// updates the scaling group in place.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_types": []string{},
+					"instance_patterns": []map[string]interface{}{{
+						"instance_family_level": "EnterpriseLevel",
+						"min_cpu_cores":         "4",
+						"max_cpu_cores":         "8",
+						"min_memory_size":       "8",
+						"max_memory_size":       "16",
+						"instance_categories":   []string{"General-purpose"},
+						"cpu_architectures":     []string{"X86"},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_types.#":                          "0",
+						"instance_patterns.#":                       "1",
+						"instance_patterns.0.instance_family_level": "EnterpriseLevel",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudCSKubernetesNodePool_rollingPolicyNodeNames covers the ordered
+// node_names list under rolling_policy with real node names. The pool cannot query
+// its own nodes without a dependency cycle, so the first step creates it and the
+// data source reads the node names afterwards; the last two applies keep the member
+// set and change only its order.
+func TestAccAliCloudCSKubernetesNodePool_rollingPolicyNodeNames(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.rolling_policy"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-rolling-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ackNodepoolRollingPolicyNodeNamesDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		// The node names come from a framework data source, which only the muxed
+		// provider serves.
+		ProtoV5ProviderFactories: testAccMuxedProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"cluster_id":  "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{"${alicloud_vswitch.defaultT8D8ss.id}"},
+					"instance_types": []string{
+						"${data.alicloud_instance_types.rolling_policy.instance_types.0.id}",
+					},
+					"desired_size":         "2",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":             name,
+						"cluster_id":       CHECKSET,
+						"rolling_policy.#": "0",
+					}),
+				),
+			},
+			// Convergence-only coverage for the ordered list: a rolling policy change does
+			// not issue a request of its own, and the resource transmits node_names only in
+			// its upgrade request, which this test does not configure. The pair therefore
+			// proves the reordered members converge in state, not that the service accepted
+			// them.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rolling_policy": []map[string]interface{}{{
+						"max_parallelism": "1",
+						"node_names": []string{
+							"${data.alicloud_cs_kubernetes_nodes.default.node_names[0]}",
+							"${data.alicloud_cs_kubernetes_nodes.default.node_names[1]}",
+						},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rolling_policy.#":                 "1",
+						"rolling_policy.0.node_names.#":    "2",
+						"rolling_policy.0.max_parallelism": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rolling_policy": []map[string]interface{}{{
+						"max_parallelism": "1",
+						"node_names": []string{
+							"${data.alicloud_cs_kubernetes_nodes.default.node_names[1]}",
+							"${data.alicloud_cs_kubernetes_nodes.default.node_names[0]}",
+						},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rolling_policy.#":                 "1",
+						"rolling_policy.0.node_names.#":    "2",
+						"rolling_policy.0.max_parallelism": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func ackNodepoolRollingPolicyNodeNamesDependence(name string) string {
+	return AlicloudAckNodepoolBasicDependence12069(name) + `
+data "alicloud_instance_types" "rolling_policy" {
+  availability_zone    = var.zone_3
+  cpu_core_count       = 4
+  memory_size          = 8
+  kubernetes_node_role = "Worker"
+  system_disk_category = "cloud_essd"
+  eni_amount           = 2
+}
+
+data "alicloud_cs_kubernetes_nodes" "default" {
+  cluster_id    = alicloud_cs_managed_kubernetes.defaultNppPcz.id
+  nodepool_name = var.name
+}
+`
+}
+
+// TestAccAliCloudCSKubernetesNodePool_memberOrder carries the convergent reorder
+// coverage for the node pool's multi-member TypeList attributes. Every pair of
+// consecutive applies keeps the member set identical and changes only the order of
+// one target list, so the SDK's required empty post-apply plan proves the resource
+// converges on the reordered members. The first config additionally carries the
+// attributes that only needed configured coverage.
+func TestAccAliCloudCSKubernetesNodePool_memberOrder(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.member_order"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-order-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ackNodepoolMemberOrderDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":       name,
+					"cluster_id": "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.defaultT8D8ss.id}",
+						"${alicloud_vswitch.defaultVTblQn.id}",
+					},
+					"security_group_ids": []string{
+						"${alicloud_security_group.defaultKHUbRj.id}",
+						"${alicloud_security_group.defaultKYDOFD.id}",
+					},
+					"instance_types": []string{
+						"${data.alicloud_instance_types.member_order.instance_types.0.id}",
+						"${data.alicloud_instance_types.member_order.instance_types.1.id}",
+					},
+					"desired_size":           "1",
+					"system_disk_categories": []string{"cloud_essd", "cloud_ssd"},
+					"system_disk_size":       "40",
+					"image_type":             "AliyunLinux3ContainerOptimized",
+					"type":                   "ess",
+					"update_nodes":           "false",
+					"data_disks": []map[string]interface{}{
+						{
+							"category": "cloud_essd",
+							"size":     "100",
+						},
+						{
+							"category": "cloud_ssd",
+							"size":     "40",
+						},
+					},
+					"labels": []map[string]interface{}{
+						{
+							"key":   "order-a",
+							"value": "value-a",
+						},
+						{
+							"key":   "order-b",
+							"value": "value-b",
+						},
+					},
+					"taints": []map[string]interface{}{
+						{
+							"key":    "order-a",
+							"value":  "value-a",
+							"effect": "NoSchedule",
+						},
+						{
+							"key":    "order-b",
+							"value":  "value-b",
+							"effect": "NoExecute",
+						},
+					},
+					"containerd_config": []map[string]interface{}{
+						{
+							"insecure_registries": []string{"registry-a.example.com", "registry-b.example.com"},
+							"registry_mirrors":    []string{"docker-a=https://mirror-a.example.com", "docker-b=https://mirror-b.example.com"},
+						},
+					},
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"allowed_unsafe_sysctls": []string{"net.core.somaxconn", "kernel.msgmax"},
+							"cluster_dns":            []string{"172.17.2.10", "172.17.2.11"},
+							"reserved_memory": []map[string]interface{}{
+								{
+									"numa_node": "0",
+									"limits": map[string]interface{}{
+										"memory": "1Gi",
+									},
+								},
+								{
+									"numa_node": "1",
+									"limits": map[string]interface{}{
+										"memory": "2Gi",
+									},
+								},
+							},
+						},
+					},
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.member_order.ciphertext_blob}",
+					"kms_encryption_context": map[string]interface{}{"purpose": "nodepool"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                     name,
+						"cluster_id":               CHECKSET,
+						"security_group_ids.#":     "2",
+						"instance_types.#":         "2",
+						"system_disk_categories.#": "2",
+						"labels.#":                 "2",
+						"taints.#":                 "2",
+						"data_disks.#":             "2",
+						"vswitch_ids.#":            "2",
+						"containerd_config.0.insecure_registries.#":        "2",
+						"containerd_config.0.registry_mirrors.#":           "2",
+						"kubelet_configuration.0.allowed_unsafe_sysctls.#": "2",
+						"kubelet_configuration.0.cluster_dns.#":            "2",
+						"kubelet_configuration.0.reserved_memory.#":        "2",
+					}),
+				),
+			},
+			// instance_types: same two specs, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_types": []string{
+						"${data.alicloud_instance_types.member_order.instance_types.1.id}",
+						"${data.alicloud_instance_types.member_order.instance_types.0.id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_types.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_types": []string{
+						"${data.alicloud_instance_types.member_order.instance_types.0.id}",
+						"${data.alicloud_instance_types.member_order.instance_types.1.id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_types.#": "2",
+					}),
+				),
+			},
+			// vswitch_ids: same two vSwitches, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.defaultVTblQn.id}",
+						"${alicloud_vswitch.defaultT8D8ss.id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.defaultT8D8ss.id}",
+						"${alicloud_vswitch.defaultVTblQn.id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_ids.#": "2",
+					}),
+				),
+			},
+			// data_disks: same two disks, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disks": []map[string]interface{}{
+						{
+							"category": "cloud_ssd",
+							"size":     "40",
+						},
+						{
+							"category": "cloud_essd",
+							"size":     "100",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disks.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disks": []map[string]interface{}{
+						{
+							"category": "cloud_essd",
+							"size":     "100",
+						},
+						{
+							"category": "cloud_ssd",
+							"size":     "40",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disks.#": "2",
+					}),
+				),
+			},
+			// labels: same two labels, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"labels": []map[string]interface{}{
+						{
+							"key":   "order-b",
+							"value": "value-b",
+						},
+						{
+							"key":   "order-a",
+							"value": "value-a",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"labels.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"labels": []map[string]interface{}{
+						{
+							"key":   "order-a",
+							"value": "value-a",
+						},
+						{
+							"key":   "order-b",
+							"value": "value-b",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"labels.#": "2",
+					}),
+				),
+			},
+			// taints: same two taints, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"taints": []map[string]interface{}{
+						{
+							"key":    "order-b",
+							"value":  "value-b",
+							"effect": "NoExecute",
+						},
+						{
+							"key":    "order-a",
+							"value":  "value-a",
+							"effect": "NoSchedule",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"taints.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"taints": []map[string]interface{}{
+						{
+							"key":    "order-a",
+							"value":  "value-a",
+							"effect": "NoSchedule",
+						},
+						{
+							"key":    "order-b",
+							"value":  "value-b",
+							"effect": "NoExecute",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"taints.#": "2",
+					}),
+				),
+			},
+			// containerd_config.insecure_registries: order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{
+						{
+							"insecure_registries": []string{"registry-b.example.com", "registry-a.example.com"},
+							"registry_mirrors":    []string{"docker-a=https://mirror-a.example.com", "docker-b=https://mirror-b.example.com"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.0.insecure_registries.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{
+						{
+							"insecure_registries": []string{"registry-a.example.com", "registry-b.example.com"},
+							"registry_mirrors":    []string{"docker-a=https://mirror-a.example.com", "docker-b=https://mirror-b.example.com"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.0.insecure_registries.#": "2",
+					}),
+				),
+			},
+			// containerd_config.registry_mirrors: order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{
+						{
+							"insecure_registries": []string{"registry-a.example.com", "registry-b.example.com"},
+							"registry_mirrors":    []string{"docker-b=https://mirror-b.example.com", "docker-a=https://mirror-a.example.com"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.0.registry_mirrors.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containerd_config": []map[string]interface{}{
+						{
+							"insecure_registries": []string{"registry-a.example.com", "registry-b.example.com"},
+							"registry_mirrors":    []string{"docker-a=https://mirror-a.example.com", "docker-b=https://mirror-b.example.com"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"containerd_config.0.registry_mirrors.#": "2",
+					}),
+				),
+			},
+			// kubelet_configuration.allowed_unsafe_sysctls: order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"allowed_unsafe_sysctls": []string{"kernel.msgmax", "net.core.somaxconn"},
+							"cluster_dns":            []string{"172.17.2.10", "172.17.2.11"},
+							"reserved_memory": []map[string]interface{}{
+								{
+									"numa_node": "0",
+									"limits": map[string]interface{}{
+										"memory": "1Gi",
+									},
+								},
+								{
+									"numa_node": "1",
+									"limits": map[string]interface{}{
+										"memory": "2Gi",
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kubelet_configuration.0.allowed_unsafe_sysctls.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"allowed_unsafe_sysctls": []string{"net.core.somaxconn", "kernel.msgmax"},
+							"cluster_dns":            []string{"172.17.2.10", "172.17.2.11"},
+							"reserved_memory": []map[string]interface{}{
+								{
+									"numa_node": "0",
+									"limits": map[string]interface{}{
+										"memory": "1Gi",
+									},
+								},
+								{
+									"numa_node": "1",
+									"limits": map[string]interface{}{
+										"memory": "2Gi",
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kubelet_configuration.0.allowed_unsafe_sysctls.#": "2",
+					}),
+				),
+			},
+			// kubelet_configuration.cluster_dns: order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"allowed_unsafe_sysctls": []string{"net.core.somaxconn", "kernel.msgmax"},
+							"cluster_dns":            []string{"172.17.2.11", "172.17.2.10"},
+							"reserved_memory": []map[string]interface{}{
+								{
+									"numa_node": "0",
+									"limits": map[string]interface{}{
+										"memory": "1Gi",
+									},
+								},
+								{
+									"numa_node": "1",
+									"limits": map[string]interface{}{
+										"memory": "2Gi",
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kubelet_configuration.0.cluster_dns.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"allowed_unsafe_sysctls": []string{"net.core.somaxconn", "kernel.msgmax"},
+							"cluster_dns":            []string{"172.17.2.10", "172.17.2.11"},
+							"reserved_memory": []map[string]interface{}{
+								{
+									"numa_node": "0",
+									"limits": map[string]interface{}{
+										"memory": "1Gi",
+									},
+								},
+								{
+									"numa_node": "1",
+									"limits": map[string]interface{}{
+										"memory": "2Gi",
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kubelet_configuration.0.cluster_dns.#": "2",
+					}),
+				),
+			},
+			// kubelet_configuration.reserved_memory: order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"allowed_unsafe_sysctls": []string{"net.core.somaxconn", "kernel.msgmax"},
+							"cluster_dns":            []string{"172.17.2.10", "172.17.2.11"},
+							"reserved_memory": []map[string]interface{}{
+								{
+									"numa_node": "1",
+									"limits": map[string]interface{}{
+										"memory": "2Gi",
+									},
+								},
+								{
+									"numa_node": "0",
+									"limits": map[string]interface{}{
+										"memory": "1Gi",
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kubelet_configuration.0.reserved_memory.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{
+						{
+							"allowed_unsafe_sysctls": []string{"net.core.somaxconn", "kernel.msgmax"},
+							"cluster_dns":            []string{"172.17.2.10", "172.17.2.11"},
+							"reserved_memory": []map[string]interface{}{
+								{
+									"numa_node": "0",
+									"limits": map[string]interface{}{
+										"memory": "1Gi",
+									},
+								},
+								{
+									"numa_node": "1",
+									"limits": map[string]interface{}{
+										"memory": "2Gi",
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kubelet_configuration.0.reserved_memory.#": "2",
+					}),
+				),
+			},
+			// system_disk_categories: same two categories, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_categories": []string{"cloud_ssd", "cloud_essd"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_categories.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_categories": []string{"cloud_essd", "cloud_ssd"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_categories.#": "2",
+					}),
+				),
+			},
+			// KMS-encrypted login password: rotate the ciphertext and its context.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.member_order_rotate.ciphertext_blob}",
+					"kms_encryption_context": map[string]interface{}{"purpose": "nodepool-rotate"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+		},
+	})
+}
+
+// ackNodepoolMemberOrderDependence selects two instance types that are actually
+// offered in the dependence's vSwitch zone (var.zone_3) so the ordered pairs above
+// can be applied for real. It also provisions the KMS ciphertexts used by the
+// kms_encrypted_password coverage.
+func ackNodepoolMemberOrderDependence(name string) string {
+	return AlicloudAckNodepoolBasicDependence12069(name) + `
+data "alicloud_instance_types" "member_order" {
+  availability_zone    = var.zone_3
+  cpu_core_count       = 2
+  memory_size          = 4
+  kubernetes_node_role = "Worker"
+  system_disk_category = "cloud_essd"
+  sorted_by            = "Price"
+}
+
+data "alicloud_kms_keys" "member_order" {
+  status  = "Enabled"
+  filters = "[{\"Key\":\"CreatorType\", \"Values\":[\"User\"]}]"
+}
+
+resource "alicloud_kms_ciphertext" "member_order" {
+  key_id             = data.alicloud_kms_keys.member_order.ids.0
+  plaintext          = "TfTest12345!"
+  encryption_context = {
+    purpose = "nodepool"
+  }
+}
+
+resource "alicloud_kms_ciphertext" "member_order_rotate" {
+  key_id             = data.alicloud_kms_keys.member_order.ids.0
+  plaintext          = "TfTest123456!"
+  encryption_context = {
+    purpose = "nodepool-rotate"
+  }
+}
+`
+}
+
+// TestAccAliCloudCSKubernetesNodePool_instancePatternsOrder carries the convergent
+// reorder coverage for the pattern-based instance filter: the pattern list itself and
+// each configurable nested TypeList. Only the target list's order changes between the
+// two applies of a pair, so an empty post-apply plan proves convergence.
+func TestAccAliCloudCSKubernetesNodePool_instancePatternsOrder(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.patterns_order"
+	ra := resourceAttrInit(resourceId, AlicloudAckNodepoolMap12069)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-patterns-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAckNodepoolBasicDependence12069)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":       name,
+					"cluster_id": "${alicloud_cs_managed_kubernetes.defaultNppPcz.id}",
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.defaultT8D8ss.id}",
+					},
+					"desired_size":         "0",
+					"system_disk_category": "cloud_essd",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3ContainerOptimized",
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                name,
+						"cluster_id":          CHECKSET,
+						"instance_patterns.#": "2",
+						"instance_patterns.0.instance_type_families.#":  "2",
+						"instance_patterns.0.excluded_instance_types.#": "2",
+						"instance_patterns.0.instance_categories.#":     "2",
+						"instance_patterns.0.cpu_architectures.#":       "2",
+					}),
+				),
+			},
+			// instance_patterns: same two patterns, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.#": "2",
+						// Index 0 now holds the second pattern, which declares one
+						// category and one architecture.
+						"instance_patterns.0.instance_type_families.#":  "2",
+						"instance_patterns.0.excluded_instance_types.#": "2",
+						"instance_patterns.0.instance_categories.#":     "1",
+						"instance_patterns.0.cpu_architectures.#":       "1",
+					}),
+				),
+			},
+			// instance_patterns: back to the original order so the next pair isolates
+			// a nested list.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.#":                           "2",
+						"instance_patterns.0.instance_type_families.#":  "2",
+						"instance_patterns.0.excluded_instance_types.#": "2",
+						"instance_patterns.0.instance_categories.#":     "2",
+						"instance_patterns.0.cpu_architectures.#":       "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.c6", "ecs.g6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.0.instance_type_families.#": "2",
+					}),
+				),
+			},
+			// instance_type_families: restore order.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.0.instance_type_families.#": "2",
+					}),
+				),
+			},
+			// excluded_instance_types: order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t6.*", "ecs.t5.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.0.excluded_instance_types.#": "2",
+					}),
+				),
+			},
+			// excluded_instance_types: restore order.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.0.excluded_instance_types.#": "2",
+					}),
+				),
+			},
+			// instance_categories: order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"Compute-intensive", "General-purpose"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.0.instance_categories.#": "2",
+					}),
+				),
+			},
+			// instance_categories: restore order.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.0.instance_categories.#": "2",
+					}),
+				),
+			},
+			// cpu_architectures: order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"Arm64", "X86"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.0.cpu_architectures.#": "2",
+					}),
+				),
+			},
+			// cpu_architectures: restore order.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "16",
+							"max_memory_size":         "32",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.0.cpu_architectures.#": "2",
+					}),
+				),
+			},
+			// instance_patterns bounds: change the memory range so the
+			// min_memory_size/max_memory_size update path is exercised and converges.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_patterns": []map[string]interface{}{
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g6", "ecs.c6"},
+							"excluded_instance_types": []string{"ecs.t5.*", "ecs.t6.*"},
+							"instance_categories":     []string{"General-purpose", "Compute-intensive"},
+							"cpu_architectures":       []string{"X86", "Arm64"},
+							"min_cpu_cores":           "4",
+							"max_cpu_cores":           "8",
+							"min_memory_size":         "4",
+							"max_memory_size":         "8",
+						},
+						{
+							"instance_family_level":   "EnterpriseLevel",
+							"instance_type_families":  []string{"ecs.g7", "ecs.c7"},
+							"excluded_instance_types": []string{"ecs.t5.large", "ecs.t6.large"},
+							"instance_categories":     []string{"General-purpose"},
+							"cpu_architectures":       []string{"X86"},
+							"min_cpu_cores":           "8",
+							"max_cpu_cores":           "16",
+							"min_memory_size":         "8",
+							"max_memory_size":         "16",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_patterns.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// ackNodepoolOsConfigDependence selects the node pool instance type from the types that
+// are actually offered in the dependence's vSwitch zone (var.zone_3). A hardcoded
+// ecs.g7.xlarge is not sold in that zone, so the case would fail on the very first apply
+// before os_config is exercised.
+func ackNodepoolOsConfigDependence(name string) string {
+	return AlicloudAckNodepoolBasicDependence12069(name) + `
+data "alicloud_instance_types" "os_config" {
+  availability_zone    = var.zone_3
+  cpu_core_count       = 4
+  memory_size          = 8
+  kubernetes_node_role = "Worker"
+  system_disk_category = "cloud_essd"
+  eni_amount           = 2
+}
+`
+}
+
+// Hand-written HCL helpers for the os_config steps. The sysctl map key contains dots,
+// which the framework config generator cannot emit (map keys are not quoted), and the
+// testing coverage checker only reads Check maps of steps whose Config captures no
+// braces — hence the HCL lives in helpers referenced from the Config lines.
+func testAccAckNodepoolOsConfigSysctl(resourceName, name, sysctlValue string) string {
+	return fmt.Sprintf(`
+resource "alicloud_cs_kubernetes_node_pool" "%s" {
+  name                 = "%s"
+  cluster_id           = alicloud_cs_managed_kubernetes.defaultNppPcz.id
+  vswitch_ids          = [alicloud_vswitch.defaultT8D8ss.id]
+  instance_types       = [data.alicloud_instance_types.os_config.instance_types.0.id]
+  desired_size         = "1"
+  system_disk_category = "cloud_essd"
+  system_disk_size     = "40"
+  image_type           = "AliyunLinux3ContainerOptimized"
+  os_config {
+    sysctl = {
+      "user.max_user_namespaces" = "%s"
+    }
+    hugepage {
+      transparent_enabled              = "madvise"
+      transparent_defrag               = "defer+madvise"
+      khugepaged_defrag                = "1"
+      khugepaged_alloc_sleep_millisecs = "120000"
+      khugepaged_scan_sleep_millisecs  = "10000"
+      khugepaged_pages_to_scan         = "4096"
+    }
+  }
+}
+`, resourceName, name, sysctlValue)
+}
+
+func testAccAckNodepoolOsConfigCreate(resourceName, name string) string {
+	return fmt.Sprintf(`
+resource "alicloud_cs_kubernetes_node_pool" "%s" {
+  name                 = "%s"
+  cluster_id           = alicloud_cs_managed_kubernetes.defaultNppPcz.id
+  vswitch_ids          = [alicloud_vswitch.defaultT8D8ss.id]
+  instance_types       = [data.alicloud_instance_types.os_config.instance_types.0.id]
+  desired_size         = "1"
+  system_disk_category = "cloud_essd"
+  system_disk_size     = "40"
+  image_type           = "AliyunLinux3ContainerOptimized"
+  os_config {
+    sysctl = {
+      "user.max_user_namespaces" = "65535"
+    }
+    hugepage {
+      transparent_enabled = "always"
+      transparent_defrag  = "madvise"
+      khugepaged_defrag   = "0"
+    }
+  }
+}
+`, resourceName, name)
+}
+
 // TestUnitFlattenContainerdConfig covers the API-response-to-schema conversion of the
 // containerd_config block: only keys explicitly returned by the API are written into the
 // element map (missing key = "not set"), numeric fields accept both json.Number and the
@@ -8518,6 +10460,417 @@ func TestUnitExpandContainerdConfig(t *testing.T) {
 	}
 }
 
+// TestUnitFlattenHugepage covers the API-response-to-schema conversion of the hugepage
+// object: string fields pass through, numeric fields accept both json.Number and the
+// float64 fallback and are rendered as decimal strings for the nullable TypeString
+// fields, and unknown keys are ignored.
+func TestUnitFlattenHugepage(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  map[string]interface{}
+		want map[string]interface{}
+	}{
+		{
+			name: "empty map returns empty map",
+			raw:  map[string]interface{}{},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "string fields pass through",
+			raw: map[string]interface{}{
+				"transparentEnabled": "always",
+				"transparentDefrag":  "defer+madvise",
+			},
+			want: map[string]interface{}{
+				"transparent_enabled": "always",
+				"transparent_defrag":  "defer+madvise",
+			},
+		},
+		{
+			name: "json.Number values render as decimal strings",
+			raw: map[string]interface{}{
+				"khugepagedDefrag":              json.Number("1"),
+				"khugepagedAllocSleepMillisecs": json.Number("60000"),
+				"khugepagedScanSleepMillisecs":  json.Number("10000"),
+				"khugepagedPagesToScan":         json.Number("4096"),
+			},
+			want: map[string]interface{}{
+				"khugepaged_defrag":                "1",
+				"khugepaged_alloc_sleep_millisecs": "60000",
+				"khugepaged_scan_sleep_millisecs":  "10000",
+				"khugepaged_pages_to_scan":         "4096",
+			},
+		},
+		{
+			name: "float64 fallback values render as decimal strings",
+			raw: map[string]interface{}{
+				"khugepagedDefrag": float64(0),
+			},
+			want: map[string]interface{}{
+				"khugepaged_defrag": "0",
+			},
+		},
+		{
+			name: "unknown keys are ignored",
+			raw: map[string]interface{}{
+				"transparentEnabled": "always",
+				"unknownKey":         "ignored",
+			},
+			want: map[string]interface{}{
+				"transparent_enabled": "always",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, flattenHugepage(tt.raw))
+		})
+	}
+}
+
+// TestUnitFlattenOsConfig covers the node_os_config-response-to-schema conversion of the
+// os_config block: sysctl and hugepage are both backfilled from the API read-back, the
+// API sysctl map wins over a differing configuration so drift is visible, the configured
+// map is used only when the API returns no sysctl entries, an empty hugepage object
+// yields no block, and an unconfigured node pool yields an empty list.
+func TestUnitFlattenOsConfig(t *testing.T) {
+	resourceSchema := resourceAliCloudAckNodepool().Schema
+
+	tests := []struct {
+		name string
+		raw  map[string]interface{}
+		api  interface{}
+		want []map[string]interface{}
+	}{
+		{
+			name: "nil API response and no config returns empty list",
+			raw:  map[string]interface{}{},
+			api:  nil,
+			want: []map[string]interface{}{},
+		},
+		{
+			name: "configured sysctl is mirrored even when API returns nothing",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				}},
+			},
+			api: nil,
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+			}},
+		},
+		{
+			// Regression for F-09: the API returns the sysctl object, so the API value
+			// must replace a differing configured value instead of being ignored. A
+			// numeric JSON value is rendered as a decimal string for the TypeMap.
+			name: "API sysctl wins over a differing configured value",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				}},
+			},
+			api: map[string]interface{}{
+				"sysctl": map[string]interface{}{
+					"user.max_user_namespaces": json.Number("131072"),
+				},
+			},
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "131072"},
+			}},
+		},
+		{
+			// Regression for F-09: import has no configuration to mirror, so a state
+			// reconstructed from the API must keep every returned sysctl entry.
+			name: "API sysctl is used when no os_config is configured",
+			raw:  map[string]interface{}{},
+			api: map[string]interface{}{
+				"sysctl": map[string]interface{}{
+					"net.ipv4.ip_local_port_range": "1024 65535",
+					"net.core.somaxconn":           json.Number("1024"),
+				},
+			},
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{
+					"net.ipv4.ip_local_port_range": "1024 65535",
+					"net.core.somaxconn":           "1024",
+				},
+			}},
+		},
+		{
+			// An empty API sysctl object carries no entries; the declared block keeps its
+			// configured map so a response that omits the section cannot cause a
+			// permanent diff.
+			name: "empty API sysctl object keeps the configured map",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				}},
+			},
+			api: map[string]interface{}{
+				"sysctl": map[string]interface{}{},
+			},
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+			}},
+		},
+		{
+			// Removal path: with no configured block an empty API sysctl object must not
+			// create an os_config block, otherwise os_config.# would never converge to 0.
+			name: "empty API sysctl object without config keeps the empty list",
+			raw:  map[string]interface{}{},
+			api: map[string]interface{}{
+				"sysctl": map[string]interface{}{},
+			},
+			want: []map[string]interface{}{},
+		},
+		{
+			name: "API hugepage is backfilled when no os_config is configured",
+			raw:  map[string]interface{}{},
+			api: map[string]interface{}{
+				"hugepage": map[string]interface{}{
+					"transparentEnabled": "always",
+					"khugepagedDefrag":   json.Number("0"),
+				},
+			},
+			want: []map[string]interface{}{{
+				"hugepage": []map[string]interface{}{{
+					"transparent_enabled": "always",
+					"khugepaged_defrag":   "0",
+				}},
+			}},
+		},
+		{
+			name: "empty hugepage object yields empty list",
+			raw:  map[string]interface{}{},
+			api: map[string]interface{}{
+				"hugepage": map[string]interface{}{},
+			},
+			want: []map[string]interface{}{},
+		},
+		{
+			// Regression for the perpetual-diff defect: an explicitly declared empty
+			// block must keep os_config.# = 1 in state, otherwise every plan shows
+			// os_config.#: 0 -> 1 and Update resends an empty map on each apply.
+			name: "explicit empty os_config block keeps its state shape",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{}},
+			},
+			api: nil,
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{},
+			}},
+		},
+		{
+			name: "explicit empty hugepage block keeps its state shape",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"hugepage": []interface{}{map[string]interface{}{}},
+				}},
+			},
+			api: nil,
+			want: []map[string]interface{}{{
+				"sysctl":   map[string]interface{}{},
+				"hugepage": []map[string]interface{}{{}},
+			}},
+		},
+		{
+			name: "API hugepage values win over an empty configured block",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{}},
+			},
+			api: map[string]interface{}{
+				"hugepage": map[string]interface{}{
+					"transparentEnabled": "always",
+				},
+			},
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{},
+				"hugepage": []map[string]interface{}{{
+					"transparent_enabled": "always",
+				}},
+			}},
+		},
+		{
+			// Only the block shape is mirrored, never configured values: when the API
+			// returns no hugepage keys for a configured non-empty hugepage block, the
+			// state must drop the values so the next plan detects the drift.
+			name: "configured hugepage values are not mirrored when API returns nothing",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"hugepage": []interface{}{map[string]interface{}{
+						"transparent_enabled": "always",
+					}},
+				}},
+			},
+			api: nil,
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{},
+			}},
+		},
+		{
+			name: "configured sysctl merges with API hugepage",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				}},
+			},
+			api: map[string]interface{}{
+				"hugepage": map[string]interface{}{
+					"transparentEnabled": "always",
+				},
+			},
+			want: []map[string]interface{}{{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				"hugepage": []map[string]interface{}{{
+					"transparent_enabled": "always",
+				}},
+			}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, resourceSchema, tt.raw)
+			assert.Equal(t, tt.want, flattenOsConfig(d, tt.api))
+		})
+	}
+}
+
+// TestUnitExpandOsConfig covers the schema-to-API-request conversion of the os_config
+// block using the resource's real schema via schema.TestResourceDataRaw. The sysctl map
+// is sent as-is, hugepage fields are sent under their camelCase API names with the
+// numeric fields parsed from the nullable TypeString values (explicit "0" is sent),
+// removing the whole block yields an empty map ({} clears the cloud-side configuration
+// under the API's full-replacement semantics), and invalid values bypassing the schema
+// ValidateFunc layer surface as parse errors.
+func TestUnitExpandOsConfig(t *testing.T) {
+	resourceSchema := resourceAliCloudAckNodepool().Schema
+
+	tests := []struct {
+		name    string
+		raw     map[string]interface{}
+		want    map[string]interface{}
+		wantErr bool
+	}{
+		{
+			name: "block absent returns empty map",
+			raw:  map[string]interface{}{},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "block removed (empty list) returns empty map",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{},
+			},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "all fields unset sends no keys",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl":   map[string]interface{}{},
+					"hugepage": []interface{}{map[string]interface{}{}},
+				}},
+			},
+			want: map[string]interface{}{},
+		},
+		{
+			name: "sysctl map is sent as-is",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				}},
+			},
+			want: map[string]interface{}{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+			},
+		},
+		{
+			name: "hugepage fields convert to camelCase API names",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"hugepage": []interface{}{map[string]interface{}{
+						"transparent_enabled":              "always",
+						"transparent_defrag":               "defer+madvise",
+						"khugepaged_defrag":                "1",
+						"khugepaged_alloc_sleep_millisecs": "60000",
+						"khugepaged_scan_sleep_millisecs":  "10000",
+						"khugepaged_pages_to_scan":         "4096",
+					}},
+				}},
+			},
+			want: map[string]interface{}{
+				"hugepage": map[string]interface{}{
+					"transparentEnabled":            "always",
+					"transparentDefrag":             "defer+madvise",
+					"khugepagedDefrag":              int64(1),
+					"khugepagedAllocSleepMillisecs": int64(60000),
+					"khugepagedScanSleepMillisecs":  int64(10000),
+					"khugepagedPagesToScan":         int64(4096),
+				},
+			},
+		},
+		{
+			name: "explicit zero khugepaged_defrag is sent",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"hugepage": []interface{}{map[string]interface{}{
+						"khugepaged_defrag": "0",
+					}},
+				}},
+			},
+			want: map[string]interface{}{
+				"hugepage": map[string]interface{}{
+					"khugepagedDefrag": int64(0),
+				},
+			},
+		},
+		{
+			name: "sysctl and hugepage are sent together",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+					"hugepage": []interface{}{map[string]interface{}{
+						"transparent_enabled": "never",
+					}},
+				}},
+			},
+			want: map[string]interface{}{
+				"sysctl": map[string]interface{}{"user.max_user_namespaces": "65535"},
+				"hugepage": map[string]interface{}{
+					"transparentEnabled": "never",
+				},
+			},
+		},
+		{
+			name: "invalid khugepaged_defrag returns error",
+			raw: map[string]interface{}{
+				"os_config": []interface{}{map[string]interface{}{
+					"hugepage": []interface{}{map[string]interface{}{
+						"khugepaged_defrag": "abc",
+					}},
+				}},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, resourceSchema, tt.raw)
+			got, err := expandOsConfig(d)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 // Case np-resource-pool-options
 var AlicloudAckNodepoolMapResourcePoolOptions = map[string]string{
 	"platform":             CHECKSET,
@@ -8685,6 +11038,27 @@ func TestAccAliCloudAckNodepool_ResourcePoolOptions(t *testing.T) {
 							"private_pool_ids": []string{
 								"${local.capacity_reservation_id}",
 								"${local.elasticity_assurance_id}",
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_pool_options.#":                    "1",
+						"resource_pool_options.0.strategy":           "PrivatePoolOnly",
+						"resource_pool_options.0.private_pool_ids.#": "2",
+					}),
+				),
+			},
+			// private_pool_ids: the same two private pools, order reversed.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_pool_options": []map[string]interface{}{
+						{
+							"strategy": "PrivatePoolOnly",
+							"private_pool_ids": []string{
+								"${local.elasticity_assurance_id}",
+								"${local.capacity_reservation_id}",
 							},
 						},
 					},

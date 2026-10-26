@@ -8,6 +8,12 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Cs",
+		DataSources: []conns.DataSource{
+			{
+				TypeName: kubernetesNodesDataSourceTypeName,
+				Factory:  NewKubernetesNodesDataSource,
+			},
+		},
 		EphemeralResources: []conns.EphemeralResource{
 			{
 				TypeName: "alicloud_cs_cluster_credential",
