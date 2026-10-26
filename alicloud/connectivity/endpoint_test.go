@@ -228,3 +228,119 @@ func TestUnitSlsWithoutEndpoint(t *testing.T) {
 		})
 	}
 }
+
+// TestUnitSlsEndpointCacheReuse reproduces the read/write key mismatch fixed in
+// loadApiEndpoint: for sls, productCodeToConfigEndpoints maps the read key to
+// "log", while loadEndpoint always stores under "sls". Before the fix the
+// mapped read key never matched the write key, so every SLS API call re-ran
+// endpoint discovery. The env var is the only probe source, so this case needs
+// no credentials and no network and runs under ci-check-quick.
+func TestUnitSlsEndpointCacheReuse(t *testing.T) {
+	const envKey = "ALIBABA_CLOUD_ENDPOINT_SLS"
+	oldVal, hadOld := os.LookupEnv(envKey)
+	t.Cleanup(func() {
+		if hadOld {
+			os.Setenv(envKey, oldVal)
+		} else {
+			os.Unsetenv(envKey)
+		}
+	})
+
+	client := &AliyunClient{
+		config: &Config{
+			Endpoints: new(sync.Map),
+			RegionId:  "cn-hangzhou",
+		},
+	}
+
+	// First call probes the env var and must cache under "sls", not "log".
+	os.Setenv(envKey, "first.sls.example.com")
+	ep1, err := client.loadApiEndpoint("sls")
+	assert.NoError(t, err)
+	assert.Equal(t, "first.sls.example.com", ep1)
+
+	// Bug symptom: the read key is "log" but the write key is "sls", so the
+	// user-config key stays empty after a probe.
+	_, ok := client.config.Endpoints.Load("log")
+	assert.False(t, ok, `Load("log") must be empty; the probe is cached under "sls"`)
+
+	cached, ok := client.config.Endpoints.Load("sls")
+	assert.True(t, ok)
+	assert.Equal(t, "first.sls.example.com", cached)
+
+	// Flip the probe source. Before the fix the second call re-probed and
+	// returned the new value; with the Load(productCode) pre-check it is served
+	// from the cache instead.
+	os.Setenv(envKey, "second.sls.example.com")
+	ep2, err := client.loadApiEndpoint("sls")
+	assert.NoError(t, err)
+	assert.Equal(t, "first.sls.example.com", ep2, "second call must reuse the cached endpoint instead of re-probing")
+
+	cached, ok = client.config.Endpoints.Load("sls")
+	assert.True(t, ok)
+	assert.Equal(t, "first.sls.example.com", cached, "cache must not be overwritten by the skipped probe")
+}
+
+// TestUnitSlsEndpointUserConfigTakesPrecedenceOverCache verifies the fix keeps
+// the v1.253.0 user-config priority: endpoints.log for sls wins over a
+// previously probed endpoint cached under "sls".
+func TestUnitSlsEndpointUserConfigTakesPrecedenceOverCache(t *testing.T) {
+	var endpoints sync.Map
+	endpoints.Store("log", "user.log.example.com")
+	endpoints.Store("sls", "cached.sls.example.com")
+
+	client := &AliyunClient{
+		config: &Config{
+			Endpoints: &endpoints,
+			RegionId:  "cn-hangzhou",
+		},
+	}
+
+	ep, err := client.loadApiEndpoint("sls")
+	assert.NoError(t, err)
+	assert.Equal(t, "user.log.example.com", ep, "user-configured log endpoint must take precedence over the cached sls endpoint")
+
+	val, ok := client.config.Endpoints.Load("log")
+	assert.True(t, ok)
+	assert.Equal(t, "user.log.example.com", val)
+
+	cached, ok := client.config.Endpoints.Load("sls")
+	assert.True(t, ok)
+	assert.Equal(t, "cached.sls.example.com", cached, "the cached sls entry must be left untouched")
+}
+
+// TestUnitNonMappedProductEndpointCacheReuse is the control group: for
+// non-mapped products the read and write keys already coincide (ecs), so
+// caching must keep working unchanged after the fix.
+func TestUnitNonMappedProductEndpointCacheReuse(t *testing.T) {
+	const envKey = "ALIBABA_CLOUD_ENDPOINT_ECS"
+	oldVal, hadOld := os.LookupEnv(envKey)
+	t.Cleanup(func() {
+		if hadOld {
+			os.Setenv(envKey, oldVal)
+		} else {
+			os.Unsetenv(envKey)
+		}
+	})
+
+	client := &AliyunClient{
+		config: &Config{
+			Endpoints: new(sync.Map),
+			RegionId:  "cn-hangzhou",
+		},
+	}
+
+	os.Setenv(envKey, "first.ecs.example.com")
+	ep1, err := client.loadApiEndpoint("ecs")
+	assert.NoError(t, err)
+	assert.Equal(t, "first.ecs.example.com", ep1)
+
+	os.Setenv(envKey, "second.ecs.example.com")
+	ep2, err := client.loadApiEndpoint("ecs")
+	assert.NoError(t, err)
+	assert.Equal(t, "first.ecs.example.com", ep2, "second call must reuse the cached ecs endpoint instead of re-probing")
+
+	cached, ok := client.config.Endpoints.Load("ecs")
+	assert.True(t, ok)
+	assert.Equal(t, "first.ecs.example.com", cached)
+}
