@@ -16,12 +16,14 @@ type VodService struct {
 
 func (s *VodService) DescribeVodDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	client := s.client
 	action := "DescribeVodDomainDetail"
+	client := s.client
+
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, true)
 		if err != nil {
@@ -34,17 +36,21 @@ func (s *VodService) DescribeVodDomain(id string) (object map[string]interface{}
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return object, WrapErrorf(NotFoundErr("Vod:Domain", id), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$.DomainDetail", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainDetail", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
@@ -64,8 +70,48 @@ func (s *VodService) VodStateRefreshFunc(id string, failStates []string) retry.S
 				return object, object["DomainStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["DomainStatus"].(string)))
 			}
 		}
+
 		return object, object["DomainStatus"].(string), nil
 	}
+}
+
+func (s *VodService) DescribeVodDomainCertificateInfo(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeVodDomainCertificateInfo"
+	client := s.client
+
+	request := map[string]interface{}{
+		"DomainName": id,
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.CertInfos.CertInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CertInfos.CertInfo", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(NotFoundErr("Vod:Domain", id), NotFoundWithResponse, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
 func (s *VodService) SetResourceTags(d *schema.ResourceData, resourceType string) error {

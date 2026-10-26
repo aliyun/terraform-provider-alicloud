@@ -1888,7 +1888,7 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_nat_ip_cidr":                                       resourceAliCloudNatGatewayNatIpCidr(),
 			"alicloud_vpc_nat_ip":                                            resourceAliCloudNatGatewayNatIp(),
 			"alicloud_quick_bi_user":                                         resourceAlicloudQuickBiUser(),
-			"alicloud_vod_domain":                                            resourceAlicloudVodDomain(),
+			"alicloud_vod_domain":                                            resourceAliCloudVodDomain(),
 			"alicloud_arms_dispatch_rule":                                    resourceAlicloudArmsDispatchRule(),
 			"alicloud_open_search_app_group":                                 resourceAlicloudOpenSearchAppGroup(),
 			"alicloud_graph_database_db_instance":                            resourceAlicloudGraphDatabaseDbInstance(),
