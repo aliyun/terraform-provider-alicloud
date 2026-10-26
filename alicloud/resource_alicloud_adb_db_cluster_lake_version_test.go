@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -446,6 +447,44 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic1_twin(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"enable_default_resource_group", "source_db_cluster_id", "backup_set_id", "restore_type", "restore_to_time"},
+			},
+		},
+	})
+}
+
+// source_db_cluster_id/backup_set_id/restore_type/restore_to_time are
+// create-only restore fields. Restoring from a real warehouse
+// (alicloud_adb_db_cluster) source requires a pre-existing source cluster
+// with backups or a PITR window that this suite cannot provision: the
+// warehouse resource exposes no backup-set field and ADB has no backup data
+// source. Removing the required db_cluster_version stops the plan before the
+// placeholders reach the API, while still covering the restore fields'
+// must-set coverage (db_cluster_version itself is covered by the basic
+// cases above).
+func TestAccAliCloudADBDBClusterLakeVersion_restore(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%sadbdbclusterlakeversion%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc("alicloud_adb_db_cluster_lake_version.default", name, AliCloudAdbDbClusterLakeVersionBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":   REMOVEKEY,
+					"vpc_id":               "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":              "${data.alicloud_adb_zones.default.ids.0}",
+					"payment_type":         "PayAsYouGo",
+					"source_db_cluster_id": "amv-bp1nonexistent",
+					"restore_type":         "timepoint",
+					"restore_to_time":      "2023-09-20T03:13:56Z",
+					"backup_set_id":        "nonexistent-backup-id",
+				}),
+				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
 		},
 	})
