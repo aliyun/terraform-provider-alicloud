@@ -162,6 +162,8 @@ type AliyunClient struct {
 	maxcomputeConn               *maxcompute.Client
 
 	Features features.Features
+
+	IgnoreTags features.IgnoreTags
 }
 
 type ApiVersion string
@@ -271,6 +273,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		csprojectconnByKey:           make(map[string]*cs.ProjectClient),
 		skipRegionValidation:         c.SkipRegionValidation,
 		Features:                     c.Features,
+		IgnoreTags:                   c.IgnoreTags,
 	}
 	if c.AccountType == "" {
 		c.AccountType = client.getAccountType()

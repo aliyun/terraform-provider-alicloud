@@ -114,9 +114,10 @@ func TestAccAliCloudOOSTemplate_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"content":       `{\"FormatVersion\":\"OOS-2019-06-01\",\"Description\":\"Describe instances of given status\",\"Parameters\":{\"Status\":{\"Type\":\"String\",\"Description\":\"(Required) The status of the Ecs instance.\"}},\"Tasks\":[{\"Properties\":{\"Parameters\":{\"Status\":\"{{ Status }}\"},\"API\":\"DescribeInstances\",\"Service\":\"Ecs\"},\"Name\":\"foo\",\"Action\":\"ACS::ExecuteApi\"}]}`,
-					"template_name": name,
-					"version_name":  "test1",
+					"content":                `{\"FormatVersion\":\"OOS-2019-06-01\",\"Description\":\"Describe instances of given status\",\"Parameters\":{\"Status\":{\"Type\":\"String\",\"Description\":\"(Required) The status of the Ecs instance.\"}},\"Tasks\":[{\"Properties\":{\"Parameters\":{\"Status\":\"{{ Status }}\"},\"API\":\"DescribeInstances\",\"Service\":\"Ecs\"},\"Name\":\"foo\",\"Action\":\"ACS::ExecuteApi\"}]}`,
+					"template_name":          name,
+					"version_name":           "test1",
+					"auto_delete_executions": "true",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance Test",

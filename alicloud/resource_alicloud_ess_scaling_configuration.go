@@ -1442,10 +1442,36 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		update = true
 	}
 	if d.HasChange("tags") {
+		// ModifyScalingConfiguration replaces the whole tag set when Tags is present, so the
+		// ignored tags already on the configuration have to be sent back when ignore_tags is
+		// configured; without the configuration the configured tags are sent as-is.
+		desired := make(map[string]string)
 		if v, ok := d.GetOk("tags"); ok {
-			tags := "{"
 			for key, value := range v.(map[string]interface{}) {
-				tags += "\"" + key + "\"" + ":" + "\"" + value.(string) + "\"" + ","
+				desired[key] = value.(string)
+			}
+		}
+		payload := desired
+		if !client.IgnoreTags.Empty() {
+			essService := EssService{client}
+			object, err := essService.DescribeEssScalingConfigurationByCommonApi(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			current := make(map[string]string)
+			if v, ok := object["Tags"].(map[string]interface{}); ok {
+				if tagList, ok := v["Tag"]; ok {
+					for key, value := range tagsToMap(tagList) {
+						current[key] = value.(string)
+					}
+				}
+			}
+			payload = mergeIgnoredTags(desired, current, client.IgnoreTags)
+		}
+		if len(payload) > 0 {
+			tags := "{"
+			for key, value := range payload {
+				tags += "\"" + key + "\"" + ":" + "\"" + value + "\"" + ","
 			}
 			request["Tags"] = strings.TrimSuffix(tags, ",") + "}"
 		}

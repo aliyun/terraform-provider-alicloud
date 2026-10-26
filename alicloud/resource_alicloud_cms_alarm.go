@@ -799,16 +799,42 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		request["CompositeExpression"] = compositeExpressionJson
 	}
 
+	// PutResourceMetricRule replaces the label set when Labels is present and clears it when
+	// the parameter is omitted, so with ignore_tags configured the ignored labels already on the
+	// rule have to be re-sent on every update; without the configuration the configured tags are
+	// sent as-is and an empty configuration keeps clearing the labels.
+	desiredTags := make(map[string]string)
 	if v, ok := d.GetOk("tags"); ok {
-		tags := make([]map[string]interface{}, 0)
 		for key, value := range v.(map[string]interface{}) {
-			tags = append(tags, map[string]interface{}{
+			desiredTags[key] = value.(string)
+		}
+	}
+	labelsPayload := desiredTags
+	if !client.IgnoreTags.Empty() && !d.IsNewResource() {
+		object, err := cmsService.DescribeAlarm(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		current := make(map[string]string)
+		if raw, ok := object["Labels"].(map[string]interface{}); ok {
+			if labels, ok := raw["Labels"]; ok {
+				for key, value := range tagsToMap(labels) {
+					current[key] = value.(string)
+				}
+			}
+		}
+		labelsPayload = mergeIgnoredTags(desiredTags, current, client.IgnoreTags)
+	}
+	if len(labelsPayload) > 0 {
+		labels := make([]map[string]interface{}, 0)
+		for key, value := range labelsPayload {
+			labels = append(labels, map[string]interface{}{
 				"Key":   key,
-				"Value": value.(string),
+				"Value": value,
 			})
 		}
 
-		request["Labels"] = tags
+		request["Labels"] = labels
 	}
 
 	runtime := util.RuntimeOptions{}
