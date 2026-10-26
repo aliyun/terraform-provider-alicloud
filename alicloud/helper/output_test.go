@@ -199,3 +199,13 @@ func TestUnitCommonWriteToFileComprehensive(t *testing.T) {
 		}
 	})
 }
+
+func TestUnitCommonDataResourceIdHashFromMap(t *testing.T) {
+	first := DataResourceIdHashFromMap(map[string]interface{}{"a": "x", "b": 2})
+	second := DataResourceIdHashFromMap(map[string]interface{}{"b": 2, "a": "x"})
+	assert.Equal(t, first, second)
+	assert.NotEmpty(t, first)
+
+	other := DataResourceIdHashFromMap(map[string]interface{}{"a": "y", "b": 2})
+	assert.NotEqual(t, first, other)
+}
