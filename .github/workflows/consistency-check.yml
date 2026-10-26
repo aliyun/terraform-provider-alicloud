@@ -147,12 +147,13 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/terraform-ci-tools/tfproviderlint
-          key: tfproviderlint-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-v0.31.0
+          key: tfproviderlint-v2-${{ runner.os }}-${{ runner.arch }}-go1.26.10-v0.31.0
       - name: Build master tfproviderlint binary
         id: tfproviderlint-build
         continue-on-error: true
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.tfproviderlint-cache.outputs.cache-hit != 'true' }}
         env:
+          GOTOOLCHAIN: go1.26.10
           GOBIN: ${{ runner.temp }}/tfproviderlint-bin
         run: |
           mkdir -p "$GOBIN" "$HOME/.cache/terraform-ci-tools"
@@ -163,4 +164,4 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/terraform-ci-tools/tfproviderlint
-          key: tfproviderlint-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-v0.31.0
+          key: tfproviderlint-v2-${{ runner.os }}-${{ runner.arch }}-go1.26.10-v0.31.0

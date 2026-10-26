@@ -78,6 +78,21 @@ test_range_validation_and_literal_filtering() {
 	local head_sha
 	head_sha="$(git -C "$repository" rev-parse HEAD)"
 
+	local toolchain
+	for toolchain in go1.27.0 auto local; do
+		run_lint "$repository" \
+			DIFF_BASE="$base_sha" DIFF_HEAD="$head_sha" \
+			GOTOOLCHAIN="$toolchain" MOCK_LINT_EXIT=0 MOCK_LINT_OUTPUT=
+		[[ "$RUN_STATUS" -eq 0 ]] || die "isolated lint failed: $RUN_OUTPUT"
+		[[ "$(cat "$MOCK_TOOLCHAIN_FILE")" == go1.26.10 ]] ||
+			die "tfproviderlint must override inherited GOTOOLCHAIN=$toolchain"
+	done
+	run_lint "$repository" env -u GOTOOLCHAIN \
+		DIFF_BASE="$base_sha" DIFF_HEAD="$head_sha" MOCK_LINT_EXIT=0 MOCK_LINT_OUTPUT=
+	[[ "$RUN_STATUS" -eq 0 ]] || die "lint without GOTOOLCHAIN failed: $RUN_OUTPUT"
+	[[ "$(cat "$MOCK_TOOLCHAIN_FILE")" == go1.26.10 ]] ||
+		die "tfproviderlint must pin its toolchain when GOTOOLCHAIN is unset"
+
 	run_lint "$repository" \
 		env -u DIFF_BASE -u DIFF_HEAD \
 		MOCK_LINT_EXIT=0 MOCK_LINT_OUTPUT=
@@ -278,6 +293,7 @@ main() {
 
 	MOCK_BIN="$temp_dir/mock-bin"
 	MOCK_ARGS_FILE="$temp_dir/tfproviderlint.args"
+	MOCK_TOOLCHAIN_FILE="$temp_dir/tfproviderlint.toolchain"
 	mkdir -p "$MOCK_BIN"
 	# The mock script must expand these variables when it runs, not while this
 	# test creates it.
@@ -285,11 +301,12 @@ main() {
 	printf '%s\n' \
 		'#!/usr/bin/env bash' \
 		'printf "%s\\n" "$*" >"$MOCK_ARGS_FILE"' \
+		'printf "%s\\n" "${GOTOOLCHAIN:-}" >"$MOCK_TOOLCHAIN_FILE"' \
 		'printf "%s\\n" "${MOCK_LINT_OUTPUT:-}"' \
 		'exit "${MOCK_LINT_EXIT:-0}"' \
 		>"$MOCK_BIN/tfproviderlint"
 	chmod +x "$MOCK_BIN/tfproviderlint"
-	export MOCK_BIN MOCK_ARGS_FILE
+	export MOCK_BIN MOCK_ARGS_FILE MOCK_TOOLCHAIN_FILE
 
 	test_range_validation_and_literal_filtering "$temp_dir"
 	test_package_target_selection "$temp_dir"
