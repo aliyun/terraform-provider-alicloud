@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -12,9 +11,51 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// essResponseValues converts the values returned by the common API, which
+// decodes numbers as json.Number and booleans as strings that the typed schema
+// cannot accept directly. The first conversion failure is kept so Read fails
+// instead of writing a zero value that hides an unexpected response.
+type essResponseValues struct {
+	err error
+}
+
+func (c *essResponseValues) intValue(v interface{}) int {
+	if c.err != nil {
+		return 0
+	}
+	value, err := convert.FormatInt(v)
+	if err != nil {
+		c.err = err
+	}
+	return value
+}
+
+func (c *essResponseValues) floatValue(v interface{}) float64 {
+	if c.err != nil {
+		return 0
+	}
+	value, err := convert.FormatFloat64(v)
+	if err != nil {
+		c.err = err
+	}
+	return value
+}
+
+func (c *essResponseValues) boolValue(v interface{}) bool {
+	if c.err != nil {
+		return false
+	}
+	value, err := convert.FormatBool(v)
+	if err != nil {
+		c.err = err
+	}
+	return value
+}
 
 func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 	return &schema.Resource{
@@ -133,8 +174,9 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 							ValidateFunc: StringInSlice([]string{"Standard", "HighPerformance"}, false),
 						},
 						"ipv6_address_count": {
-							Type:     schema.TypeInt,
-							Optional: true,
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntAtLeast(0),
 						},
 						"security_group_ids": {
 							Type: schema.TypeList,
@@ -312,6 +354,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"user_data": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"role_name": {
@@ -333,6 +376,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"tags": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Computed: true,
 			},
 
 			"instance_name": {
@@ -861,7 +905,9 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			if networkInterfaceTrafficMode, ok := item["network_interface_traffic_mode"].(string); ok && networkInterfaceTrafficMode != "" {
 				networkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfaceTrafficMode
 			}
-			networkInterfacesMap["Ipv6AddressCount"] = item["ipv6_address_count"].(int)
+			if ipv6AddressCount, ok := item["ipv6_address_count"].(int); ok && ipv6AddressCount > 0 {
+				networkInterfacesMap["Ipv6AddressCount"] = ipv6AddressCount
+			}
 			networkInterfacesMap["SecurityGroupIds"] = item["security_group_ids"]
 			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
 		}
@@ -1284,8 +1330,15 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				networkInterface := map[string]interface{}{
 					"InstanceType":                pack["instance_type"].(string),
 					"NetworkInterfaceTrafficMode": pack["network_interface_traffic_mode"].(string),
-					"Ipv6AddressCount":            strconv.Itoa(pack["ipv6_address_count"].(int)),
 					"SecurityGroupIds":            &securityGroupIds,
+				}
+				// The Auto Scaling service drops the previous IPv6 address count
+				// when the parameter is left out, so a zero count is not sent and
+				// a removed count still converges. Negative counts never reach this
+				// point: the schema validator rejects them during plan, so omitting
+				// a non-positive value only ever means zero or unset.
+				if ipv6AddressCount := pack["ipv6_address_count"].(int); ipv6AddressCount > 0 {
+					networkInterface["Ipv6AddressCount"] = strconv.Itoa(ipv6AddressCount)
 				}
 				networkInterfaces = append(networkInterfaces, networkInterface)
 			}
@@ -1325,16 +1378,17 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if d.HasChange("user_data") {
-		if v, ok := d.GetOk("user_data"); ok && v.(string) != "" {
+		// An empty user_data reaches this branch but is not sent: GetOk reports
+		// false for an unset Optional+Computed string, so no UserData parameter
+		// is built and the remote value stays untouched. Clearing user data
+		// would need a separate change that bypasses GetOk.
+		if v, ok := d.GetOk("user_data"); ok {
 			_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
 			if base64DecodeError == nil {
 				request["UserData"] = v
 			} else {
 				request["UserData"] = base64.StdEncoding.EncodeToString([]byte(v.(string)))
 			}
-		}
-		if v, ok := d.GetOk("user_data"); ok && v.(string) == "" {
-			request["UserData"] = ""
 		}
 		update = true
 	}
@@ -1442,13 +1496,13 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		update = true
 	}
 	if d.HasChange("tags") {
-		if v, ok := d.GetOk("tags"); ok {
-			tags := "{"
-			for key, value := range v.(map[string]interface{}) {
-				tags += "\"" + key + "\"" + ":" + "\"" + value.(string) + "\"" + ","
-			}
-			request["Tags"] = strings.TrimSuffix(tags, ",") + "}"
+		// An explicit empty map is still a tags change: send it so the API sees
+		// the requested clear instead of the provider silently skipping it.
+		tags, err := convertMaptoJsonString(d.Get("tags").(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
 		}
+		request["Tags"] = tags
 		update = true
 	}
 
@@ -1730,20 +1784,21 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		d.Set("security_group_ids", v["SecurityGroupId"].([]interface{}))
 	}
 
+	values := &essResponseValues{}
 	if v := response["DataDisks"]; v != nil {
 		result := make([]map[string]interface{}, 0)
 		for _, i := range v.(map[string]interface{})["DataDisk"].([]interface{}) {
 			r := i.(map[string]interface{})
 			l := map[string]interface{}{
-				"size":                    r["Size"],
-				"provisioned_iops":        r["ProvisionedIops"],
+				"size":                    values.intValue(r["Size"]),
+				"provisioned_iops":        values.intValue(r["ProvisionedIops"]),
 				"category":                r["Category"],
 				"snapshot_id":             r["SnapshotId"],
 				"device":                  r["Device"],
-				"delete_with_instance":    r["DeleteWithInstance"],
-				"encrypted":               r["Encrypted"],
+				"delete_with_instance":    values.boolValue(r["DeleteWithInstance"]),
+				"encrypted":               values.boolValue(r["Encrypted"]),
 				"kms_key_id":              r["KMSKeyId"],
-				"disk_name":               r["DiskName"],
+				"name":                    r["DiskName"],
 				"description":             r["Description"],
 				"auto_snapshot_policy_id": r["AutoSnapshotPolicyId"],
 				"performance_level":       r["PerformanceLevel"],
@@ -1751,15 +1806,25 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			result = append(result, l)
 		}
 		d.Set("data_disk", result)
+		if values.err != nil {
+			return WrapError(values.err)
+		}
 	}
-	if v := response["Tags"]; v != nil {
-		d.Set("tags", tagsToMap(response["Tags"].(map[string]interface{})["Tag"]))
+	// The common API omits the Tags key when the scaling configuration has no
+	// instance tags, so an absent key means there are no remote tags. Always
+	// writing the observed set keeps Computed from rendering an
+	// empty-versus-unknown diff and drops stale state once the remote tags are
+	// gone.
+	observedTags := map[string]interface{}{}
+	if v, ok := response["Tags"].(map[string]interface{}); ok {
+		observedTags = tagsToMap(v["Tag"])
 	}
+	d.Set("tags", observedTags)
 	if v := response["SpotPriceLimit"]; v != nil {
 		result := make([]map[string]interface{}, 0)
 		for _, i := range v.(map[string]interface{})["SpotPriceModel"].([]interface{}) {
 			r := i.(map[string]interface{})
-			f, _ := r["PriceLimit"].(json.Number).Float64()
+			f := values.floatValue(r["PriceLimit"])
 			p, _ := strconv.ParseFloat(strconv.FormatFloat(f, 'f', 2, 64), 64)
 			l := map[string]interface{}{
 				"instance_type": r["InstanceType"],
@@ -1768,6 +1833,9 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			result = append(result, l)
 		}
 		d.Set("spot_price_limit", result)
+		if values.err != nil {
+			return WrapError(values.err)
+		}
 	}
 
 	if v := response["InstancePatternInfos"]; v != nil {
@@ -1842,46 +1910,46 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			}
 
 			if r["Memory"] != nil {
-				l["memory"] = r["Memory"]
+				l["memory"] = values.floatValue(r["Memory"])
 			}
 			if r["MinimumEniQuantity"] != nil {
-				l["minimum_eni_quantity"] = r["MinimumEniQuantity"]
+				l["minimum_eni_quantity"] = values.intValue(r["MinimumEniQuantity"])
 			}
 			if r["MinimumEniPrivateIpAddressQuantity"] != nil {
-				l["minimum_eni_private_ip_address_quantity"] = r["MinimumEniPrivateIpAddressQuantity"]
+				l["minimum_eni_private_ip_address_quantity"] = values.intValue(r["MinimumEniPrivateIpAddressQuantity"])
 			}
 			if r["MinimumEniIpv6AddressQuantity"] != nil {
-				l["minimum_eni_ipv6_address_quantity"] = r["MinimumEniIpv6AddressQuantity"]
+				l["minimum_eni_ipv6_address_quantity"] = values.intValue(r["MinimumEniIpv6AddressQuantity"])
 			}
 			if r["MinimumBaselineCredit"] != nil {
-				l["minimum_baseline_credit"] = r["MinimumBaselineCredit"]
+				l["minimum_baseline_credit"] = values.intValue(r["MinimumBaselineCredit"])
 			}
 			if r["MinimumInitialCredit"] != nil {
-				l["minimum_initial_credit"] = r["MinimumInitialCredit"]
+				l["minimum_initial_credit"] = values.intValue(r["MinimumInitialCredit"])
 			}
 			if r["MinimumGpuAmount"] != nil {
-				l["minimum_gpu_amount"] = r["MinimumGpuAmount"]
+				l["minimum_gpu_amount"] = values.intValue(r["MinimumGpuAmount"])
 			}
 			if r["MaximumGpuAmount"] != nil {
-				l["maximum_gpu_amount"] = r["MaximumGpuAmount"]
+				l["maximum_gpu_amount"] = values.intValue(r["MaximumGpuAmount"])
 			}
 			if r["Cores"] != nil {
-				l["cores"] = r["Cores"]
+				l["cores"] = values.intValue(r["Cores"])
 			}
 			if r["MinimumCpuCoreCount"] != nil {
-				l["minimum_cpu_core_count"] = r["MinimumCpuCoreCount"]
+				l["minimum_cpu_core_count"] = values.intValue(r["MinimumCpuCoreCount"])
 			}
 			if r["MinimumMemorySize"] != nil {
-				l["minimum_memory_size"] = r["MinimumMemorySize"]
+				l["minimum_memory_size"] = values.floatValue(r["MinimumMemorySize"])
 			}
 			if r["MaximumMemorySize"] != nil {
-				l["maximum_memory_size"] = r["MaximumMemorySize"]
+				l["maximum_memory_size"] = values.floatValue(r["MaximumMemorySize"])
 			}
 			if r["MaximumCpuCoreCount"] != nil {
-				l["maximum_cpu_core_count"] = r["MaximumCpuCoreCount"]
+				l["maximum_cpu_core_count"] = values.intValue(r["MaximumCpuCoreCount"])
 			}
 			if r["MaxPrice"] != nil {
-				f, _ := r["MaxPrice"].(json.Number).Float64()
+				f := values.floatValue(r["MaxPrice"])
 				maxPrice, _ := strconv.ParseFloat(strconv.FormatFloat(f, 'f', 2, 64), 64)
 				l["max_price"] = maxPrice
 			}
@@ -1890,6 +1958,9 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		err := d.Set("instance_pattern_info", result)
 		if err != nil {
 			return WrapError(err)
+		}
+		if values.err != nil {
+			return WrapError(values.err)
 		}
 	}
 	if v := response["NetworkInterfaces"]; v != nil {
@@ -1904,7 +1975,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			l := map[string]interface{}{
 				"instance_type":                  r["InstanceType"],
 				"network_interface_traffic_mode": r["NetworkInterfaceTrafficMode"],
-				"ipv6_address_count":             r["Ipv6AddressCount"],
+				"ipv6_address_count":             values.intValue(r["Ipv6AddressCount"]),
 				"security_group_ids":             &arr1,
 			}
 			result = append(result, l)
@@ -1912,6 +1983,9 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		err := d.Set("network_interfaces", result)
 		if err != nil {
 			return WrapError(err)
+		}
+		if values.err != nil {
+			return WrapError(values.err)
 		}
 	}
 
