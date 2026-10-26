@@ -528,10 +528,12 @@ func Provider() *schema.Provider {
 			"alicloud_dfs_mount_points":  dataSourceAlicloudDfsMountPoints(),
 
 			// direct
-			"alicloud_direct_mail_receiverses":    dataSourceAlicloudDirectMailReceiverses(),
-			"alicloud_direct_mail_domains":        dataSourceAliCloudDirectMailDomains(),
-			"alicloud_direct_mail_mail_addresses": dataSourceAlicloudDirectMailMailAddresses(),
-			"alicloud_direct_mail_tags":           dataSourceAlicloudDirectMailTags(),
+			"alicloud_direct_mail_receiverses":        dataSourceAlicloudDirectMailReceiverses(),
+			"alicloud_direct_mail_domains":            dataSourceAliCloudDirectMailDomains(),
+			"alicloud_direct_mail_mail_addresses":     dataSourceAlicloudDirectMailMailAddresses(),
+			"alicloud_direct_mail_tags":               dataSourceAlicloudDirectMailTags(),
+			"alicloud_direct_mail_config_sets":        dataSourceAliCloudDirectMailConfigSets(),
+			"alicloud_direct_mail_dedicated_ip_pools": dataSourceAliCloudDirectMailDedicatedIpPools(),
 
 			// disks
 			"alicloud_disks": dataSourceAliCloudEcsDisks(),
@@ -1751,10 +1753,12 @@ func Provider() *schema.Provider {
 			"alicloud_dfs_mount_point":     resourceAliCloudDfsMountPoint(),
 
 			// direct
-			"alicloud_direct_mail_receivers":    resourceAlicloudDirectMailReceivers(),
-			"alicloud_direct_mail_domain":       resourceAlicloudDirectMailDomain(),
-			"alicloud_direct_mail_mail_address": resourceAlicloudDirectMailMailAddress(),
-			"alicloud_direct_mail_tag":          resourceAlicloudDirectMailTag(),
+			"alicloud_direct_mail_receivers":         resourceAlicloudDirectMailReceivers(),
+			"alicloud_direct_mail_domain":            resourceAlicloudDirectMailDomain(),
+			"alicloud_direct_mail_mail_address":      resourceAlicloudDirectMailMailAddress(),
+			"alicloud_direct_mail_tag":               resourceAlicloudDirectMailTag(),
+			"alicloud_direct_mail_config_set":        resourceAliCloudDirectMailConfigSet(),
+			"alicloud_direct_mail_dedicated_ip_pool": resourceAliCloudDirectMailDedicatedIpPool(),
 
 			// disk
 			"alicloud_disk_attachment": resourceAlicloudEcsDiskAttachment(),
