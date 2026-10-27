@@ -1,4 +1,4 @@
-package alicloud
+package vod
 
 import (
 	"fmt"
@@ -6,16 +6,22 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudVodDomain() *schema.Resource {
+func ResourceDomain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudVodDomainCreate,
-		Read:   resourceAliCloudVodDomainRead,
-		Update: resourceAliCloudVodDomainUpdate,
-		Delete: resourceAliCloudVodDomainDelete,
+		Create: resourceDomainCreate,
+		Read:   resourceDomainRead,
+		Update: resourceDomainUpdate,
+		Delete: resourceDomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -35,13 +41,13 @@ func resourceAliCloudVodDomain() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "domestic",
-				ValidateFunc: StringInSlice([]string{"domestic", "overseas", "global"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"domestic", "overseas", "global"}, false),
 			},
 			"ssl_protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"on", "off"}, false),
 			},
 			"cert_id": {
 				Type:     schema.TypeString,
@@ -62,7 +68,7 @@ func resourceAliCloudVodDomain() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"cn-hangzhou", "ap-southeast-1"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"cn-hangzhou", "ap-southeast-1"}, false),
 			},
 			"ssl_pub": {
 				Type:     schema.TypeString,
@@ -82,7 +88,7 @@ func resourceAliCloudVodDomain() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"tags": tagsSchemaWithElements(),
+			"tags": tags.TagsSchemaWithElements(),
 			"sources": {
 				Type:     schema.TypeSet,
 				Required: true,
@@ -91,7 +97,7 @@ func resourceAliCloudVodDomain() *schema.Resource {
 						"source_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"ipaddr", "domain", "oss"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"ipaddr", "domain", "oss"}, false),
 						},
 						"source_content": {
 							Type:     schema.TypeString,
@@ -105,7 +111,7 @@ func resourceAliCloudVodDomain() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"20", "30"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"20", "30"}, false),
 						},
 					},
 				},
@@ -138,9 +144,9 @@ func resourceAliCloudVodDomain() *schema.Resource {
 	}
 }
 
-func resourceAliCloudVodDomainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDomainCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vodService := VodService{client}
+	vodService := &Service{client: client}
 	var response map[string]interface{}
 	action := "AddVodDomain"
 	request := make(map[string]interface{})
@@ -162,7 +168,7 @@ func resourceAliCloudVodDomainCreate(d *schema.ResourceData, meta interface{}) e
 
 	sources := d.Get("sources")
 	sourcesMaps := make([]map[string]interface{}, 0)
-	for _, sourcesList := range convertToInterfaceArray(sources) {
+	for _, sourcesList := range convert.ConvertToInterfaceArray(sources) {
 		sourcesMap := map[string]interface{}{}
 		sourcesArg := sourcesList.(map[string]interface{})
 
@@ -177,18 +183,18 @@ func resourceAliCloudVodDomainCreate(d *schema.ResourceData, meta interface{}) e
 		sourcesMaps = append(sourcesMaps, sourcesMap)
 	}
 
-	sourcesJson, err := convertArrayObjectToJsonString(sourcesMaps)
+	sourcesJson, err := convert.ConvertArrayObjectToJsonString(sourcesMaps)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	request["Sources"] = sourcesJson
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -196,35 +202,35 @@ func resourceAliCloudVodDomainCreate(d *schema.ResourceData, meta interface{}) e
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vod_domain", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_vod_domain", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["DomainName"]))
 
-	stateConf := BuildStateConf([]string{"configuring"}, []string{"online"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vodService.VodStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{"configuring"}, []string{"online"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vodService.DomainStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudVodDomainUpdate(d, meta)
+	return resourceDomainUpdate(d, meta)
 }
 
-func resourceAliCloudVodDomainRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vodService := VodService{client}
+	vodService := &Service{client: client}
 
-	object, err := vodService.DescribeVodDomain(d.Id())
+	object, err := vodService.DescribeDomain(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_vod_domain vodService.DescribeVodDomain Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vod_domain vodService.DescribeDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("domain_name", object["DomainName"])
@@ -240,7 +246,7 @@ func resourceAliCloudVodDomainRead(d *schema.ResourceData, meta interface{}) err
 	if sources, ok := object["Sources"]; ok {
 		if source, ok := sources.(map[string]interface{})["Source"]; ok {
 			sourcesMaps := make([]map[string]interface{}, 0)
-			for _, sourceList := range convertToInterfaceArray(source) {
+			for _, sourceList := range convert.ConvertToInterfaceArray(source) {
 				sourcesMap := map[string]interface{}{}
 				sourcesArg := sourceList.(map[string]interface{})
 
@@ -259,9 +265,9 @@ func resourceAliCloudVodDomainRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
-	certInfo, err := vodService.DescribeVodDomainCertificateInfo(d.Id())
+	certInfo, err := vodService.DescribeDomainCertificateInfo(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("cert_id", certInfo["CertId"])
@@ -273,9 +279,9 @@ func resourceAliCloudVodDomainRead(d *schema.ResourceData, meta interface{}) err
 	return nil
 }
 
-func resourceAliCloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vodService := VodService{client}
+	vodService := &Service{client: client}
 	var response map[string]interface{}
 	var err error
 	update := false
@@ -289,7 +295,7 @@ func resourceAliCloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) e
 
 		sources := d.Get("sources")
 		sourcesMaps := make([]map[string]interface{}, 0)
-		for _, sourcesList := range convertToInterfaceArray(sources) {
+		for _, sourcesList := range convert.ConvertToInterfaceArray(sources) {
 			sourcesMap := map[string]interface{}{}
 			sourcesArg := sourcesList.(map[string]interface{})
 
@@ -304,9 +310,9 @@ func resourceAliCloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) e
 			sourcesMaps = append(sourcesMaps, sourcesMap)
 		}
 
-		sourcesJson, err := convertArrayObjectToJsonString(sourcesMaps)
+		sourcesJson, err := convert.ConvertArrayObjectToJsonString(sourcesMaps)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		request["Sources"] = sourcesJson
@@ -323,11 +329,11 @@ func resourceAliCloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	if update {
 		action := "UpdateVodDomain"
 
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"3", "2001"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"3", "2001"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -335,15 +341,15 @@ func resourceAliCloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) e
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{"configuring"}, []string{"online"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vodService.VodStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{"configuring"}, []string{"online"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vodService.DomainStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -408,11 +414,11 @@ func resourceAliCloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	if update {
 		action := "SetVodDomainSSLCertificate"
 
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("vod", "2017-03-21", action, nil, setVodDomainSSLCertificateReq, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -420,28 +426,28 @@ func resourceAliCloudVodDomainUpdate(d *schema.ResourceData, meta interface{}) e
 			}
 			return nil
 		})
-		addDebug(action, response, setVodDomainSSLCertificateReq)
+		logs.AddDebug(action, response, setVodDomainSSLCertificateReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{"configuring"}, []string{"online"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vodService.VodStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{"configuring"}, []string{"online"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vodService.DomainStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	if err := vodService.SetResourceTags(d, "DOMAIN"); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	return resourceAliCloudVodDomainRead(d, meta)
+	return resourceDomainRead(d, meta)
 }
 
-func resourceAliCloudVodDomainDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDomainDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vodService := VodService{client}
+	vodService := &Service{client: client}
 
 	action := "DeleteVodDomain"
 	var response map[string]interface{}
@@ -451,11 +457,11 @@ func resourceAliCloudVodDomainDelete(d *schema.ResourceData, meta interface{}) e
 		"DomainName": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("vod", "2017-03-21", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"2001"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"2001"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -463,15 +469,15 @@ func resourceAliCloudVodDomainDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{"deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vodService.VodStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{"deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vodService.DomainStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

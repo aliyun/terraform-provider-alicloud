@@ -1,19 +1,26 @@
-package alicloud
+package vod_test
 
 import (
 	"fmt"
 	"log"
 	"os"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vod"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,22 +28,22 @@ import (
 func TestAccAlicloudVODEditingProject_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vod_editing_project.default"
-	checkoutSupportedRegions(t, true, connectivity.VODSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudVODEditingProjectMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VodService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVodEditingProject")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svodeditingproject%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVODEditingProjectBasicDependence0)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VODSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVODEditingProjectMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vod.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEditingProject")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svodeditingproject%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVODEditingProjectBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -66,10 +73,10 @@ func TestAccAlicloudVODEditingProject_basic0(t *testing.T) {
 }
 
 var AlicloudVODEditingProjectMap0 = map[string]string{
-	"editing_project_name": CHECKSET,
-	"status":               CHECKSET,
-	"title":                CHECKSET,
-	"timeline":             CHECKSET,
+	"editing_project_name": acctest.CHECKSET,
+	"status":               acctest.CHECKSET,
+	"title":                acctest.CHECKSET,
+	"timeline":             acctest.CHECKSET,
 }
 
 func AlicloudVODEditingProjectBasicDependence0(name string) string {
@@ -82,22 +89,22 @@ variable "name" {
 func TestAccAlicloudVODEditingProject_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vod_editing_project.default"
-	checkoutSupportedRegions(t, true, connectivity.VODSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudVODEditingProjectMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VodService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVodEditingProject")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svodeditingproject%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVODEditingProjectBasicDependence1)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VODSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVODEditingProjectMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vod.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEditingProject")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svodeditingproject%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVODEditingProjectBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -164,8 +171,8 @@ func TestAccAlicloudVODEditingProject_basic1(t *testing.T) {
 }
 
 var AlicloudVODEditingProjectMap1 = map[string]string{
-	"status": CHECKSET,
-	"title":  CHECKSET,
+	"status": acctest.CHECKSET,
+	"title":  acctest.CHECKSET,
 }
 
 func AlicloudVODEditingProjectBasicDependence1(name string) string {
@@ -178,9 +185,9 @@ variable "name" {
 
 // lintignore: R001
 func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_vod_editing_project"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_vod_editing_project"].Schema).Data(nil, nil)
+	resourceSchema := vod.ResourceEditingProject()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"editing_project_name": "CreateVodEditingProjectValue",
@@ -199,13 +206,12 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := vodTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
 
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		"Project": map[string]interface{}{
 			"Status":      "Normal",
@@ -224,14 +230,14 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_vod_editing_project", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_vod_editing_project", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
@@ -240,15 +246,15 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 		return ReadMockResponse, nil
 	}
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVodClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVodEditingProjectCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -271,14 +277,14 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVodEditingProjectCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_vod_editing_project"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -290,15 +296,15 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 	}
 
 	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVodClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVodEditingProjectUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -307,11 +313,8 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 		"title":                "UpdateVodEditingProjectValue",
 		"cover_url":            "UpdateVodEditingProjectValue",
 	}
-	diff, err := newInstanceDiff("alicloud_vod_editing_project", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_vod_editing_project"].Schema).Data(dInit.State(), diff)
+	diff := buildVodEditingProjectDiff(attributes, attributesDiff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		"Project": map[string]interface{}{
 			"Timeline":    "UpdateVodEditingProjectValue",
@@ -338,14 +341,14 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVodEditingProjectUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_vod_editing_project"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -357,11 +360,8 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 	}
 
 	// Read
-	diff, err = newInstanceDiff("alicloud_vod_editing_project", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_vod_editing_project"].Schema).Data(dInit.State(), diff)
+	diff = buildVodEditingProjectDiff(attributes, attributesDiff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -382,7 +382,7 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVodEditingProjectRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -393,23 +393,20 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 	}
 
 	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVodClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVodEditingProjectDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_vod_editing_project", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_vod_editing_project"].Schema).Data(dInit.State(), diff)
+	diff = buildVodEditingProjectDiff(attributes, attributesDiff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -429,7 +426,7 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVodEditingProjectDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -438,4 +435,57 @@ func TestUnitAccAlicloudVodEditingProject(t *testing.T) {
 			assert.Nil(t, err)
 		}
 	}
+}
+
+func buildVodEditingProjectDiff(attributes, attributesDiff map[string]interface{}) *sdkterraform.InstanceDiff {
+	diff := sdkterraform.NewInstanceDiff()
+	for key, newVal := range attributesDiff {
+		diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{
+			Old: attributes[key].(string),
+			New: newVal.(string),
+		}
+	}
+	return diff
+}
+
+func mapMerge(dst map[string]interface{}, src map[string]interface{}) {
+	for k, v := range src {
+		dst[k] = v
+	}
+}
+
+var vodTestEndpoints sync.Map
+var vodTestSignVersion sync.Map
+
+func vodTestClientForRegion(region string) (*connectivity.AliyunClient, error) {
+	var accessKey, secretKey string
+	if accessKey = os.Getenv("ALICLOUD_ACCESS_KEY"); accessKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_ACCESS_KEY")
+	}
+	if secretKey = os.Getenv("ALICLOUD_SECRET_KEY"); secretKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_SECRET_KEY")
+	}
+	securityToken := os.Getenv("ALICLOUD_SECURITY_TOKEN")
+	conf := connectivity.Config{
+		Region:      connectivity.Region(region),
+		RegionId:    region,
+		AccessKey:   accessKey,
+		SecretKey:   secretKey,
+		Protocol:    "HTTPS",
+		Endpoints:   &vodTestEndpoints,
+		SignVersion: &vodTestSignVersion,
+	}
+	if securityToken != "" {
+		conf.SecurityToken = securityToken
+	}
+	credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
+	if v := strings.TrimSpace(securityToken); v != "" {
+		credentialConfig.SetType("sts").SetSecurityToken(v)
+	}
+	credential, err := credentials.NewCredential(credentialConfig)
+	if err != nil {
+		return nil, err
+	}
+	conf.Credential = credential
+	return conf.Client()
 }
