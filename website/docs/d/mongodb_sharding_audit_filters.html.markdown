@@ -17,6 +17,14 @@ This data source provides the Mongodb Sharding Audit Filter of the current Aliba
 Basic Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -54,9 +62,12 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 }
 
 resource "alicloud_mongodb_sharding_audit_filter" "default" {
-  db_instance_id = alicloud_mongodb_sharding_instance.default.id
-  audit_status   = "enable"
-  filter         = "admin,slow"
+  db_instance_id     = alicloud_mongodb_sharding_instance.default.id
+  audit_status       = "enable"
+  filter             = "admin,slow"
+  service_type       = "V2_Standard"
+  storage_period     = 30
+  hot_storage_period = 7
 }
 
 data "alicloud_mongodb_sharding_audit_filters" "default" {
@@ -83,8 +94,8 @@ The following attributes are exported in addition to the `arguments` listed abov
   * `db_instance_id` - The ID of the sharding cluster instance.
   * `audit_status` - Audit state. Valid values: `enable`, `disabled`.
   * `service_type` - The edition of the audit log. Valid values: `Standard`, `V2_Standard`.
-  * `storage_period` - Audit log retention duration, in days.
-  * `hot_storage_period` - The hot storage duration of the audit log, in days.
+  * `storage_period` - (Int) Audit log retention duration, in days. For a `V2_Standard` audit log this is the cold storage duration; for `Standard` it is the retention of the Standard edition.
+  * `hot_storage_period` - (Int) The hot storage duration of the audit log, in days. Only set for a `V2_Standard` audit log.
   * `filter` - The type of logs collected by the audit log feature of the instance. When every node role shares the same filter, this is that common value (for example `admin,slow`); otherwise it is the API's per-role merged view (for example `mongos@admin,slow-db@admin`).
   * `role_type` - The node role scope of the returned filter. The data source reads every node role at once, so the API returns its merged-view marker `logic` rather than a single role.
   * `region_id` - The region ID of the sharding cluster instance.
