@@ -8,6 +8,12 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "PolarDB",
+		SDKResources: []conns.SDKResource{
+			{
+				TypeName: "alicloud_polardb_cluster",
+				Factory:  ResourceCluster,
+			},
+		},
 		SDKDataSources: []conns.SDKDataSource{
 			{
 				TypeName: "alicloud_polardb_node_classes",

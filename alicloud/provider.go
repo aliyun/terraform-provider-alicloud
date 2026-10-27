@@ -1645,7 +1645,6 @@ func Provider() *schema.Provider {
 			"alicloud_yundun_dbaudit_instance":                               resourceAlicloudDbauditInstance(),
 			"alicloud_yundun_bastionhost_instance":                           resourceAliCloudBastionhostInstance(),
 			"alicloud_bastionhost_instance":                                  resourceAliCloudBastionhostInstance(),
-			"alicloud_polardb_cluster":                                       resourceAlicloudPolarDBCluster(),
 			"alicloud_polardb_cluster_endpoint":                              resourceAlicloudPolarDBClusterEndpoint(),
 			"alicloud_polardb_backup_policy":                                 resourceAlicloudPolarDBBackupPolicy(),
 			"alicloud_polardb_database":                                      resourceAliCloudPolarDbDatabase(),
