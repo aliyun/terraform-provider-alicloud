@@ -133,7 +133,8 @@ function harness(responses = [[]]) {
     sleep: async (milliseconds) => {
       clock += milliseconds;
     },
-    timeoutMs: 2,
+    discoveryTimeoutMs: 4,
+    completionTimeoutMs: 4,
     pollIntervalMs: 1,
   };
   return { calls, github, core, options, outputs };
@@ -388,13 +389,129 @@ test("queued and in-progress checks are polled before success", async () => {
   const queued = checkRun({ status: "queued", conclusion: null });
   const inProgress = checkRun({ status: "in_progress", conclusion: null });
   const result = harness([[queued], [inProgress], [checkRun()]]);
-  result.options.timeoutMs = 4;
   await selectPolicy({
     context: pullRequestContext(),
     ...result.options,
   });
   assert.equal(result.calls.length, 3);
   assert.equal(result.outputs.classification, "trusted");
+});
+
+test("a late-appearing completed check within the discovery budget succeeds", async () => {
+  // The Basic Policy Gate runs as a separate workflow that queues on the
+  // shared runner pool independently of the route job. This simulates the
+  // observed race: the Check Run is absent for several polls (Gate still
+  // queued) and only appears after the route job has already started. The
+  // discovery budget must accommodate that queue delay rather than timing
+  // out from the route job's own start.
+  const result = harness([[], [], [checkRun()]]);
+  result.options.discoveryTimeoutMs = 6;
+  result.options.completionTimeoutMs = 4;
+  await selectPolicy({
+    context: pullRequestContext(),
+    ...result.options,
+  });
+  assert.equal(result.calls.length, 3);
+  assert.equal(result.outputs.classification, "trusted");
+});
+
+test("a check appearing after the discovery budget times out at discovery", async () => {
+  // The same late-appearing check, but the discovery budget is too small to
+  // tolerate the Gate queue delay. The route job must fail closed at the
+  // discovery phase, not silently succeed or wait forever.
+  const result = harness([[], [], [checkRun()]]);
+  result.options.discoveryTimeoutMs = 2;
+  result.options.completionTimeoutMs = 4;
+  await assert.rejects(
+    selectPolicy({
+      context: pullRequestContext(),
+      ...result.options,
+    }),
+    /timed out.*appear/i
+  );
+  assert.equal(result.calls.length, 2);
+});
+
+test("an in-progress check completing within the completion budget succeeds", async () => {
+  const inProgress = checkRun({ status: "in_progress", conclusion: null });
+  const result = harness([[inProgress], [checkRun()]]);
+  result.options.discoveryTimeoutMs = 6;
+  result.options.completionTimeoutMs = 4;
+  await selectPolicy({
+    context: pullRequestContext(),
+    ...result.options,
+  });
+  assert.equal(result.calls.length, 2);
+  assert.equal(result.outputs.classification, "trusted");
+});
+
+test("an in-progress check never completing times out at completion", async () => {
+  // Once a unique Check Run is observable, the completion phase bounds the
+  // wait for it to finish. A Check Run stuck in_progress must fail closed at
+  // the completion phase, distinct from the discovery-phase timeout.
+  const inProgress = checkRun({ status: "in_progress", conclusion: null });
+  const result = harness([[inProgress]]);
+  result.options.discoveryTimeoutMs = 6;
+  result.options.completionTimeoutMs = 2;
+  await assert.rejects(
+    selectPolicy({
+      context: pullRequestContext(),
+      ...result.options,
+    }),
+    /timed out.*result/i
+  );
+});
+
+test("completion deadline is measured from first observation, not route start", async () => {
+  // Core regression guard for the 90s race. A Check Run that appears late
+  // (simulating Gate queue delay) and is still in_progress must get a full
+  // completion budget counted from the moment it is first observed. With the
+  // old single-deadline design, a check first observed at clock=4 with a
+  // 2-unit budget would already be past the deadline (0+2) and could never
+  // complete; the two-phase design starts the completion clock at first
+  // observation so the check still has time to finish.
+  const inProgress = checkRun({ status: "in_progress", conclusion: null });
+  const result = harness([[], [], [], [], [inProgress], [checkRun()]]);
+  result.options.discoveryTimeoutMs = 10;
+  result.options.completionTimeoutMs = 2;
+  await selectPolicy({
+    context: pullRequestContext(),
+    ...result.options,
+  });
+  assert.equal(result.calls.length, 6);
+  assert.equal(result.outputs.classification, "trusted");
+});
+
+test("invalid polling configuration fails closed", async () => {
+  const result = harness([[checkRun()]]);
+  result.options.discoveryTimeoutMs = -1;
+  await assert.rejects(
+    selectPolicy({
+      context: pullRequestContext(),
+      ...result.options,
+    }),
+    /polling configuration/i
+  );
+
+  const oversized = harness([[checkRun()]]);
+  oversized.options.discoveryTimeoutMs = Number.MAX_SAFE_INTEGER;
+  await assert.rejects(
+    selectPolicy({
+      context: pullRequestContext(),
+      ...oversized.options,
+    }),
+    /polling configuration/i
+  );
+
+  const badPoll = harness([[checkRun()]]);
+  badPoll.options.pollIntervalMs = 100;
+  await assert.rejects(
+    selectPolicy({
+      context: pullRequestContext(),
+      ...badPoll.options,
+    }),
+    /polling configuration/i
+  );
 });
 
 test("an unknown Check Run status fails closed", async () => {

@@ -23,7 +23,7 @@ jobs:
       checks: read
       pull-requests: read
     runs-on: terraform-ci-policy
-    timeout-minutes: 3
+    timeout-minutes: 5
     outputs:
       classification: ${{ steps.select.outputs.classification }}
       relevant: ${{ steps.select.outputs.relevant }}
@@ -124,9 +124,32 @@ jobs:
 
             const delay = (milliseconds) =>
               new Promise((resolve) => setTimeout(resolve, milliseconds));
-            const deadline = Date.now() + 90000;
+            // The Basic Policy Gate runs on pull_request_target in a separate
+            // workflow that queues on the shared terraform-ci-policy runner
+            // pool independently of this route job. Under runner contention the
+            // Gate's Check Run can appear after this job has started. The
+            // discovery budget tolerates that queue delay; the completion
+            // budget only starts once a unique Check Run is observable, so a
+            // slow-to-appear but already-completed policy is not penalised by
+            // this job's own start. Worst case 150s + 30s = 180s, within the
+            // 300s (timeout-minutes: 5) route job budget.
+            const discoveryTimeoutMs = 150000;
+            const completionTimeoutMs = 30000;
+            const pollIntervalMs = 3000;
+            const discoveryDeadline = Date.now() + discoveryTimeoutMs;
+            let completionDeadline = null;
+            let observed = false;
 
-            while (Date.now() < deadline) {
+            while (true) {
+              const deadline = observed ? completionDeadline : discoveryDeadline;
+              if (Date.now() >= deadline) {
+                throw new Error(
+                  observed
+                    ? "Timed out waiting for a unique Basic Policy result."
+                    : "Timed out waiting for a Basic Policy Check Run to appear."
+                );
+              }
+
               const checkRuns = await github.paginate(
                 github.rest.checks.listForRef,
                 {
@@ -144,7 +167,7 @@ jobs:
               );
 
               if (candidates.length === 0) {
-                await delay(3000);
+                await delay(Math.min(pollIntervalMs, Math.max(0, deadline - Date.now())));
                 continue;
               }
               if (candidates.length !== 1) {
@@ -154,12 +177,16 @@ jobs:
               const check = candidates[0];
               validateSource(check);
               const binding = parseBinding(check.external_id);
+              if (!observed) {
+                observed = true;
+                completionDeadline = Date.now() + completionTimeoutMs;
+              }
 
               if (check.status !== "completed") {
                 if (!["queued", "in_progress"].includes(check.status)) {
                   throw new Error("Basic Policy Check Run status is invalid.");
                 }
-                await delay(3000);
+                await delay(Math.min(pollIntervalMs, Math.max(0, completionDeadline - Date.now())));
                 continue;
               }
               if (check.conclusion !== "success") {
@@ -178,8 +205,6 @@ jobs:
               core.setOutput("runner", runner);
               return;
             }
-
-            throw new Error("Timed out waiting for a unique Basic Policy result.");
 
   TestFrameworkGuard:
     needs: route
