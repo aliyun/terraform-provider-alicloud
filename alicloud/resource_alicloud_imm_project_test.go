@@ -452,3 +452,79 @@ func TestUnitAlicloudImmProject(t *testing.T) {
 		}
 	}
 }
+
+// TestUnitAlicloudImmProjectReadNonZeroComputeUnit is a regression test for a
+// pre-existing baseline defect in resourceAlicloudImmProjectRead: it wrote
+// "compute_unit" via d.Set even though "compute_unit" is not declared in the
+// alicloud_imm_project resource schema (the schema only exposes "project" and
+// "service_role"). When GetProject returned a non-zero CU, that d.Set call
+// failed inside the SDK MapFieldWriter with "Invalid address to set:
+// []string{"compute_unit"}"; with TF_ACC set the SDK constructs ResourceData
+// with panicOnError=true (see schema.schemaMap.panicOnError), so the failed
+// Set panicked at resource_data.go:341 instead of being logged-and-ignored,
+// crashing the real acceptance-test refresh path.
+//
+// The fix removes the invalid write (and the formatInt conversion / local
+// variable that only existed to feed it). This test forces the non-zero CU
+// path under panicOnError=true and asserts Read no longer panics and that the
+// effective schema fields are still populated correctly.
+func TestUnitAlicloudImmProjectReadNonZeroComputeUnit(t *testing.T) {
+	p := Provider().ResourcesMap
+
+	// Match the real acceptance-test refresh path: panicOnError is true only
+	// while TF_ACC is set, so a d.Set on a non-schema key panics instead of
+	// being logged-and-ignored. Restore the original environment on cleanup.
+	prevTFACC, hadTFACC := os.LookupEnv("TF_ACC")
+	os.Setenv("TF_ACC", "1")
+	defer func() {
+		if hadTFACC {
+			os.Setenv("TF_ACC", prevTFACC)
+		} else {
+			os.Unsetenv("TF_ACC")
+		}
+	}()
+
+	d, _ := schema.InternalMap(p["alicloud_imm_project"].Schema).Data(nil, nil)
+	d.SetId("tf-testacc-imm-nonzero-cu")
+	// Set the effective schema fields with string-literal keys: tfproviderlint
+	// R001 requires ResourceData.Set() key arguments to be string literals.
+	assert.Nil(t, d.Set("project", "tf-testacc-imm-nonzero-cu"))
+	assert.Nil(t, d.Set("service_role", "AliyunIMMDefaultRole"))
+
+	// Sanity check: "compute_unit" must not be a declared schema field, which
+	// is precisely why the removed d.Set("compute_unit", ...) was invalid.
+	_, hasComputeUnit := p["alicloud_imm_project"].Schema["compute_unit"]
+	assert.False(t, hasComputeUnit, "compute_unit must not be declared in the alicloud_imm_project schema")
+
+	// No cloud credentials are required: DescribeImmProject is patched at the
+	// service boundary, so this case runs in quick CI (which has no
+	// ALICLOUD_ACCESS_KEY) instead of skipping like TestUnitAlicloudImmProject,
+	// and reaches the non-zero-CU Read path that previously panicked.
+	readMockResponse := map[string]interface{}{
+		// GetProject returns a non-zero CU — the scenario that triggered the panic.
+		"CU":          8,
+		"Project":     "tf-testacc-imm-nonzero-cu",
+		"ServiceRole": "AliyunIMMDefaultRole",
+	}
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&ImmService{}), "DescribeImmProject",
+		func(_ *ImmService, _ string) (map[string]interface{}, error) {
+			return readMockResponse, nil
+		})
+	defer patches.Reset()
+
+	// The zero-value AliyunClient is safe here: Read only uses it to build
+	// ImmService, whose DescribeImmProject is patched above, so no transport or
+	// credential state is touched.
+	rawClient := &connectivity.AliyunClient{}
+
+	// Post-fix: Read must not panic on the non-zero CU response and must keep
+	// populating the valid schema fields. Pre-fix this panicked under TF_ACC at
+	// resource_data.go:341 via the removed d.Set("compute_unit", ...).
+	assert.NotPanics(t, func() {
+		err := resourceAlicloudImmProjectRead(d, rawClient)
+		assert.Nil(t, err)
+	})
+	// Effective fields are still read after removing the invalid compute_unit write.
+	assert.Equal(t, "tf-testacc-imm-nonzero-cu", d.Get("project"))
+	assert.Equal(t, "AliyunIMMDefaultRole", d.Get("service_role"))
+}
