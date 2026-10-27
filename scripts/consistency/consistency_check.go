@@ -234,6 +234,12 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 	line := 0
 	rootPrefixLen := 0
 	rootName := ""
+	// indentStep is the per-list indentation increment detected from the
+	// first descent in the Attribute phase. The project's markdownlint
+	// (MD007) mandates a two-space step, while legacy docs use four; both
+	// must be parsed. The step is detected dynamically so the back-up
+	// arithmetic is not hard-coded to a single indent width.
+	indentStep := 0
 	extraResourceAttribute := map[string]struct{}{}
 	for scanner.Scan() {
 		line += 1
@@ -256,6 +262,13 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 			record = true
 			parts := strings.Split(strings.TrimSpace(text), " ")
 			subAttributeName = strings.Replace(strings.Trim(parts[len(parts)-1], "`"), "-", ".", -1)
+			// A `### `block`` heading opens a fresh attribute scope. The
+			// indentation context of the previous list (depth, current field
+			// and detected step) must not bleed into the new scope, otherwise
+			// a block following a nested list would mis-parse its first field.
+			rootPrefixLen = 0
+			rootName = ""
+			indentStep = 0
 			continue
 		}
 		if record {
@@ -271,6 +284,19 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 					thisLen := len(strings.Split(m[0], "*")[0])
 
 					if rootPrefixLen < thisLen {
+						// Descending one indentation level. The step is
+						// established by the first descent and every
+						// subsequent descent must reuse the same step; a
+						// different delta means the list is inconsistently
+						// indented (e.g. a two-space list that suddenly widens
+						// by four, or a skip-level child), which this gate
+						// rejects.
+						diff := thisLen - rootPrefixLen
+						if indentStep == 0 {
+							indentStep = diff
+						} else if diff != indentStep {
+							return fmt.Errorf("resource %s docs %s have not been formatted: inconsistent indentation step", resourceName, docsPath)
+						}
 						if subAttributeName != "" {
 							subAttributeName += "." + rootName
 						} else {
@@ -280,11 +306,15 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 					} else if rootPrefixLen > thisLen {
 						parts := strings.Split(subAttributeName, ".")
 						backIndex := rootPrefixLen - thisLen
-						if backIndex%4 == 0 {
-							backIndex /= 4
-						} else {
-							return fmt.Errorf("resource %s docs %s have not been formatted.", resourceName, docsPath)
+						// Ascending back toward a sibling or ancestor. The
+						// indent delta must be a whole multiple of the
+						// detected step; otherwise the list is malformed. The
+						// number of levels to pop is delta / step, which works
+						// for both two-space and four-space indentation.
+						if indentStep == 0 || backIndex%indentStep != 0 {
+							return fmt.Errorf("resource %s docs %s have not been formatted: indent step %d does not divide indent delta %d", resourceName, docsPath, indentStep, backIndex)
 						}
+						backIndex /= indentStep
 						if len(parts) > 0 {
 							for backIndex > 0 {
 								backIndex--
