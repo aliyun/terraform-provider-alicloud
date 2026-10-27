@@ -1,41 +1,43 @@
-package alicloud
+package datahub_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	datahubsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/datahub"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudDatahubSubscription_basic(t *testing.T) {
+func TestAccAliCloudDatahubSubscription_basic(t *testing.T) {
 	var v *datahub.GetSubscriptionResult
 
 	resourceId := "alicloud_datahub_subscription.default"
-	ra := resourceAttrInit(resourceId, datahubSubscriptionBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, datahubSubscriptionBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return datahubsvc.NewDatahubService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100000, 999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100000, 999999)
 	name := fmt.Sprintf("tf_testacc_datahub_project%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubSubscriptionConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDatahubSubscriptionConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -63,7 +65,7 @@ func TestAccAlicloudDatahubSubscription_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"comment": REMOVEKEY,
+					"comment": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -74,32 +76,32 @@ func TestAccAlicloudDatahubSubscription_basic(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudDatahubSubscription_multi(t *testing.T) {
+func TestAccAliCloudDatahubSubscription_multi(t *testing.T) {
 	var v *datahub.GetSubscriptionResult
 
 	resourceId := "alicloud_datahub_subscription.default.4"
-	ra := resourceAttrInit(resourceId, datahubSubscriptionBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, datahubSubscriptionBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return datahubsvc.NewDatahubService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100000, 999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100000, 999999)
 	name := fmt.Sprintf("tf_testacc_datahub_project%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubSubscriptionConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDatahubSubscriptionConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -141,7 +143,7 @@ func resourceDatahubSubscriptionConfigDependence(name string) string {
 }
 
 var datahubSubscriptionBasicMap = map[string]string{
-	"project_name": CHECKSET,
-	"topic_name":   CHECKSET,
+	"project_name": acctest.CHECKSET,
+	"topic_name":   acctest.CHECKSET,
 	"comment":      "subscription added by terraform",
 }

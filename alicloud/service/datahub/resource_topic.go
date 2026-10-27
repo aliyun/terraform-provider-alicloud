@@ -1,4 +1,4 @@
-package alicloud
+package datahub
 
 import (
 	"fmt"
@@ -8,17 +8,20 @@ import (
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudDatahubTopic() *schema.Resource {
+func ResourceTopic() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunDatahubTopicCreate,
-		Read:   resourceAliyunDatahubTopicRead,
-		Update: resourceAliyunDatahubTopicUpdate,
-		Delete: resourceAliyunDatahubTopicDelete,
+		Create: resourceTopicCreate,
+		Read:   resourceTopicRead,
+		Update: resourceTopicUpdate,
+		Delete: resourceTopicDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -95,7 +98,7 @@ func resourceAlicloudDatahubTopic() *schema.Resource {
 	}
 }
 
-func resourceAliyunDatahubTopicCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceTopicCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	t := &datahub.GetTopicResult{
@@ -133,25 +136,25 @@ func resourceAliyunDatahubTopicCreate(d *schema.ResourceData, meta interface{}) 
 		})
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_datahub_topic", "CreateTopic", AliyunDatahubSdkGo)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_datahub_topic", "CreateTopic", errs.AliyunDatahubSdkGo)
 	}
-	addDebug("CreateTopic", raw, requestInfo, t)
+	logs.AddDebug("CreateTopic", raw, requestInfo, t)
 
 	d.SetId(strings.ToLower(fmt.Sprintf("%s%s%s", t.ProjectName, COLON_SEPARATED, t.TopicName)))
-	return resourceAliyunDatahubTopicRead(d, meta)
+	return resourceTopicRead(d, meta)
 }
 
-func resourceAliyunDatahubTopicRead(d *schema.ResourceData, meta interface{}) error {
+func resourceTopicRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	datahubService := DatahubService{client}
 	object, err := datahubService.DescribeDatahubTopic(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("name", object.TopicName)
@@ -168,10 +171,10 @@ func resourceAliyunDatahubTopicRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) error {
-	parts, err := ParseResourceId(d.Id(), 2)
+func resourceTopicUpdate(d *schema.ResourceData, meta interface{}) error {
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	projectName, topicName := parts[0], parts[1]
 
@@ -188,15 +191,15 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 			return dataHubClient.UpdateTopic(projectName, topicName, topicComment)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateTopic", AliyunDatahubSdkGo)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "UpdateTopic", errs.AliyunDatahubSdkGo)
 		}
-		if debugOn() {
+		if logs.DebugOn() {
 			requestMap := make(map[string]string)
 			requestMap["ProjectName"] = projectName
 			requestMap["TopicName"] = topicName
 			requestMap["LifeCycle"] = strconv.Itoa(lifeCycle)
 			requestMap["TopicComment"] = topicComment
-			addDebug("UpdateTopic", raw, requestInfo, requestMap)
+			logs.AddDebug("UpdateTopic", raw, requestInfo, requestMap)
 		}
 		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			datahubService := DatahubService{client}
@@ -211,17 +214,17 @@ func resourceAliyunDatahubTopicUpdate(d *schema.ResourceData, meta interface{}) 
 			return nil
 		})
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
-	return resourceAliyunDatahubTopicRead(d, meta)
+	return resourceTopicRead(d, meta)
 }
 
-func resourceAliyunDatahubTopicDelete(d *schema.ResourceData, meta interface{}) error {
-	parts, err := ParseResourceId(d.Id(), 2)
+func resourceTopicDelete(d *schema.ResourceData, meta interface{}) error {
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	projectName, topicName := parts[0], parts[1]
 
@@ -240,11 +243,11 @@ func resourceAliyunDatahubTopicDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return retry.NonRetryableError(err)
 		}
-		if debugOn() {
+		if logs.DebugOn() {
 			requestMap := make(map[string]string)
 			requestMap["ProjectName"] = projectName
 			requestMap["TopicName"] = topicName
-			addDebug("DeleteTopic", raw, requestInfo, requestMap)
+			logs.AddDebug("DeleteTopic", raw, requestInfo, requestMap)
 		}
 		return nil
 	})
@@ -252,7 +255,7 @@ func resourceAliyunDatahubTopicDelete(d *schema.ResourceData, meta interface{}) 
 		if isDatahubNotExistError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTopic", AliyunDatahubSdkGo)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteTopic", errs.AliyunDatahubSdkGo)
 	}
-	return WrapError(datahubService.WaitForDatahubTopic(d.Id(), Deleted, DefaultTimeout))
+	return errs.WrapError(datahubService.WaitForDatahubTopic(d.Id(), Deleted, DefaultTimeout))
 }

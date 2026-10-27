@@ -1,4 +1,4 @@
-package alicloud
+package datahub_test
 
 import (
 	"fmt"
@@ -6,43 +6,48 @@ import (
 	"testing"
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	datahubsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/datahub"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccAlicloudDatahubTopic_basic(t *testing.T) {
+func TestAccAliCloudDatahubTopic_basic(t *testing.T) {
 	var v *datahub.GetTopicResult
 
 	resourceId := "alicloud_datahub_topic.default"
-	ra := resourceAttrInit(resourceId, datahubTopicBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, datahubTopicBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return datahubsvc.NewDatahubService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100000, 999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100000, 999999)
 	name := fmt.Sprintf("tf_testacc_datahub_%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubTopicConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDatahubTopicConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":         name,
 					"project_name": "${alicloud_datahub_project.default.name}",
+					"shard_count":  1,
+					"life_cycle":   3,
+					"comment":      "topic added by terraform",
 					"record_schema": map[string]string{
 						"bigint_field":    "BIGINT",
 						"timestamp_field": "TIMESTAMP",
@@ -55,6 +60,9 @@ func TestAccAlicloudDatahubTopic_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":            name,
 						"project_name":    name,
+						"shard_count":     "1",
+						"life_cycle":      "3",
+						"comment":         "topic added by terraform",
 						"record_schema.%": "5",
 					}),
 				),
@@ -80,32 +88,32 @@ func TestAccAlicloudDatahubTopic_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDatahubTopic_blob(t *testing.T) {
+func TestAccAliCloudDatahubTopic_blob(t *testing.T) {
 	var v *datahub.GetTopicResult
 
 	resourceId := "alicloud_datahub_topic.default"
-	ra := resourceAttrInit(resourceId, datahubTopicBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, datahubTopicBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return datahubsvc.NewDatahubService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100000, 999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100000, 999999)
 	name := fmt.Sprintf("tf_testacc_datahub_%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubTopicConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDatahubTopicConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -140,7 +148,7 @@ func TestAccAlicloudDatahubTopic_blob(t *testing.T) {
 			//},
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"comment": REMOVEKEY,
+			//		"comment": acctest.REMOVEKEY,
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{
@@ -152,32 +160,32 @@ func TestAccAlicloudDatahubTopic_blob(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDatahubTopic_multi(t *testing.T) {
+func TestAccAliCloudDatahubTopic_multi(t *testing.T) {
 	var v *datahub.GetTopicResult
 
 	resourceId := "alicloud_datahub_topic.default.4"
-	ra := resourceAttrInit(resourceId, datahubTopicBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, datahubTopicBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return datahubsvc.NewDatahubService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100000, 999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100000, 999999)
 	name := fmt.Sprintf("tf_testacc_datahub_%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubTopicConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDatahubTopicConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -213,14 +221,14 @@ func resourceDatahubTopicConfigDependence(name string) string {
 }
 
 var datahubTopicBasicMap = map[string]string{
-	"name":             CHECKSET,
-	"project_name":     CHECKSET,
+	"name":             acctest.CHECKSET,
+	"project_name":     acctest.CHECKSET,
 	"shard_count":      "1",
 	"life_cycle":       "3",
 	"comment":          "topic added by terraform",
 	"record_type":      "TUPLE",
-	"create_time":      CHECKSET,
-	"last_modify_time": CHECKSET,
+	"create_time":      acctest.CHECKSET,
+	"last_modify_time": acctest.CHECKSET,
 }
 
 func testAccCheckDatahubTopicExist(n string) resource.TestCheckFunc {
@@ -234,9 +242,9 @@ func testAccCheckDatahubTopicExist(n string) resource.TestCheckFunc {
 			return fmt.Errorf("no Datahub topic ID is set")
 		}
 
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
 
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
+		split := strings.Split(rs.Primary.ID, datahubsvc.COLON_SEPARATED)
 		projectName := split[0]
 		topicName := split[1]
 		_, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
