@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package openapiexplorer. This file is generated automatically. Please do not modify it manually, thank you!
+package openapiexplorer
 
 import (
 	"fmt"
@@ -7,6 +7,11 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -65,7 +70,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServer() *schema.Resource {
 							Optional:     true,
 							ValidateFunc: validation.StringIsJSON,
 							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-								equal, _ := compareJsonTemplateAreEquivalent(old, new)
+								equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 								return equal
 							},
 						},
@@ -106,7 +111,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServer() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -137,7 +142,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServer() *schema.Resource {
 			"language": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"EN_US", "ZH_CN"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"EN_US", "ZH_CN"}, false),
 			},
 			"name": {
 				Type:     schema.TypeString,
@@ -191,7 +196,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServer() *schema.Resource {
 			"public_access": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"on", "off", "follow"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"on", "off", "follow"}, false),
 			},
 			"system_tools": {
 				Type:     schema.TypeSet,
@@ -214,7 +219,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServer() *schema.Resource {
 						"destroy_policy": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"NEVER", "ALWAYS", "ON_FAILURE"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"NEVER", "ALWAYS", "ON_FAILURE"}, false),
 						},
 						"code": {
 							Type:     schema.TypeString,
@@ -250,14 +255,14 @@ func resourceAliCloudOpenApiExplorerApiMcpServerCreate(d *schema.ResourceData, m
 
 	if v, ok := d.GetOk("additional_api_descriptions"); ok {
 		additionalApiDescriptionsMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["apiOverrideJson"] = dataLoopTmp["api_override_json"]
 			dataLoopMap["executeCliCommand"] = dataLoopTmp["execute_cli_command"]
 			localMaps := make([]interface{}, 0)
 			localData1 := dataLoopTmp["const_parameters"]
-			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
+			for _, dataLoop1 := range convert.ConvertToInterfaceArray(localData1) {
 				dataLoop1Tmp := dataLoop1.(map[string]interface{})
 				dataLoop1Map := make(map[string]interface{})
 				dataLoop1Map["key"] = dataLoop1Tmp["key"]
@@ -276,7 +281,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerCreate(d *schema.ResourceData, m
 
 	if v, ok := d.GetOk("terraform_tools"); ok {
 		terraformToolsMapsArray := make([]interface{}, 0)
-		for _, dataLoop2 := range convertToInterfaceArray(v) {
+		for _, dataLoop2 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop2Tmp := dataLoop2.(map[string]interface{})
 			dataLoop2Map := make(map[string]interface{})
 			dataLoop2Map["async"] = dataLoop2Tmp["async"]
@@ -291,12 +296,12 @@ func resourceAliCloudOpenApiExplorerApiMcpServerCreate(d *schema.ResourceData, m
 
 	if v, ok := d.GetOk("apis"); ok {
 		apisMapsArray := make([]interface{}, 0)
-		for _, dataLoop3 := range convertToInterfaceArray(v) {
+		for _, dataLoop3 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop3Tmp := dataLoop3.(map[string]interface{})
 			dataLoop3Map := make(map[string]interface{})
 			dataLoop3Map["apiVersion"] = dataLoop3Tmp["api_version"]
 			dataLoop3Map["product"] = dataLoop3Tmp["product"]
-			dataLoop3Map["selectors"] = convertToInterfaceArray(dataLoop3Tmp["selectors"])
+			dataLoop3Map["selectors"] = convert.ConvertToInterfaceArray(dataLoop3Tmp["selectors"])
 			apisMapsArray = append(apisMapsArray, dataLoop3Map)
 		}
 		request["apis"] = apisMapsArray
@@ -310,12 +315,12 @@ func resourceAliCloudOpenApiExplorerApiMcpServerCreate(d *schema.ResourceData, m
 	}
 	if v, ok := d.GetOk("prompts"); ok {
 		promptsMapsArray := make([]interface{}, 0)
-		for _, dataLoop4 := range convertToInterfaceArray(v) {
+		for _, dataLoop4 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop4Tmp := dataLoop4.(map[string]interface{})
 			dataLoop4Map := make(map[string]interface{})
 			localMaps1 := make([]interface{}, 0)
 			localData5 := dataLoop4Tmp["arguments"]
-			for _, dataLoop5 := range convertToInterfaceArray(localData5) {
+			for _, dataLoop5 := range convert.ConvertToInterfaceArray(localData5) {
 				dataLoop5Tmp := dataLoop5.(map[string]interface{})
 				dataLoop5Map := make(map[string]interface{})
 				dataLoop5Map["description"] = dataLoop5Tmp["description"]
@@ -333,13 +338,13 @@ func resourceAliCloudOpenApiExplorerApiMcpServerCreate(d *schema.ResourceData, m
 	}
 
 	if v, ok := d.GetOk("vpc_whitelists"); ok {
-		vpcWhitelistsMapsArray := convertToInterfaceArray(v)
+		vpcWhitelistsMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["vpcWhitelists"] = vpcWhitelistsMapsArray
 	}
 
 	if v, ok := d.GetOk("system_tools"); ok {
-		systemToolsMapsArray := convertToInterfaceArray(v)
+		systemToolsMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["systemTools"] = systemToolsMapsArray
 	}
@@ -367,11 +372,11 @@ func resourceAliCloudOpenApiExplorerApiMcpServerCreate(d *schema.ResourceData, m
 		request["assumeRoleName"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("OpenAPIExplorer", "2024-11-30", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -379,10 +384,10 @@ func resourceAliCloudOpenApiExplorerApiMcpServerCreate(d *schema.ResourceData, m
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_open_api_explorer_api_mcp_server", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_open_api_explorer_api_mcp_server", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["id"]))
@@ -396,12 +401,12 @@ func resourceAliCloudOpenApiExplorerApiMcpServerRead(d *schema.ResourceData, met
 
 	objectRaw, err := openApiExplorerServiceV2.DescribeOpenApiExplorerApiMcpServer(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_open_api_explorer_api_mcp_server DescribeOpenApiExplorerApiMcpServer Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("assume_role_extra_policy", objectRaw["assumeRoleExtraPolicy"])
@@ -419,7 +424,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerRead(d *schema.ResourceData, met
 	additionalApiDescriptionsRaw := objectRaw["additionalApiDescriptions"]
 	additionalApiDescriptionsMaps := make([]map[string]interface{}, 0)
 	if additionalApiDescriptionsRaw != nil {
-		for _, additionalApiDescriptionsChildRaw := range convertToInterfaceArray(additionalApiDescriptionsRaw) {
+		for _, additionalApiDescriptionsChildRaw := range convert.ConvertToInterfaceArray(additionalApiDescriptionsRaw) {
 			additionalApiDescriptionsMap := make(map[string]interface{})
 			additionalApiDescriptionsChildRaw := additionalApiDescriptionsChildRaw.(map[string]interface{})
 			additionalApiDescriptionsMap["api_name"] = additionalApiDescriptionsChildRaw["apiName"]
@@ -432,7 +437,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerRead(d *schema.ResourceData, met
 			constParametersRaw := additionalApiDescriptionsChildRaw["constParameters"]
 			constParametersMaps := make([]map[string]interface{}, 0)
 			if constParametersRaw != nil {
-				for _, constParametersChildRaw := range convertToInterfaceArray(constParametersRaw) {
+				for _, constParametersChildRaw := range convert.ConvertToInterfaceArray(constParametersRaw) {
 					constParametersMap := make(map[string]interface{})
 					constParametersChildRaw := constParametersChildRaw.(map[string]interface{})
 					constParametersMap["key"] = constParametersChildRaw["key"]
@@ -451,7 +456,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerRead(d *schema.ResourceData, met
 	apisRaw := objectRaw["apis"]
 	apisMaps := make([]map[string]interface{}, 0)
 	if apisRaw != nil {
-		for _, apisChildRaw := range convertToInterfaceArray(apisRaw) {
+		for _, apisChildRaw := range convert.ConvertToInterfaceArray(apisRaw) {
 			apisMap := make(map[string]interface{})
 			apisChildRaw := apisChildRaw.(map[string]interface{})
 			apisMap["api_version"] = apisChildRaw["apiVersion"]
@@ -459,7 +464,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerRead(d *schema.ResourceData, met
 
 			selectorsRaw := make([]interface{}, 0)
 			if apisChildRaw["selectors"] != nil {
-				selectorsRaw = convertToInterfaceArray(apisChildRaw["selectors"])
+				selectorsRaw = convert.ConvertToInterfaceArray(apisChildRaw["selectors"])
 			}
 
 			apisMap["selectors"] = selectorsRaw
@@ -472,7 +477,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerRead(d *schema.ResourceData, met
 	promptsRaw := objectRaw["prompts"]
 	promptsMaps := make([]map[string]interface{}, 0)
 	if promptsRaw != nil {
-		for _, promptsChildRaw := range convertToInterfaceArray(promptsRaw) {
+		for _, promptsChildRaw := range convert.ConvertToInterfaceArray(promptsRaw) {
 			promptsMap := make(map[string]interface{})
 			promptsChildRaw := promptsChildRaw.(map[string]interface{})
 			promptsMap["content"] = promptsChildRaw["content"]
@@ -482,7 +487,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerRead(d *schema.ResourceData, met
 			argumentsRaw := promptsChildRaw["arguments"]
 			argumentsMaps := make([]map[string]interface{}, 0)
 			if argumentsRaw != nil {
-				for _, argumentsChildRaw := range convertToInterfaceArray(argumentsRaw) {
+				for _, argumentsChildRaw := range convert.ConvertToInterfaceArray(argumentsRaw) {
 					argumentsMap := make(map[string]interface{})
 					argumentsChildRaw := argumentsChildRaw.(map[string]interface{})
 					argumentsMap["description"] = argumentsChildRaw["description"]
@@ -501,14 +506,14 @@ func resourceAliCloudOpenApiExplorerApiMcpServerRead(d *schema.ResourceData, met
 	}
 	systemToolsRaw := make([]interface{}, 0)
 	if objectRaw["systemTools"] != nil {
-		systemToolsRaw = convertToInterfaceArray(objectRaw["systemTools"])
+		systemToolsRaw = convert.ConvertToInterfaceArray(objectRaw["systemTools"])
 	}
 
 	d.Set("system_tools", systemToolsRaw)
 	terraformToolsRaw := objectRaw["terraformTools"]
 	terraformToolsMaps := make([]map[string]interface{}, 0)
 	if terraformToolsRaw != nil {
-		for _, terraformToolsChildRaw := range convertToInterfaceArray(terraformToolsRaw) {
+		for _, terraformToolsChildRaw := range convert.ConvertToInterfaceArray(terraformToolsRaw) {
 			terraformToolsMap := make(map[string]interface{})
 			terraformToolsChildRaw := terraformToolsChildRaw.(map[string]interface{})
 			terraformToolsMap["async"] = terraformToolsChildRaw["async"]
@@ -525,7 +530,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerRead(d *schema.ResourceData, met
 	}
 	vpcWhitelistsRaw := make([]interface{}, 0)
 	if objectRaw["vpcWhitelists"] != nil {
-		vpcWhitelistsRaw = convertToInterfaceArray(objectRaw["vpcWhitelists"])
+		vpcWhitelistsRaw = convert.ConvertToInterfaceArray(objectRaw["vpcWhitelists"])
 	}
 
 	d.Set("vpc_whitelists", vpcWhitelistsRaw)
@@ -547,21 +552,21 @@ func resourceAliCloudOpenApiExplorerApiMcpServerUpdate(d *schema.ResourceData, m
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["id"] = StringPointer(d.Id())
+	query["id"] = helper.StringPointer(d.Id())
 
 	if d.HasChange("additional_api_descriptions") {
 		update = true
 	}
 	if v, ok := d.GetOk("additional_api_descriptions"); ok || d.HasChange("additional_api_descriptions") {
 		additionalApiDescriptionsMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["apiOverrideJson"] = dataLoopTmp["api_override_json"]
 			dataLoopMap["executeCliCommand"] = dataLoopTmp["execute_cli_command"]
 			localMaps := make([]interface{}, 0)
 			localData1 := dataLoopTmp["const_parameters"]
-			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
+			for _, dataLoop1 := range convert.ConvertToInterfaceArray(localData1) {
 				dataLoop1Tmp := dataLoop1.(map[string]interface{})
 				dataLoop1Map := make(map[string]interface{})
 				dataLoop1Map["key"] = dataLoop1Tmp["key"]
@@ -583,7 +588,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerUpdate(d *schema.ResourceData, m
 	}
 	if v, ok := d.GetOk("terraform_tools"); ok || d.HasChange("terraform_tools") {
 		terraformToolsMapsArray := make([]interface{}, 0)
-		for _, dataLoop2 := range convertToInterfaceArray(v) {
+		for _, dataLoop2 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop2Tmp := dataLoop2.(map[string]interface{})
 			dataLoop2Map := make(map[string]interface{})
 			dataLoop2Map["async"] = dataLoop2Tmp["async"]
@@ -601,12 +606,12 @@ func resourceAliCloudOpenApiExplorerApiMcpServerUpdate(d *schema.ResourceData, m
 	}
 	if v, ok := d.GetOk("apis"); ok || d.HasChange("apis") {
 		apisMapsArray := make([]interface{}, 0)
-		for _, dataLoop3 := range convertToInterfaceArray(v) {
+		for _, dataLoop3 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop3Tmp := dataLoop3.(map[string]interface{})
 			dataLoop3Map := make(map[string]interface{})
 			dataLoop3Map["apiVersion"] = dataLoop3Tmp["api_version"]
 			dataLoop3Map["product"] = dataLoop3Tmp["product"]
-			dataLoop3Map["selectors"] = convertToInterfaceArray(dataLoop3Tmp["selectors"])
+			dataLoop3Map["selectors"] = convert.ConvertToInterfaceArray(dataLoop3Tmp["selectors"])
 			apisMapsArray = append(apisMapsArray, dataLoop3Map)
 		}
 		request["apis"] = apisMapsArray
@@ -629,12 +634,12 @@ func resourceAliCloudOpenApiExplorerApiMcpServerUpdate(d *schema.ResourceData, m
 	}
 	if v, ok := d.GetOk("prompts"); ok || d.HasChange("prompts") {
 		promptsMapsArray := make([]interface{}, 0)
-		for _, dataLoop4 := range convertToInterfaceArray(v) {
+		for _, dataLoop4 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop4Tmp := dataLoop4.(map[string]interface{})
 			dataLoop4Map := make(map[string]interface{})
 			localMaps1 := make([]interface{}, 0)
 			localData5 := dataLoop4Tmp["arguments"]
-			for _, dataLoop5 := range convertToInterfaceArray(localData5) {
+			for _, dataLoop5 := range convert.ConvertToInterfaceArray(localData5) {
 				dataLoop5Tmp := dataLoop5.(map[string]interface{})
 				dataLoop5Map := make(map[string]interface{})
 				dataLoop5Map["description"] = dataLoop5Tmp["description"]
@@ -655,7 +660,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerUpdate(d *schema.ResourceData, m
 		update = true
 	}
 	if v, ok := d.GetOk("vpc_whitelists"); ok || d.HasChange("vpc_whitelists") {
-		vpcWhitelistsMapsArray := convertToInterfaceArray(v)
+		vpcWhitelistsMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["vpcWhitelists"] = vpcWhitelistsMapsArray
 	}
@@ -664,7 +669,7 @@ func resourceAliCloudOpenApiExplorerApiMcpServerUpdate(d *schema.ResourceData, m
 		update = true
 	}
 	if v, ok := d.GetOk("system_tools"); ok || d.HasChange("system_tools") {
-		systemToolsMapsArray := convertToInterfaceArray(v)
+		systemToolsMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["systemTools"] = systemToolsMapsArray
 	}
@@ -713,11 +718,11 @@ func resourceAliCloudOpenApiExplorerApiMcpServerUpdate(d *schema.ResourceData, m
 	}
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPatch("OpenAPIExplorer", "2024-11-30", action, query, header, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -725,9 +730,9 @@ func resourceAliCloudOpenApiExplorerApiMcpServerUpdate(d *schema.ResourceData, m
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -743,13 +748,13 @@ func resourceAliCloudOpenApiExplorerApiMcpServerDelete(d *schema.ResourceData, m
 	query := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
-	query["id"] = StringPointer(d.Id())
+	query["id"] = helper.StringPointer(d.Id())
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("OpenAPIExplorer", "2024-11-30", action, query, nil, nil, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -757,13 +762,13 @@ func resourceAliCloudOpenApiExplorerApiMcpServerDelete(d *schema.ResourceData, m
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidApiMcpServer.NotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InvalidApiMcpServer.NotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

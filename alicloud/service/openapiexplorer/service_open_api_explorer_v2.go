@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package openapiexplorer. This file is generated automatically. Please do not modify it manually, thank you!
+package openapiexplorer
 
 import (
 	"fmt"
@@ -8,11 +8,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type OpenApiExplorerServiceV2 struct {
 	client *connectivity.AliyunClient
+}
+
+// NewOpenApiExplorerServiceV2 is the exported constructor used by the
+// package's external tests (package openapiexplorer_test); production wiring
+// reaches the service through conns.ServicePackage.
+func NewOpenApiExplorerServiceV2(client *connectivity.AliyunClient) *OpenApiExplorerServiceV2 {
+	return &OpenApiExplorerServiceV2{client: client}
 }
 
 // DescribeOpenApiExplorerApiMcpServer <<< Encapsulated get interface for OpenApiExplorer ApiMcpServer.
@@ -26,16 +36,16 @@ func (s *OpenApiExplorerServiceV2) DescribeOpenApiExplorerApiMcpServer(id string
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	header = make(map[string]*string)
-	query["id"] = StringPointer(id)
+	query["id"] = helper.StringPointer(id)
 
 	action := fmt.Sprintf("/apimcpserver")
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("OpenAPIExplorer", "2024-11-30", action, query, header, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -43,12 +53,12 @@ func (s *OpenApiExplorerServiceV2) DescribeOpenApiExplorerApiMcpServer(id string
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidApiMcpServer.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("ApiMcpServer", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidApiMcpServer.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ApiMcpServer", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -62,10 +72,10 @@ func (s *OpenApiExplorerServiceV2) OpenApiExplorerApiMcpServerStateRefreshFuncWi
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -79,7 +89,7 @@ func (s *OpenApiExplorerServiceV2) OpenApiExplorerApiMcpServerStateRefreshFuncWi
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil

@@ -1,36 +1,33 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package openapiexplorer. This file is generated automatically. Please do not modify it manually, thank you!
+package openapiexplorer_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/openapiexplorer"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // Test OpenApiExplorer ApiMcpServer. >>> Resource test cases, automatically generated.
 // Case resource_ApiMcpServer_test 11977
 func TestAccAliCloudOpenApiExplorerApiMcpServer_basic11977(t *testing.T) {
-	var v map[string]interface{}
 	resourceId := "alicloud_open_api_explorer_api_mcp_server.default"
-	ra := resourceAttrInit(resourceId, AlicloudOpenApiExplorerApiMcpServerMap11977)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &OpenApiExplorerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeOpenApiExplorerApiMcpServer")
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := resourceAttrCheckInit(resourceId, AlicloudOpenApiExplorerApiMcpServerMap11977, (*openapiexplorer.OpenApiExplorerServiceV2).DescribeOpenApiExplorerApiMcpServer)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 100)
+	rand := tfacctest.RandIntRange(1, 100)
 	name := fmt.Sprintf("tfacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOpenApiExplorerApiMcpServerBasicDependence11977)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -347,7 +344,7 @@ func TestAccAliCloudOpenApiExplorerApiMcpServer_basic11977(t *testing.T) {
 					"additional_api_descriptions": []map[string]interface{}{
 						{
 							"api_version":          "2014-08-15",
-							"enable_output_schema": "true",
+							"enable_output_schema": "false",
 							"api_name":             "DescribeInstances",
 							"const_parameters": []map[string]interface{}{
 								{
@@ -375,7 +372,7 @@ func TestAccAliCloudOpenApiExplorerApiMcpServer_basic11977(t *testing.T) {
 					"terraform_tools": []map[string]interface{}{
 						{
 							"description":    "更新时候的描述",
-							"async":          "true",
+							"async":          "false",
 							"destroy_policy": "ON_FAILURE",
 							"code":           "variable \\\"name\\\" {\\n  default = \\\"terraform-example-update\\\"\\n}\\n\\nprovider \\\"alicloud\\\" {\\n  region = \\\"cn-beijing\\\"\\n}\\n\\nresource \\\"alicloud_vpc\\\" \\\"default\\\" {\\n  ipv6_isp    = \\\"BGP\\\"\\n  description = \\\"test\\\"\\n  cidr_block  = \\\"10.0.0.0/8\\\"\\n  vpc_name    = var.name\\n  enable_ipv6 = true\\n}",
 							"name":           "tftoolupdate",
@@ -384,6 +381,7 @@ func TestAccAliCloudOpenApiExplorerApiMcpServer_basic11977(t *testing.T) {
 					"assume_role_name":            "update-role-name",
 					"public_access":               "follow",
 					"enable_custom_vpc_whitelist": "false",
+					"enable_assume_role":          "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -401,6 +399,7 @@ func TestAccAliCloudOpenApiExplorerApiMcpServer_basic11977(t *testing.T) {
 						"assume_role_name":              "update-role-name",
 						"public_access":                 "follow",
 						"enable_custom_vpc_whitelist":   "false",
+						"enable_assume_role":            "false",
 					}),
 				),
 			},
@@ -444,24 +443,19 @@ variable "name" {
 
 // Case test 10799
 func TestAccAliCloudOpenApiExplorerApiMcpServer_basic10799(t *testing.T) {
-	var v map[string]interface{}
 	resourceId := "alicloud_open_api_explorer_api_mcp_server.default"
-	ra := resourceAttrInit(resourceId, AlicloudOpenApiExplorerApiMcpServerMap10799)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &OpenApiExplorerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeOpenApiExplorerApiMcpServer")
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := resourceAttrCheckInit(resourceId, AlicloudOpenApiExplorerApiMcpServerMap10799, (*openapiexplorer.OpenApiExplorerServiceV2).DescribeOpenApiExplorerApiMcpServer)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 100)
+	rand := tfacctest.RandIntRange(1, 100)
 	name := fmt.Sprintf("tfacc%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOpenApiExplorerApiMcpServerBasicDependence10799)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

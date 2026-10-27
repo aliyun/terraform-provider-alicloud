@@ -4,9 +4,12 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
 )
 
-// ServicePackage is a placeholder for the openapiexplorer service; declarations move here when the product adopts the split layout.
+// ServicePackage wires the openapiexplorer product into the provider registry.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "OpenAPIExplorer",
+		SDKResources: []conns.SDKResource{
+			{TypeName: "alicloud_open_api_explorer_api_mcp_server", Factory: resourceAliCloudOpenApiExplorerApiMcpServer},
+		},
 	}
 }

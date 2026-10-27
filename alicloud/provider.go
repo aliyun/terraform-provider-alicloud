@@ -2355,8 +2355,7 @@ func Provider() *schema.Provider {
 			"alicloud_oos_default_patch_baseline": resourceAlicloudOosDefaultPatchBaseline(),
 
 			// open
-			"alicloud_open_api_explorer_api_mcp_server": resourceAliCloudOpenApiExplorerApiMcpServer(),
-			"alicloud_open_search_app_group":            resourceAlicloudOpenSearchAppGroup(),
+			"alicloud_open_search_app_group": resourceAlicloudOpenSearchAppGroup(),
 
 			// oss
 			"alicloud_oss_bucket_inventory":                  resourceAliCloudOssBucketInventory(),
