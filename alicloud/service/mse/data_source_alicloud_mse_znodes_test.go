@@ -1,39 +1,40 @@
-package alicloud
+package mse_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudMSEZnodesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MSESupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mse_znode.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mse_znode.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_mse_znode.default.path}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_mse_znode.default.path}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_mse_znode.default.id}"]`,
 			"name_regex": `"${alicloud_mse_znode.default.path}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMseZnodesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_mse_znode.default.id}_fake"]`,
 			"name_regex": `"${alicloud_mse_znode.default.path}_fake"`,
 		}),
@@ -43,15 +44,15 @@ func TestAccAlicloudMSEZnodesDataSource(t *testing.T) {
 			"ids.#":               "1",
 			"names.#":             "1",
 			"znodes.#":            "1",
-			"znodes.0.cluster_id": CHECKSET,
+			"znodes.0.cluster_id": acctest.CHECKSET,
 			// znodes.0.data is intentionally not asserted: the backing
 			// ListZnodeChildren API only returns child metadata (path/name/dir),
 			// not the znode payload, so this field is always empty in the data
 			// source's list view.
 			"znodes.0.path":       fmt.Sprintf("/tf-testAccZnode-%d", rand),
-			"znodes.0.znode_name": CHECKSET,
-			"znodes.0.dir":        CHECKSET,
-			"znodes.0.id":         CHECKSET,
+			"znodes.0.znode_name": acctest.CHECKSET,
+			"znodes.0.dir":        acctest.CHECKSET,
+			"znodes.0.id":         acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudMseZnodesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -60,16 +61,16 @@ func TestAccAlicloudMSEZnodesDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudMseZnodesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_mse_znodes.default",
-		existMapFunc: existAlicloudMseZnodesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudMseZnodesDataSourceNameMapFunc,
+	var alicloudMseZnodesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_mse_znodes.default",
+		ExistMapFunc: existAlicloudMseZnodesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudMseZnodesDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudMseZnodesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	alicloudMseZnodesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudMseZnodesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -82,13 +83,18 @@ func testAccCheckAlicloudMseZnodesDataSourceName(rand int, attrMap map[string]st
 variable "name" {
   default = "tf-testAccZnode-%d"
 }
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.17.3.0/24"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 resource "alicloud_mse_cluster" "default" {
   cluster_specification = "MSE_SC_1_2_60_c"
@@ -96,7 +102,7 @@ resource "alicloud_mse_cluster" "default" {
   cluster_version       = "ZooKeeper_3_8_0"
   instance_count        = 1
   net_type              = "privatenet"
-  vswitch_id            = data.alicloud_vswitches.default.ids.0
+  vswitch_id            = alicloud_vswitch.default.id
   pub_network_flow      = "1"
   cluster_alias_name    = var.name
   mse_version = "mse_dev"

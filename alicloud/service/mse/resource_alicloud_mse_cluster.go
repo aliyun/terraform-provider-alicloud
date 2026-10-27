@@ -1,4 +1,4 @@
-package alicloud
+package mse
 
 import (
 	"context"
@@ -6,13 +6,20 @@ import (
 	"log"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudMseCluster() *schema.Resource {
+func ResourceMseCluster() *schema.Resource {
 	return &schema.Resource{
 		Create:        resourceAlicloudMseClusterCreate,
 		Read:          resourceAlicloudMseClusterRead,
@@ -49,13 +56,13 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			"cluster_specification": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"MSE_SC_1_2_60_c", "MSE_SC_2_4_60_c", "MSE_SC_4_8_60_c", "MSE_SC_8_16_60_c", "MSE_SC_16_32_60_c", "MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c", "MSE_SC_16_32_200_c", "MSE_SC_SERVERLESS"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"MSE_SC_1_2_60_c", "MSE_SC_2_4_60_c", "MSE_SC_4_8_60_c", "MSE_SC_8_16_60_c", "MSE_SC_16_32_60_c", "MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c", "MSE_SC_16_32_200_c", "MSE_SC_SERVERLESS"}, false),
 			},
 			"cluster_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Eureka", "Nacos-Ans", "ZooKeeper"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Eureka", "Nacos-Ans", "ZooKeeper"}, false),
 			},
 			"cluster_version": {
 				Type:     schema.TypeString,
@@ -72,7 +79,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"slb", "single_eni"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"slb", "single_eni"}, false),
 			},
 			"disk_type": {
 				Type:     schema.TypeString,
@@ -86,16 +93,16 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"privatenet", "pubnet", "both"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"privatenet", "pubnet", "both"}, false),
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -126,7 +133,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"mse_dev", "mse_basic", "mse_pro", "mse_serverless"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"mse_dev", "mse_basic", "mse_pro", "mse_serverless"}, false),
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -151,7 +158,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 
 func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mseService := MseService{client}
+	mseService := NewService(client)
 	var response map[string]interface{}
 	action := "CreateCluster"
 	request := make(map[string]interface{})
@@ -198,58 +205,58 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 	request["Region"] = client.RegionId
 
 	if request["VpcId"] == nil && request["VSwitchId"] != nil {
-		vpcService := VpcService{client}
+		vpcService := NewService(client)
 		vsw, err := vpcService.DescribeVswitch(request["VSwitchId"].(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if v, ok := request["VpcId"].(string); !ok || v == "" {
 			request["VpcId"] = vsw["VpcId"]
 		}
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mse_cluster", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_mse_cluster", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	d.SetId(fmt.Sprint(response["InstanceId"]))
-	stateConf := BuildStateConf([]string{}, []string{"INIT_SUCCESS"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"INIT_SUCCESS"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return resourceAlicloudMseClusterUpdate(d, meta)
 }
 
 func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mseService := MseService{client}
+	mseService := NewService(client)
 	object, err := mseService.DescribeMseCluster(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_mse_cluster mseService.DescribeMseCluster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("cluster_type", object["ClusterType"])
 	d.Set("cluster_specification", object["ClusterSpecification"])
-	instance_countVal, err := formatInt(object["InstanceCount"])
+	instance_countVal, err := convert.FormatInt(object["InstanceCount"])
 	if err != nil {
 		return err
 	}
@@ -269,14 +276,14 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("payment_type", convertMseChargeTypeToPaymentType(object["ChargeType"]))
 	tagsMaps, _ := jsonpath.Get("$.Tags", object)
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
 
 func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mseService := MseService{client}
+	mseService := NewService(client)
 	var response map[string]interface{}
 	var err error
 	d.Partial(true)
@@ -294,22 +301,22 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 
 	request["ResourceType"] = "Cluster"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -317,26 +324,26 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		request := map[string]interface{}{
 			"InstanceId": d.Id(),
 		}
-		request["AclEntryList"] = convertListToCommaSeparate(d.Get("acl_entry_list").(*schema.Set).List())
+		request["AclEntryList"] = convert.ConvertListToCommaSeparate(d.Get("acl_entry_list").(*schema.Set).List())
 		action := "UpdateAcl"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -349,24 +356,24 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if update {
 		action := "UpdateCluster"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -393,29 +400,29 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if update {
 		action := "UpdateClusterSpec"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("mse", "2019-05-31", action, nil, updateClusterSpecReq, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, updateClusterSpecReq)
+			logs.AddDebug(action, response, updateClusterSpecReq)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
@@ -423,9 +430,9 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 	update = false
 	if d.HasChange("tags") {
 		update = true
-		mseServiceV2 := MseService{client}
+		mseServiceV2 := NewService(client)
 		if err := mseServiceV2.SetResourceTags(d, "CLUSTER"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -437,29 +444,29 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		request["VpcId"] = d.Get("vpc_id")
 		request["VswId"] = d.Get("vswitch_id")
 		action := "UpdateClusterNetwork"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
@@ -473,29 +480,29 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		updateNetworkFlowRequest["AutoPay"] = true
 
 		action := "UpdateClusterSpec"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("mse", "2019-05-31", action, nil, updateNetworkFlowRequest, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, updateNetworkFlowRequest)
+			logs.AddDebug(action, response, updateNetworkFlowRequest)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
@@ -512,29 +519,29 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 
 			action := "UpdateImage"
-			wait := incrementalWait(3*time.Second, 3*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("mse", "2019-05-31", action, nil, updateRequest, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug(action, response, updateRequest)
+				logs.AddDebug(action, response, updateRequest)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 			if fmt.Sprint(response["Success"]) == "false" {
-				return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
-			stateConf := BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
+			stateConf := helper.BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 
 		} else {
@@ -550,12 +557,12 @@ func resourceAlicloudMseClusterDelete(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("payment_type"); ok {
 		if v == "Subscription" {
-			return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+			return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 		}
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	mseService := MseService{client}
+	mseService := NewService(client)
 	action := "DeleteCluster"
 	var response map[string]interface{}
 	var err error
@@ -563,28 +570,28 @@ func resourceAlicloudMseClusterDelete(d *schema.ResourceData, meta interface{}) 
 		"InstanceId": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{"DESTROY_SUCCESS"}, d.Timeout(schema.TimeoutDelete), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"DESTROY_FAILED"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"DESTROY_SUCCESS"}, d.Timeout(schema.TimeoutDelete), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"DESTROY_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
@@ -602,17 +609,17 @@ func customizeMseClusterDiff(ctx context.Context, d *schema.ResourceDiff, meta i
 	}
 	response, err := client.RpcPost("mse", "2019-05-31", "QueryClusterInfo", nil, queryClusterInfoRequest, false)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "QueryClusterInfo", AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "QueryClusterInfo", errs.AlibabaCloudSdkGoERROR)
 	}
 	log.Printf("[DEBUG] QueryClusterInfo response: %#v", response)
 	data, ok := response["Data"].(map[string]interface{})
 	if !ok {
-		return WrapErrorf(fmt.Errorf("failed to get data from response: %v", response), DefaultErrorMsg, d.Id(), "QueryClusterInfo", AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(fmt.Errorf("failed to get data from response: %v", response), errs.DefaultErrorMsg, d.Id(), "QueryClusterInfo", errs.AlibabaCloudSdkGoERROR)
 	}
 
 	canUpdate, ok := data["CanUpdate"].(bool)
 	if !ok {
-		return WrapErrorf(fmt.Errorf("failed to get canUpdate: %v", data), DefaultErrorMsg, d.Id(), "QueryClusterInfo", AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(fmt.Errorf("failed to get canUpdate: %v", data), errs.DefaultErrorMsg, d.Id(), "QueryClusterInfo", errs.AlibabaCloudSdkGoERROR)
 	}
 	if !canUpdate {
 		oldValue, _ := d.GetChange("version_code")
@@ -622,18 +629,18 @@ func customizeMseClusterDiff(ctx context.Context, d *schema.ResourceDiff, meta i
 
 	if d.Id() != "" && (d.HasChange("version_code") || d.Get("version_code").(string) == "LATEST") {
 		client := meta.(*connectivity.AliyunClient)
-		mseService := MseService{client}
+		mseService := NewService(client)
 
 		object, err := mseService.DescribeMseCluster(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		log.Printf("[DEBUG] DescribeMseCluster response: %#v", object)
 
 		versionCode, ok := object["ClusterVersion"].(string)
 		if !ok || versionCode == "" {
-			return WrapErrorf(fmt.Errorf("failed to get current version, cluster info: %v", object), DefaultErrorMsg, d.Id(), "GetClusterInfo", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(fmt.Errorf("failed to get current version, cluster info: %v", object), errs.DefaultErrorMsg, d.Id(), "GetClusterInfo", errs.AlibabaCloudSdkGoERROR)
 		}
 		log.Printf("[DEBUG] Current VersionCode: %s", versionCode)
 
@@ -644,18 +651,18 @@ func customizeMseClusterDiff(ctx context.Context, d *schema.ResourceDiff, meta i
 
 		response, err := client.RpcPost("mse", "2019-05-31", "GetImage", nil, getImageRequest, false)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetImage", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "GetImage", errs.AlibabaCloudSdkGoERROR)
 		}
 		log.Printf("[DEBUG] GetImage response: %#v", response)
 
 		data, ok := response["Data"].(map[string]interface{})
 		if !ok {
-			return WrapErrorf(fmt.Errorf("failed to get data from response: %v", response), DefaultErrorMsg, d.Id(), "GetImage", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(fmt.Errorf("failed to get data from response: %v", response), errs.DefaultErrorMsg, d.Id(), "GetImage", errs.AlibabaCloudSdkGoERROR)
 		}
 
 		maxVersionCode, ok := data["MaxVersionCode"].(string)
 		if !ok {
-			return WrapErrorf(fmt.Errorf("failed to get maxVersionCode: %v", data), DefaultErrorMsg, d.Id(), "GetImage", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(fmt.Errorf("failed to get maxVersionCode: %v", data), errs.DefaultErrorMsg, d.Id(), "GetImage", errs.AlibabaCloudSdkGoERROR)
 		}
 		log.Printf("[DEBUG] MaxVersionCode: %s", maxVersionCode)
 
@@ -664,9 +671,9 @@ func customizeMseClusterDiff(ctx context.Context, d *schema.ResourceDiff, meta i
 			d.SetNew("version_code", maxVersionCode)
 		} else if d.HasChange("version_code") {
 			if targetVersion != maxVersionCode {
-				return WrapErrorf(fmt.Errorf("can only upgrade to the latest version %s, but got %s. "+
+				return errs.WrapErrorf(fmt.Errorf("can only upgrade to the latest version %s, but got %s. "+
 					"You can also set version_code to 'LATEST' to always upgrade to the latest version",
-					maxVersionCode, targetVersion), DefaultErrorMsg, d.Id(), "ValidateVersion", AlibabaCloudSdkGoERROR)
+					maxVersionCode, targetVersion), errs.DefaultErrorMsg, d.Id(), "ValidateVersion", errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 	}

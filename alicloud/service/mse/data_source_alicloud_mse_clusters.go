@@ -1,16 +1,20 @@
-package alicloud
+package mse
 
 import (
 	"fmt"
 	"regexp"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudMseClusters() *schema.Resource {
+func DataSourceMseClusters() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudMseClustersRead,
 		Schema: map[string]*schema.Schema{
@@ -200,14 +204,14 @@ func dataSourceAlicloudMseClustersRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("request_pars"); ok {
 		request["RequestPars"] = v
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNum"] = 1
 	var objects []map[string]interface{}
 	var clusterNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		clusterNameRegex = r
 	}
@@ -227,13 +231,13 @@ func dataSourceAlicloudMseClustersRead(d *schema.ResourceData, meta interface{})
 	for {
 		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mse_clusters", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_mse_clusters", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Data", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -253,7 +257,7 @@ func dataSourceAlicloudMseClustersRead(d *schema.ResourceData, meta interface{})
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNum"] = request["PageNum"].(int) + 1
@@ -282,11 +286,11 @@ func dataSourceAlicloudMseClustersRead(d *schema.ResourceData, meta interface{})
 			continue
 		}
 
-		mseService := MseService{client}
+		mseService := NewService(client)
 		id := fmt.Sprint(object["InstanceId"])
 		getResp, err := mseService.DescribeMseCluster(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["acl_id"] = getResp["AclId"]
 		mapping["cpu"] = getResp["Cpu"]
@@ -323,20 +327,20 @@ func dataSourceAlicloudMseClustersRead(d *schema.ResourceData, meta interface{})
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

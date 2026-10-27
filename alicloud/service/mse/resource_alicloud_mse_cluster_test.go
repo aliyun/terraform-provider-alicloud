@@ -1,24 +1,23 @@
-package alicloud
+package mse_test
 
 import (
 	"fmt"
 	"log"
-	"os"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/agiledragon/gomonkey/v2"
-	"github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mse"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/stretchr/testify/assert"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func init() {
@@ -29,9 +28,9 @@ func init() {
 }
 
 func testSweepMSECluster(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
+		return errs.WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -42,16 +41,16 @@ func testSweepMSECluster(region string) error {
 	request := make(map[string]interface{})
 	var response map[string]interface{}
 	action := "ListClusters"
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNum"] = 1
 	for {
 		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mse_clusters", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_mse_clusters", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Data", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -80,7 +79,7 @@ func testSweepMSECluster(region string) error {
 
 			log.Printf("[INFO] Delete mse cluster success: %s ", item["InstanceId"].(string))
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNum"] = request["PageNum"].(int) + 1
@@ -91,23 +90,23 @@ func testSweepMSECluster(region string) error {
 func TestAccAliCloudMSECluster_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
-	ra := resourceAttrInit(resourceId, MseClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, MseClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMseCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, MseClusterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckMseClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -134,7 +133,7 @@ func TestAccAliCloudMSECluster_basic0(t *testing.T) {
 						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "1",
 						"net_type":              "privatenet",
-						"vswitch_id":            CHECKSET,
+						"vswitch_id":            acctest.CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
 						"connection_type":       "slb",
@@ -182,7 +181,7 @@ func TestAccAliCloudMSECluster_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_specification": "MSE_SC_2_4_60_c",
-						"resource_group_id":     CHECKSET,
+						"resource_group_id":     acctest.CHECKSET,
 					}),
 				),
 			},
@@ -196,8 +195,8 @@ func TestAccAliCloudMSECluster_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_alias_name": name,
-						"vswitch_id":         CHECKSET,
-						"vpc_id":             CHECKSET,
+						"vswitch_id":         acctest.CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
 					}),
 				),
 			},
@@ -215,23 +214,23 @@ func TestAccAliCloudMSECluster_basic0(t *testing.T) {
 func TestAccAliCloudMSECluster_changeNetwork(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
-	ra := resourceAttrInit(resourceId, MseClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, MseClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMseCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, MseClusterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckMseClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -254,7 +253,7 @@ func TestAccAliCloudMSECluster_changeNetwork(t *testing.T) {
 						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "1",
 						"net_type":              "privatenet",
-						"vswitch_id":            CHECKSET,
+						"vswitch_id":            acctest.CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
 						"connection_type":       "slb",
@@ -271,8 +270,8 @@ func TestAccAliCloudMSECluster_changeNetwork(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_alias_name": name,
-						"vswitch_id":         CHECKSET,
-						"vpc_id":             CHECKSET,
+						"vswitch_id":         acctest.CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
 						"pub_network_flow":   "2",
 					}),
 				),
@@ -290,23 +289,23 @@ func TestAccAliCloudMSECluster_changeNetwork(t *testing.T) {
 func TestAccAliCloudMSECluster_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
-	ra := resourceAttrInit(resourceId, MseClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, MseClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMseCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, MseClusterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckMseClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -328,7 +327,7 @@ func TestAccAliCloudMSECluster_basic1(t *testing.T) {
 						"cluster_version":       "ZooKeeper_3_8_0",
 						"instance_count":        "1",
 						"net_type":              "privatenet",
-						"vswitch_id":            CHECKSET,
+						"vswitch_id":            acctest.CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
 						"connection_type":       "slb",
@@ -381,22 +380,22 @@ func TestAccAliCloudMSECluster_basic1(t *testing.T) {
 func TestAccAliCloudMSECluster_pro(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
-	ra := resourceAttrInit(resourceId, MseClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, MseClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMseCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, MseClusterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckMseClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -417,7 +416,7 @@ func TestAccAliCloudMSECluster_pro(t *testing.T) {
 						"cluster_type":          "Nacos-Ans",
 						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "3",
-						"vswitch_id":            CHECKSET,
+						"vswitch_id":            acctest.CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
 						"mse_version":           "mse_pro",
@@ -451,7 +450,7 @@ func TestAccAliCloudMSECluster_pro(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version_code": CHECKSET,
+						"version_code": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -467,22 +466,22 @@ func TestAccAliCloudMSECluster_pro(t *testing.T) {
 func TestAccAliCloudMSECluster_serverless(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
-	ra := resourceAttrInit(resourceId, MseClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, MseClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMseCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, MseClusterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckMseClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -502,7 +501,7 @@ func TestAccAliCloudMSECluster_serverless(t *testing.T) {
 						"cluster_type":          "Nacos-Ans",
 						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "3",
-						"vswitch_id":            CHECKSET,
+						"vswitch_id":            acctest.CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
 						"mse_version":           "mse_serverless",
@@ -521,22 +520,22 @@ func TestAccAliCloudMSECluster_serverless(t *testing.T) {
 func TestAccAliCloudMSECluster_VpcId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
-	ra := resourceAttrInit(resourceId, MseClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, MseClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMseCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, MseClusterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckMseClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -559,12 +558,12 @@ func TestAccAliCloudMSECluster_VpcId(t *testing.T) {
 						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "1",
 						"net_type":              "privatenet",
-						"vswitch_id":            CHECKSET,
+						"vswitch_id":            acctest.CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
 						"connection_type":       "slb",
 						"mse_version":           "mse_dev",
-						"vpc_id":                CHECKSET,
+						"vpc_id":                acctest.CHECKSET,
 					}),
 				),
 			},
@@ -574,7 +573,7 @@ func TestAccAliCloudMSECluster_VpcId(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -610,13 +609,13 @@ func TestAccAliCloudMSECluster_VpcId(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -632,24 +631,24 @@ func TestAccAliCloudMSECluster_VpcId(t *testing.T) {
 func TestAccAliCloudMSECluster_PrePaid(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
-	ra := resourceAttrInit(resourceId, MseClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, MseClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMseCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, MseClusterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheckWithTime(t, []int{22})
+			acctest.PreCheck(t)
+			acctest.PreCheckPrePaidResources(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheckWithTime(t, []int{22})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckMseClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -673,12 +672,12 @@ func TestAccAliCloudMSECluster_PrePaid(t *testing.T) {
 						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "1",
 						"net_type":              "privatenet",
-						"vswitch_id":            CHECKSET,
+						"vswitch_id":            acctest.CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
 						"connection_type":       "slb",
 						"mse_version":           "mse_dev",
-						"vpc_id":                CHECKSET,
+						"vpc_id":                acctest.CHECKSET,
 					}),
 				),
 			},
@@ -714,13 +713,13 @@ func TestAccAliCloudMSECluster_PrePaid(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -736,22 +735,22 @@ func TestAccAliCloudMSECluster_PrePaid(t *testing.T) {
 func TestAccAliCloudMSECluster_single_eni(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
-	ra := resourceAttrInit(resourceId, MseClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, MseClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMseCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, MseClusterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckMseClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -773,7 +772,7 @@ func TestAccAliCloudMSECluster_single_eni(t *testing.T) {
 						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "1",
 						"net_type":              "privatenet",
-						"vswitch_id":            CHECKSET,
+						"vswitch_id":            acctest.CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
 						"connection_type":       "single_eni",
@@ -785,10 +784,51 @@ func TestAccAliCloudMSECluster_single_eni(t *testing.T) {
 	})
 }
 
+// After DeleteCluster the cluster reaches DESTROY_SUCCESS (the API's terminal
+// destroyed state, the same target the production Delete stateConf waits for)
+// but remains queryable via QueryClusterDetail for an extended window before
+// the API eventually returns mse-200-021 (NotFound). The shared
+// CheckResourceDestroy performs a single Describe and treats the still-present
+// cluster as not destroyed. testAccCheckMseClusterDestroy bounded-retries
+// DescribeMseCluster until the cluster is NotFound (mse-200-021) or reaches
+// DESTROY_SUCCESS — both are real destroy assertions; it fails if the cluster
+// lingers in a non-destroyed state. No sleep-without-check, no error
+// swallowing, no CheckDestroy removal.
+func testAccCheckMseClusterDestroy(s *terraform.State) error {
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	mseService := mse.NewService(client)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_mse_cluster" {
+			continue
+		}
+		if rs.Primary.ID == "" {
+			continue
+		}
+		wait := helper.IncrementalWait(5*time.Second, 10*time.Second)
+		if err := retry.Retry(10*time.Minute, func() *retry.RetryError {
+			object, err := mseService.DescribeMseCluster(rs.Primary.ID)
+			if err != nil {
+				if errs.NotFoundError(err) {
+					return nil
+				}
+				return retry.NonRetryableError(err)
+			}
+			if fmt.Sprint(object["InitStatus"]) == "DESTROY_SUCCESS" {
+				return nil
+			}
+			wait()
+			return retry.RetryableError(fmt.Errorf("mse cluster %s still in status %q after delete", rs.Primary.ID, fmt.Sprint(object["InitStatus"])))
+		}); err != nil {
+			return fmt.Errorf("mse cluster %s was not destroyed: %s", rs.Primary.ID, err)
+		}
+	}
+	return nil
+}
+
 var MseClusterMap = map[string]string{
-	"cluster_id":  CHECKSET,
-	"app_version": CHECKSET,
-	"status":      CHECKSET,
+	"cluster_id":  acctest.CHECKSET,
+	"app_version": acctest.CHECKSET,
+	"status":      acctest.CHECKSET,
 }
 
 func MseClusterBasicdependence(name string) string {
@@ -829,328 +869,4 @@ func MseClusterBasicdependence(name string) string {
 	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 `, name)
-}
-
-// lintignore: R001
-func TestUnitAlicloudMSECluster(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_mse_cluster"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_mse_cluster"].Schema).Data(nil, nil)
-	dInit.MarkNewResource()
-	attributes := map[string]interface{}{
-		"cluster_specification": "CreateClusterValue",
-		"cluster_type":          "CreateClusterValue",
-		"cluster_version":       "CreateClusterValue",
-		"instance_count":        3,
-		"net_type":              "CreateClusterValue",
-		"vswitch_id":            "CreateClusterValue",
-		"pub_network_flow":      "1",
-		"cluster_alias_name":    "CreateClusterValue",
-		"mse_version":           "CreateClusterValue",
-	}
-	for key, value := range attributes {
-		err := dInit.Set(key, value)
-		assert.Nil(t, err)
-		err = dExisted.Set(key, value)
-		assert.Nil(t, err)
-		if err != nil {
-			log.Printf("[ERROR] the field %s setting error", key)
-		}
-	}
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
-	ReadMockResponse := map[string]interface{}{
-		// QueryClusterDetail
-		"Data": map[string]interface{}{
-			"ClusterType":         "CreateClusterValue",
-			"InstanceCount":       3,
-			"PubNetworkFlow":      "1",
-			"InitStatus":          "INIT_SUCCESS",
-			"ClusterId":           "CreateClusterValue",
-			"MseVersion":          "CreateClusterValue",
-			"NetType":             "CreateClusterValue",
-			"VSwitchId":           "CreateClusterValue",
-			"OrderClusterVersion": "CreateClusterValue",
-			"ClusterAliasName":    "CreateClusterValue",
-		},
-		"VSwitchId":  "CreateClusterValue",
-		"VpcId":      "CreateClusterValue",
-		"InstanceId": "CreateClusterValue",
-		"Success":    "true",
-	}
-	CreateMockResponse := map[string]interface{}{
-		// CreateCluster
-		"VSwitchId":  "CreateClusterValue",
-		"VpcId":      "CreateClusterValue",
-		"InstanceId": "CreateClusterValue",
-		"Success":    "true",
-	}
-	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
-			StatusCode: tea.Int(400),
-		}
-	}
-	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_mse_cluster", errorCode))
-	}
-	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
-		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
-		}
-		return ReadMockResponse, nil
-	}
-
-	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMseClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAlicloudMseClusterCreate(dInit, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	ReadMockResponseDiff := map[string]interface{}{
-		// QueryClusterDetail Response
-		"VSwitchId":  "CreateClusterValue",
-		"VpcId":      "CreateClusterValue",
-		"InstanceId": "CreateClusterValue",
-		"Success":    "true",
-	}
-	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateCluster" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						successResponseMock(ReadMockResponseDiff)
-						return CreateMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudMseClusterCreate(dInit, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_mse_cluster"].Schema).Data(dInit.State(), nil)
-			for key, value := range attributes {
-				_ = dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
-		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
-		}
-	}
-
-	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMseClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAlicloudMseClusterUpdate(dExisted, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	// UpdateAcl
-	attributesDiff := map[string]interface{}{
-		"acl_entry_list": []string{"UpdateAclValue"},
-	}
-	diff, err := newInstanceDiff("alicloud_mse_cluster", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_mse_cluster"].Schema).Data(dInit.State(), diff)
-	ReadMockResponseDiff = map[string]interface{}{
-		// QueryClusterDetail
-		"Success": "true",
-	}
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "UpdateAcl" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						return successResponseMock(ReadMockResponseDiff)
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudMseClusterUpdate(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_mse_cluster"].Schema).Data(dExisted.State(), nil)
-			for key, value := range attributes {
-				_ = dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
-		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
-		}
-	}
-
-	// UpdateCluster
-	attributesDiff = map[string]interface{}{
-		"cluster_alias_name": "UpdateCluster",
-	}
-	diff, err = newInstanceDiff("alicloud_mse_cluster", attributes, attributesDiff, dExisted.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_mse_cluster"].Schema).Data(dExisted.State(), diff)
-	ReadMockResponseDiff = map[string]interface{}{
-		// QueryClusterDetail
-		"Data": map[string]interface{}{
-			"ClusterAliasName": "UpdateCluster",
-		},
-		"Success": "true",
-	}
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "UpdateCluster" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						return successResponseMock(ReadMockResponseDiff)
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudMseClusterUpdate(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_mse_cluster"].Schema).Data(dExisted.State(), nil)
-			for key, value := range attributes {
-				_ = dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
-		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
-		}
-	}
-
-	// Read
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "QueryClusterDetail" {
-				switch errorCode {
-				case "{}":
-					return notFoundResponseMock(errorCode)
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if errorCodes[retryIndex] == "nil" {
-						return ReadMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudMseClusterRead(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		case "{}":
-			assert.Nil(t, err)
-		}
-	}
-
-	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMseClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAlicloudMseClusterDelete(dExisted, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DeleteCluster" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if errorCodes[retryIndex] == "nil" {
-						ReadMockResponse = map[string]interface{}{
-							"Data": map[string]interface{}{
-								"InitStatus": "DESTROY_SUCCESS",
-							},
-							"Success": "true",
-						}
-						return ReadMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAlicloudMseClusterDelete(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		case "nil":
-			assert.Nil(t, err)
-		}
-	}
 }

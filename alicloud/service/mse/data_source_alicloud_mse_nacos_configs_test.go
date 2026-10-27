@@ -1,22 +1,23 @@
-package alicloud
+package mse_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudMseNacosConfigsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMseNacosConfigsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MSESupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMseNacosConfigsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mse_nacos_config.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudMseNacosConfigsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMseNacosConfigsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mse_nacos_config.default.id}_fake"]`,
 		}),
 	}
@@ -24,9 +25,9 @@ func TestAccAlicloudMseNacosConfigsDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":              "1",
 			"configs.#":          "1",
-			"configs.0.type":     CHECKSET,
+			"configs.0.type":     acctest.CHECKSET,
 			"configs.0.app_name": "test",
-			"configs.0.md5":      CHECKSET,
+			"configs.0.md5":      acctest.CHECKSET,
 			"configs.0.data_id":  fmt.Sprintf("tf-testAccNacosConfig-%d", rand),
 			"configs.0.content":  "test",
 			"configs.0.group":    fmt.Sprintf("tf-testAccNacosConfig-%d", rand),
@@ -38,16 +39,16 @@ func TestAccAlicloudMseNacosConfigsDataSource(t *testing.T) {
 			"ids.#": "0",
 		}
 	}
-	var AlicloudMseNacosConfigsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_mse_nacos_configs.default",
-		existMapFunc: existAlicloudMseNacosConfigsDataSourceMapFunc,
-		fakeMapFunc:  fakeAlicloudMseNacosConfigsDataSourceMapFunc,
+	var AlicloudMseNacosConfigsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_mse_nacos_configs.default",
+		ExistMapFunc: existAlicloudMseNacosConfigsDataSourceMapFunc,
+		FakeMapFunc:  fakeAlicloudMseNacosConfigsDataSourceMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	AlicloudMseNacosConfigsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
+	AlicloudMseNacosConfigsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
 
 }
 func testAccCheckAlicloudMseNacosConfigsDataSourceName(rand int, attrMap map[string]string) string {

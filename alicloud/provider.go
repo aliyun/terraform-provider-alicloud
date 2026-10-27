@@ -890,11 +890,6 @@ func Provider() *schema.Provider {
 			"alicloud_msc_sub_contact_verification_message": dataSourceAlicloudMscSubContactVerificationMessage(),
 
 			// mse
-			"alicloud_mse_clusters":          dataSourceAlicloudMseClusters(),
-			"alicloud_mse_gateways":          dataSourceAlicloudMseGateways(),
-			"alicloud_mse_znodes":            dataSourceAlicloudMseZnodes(),
-			"alicloud_mse_engine_namespaces": dataSourceAlicloudMseEngineNamespaces(),
-			"alicloud_mse_nacos_configs":     dataSourceAlicloudMseNacosConfigs(),
 
 			// nas
 			"alicloud_nas_service":                dataSourceAlicloudNasService(),
@@ -2244,11 +2239,6 @@ func Provider() *schema.Provider {
 			"alicloud_msc_sub_webhook":      resourceAlicloudMscSubWebhook(),
 
 			// mse
-			"alicloud_mse_cluster":          resourceAlicloudMseCluster(),
-			"alicloud_mse_gateway":          resourceAlicloudMseGateway(),
-			"alicloud_mse_znode":            resourceAlicloudMseZnode(),
-			"alicloud_mse_engine_namespace": resourceAlicloudMseEngineNamespace(),
-			"alicloud_mse_nacos_config":     resourceAlicloudMseNacosConfig(),
 
 			// nas
 			"alicloud_nas_protocol_service":      resourceAliCloudNasProtocolService(),
