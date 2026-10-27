@@ -35,7 +35,8 @@ jobs:
     permissions:
       checks: read
       pull-requests: read
-    runs-on: terraform-ci-policy
+    # API-only policy discovery must not occupy the Gate runner pool.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       runner: ${{ steps.select.outputs.runner }}
