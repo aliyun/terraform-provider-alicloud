@@ -949,7 +949,7 @@ func Provider() *schema.Provider {
 			"alicloud_nlb_server_group_server_attachments": dataSourceAlicloudNlbServerGroupServerAttachments(),
 
 			// ocean
-			"alicloud_ocean_base_instances": dataSourceAlicloudOceanBaseInstances(),
+			// alicloud_ocean_base_instances is declared by service/oceanbasepro.ServicePackage().
 
 			// ons
 			"alicloud_ons_instances": dataSourceAlicloudOnsInstances(),
@@ -2335,7 +2335,7 @@ func Provider() *schema.Provider {
 			"alicloud_nlb_load_balancer_security_group_attachment":          resourceAliCloudNlbLoadBalancerSecurityGroupAttachment(),
 
 			// ocean
-			"alicloud_ocean_base_instance": resourceAliCloudOceanBaseInstance(),
+			// alicloud_ocean_base_instance is declared by service/oceanbasepro.ServicePackage().
 
 			// ons
 			"alicloud_ons_instance": resourceAlicloudOnsInstance(),
