@@ -1,4 +1,4 @@
-package alicloud
+package eipanycast
 
 import (
 	"fmt"
@@ -6,16 +6,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEipanycastAnycastEipAddress() *schema.Resource {
+func ResourceAnycastEipAddress() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudEipanycastAnycastEipAddressCreate,
-		Read:   resourceAliCloudEipanycastAnycastEipAddressRead,
-		Update: resourceAliCloudEipanycastAnycastEipAddressUpdate,
-		Delete: resourceAliCloudEipanycastAnycastEipAddressDelete,
+		Create: resourceAnycastEipAddressCreate,
+		Read:   resourceAnycastEipAddressRead,
+		Update: resourceAnycastEipAddressUpdate,
+		Delete: resourceAnycastEipAddressDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -46,14 +51,14 @@ func resourceAliCloudEipanycastAnycastEipAddress() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Default:  PayByTraffic,
+				Default:  "PayByTraffic",
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "PayAsYouGo",
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -69,12 +74,12 @@ func resourceAliCloudEipanycastAnycastEipAddress() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 		},
 	}
 }
 
-func resourceAliCloudEipanycastAnycastEipAddressCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAnycastEipAddressCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -85,7 +90,7 @@ func resourceAliCloudEipanycastAnycastEipAddressCreate(d *schema.ResourceData, m
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
@@ -106,11 +111,11 @@ func resourceAliCloudEipanycastAnycastEipAddressCreate(d *schema.ResourceData, m
 	if v, ok := d.GetOk("internet_charge_type"); ok {
 		request["InternetChargeType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -118,35 +123,35 @@ func resourceAliCloudEipanycastAnycastEipAddressCreate(d *schema.ResourceData, m
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eipanycast_anycast_eip_address", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eipanycast_anycast_eip_address", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["AnycastId"]))
 
-	eipanycastServiceV2 := EipanycastServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Allocated", "Associated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, eipanycastServiceV2.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
+	eipanycastService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Allocated", "Associated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, eipanycastService.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudEipanycastAnycastEipAddressUpdate(d, meta)
+	return resourceAnycastEipAddressUpdate(d, meta)
 }
 
-func resourceAliCloudEipanycastAnycastEipAddressRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAnycastEipAddressRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eipanycastServiceV2 := EipanycastServiceV2{client}
+	eipanycastService := NewService(client)
 
-	objectRaw, err := eipanycastServiceV2.DescribeEipanycastAnycastEipAddress(d.Id())
+	objectRaw, err := eipanycastService.DescribeEipanycastAnycastEipAddress(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_eipanycast_anycast_eip_address DescribeEipanycastAnycastEipAddress Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("anycast_eip_address_name", objectRaw["Name"])
@@ -160,12 +165,12 @@ func resourceAliCloudEipanycastAnycastEipAddressRead(d *schema.ResourceData, met
 	d.Set("status", objectRaw["Status"])
 
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAnycastEipAddressUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -190,11 +195,11 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -202,9 +207,9 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -219,11 +224,11 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -231,14 +236,14 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		eipanycastServiceV2 := EipanycastServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Allocated", "Associated"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, eipanycastServiceV2.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
+		eipanycastService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Allocated", "Associated"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, eipanycastService.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -253,11 +258,11 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "ANYCASTEIPADDRESS"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -265,23 +270,23 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		eipanycastServiceV2 := EipanycastServiceV2{client}
-		if err := eipanycastServiceV2.SetResourceTags(d, "ANYCASTEIPADDRESS"); err != nil {
-			return WrapError(err)
+		eipanycastService := NewService(client)
+		if err := eipanycastService.SetResourceTags(d, "ANYCASTEIPADDRESS"); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudEipanycastAnycastEipAddressRead(d, meta)
+	return resourceAnycastEipAddressRead(d, meta)
 }
 
-func resourceAliCloudEipanycastAnycastEipAddressDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAnycastEipAddressDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "ReleaseAnycastEipAddress"
@@ -292,13 +297,13 @@ func resourceAliCloudEipanycastAnycastEipAddressDelete(d *schema.ResourceData, m
 	request = make(map[string]interface{})
 	request["AnycastId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus.Anycast"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"IncorrectStatus.Anycast"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -306,53 +311,20 @@ func resourceAliCloudEipanycastAnycastEipAddressDelete(d *schema.ResourceData, m
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	eipanycastServiceV2 := EipanycastServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eipanycastServiceV2.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
+	eipanycastService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eipanycastService.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
-}
-
-func convertEipanycastAnycastEipAddressPaymentTypeRequest(source string) string {
-	switch source {
-	case "PayAsYouGo":
-		return "PostPaid"
-	}
-	return source
-}
-
-func convertEipanycastAnycastEipAddressPaymentTypeResponse(source string) string {
-	switch source {
-	case "PostPaid":
-		return "PayAsYouGo"
-	}
-	return source
-}
-
-func convertEipanycastAnycastEipAddressInstanceChargeTypeResponse(source interface{}) interface{} {
-	source = fmt.Sprint(source)
-	switch source {
-	case "PostPaid":
-		return "PayAsYouGo"
-	}
-	return source
-}
-func convertEipanycastAnycastEipAddressInstanceChargeTypeRequest(source interface{}) interface{} {
-	source = fmt.Sprint(source)
-	switch source {
-	case "PayAsYouGo":
-		return "PostPaid"
-	}
-	return source
 }
