@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package rocketmq. This file is generated automatically. Please do not modify it manually, thank you!
+package rocketmq
 
 import (
 	"fmt"
@@ -9,16 +9,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudRocketmqTopic() *schema.Resource {
+func ResourceTopic() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudRocketmqTopicCreate,
-		Read:   resourceAliCloudRocketmqTopicRead,
-		Update: resourceAliCloudRocketmqTopicUpdate,
-		Delete: resourceAliCloudRocketmqTopicDelete,
+		Create: resourceTopicCreate,
+		Read:   resourceTopicRead,
+		Update: resourceTopicUpdate,
+		Delete: resourceTopicDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -45,7 +49,7 @@ func resourceAliCloudRocketmqTopic() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"NORMAL", "FIFO", "DELAY", "TRANSACTION"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"NORMAL", "FIFO", "DELAY", "TRANSACTION"}, false),
 			},
 			"region_id": {
 				Type:     schema.TypeString,
@@ -54,7 +58,7 @@ func resourceAliCloudRocketmqTopic() *schema.Resource {
 			"remark": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_]+$"), "Custom remarks"),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_]+$"), "Custom remarks"),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -64,13 +68,13 @@ func resourceAliCloudRocketmqTopic() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[%a-zA-Z0-9_-]+$"), "Topic name and identification"),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[%a-zA-Z0-9_-]+$"), "Topic name and identification"),
 			},
 		},
 	}
 }
 
-func resourceAliCloudRocketmqTopicCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceTopicCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -94,11 +98,11 @@ func resourceAliCloudRocketmqTopicCreate(d *schema.ResourceData, meta interface{
 		request["maxSendTps"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -106,35 +110,35 @@ func resourceAliCloudRocketmqTopicCreate(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rocketmq_topic", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_rocketmq_topic", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", instanceId, topicName))
 
-	rocketmqServiceV2 := RocketmqServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 50*time.Second, rocketmqServiceV2.RocketmqTopicStateRefreshFunc(d.Id(), "status", []string{}))
+	rocketmqService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 50*time.Second, rocketmqService.TopicStateRefreshFunc(d.Id(), "status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudRocketmqTopicRead(d, meta)
+	return resourceTopicRead(d, meta)
 }
 
-func resourceAliCloudRocketmqTopicRead(d *schema.ResourceData, meta interface{}) error {
+func resourceTopicRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	rocketmqServiceV2 := RocketmqServiceV2{client}
+	rocketmqService := NewService(client)
 
-	objectRaw, err := rocketmqServiceV2.DescribeRocketmqTopic(d.Id())
+	objectRaw, err := rocketmqService.DescribeTopic(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_rocketmq_topic DescribeRocketmqTopic Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_rocketmq_topic DescribeTopic Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["createTime"])
@@ -149,7 +153,7 @@ func resourceAliCloudRocketmqTopicRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceAliCloudRocketmqTopicUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceTopicUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -181,11 +185,11 @@ func resourceAliCloudRocketmqTopicUpdate(d *schema.ResourceData, meta interface{
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -193,21 +197,21 @@ func resourceAliCloudRocketmqTopicUpdate(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		rocketmqServiceV2 := RocketmqServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, rocketmqServiceV2.RocketmqTopicStateRefreshFunc(d.Id(), "status", []string{}))
+		rocketmqService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, rocketmqService.TopicStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
-	return resourceAliCloudRocketmqTopicRead(d, meta)
+	return resourceTopicRead(d, meta)
 }
 
-func resourceAliCloudRocketmqTopicDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceTopicDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -220,12 +224,12 @@ func resourceAliCloudRocketmqTopicDelete(d *schema.ResourceData, meta interface{
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -233,19 +237,19 @@ func resourceAliCloudRocketmqTopicDelete(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	rocketmqServiceV2 := RocketmqServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, rocketmqServiceV2.RocketmqTopicStateRefreshFunc(d.Id(), "topicName", []string{}))
+	rocketmqService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, rocketmqService.TopicStateRefreshFunc(d.Id(), "topicName", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

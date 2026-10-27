@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package rocketmq. This file is generated automatically. Please do not modify it manually, thank you!
+package rocketmq
 
 import (
 	"fmt"
@@ -9,16 +9,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudRocketmqConsumerGroup() *schema.Resource {
+func ResourceConsumerGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudRocketmqConsumerGroupCreate,
-		Read:   resourceAliCloudRocketmqConsumerGroupRead,
-		Update: resourceAliCloudRocketmqConsumerGroupUpdate,
-		Delete: resourceAliCloudRocketmqConsumerGroupDelete,
+		Create: resourceConsumerGroupCreate,
+		Read:   resourceConsumerGroupRead,
+		Update: resourceConsumerGroupUpdate,
+		Delete: resourceConsumerGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -41,12 +45,12 @@ func resourceAliCloudRocketmqConsumerGroup() *schema.Resource {
 						"retry_policy": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"DefaultRetryPolicy", "FixedRetryPolicy", "BackoffRetryPolicy"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"DefaultRetryPolicy", "FixedRetryPolicy", "BackoffRetryPolicy"}, false),
 						},
 						"max_retry_times": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntBetween(0, 1000),
+							ValidateFunc: validators.IntBetween(0, 1000),
 						},
 					},
 				},
@@ -63,7 +67,7 @@ func resourceAliCloudRocketmqConsumerGroup() *schema.Resource {
 			"delivery_order_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Concurrently", "Orderly"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Concurrently", "Orderly"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -90,7 +94,7 @@ func resourceAliCloudRocketmqConsumerGroup() *schema.Resource {
 	}
 }
 
-func resourceAliCloudRocketmqConsumerGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceConsumerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -112,7 +116,7 @@ func resourceAliCloudRocketmqConsumerGroupCreate(d *schema.ResourceData, meta in
 	}
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("consume_retry_policy"); !IsNil(v) {
+	if v := d.Get("consume_retry_policy"); !helper.IsNil(v) {
 		maxRetryTimes1, _ := jsonpath.Get("$[0].max_retry_times", v)
 		if maxRetryTimes1 != nil && maxRetryTimes1 != "" {
 			objectDataLocalMap["maxRetryTimes"] = maxRetryTimes1
@@ -133,11 +137,11 @@ func resourceAliCloudRocketmqConsumerGroupCreate(d *schema.ResourceData, meta in
 		request["maxReceiveTps"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -145,35 +149,35 @@ func resourceAliCloudRocketmqConsumerGroupCreate(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rocketmq_consumer_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_rocketmq_consumer_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", instanceId, consumerGroupId))
 
-	rocketmqServiceV2 := RocketmqServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, rocketmqServiceV2.RocketmqConsumerGroupStateRefreshFunc(d.Id(), "status", []string{}))
+	rocketmqService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, rocketmqService.ConsumerGroupStateRefreshFunc(d.Id(), "status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudRocketmqConsumerGroupRead(d, meta)
+	return resourceConsumerGroupRead(d, meta)
 }
 
-func resourceAliCloudRocketmqConsumerGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceConsumerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	rocketmqServiceV2 := RocketmqServiceV2{client}
+	rocketmqService := NewService(client)
 
-	objectRaw, err := rocketmqServiceV2.DescribeRocketmqConsumerGroup(d.Id())
+	objectRaw, err := rocketmqService.DescribeConsumerGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_rocketmq_consumer_group DescribeRocketmqConsumerGroup Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_rocketmq_consumer_group DescribeConsumerGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["createTime"])
@@ -205,7 +209,7 @@ func resourceAliCloudRocketmqConsumerGroupRead(d *schema.ResourceData, meta inte
 	return nil
 }
 
-func resourceAliCloudRocketmqConsumerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceConsumerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -241,7 +245,7 @@ func resourceAliCloudRocketmqConsumerGroupUpdate(d *schema.ResourceData, meta in
 	}
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("consume_retry_policy"); !IsNil(v) {
+	if v := d.Get("consume_retry_policy"); !helper.IsNil(v) {
 		maxRetryTimes1, _ := jsonpath.Get("$[0].max_retry_times", v)
 		if maxRetryTimes1 != nil && maxRetryTimes1 != "" {
 			objectDataLocalMap["maxRetryTimes"] = maxRetryTimes1
@@ -266,11 +270,11 @@ func resourceAliCloudRocketmqConsumerGroupUpdate(d *schema.ResourceData, meta in
 	}
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -278,21 +282,21 @@ func resourceAliCloudRocketmqConsumerGroupUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		rocketmqServiceV2 := RocketmqServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, rocketmqServiceV2.RocketmqConsumerGroupStateRefreshFunc(d.Id(), "status", []string{}))
+		rocketmqService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, rocketmqService.ConsumerGroupStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
-	return resourceAliCloudRocketmqConsumerGroupRead(d, meta)
+	return resourceConsumerGroupRead(d, meta)
 }
 
-func resourceAliCloudRocketmqConsumerGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceConsumerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -305,12 +309,12 @@ func resourceAliCloudRocketmqConsumerGroupDelete(d *schema.ResourceData, meta in
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -318,19 +322,19 @@ func resourceAliCloudRocketmqConsumerGroupDelete(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	rocketmqServiceV2 := RocketmqServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, rocketmqServiceV2.RocketmqConsumerGroupStateRefreshFunc(d.Id(), "consumerGroupId", []string{}))
+	rocketmqService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, rocketmqService.ConsumerGroupStateRefreshFunc(d.Id(), "consumerGroupId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
