@@ -2485,7 +2485,6 @@ func Provider() *schema.Provider {
 			// redis
 			"alicloud_redis_global_security_ip_group": resourceAliCloudRedisGlobalSecurityIpGroup(),
 			"alicloud_redis_backup":                   resourceAliCloudRedisBackup(),
-			"alicloud_redis_tair_instance":            resourceAliCloudRedisTairInstance(),
 
 			// reserved
 			"alicloud_reserved_instance": resourceAliCloudReservedInstance(),
