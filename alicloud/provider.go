@@ -945,9 +945,6 @@ func Provider() *schema.Provider {
 			"alicloud_oos_state_configurations": dataSourceAlicloudOosStateConfigurations(),
 			"alicloud_oos_secret_parameters":    dataSourceAliCloudOosSecretParameters(),
 
-			// open
-			"alicloud_open_search_app_groups": dataSourceAlicloudOpenSearchAppGroups(),
-
 			// oss
 			"alicloud_oss_bucket_inventories": dataSourceAliCloudOssBucketInventories(),
 			"alicloud_oss_service":            dataSourceAlicloudOssService(),
@@ -2308,9 +2305,6 @@ func Provider() *schema.Provider {
 			"alicloud_oos_state_configuration":    resourceAlicloudOosStateConfiguration(),
 			"alicloud_oos_secret_parameter":       resourceAliCloudOosSecretParameter(),
 			"alicloud_oos_default_patch_baseline": resourceAlicloudOosDefaultPatchBaseline(),
-
-			// open
-			"alicloud_open_search_app_group": resourceAlicloudOpenSearchAppGroup(),
 
 			// oss
 			"alicloud_oss_bucket_inventory":                  resourceAliCloudOssBucketInventory(),

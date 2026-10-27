@@ -1,4 +1,4 @@
-package alicloud
+package opensearch
 
 import (
 	"encoding/json"
@@ -9,14 +9,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOpenSearchAppGroups() *schema.Resource {
+func DataSourceAppGroups() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudOpenSearchAppGroupsRead,
+		Read: dataSourceAppGroupsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -192,31 +196,31 @@ func dataSourceAlicloudOpenSearchAppGroups() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudOpenSearchAppGroupsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAppGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "/v4/openapi/app-groups"
 	request := make(map[string]*string)
 	if v, ok := d.GetOk("instance_id"); ok {
-		request["instanceId"] = StringPointer(v.(string))
+		request["instanceId"] = helper.StringPointer(v.(string))
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["resourceGroupId"] = StringPointer(v.(string))
+		request["resourceGroupId"] = helper.StringPointer(v.(string))
 	}
 	if v, ok := d.GetOk("type"); ok {
-		request["type"] = StringPointer(v.(string))
+		request["type"] = helper.StringPointer(v.(string))
 	}
 	if v, ok := d.GetOk("name"); ok {
-		request["name"] = StringPointer(v.(string))
+		request["name"] = helper.StringPointer(v.(string))
 	}
-	request["PageSize"] = StringPointer(strconv.Itoa(PageSizeLarge))
-	request["PageNumber"] = StringPointer("1")
+	request["PageSize"] = helper.StringPointer(strconv.Itoa(helper.PageSizeLarge))
+	request["PageNumber"] = helper.StringPointer("1")
 	var objects []map[string]interface{}
 	var appGroupNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		appGroupNameRegex = r
 	}
@@ -232,11 +236,11 @@ func dataSourceAlicloudOpenSearchAppGroupsRead(d *schema.ResourceData, meta inte
 	}
 	var response map[string]interface{}
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("OpenSearch", "2017-12-25", action, request, nil, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -244,13 +248,13 @@ func dataSourceAlicloudOpenSearchAppGroupsRead(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug("GET "+action, response, request)
+	logs.AddDebug("GET "+action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_open_search_app_groups", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_open_search_app_groups", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.result", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.result", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.result", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -270,50 +274,50 @@ func dataSourceAlicloudOpenSearchAppGroupsRead(d *schema.ResourceData, meta inte
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		charge_wayVal, err := formatInt(object["chargingWay"])
+		charge_wayVal, err := convert.FormatInt(object["chargingWay"])
 		if err != nil {
 			return err
 		}
 
-		create_timeVal, err := formatInt(object["created"])
+		create_timeVal, err := convert.FormatInt(object["created"])
 		if err != nil {
 			return err
 		}
 
-		first_rank_algo_deployment_idVal, err := formatInt(object["firstRankAlgoDeploymentId"])
+		first_rank_algo_deployment_idVal, err := convert.FormatInt(object["firstRankAlgoDeploymentId"])
 		if err != nil {
 			return err
 		}
-		has_pending_quota_review_taskVal, err := formatInt(object["hasPendingQuotaReviewTask"])
-		if err != nil {
-			return err
-		}
-
-		locked_by_expirationVal, err := formatInt(object["lockedByExpiration"])
-		if err != nil {
-			return err
-		}
-		pending_second_rank_algo_deployment_idVal, err := formatInt(object["pendingSecondRankAlgoDeploymentId"])
+		has_pending_quota_review_taskVal, err := convert.FormatInt(object["hasPendingQuotaReviewTask"])
 		if err != nil {
 			return err
 		}
 
-		producedVal, err := formatInt(object["produced"])
+		locked_by_expirationVal, err := convert.FormatInt(object["lockedByExpiration"])
+		if err != nil {
+			return err
+		}
+		pending_second_rank_algo_deployment_idVal, err := convert.FormatInt(object["pendingSecondRankAlgoDeploymentId"])
 		if err != nil {
 			return err
 		}
 
-		second_rank_algo_deployment_idVal, err := formatInt(object["secondRankAlgoDeploymentId"])
+		producedVal, err := convert.FormatInt(object["produced"])
 		if err != nil {
 			return err
 		}
 
-		switched_timeVal, err := formatInt(object["switchedTime"])
+		second_rank_algo_deployment_idVal, err := convert.FormatInt(object["secondRankAlgoDeploymentId"])
+		if err != nil {
+			return err
+		}
+
+		switched_timeVal, err := convert.FormatInt(object["switchedTime"])
 		if err != nil {
 			return err
 		}
 		mapping := map[string]interface{}{
-			"payment_type":                           convertOpenSearchAppGroupPaymentTypeResponse(object["chargeType"].(string)),
+			"payment_type":                           convertAppGroupPaymentTypeResponse(object["chargeType"].(string)),
 			"charge_way":                             charge_wayVal,
 			"commodity_code":                         object["commodityCode"],
 			"create_time":                            create_timeVal,
@@ -353,10 +357,10 @@ func dataSourceAlicloudOpenSearchAppGroupsRead(d *schema.ResourceData, meta inte
 		}
 
 		id := fmt.Sprint(object["name"])
-		openSearchService := OpenSearchService{client}
-		getResp, err := openSearchService.DescribeOpenSearchAppGroup(id)
+		openSearchService := NewService(client)
+		getResp, err := openSearchService.DescribeAppGroup(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["app_group_id"] = getResp["id"]
 		mapping["app_group_name"] = getResp["name"]
@@ -364,19 +368,19 @@ func dataSourceAlicloudOpenSearchAppGroupsRead(d *schema.ResourceData, meta inte
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("groups", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package alicloud
+package opensearch
 
 import (
 	"encoding/json"
@@ -7,17 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudOpenSearchAppGroup() *schema.Resource {
+func ResourceAppGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudOpenSearchAppGroupCreate,
-		Read:   resourceAlicloudOpenSearchAppGroupRead,
-		Update: resourceAlicloudOpenSearchAppGroupUpdate,
-		Delete: resourceAlicloudOpenSearchAppGroupDelete,
+		Create: resourceAppGroupCreate,
+		Read:   resourceAppGroupRead,
+		Update: resourceAppGroupUpdate,
+		Delete: resourceAppGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -121,7 +124,7 @@ func resourceAlicloudOpenSearchAppGroup() *schema.Resource {
 	}
 }
 
-func resourceAlicloudOpenSearchAppGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAppGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "/v4/openapi/app-groups"
@@ -129,7 +132,7 @@ func resourceAlicloudOpenSearchAppGroupCreate(d *schema.ResourceData, meta inter
 	var err error
 	body["name"] = d.Get("app_group_name")
 	body["type"] = d.Get("type")
-	body["chargeType"] = convertOpenSearchAppGroupPaymentTypeRequest(d.Get("payment_type").(string))
+	body["chargeType"] = convertAppGroupPaymentTypeRequest(d.Get("payment_type").(string))
 	quotaMaps := make(map[string]interface{}, 0)
 	for _, quotas := range d.Get("quota").(*schema.Set).List() {
 		quota := quotas.(map[string]interface{})
@@ -155,11 +158,11 @@ func resourceAlicloudOpenSearchAppGroupCreate(d *schema.ResourceData, meta inter
 		body["order"] = orderMaps
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("OpenSearch", "2017-12-25", action, nil, nil, body, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -167,33 +170,33 @@ func resourceAlicloudOpenSearchAppGroupCreate(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug("POST "+action, response, body)
+	logs.AddDebug("POST "+action, response, body)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_open_search_app_group", "POST "+action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_open_search_app_group", "POST "+action, errs.AlibabaCloudSdkGoERROR)
 	}
 	d.SetId(fmt.Sprint(response["result"].(map[string]interface{})["instanceId"]))
 
-	return resourceAlicloudOpenSearchAppGroupUpdate(d, meta)
+	return resourceAppGroupUpdate(d, meta)
 }
-func resourceAlicloudOpenSearchAppGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAppGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	openSearchService := OpenSearchService{client}
-	object, err := openSearchService.DescribeOpenSearchAppGroup(d.Id())
+	openSearchService := NewService(client)
+	object, err := openSearchService.DescribeAppGroup(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_open_search_app_group openSearchService.DescribeOpenSearchAppGroup Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_open_search_app_group openSearchService.DescribeAppGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	d.Set("payment_type", convertOpenSearchAppGroupPaymentTypeResponse(object["chargeType"].(string)))
+	d.Set("payment_type", convertAppGroupPaymentTypeResponse(object["chargeType"].(string)))
 	d.Set("app_group_name", object["name"])
 	d.Set("description", object["description"])
 	d.Set("type", object["type"])
 	d.Set("current_version", object["currentVersion"])
 	d.Set("status", object["status"])
-	d.Set("charge_way", convertOpenSearchchargingWayResponse(object["chargingWay"].(json.Number).String()))
+	d.Set("charge_way", convertChargingWayResponse(object["chargingWay"].(json.Number).String()))
 	quotaSli := make([]map[string]interface{}, 0)
 	if _, exist := object["quota"]; exist {
 		quotaval := object["quota"].(map[string]interface{})
@@ -209,9 +212,9 @@ func resourceAlicloudOpenSearchAppGroupRead(d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAppGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	openSearchService := OpenSearchService{client}
+	openSearchService := NewService(client)
 	var response map[string]interface{}
 	var err error
 	update := false
@@ -232,17 +235,17 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 	}
 	if d.HasChange("charge_way") || d.IsNewResource() {
 		if v, ok := d.GetOk("charge_way"); ok {
-			body["chargingWay"] = convertOpenSearchchargingWayRequest(v.(string))
+			body["chargingWay"] = convertChargingWayRequest(v.(string))
 			update = true
 		}
 	}
 	if update {
 		action := "/v4/openapi/app-groups/" + d.Id()
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("OpenSearch", "2017-12-25", action, nil, nil, body, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -250,9 +253,9 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug("PUT "+action, response, body)
+		logs.AddDebug("PUT "+action, response, body)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -261,7 +264,7 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 		if val, exist := d.GetOk("order_type"); exist {
 			body["orderType"] = val
 		} else {
-			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is updated ", "order_type", "quota"))
+			return errs.WrapError(fmt.Errorf("attribute '%s' is required when '%s' is updated ", "order_type", "quota"))
 		}
 		for _, quotas := range d.Get("quota").(*schema.Set).List() {
 			quota := quotas.(map[string]interface{})
@@ -272,11 +275,11 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 	}
 	if update {
 		action := fmt.Sprintf("/v4/openapi/app-groups/%s/quota", d.Id())
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("OpenSearch", "2017-12-25", action, nil, nil, body, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -284,20 +287,20 @@ func resourceAlicloudOpenSearchAppGroupUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug("PUT "+action, response, body)
+		logs.AddDebug("PUT "+action, response, body)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	stateConf := BuildStateConf([]string{}, []string{"config_pending", "normal"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, openSearchService.OpenSearchAppStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"config_pending", "normal"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, openSearchService.AppStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudOpenSearchAppGroupRead(d, meta)
+	return resourceAppGroupRead(d, meta)
 }
 
-func resourceAlicloudOpenSearchAppGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAppGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	if d.Get("payment_type").(string) == "Subscription" {
@@ -308,14 +311,14 @@ func resourceAlicloudOpenSearchAppGroupDelete(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	var err error
 	request := map[string]*string{
-		"appGroupIdentity": StringPointer(d.Id()),
+		"appGroupIdentity": helper.StringPointer(d.Id()),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("OpenSearch", "2017-12-25", action, request, nil, nil, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -323,47 +326,9 @@ func resourceAlicloudOpenSearchAppGroupDelete(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug("DELETE "+action, response, request)
+	logs.AddDebug("DELETE "+action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
-}
-
-func convertOpenSearchAppGroupPaymentTypeRequest(source string) string {
-	switch source {
-	case "PayAsYouGo":
-		return "POSTPAY"
-	case "Subscription":
-		return "PREPAY"
-	}
-	return source
-}
-func convertOpenSearchAppGroupPaymentTypeResponse(source string) string {
-	switch source {
-	case "POSTPAY":
-		return "PayAsYouGo"
-	case "PREPAY":
-		return "Subscription"
-	}
-	return source
-}
-
-func convertOpenSearchchargingWayRequest(source string) interface{} {
-	switch source {
-	case "compute_resource":
-		return 1
-	case "qps":
-		return 2
-	}
-	return source
-}
-func convertOpenSearchchargingWayResponse(source string) interface{} {
-	switch source {
-	case "1":
-		return "compute_resource"
-	case "2":
-		return "qps"
-	}
-	return source
 }
