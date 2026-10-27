@@ -1,4 +1,4 @@
-package alicloud
+package gdb_test
 
 import (
 	"fmt"
@@ -14,10 +14,16 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gdb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,7 +38,7 @@ func init() {
 }
 
 func testSweepGraphDatabaseDbInstance(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -45,16 +51,16 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 	request := map[string]interface{}{}
 
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -62,7 +68,7 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
 			return nil
@@ -78,7 +84,7 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			if !sweepAll() {
+			if !sweep.SweepAll() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(strings.ToLower(item["DBInstanceDescription"].(string)), strings.ToLower(prefix)) {
 						skip = false
@@ -102,7 +108,7 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 			}
 			log.Printf("[INFO] Delete Graph Database DbInstance success: %s ", item["DBInstanceDescription"].(string))
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -113,22 +119,22 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 func TestAccAliCloudGraphDatabaseDbInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_graph_database_db_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudGraphDatabaseDbInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGraphDatabaseDbInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gdb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeGraphDatabaseDbInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sgraphdatabasedbinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGraphDatabaseDbInstanceBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgraphdatabasedbinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGraphDatabaseDbInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.GraphDatabaseSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.GraphDatabaseSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -249,22 +255,22 @@ func TestAccAliCloudGraphDatabaseDbInstance_basic0(t *testing.T) {
 func TestAccAliCloudGraphDatabaseDbInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_graph_database_db_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.GraphDatabaseDbInstanceSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudGraphDatabaseDbInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.GraphDatabaseDbInstanceSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGraphDatabaseDbInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gdb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeGraphDatabaseDbInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sgraphdatabasedbinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGraphDatabaseDbInstanceBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgraphdatabasedbinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGraphDatabaseDbInstanceBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -290,9 +296,9 @@ func TestAccAliCloudGraphDatabaseDbInstance_basic1(t *testing.T) {
 						"db_node_storage":          "50",
 						"payment_type":             "PayAsYouGo",
 						"db_instance_description":  name,
-						"vswitch_id":               CHECKSET,
-						"vpc_id":                   CHECKSET,
-						"zone_id":                  CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
+						"vpc_id":                   acctest.CHECKSET,
+						"zone_id":                  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -308,22 +314,22 @@ func TestAccAliCloudGraphDatabaseDbInstance_basic1(t *testing.T) {
 func TestAccAliCloudGraphDatabaseDbInstance_single(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_graph_database_db_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.GraphDatabaseDbInstanceSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudGraphDatabaseDbInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.GraphDatabaseDbInstanceSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGraphDatabaseDbInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gdb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeGraphDatabaseDbInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sgraphdatabasedbinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGraphDatabaseDbInstanceBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgraphdatabasedbinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGraphDatabaseDbInstanceBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -349,9 +355,9 @@ func TestAccAliCloudGraphDatabaseDbInstance_single(t *testing.T) {
 						"db_node_storage":          "50",
 						"payment_type":             "PayAsYouGo",
 						"db_instance_description":  name,
-						"vswitch_id":               CHECKSET,
-						"vpc_id":                   CHECKSET,
-						"zone_id":                  CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
+						"vpc_id":                   acctest.CHECKSET,
+						"zone_id":                  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -365,12 +371,12 @@ func TestAccAliCloudGraphDatabaseDbInstance_single(t *testing.T) {
 }
 
 var AlicloudGraphDatabaseDbInstanceMap0 = map[string]string{
-	"connection_string": CHECKSET,
-	"port":              CHECKSET,
+	"connection_string": acctest.CHECKSET,
+	"port":              acctest.CHECKSET,
 }
 
 func AlicloudGraphDatabaseDbInstanceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }`, name)
@@ -378,7 +384,7 @@ variable "name" {
 
 // The instance requires the same zone as the vswitch, but currently the instance does not support zone query.
 func AlicloudGraphDatabaseDbInstanceBasicDependence1(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -396,9 +402,9 @@ data "alicloud_vswitches" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(nil, nil)
+	resourceSchema := gdb.ResourceGraphDatabaseDbInstance()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"db_node_class":            "CreateDBInstanceValue",
@@ -423,7 +429,7 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -463,18 +469,18 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_graph_database_db_instance", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_graph_database_db_instance", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -482,13 +488,13 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGraphDatabaseDbInstanceCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -513,14 +519,14 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGraphDatabaseDbInstanceCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -534,23 +540,23 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGraphDatabaseDbInstanceUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
 		"db_instance_description": "ModifyDBInstanceDescriptionValue",
 	}
-	diff, err := newInstanceDiff("alicloud_graph_database_db_instance", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_graph_database_db_instance", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		"Items": map[string]interface{}{
 			"DBInstance": []interface{}{
@@ -579,14 +585,14 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGraphDatabaseDbInstanceUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -606,11 +612,11 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 			},
 		},
 	}
-	diff, err = newInstanceDiff("alicloud_graph_database_db_instance", attributes, attributesDiff, dExisted.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_graph_database_db_instance", attributes, attributesDiff, dExisted.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(dExisted.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		"Items": map[string]interface{}{
 			"DBInstance": []interface{}{
@@ -644,14 +650,14 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGraphDatabaseDbInstanceUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -667,11 +673,11 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 		"db_node_storage":          70,
 		"db_instance_storage_type": "ModifyDBInstanceSpecValue",
 	}
-	diff, err = newInstanceDiff("alicloud_graph_database_db_instance", attributes, attributesDiff, dExisted.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_graph_database_db_instance", attributes, attributesDiff, dExisted.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(dExisted.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		"Items": map[string]interface{}{
 			"DBInstance": []interface{}{
@@ -702,14 +708,14 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGraphDatabaseDbInstanceUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_graph_database_db_instance"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -741,7 +747,7 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGraphDatabaseDbInstanceRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -754,13 +760,13 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGraphDatabaseDbInstanceDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	for index, errorCode := range errorCodes {
@@ -788,7 +794,7 @@ func TestUnitAlicloudGraphDatabaseDbInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGraphDatabaseDbInstanceDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
