@@ -1,4 +1,4 @@
-package alicloud
+package rdsai
 
 import (
 	"encoding/json"
@@ -8,16 +8,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudRdsAiInstance() *schema.Resource {
+func ResourceRdsAiInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudRdsAiInstanceCreate,
-		Read:   resourceAliCloudRdsAiInstanceRead,
-		Update: resourceAliCloudRdsAiInstanceUpdate,
-		Delete: resourceAliCloudRdsAiInstanceDelete,
+		Create: resourceRdsAiInstanceCreate,
+		Read:   resourceRdsAiInstanceRead,
+		Update: resourceRdsAiInstanceUpdate,
+		Delete: resourceRdsAiInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -123,7 +127,7 @@ func resourceAliCloudRdsAiInstance() *schema.Resource {
 	}
 }
 
-func resourceAliCloudRdsAiInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceRdsAiInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -134,7 +138,7 @@ func resourceAliCloudRdsAiInstanceCreate(d *schema.ResourceData, meta interface{
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("dashboard_password"); ok {
 		request["DashboardPassword"] = v
@@ -158,11 +162,11 @@ func resourceAliCloudRdsAiInstanceCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOkExists("public_endpoint_enabled"); ok {
 		request["PublicEndpointEnabled"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("RdsAi", "2025-05-07", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -170,35 +174,35 @@ func resourceAliCloudRdsAiInstanceCreate(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rds_ai_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_rds_ai_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["InstanceName"]))
 
-	rdsAiServiceV2 := RdsAiServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
+	rdsAiServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 	}
 
-	return resourceAliCloudRdsAiInstanceUpdate(d, meta)
+	return resourceRdsAiInstanceUpdate(d, meta)
 }
 
-func resourceAliCloudRdsAiInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceRdsAiInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	rdsAiServiceV2 := RdsAiServiceV2{client}
+	rdsAiServiceV2 := NewService(client)
 
 	objectRaw, err := rdsAiServiceV2.DescribeRdsAiInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_rds_ai_instance DescribeRdsAiInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("app_name", objectRaw["AppName"])
@@ -207,13 +211,13 @@ func resourceAliCloudRdsAiInstanceRead(d *schema.ResourceData, meta interface{})
 	d.Set("status", objectRaw["Status"])
 
 	objectRaw, err = rdsAiServiceV2.DescribeInstanceDescribeInstanceAuthInfo(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	authConfigListNameArray := make([]string, 0)
 	if v, ok := d.GetOk("auth_config_list"); ok {
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			authConfigListNameArray = append(authConfigListNameArray, fmt.Sprint(dataLoopTmp["name"]))
 		}
@@ -222,10 +226,10 @@ func resourceAliCloudRdsAiInstanceRead(d *schema.ResourceData, meta interface{})
 	configListRaw := objectRaw["ConfigList"]
 	authConfigListMaps := make([]map[string]interface{}, 0)
 	if configListRaw != nil {
-		for _, configListChildRaw := range convertToInterfaceArray(configListRaw) {
+		for _, configListChildRaw := range convert.ConvertToInterfaceArray(configListRaw) {
 			authConfigListMap := make(map[string]interface{})
 			configListChildRaw := configListChildRaw.(map[string]interface{})
-			if !InArray(fmt.Sprint(configListChildRaw["Name"]), authConfigListNameArray) {
+			if !helper.InArray(fmt.Sprint(configListChildRaw["Name"]), authConfigListNameArray) {
 				continue
 			}
 
@@ -240,12 +244,12 @@ func resourceAliCloudRdsAiInstanceRead(d *schema.ResourceData, meta interface{})
 	}
 
 	objectRaw, err = rdsAiServiceV2.DescribeInstanceDescribeInstanceSSL(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("ca_type", objectRaw["CAType"])
-	ssl_enabledVal, formatErr := formatInt(objectRaw["SSLEnabled"])
+	ssl_enabledVal, formatErr := convert.FormatInt(objectRaw["SSLEnabled"])
 	if formatErr != nil {
 		return formatErr
 	}
@@ -254,13 +258,13 @@ func resourceAliCloudRdsAiInstanceRead(d *schema.ResourceData, meta interface{})
 	d.Set("server_key", objectRaw["ServerKey"])
 
 	objectRaw, err = rdsAiServiceV2.DescribeInstanceDescribeInstanceStorageConfig(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	storageConfigListNameArray := make([]string, 0)
 	if v, ok := d.GetOk("storage_config_list"); ok {
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			storageConfigListNameArray = append(storageConfigListNameArray, fmt.Sprint(dataLoopTmp["name"]))
 		}
@@ -270,10 +274,10 @@ func resourceAliCloudRdsAiInstanceRead(d *schema.ResourceData, meta interface{})
 	configListRaw = objectRaw["ConfigList"]
 	storageConfigListMaps := make([]map[string]interface{}, 0)
 	if configListRaw != nil {
-		for _, configListChildRaw := range convertToInterfaceArray(configListRaw) {
+		for _, configListChildRaw := range convert.ConvertToInterfaceArray(configListRaw) {
 			storageConfigListMap := make(map[string]interface{})
 			configListChildRaw := configListChildRaw.(map[string]interface{})
-			if !InArray(fmt.Sprint(configListChildRaw["Name"]), storageConfigListNameArray) {
+			if !helper.InArray(fmt.Sprint(configListChildRaw["Name"]), storageConfigListNameArray) {
 				continue
 			}
 
@@ -290,7 +294,7 @@ func resourceAliCloudRdsAiInstanceRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -298,7 +302,7 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 	update := false
 	d.Partial(true)
 
-	rdsAiServiceV2 := RdsAiServiceV2{client}
+	rdsAiServiceV2 := NewService(client)
 	objectRaw, _ := rdsAiServiceV2.DescribeRdsAiInstance(d.Id())
 
 	if d.HasChange("status") {
@@ -307,7 +311,7 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 
 		currentStatus, err := jsonpath.Get("Status", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "Status", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "Status", objectRaw)
 		}
 		if fmt.Sprint(currentStatus) != target {
 			enableStopInstanceStopped := false
@@ -321,11 +325,11 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 				query = make(map[string]interface{})
 				request["InstanceName"] = d.Id()
 				request["RegionId"] = client.RegionId
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("RdsAi", "2025-05-07", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -333,14 +337,14 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				rdsAiServiceV2 := RdsAiServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
+				rdsAiServiceV2 := NewService(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
 				if jobDetail, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 				}
 
 			}
@@ -355,11 +359,11 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 				query = make(map[string]interface{})
 				request["InstanceName"] = d.Id()
 				request["RegionId"] = client.RegionId
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("RdsAi", "2025-05-07", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -367,14 +371,14 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				rdsAiServiceV2 := RdsAiServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
+				rdsAiServiceV2 := NewService(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
 				if jobDetail, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 				}
 
 			}
@@ -398,11 +402,11 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("RdsAi", "2025-05-07", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -410,14 +414,14 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		rdsAiServiceV2 := RdsAiServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
+		rdsAiServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 		}
 	}
 	update = false
@@ -430,7 +434,7 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 		update = true
 		if v, ok := d.GetOk("auth_config_list"); ok || d.HasChange("auth_config_list") {
 			configListMapsArray := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(v) {
+			for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["Value"] = dataLoopTmp["value"]
@@ -439,18 +443,18 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 			}
 			configListMapsJson, err := json.Marshal(configListMapsArray)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			request["ConfigList"] = string(configListMapsJson)
 		}
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("RdsAi", "2025-05-07", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -458,14 +462,14 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		rdsAiServiceV2 := RdsAiServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
+		rdsAiServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 		}
 	}
 	update = false
@@ -474,12 +478,12 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 	query = make(map[string]interface{})
 	request["InstanceName"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("storage_config_list") {
 		update = true
 		if v, ok := d.GetOk("storage_config_list"); ok || d.HasChange("storage_config_list") {
 			configListMapsArray := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(v) {
+			for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["Value"] = dataLoopTmp["value"]
@@ -488,18 +492,18 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 			}
 			configListMapsJson, err := json.Marshal(configListMapsArray)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			request["ConfigList"] = string(configListMapsJson)
 		}
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("RdsAi", "2025-05-07", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -507,14 +511,14 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		rdsAiServiceV2 := RdsAiServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
+		rdsAiServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 		}
 	}
 	update = false
@@ -543,11 +547,11 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 	}
 	request["SSLEnabled"] = d.Get("ssl_enabled")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("RdsAi", "2025-05-07", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -555,22 +559,22 @@ func resourceAliCloudRdsAiInstanceUpdate(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		rdsAiServiceV2 := RdsAiServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
+		rdsAiServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 		}
 	}
 
 	d.Partial(false)
-	return resourceAliCloudRdsAiInstanceRead(d, meta)
+	return resourceRdsAiInstanceRead(d, meta)
 }
 
-func resourceAliCloudRdsAiInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceRdsAiInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteAppInstance"
@@ -581,13 +585,13 @@ func resourceAliCloudRdsAiInstanceDelete(d *schema.ResourceData, meta interface{
 	request = make(map[string]interface{})
 	request["InstanceName"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("RdsAi", "2025-05-07", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -595,19 +599,19 @@ func resourceAliCloudRdsAiInstanceDelete(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	rdsAiServiceV2 := RdsAiServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
+	rdsAiServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, rdsAiServiceV2.DescribeAsyncRdsAiInstanceStateRefreshFunc(d, response, "$.Status", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 	}
 
 	return nil

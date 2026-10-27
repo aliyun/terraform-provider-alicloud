@@ -2502,7 +2502,6 @@ func Provider() *schema.Provider {
 
 			// rds
 			"alicloud_rds_custom_disk_attachment":       resourceAliCloudRdsCustomDiskAttachment(),
-			"alicloud_rds_ai_instance":                  resourceAliCloudRdsAiInstance(),
 			"alicloud_rds_custom_disk":                  resourceAliCloudRdsCustomDisk(),
 			"alicloud_rds_custom_deployment_set":        resourceAliCloudRdsCustomDeploymentSet(),
 			"alicloud_rds_custom":                       resourceAliCloudRdsCustom(),
