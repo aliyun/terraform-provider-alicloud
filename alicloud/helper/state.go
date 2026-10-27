@@ -15,6 +15,14 @@ import (
 // package alicloud re-exports them as var aliases so the flat layout
 // keeps compiling unchanged.
 
+// BuildStateConf is kept out of the inliner (//go:noinline) so that unit
+// tests can patch it with gomonkey.ApplyFunc to neutralize the production
+// Delay/MinTimeout. Go's inliner would otherwise inline this tiny function at
+// every call site, leaving the assembly-level patch with no effect and making
+// the patched tests sleep for the full production 3-4 minute delays. The
+// runtime cost of the single indirect call is negligible next to a state wait.
+//
+//go:noinline
 func BuildStateConf(pending, target []string, timeout, delay time.Duration, f retry.StateRefreshFunc) *retry.StateChangeConf {
 	return &retry.StateChangeConf{
 		Pending:    pending,

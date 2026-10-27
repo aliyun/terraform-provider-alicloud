@@ -1351,7 +1351,6 @@ func Provider() *schema.Provider {
 			"alicloud_amqp_virtual_host":           resourceAliCloudAmqpVirtualHost(),
 			"alicloud_amqp_queue":                  resourceAliCloudAmqpQueue(),
 			"alicloud_amqp_exchange":               resourceAliCloudAmqpExchange(),
-			"alicloud_amqp_instance":               resourceAliCloudAmqpInstance(),
 			"alicloud_amqp_binding":                resourceAliCloudAmqpBinding(),
 			"alicloud_amqp_static_account":         resourceAliCloudAmqpStaticAccount(),
 
