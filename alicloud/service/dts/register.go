@@ -23,6 +23,14 @@ func ServicePackage() conns.ServicePackage {
 				TypeName: "alicloud_dts_migration_job",
 				Factory:  ResourceMigrationJob,
 			},
+			{
+				TypeName: "alicloud_dts_subscription_job",
+				Factory:  ResourceSubscriptionJob,
+			},
+			{
+				TypeName: "alicloud_dts_synchronization_job",
+				Factory:  ResourceSynchronizationJob,
+			},
 		},
 	}
 }

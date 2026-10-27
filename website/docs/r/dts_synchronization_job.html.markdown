@@ -230,8 +230,12 @@ The following attributes are exported:
 
 ## Import
 
-DTS Synchronization Job can be imported using the id, e.g.
+DTS Synchronization Job can be imported using its canonical `DtsJobId`, e.g.
 
 ```shell
-$ terraform import alicloud_dts_synchronization_job.example <id>
+$ terraform import alicloud_dts_synchronization_job.example <DtsJobId>
 ```
+
+The import ID must exactly match `DtsJobId` returned by `DescribeDtsJobDetail`. A DTS instance ID (`DtsInstanceID`) is not a job ID, even if the detail API accepts it as a lookup key. Import rejects a different or missing job identity and does not automatically bind to another task.
+
+If existing state contains an instance ID, first back up the state and verify the intended job in DTS. Remove only the incorrect local state binding with `terraform state rm`, then explicitly import the verified `DtsJobId`. Do not delete the cloud job to correct its state binding. If the original job has been deleted or rebuilt, verify the replacement separately before importing it.

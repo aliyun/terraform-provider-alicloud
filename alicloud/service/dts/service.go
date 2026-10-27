@@ -3,6 +3,7 @@ package dts
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -334,6 +335,229 @@ func (s *Service) CheckJobStateRefreshFunc(id string, failStates []string) retry
 	}
 }
 
+func (s *Service) DescribeSubscriptionJob(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobDetail"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"DtsJobId": id,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS:SubscriptionJob", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	if object["Status"] == "Starting" {
+		object["Status"] = "Normal"
+	}
+	return object, nil
+}
+
+func (s *Service) SubscriptionJobStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeSubscriptionJob(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *Service) DescribeSynchronizationJob(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobDetail"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"DtsJobId": id,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS:SynchronizationJob", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	// From startup to synchronizing, the resource goes through the pre-check and initialization phases.
+	// Because the initialization phase takes too long, and once it passes the pre-check, it can be considered that the task can be executed normally.
+	// Therefore, the initialization state is regarded as an equivalent synchronization state.
+	if object["Status"] == "synchronizing" || object["Status"] == "Initializing" {
+		object["Status"] = "Synchronizing"
+	}
+	// After calling the delete interface, soft delete is actually performed,
+	// and instance data will still be queried from the query interface.
+	// Therefore, it is judged that the instance does not exist when the end state is "Finished".
+	if object["Status"] == "Finished" {
+		return object, errs.WrapErrorf(errs.NotFoundErr("DTS:SynchronizationJob", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
+	}
+	return object, nil
+}
+
+func (s *Service) SynchronizationJobStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeSynchronizationJob(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *Service) QueryChangedJobParameters(dtsJobId string) (string, error) {
+	client := s.client
+	action := "DescribeDtsJobConfig"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"DtsJobId": dtsJobId,
+	}
+	resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+	if err != nil {
+		return "", err
+	}
+
+	logs.AddDebug(action, resp, request)
+
+	// Parameters 必须为 []interface{}
+	parameters, ok := resp["Parameters"].([]interface{})
+	if !ok {
+		return "", fmt.Errorf("no Parameters found in response")
+	}
+
+	changed := make([]map[string]interface{}, 0)
+
+	// filter 被修改的项
+	for _, item := range parameters {
+		param, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		rv, rvOk := param["RunningValue"]
+		dv, dvOk := param["DefaultValue"]
+		if rvOk && dvOk && rv != dv {
+			changed = append(changed, map[string]interface{}{
+				"module": param["Module"],
+				"name":   param["Name"],
+				"value":  rv,
+			})
+		}
+	}
+
+	if len(changed) == 0 {
+		return "", nil
+	}
+
+	// 按 name 排序
+	sort.Slice(changed, func(i, j int) bool {
+		ni, _ := changed[i]["name"].(string)
+		nj, _ := changed[j]["name"].(string)
+		return ni < nj
+	})
+
+	// 转一行字符串
+	b, err := json.Marshal(changed)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+// Detail lookups accept instance IDs too; mutations require the exact job identity.
+// Never adopt the current job under a stable instance ID implicitly.
+func validateDtsJobIdentity(id string, object map[string]interface{}) error {
+	jobId, ok := object["DtsJobId"].(string)
+	if !ok || jobId == "" {
+		return fmt.Errorf("cannot verify DTS job %q: DescribeDtsJobDetail returned no DtsJobId; state identity has not been changed", id)
+	}
+	if id != jobId {
+		return fmt.Errorf("DTS job ID %q does not match DtsJobId %q returned by DescribeDtsJobDetail; use the canonical DtsJobId, not DtsInstanceID. State identity has not been changed; verify the intended job and explicitly re-import it", id, jobId)
+	}
+	return nil
+}
+
+func importDtsJob(d *schema.ResourceData, describe func(string) (map[string]interface{}, error)) ([]*schema.ResourceData, error) {
+	object, err := describe(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil, fmt.Errorf("cannot import non-existent DTS job %q: %s", d.Id(), err)
+		}
+		return nil, errs.WrapError(err)
+	}
+	if object["Status"] == "Finished" {
+		return nil, fmt.Errorf("cannot import non-existent DTS job %q: job is Finished", d.Id())
+	}
+	if err := validateDtsJobIdentity(d.Id(), object); err != nil {
+		return nil, err
+	}
+	return []*schema.ResourceData{d}, nil
+}
+
+// setEndpointSSL folds source_endpoint_ssl and destination_endpoint_ssl into the DTS Reserve
+// parameter as its srcSSL and destSSL keys. ConfigureDtsJob has no dedicated SSL parameter, so
+// Reserve is the only place the connection mode can be sent. Values already present under those
+// keys in a user-supplied reserve are overwritten by the dedicated attributes.
 // setEndpointSSL folds source_endpoint_ssl and destination_endpoint_ssl into the DTS Reserve
 // parameter as its srcSSL and destSSL keys. ConfigureDtsJob has no dedicated SSL parameter, so
 // Reserve is the only place the connection mode can be sent. Values already present under those

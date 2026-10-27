@@ -761,3 +761,17 @@ func convertDtsMigrationJobPaymentTypeResponse(source interface{}) interface{} {
 	}
 	return source
 }
+
+func convertDtsPaymentTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "PostPaid":
+		return "PayAsYouGo"
+	case "POSTPAY":
+		return "PayAsYouGo"
+	case "PrePaid":
+		return "Subscription"
+	case "PREPAY":
+		return "Subscription"
+	}
+	return source
+}
