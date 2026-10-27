@@ -24,7 +24,8 @@ jobs:
     permissions:
       checks: read
       pull-requests: read
-    runs-on: terraform-ci-policy
+    # API-only policy discovery must not occupy the Gate runner pool.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       classification: ${{ steps.select.outputs.classification }}
@@ -105,6 +106,27 @@ jobs:
             git archive "$PR_BASE_SHA" -- "${cache_inputs[@]}" | tar -x -C "$test_root"
           fi
           python3 -m unittest discover -s "$test_root/scripts/ci" -p test_go_cache.py
+      - name: Restore node-local Go cache
+        id: local-go-cache
+        if: ${{ needs.route.outputs.classification == 'trusted' }}
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Older PR heads may lack the helper. Use their exact base fixture.
+          helper=scripts/ci/restore-local-go-cache.py
+          if [[ ! -f "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/restore-local-go-cache.py"
+            if ! git show "$PR_BASE_SHA:scripts/ci/restore-local-go-cache.py" > "$helper"; then
+              echo 'hit=false' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          if [[ -f "$helper" ]]; then
+            python3 "$helper"
+          else
+            echo 'hit=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: Resolve Go cache paths
         id: go-cache
         shell: bash
@@ -114,7 +136,7 @@ jobs:
           echo "module=$(go env GOMODCACHE)/cache/download" >> "$GITHUB_OUTPUT"
           echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
       - name: Restore trusted Go cache
-        if: ${{ needs.route.outputs.classification == 'trusted' }}
+        if: ${{ needs.route.outputs.classification == 'trusted' && steps.local-go-cache.outputs.hit != 'true' }}
         id: cache-restore
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -134,7 +156,7 @@ jobs:
             go run scripts/consistency/consistency_check.go -fileNames="diff.out"
           fi
       - name: Save master Go cache
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.cache-restore.outputs.cache-hit != 'true' }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.local-go-cache.outputs.hit != 'true' && steps.cache-restore.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
