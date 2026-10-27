@@ -655,6 +655,31 @@ else
 fi
 
 # ============================================================================
+# 5b. Test Binary Initialization Check (cloudauth no-tests)
+# ============================================================================
+#
+# Compiles, links and initializes the standard alicloud/service/cloudauth test
+# binary WITHOUT running any acceptance test (go test -run '^$' -count=1 -v).
+# `-run '^$'` matches no Test* function (no cloud resource is created); the
+# binary still builds, links and runs init()/TestMain. `-count=1` defeats the
+# Go test cache so a cached pass cannot mask a real compile/link/init failure.
+#
+# This is the local-ci-check equivalent of the remote probe_init init probe.
+# It runs UNCONDITIONALLY (including --quick): a compile/link/init failure
+# fails the check and the enclosing quick/CI run. It does NOT replace the
+# production build (`make provider-build`) or a real ACC; the receipt marks
+# INITIALIZATION_ONLY and countsAsAccTest=false. See
+# scripts/ci/initialization-check.sh and scripts/ci/production-build-checks.md.
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}  Part 5b: Test Binary Initialization Check (cloudauth no-tests)${NC}"
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo
+
+run_check "Test Binary Initialization Check (cloudauth no-tests)" \
+  "\"$SCRIPT_DIR/ci/initialization-check.sh\"" \
+  || true
+
+# ============================================================================
 # 6. Example Tests (Documentation Examples)
 # ============================================================================
 
