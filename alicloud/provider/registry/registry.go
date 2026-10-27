@@ -83,6 +83,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/expressconnectrouter"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcopen"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv2"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fnf"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ga"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gdb"
@@ -246,6 +247,7 @@ var servicePackages = []conns.ServicePackage{
 	expressconnectrouter.ServicePackage(),
 	fc.ServicePackage(),
 	fcopen.ServicePackage(),
+	fcv2.ServicePackage(),
 	fnf.ServicePackage(),
 	ga.ServicePackage(),
 	gdb.ServicePackage(),

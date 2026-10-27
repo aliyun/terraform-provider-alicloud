@@ -1,4 +1,4 @@
-package alicloud
+package fcv2_test
 
 import (
 	"bytes"
@@ -10,8 +10,10 @@ import (
 	"testing"
 
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv2"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -19,24 +21,24 @@ import (
 // Case 3393
 func TestAccAliCloudFcv2Function_basic3393(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+	acctest.CheckoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3393)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv2ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcv2.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeFcv2Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv2function%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv2function%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv2FunctionBasicDependence3393)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -780,20 +782,20 @@ func TestAccAliCloudFcv2Function_basic3270(t *testing.T) {
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3270)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv2ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcv2.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeFcv2Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv2function%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv2function%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv2FunctionBasicDependence3270)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1316,20 +1318,20 @@ func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3395)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv2ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcv2.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeFcv2Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv2function%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv2function%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv2FunctionBasicDependence3395)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1932,20 +1934,20 @@ func TestAccAliCloudFcv2Function_basic3393_twin(t *testing.T) {
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3393)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv2ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcv2.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeFcv2Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv2function%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv2function%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv2FunctionBasicDependence3393)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2070,20 +2072,20 @@ func TestAccAliCloudFcv2Function_basic3270_twin(t *testing.T) {
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3270)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv2ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcv2.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeFcv2Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv2function%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv2function%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv2FunctionBasicDependence3270)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2165,20 +2167,20 @@ func TestAccAliCloudFcv2Function_basic3395_twin(t *testing.T) {
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3395)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv2ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcv2.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeFcv2Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv2function%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv2function%d", acctest.DefaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv2FunctionBasicDependence3395)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
