@@ -1,70 +1,72 @@
-package alicloud
+package vpcpeer_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 )
 
 func TestAccAlicloudVpcPeerConnectionsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_vpc_peer_connection.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_vpc_peer_connection.default.id}_fake"]`,
 		}),
 	}
-	peerConnectionNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+	peerConnectionNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_vpc_peer_connection.default.id}"]`,
 			"peer_connection_name": `"${alicloud_vpc_peer_connection.default.peer_connection_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_vpc_peer_connection.default.id}"]`,
 			"peer_connection_name": `"${alicloud_vpc_peer_connection.default.peer_connection_name}_fake"`,
 		}),
 	}
-	vpcIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+	vpcIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_vpc_peer_connection.default.id}"]`,
 			"vpc_id": `"${alicloud_vpc_peer_connection.default.vpc_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_vpc_peer_connection.default.id}"]`,
 			"vpc_id": `"${alicloud_vpc_peer_connection.default.vpc_id}_fake"`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_vpc_peer_connection.default.peer_connection_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_vpc_peer_connection.default.peer_connection_name}_fake"`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_vpc_peer_connection.default.id}"]`,
 			"status": `"${alicloud_vpc_peer_connection.default.status}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_vpc_peer_connection.default.id}"]`,
 			"status": `"Creating"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_vpc_peer_connection.default.id}"]`,
 			"name_regex":           `"${alicloud_vpc_peer_connection.default.peer_connection_name}"`,
 			"peer_connection_name": `"${alicloud_vpc_peer_connection.default.peer_connection_name}"`,
 			"status":               `"${alicloud_vpc_peer_connection.default.status}"`,
 			"vpc_id":               `"${alicloud_vpc_peer_connection.default.vpc_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand, map[string]string{
 			"ids":                  `["${alicloud_vpc_peer_connection.default.id}_fake"]`,
 			"name_regex":           `"${alicloud_vpc_peer_connection.default.peer_connection_name}_fake"`,
 			"peer_connection_name": `"${alicloud_vpc_peer_connection.default.peer_connection_name}_fake"`,
@@ -77,17 +79,17 @@ func TestAccAlicloudVpcPeerConnectionsDataSource(t *testing.T) {
 			"ids.#":                              "1",
 			"names.#":                            "1",
 			"connections.#":                      "1",
-			"connections.0.accepting_ali_uid":    CHECKSET,
-			"connections.0.accepting_region_id":  defaultRegionToTest,
-			"connections.0.accepting_vpc_id":     CHECKSET,
-			"connections.0.bandwidth":            CHECKSET,
+			"connections.0.accepting_ali_uid":    acctest.CHECKSET,
+			"connections.0.accepting_region_id":  acctest.DefaultRegionToTest,
+			"connections.0.accepting_vpc_id":     acctest.CHECKSET,
+			"connections.0.bandwidth":            acctest.CHECKSET,
 			"connections.0.description":          fmt.Sprintf("tf-testAccPeerConnection-%d", rand),
 			"connections.0.peer_connection_name": fmt.Sprintf("tf-testAccPeerConnection-%d", rand),
-			"connections.0.vpc_id":               CHECKSET,
-			"connections.0.create_time":          CHECKSET,
-			"connections.0.id":                   CHECKSET,
-			"connections.0.peer_connection_id":   CHECKSET,
-			"connections.0.status":               CHECKSET,
+			"connections.0.vpc_id":               acctest.CHECKSET,
+			"connections.0.create_time":          acctest.CHECKSET,
+			"connections.0.id":                   acctest.CHECKSET,
+			"connections.0.peer_connection_id":   acctest.CHECKSET,
+			"connections.0.status":               acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudVpcPeerConnectionsDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -96,16 +98,16 @@ func TestAccAlicloudVpcPeerConnectionsDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudVpcPeerConnectionsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_vpc_peer_connections.default",
-		existMapFunc: existAlicloudVpcPeerConnectionsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudVpcPeerConnectionsDataSourceNameMapFunc,
+	var alicloudVpcPeerConnectionsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_vpc_peer_connections.default",
+		ExistMapFunc: existAlicloudVpcPeerConnectionsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudVpcPeerConnectionsDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudVpcPeerConnectionsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, peerConnectionNameConf, vpcIdConf, nameRegexConf, statusConf, allConf)
+	alicloudVpcPeerConnectionsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, peerConnectionNameConf, vpcIdConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -115,7 +117,7 @@ func testAccCheckAlicloudVpcPeerConnectionsDataSourceName(rand int, attrMap map[
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf-testAccPeerConnection-%d"
 }
 data "alicloud_account" "default" {}
@@ -137,8 +139,8 @@ resource "alicloud_vpc_peer_connection" "default" {
 }
 
 data "alicloud_vpc_peer_connections" "default" {
-	%s	
+	%s
 }
-`, rand, defaultRegionToTest, strings.Join(pairs, " \n "))
+`, rand, acctest.DefaultRegionToTest, strings.Join(pairs, " \n "))
 	return config
 }

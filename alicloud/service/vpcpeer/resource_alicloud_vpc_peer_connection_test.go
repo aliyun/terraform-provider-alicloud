@@ -1,4 +1,4 @@
-package alicloud
+package vpcpeer_test
 
 import (
 	"fmt"
@@ -14,10 +14,16 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcpeer"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +39,7 @@ func init() {
 }
 
 func testSweepVpcPeerConnection(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
@@ -46,15 +52,15 @@ func testSweepVpcPeerConnection(region string) error {
 	request := map[string]interface{}{}
 	request["RegionId"] = client.RegionId
 
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("VpcPeer", "2022-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -62,7 +68,7 @@ func testSweepVpcPeerConnection(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
 			return nil
@@ -113,21 +119,21 @@ func testSweepVpcPeerConnection(region string) error {
 func TestAccAliCloudVPCPeerConnection_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_peer_connection.default"
-	ra := resourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpcPeerConnection")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPCPeerConnectionBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vpcpeer.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpcPeerPeerConnection")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudVPCPeerConnectionBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -139,10 +145,10 @@ func TestAccAliCloudVPCPeerConnection_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":              CHECKSET,
-						"accepting_vpc_id":    CHECKSET,
-						"accepting_region_id": CHECKSET,
-						"accepting_ali_uid":   CHECKSET,
+						"vpc_id":              acctest.CHECKSET,
+						"accepting_vpc_id":    acctest.CHECKSET,
+						"accepting_region_id": acctest.CHECKSET,
+						"accepting_ali_uid":   acctest.CHECKSET,
 						//"link_type":           "Gold",
 					}),
 				),
@@ -154,7 +160,7 @@ func TestAccAliCloudVPCPeerConnection_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						//"link_type":         "Silver",
 					}),
 				),
@@ -206,13 +212,13 @@ func TestAccAliCloudVPCPeerConnection_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -228,21 +234,21 @@ func TestAccAliCloudVPCPeerConnection_basic0(t *testing.T) {
 func TestAccAliCloudVPCPeerConnection_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_peer_connection.default"
-	ra := resourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpcPeerConnection")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPCPeerConnectionBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vpcpeer.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpcPeerPeerConnection")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudVPCPeerConnectionBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -261,11 +267,11 @@ func TestAccAliCloudVPCPeerConnection_basic0_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":               CHECKSET,
-						"accepting_vpc_id":     CHECKSET,
-						"accepting_region_id":  CHECKSET,
-						"accepting_ali_uid":    CHECKSET,
-						"resource_group_id":    CHECKSET,
+						"vpc_id":               acctest.CHECKSET,
+						"accepting_vpc_id":     acctest.CHECKSET,
+						"accepting_region_id":  acctest.CHECKSET,
+						"accepting_ali_uid":    acctest.CHECKSET,
+						"resource_group_id":    acctest.CHECKSET,
 						"peer_connection_name": name,
 						"description":          name,
 						"status":               "Activated",
@@ -287,17 +293,17 @@ func TestAccAliCloudVPCPeerConnection_basic0_twin(t *testing.T) {
 func TestAccAliCloudVPCPeerConnection_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_peer_connection.default"
-	ra := resourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
-	testAccCheck := ra.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPCPeerConnectionBasicDependence1)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
+	testAccCheck := ra.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudVPCPeerConnectionBasicDependence1)
 	_ = v
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactoriesAlternate(),
+		ProviderFactories: acctest.SDKProviderFactoriesAlternate(),
 		CheckDestroy:      testAccCheckVPCPeerConnectionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -310,10 +316,10 @@ func TestAccAliCloudVPCPeerConnection_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":              CHECKSET,
-						"accepting_vpc_id":    CHECKSET,
-						"accepting_region_id": CHECKSET,
-						"accepting_ali_uid":   CHECKSET,
+						"vpc_id":              acctest.CHECKSET,
+						"accepting_vpc_id":    acctest.CHECKSET,
+						"accepting_region_id": acctest.CHECKSET,
+						"accepting_ali_uid":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -343,7 +349,7 @@ func TestAccAliCloudVPCPeerConnection_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -405,13 +411,13 @@ func TestAccAliCloudVPCPeerConnection_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -422,17 +428,17 @@ func TestAccAliCloudVPCPeerConnection_basic1(t *testing.T) {
 func TestAccAliCloudVPCPeerConnection_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_peer_connection.default"
-	ra := resourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
-	testAccCheck := ra.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPCPeerConnectionBasicDependence1)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
+	testAccCheck := ra.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudVPCPeerConnectionBasicDependence1)
 	_ = v
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactoriesAlternate(),
+		ProviderFactories: acctest.SDKProviderFactoriesAlternate(),
 		CheckDestroy:      testAccCheckVPCPeerConnectionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -453,12 +459,12 @@ func TestAccAliCloudVPCPeerConnection_basic1_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":               CHECKSET,
-						"accepting_vpc_id":     CHECKSET,
-						"accepting_region_id":  CHECKSET,
-						"accepting_ali_uid":    CHECKSET,
+						"vpc_id":               acctest.CHECKSET,
+						"accepting_vpc_id":     acctest.CHECKSET,
+						"accepting_region_id":  acctest.CHECKSET,
+						"accepting_ali_uid":    acctest.CHECKSET,
 						"bandwidth":            "200",
-						"resource_group_id":    CHECKSET,
+						"resource_group_id":    acctest.CHECKSET,
 						"peer_connection_name": name,
 						"description":          name,
 						"status":               "Activated",
@@ -473,14 +479,106 @@ func TestAccAliCloudVPCPeerConnection_basic1_twin(t *testing.T) {
 }
 
 var AliCloudVPCPeerConnectionMap0 = map[string]string{
-	"bandwidth":         CHECKSET,
-	"resource_group_id": CHECKSET,
-	"status":            CHECKSET,
-	"create_time":       CHECKSET,
+	"bandwidth":         acctest.CHECKSET,
+	"resource_group_id": acctest.CHECKSET,
+	"status":            acctest.CHECKSET,
+	"create_time":       acctest.CHECKSET,
+}
+
+// TestAccAliCloudVPCPeerConnection_linkType exercises the cross-region
+// link_type field (Platinum/Gold) end-to-end: Create with Gold, then Update to
+// Platinum. link_type is only valid for cross-region peer connections (see
+// VpcPeer 2022-01-01 CreateVpcPeerConnection LinkType), so the dependence
+// places the accepting VPC in cn-hangzhou via the alternate provider; the
+// requesting VPC stays in the default test region (cn-beijing), making the
+// peer connection cross-region so link_type is accepted. Values
+// Platinum/Gold are the documented enum; Silver is not a published value and
+// is intentionally not used. The cross-region layout mirrors the proven
+// basic1/Dependence1 setup.
+func TestAccAliCloudVPCPeerConnection_linkType(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_peer_connection.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vpcpeer.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpcPeerPeerConnection")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudVPCPeerConnectionLinkTypeDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactoriesAlternate(),
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":              "${alicloud_vpc.requesting.id}",
+					"accepting_vpc_id":    "${alicloud_vpc.accepting.id}",
+					"accepting_region_id": "${data.alicloud_regions.default.regions.0.id}",
+					"accepting_ali_uid":   "${data.alicloud_account.default.id}",
+					"link_type":           "Gold",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":              acctest.CHECKSET,
+						"accepting_vpc_id":    acctest.CHECKSET,
+						"accepting_region_id": acctest.CHECKSET,
+						"accepting_ali_uid":   acctest.CHECKSET,
+						"link_type":           "Gold",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"link_type": "Platinum",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"link_type": "Platinum",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func AliCloudVPCPeerConnectionLinkTypeDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	provider "alicloudalt" {
+  		region = "cn-hangzhou"
+	}
+
+	data "alicloud_regions" "default" {
+  		provider = alicloudalt
+  		current  = true
+	}
+
+	data "alicloud_account" "default" {
+	}
+
+	resource "alicloud_vpc" "requesting" {
+  		vpc_name    = var.name
+  		enable_ipv6 = "true"
+	}
+
+	resource "alicloud_vpc" "accepting" {
+  		provider    = alicloudalt
+  		vpc_name    = var.name
+  		enable_ipv6 = "true"
+	}
+`, name)
 }
 
 func AliCloudVPCPeerConnectionBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
 	}
@@ -542,17 +640,17 @@ func AliCloudVPCPeerConnectionBasicDependence1(name string) string {
 }
 
 func testAccCheckVPCPeerConnectionDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	vpcServiceV2 := VpcServiceV2{client}
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	service := vpcpeer.NewService(client)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_vpc_peer_connection" {
 			continue
 		}
 
-		_, err := vpcServiceV2.DescribeVpcPeerConnection(rs.Primary.ID)
+		_, err := service.DescribeVpcPeerPeerConnection(rs.Primary.ID)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				continue
 			}
 			return err
@@ -579,16 +677,16 @@ func testAccCheckVPCPeerConnectionDestroyWithProviders(providers *[]*schema.Prov
 
 func testAccCheckVPCPeerConnectionDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
 	client := provider.Meta().(*connectivity.AliyunClient)
-	vpcServiceV2 := VpcServiceV2{client}
+	service := vpcpeer.NewService(client)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_vpc_peer_connection" {
 			continue
 		}
 
-		_, err := vpcServiceV2.DescribeVpcPeerConnection(rs.Primary.ID)
+		_, err := service.DescribeVpcPeerPeerConnection(rs.Primary.ID)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				continue
 			}
 			return err
@@ -615,11 +713,11 @@ func testAccCheckVPCPeerConnectionExistsWithProviders(n string, res map[string]i
 			}
 
 			client := provider.Meta().(*connectivity.AliyunClient)
-			vpcServiceV2 := VpcServiceV2{client}
+			service := vpcpeer.NewService(client)
 
-			resp, err := vpcServiceV2.DescribeVpcPeerConnection(rs.Primary.ID)
+			resp, err := service.DescribeVpcPeerPeerConnection(rs.Primary.ID)
 			if err != nil {
-				if NotFoundError(err) {
+				if errs.NotFoundError(err) {
 					continue
 				}
 				return err
@@ -636,9 +734,9 @@ func testAccCheckVPCPeerConnectionExistsWithProviders(n string, res map[string]i
 
 // lintignore: R001
 func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_vpc_peer_connection"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_vpc_peer_connection"].Schema).Data(nil, nil)
+	resourceSchema := vpcpeer.ResourcePeerConnection()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"peer_connection_name": "CreateVpcPeerConnectionValue",
@@ -660,7 +758,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -689,31 +787,31 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_vpc_peer_connection", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_vpc_peer_connection", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcpeerClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudVpcPeerPeerConnectionCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -736,14 +834,14 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpcPeerPeerConnectionCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_vpc_peer_connection"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -757,13 +855,13 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcpeerClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudVpcPeerPeerConnectionUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -771,11 +869,11 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 		"description":          "UpdateVpcPeerConnectionValue",
 		"bandwidth":            200,
 	}
-	diff, err := newInstanceDiff("alicloud_vpc_peer_connection", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_vpc_peer_connection", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_vpc_peer_connection"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		"Name":        "UpdateVpcPeerConnectionValue",
 		"Description": "UpdateVpcPeerConnectionValue",
@@ -799,14 +897,14 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpcPeerPeerConnectionUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_vpc_peer_connection"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -818,11 +916,11 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 	}
 
 	// Read
-	diff, err = newInstanceDiff("alicloud_vpc_peer_connection", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_vpc_peer_connection", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_vpc_peer_connection"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -843,7 +941,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpcPeerPeerConnectionRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -856,21 +954,21 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcpeerClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudVpcPeerPeerConnectionDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_vpc_peer_connection", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_vpc_peer_connection", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_vpc_peer_connection"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -893,7 +991,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpcPeerPeerConnectionDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -909,22 +1007,22 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 func TestAccAliCloudVpcPeerPeerConnection_basic7960(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_peer_connection.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcPeerPeerConnectionMap7960)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcPeerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcPeerPeerConnectionMap7960)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vpcpeer.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpcPeerPeerConnection")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcpeerpeerconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcPeerPeerConnectionBasicDependence7960)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcpeerpeerconnection%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcPeerPeerConnectionBasicDependence7960)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -932,17 +1030,17 @@ func TestAccAliCloudVpcPeerPeerConnection_basic7960(t *testing.T) {
 					"description":          "tf-testacc-28",
 					"vpc_id":               "${alicloud_vpc.defaultQka2zR.id}",
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"accepting_region_id":  defaultRegionToTest,
+					"accepting_region_id":  acctest.DefaultRegionToTest,
 					"accepting_ali_uid":    "1511928242963727",
 					"peer_connection_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"accepting_vpc_id":     CHECKSET,
-						"description":          CHECKSET,
-						"vpc_id":               CHECKSET,
-						"resource_group_id":    CHECKSET,
-						"accepting_region_id":  CHECKSET,
+						"accepting_vpc_id":     acctest.CHECKSET,
+						"description":          acctest.CHECKSET,
+						"vpc_id":               acctest.CHECKSET,
+						"resource_group_id":    acctest.CHECKSET,
+						"accepting_region_id":  acctest.CHECKSET,
 						"accepting_ali_uid":    "1511928242963727",
 						"peer_connection_name": name,
 					}),
@@ -954,7 +1052,7 @@ func TestAccAliCloudVpcPeerPeerConnection_basic7960(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": CHECKSET,
+						"description": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -990,13 +1088,13 @@ func TestAccAliCloudVpcPeerPeerConnection_basic7960(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -1011,8 +1109,8 @@ func TestAccAliCloudVpcPeerPeerConnection_basic7960(t *testing.T) {
 }
 
 var AlicloudVpcPeerPeerConnectionMap7960 = map[string]string{
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudVpcPeerPeerConnectionBasicDependence7960(name string) string {
