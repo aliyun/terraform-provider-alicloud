@@ -1,4 +1,4 @@
-package alicloud
+package computenest
 
 import (
 	"fmt"
@@ -7,14 +7,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudComputeNestServiceInstances() *schema.Resource {
+func DataSourceServiceInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudComputeNestServiceInstancesRead,
+		Read: dataSourceServiceInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -30,7 +35,7 @@ func dataSourceAlicloudComputeNestServiceInstances() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Created", "Deploying", "DeployedFailed", "Deployed", "Upgrading", "Deleting", "Deleted", "DeletedFailed"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Created", "Deploying", "DeployedFailed", "Deployed", "Upgrading", "Deleting", "Deleted", "DeletedFailed"}, false),
 			},
 			"filter": {
 				Type:     schema.TypeList,
@@ -50,7 +55,7 @@ func dataSourceAlicloudComputeNestServiceInstances() *schema.Resource {
 					},
 				},
 			},
-			"tags": tagsSchemaForceNew(),
+			"tags": tags.TagsSchemaForceNew(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -193,13 +198,13 @@ func dataSourceAlicloudComputeNestServiceInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudComputeNestServiceInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceServiceInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListServiceInstances"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 
 	if v, ok := d.GetOk("filter"); ok {
 		filterMaps := make([]map[string]interface{}, 0)
@@ -222,7 +227,7 @@ func dataSourceAlicloudComputeNestServiceInstancesRead(d *schema.ResourceData, m
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
-		request["Tag"] = tagsFromMap(v.(map[string]interface{}))
+		request["Tag"] = tags.TagsFromMap(v.(map[string]interface{}))
 	}
 
 	status, statusOk := d.GetOk("status")
@@ -232,7 +237,7 @@ func dataSourceAlicloudComputeNestServiceInstancesRead(d *schema.ResourceData, m
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		serviceInstanceNameRegex = r
 	}
@@ -250,11 +255,11 @@ func dataSourceAlicloudComputeNestServiceInstancesRead(d *schema.ResourceData, m
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -262,15 +267,15 @@ func dataSourceAlicloudComputeNestServiceInstancesRead(d *schema.ResourceData, m
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_compute_nest_service_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_compute_nest_service_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.ServiceInstances", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ServiceInstances", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.ServiceInstances", response)
 		}
 
 		result, _ := resp.([]interface{})
@@ -316,7 +321,7 @@ func dataSourceAlicloudComputeNestServiceInstancesRead(d *schema.ResourceData, m
 			"resources":                    object["Resources"],
 			"operated_service_instance_id": object["OperatedServiceInstanceId"],
 			"source":                       object["Source"],
-			"tags":                         tagsToMap(object["Tags"]),
+			"tags":                         tags.TagsToMap(object["Tags"]),
 			"status":                       object["Status"],
 		}
 
@@ -398,22 +403,22 @@ func dataSourceAlicloudComputeNestServiceInstancesRead(d *schema.ResourceData, m
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("service_instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package alicloud
+package computenest
 
 import (
 	"fmt"
@@ -7,15 +7,28 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type ComputeNestService struct {
+// Service wraps the ComputeNest API calls used by the resources and data
+// sources of this package.
+type Service struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *ComputeNestService) DescribeComputeNestServiceInstance(id string) (object map[string]interface{}, err error) {
+// NewService is the exported constructor: the client field stays
+// unexported, so callers outside the package (including the flat
+// layout's acceptance tests) build values with it.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+func (s *Service) DescribeServiceInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "GetServiceInstance"
 	client := s.client
@@ -24,11 +37,11 @@ func (s *ComputeNestService) DescribeComputeNestServiceInstance(id string) (obje
 		"ServiceInstanceId": id,
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -36,18 +49,18 @@ func (s *ComputeNestService) DescribeComputeNestServiceInstance(id string) (obje
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ServiceInstanceNotFound"}) {
-			return nil, WrapErrorf(NotFoundErr("ComputeNest:ServiceInstance", id), NotFoundWithResponse, response)
+		if errs.IsExpectedErrors(err, []string{"ServiceInstanceNotFound"}) {
+			return nil, errs.WrapErrorf(errs.NotFoundErr("ComputeNest:ServiceInstance", id), errs.NotFoundWithResponse, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
 	}
 
 	object = v.(map[string]interface{})
@@ -55,20 +68,20 @@ func (s *ComputeNestService) DescribeComputeNestServiceInstance(id string) (obje
 	return object, nil
 }
 
-func (s *ComputeNestService) ComputeNestServiceInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) ServiceInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeComputeNestServiceInstance(id)
+		object, err := s.DescribeServiceInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if fmt.Sprint(object["Status"]) == failState {
-				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
 
@@ -76,7 +89,7 @@ func (s *ComputeNestService) ComputeNestServiceInstanceStateRefreshFunc(id strin
 	}
 }
 
-func (s *ComputeNestService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
+func (s *Service) ListTagResources(id string, resourceType string) (object interface{}, err error) {
 	client := s.client
 	action := "ListTagResources"
 
@@ -91,41 +104,41 @@ func (s *ComputeNestService) ListTagResources(id string, resourceType string) (o
 	case 0:
 		request["ResourceId.1"] = id
 	case 1:
-		parts, err := ParseResourceId(id, 2)
+		parts, err := helper.ParseResourceId(id, 2)
 		if err != nil {
-			return object, WrapError(err)
+			return object, errs.WrapError(err)
 		}
 		request["ResourceId.1"] = parts[resourceIdNum]
 	}
 
-	tags := make([]interface{}, 0)
+	tagResources := make([]interface{}, 0)
 	var response map[string]interface{}
 
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResource", response)
 			if err != nil {
-				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResource", response))
+				return retry.NonRetryableError(errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.TagResource", response))
 			}
 
 			if v != nil {
-				tags = append(tags, v.([]interface{})...)
+				tagResources = append(tagResources, v.([]interface{})...)
 			}
 
 			return nil
 		})
 		if err != nil {
-			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 			return
 		}
 		if response["NextToken"] == "" {
@@ -134,20 +147,20 @@ func (s *ComputeNestService) ListTagResources(id string, resourceType string) (o
 		request["NextToken"] = response["NextToken"]
 	}
 
-	return tags, nil
+	return tagResources, nil
 }
 
-func (s *ComputeNestService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 
 	resourceIdNum := strings.Count(d.Id(), ":")
 
 	if d.HasChange("tags") {
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		client := s.client
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -163,9 +176,9 @@ func (s *ComputeNestService) SetResourceTags(d *schema.ResourceData, resourceTyp
 			case 0:
 				request["ResourceId.1"] = d.Id()
 			case 1:
-				parts, err := ParseResourceId(d.Id(), 2)
+				parts, err := helper.ParseResourceId(d.Id(), 2)
 				if err != nil {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 				request["ResourceId.1"] = parts[resourceIdNum]
 			}
@@ -174,22 +187,22 @@ func (s *ComputeNestService) SetResourceTags(d *schema.ResourceData, resourceTyp
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			wait := incrementalWait(2*time.Second, 1*time.Second)
+			wait := helper.IncrementalWait(2*time.Second, 1*time.Second)
 			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 		if len(added) > 0 {
@@ -203,9 +216,9 @@ func (s *ComputeNestService) SetResourceTags(d *schema.ResourceData, resourceTyp
 			case 0:
 				request["ResourceId.1"] = d.Id()
 			case 1:
-				parts, err := ParseResourceId(d.Id(), 2)
+				parts, err := helper.ParseResourceId(d.Id(), 2)
 				if err != nil {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 				request["ResourceId.1"] = parts[resourceIdNum]
 			}
@@ -217,22 +230,22 @@ func (s *ComputeNestService) SetResourceTags(d *schema.ResourceData, resourceTyp
 				count++
 			}
 
-			wait := incrementalWait(2*time.Second, 1*time.Second)
+			wait := helper.IncrementalWait(2*time.Second, 1*time.Second)
 			err := retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err := client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 	}
