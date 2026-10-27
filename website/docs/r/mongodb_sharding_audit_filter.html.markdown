@@ -25,6 +25,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -84,6 +92,7 @@ Terraform cannot destroy resource `alicloud_mongodb_sharding_audit_filter`. Terr
 The following arguments are supported:
 * `db_instance_id` - (Required, ForceNew) The ID of the sharding cluster instance.
 * `audit_status` - (Required) Audit state. Valid values: `enable`, `disabled`.
+* `audit_log_switch_source` - (Optional, String, Available since v2.2.0) The request source of the audit log. Valid values: `Console`. The Provider sends it with an audit policy change only when it is configured; when it is omitted, the parameter is left out of the request. The query APIs do not return it, so an imported resource keeps no value for it.
 * `filter` - (Required) The type of logs collected by the audit log feature of the instance. Separate multiple types with commas (,). Valid values:
   - `admin`: O & M control operation.
   - `slow`: slow log.
