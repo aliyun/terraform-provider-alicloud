@@ -1,19 +1,23 @@
-package alicloud
+package bpstudio
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudBpStudioApplication() *schema.Resource {
+func ResourceApplication() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudBpStudioApplicationCreate,
-		Read:   resourceAlicloudBpStudioApplicationRead,
-		Delete: resourceAlicloudBpStudioApplicationDelete,
+		Create: resourceApplicationCreate,
+		Read:   resourceApplicationRead,
+		Delete: resourceApplicationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -87,9 +91,9 @@ func resourceAlicloudBpStudioApplication() *schema.Resource {
 	}
 }
 
-func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceApplicationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	bpStudioService := BpStudioService{client}
+	bpStudioService := NewService(client)
 
 	//1. CreateApplication
 	action := "CreateApplication"
@@ -98,7 +102,7 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 	var err error
 	request["Name"] = d.Get("application_name")
 	request["TemplateId"] = d.Get("template_id")
-	request["ClientToken"] = buildClientToken("CreateApplication")
+	request["ClientToken"] = helper.BuildClientToken("CreateApplication")
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
@@ -129,36 +133,36 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 			instancesMaps = append(instancesMaps, instancesMap)
 		}
 
-		instancesMapsJson, err := convertListMapToJsonString(instancesMaps)
+		instancesMapsJson, err := convert.ConvertListMapToJsonString(instancesMaps)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_bp_studio_application", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_bp_studio_application", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		request["Instances"] = instancesMapsJson
 	}
 
 	if v, ok := d.GetOk("configuration"); ok {
 		configuration := v.(map[string]interface{})
-		configurationJson, err := convertMaptoJsonString(configuration)
+		configurationJson, err := convert.ConvertMaptoJsonString(configuration)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_bp_studio_application", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_bp_studio_application", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		request["Configuration"] = configurationJson
 	}
 
 	if v, ok := d.GetOk("variables"); ok {
 		variables := v.(map[string]interface{})
-		variablesJson, err := convertMaptoJsonString(variables)
+		variablesJson, err := convert.ConvertMaptoJsonString(variables)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_bp_studio_application", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_bp_studio_application", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		request["Variables"] = variablesJson
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("BPStudio", "2021-09-31", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -166,17 +170,17 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_bp_studio_application", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_bp_studio_application", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Data"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Modified"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Modified"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	//2. ValidateApplication
@@ -191,7 +195,7 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		validateApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", validateApplicationAction, nil, deployReq, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -199,14 +203,14 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(validateApplicationAction, validateApplicationResponse, deployReq)
+	logs.AddDebug(validateApplicationAction, validateApplicationResponse, deployReq)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), validateApplicationAction, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), validateApplicationAction, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	validateApplicationStateConf := BuildStateConf([]string{}, []string{"Verified_Success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
+	validateApplicationStateConf := helper.BuildStateConf([]string{}, []string{"Verified_Success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
 	if _, err := validateApplicationStateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	//3. ValuateApplication
@@ -216,7 +220,7 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		valuateApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", valuateApplicationAction, nil, deployReq, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -224,14 +228,14 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(valuateApplicationAction, valuateApplicationResponse, deployReq)
+	logs.AddDebug(valuateApplicationAction, valuateApplicationResponse, deployReq)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), valuateApplicationAction, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), valuateApplicationAction, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	valuateApplicationStateConf := BuildStateConf([]string{}, []string{"Valuating_Success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
+	valuateApplicationStateConf := helper.BuildStateConf([]string{}, []string{"Valuating_Success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
 	if _, err := valuateApplicationStateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	//4. DeployApplication
@@ -241,7 +245,7 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		deployApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", deployApplicationAction, nil, deployReq, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -249,30 +253,30 @@ func resourceAlicloudBpStudioApplicationCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(deployApplicationAction, deployApplicationResponse, deployReq)
+	logs.AddDebug(deployApplicationAction, deployApplicationResponse, deployReq)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deployApplicationAction, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), deployApplicationAction, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	deployApplicationStateConf := BuildStateConf([]string{}, []string{"Deployed_Success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
+	deployApplicationStateConf := helper.BuildStateConf([]string{}, []string{"Deployed_Success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
 	if _, err := deployApplicationStateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudBpStudioApplicationRead(d, meta)
+	return resourceApplicationRead(d, meta)
 }
 
-func resourceAlicloudBpStudioApplicationRead(d *schema.ResourceData, meta interface{}) error {
+func resourceApplicationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	bpStudioService := BpStudioService{client}
+	bpStudioService := NewService(client)
 
 	object, err := bpStudioService.DescribeBpStudioApplication(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("application_name", object["Name"])
@@ -283,9 +287,9 @@ func resourceAlicloudBpStudioApplicationRead(d *schema.ResourceData, meta interf
 	return nil
 }
 
-func resourceAlicloudBpStudioApplicationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceApplicationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	bpStudioService := BpStudioService{client}
+	bpStudioService := NewService(client)
 	var err error
 
 	request := make(map[string]interface{})
@@ -297,11 +301,11 @@ func resourceAlicloudBpStudioApplicationDelete(d *schema.ResourceData, meta inte
 
 	object, err := bpStudioService.DescribeBpStudioApplication(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	//1. ReleaseApplication
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 
 	if fmt.Sprint(object["Status"]) == "Deployed_Failure" || fmt.Sprint(object["Status"]) == "PartiallyDeployedSuccess" || fmt.Sprint(object["Status"]) == "Deployed_Success" || fmt.Sprint(object["Status"]) == "Destroyed_Failure" || fmt.Sprint(object["Status"]) == "PartiallyDestroyedSuccess" {
 		releaseApplicationAction := "ReleaseApplication"
@@ -310,7 +314,7 @@ func resourceAlicloudBpStudioApplicationDelete(d *schema.ResourceData, meta inte
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 			releaseApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", releaseApplicationAction, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -318,14 +322,14 @@ func resourceAlicloudBpStudioApplicationDelete(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(releaseApplicationAction, releaseApplicationResponse, request)
+		logs.AddDebug(releaseApplicationAction, releaseApplicationResponse, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), releaseApplicationAction, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), releaseApplicationAction, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		releaseApplicationStateConf := BuildStateConf([]string{}, []string{"Destroyed_Success"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
+		releaseApplicationStateConf := helper.BuildStateConf([]string{}, []string{"Destroyed_Success"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
 		if _, err := releaseApplicationStateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -336,7 +340,7 @@ func resourceAlicloudBpStudioApplicationDelete(d *schema.ResourceData, meta inte
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		deleteApplicationResponse, err = client.RpcPost("BPStudio", "2021-09-31", deleteApplicationAction, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -344,14 +348,14 @@ func resourceAlicloudBpStudioApplicationDelete(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(deleteApplicationAction, deleteApplicationResponse, request)
+	logs.AddDebug(deleteApplicationAction, deleteApplicationResponse, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteApplicationAction, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), deleteApplicationAction, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	deleteApplicationStateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
+	deleteApplicationStateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, bpStudioService.BpStudioApplicationStateRefreshFunc(d.Id(), []string{}))
 	if _, err := deleteApplicationStateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
