@@ -1,11 +1,13 @@
-package alicloud
+package ims_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ims"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,28 +16,34 @@ import (
 func TestAccAliCloudImsOidcProvider_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ims_oidc_provider.default"
-	ra := resourceAttrInit(resourceId, AlicloudImsOidcProviderMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ImsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudImsOidcProviderMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ims.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeImsOidcProvider")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccims%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudImsOidcProviderBasicDependence0)
+	// IMS validates Fingerprints against the issuer's real HTTPS CA
+	// certificate, so the initial fingerprint must be the live issuer root CA
+	// SHA-1 (see imsOidcProviderFingerprint), not the synthetic doc-example
+	// value. The later interleaving steps exercise the provider's add/remove
+	// diff logic under the API's 1..5 count constraint.
+	issuerFingerprint := imsOidcProviderFingerprint(t)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudImsOidcProviderBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": "${var.oidc_provider_name}",
 					"issuer_url":  "https://oauth.aliyun.com",
 					"fingerprints": []string{
-						"0BBFAB97059595E8D1EC48E89EB8657C0E5AAE71"},
+						issuerFingerprint},
 					"issuance_limit_time": "12",
 					"oidc_provider_name":  name,
 					"client_ids": []string{
@@ -43,7 +51,7 @@ func TestAccAliCloudImsOidcProvider_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":         CHECKSET,
+						"description":         acctest.CHECKSET,
 						"issuer_url":          "https://oauth.aliyun.com",
 						"fingerprints.#":      "1",
 						"issuance_limit_time": "12",
@@ -199,7 +207,7 @@ func TestAccAliCloudImsOidcProvider_basic0(t *testing.T) {
 }
 
 var AlicloudImsOidcProviderMap0 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudImsOidcProviderBasicDependence0(name string) string {

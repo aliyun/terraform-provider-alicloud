@@ -1,4 +1,4 @@
-package alicloud
+package ims
 
 import (
 	"fmt"
@@ -7,12 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAliCloudImsOidcProvider() *schema.Resource {
+func ResourceImsOidcProvider() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudImsOidcProviderCreate,
 		Read:   resourceAliCloudImsOidcProviderRead,
@@ -53,7 +58,7 @@ func resourceAliCloudImsOidcProvider() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(0, 168),
+				ValidateFunc: validation.IntBetween(0, 168),
 			},
 			"issuer_url": {
 				Type:     schema.TypeString,
@@ -93,20 +98,20 @@ func resourceAliCloudImsOidcProviderCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("client_ids"); ok {
 		jsonPathResult3, err := jsonpath.Get("$", v)
 		if err == nil && jsonPathResult3 != "" {
-			request["ClientIds"] = convertListToCommaSeparate(jsonPathResult3.(*schema.Set).List())
+			request["ClientIds"] = convert.ConvertListToCommaSeparate(jsonPathResult3.(*schema.Set).List())
 		}
 	}
 	if v, ok := d.GetOk("fingerprints"); ok {
 		jsonPathResult4, err := jsonpath.Get("$", v)
 		if err == nil && jsonPathResult4 != "" {
-			request["Fingerprints"] = convertListToCommaSeparate(jsonPathResult4.(*schema.Set).List())
+			request["Fingerprints"] = convert.ConvertListToCommaSeparate(jsonPathResult4.(*schema.Set).List())
 		}
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -114,10 +119,10 @@ func resourceAliCloudImsOidcProviderCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ims_oidc_provider", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ims_oidc_provider", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.OIDCProvider.OIDCProviderName", response)
@@ -128,16 +133,16 @@ func resourceAliCloudImsOidcProviderCreate(d *schema.ResourceData, meta interfac
 
 func resourceAliCloudImsOidcProviderRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	imsServiceV2 := ImsServiceV2{client}
+	imsService := NewService(client)
 
-	objectRaw, err := imsServiceV2.DescribeImsOidcProvider(d.Id())
+	objectRaw, err := imsService.DescribeImsOidcProvider(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ims_oidc_provider DescribeImsOidcProvider Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("arn", objectRaw["Arn"])
@@ -186,16 +191,16 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 		update = true
 		jsonPathResult2, err := jsonpath.Get("$", d.Get("client_ids"))
 		if err == nil {
-			request["ClientIds"] = convertListToCommaSeparate(jsonPathResult2.(*schema.Set).List())
+			request["ClientIds"] = convert.ConvertListToCommaSeparate(jsonPathResult2.(*schema.Set).List())
 		}
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -203,9 +208,9 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -241,15 +246,15 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 					if v, ok := item.(string); ok {
 						jsonPathResult, err := jsonpath.Get("$", v)
 						if err != nil {
-							return WrapError(err)
+							return errs.WrapError(err)
 						}
 						request["Fingerprint"] = jsonPathResult
 					}
-					wait := incrementalWait(3*time.Second, 5*time.Second)
+					wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 					err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 						if err != nil {
-							if NeedRetry(err) {
+							if helper.NeedRetry(err) {
 								wait()
 								return retry.RetryableError(err)
 							}
@@ -257,9 +262,9 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 						}
 						return nil
 					})
-					addDebug(action, response, request)
+					logs.AddDebug(action, response, request)
 					if err != nil {
-						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 					}
 				}
 
@@ -273,15 +278,15 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 					if v, ok := item.(string); ok {
 						jsonPathResult, err := jsonpath.Get("$", v)
 						if err != nil {
-							return WrapError(err)
+							return errs.WrapError(err)
 						}
 						request["Fingerprint"] = jsonPathResult
 					}
-					wait := incrementalWait(3*time.Second, 5*time.Second)
+					wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 					err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 						if err != nil {
-							if NeedRetry(err) {
+							if helper.NeedRetry(err) {
 								wait()
 								return retry.RetryableError(err)
 							}
@@ -289,9 +294,9 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 						}
 						return nil
 					})
-					addDebug(action, response, request)
+					logs.AddDebug(action, response, request)
 					if err != nil {
-						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 					}
 				}
 
@@ -305,15 +310,15 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 				if v, ok := lastItem.(string); ok {
 					jsonPathResult, err := jsonpath.Get("$", v)
 					if err != nil {
-						return WrapError(err)
+						return errs.WrapError(err)
 					}
 					request["Fingerprint"] = jsonPathResult
 				}
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -321,9 +326,9 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 			} else {
 				// Can add all new ones first without exceeding limit, then remove old ones
@@ -337,15 +342,15 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 					if v, ok := item.(string); ok {
 						jsonPathResult, err := jsonpath.Get("$", v)
 						if err != nil {
-							return WrapError(err)
+							return errs.WrapError(err)
 						}
 						request["Fingerprint"] = jsonPathResult
 					}
-					wait := incrementalWait(3*time.Second, 5*time.Second)
+					wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 					err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 						if err != nil {
-							if NeedRetry(err) {
+							if helper.NeedRetry(err) {
 								wait()
 								return retry.RetryableError(err)
 							}
@@ -353,9 +358,9 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 						}
 						return nil
 					})
-					addDebug(action, response, request)
+					logs.AddDebug(action, response, request)
 					if err != nil {
-						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 					}
 				}
 
@@ -369,15 +374,15 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 					if v, ok := item.(string); ok {
 						jsonPathResult, err := jsonpath.Get("$", v)
 						if err != nil {
-							return WrapError(err)
+							return errs.WrapError(err)
 						}
 						request["Fingerprint"] = jsonPathResult
 					}
-					wait := incrementalWait(3*time.Second, 5*time.Second)
+					wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 					err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 						if err != nil {
-							if NeedRetry(err) {
+							if helper.NeedRetry(err) {
 								wait()
 								return retry.RetryableError(err)
 							}
@@ -385,9 +390,9 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 						}
 						return nil
 					})
-					addDebug(action, response, request)
+					logs.AddDebug(action, response, request)
 					if err != nil {
-						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 					}
 				}
 			}
@@ -404,15 +409,15 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 					if v, ok := item.(string); ok {
 						jsonPathResult, err := jsonpath.Get("$", v)
 						if err != nil {
-							return WrapError(err)
+							return errs.WrapError(err)
 						}
 						request["Fingerprint"] = jsonPathResult
 					}
-					wait := incrementalWait(3*time.Second, 5*time.Second)
+					wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 					err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 						if err != nil {
-							if NeedRetry(err) {
+							if helper.NeedRetry(err) {
 								wait()
 								return retry.RetryableError(err)
 							}
@@ -420,9 +425,9 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 						}
 						return nil
 					})
-					addDebug(action, response, request)
+					logs.AddDebug(action, response, request)
 					if err != nil {
-						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 					}
 				}
 			}
@@ -439,15 +444,15 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 					if v, ok := item.(string); ok {
 						jsonPathResult, err := jsonpath.Get("$", v)
 						if err != nil {
-							return WrapError(err)
+							return errs.WrapError(err)
 						}
 						request["Fingerprint"] = jsonPathResult
 					}
-					wait := incrementalWait(3*time.Second, 5*time.Second)
+					wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 					err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 						response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 						if err != nil {
-							if NeedRetry(err) {
+							if helper.NeedRetry(err) {
 								wait()
 								return retry.RetryableError(err)
 							}
@@ -455,9 +460,9 @@ func resourceAliCloudImsOidcProviderUpdate(d *schema.ResourceData, meta interfac
 						}
 						return nil
 					})
-					addDebug(action, response, request)
+					logs.AddDebug(action, response, request)
 					if err != nil {
-						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 					}
 				}
 			}
@@ -478,12 +483,12 @@ func resourceAliCloudImsOidcProviderDelete(d *schema.ResourceData, meta interfac
 	request = make(map[string]interface{})
 	request["OIDCProviderName"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -491,13 +496,13 @@ func resourceAliCloudImsOidcProviderDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.OIDCProvider"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"EntityNotExist.OIDCProvider"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
