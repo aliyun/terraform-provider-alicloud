@@ -49,17 +49,20 @@ def matches(manifest, workspace):
 
 def extract(archive_path, module_cache, build_cache):
     """Allow only regular cache files/directories; never links or traversal."""
-    roots = [('modules/cache/download', module_cache / 'cache/download'), ('build', build_cache)]
+    # Pin each destination once, rather than resolving it again for every file.
+    # A later symlink redirect must not redefine the allowed destination.
+    roots = [(prefix, root, root.resolve()) for prefix, root in
+             [('modules/cache/download', module_cache / 'cache/download'), ('build', build_cache)]]
     with tarfile.open(archive_path, 'r:gz') as archive:
         for member in archive:
             path = PurePosixPath(member.name)
             if path.is_absolute() or '..' in path.parts or not (member.isfile() or member.isdir()):
                 raise ValueError('Unsafe cache archive member')
-            for prefix, root in roots:
+            for prefix, root, resolved_root in roots:
                 if str(path) == prefix or str(path).startswith(prefix + '/'):
                     relative = path.relative_to(prefix)
                     target = root / relative
-                    if not target.resolve().is_relative_to(root.resolve()):
+                    if not target.resolve().is_relative_to(resolved_root):
                         raise ValueError('Cache destination escapes its private directory')
                     if member.isdir():
                         target.mkdir(parents=True, exist_ok=True)
@@ -95,6 +98,7 @@ def restore(url, workspace, module_cache, build_cache, temporary=None):
     with tempfile.TemporaryDirectory(prefix='go-seed-', dir=temporary) as directory:
         archive_path = Path(directory) / 'seed.tar.gz'
         digest, received = hashlib.sha256(), 0
+        download_started = time.monotonic()
         with open_url(url + '/seed.tar.gz', timeout=10) as response, archive_path.open('wb') as output:
             while chunk := response.read(1024 * 1024):
                 received += len(chunk)
@@ -104,7 +108,9 @@ def restore(url, workspace, module_cache, build_cache, temporary=None):
                 output.write(chunk)
         if received != size or digest.hexdigest() != checksum:
             raise ValueError('Cache archive checksum mismatch')
+        extract_started = time.monotonic()
         extract(archive_path, module_cache, build_cache)
+        print(f'Node-local Go cache archive_bytes={received}, download_seconds={extract_started - download_started:.1f}, extract_seconds={time.monotonic() - extract_started:.1f}')
         build_cache.mkdir(parents=True, exist_ok=True)
         marker.write_text(json.dumps(manifest))
     return True

@@ -18,6 +18,7 @@ on:
       - .github/workflows/ci-policy-test.yml
       - scripts/ci/restore-local-go-cache.py
       - scripts/ci/test_local_go_cache.py
+      - scripts/ci/test_workload_go_cache.py
       - scripts/ci/test_go_cache.py
       - scripts/ci/ensure-writable-go-cache.sh
       - scripts/ci/test_ensure_writable_go_cache.py
@@ -36,6 +37,7 @@ on:
       - .github/workflows/ci-policy-test.yml
       - scripts/ci/restore-local-go-cache.py
       - scripts/ci/test_local_go_cache.py
+      - scripts/ci/test_workload_go_cache.py
       - scripts/ci/test_go_cache.py
       - scripts/ci/ensure-writable-go-cache.sh
       - scripts/ci/test_ensure_writable_go_cache.py

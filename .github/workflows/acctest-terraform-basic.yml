@@ -215,7 +215,7 @@ jobs:
     if: ${{ needs.route.outputs.relevant == 'true' }}
     permissions:
       contents: read
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -242,7 +242,7 @@ jobs:
     if: ${{ needs.route.outputs.relevant == 'true' }}
     permissions:
       contents: read
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -315,7 +315,7 @@ jobs:
     if: ${{ needs.route.outputs.relevant == 'true' }}
     permissions:
       contents: read
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -503,7 +503,7 @@ jobs:
     if: ${{ always() && needs.route.result == 'success' }}
     permissions:
       contents: read
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     outputs:
       changed: ${{ steps.detect.outputs.changed }}
     steps:
