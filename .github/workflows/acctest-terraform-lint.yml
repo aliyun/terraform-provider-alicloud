@@ -22,6 +22,9 @@ on:
       - scripts/ci/resolve-change-range.sh
       - scripts/ci/resolve-change-range_test.sh
       - scripts/ci/run-tflint_test.sh
+      - scripts/ci/initialization-check.sh
+      - scripts/ci/initialization-check_test.sh
+      - scripts/local-ci-check.sh
 
 permissions: {}
 
@@ -148,6 +151,7 @@ jobs:
         run: |
           scripts/ci/resolve-change-range_test.sh
           scripts/ci/run-tflint_test.sh
+          scripts/ci/initialization-check_test.sh
       - name: Resolve change range
         id: change-range
         shell: bash

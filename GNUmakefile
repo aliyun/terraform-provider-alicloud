@@ -171,6 +171,14 @@ provider-build:
 check-production-deps:
 	@"$(CURDIR)/scripts/ci/check-production-deps.sh"
 
+# Compile, link and initialize the standard alicloud/service/cloudauth test
+# binary without running any acceptance test (go test -run '^$' -count=1 -v).
+# INITIALIZATION_ONLY / countsAsAccTest=false: proves ONE service test binary
+# builds+inits, not the root main build and not a real ACC. Run unconditionally
+# inside `ci-check-quick`; see scripts/ci/initialization-check.sh.
+check-initialization:
+	@"$(CURDIR)/scripts/ci/initialization-check.sh"
+
 fmtcheck:
 	"$(CURDIR)/scripts/gofmtcheck.sh"
 
