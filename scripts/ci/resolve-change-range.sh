@@ -24,8 +24,14 @@ fetch_base_branch() {
 	git check-ref-format "refs/heads/$base_ref" >/dev/null 2>&1 ||
 		die "base ref is invalid: $base_ref"
 
-	git fetch --no-tags --no-recurse-submodules --force \
-		"$repository_url" \
+	# A fork's origin cannot supply blobs introduced only on the base branch.
+	# Register the trusted base URL as a promisor before fetching its complete
+	# commit graph, so later git show/checkout can retrieve omitted base blobs.
+	git config --local --replace-all remote.ci-base.url "$repository_url"
+	git config --local remote.ci-base.promisor true
+	git config --local remote.ci-base.partialclonefilter blob:none
+	git fetch --no-tags --no-recurse-submodules --force --filter=blob:none \
+		ci-base \
 		"+refs/heads/$base_ref:$destination_ref"
 }
 

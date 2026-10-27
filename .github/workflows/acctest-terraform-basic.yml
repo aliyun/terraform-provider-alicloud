@@ -223,6 +223,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -250,6 +251,7 @@ jobs:
           persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -265,7 +267,32 @@ jobs:
         # tfproviderlint. Runs before setup-go so the env it exports is in effect
         # for setup-go, the node-local seed restore and every later Go step.
         shell: bash
-        run: bash scripts/ci/ensure-writable-go-cache.sh
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -297,6 +324,7 @@ jobs:
           persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -312,7 +340,32 @@ jobs:
         # tfproviderlint. Runs before setup-go so the env it exports is in effect
         # for setup-go, the node-local seed restore and every later Go step.
         shell: bash
-        run: bash scripts/ci/ensure-writable-go-cache.sh
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -358,6 +411,7 @@ jobs:
           persist-credentials: false
           # Checkout as many commits as needed for the diff
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -373,7 +427,32 @@ jobs:
         # tfproviderlint. Runs before setup-go so the env it exports is in effect
         # for setup-go, the node-local seed restore and every later Go step.
         shell: bash
-        run: bash scripts/ci/ensure-writable-go-cache.sh
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -434,6 +513,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -481,6 +561,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Prepare writable Go/tool cache
         # Route A: keep node-local Go/tool caches when the default HOME-owned
         # directories are writable; redirect only the unwritable ones to a
@@ -489,7 +570,32 @@ jobs:
         # tfproviderlint. Runs before setup-go so the env it exports is in effect
         # for setup-go, the node-local seed restore and every later Go step.
         shell: bash
-        run: bash scripts/ci/ensure-writable-go-cache.sh
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:

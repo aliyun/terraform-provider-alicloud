@@ -60,6 +60,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -87,7 +88,32 @@ jobs:
         # polluted /home/runner on the trusted fleet.
         if: steps.scope.outputs.needed == 'true'
         shell: bash
-        run: bash scripts/ci/ensure-writable-go-cache.sh
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: errcheck
         if: steps.scope.outputs.needed == 'true'
         uses: reviewdog/action-golangci-lint@284129a3ac23bc5d8ac1522e0b6511df74a8836d # v2.10.2
@@ -116,6 +142,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Test change range and lint scoping
         shell: bash
         run: |
@@ -136,7 +163,32 @@ jobs:
         # /home/runner on the trusted fleet no longer causes EACCES in setup-go,
         # go install or the tfproviderlint tool drop. Runs before setup-go.
         shell: bash
-        run: bash scripts/ci/ensure-writable-go-cache.sh
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:

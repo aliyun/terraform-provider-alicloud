@@ -109,6 +109,54 @@ func TestUnitIndentParseDocsFourSpace(t *testing.T) {
 	}
 }
 
+func TestUnitIndentParseDocsNonNestedInitialIndentFails(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		indent string
+	}{
+		{"one_space", " "},
+		{"six_spaces", "      "},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// One space renders as a root sibling; six spaces renders
+			// inside the parent paragraph (or as an indented code block).
+			// Neither may satisfy a nested schema path root.child.
+			body := "## Attributes Reference\n\n* `root` - desc.\n" +
+				tc.indent + "* `child` - desc.\n* `sibling` - desc.\n## Timeouts\n"
+			if _, err := indentFixtureDocs(t, "fixture_"+tc.name, body); err == nil {
+				t.Fatal("non-nested Markdown must not be interpreted as a nested schema attribute")
+			}
+		})
+	}
+}
+
+func TestUnitIndentParseDocsOtherValidIndentSteps(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		indent string
+	}{
+		{"three_spaces", "   "},
+		{"five_spaces", "     "},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// These widths form nested lists in Markdown. Leave style
+			// enforcement to MD007 while preserving their schema paths.
+			body := "## Attributes Reference\n\n* `root` - desc.\n" +
+				tc.indent + "* `child` - desc.\n" +
+				tc.indent + tc.indent + "* `grandchild` - desc.\n" +
+				tc.indent + "* `peer` - desc.\n* `sibling` - desc.\n## Timeouts\n"
+			attrs, err := indentFixtureDocs(t, "fixture_"+tc.name, body)
+			if err != nil {
+				t.Fatalf("valid nested list was rejected: %s", err)
+			}
+			want := []string{"root", "root.child", "root.child.grandchild", "root.peer", "sibling"}
+			if got := indentAttrNames(attrs); !equalStrings(got, want) {
+				t.Fatalf("nested paths = %v; want %v", got, want)
+			}
+		})
+	}
+}
+
 // TestUnitIndentParseDocsMultipleRootsAndAncestorFallback exercises several
 // root fields, a grandchild that falls back past its parent to a sibling, and
 // a deep-to-root ancestor fallback. This is the "multiple root fields" and

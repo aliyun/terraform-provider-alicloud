@@ -38,14 +38,19 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Fetch the pull request base
         env:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
         run: |
           set -euo pipefail
-          git fetch --no-tags --no-recurse-submodules --force \
-            "$CI_BASE_REPOSITORY_URL" \
+          # Keep base-only checker blobs available for lazy git checkout.
+          git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+          git config --local remote.ci-base.promisor true
+          git config --local remote.ci-base.partialclonefilter blob:none
+          git fetch --no-tags --no-recurse-submodules --force --filter=blob:none \
+            ci-base \
             "+refs/heads/$PR_BASE_REF:refs/remotes/ci-base/base"
       - name: Restore the title checker from the pull request base
         env:

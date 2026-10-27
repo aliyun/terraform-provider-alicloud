@@ -79,6 +79,21 @@ probe_writable() {
   return 0
 }
 
+probe_sumdb_writable() {
+  # Go keeps checksum tree heads under GOPATH/pkg/sumdb even when GOMODCACHE
+  # points elsewhere. A writable GOPATH root does not cover this nested state.
+  local state="$1/pkg/sumdb" server
+  probe_writable "$state" || return 1
+  for server in "$state"/*; do
+    [[ -d "$server" ]] || continue
+    probe_writable "$server" || return 1
+    # Do not modify an existing signed tree head just to test permissions.
+    if [[ -e "$server/latest" || -L "$server/latest" ]]; then
+      [[ -w "$server/latest" ]] || return 1
+    fi
+  done
+}
+
 run_dir="${RUNNER_TEMP:-$HOME/.ci-tmp}/go-cache"
 
 # Effective Go cache locations: respect any pre-set env (a provisioned runner
@@ -105,14 +120,14 @@ tf_doc_tools="${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}"
 
 redirected=0
 
-# 1. GOPATH root (covers pkg/sumdb, pkg/mod parent, etc.).
-if probe_writable "$gopath"; then
+# 1. GOPATH root and the independent checksum database state.
+if probe_writable "$gopath" && probe_sumdb_writable "$gopath"; then
   echo "Route-A: GOPATH writable at $gopath (kept)"
 else
   gopath="$run_dir/go"
   mkdir -p "$gopath"
   redirected=1
-  echo "Route-A: GOPATH unwritable at default; redirected to $gopath"
+  echo "Route-A: GOPATH or checksum state unwritable at default; redirected to $gopath"
 fi
 emit_env GOPATH "$gopath"
 

@@ -57,6 +57,7 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -95,6 +96,7 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -113,7 +115,32 @@ jobs:
         # TF_DOC_TOOLS_DIR (and GOBIN/PATH) so the docs cache/install/run steps
         # resolve one variable on every fleet state; runs before setup-go.
         shell: bash
-        run: bash scripts/ci/ensure-writable-go-cache.sh
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
@@ -155,6 +182,21 @@ jobs:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
           TF_DOC_TOOLS_DIR: ${{ env.TF_DOC_TOOLS_DIR }}
-        run: python3 scripts/ci/run-document-checks.py --group go
+        shell: bash
+        run: |
+          driver=scripts/ci/run-document-checks.py
+          if [[ "$TF_DOC_TOOLS_DIR" != "$HOME/.cache/terraform-doc-tools" ]] &&
+             ! grep -q TF_DOC_TOOLS_DIR "$driver"; then
+            # Older PR drivers hard-code HOME/.cache. Adapt their environment,
+            # retaining the PR's checker logic and all resolved Go cache paths.
+            export GOPATH="$(go env GOPATH)" GOMODCACHE="$(go env GOMODCACHE)"
+            export GOCACHE="$(go env GOCACHE)" GOENV="$(go env GOENV)"
+            compat_home="$(mktemp -d "$RUNNER_TEMP/doc-check-home.XXXXXX")"
+            mkdir -p "$compat_home/.cache"
+            ln -s "$(cd "$TF_DOC_TOOLS_DIR" && pwd)" "$compat_home/.cache/terraform-doc-tools"
+            HOME="$compat_home" python3 "$driver" --group go
+          else
+            python3 "$driver" --group go
+          fi
     name: docs-go
     timeout-minutes: 20
