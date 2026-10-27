@@ -1,11 +1,13 @@
-package alicloud
+package aligreen_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	aligreen "github.com/aliyun/terraform-provider-alicloud/alicloud/service/aligreen"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudAligreenKeywordLib_basic7323(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_keyword_lib.default"
-	ra := resourceAttrInit(resourceId, AlicloudAligreenKeywordLibMap7323)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AligreenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenKeywordLibMap7323)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAligreenKeywordLib")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc_ag%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenKeywordLibBasicDependence7323)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAligreenKeywordLibBasicDependence7323)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -111,21 +113,21 @@ resource "alicloud_aligreen_biz_type" "defaultMn8sVK" {
 func TestAccAliCloudAligreenKeywordLib_basic7323_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_keyword_lib.default"
-	ra := resourceAttrInit(resourceId, AlicloudAligreenKeywordLibMap7323)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AligreenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenKeywordLibMap7323)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAligreenKeywordLib")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc_ag%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenKeywordLibBasicDependence7323)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAligreenKeywordLibBasicDependence7323)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -168,21 +170,21 @@ func TestAccAliCloudAligreenKeywordLib_basic7323_twin(t *testing.T) {
 func TestAccAliCloudAligreenKeywordLib_basic7323_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_keyword_lib.default"
-	ra := resourceAttrInit(resourceId, AlicloudAligreenKeywordLibMap7323)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AligreenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenKeywordLibMap7323)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAligreenKeywordLib")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc_ag%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenKeywordLibBasicDependence7323)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAligreenKeywordLibBasicDependence7323)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -226,6 +228,60 @@ func TestAccAliCloudAligreenKeywordLib_basic7323_raw(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+// Case 文本库 collection-order coverage
+// Covers the configurable multi-member TypeList attribute biz_types (ForceNew):
+// apply the original member order, then a convergent apply with the members
+// reordered. Schema ForceNew triggers a replacement, which the collection-order
+// checker allows.
+func TestAccAliCloudAligreenKeywordLib_collectionOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_aligreen_keyword_lib.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenKeywordLibMap7323)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAligreenKeywordLib")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf_testacc_ag%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenKeywordLibBasicDependence7323)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_type":    "TEXT",
+					"keyword_lib_name": name,
+					"biz_types": []string{
+						"test_007", "test_008"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_type":    "TEXT",
+						"keyword_lib_name": name,
+						"biz_types.#":      "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"biz_types": []string{
+						"test_008", "test_007"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"biz_types.#": "2",
+					}),
+				),
 			},
 		},
 	})

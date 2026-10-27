@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package aligreen
 
 import (
 	"fmt"
@@ -9,6 +9,10 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -32,7 +36,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -61,7 +65,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -80,7 +84,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -99,7 +103,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -113,7 +117,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -127,7 +131,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -147,7 +151,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -166,7 +170,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -185,7 +189,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -209,7 +213,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -223,7 +227,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -232,7 +236,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -241,7 +245,7 @@ func resourceAliCloudAligreenOssStockTask() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -356,7 +360,7 @@ func resourceAliCloudAligreenOssStockTaskCreate(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("image_scenes"); ok {
 		jsonPathResult31, err := jsonpath.Get("$", v)
 		if err == nil && jsonPathResult31 != "" {
-			request["ImageScenes"] = convertListToJsonString(jsonPathResult31.([]interface{}))
+			request["ImageScenes"] = convert.ConvertListToJsonString(jsonPathResult31.([]interface{}))
 		}
 	}
 	if v, ok := d.GetOk("buckets"); ok {
@@ -364,22 +368,22 @@ func resourceAliCloudAligreenOssStockTaskCreate(d *schema.ResourceData, meta int
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_aligreen_oss_stock_task", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_aligreen_oss_stock_task", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
@@ -389,16 +393,16 @@ func resourceAliCloudAligreenOssStockTaskCreate(d *schema.ResourceData, meta int
 
 func resourceAliCloudAligreenOssStockTaskRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	aligreenServiceV2 := AligreenServiceV2{client}
+	aligreenServiceV2 := NewService(client)
 
 	objectRaw, err := aligreenServiceV2.DescribeAligreenOssStockTask(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_aligreen_oss_stock_task DescribeAligreenOssStockTask Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["AudioAutoFreezeOpened"] != nil {
@@ -476,43 +480,43 @@ func resourceAliCloudAligreenOssStockTaskRead(d *schema.ResourceData, meta inter
 
 	e := jsonata.MustCompile("$.AudioAntispamFreezeConfig")
 	evaluation, _ := e.Eval(objectRaw)
-	d.Set("audio_antispam_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("audio_antispam_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.AudioScenes")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("audio_scenes", convertObjectToJsonString(evaluation))
+	d.Set("audio_scenes", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.Buckets")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("buckets", convertObjectToJsonString(evaluation))
+	d.Set("buckets", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.ImageAdFreezeConfig")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("image_ad_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("image_ad_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.ImageLiveFreezeConfig")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("image_live_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("image_live_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.ImagePornFreezeConfig")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("image_porn_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("image_porn_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.ImageTerrorismFreezeConfig")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("image_terrorism_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("image_terrorism_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.VideoAdFreezeConfig")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("video_ad_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("video_ad_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.VideoLiveFreezeConfig")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("video_live_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("video_live_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.VideoPornFreezeConfig")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("video_porn_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("video_porn_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.VideoScenes")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("video_scenes", convertObjectToJsonString(evaluation))
+	d.Set("video_scenes", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.VideoTerrorismFreezeConfig")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("video_terrorism_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("video_terrorism_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 	e = jsonata.MustCompile("$.VideoVoiceAntispamFreezeConfig")
 	evaluation, _ = e.Eval(objectRaw)
-	d.Set("video_voice_antispam_freeze_config", convertObjectToJsonString(evaluation))
+	d.Set("video_voice_antispam_freeze_config", convert.ConvertObjectToJsonString(evaluation))
 
 	return nil
 }
