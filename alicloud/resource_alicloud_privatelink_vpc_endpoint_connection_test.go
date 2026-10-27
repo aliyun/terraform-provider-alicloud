@@ -27,7 +27,9 @@ func TestAccAliCloudPrivatelinkVpcEndpointConnection_basic(t *testing.T) {
 	}, "DescribePrivatelinkVpcEndpointConnection")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", AlicloudPrivatelinkVpcEndpointConnectionBasicDependence)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccprivatelinkvpcendpointconnection%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointConnectionBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -38,23 +40,19 @@ func TestAccAliCloudPrivatelinkVpcEndpointConnection_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"endpoint_id": "${alicloud_privatelink_vpc_endpoint.default.id}",
-					"service_id":  "${alicloud_privatelink_vpc_endpoint_service.default.id}",
-					"bandwidth":   "1024",
+					"endpoint_id":          "${alicloud_privatelink_vpc_endpoint.default.id}",
+					"service_id":           "${alicloud_privatelink_vpc_endpoint_service.default.id}",
+					"bandwidth":            "1024",
+					"traffic_control_mode": "BandwidthLimit",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"endpoint_id": CHECKSET,
-						"service_id":  CHECKSET,
-						"bandwidth":   "1024",
+						"endpoint_id":          CHECKSET,
+						"service_id":           CHECKSET,
+						"bandwidth":            "1024",
+						"traffic_control_mode": "BandwidthLimit",
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -66,37 +64,100 @@ func TestAccAliCloudPrivatelinkVpcEndpointConnection_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_id":          "${alicloud_privatelink_vpc_endpoint.default.id}",
+					"service_id":           "${alicloud_privatelink_vpc_endpoint_service.default.id}",
+					"traffic_control_mode": "Scalability",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"traffic_control_mode": "Scalability",
+					}),
+				),
+			},
 		},
 	})
 }
 
 var AlicloudPrivatelinkVpcEndpointConnectionMap = map[string]string{
-	"status": CHECKSET,
+	"endpoint_owner_id": CHECKSET,
+	"status":            CHECKSET,
 }
 
 func AlicloudPrivatelinkVpcEndpointConnectionBasicDependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_vpcs" "default" {
-	     name_regex = "^default-NODELETING$"
-	}
-	resource "alicloud_security_group" "default" {
-	 name = "tf-testAcc-for-privatelink"
-	 description = "privatelink test security group"
-	 vpc_id = data.alicloud_vpcs.default.ids.0
-	}
-	resource "alicloud_privatelink_vpc_endpoint_service" "default" {
-	service_description = "test for privatelink connection"
-	connect_bandwidth = 103
-	auto_accept_connection = false
-	}
-	resource "alicloud_privatelink_vpc_endpoint" "default" {
-	 service_id = alicloud_privatelink_vpc_endpoint_service.default.id
-	 vpc_id = data.alicloud_vpcs.default.ids.0
-	 security_group_ids = [alicloud_security_group.default.id]
-	 vpc_endpoint_name = "testformaintf"
-	 depends_on = [alicloud_privatelink_vpc_endpoint_service.default]
-	}
-`)
+variable "name" { default = "%s" }
+data "alicloud_nlb_zones" "default" {}
+resource "alicloud_vpc" "default" {
+  description = "test-terraform"
+  cidr_block  = "10.0.0.0/8"
+  vpc_name    = var.name
+}
+resource "alicloud_vswitch" "default_a" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  cidr_block = "10.1.0.0/16"
+}
+resource "alicloud_security_group" "default" {
+  name        = var.name
+  description = "privatelink test security group"
+  vpc_id      = alicloud_vpc.default.id
+}
+resource "alicloud_privatelink_vpc_endpoint_service" "default" {
+  service_description    = "test for privatelink connection"
+  connect_bandwidth      = 3072
+  auto_accept_connection = false
+  service_resource_type  = "nlb"
+}
+resource "alicloud_vpc" "defaultService" {
+  description = "test-terraform-service"
+  cidr_block  = "172.16.0.0/12"
+  vpc_name    = var.name
+}
+resource "alicloud_vswitch" "defaultService_a" {
+  vpc_id     = alicloud_vpc.defaultService.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  cidr_block = "172.16.1.0/24"
+}
+resource "alicloud_vswitch" "defaultService_b" {
+  vpc_id     = alicloud_vpc.defaultService.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  cidr_block = "172.16.2.0/24"
+}
+resource "alicloud_nlb_load_balancer" "default" {
+  load_balancer_name = var.name
+  vpc_id       = alicloud_vpc.defaultService.id
+  address_type = "Intranet"
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.defaultService_a.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.defaultService_b.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  }
+}
+resource "alicloud_privatelink_vpc_endpoint_service_resource" "default" {
+  zone_id       = data.alicloud_nlb_zones.default.zones.0.id
+  resource_id   = alicloud_nlb_load_balancer.default.id
+  resource_type = "nlb"
+  service_id    = alicloud_privatelink_vpc_endpoint_service.default.id
+}
+resource "alicloud_privatelink_vpc_endpoint" "default" {
+  service_id         = alicloud_privatelink_vpc_endpoint_service.default.id
+  vpc_id             = alicloud_vpc.default.id
+  security_group_ids = [alicloud_security_group.default.id]
+  vpc_endpoint_name  = "testformaintf"
+  depends_on         = [alicloud_privatelink_vpc_endpoint_service_resource.default]
+}
+`, name)
 }
 
 // lintignore: R001
@@ -131,8 +192,10 @@ func TestUnitAlicloudPrivatelinkVpcEndpointConnection(t *testing.T) {
 		// ListVpcEndpointConnections
 		"Connections": []interface{}{
 			map[string]interface{}{
-				"ConnectionStatus": "Connected",
-				"Bandwidth":        1000,
+				"ConnectionStatus":   "Connected",
+				"Bandwidth":          1000,
+				"EndpointOwnerId":    123456789,
+				"TrafficControlMode": "BandwidthLimit",
 			},
 		},
 	}
@@ -426,15 +489,17 @@ func TestAccAliCloudPrivateLinkVpcEndpointConnection_basic4902(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"endpoint_id": "${alicloud_privatelink_vpc_endpoint.defaultEndpoint.id}",
-					"service_id":  "${alicloud_privatelink_vpc_endpoint_service.defaultService.id}",
-					"bandwidth":   "3072",
+					"endpoint_id":          "${alicloud_privatelink_vpc_endpoint.defaultEndpoint.id}",
+					"service_id":           "${alicloud_privatelink_vpc_endpoint_service.defaultService.id}",
+					"bandwidth":            "3072",
+					"traffic_control_mode": "BandwidthLimit",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"endpoint_id": CHECKSET,
-						"service_id":  CHECKSET,
-						"bandwidth":   "3072",
+						"endpoint_id":          CHECKSET,
+						"service_id":           CHECKSET,
+						"bandwidth":            "3072",
+						"traffic_control_mode": "BandwidthLimit",
 					}),
 				),
 			},
@@ -449,7 +514,8 @@ func TestAccAliCloudPrivateLinkVpcEndpointConnection_basic4902(t *testing.T) {
 }
 
 var AlicloudPrivateLinkVpcEndpointConnectionMap4902 = map[string]string{
-	"status": CHECKSET,
+	"endpoint_owner_id": CHECKSET,
+	"status":            CHECKSET,
 }
 
 func AlicloudPrivateLinkVpcEndpointConnectionBasicDependence4902(name string) string {
@@ -513,15 +579,17 @@ func TestAccAliCloudPrivateLinkVpcEndpointConnection_basic4902_twin(t *testing.T
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"endpoint_id": "${alicloud_privatelink_vpc_endpoint.defaultEndpoint.id}",
-					"service_id":  "${alicloud_privatelink_vpc_endpoint_service.defaultService.id}",
-					"bandwidth":   "3072",
+					"endpoint_id":          "${alicloud_privatelink_vpc_endpoint.defaultEndpoint.id}",
+					"service_id":           "${alicloud_privatelink_vpc_endpoint_service.defaultService.id}",
+					"bandwidth":            "3072",
+					"traffic_control_mode": "BandwidthLimit",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"endpoint_id": CHECKSET,
-						"service_id":  CHECKSET,
-						"bandwidth":   "3072",
+						"endpoint_id":          CHECKSET,
+						"service_id":           CHECKSET,
+						"bandwidth":            "3072",
+						"traffic_control_mode": "BandwidthLimit",
 					}),
 				),
 			},

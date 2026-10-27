@@ -29,13 +29,15 @@ func TestAccAlicloudPrivatelinkVpcEndpointConnectionsDataSource(t *testing.T) {
 
 	var existPrivatelinkVpcEndpointConnectionsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                     "1",
-			"ids.0":                     CHECKSET,
-			"connections.#":             "1",
-			"connections.0.id":          CHECKSET,
-			"connections.0.bandwidth":   "1024",
-			"connections.0.endpoint_id": CHECKSET,
-			"connections.0.status":      CHECKSET,
+			"ids.#":                              "1",
+			"ids.0":                              CHECKSET,
+			"connections.#":                      "1",
+			"connections.0.id":                   CHECKSET,
+			"connections.0.bandwidth":            "1024",
+			"connections.0.traffic_control_mode": "BandwidthLimit",
+			"connections.0.endpoint_id":          CHECKSET,
+			"connections.0.endpoint_owner_id":    CHECKSET,
+			"connections.0.status":               CHECKSET,
 		}
 	}
 
@@ -85,6 +87,7 @@ func dataSourcePrivatelinkVpcEndpointConnectionsDependence(name string) string {
 	 service_id = alicloud_privatelink_vpc_endpoint_service.default.id
 	 endpoint_id = alicloud_privatelink_vpc_endpoint.default.id
 	 bandwidth = "1024"
+	 traffic_control_mode = "BandwidthLimit"
 	}
 	`)
 }
