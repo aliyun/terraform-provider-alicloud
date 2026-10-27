@@ -92,6 +92,7 @@ The following arguments are supported:
 * `office_site_id` - (Required, ForceNew) The ID of the Simple Office Site.
 * `end_user_ids` - (Optional, ForceNew) The desktop end user id of the Desktop.
 * `host_name` - (Optional) The hostname of the Desktop.
+* `desktop_timers` - (Optional) The list of scheduled timer tasks for the Desktop. See [`desktop_timers`](#desktop_timers) below.
 * `payment_type` - (Optional, Computed) The payment type of the Desktop. Valid values: `PayAsYouGo`, `Subscription`. Default to `PayAsYouGo`.
 * `period` - (Optional) The period of the Desktop.
 * `period_unit` - (Optional) The period unit of the Desktop.
@@ -102,6 +103,20 @@ The following arguments are supported:
 * `user_assign_mode` - (Optional) The user assign mode of the Desktop. Valid values: `ALL`, `PER_USER`. Default to `ALL`.
 * `user_disk_size_gib` - (Optional) The user disk size gib of the Desktop.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+
+### `desktop_timers`
+
+The desktop_timers supports the following:
+
+* `timer_type` - (Optional) The type of the scheduled timer task. Required when a `desktop_timers` block is configured. Valid values: `LoginAutoConnect`, `LogoutShutdown`, `NoConnect`, `NoOperationDisconnect`, `NoOperationReboot`, `NoOperationShutdown`, `TimerBoot`, `TimerReboot`, `TimerReset`, `TimerShutdown`.
+* `cron_expression` - (Optional) The cron expression of the scheduled timer task. The cron expression uses UTC time. For example, to execute at 00:00 Beijing time every day, set the value to `0 0 16 ? * 1,2,3,4,5,6,7`.
+* `interval` - (Optional) The time interval, in minutes.
+* `enforce` - (Optional) Whether to force the execution of the scheduled timer task.
+* `reset_type` - (Optional) The reset type of the Desktop. Valid values: `RESET_TYPE_BOTH`, `RESET_TYPE_SYSTEM`.
+* `allow_client_setting` - (Optional) Whether to allow the end user to configure the scheduled timer task.
+* `operation_type` - (Optional) The operation type of the scheduled timer task, only valid when `timer_type` is `NoConnect`. Valid values: `Hibernate`, `Shutdown`.
+
+  -> **NOTE:** `desktop_timers` is a write-only field. Since the DescribeDesktops API does not return timer configurations, Terraform cannot detect drift on this field, and the field is ignored when importing. Removing the block disables the timers.
 
 ## Attributes Reference
 

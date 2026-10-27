@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -183,6 +184,49 @@ func resourceAlicloudEcdPolicyGroup() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.IntBetween(15, 180),
 			},
+			"internet_communication_protocol": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"BOTH", "TCP"}, false),
+			},
+			"recording_duration": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntInSlice([]int{10, 20, 30, 60}),
+			},
+			"client_types": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"client_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"android", "html5", "ios", "macos", "windows"}, false),
+						},
+						"status": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+						},
+					},
+				},
+			},
+			"end_user_apply_admin_coordinate": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+			},
+			"end_user_group_coordinate": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+			},
 		},
 	}
 }
@@ -263,6 +307,27 @@ func resourceAlicloudEcdPolicyGroupCreate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("recording_expires"); ok {
 		request["RecordingExpires"] = v
+	}
+	if v, ok := d.GetOk("internet_communication_protocol"); ok {
+		request["InternetCommunicationProtocol"] = v
+	}
+	if v, ok := d.GetOk("recording_duration"); ok {
+		request["RecordingDuration"] = v
+	}
+	if v, ok := d.GetOk("client_types"); ok {
+		for clientTypesPtr, clientTypes := range v.(*schema.Set).List() {
+			clientTypesArg := clientTypes.(map[string]interface{})
+			request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".ClientType"] = clientTypesArg["client_type"]
+			// Status enum is uppercase OFF/ON on the wire; the schema stores off/on,
+			// so uppercase it for the request (the Read side lowercases it back).
+			request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".Status"] = strings.ToUpper(clientTypesArg["status"].(string))
+		}
+	}
+	if v, ok := d.GetOk("end_user_apply_admin_coordinate"); ok {
+		request["EndUserApplyAdminCoordinate"] = v
+	}
+	if v, ok := d.GetOk("end_user_group_coordinate"); ok {
+		request["EndUserGroupCoordinate"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -353,6 +418,38 @@ func resourceAlicloudEcdPolicyGroupRead(d *schema.ResourceData, meta interface{}
 		return err
 	}
 	d.Set("recording_expires", recording_expiresVal)
+	if protocol, ok := object["InternetCommunicationProtocol"].(string); ok && protocol != "" {
+		d.Set("internet_communication_protocol", strings.ToUpper(protocol))
+	}
+	recordingDurationVal, err := formatInt(object["RecordingDuration"])
+	if err != nil {
+		return err
+	}
+	d.Set("recording_duration", recordingDurationVal)
+	// DescribePolicyGroups returns client types under the plural "ClientTypes"
+	// key, consistent with AuthorizeAccessPolicyRules / AuthorizeSecurityPolicyRules
+	// in this same Read: the request uses the singular repeatList prefix
+	// ClientType.{N}.ClientType/.Status, and the response echoes it as a plural
+	// array. The singular "ClientType" key is empty (verified via ACC). The
+	// Status enum is uppercase OFF/ON on the wire, so it is lowercased for state.
+	if clientTypesList, ok := object["ClientTypes"].([]interface{}); ok {
+		clientTypesMaps := make([]map[string]interface{}, 0)
+		for _, clientTypesListItem := range clientTypesList {
+			if clientTypesListItemMap, ok := clientTypesListItem.(map[string]interface{}); ok {
+				clientTypesMap := make(map[string]interface{})
+				clientTypesMap["client_type"] = clientTypesListItemMap["ClientType"]
+				if status, ok := clientTypesListItemMap["Status"].(string); ok {
+					clientTypesMap["status"] = strings.ToLower(status)
+				}
+				clientTypesMaps = append(clientTypesMaps, clientTypesMap)
+			}
+		}
+		if err := d.Set("client_types", clientTypesMaps); err != nil {
+			return WrapError(err)
+		}
+	}
+	d.Set("end_user_apply_admin_coordinate", object["EndUserApplyAdminCoordinate"])
+	d.Set("end_user_group_coordinate", object["EndUserGroupCoordinate"])
 	return nil
 }
 func resourceAlicloudEcdPolicyGroupUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -522,6 +619,42 @@ func resourceAlicloudEcdPolicyGroupUpdate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("recording_expires"); ok {
 		request["RecordingExpires"] = v
+	}
+	if d.HasChange("internet_communication_protocol") {
+		update = true
+	}
+	if v, ok := d.GetOk("internet_communication_protocol"); ok {
+		request["InternetCommunicationProtocol"] = v
+	}
+	if d.HasChange("recording_duration") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_duration"); ok {
+		request["RecordingDuration"] = v
+	}
+	if d.HasChange("client_types") {
+		update = true
+		if v, ok := d.GetOk("client_types"); ok {
+			for clientTypesPtr, clientTypes := range v.(*schema.Set).List() {
+				clientTypesArg := clientTypes.(map[string]interface{})
+				request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".ClientType"] = clientTypesArg["client_type"]
+				// Status enum is uppercase OFF/ON on the wire; the schema stores off/on,
+				// so uppercase it for the request (the Read side lowercases it back).
+				request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".Status"] = strings.ToUpper(clientTypesArg["status"].(string))
+			}
+		}
+	}
+	if d.HasChange("end_user_apply_admin_coordinate") {
+		update = true
+	}
+	if v, ok := d.GetOk("end_user_apply_admin_coordinate"); ok {
+		request["EndUserApplyAdminCoordinate"] = v
+	}
+	if d.HasChange("end_user_group_coordinate") {
+		update = true
+	}
+	if v, ok := d.GetOk("end_user_group_coordinate"); ok {
+		request["EndUserGroupCoordinate"] = v
 	}
 	if update {
 		action := "ModifyPolicyGroup"

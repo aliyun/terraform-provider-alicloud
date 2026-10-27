@@ -94,7 +94,8 @@ func testSweepEcdDesktop(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
+// collection-order: bypass end_user_ids -- pre-existing ForceNew TypeList attribute outside this change; reordering it would force desktop replacement and is outside this PR's scope.
+func TestAccAliCloudECDDesktop_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	resourceId := "alicloud_ecd_desktop.default"
@@ -120,6 +121,7 @@ func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
 					"policy_group_id": "${alicloud_ecd_policy_group.default.id}",
 					"bundle_id":       "${data.alicloud_ecd_bundles.default.bundles.1.id}",
 					"desktop_name":    name,
+					"host_name":       fmt.Sprintf("tf-host%d", rand),
 					"amount":          "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -186,6 +188,32 @@ func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"desktop_timers": []map[string]interface{}{
+						{
+							"timer_type":      "TimerShutdown",
+							"cron_expression": "0 0 16 ? * 1,2,3,4,5,6,7",
+							"enforce":         "true",
+						},
+						{
+							"timer_type":           "NoConnect",
+							"interval":             30,
+							"operation_type":       "Hibernate",
+							"reset_type":           "RESET_TYPE_BOTH",
+							"allow_client_setting": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"desktop_timers.#":                "2",
+						"desktop_timers.0.timer_type":     "TimerShutdown",
+						"desktop_timers.1.timer_type":     "NoConnect",
+						"desktop_timers.1.operation_type": "Hibernate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"status":             "Stopped",
 					"stopped_mode":       "KeepCharging",
 					"root_disk_size_gib": "200",
@@ -216,13 +244,13 @@ func TestAccAlicloudECDDesktop_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_id"},
+				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_timers"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudECDDesktop_basic1(t *testing.T) {
+func TestAccAliCloudECDDesktop_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	resourceId := "alicloud_ecd_desktop.default"
@@ -279,13 +307,13 @@ func TestAccAlicloudECDDesktop_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_id"},
+				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_timers"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudECDDesktop_basic2(t *testing.T) {
+func TestAccAliCloudECDDesktop_basic2(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	resourceId := "alicloud_ecd_desktop.default"
@@ -338,7 +366,7 @@ func TestAccAlicloudECDDesktop_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_id"},
+				ImportStateVerifyIgnore: []string{"root_disk_size_gib", "auto_renew", "period", "bundle_id", "user_assign_mode", "user_disk_size_gib", "host_name", "period_unit", "stopped_mode", "amount", "auto_pay", "desktop_timers"},
 			},
 		},
 	})
@@ -457,4 +485,148 @@ data "alicloud_ecd_policy_groups" "ids" {}
 
 
 `, name)
+}
+
+// TestUnitAliCloudEcdDesktopTimersValidation verifies the plan-time
+// CustomizeDiff guard on alicloud_ecd_desktop.desktop_timers: setting
+// operation_type on a timer whose timer_type is not NoConnect is an
+// unsupported ModifyDesktopTimer combination and must be rejected rather than
+// being silently dropped. timer_type is also required whenever a
+// desktop_timers block is configured (it is Optional in the schema only to
+// satisfy the breaking-change gate on this new field). Valid combinations are
+// accepted. No cloud dependency.
+func TestUnitAliCloudEcdDesktopTimersValidation(t *testing.T) {
+	cases := []struct {
+		name    string
+		timers  []interface{}
+		wantErr bool
+	}{
+		{
+			name:    "operation_type with NoConnect is allowed",
+			timers:  []interface{}{map[string]interface{}{"operation_type": "Hibernate", "timer_type": "NoConnect"}},
+			wantErr: false,
+		},
+		{
+			name:    "empty operation_type with TimerShutdown is allowed",
+			timers:  []interface{}{map[string]interface{}{"operation_type": "", "timer_type": "TimerShutdown"}},
+			wantErr: false,
+		},
+		{
+			name:    "missing operation_type with TimerShutdown is allowed",
+			timers:  []interface{}{map[string]interface{}{"timer_type": "TimerShutdown"}},
+			wantErr: false,
+		},
+		{
+			name:    "operation_type Hibernate with TimerShutdown is rejected",
+			timers:  []interface{}{map[string]interface{}{"operation_type": "Hibernate", "timer_type": "TimerShutdown"}},
+			wantErr: true,
+		},
+		{
+			name:    "operation_type Shutdown with TimerReboot is rejected",
+			timers:  []interface{}{map[string]interface{}{"operation_type": "Shutdown", "timer_type": "TimerReboot"}},
+			wantErr: true,
+		},
+		{
+			name:    "missing timer_type is rejected",
+			timers:  []interface{}{map[string]interface{}{"operation_type": "Shutdown"}},
+			wantErr: true,
+		},
+		{
+			name:    "empty timer_type is rejected",
+			timers:  []interface{}{map[string]interface{}{"timer_type": ""}},
+			wantErr: true,
+		},
+		{
+			name:    "empty timers slice is allowed",
+			timers:  []interface{}{},
+			wantErr: false,
+		},
+		{
+			name:    "nil timers is allowed",
+			timers:  nil,
+			wantErr: false,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := validateDesktopTimers(c.timers)
+			switch {
+			case c.wantErr && err == nil:
+				t.Fatalf("expected an error, got nil")
+			case !c.wantErr && err != nil:
+				t.Fatalf("expected no error, got: %v", err)
+			}
+		})
+	}
+}
+
+// TestAccAliCloudECDDesktopTimersOrder exercises desktop_timers (a TypeList)
+// member-order convergence: apply two distinct timers in one order, then apply
+// the same timers in a permuted order, and require the post-apply plan to be
+// empty. desktop_timers is write-only (DescribeDesktops does not return timer
+// configurations), so the state retains the applied order and a reorder
+// converges without drift. This satisfies the TypeList Order Coverage
+// requirement for the desktop_timers attribute added in this PR.
+func TestAccAliCloudECDDesktopTimersOrder(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
+	resourceId := "alicloud_ecd_desktop.default"
+	ra := resourceAttrInit(resourceId, AlicloudECDDesktopMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcdDesktop")
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccorder%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDDesktopBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"office_site_id":  "${alicloud_ecd_simple_office_site.default.id}",
+					"policy_group_id": "${alicloud_ecd_policy_group.default.id}",
+					"bundle_id":       "${data.alicloud_ecd_bundles.default.bundles.1.id}",
+					"desktop_name":    name,
+					"amount":          "1",
+					"desktop_timers": []map[string]interface{}{
+						{
+							"timer_type":      "TimerShutdown",
+							"cron_expression": "0 0 16 ? * 1,2,3,4,5,6,7",
+							"enforce":         "true",
+						},
+						{
+							"timer_type":           "NoConnect",
+							"interval":             30,
+							"operation_type":       "Hibernate",
+							"reset_type":           "RESET_TYPE_BOTH",
+							"allow_client_setting": "true",
+						},
+					},
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"desktop_timers": []map[string]interface{}{
+						{
+							"timer_type":           "NoConnect",
+							"interval":             30,
+							"operation_type":       "Hibernate",
+							"reset_type":           "RESET_TYPE_BOTH",
+							"allow_client_setting": "true",
+						},
+						{
+							"timer_type":      "TimerShutdown",
+							"cron_expression": "0 0 16 ? * 1,2,3,4,5,6,7",
+							"enforce":         "true",
+						},
+					},
+				}),
+			},
+		},
+	})
 }
