@@ -2,11 +2,13 @@ package rds
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -24,7 +26,9 @@ func resourceAlicloudRdsDBProxy() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(60 * time.Minute),
 			Update: schema.DefaultTimeout(30 * time.Minute),
-			Delete: schema.DefaultTimeout(20 * time.Minute),
+			// Closing the proxy instances is asynchronous and has been observed to
+			// take longer than 20 minutes for some proxies.
+			Delete: schema.DefaultTimeout(45 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -47,12 +51,10 @@ func resourceAlicloudRdsDBProxy() *schema.Resource {
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"db_proxy_connection_prefix": {
 				Type:     schema.TypeString,
@@ -159,6 +161,35 @@ func resourceAlicloudRdsDBProxy() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"persistent_connection_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Enabled", "Disabled"}, false),
+			},
+			"db_proxy_nodes": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 2,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cpu_cores": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntBetween(1, 16),
+						},
+						"node_counts": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntBetween(1, 2),
+						},
+						"zone_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -193,6 +224,13 @@ func resourceAlicloudRdsDBProxyCreate(d *schema.ResourceData, meta interface{}) 
 	resourceGroupId, ok := d.GetOk("resource_group_id")
 	if ok && vpcId.(string) != "" {
 		request["ResourceGroupId"] = resourceGroupId
+	}
+	if v, ok := d.GetOk("db_proxy_nodes"); ok {
+		dbProxyNodes, err := expandRdsDBProxyNodes(v.(*schema.Set))
+		if err != nil {
+			return WrapError(err)
+		}
+		request["DBProxyNodes"] = dbProxyNodes
 	}
 	if err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
@@ -294,6 +332,24 @@ func resourceAlicloudRdsDBProxyRead(d *schema.ResourceData, meta interface{}) er
 			d.Set("db_proxy_ssl_enabled", v)
 		}
 	}
+	if v, ok := proxy["DBProxyPersistentConnectionStatus"]; ok {
+		d.Set("persistent_connection_status", v)
+	}
+	// The node layout is refreshed only when it is managed by the configuration,
+	// otherwise the API layout would be added to resources that do not manage it.
+	if _, ok := d.GetOk("db_proxy_nodes"); ok {
+		nodes, err := describeRdsDBProxyNodes(client, d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		if len(nodes) > 0 {
+			if flattenNodes := flattenRdsDBProxyNodes(nodes); flattenNodes != nil {
+				if err := d.Set("db_proxy_nodes", flattenNodes); err != nil {
+					return WrapError(err)
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -358,7 +414,11 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 	if endpointError != nil {
 		return WrapError(endpointError)
 	}
-	if !d.IsNewResource() && (d.HasChange("db_proxy_instance_num") || d.HasChange("db_proxy_instance_type")) {
+	_, dbProxyNodesConfigured := d.GetOk("db_proxy_nodes")
+	// Changing the vSwitch or the VPC migrates the proxy to the target network
+	// through MigrateAZ instead of replacing the resource.
+	networkChanged := !d.IsNewResource() && d.HasChanges("vswitch_id", "vpc_id")
+	if !d.IsNewResource() && (d.HasChange("db_proxy_instance_num") || d.HasChange("db_proxy_instance_type") || (d.HasChange("db_proxy_nodes") && dbProxyNodesConfigured) || networkChanged) {
 		action := "ModifyDBProxyInstance"
 		request := map[string]interface{}{
 			"RegionId":            client.RegionId,
@@ -368,16 +428,80 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 			"DBProxyInstanceType": d.Get("db_proxy_instance_type"),
 			"SourceIp":            client.SourceIp,
 		}
-		if d.HasChange("effective_time") {
-			request["EffectiveTime"] = d.Get("effective_time")
+		if networkChanged {
+			migrateAz, err := buildRdsDBProxyMigrateAz(endpointInfo["DBProxyEndpointId"], d.Get("vswitch_id"), d.Get("vpc_id"))
+			if err != nil {
+				return WrapError(err)
+			}
+			request["MigrateAZ"] = migrateAz
 		}
-		if d.HasChange("effective_specific_time") {
-			request["EffectiveSpecificTime"] = d.Get("effective_specific_time")
+		// EffectiveTime defaults to MaintainTime on the server, which defers the change to the
+		// maintenance window and leaves the proxy in a changing state, so the configured value is
+		// sent as-is and Immediate is sent when the attribute is absent from the configuration.
+		effectiveTime, effectiveSpecificTime, err := rdsDBProxyEffectiveTime(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["EffectiveTime"] = effectiveTime
+		if effectiveTime == "SpecificTime" {
+			request["EffectiveSpecificTime"] = effectiveSpecificTime
+		}
+		targetZone := ""
+		var currentLayout []map[string]interface{}
+		if networkChanged {
+			var err error
+			targetZone, err = rdsDBProxyTargetZone(client, d.Get("vswitch_id").(string))
+			if err != nil {
+				return WrapError(err)
+			}
+			// An in-place migration moves every proxy node into the availability zone of
+			// the target vSwitch, so a proxy that currently spans several availability
+			// zones cannot be migrated in place. The current layout is checked before
+			// the request on every network change path, including a configuration that
+			// sets db_proxy_nodes to the target zone.
+			currentLayout, err = currentRdsDBProxyNodeLayout(client, d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			if len(currentLayout) > 1 {
+				zones := make([]string, 0, len(currentLayout))
+				for _, node := range currentLayout {
+					zones = append(zones, fmt.Sprint(node["zone_id"]))
+				}
+				return WrapError(fmt.Errorf("the proxy is deployed across availability zones (%s); changing vswitch_id or vpc_id in place is not supported for a multi-AZ proxy, recreate the proxy instead", strings.Join(zones, ", ")))
+			}
+		}
+		if v, ok := d.GetOk("db_proxy_nodes"); ok {
+			if networkChanged {
+				for _, item := range v.(*schema.Set).List() {
+					node, _ := item.(map[string]interface{})
+					zoneId, _ := node["zone_id"].(string)
+					if zoneId != "" && zoneId != targetZone {
+						return WrapError(fmt.Errorf("db_proxy_nodes.zone_id (%s) must be the availability zone of the target vswitch_id (%s), the proxy nodes move together with the proxy", zoneId, targetZone))
+					}
+				}
+			}
+			dbProxyNodes, err := expandRdsDBProxyNodes(v.(*schema.Set))
+			if err != nil {
+				return WrapError(err)
+			}
+			request["DBProxyNodes"] = dbProxyNodes
+		} else if networkChanged && len(currentLayout) == 1 {
+			// MigrateAZ alone is accepted but does not move the proxy: the API needs
+			// the target node layout. The current node size is resent in the target
+			// availability zone.
+			dbProxyNodes, err := rdsDBProxyNodesOfZone(currentLayout, targetZone)
+			if err != nil {
+				return WrapError(err)
+			}
+			if dbProxyNodes != "" {
+				request["DBProxyNodes"] = dbProxyNodes
+			}
 		}
 		if err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"TaskExists", "MaxscaleInternalError", "APICallingFailed"}) || NeedRetry(err) {
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
@@ -391,6 +515,14 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBProxyStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		// A finished migration task is not reflected in DescribeDBProxy at once, so the
+		// target network is polled before the state is refreshed from the API. A deferred
+		// effective time is not polled because the migration only starts at that time.
+		if networkChanged && effectiveTime == "Immediate" {
+			if err := waitForRdsDBProxyNetwork(client, d.Id(), d.Get("vswitch_id").(string), d.Get("vpc_id").(string), d.Timeout(schema.TimeoutUpdate)); err != nil {
+				return WrapError(err)
+			}
 		}
 	}
 	if d.HasChanges("db_proxy_endpoint_read_write_mode", "read_only_instance_max_delay_time", "read_only_instance_distribution_type", "db_proxy_features", "read_only_instance_weight") {
@@ -446,6 +578,35 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.HasChange("persistent_connection_status") {
+		if v, ok := d.GetOk("persistent_connection_status"); ok {
+			action := "ModifyDBProxy"
+			request := map[string]interface{}{
+				"RegionId":                   client.RegionId,
+				"DBInstanceId":               d.Id(),
+				"ConfigDBProxyService":       "Modify",
+				"PersistentConnectionStatus": v,
+				"SourceIp":                   client.SourceIp,
+			}
+			if err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+				response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+				if err != nil {
+					if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"TaskExists", "MaxscaleInternalError"}) || NeedRetry(err) {
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			}); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBProxyStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+	}
 	if d.HasChange("db_proxy_ssl_enabled") {
 		action := "ModifyDbProxyInstanceSsl"
 		request := map[string]interface{}{
@@ -582,4 +743,234 @@ func convertDBProxyInstanceTypeResponse(source interface{}) interface{} {
 		return "common"
 	}
 	return ""
+}
+
+func expandRdsDBProxyNodes(nodes *schema.Set) (string, error) {
+	items := nodes.List()
+	dbProxyNodes := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		node, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		zoneId, _ := node["zone_id"].(string)
+		cpuCores, _ := node["cpu_cores"].(int)
+		nodeCounts, _ := node["node_counts"].(int)
+		// Every sub-attribute has to be set explicitly: a default would be written
+		// back from the API into the set element hash and never converge.
+		if zoneId == "" || cpuCores == 0 || nodeCounts == 0 {
+			return "", fmt.Errorf("db_proxy_nodes requires zone_id, cpu_cores and node_counts, got zone_id=%q cpu_cores=%d node_counts=%d", zoneId, cpuCores, nodeCounts)
+		}
+		dbProxyNodes = append(dbProxyNodes, map[string]interface{}{
+			"cpuCores":   strconv.Itoa(cpuCores),
+			"nodeCounts": strconv.Itoa(nodeCounts),
+			"zoneId":     zoneId,
+		})
+	}
+	result, err := json.Marshal(dbProxyNodes)
+	if err != nil {
+		return "", err
+	}
+	return string(result), nil
+}
+
+// rdsDBProxyEffectiveTime returns the EffectiveTime that the request carries.
+// The attribute is Optional+Computed, so the raw configuration decides whether a
+// value was requested; Immediate is used when the attribute is absent.
+func rdsDBProxyEffectiveTime(d *schema.ResourceData) (string, interface{}, error) {
+	requested := ""
+	if raw := d.GetRawConfig(); raw != cty.NilVal && !raw.IsNull() {
+		if v := raw.GetAttr("effective_time"); v.IsKnown() && !v.IsNull() {
+			requested = v.AsString()
+		}
+	} else if v, ok := d.GetOk("effective_time"); ok {
+		requested = v.(string)
+	}
+	switch requested {
+	case "":
+		return "Immediate", nil, nil
+	case "SpecificTime":
+		// The API requires the point in time together with SpecificTime, so a
+		// missing value is reported here instead of as a server-side parameter error.
+		specific, _ := d.Get("effective_specific_time").(string)
+		if specific == "" {
+			return "", nil, fmt.Errorf("effective_specific_time must be set when effective_time is SpecificTime")
+		}
+		return requested, specific, nil
+	default:
+		return requested, nil, nil
+	}
+}
+
+// rdsDBProxyTargetZone returns the availability zone of the vSwitch that the
+// proxy is migrated to.
+func rdsDBProxyTargetZone(client *connectivity.AliyunClient, vswitchId string) (string, error) {
+	vpcService := VpcService{client}
+	vswitch, err := vpcService.DescribeVswitch(vswitchId)
+	if err != nil {
+		return "", err
+	}
+	zone, _ := vswitch["ZoneId"].(string)
+	if zone == "" {
+		return "", fmt.Errorf("cannot determine the availability zone of vswitch %q", vswitchId)
+	}
+	return zone, nil
+}
+
+// currentRdsDBProxyNodeLayout returns the node layout that the proxy currently
+// reports, aggregated per availability zone.
+func currentRdsDBProxyNodeLayout(client *connectivity.AliyunClient, id string) ([]map[string]interface{}, error) {
+	nodes, err := describeRdsDBProxyNodes(client, id)
+	if err != nil {
+		return nil, err
+	}
+	if len(nodes) == 0 {
+		return nil, nil
+	}
+	return flattenRdsDBProxyNodes(nodes), nil
+}
+
+// rdsDBProxyNodesOfZone rebuilds the DBProxyNodes request value for the target
+// availability zone from the current node layout.
+func rdsDBProxyNodesOfZone(layout []map[string]interface{}, zoneId string) (string, error) {
+	items := make([]map[string]interface{}, 0, len(layout))
+	for _, node := range layout {
+		cpuCores, ok := node["cpu_cores"].(int)
+		nodeCounts, _ := node["node_counts"].(int)
+		if !ok || cpuCores <= 0 || nodeCounts <= 0 || zoneId == "" {
+			return "", nil
+		}
+		items = append(items, map[string]interface{}{
+			"cpuCores":   strconv.Itoa(cpuCores),
+			"nodeCounts": strconv.Itoa(nodeCounts),
+			"zoneId":     zoneId,
+		})
+	}
+	result, err := json.Marshal(items)
+	if err != nil {
+		return "", err
+	}
+	return string(result), nil
+}
+
+// waitForRdsDBProxyNetwork waits until the proxy reports the target network,
+// because MigrateAZ returns before the migration is reflected by DescribeDBProxy.
+func waitForRdsDBProxyNetwork(client *connectivity.AliyunClient, id, vswitchId, vpcId string, timeout time.Duration) error {
+	rdsService := RdsService{client}
+	stateConf := &retry.StateChangeConf{
+		Pending: []string{"Pending"},
+		Target:  []string{"Converged"},
+		Refresh: func() (interface{}, string, error) {
+			object, err := rdsService.DescribeDBProxy(id)
+			if err != nil {
+				if NotFoundError(err) {
+					return nil, "", nil
+				}
+				return nil, "", WrapError(err)
+			}
+			if fmt.Sprint(object["DBProxyVswitchId"]) == vswitchId && fmt.Sprint(object["DBProxyVpcId"]) == vpcId {
+				return object, "Converged", nil
+			}
+			return object, "Pending", nil
+		},
+		Timeout:    timeout,
+		Delay:      10 * time.Second,
+		MinTimeout: 10 * time.Second,
+	}
+	_, err := stateConf.WaitForState()
+	return err
+}
+
+func buildRdsDBProxyMigrateAz(endpointId, vswitchId, vpcId interface{}) (string, error) {
+	endpoint, _ := endpointId.(string)
+	vswitch, _ := vswitchId.(string)
+	vpc, _ := vpcId.(string)
+	if endpoint == "" || vswitch == "" || vpc == "" {
+		return "", fmt.Errorf("migrating the proxy requires a proxy endpoint, vswitch_id and vpc_id, got endpoint=%q vswitch_id=%q vpc_id=%q", endpoint, vswitch, vpc)
+	}
+	migrateAz, err := json.Marshal([]map[string]interface{}{
+		{
+			"dbProxyEndpointId": endpoint,
+			"destVSwitchId":     vswitch,
+			"destVpcId":         vpc,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return string(migrateAz), nil
+}
+
+func describeRdsDBProxyNodes(client *connectivity.AliyunClient, id string) ([]interface{}, error) {
+	action := "DescribeDBProxy"
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     client.SourceIp,
+	}
+	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+	if err != nil {
+		// The node layout is auxiliary data of the proxy that is already checked by the caller,
+		// so a vanished proxy only skips the refresh instead of failing the whole read.
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return nil, nil
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	proxyNodes, ok := response["DBProxyNodes"].(map[string]interface{})
+	if !ok {
+		return nil, nil
+	}
+	nodes, _ := proxyNodes["DBProxyNodes"].([]interface{})
+	return nodes, nil
+}
+
+// DescribeDBProxy returns one entry per proxy node, while the configuration is
+// expressed per availability zone, so the nodes are grouped by zone.
+func flattenRdsDBProxyNodes(apiNodes []interface{}) []map[string]interface{} {
+	zoneIds := make([]string, 0)
+	aggregated := make(map[string]map[string]interface{}, 0)
+	for _, item := range apiNodes {
+		apiNode, ok := item.(map[string]interface{})
+		if !ok {
+			return nil
+		}
+		zoneId, _ := apiNode["zoneId"].(string)
+		if zoneId == "" {
+			return nil
+		}
+		node, ok := aggregated[zoneId]
+		if !ok {
+			cpuCores, ok := rdsDBProxyNodeCpuCores(apiNode["cpuCores"])
+			if !ok {
+				return nil
+			}
+			node = map[string]interface{}{
+				"zone_id":     zoneId,
+				"cpu_cores":   cpuCores,
+				"node_counts": 0,
+			}
+			aggregated[zoneId] = node
+			zoneIds = append(zoneIds, zoneId)
+		}
+		node["node_counts"] = node["node_counts"].(int) + 1
+	}
+	result := make([]map[string]interface{}, 0, len(zoneIds))
+	for _, zoneId := range zoneIds {
+		result = append(result, aggregated[zoneId])
+	}
+	return result
+}
+
+func rdsDBProxyNodeCpuCores(source interface{}) (int, bool) {
+	switch v := source.(type) {
+	case string:
+		if cores, err := strconv.Atoi(v); err == nil {
+			return cores, true
+		}
+	case float64:
+		return int(v), true
+	}
+	return 0, false
 }

@@ -2,6 +2,7 @@ package rds_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -11,12 +12,15 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 	var connection map[string]interface{}
 	var primary map[string]interface{}
 	var readonly map[string]interface{}
+	var proxyEndpointIdBefore string
 
 	resourceId := "alicloud_rds_db_proxy.default"
 	var DBProxyMap = map[string]string{
@@ -38,6 +42,9 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 		return rds.NewRdsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDBReadonlyInstance")
 	rand := tfacctest.RandString(5)
+	// The effective specific time is only carried while EffectiveTime is Immediate,
+	// because a deferred change keeps the proxy in a changing state until the
+	// requested time and a wall clock dependent step is not reproducible.
 	effectiveSpecificTime := time.Now().UTC().Add(45 * time.Minute).Format("2006-01-02T15:04:05Z")
 	switchTime := time.Now().UTC().Add(45 * time.Minute).Format("2006-01-02T15:04:05Z")
 	rac := acctest.ResourceAttrCheckInit(rc_connection, ra)
@@ -77,6 +84,57 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 						"vpc_id":                 acctest.CHECKSET,
 						"resource_group_id":      acctest.CHECKSET,
 					}),
+					captureRdsDBProxyEndpointId(resourceId, &proxyEndpointIdBefore),
+				),
+			},
+			{
+				// SpecificTime requires the point in time, and the guard rejects the
+				// missing value before ModifyDBProxyInstance is called. This step runs
+				// before any step configures effective_specific_time: the attribute is
+				// Optional+Computed, so a value planned by an earlier step survives an
+				// omitted or empty configuration value.
+				Config: testAccConfig(map[string]interface{}{
+					"db_proxy_instance_type": "exclusive",
+					"effective_time":         "SpecificTime",
+				}),
+				ExpectError: regexp.MustCompile(`effective_specific_time must be set when effective_time is SpecificTime`),
+			},
+			{
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionUpdate),
+					},
+				},
+				Config: testAccConfig(map[string]interface{}{
+					// Restore the values set by step 1: a failed apply does not roll
+					// back the cumulative configuration accumulator.
+					"db_proxy_instance_type": "common",
+					"effective_time":         "Immediate",
+					"vswitch_id":             "${alicloud_vswitch.second.id}",
+					"vpc_id":                 "${alicloud_vpc.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id": acctest.CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "vswitch_id", "alicloud_vswitch.second", "id"),
+					checkRdsDBProxyEndpointIdUnchanged(resourceId, &proxyEndpointIdBefore),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_proxy_instance_num":   "2",
+					"db_proxy_instance_type":  "exclusive",
+					"effective_time":          "Immediate",
+					"effective_specific_time": effectiveSpecificTime,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_proxy_instance_num":   "2",
+						"db_proxy_instance_type":  "exclusive",
+						"effective_time":          "Immediate",
+						"effective_specific_time": acctest.CHECKSET,
+					}),
 				),
 			},
 			{
@@ -88,22 +146,6 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"upgrade_time": "Immediate",
 						"switch_time":  acctest.CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_proxy_instance_num":   "2",
-					"db_proxy_instance_type":  "exclusive",
-					"effective_time":          "SpecificTime",
-					"effective_specific_time": effectiveSpecificTime,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_proxy_instance_num":   "2",
-						"db_proxy_instance_type":  "exclusive",
-						"effective_time":          "SpecificTime",
-						"effective_specific_time": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -217,6 +259,63 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"persistent_connection_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"persistent_connection_status": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"persistent_connection_status": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"persistent_connection_status": "Disabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_proxy_instance_num":  "2",
+					"db_proxy_instance_type": "common",
+					"db_proxy_nodes": []map[string]interface{}{
+						{
+							"cpu_cores":   "2",
+							"node_counts": "2",
+							"zone_id":     "${local.proxy_zone_id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_proxy_instance_num":  "2",
+						"db_proxy_instance_type": "common",
+						"db_proxy_nodes.#":       "1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "db_proxy_nodes.*", map[string]string{
+						"cpu_cores":   "2",
+						"node_counts": "2",
+					}),
+				),
+			},
+			{
+				// node_counts has no default, so an incomplete block is rejected before
+				// the API call instead of producing a value the configuration omits.
+				Config: testAccConfig(map[string]interface{}{
+					"db_proxy_nodes": []map[string]interface{}{
+						{
+							"cpu_cores": "2",
+							"zone_id":   "${local.proxy_zone_id}",
+						},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`db_proxy_nodes requires zone_id, cpu_cores and node_counts`),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       false,
@@ -224,6 +323,39 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 			},
 		},
 	})
+}
+
+func captureRdsDBProxyEndpointId(resourceId string, target *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		endpointId := rs.Primary.Attributes["db_proxy_endpoint_id"]
+		if endpointId == "" {
+			return fmt.Errorf("resource %s has no proxy endpoint id", resourceId)
+		}
+		*target = endpointId
+		return nil
+	}
+}
+
+// A vSwitch update is applied as an in-place migration, so the proxy endpoint
+// survives the change; a replacement would create a new proxy endpoint.
+func checkRdsDBProxyEndpointIdUnchanged(resourceId string, expected *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		if *expected == "" {
+			return fmt.Errorf("proxy endpoint id was not captured before the migration")
+		}
+		if endpointId := rs.Primary.Attributes["db_proxy_endpoint_id"]; endpointId != *expected {
+			return fmt.Errorf("proxy endpoint id changed from %q to %q, the proxy was replaced instead of migrated", *expected, endpointId)
+		}
+		return nil
+	}
 }
 
 func resourceRdsDBProxyDependence_MySQL(name string) string {
@@ -248,24 +380,27 @@ data "alicloud_db_instance_classes" "default" {
 	instance_charge_type = "PostPaid"
 }
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
 
-resource "alicloud_vswitch" "this" {
- count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- vswitch_name = var.name
- vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.ids.0
- cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
+  vswitch_name = var.name
 }
+
+resource "alicloud_vswitch" "second" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.1.0/24"
+  zone_id      = local.proxy_zone_id
+  vswitch_name = "${var.name}-second"
+}
+
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+  proxy_zone_id = length(data.alicloud_db_zones.default.zones) > 1 ? data.alicloud_db_zones.default.zones.1.id : data.alicloud_db_zones.default.zones.0.id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -278,7 +413,7 @@ resource "alicloud_db_instance" "default" {
  	db_instance_storage_type = "cloud_essd"
 	instance_type = "mysql.x2.large.2c"
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
-	vswitch_id = local.vswitch_id
+	vswitch_id = alicloud_vswitch.default.id
 	instance_name = var.name
 }
 
