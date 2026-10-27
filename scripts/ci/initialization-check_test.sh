@@ -7,8 +7,11 @@
 #
 # The genuine `go test` execution is validated separately by a real
 # `ci-check-quick` run (remote quick / `make ci-check-quick`); these fixtures
-# prove the wrapper rejects compile failure, panic, an accidentally-run test
-# and a no-test-files package, and accepts only a real no-tests `ok`/`PASS`.
+# prove the wrapper rejects compile failure, panic, an accidentally-run test,
+# a no-test-files package and a bare ok/PASS without a genuine no-tests
+# signal, and accepts only a real no-tests `ok` line carrying the
+# `[no tests to run]` marker (plus the `testing: warning: no tests to run`
+# line).
 
 set -euo pipefail
 
@@ -35,9 +38,11 @@ run_case() {
         echo "ok - $name"
 }
 
-# 1. Genuine no-tests pass: exit 0, ok line, no RUN lines.
+# 1. Genuine no-tests pass: the real go-test output shape — a `testing:
+#    warning: no tests to run` line, a bare PASS line, and an `ok` line
+#    carrying the `[no tests to run]` marker. exit 0.
 run_case "no-tests pass" \
-        $'printf \'PASS\\nok\\t./a/pkg\\t0.001s\\n\'; exit 0' \
+        $'printf \'testing: warning: no tests to run\\nPASS\\nok\\t./a/pkg\\t0.001s\\t[no tests to run]\\n\'; exit 0' \
         0 "no tests to run"
 
 # 2. Compile failure propagates: original stderr printed, check fails.
@@ -67,10 +72,20 @@ run_case "no-ok-signal rejected" \
         $'printf \'random output\\n\'; exit 0' \
         1 "no ok/PASS signal"
 
-# 7. Receipt is machine-readable and marks INITIALIZATION_ONLY / not an ACC.
+# 7. Bare ok/PASS WITHOUT a genuine no-tests marker is rejected: a stub can
+#    print "ok"/"PASS" without ever running the test binary, so the wrapper
+#    must not report a pass from a bare ok/PASS line alone. This is the gap
+#    the tightened judgment closes (an ok/PASS line is necessary but not
+#    sufficient; the real `[no tests to run]` / testing warning signal is
+#    required).
+run_case "bare ok/pass without no-tests signal rejected" \
+        $'printf \'PASS\\nok\\t./a/pkg\\t0.001s\\n\'; exit 0' \
+        1 "no genuine no-tests signal"
+
+# 8. Receipt is machine-readable and marks INITIALIZATION_ONLY / not an ACC.
 set +e
 receipt="$(INIT_CHECK_PACKAGE=./a/pkg \
-        INIT_CHECK_GO_TEST_CMD=$'printf \'PASS\\nok\\t./a/pkg\\t0.001s\\n\'; exit 0' \
+        INIT_CHECK_GO_TEST_CMD=$'printf \'testing: warning: no tests to run\\nPASS\\nok\\t./a/pkg\\t0.001s\\t[no tests to run]\\n\'; exit 0' \
         "$check" 2>&1)"
 rc=$?
 set -e
@@ -83,11 +98,11 @@ echo "$receipt" | grep -q ' task_id=' && die "receipt guessed a task_id"
 echo "$receipt" | grep -q ' source_sha=' && die "receipt guessed a source_sha"
 echo "ok - receipt format (no guessed identifiers)"
 
-# 8. Outer Provider Run identifiers are bound only when provided (never guessed).
+# 9. Outer Provider Run identifiers are bound only when provided (never guessed).
 set +e
 receipt="$(INIT_CHECK_PACKAGE=./a/pkg \
         CI_INIT_SOURCE_SHA=abc123 CI_INIT_SOURCE_ID=sid42 CI_INIT_TASK_ID=tid7 \
-        INIT_CHECK_GO_TEST_CMD=$'printf \'PASS\\nok\\t./a/pkg\\t0.001s\\n\'; exit 0' \
+        INIT_CHECK_GO_TEST_CMD=$'printf \'testing: warning: no tests to run\\nPASS\\nok\\t./a/pkg\\t0.001s\\t[no tests to run]\\n\'; exit 0' \
         "$check" 2>&1)"
 rc=$?
 set -e
@@ -97,15 +112,15 @@ echo "$receipt" | grep -q 'source_id=sid42' || die "receipt missing source_id"
 echo "$receipt" | grep -q 'task_id=tid7' || die "receipt missing task_id"
 echo "ok - receipt binds outer identifiers when provided"
 
-# 9. The default command defeats the cache (-count=1) and matches no test
-#    (-run '^$') with verbose output (-v), so a cached pass cannot skip the
-#    real test binary.
+# 10. The default command defeats the cache (-count=1) and matches no test
+#     (-run '^$') with verbose output (-v), so a cached pass cannot skip the
+#     real test binary.
 grep -q -- "-count=1" "$check" || die "default command missing -count=1"
 grep -q -- "-run '^\$'" "$check" || die "default command missing -run '^\$'"
 grep -q -- "-v" "$check" || die "default command missing -v"
 echo "ok - default command defeats cache and matches no test"
 
-# 10. The probe runs exactly once per quick, and --quick does not bypass it:
+# 11. The probe runs exactly once per quick, and --quick does not bypass it:
 #     local-ci-check.sh invokes initialization-check.sh exactly once (count
 #     actual command invocations, not doc mentions), outside any
 #     SKIP_BUILD/CHANGED_UNIT_TESTS gate that quick would skip.
