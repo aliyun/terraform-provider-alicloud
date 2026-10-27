@@ -1,4 +1,4 @@
-package alicloud
+package scdn_test
 
 import (
 	"fmt"
@@ -9,9 +9,14 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/scdn"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -25,23 +30,23 @@ func init() {
 }
 
 func testSweepScdnDomain(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := scdnTestClientForRegion(region)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	action := "DescribeScdnUserDomains"
 	request := make(map[string]interface{})
-	request["PageSize"] = PageSizeXLarge
+	request["PageSize"] = helper.PageSizeXLarge
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -49,14 +54,14 @@ func testSweepScdnDomain(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %s", action, err)
 			return nil
 		}
 		resp, err := jsonpath.Get("$.Domains.PageData", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Domains.PageData", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Domains.PageData", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -75,7 +80,7 @@ func testSweepScdnDomain(region string) error {
 				log.Println("[ERROR] Deleting the domain ", name, " failed! Error: ", err)
 			}
 		}
-		if len(result) < PageSizeXLarge {
+		if len(result) < helper.PageSizeXLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -89,20 +94,20 @@ func SkipTestAccAlicloudScdnDomain_basic(t *testing.T) {
 	resourceId := "alicloud_scdn_domain.default"
 	ra := resourceAttrInit(resourceId, ScdnDomainMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ScdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return scdn.NewScdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeScdnDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", acctest.DefaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ScdnDomainBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
