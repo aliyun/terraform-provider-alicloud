@@ -1,12 +1,15 @@
-package alicloud
+package vpcipam_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcipam"
 )
 
 // Test VpcIpam IpamPoolAllocation. >>> Resource test cases, automatically generated.
@@ -14,22 +17,22 @@ import (
 func TestAccAliCloudVpcIpamIpamPoolAllocation_basic7885(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipam_ipam_pool_allocation.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolAllocationMap7885)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcIpamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolAllocationMap7885)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vpcipam.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpcIpamIpamPoolAllocation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcipamipampoolallocation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpamIpamPoolAllocationBasicDependence7885)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcipamipampoolallocation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcIpamIpamPoolAllocationBasicDependence7885)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -43,7 +46,7 @@ func TestAccAliCloudVpcIpamIpamPoolAllocation_basic7885(t *testing.T) {
 						"ipam_pool_allocation_description": "init alloc desc",
 						"ipam_pool_allocation_name":        name,
 						"cidr":                             "10.0.0.0/20",
-						"ipam_pool_id":                     CHECKSET,
+						"ipam_pool_id":                     acctest.CHECKSET,
 					}),
 				),
 			},
@@ -70,9 +73,9 @@ func TestAccAliCloudVpcIpamIpamPoolAllocation_basic7885(t *testing.T) {
 }
 
 var AlicloudVpcIpamIpamPoolAllocationMap7885 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudVpcIpamIpamPoolAllocationBasicDependence7885(name string) string {
@@ -103,22 +106,22 @@ resource "alicloud_vpc_ipam_ipam_pool_cidr" "defaultIpamPoolCidr" {
 func TestAccAliCloudVpcIpamIpamPoolAllocation_basic9268(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipam_ipam_pool_allocation.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolAllocationMap9268)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcIpamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolAllocationMap9268)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vpcipam.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpcIpamIpamPoolAllocation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcipamipampoolallocation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpamIpamPoolAllocationBasicDependence9268)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcipamipampoolallocation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcIpamIpamPoolAllocationBasicDependence9268)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -131,7 +134,7 @@ func TestAccAliCloudVpcIpamIpamPoolAllocation_basic9268(t *testing.T) {
 					testAccCheck(map[string]string{
 						"ipam_pool_allocation_description": "init alloc desc",
 						"ipam_pool_allocation_name":        name,
-						"ipam_pool_id":                     CHECKSET,
+						"ipam_pool_id":                     acctest.CHECKSET,
 						"cidr_mask":                        "20",
 					}),
 				),
@@ -159,9 +162,9 @@ func TestAccAliCloudVpcIpamIpamPoolAllocation_basic9268(t *testing.T) {
 }
 
 var AlicloudVpcIpamIpamPoolAllocationMap9268 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudVpcIpamIpamPoolAllocationBasicDependence9268(name string) string {

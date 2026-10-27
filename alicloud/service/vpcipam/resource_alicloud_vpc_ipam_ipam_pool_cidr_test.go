@@ -1,4 +1,4 @@
-package alicloud
+package vpcipam_test
 
 import (
 	"fmt"
@@ -7,10 +7,16 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcipam"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 )
 
 func init() {
@@ -21,7 +27,7 @@ func init() {
 }
 
 func testSweepVpcIpamIpamPoolCidr(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -31,7 +37,7 @@ func testSweepVpcIpamIpamPoolCidr(region string) error {
 	poolAction := "ListIpamPools"
 	var poolResponse map[string]interface{}
 	poolRequest := map[string]interface{}{
-		"MaxResults": PageSizeLarge,
+		"MaxResults": helper.PageSizeLarge,
 		"RegionId":   client.RegionId,
 	}
 
@@ -44,7 +50,7 @@ func testSweepVpcIpamIpamPoolCidr(region string) error {
 		}
 		resp, err := jsonpath.Get("$.IpamPools", poolResponse)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, poolAction, "$.IpamPools", poolResponse)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, poolAction, "$.IpamPools", poolResponse)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -63,7 +69,7 @@ func testSweepVpcIpamIpamPoolCidr(region string) error {
 		action := "ListIpamPoolCidrs"
 		var response map[string]interface{}
 		request := map[string]interface{}{
-			"MaxResults": PageSizeLarge,
+			"MaxResults": helper.PageSizeLarge,
 			"IpamPoolId": poolId,
 			"RegionId":   client.RegionId,
 		}
@@ -91,11 +97,11 @@ func testSweepVpcIpamIpamPoolCidr(region string) error {
 					"Cidr":       cidr,
 					"RegionId":   client.RegionId,
 				}
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(time.Minute*10, func() *retry.RetryError {
 					response, err = client.RpcPost("VpcIpam", "2023-02-28", deleteAction, nil, deleteRequest, false)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -123,22 +129,22 @@ func testSweepVpcIpamIpamPoolCidr(region string) error {
 func TestAccAliCloudVpcIpamIpamPoolCidr_basic10812(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipam_ipam_pool_cidr.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolCidrMap10812)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcIpamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolCidrMap10812)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vpcipam.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpcIpamIpamPoolCidr")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccvpcipam%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpamIpamPoolCidrBasicDependence10812)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcIpamIpamPoolCidrBasicDependence10812)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -148,7 +154,7 @@ func TestAccAliCloudVpcIpamIpamPoolCidr_basic10812(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"netmask_length": "24",
-						"ipam_pool_id":   CHECKSET,
+						"ipam_pool_id":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -163,7 +169,7 @@ func TestAccAliCloudVpcIpamIpamPoolCidr_basic10812(t *testing.T) {
 }
 
 var AlicloudVpcIpamIpamPoolCidrMap10812 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudVpcIpamIpamPoolCidrBasicDependence10812(name string) string {
@@ -203,22 +209,22 @@ resource "alicloud_vpc_ipam_ipam_pool" "subIpamPool" {
 func TestAccAliCloudVpcIpamIpamPoolCidr_basic11310(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipam_ipam_pool_cidr.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolCidrMap11310)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcIpamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolCidrMap11310)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vpcipam.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpcIpamIpamPoolCidr")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccvpcipam%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpamIpamPoolCidrBasicDependence11310)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcIpamIpamPoolCidrBasicDependence11310)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -227,7 +233,7 @@ func TestAccAliCloudVpcIpamIpamPoolCidr_basic11310(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ipam_pool_id":   CHECKSET,
+						"ipam_pool_id":   acctest.CHECKSET,
 						"netmask_length": "56",
 					}),
 				),
@@ -243,7 +249,7 @@ func TestAccAliCloudVpcIpamIpamPoolCidr_basic11310(t *testing.T) {
 }
 
 var AlicloudVpcIpamIpamPoolCidrMap11310 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudVpcIpamIpamPoolCidrBasicDependence11310(name string) string {
@@ -271,22 +277,22 @@ resource "alicloud_vpc_ipam_ipam_pool" "defaultIpamPool" {
 func TestAccAliCloudVpcIpamIpamPoolCidr_basic8028(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipam_ipam_pool_cidr.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolCidrMap8028)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcIpamServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcIpamIpamPoolCidrMap8028)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vpcipam.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpcIpamIpamPoolCidr")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccvpcipam%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcIpamIpamPoolCidrBasicDependence8028)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcIpamIpamPoolCidrBasicDependence8028)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -296,7 +302,7 @@ func TestAccAliCloudVpcIpamIpamPoolCidr_basic8028(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cidr":         "10.0.0.0/8",
-						"ipam_pool_id": CHECKSET,
+						"ipam_pool_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -311,7 +317,7 @@ func TestAccAliCloudVpcIpamIpamPoolCidr_basic8028(t *testing.T) {
 }
 
 var AlicloudVpcIpamIpamPoolCidrMap8028 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudVpcIpamIpamPoolCidrBasicDependence8028(name string) string {
