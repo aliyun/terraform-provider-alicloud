@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package ims. This file is generated automatically. Please do not modify it manually, thank you!
+package ims
 
 import (
 	"fmt"
@@ -9,13 +9,16 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAliCloudImsOidcProviders() *schema.Resource {
+func DataSourceImsOidcProviders() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAliCloudImsOidcProviderRead,
 		Schema: map[string]*schema.Schema{
@@ -101,7 +104,7 @@ func dataSourceAliCloudImsOidcProviderRead(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		nameRegex = r
 	}
@@ -125,24 +128,24 @@ func dataSourceAliCloudImsOidcProviderRead(d *schema.ResourceData, meta interfac
 	query = make(map[string]interface{})
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ims", "2019-08-15", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, _ := jsonpath.Get("$.OIDCProviders.OIDCProvider[*]", response)
@@ -195,20 +198,20 @@ func dataSourceAliCloudImsOidcProviderRead(d *schema.ResourceData, meta interfac
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("providers", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

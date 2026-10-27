@@ -805,9 +805,6 @@ func Provider() *schema.Provider {
 			// imp
 			"alicloud_imp_app_templates": dataSourceAlicloudImpAppTemplates(),
 
-			// ims
-			"alicloud_ims_oidc_providers": dataSourceAliCloudImsOidcProviders(),
-
 			// instance
 			"alicloud_instance_type_families": dataSourceAlicloudInstanceTypeFamilies(),
 			"alicloud_instance_types":         dataSourceAliCloudInstanceTypes(),
@@ -2135,9 +2132,6 @@ func Provider() *schema.Provider {
 
 			// imp
 			"alicloud_imp_app_template": resourceAlicloudImpAppTemplate(),
-
-			// ims
-			"alicloud_ims_oidc_provider": resourceAliCloudImsOidcProvider(),
 
 			// instance
 			"alicloud_instance": resourceAliCloudInstance(),
