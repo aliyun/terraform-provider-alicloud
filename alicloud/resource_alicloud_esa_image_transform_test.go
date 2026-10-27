@@ -9,75 +9,38 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// Test ESA ImageTransform. >>> Resource test cases, automatically generated.
-// Case resource_ImageTransform_test
-func TestAccAliCloudESAImageTransformresource_ImageTransform_test(t *testing.T) {
+// Test Esa ImageTransform. >>> Resource test cases, automatically generated.
+// Case resource_ImageTransform_test 13068
+func TestAccAliCloudEsaImageTransform_basic13068(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_esa_image_transform.default"
-	ra := resourceAttrInit(resourceId, AliCloudESAImageTransformresource_ImageTransform_testMap)
+	ra := resourceAttrInit(resourceId, AliCloudEsaImageTransformMap13068)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEsaImageTransform")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sESAImageTransform%d", defaultRegionToTest, rand)
-
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudESAImageTransformresource_ImageTransform_testBasicDependence)
+	name := fmt.Sprintf("tfaccesa%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEsaImageTransformBasicDependence13068)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"site_id":      "${alicloud_esa_site.default.id}",
-					"rule_enable":  "off",
-					"enable":       "off",
-					"rule":         "http.host eq \\\"video.example.com\\\"",
-					"site_version": "0",
-					"rule_name":    "rule_example",
+					"site_id": "${data.alicloud_esa_sites.default.sites.0.id}",
+					"enable":  "off",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rule_enable": "on",
-					"enable":      "on",
-					"rule":        "http.host eq \\\"videoo.example.com\\\"",
-					"rule_name":   "rule_viedoo",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rule_enable": "on",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rule": "http.host eq \\\"image.example.com\\\"",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rule_name": "rule_image",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"site_id": CHECKSET,
+						"enable":  "off",
+					}),
 				),
 			},
 			{
@@ -85,24 +48,99 @@ func TestAccAliCloudESAImageTransformresource_ImageTransform_test(t *testing.T) 
 					"enable": "on",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"enable": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable": "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_avif": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_avif": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_avif": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_avif": "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_webp": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_webp": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_webp": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_webp": "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_enable": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_enable": "on",
+					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"rule_enable": "off",
-					"enable":      "off",
-					"rule":        "http.host eq \\\"video.example.com\\\"",
-					"rule_name":   "rule_example",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"rule_enable": "off",
+					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{}),
+				Config: testAccConfig(map[string]interface{}{
+					"rule_name": name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"rule_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sequence": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sequence": "0",
+					}),
 				),
 			},
 			{
@@ -115,28 +153,235 @@ func TestAccAliCloudESAImageTransformresource_ImageTransform_test(t *testing.T) 
 	})
 }
 
-var AliCloudESAImageTransformresource_ImageTransform_testMap = map[string]string{
-	"id": CHECKSET,
+func TestAccAliCloudEsaImageTransform_basic13069(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_image_transform.default"
+	ra := resourceAttrInit(resourceId, AliCloudEsaImageTransformMap13068)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEsaImageTransform")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccesa%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEsaImageTransformBasicDependence13068)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":     "${data.alicloud_esa_sites.default.sites.0.id}",
+					"enable":      "on",
+					"rule_enable": "on",
+					"rule_name":   name,
+					"rule":        true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"site_id":     CHECKSET,
+						"enable":      "on",
+						"rule_enable": "on",
+						"rule_name":   name,
+						"rule":        "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable": "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_avif": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_avif": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_avif": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_avif": "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_webp": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_webp": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_webp": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_webp": "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_enable": "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_enable": "on",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_enable": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_enable": "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_name": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule": `(http.host eq \"video.example.com\")`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sequence": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sequence": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
 }
 
-func AliCloudESAImageTransformresource_ImageTransform_testBasicDependence(name string) string {
+func TestAccAliCloudEsaImageTransform_basic13069_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_image_transform.default"
+	ra := resourceAttrInit(resourceId, AliCloudEsaImageTransformMap13068)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EsaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEsaImageTransform")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccesa%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEsaImageTransformBasicDependence13068)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"site_id":      "${data.alicloud_esa_sites.default.sites.0.id}",
+					"enable":       "on",
+					"rule_enable":  "on",
+					"rule_name":    name,
+					"rule":         true,
+					"sequence":     "1",
+					"site_version": "0",
+					"auto_avif":    "on",
+					"auto_webp":    "on",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"site_id":      CHECKSET,
+						"enable":       "on",
+						"rule_enable":  "on",
+						"rule_name":    name,
+						"rule":         "true",
+						"sequence":     "1",
+						"site_version": "0",
+						"auto_avif":    "on",
+						"auto_webp":    "on",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AliCloudEsaImageTransformMap13068 = map[string]string{
+	"config_id":   CHECKSET,
+	"config_type": CHECKSET,
+}
+
+func AliCloudEsaImageTransformBasicDependence13068(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 data "alicloud_esa_sites" "default" {
-  plan_subscribe_type = "enterpriseplan"
+  plan_subscribe_type = "standardplan"
 }
-
-resource "alicloud_esa_site" "default" {
-  site_name   = "${lower(var.name)}.com"
-  instance_id = data.alicloud_esa_sites.default.sites.0.instance_id
-  coverage    = "domestic"
-  access_type = "NS"
-}
-
 `, name)
 }
 
-// Test ESA ImageTransform. <<< Resource test cases, automatically generated.
+// Test Esa ImageTransform. <<< Resource test cases, automatically generated.
