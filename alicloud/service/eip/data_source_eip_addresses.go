@@ -1,4 +1,4 @@
-package alicloud
+package eip
 
 import (
 	"fmt"
@@ -7,6 +7,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -90,7 +94,7 @@ func dataSourceAlicloudEipAddresses() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Associating", "Available", "InUse", "Unassociating"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -326,14 +330,14 @@ func dataSourceAlicloudEipAddressesRead(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("status"); ok {
 		request["Status"] = v
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 	var addressNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		addressNameRegex = r
 	}
@@ -363,11 +367,11 @@ func dataSourceAlicloudEipAddressesRead(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -375,13 +379,13 @@ func dataSourceAlicloudEipAddressesRead(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_eip_addresses", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_eip_addresses", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.EipAddresses.EipAddress", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.EipAddresses.EipAddress", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.EipAddresses.EipAddress", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -403,7 +407,7 @@ func dataSourceAlicloudEipAddressesRead(d *schema.ResourceData, meta interface{}
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -466,15 +470,15 @@ func dataSourceAlicloudEipAddressesRead(d *schema.ResourceData, meta interface{}
 			continue
 		}
 
-		vpcService := VpcService{client}
+		eipService := NewService(client)
 		id := fmt.Sprint(object["AllocationId"])
-		getResp, err := vpcService.ListTagResources(id, "EIP")
+		getResp, err := eipService.ListTagResources(id, "EIP")
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		mapping["tags"] = tagsToMap(getResp)
+		mapping["tags"] = tags.TagsToMap(getResp)
 		march := false
-		for tagKey, tagValue := range tagsToMap(getResp) {
+		for tagKey, tagValue := range tags.TagsToMap(getResp) {
 			if v, ok := tagsMap[tagKey]; ok && v == tagValue {
 				march = true
 				break
@@ -489,24 +493,24 @@ func dataSourceAlicloudEipAddressesRead(d *schema.ResourceData, meta interface{}
 		eips = append(eips, eipMapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("addresses", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("eips", eips); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

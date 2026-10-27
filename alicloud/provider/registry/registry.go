@@ -77,6 +77,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/edsuser"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eflo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ehpc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eip"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eipanycast"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/elasticsearch"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/emr"
@@ -247,6 +248,7 @@ var servicePackages = []conns.ServicePackage{
 	edsuser.ServicePackage(),
 	eflo.ServicePackage(),
 	ehpc.ServicePackage(),
+	eip.ServicePackage(),
 	eipanycast.ServicePackage(),
 	elasticsearch.ServicePackage(),
 	emr.ServicePackage(),

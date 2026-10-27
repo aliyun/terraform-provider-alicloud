@@ -1,80 +1,81 @@
-package alicloud
+package eip_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudEIPAddressesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+func TestAccAliCloudEIPAddressesDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids": `[alicloud_eip_address.default.id]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids": `["fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_eip_address.default.address_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_eip_address.default.address_name}_fake"`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":    `[alicloud_eip_address.default.id]`,
 			"status": `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":    `[alicloud_eip_address.default.id]`,
 			"status": `"InUse"`,
 		}),
 	}
-	paymentTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+	paymentTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":          `[alicloud_eip_address.default.id]`,
 			"payment_type": `"PayAsYouGo"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":          `[alicloud_eip_address.default.id]`,
 			"payment_type": `"Subscription"`,
 		}),
 	}
-	resourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+	resourceGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":               `[alicloud_eip_address.default.id]`,
 			"resource_group_id": `"${alicloud_eip_address.default.resource_group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":               `["fake"]`,
 			"resource_group_id": `"${alicloud_eip_address.default.resource_group_id}"`,
 		}),
 	}
-	ispConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+	ispConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids": `[alicloud_eip_address.default.id]`,
 			"isp": `"BGP"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids": `[alicloud_eip_address.default.id]`,
 			"isp": `"BGP_PRO"`,
 		}),
 	}
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids": `[alicloud_eip_address.default.id]`,
 			"tags": `{
 							Created = "tfTest"
 							For 	= "tfTest 123"
 					  }`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids": `["fake"]`,
 			"tags": `{
 							Created = "tfTest-fake"
@@ -82,28 +83,28 @@ func TestAccAlicloudEIPAddressesDataSource(t *testing.T) {
 					  }`,
 		}),
 	}
-	ipAddressConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+	ipAddressConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":          `[alicloud_eip_address.default.id]`,
 			"ip_addresses": `["${alicloud_eip_address.default.ip_address}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":          `["fake"]`,
 			"ip_addresses": `["${alicloud_eip_address.default.ip_address}_fake"]`,
 		}),
 	}
-	eipAddressConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+	eipAddressConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":        `[alicloud_eip_address.default.id]`,
 			"ip_address": `"${alicloud_eip_address.default.ip_address}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":        `["fake"]`,
 			"ip_address": `"${alicloud_eip_address.default.ip_address}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":               `[alicloud_eip_address.default.id]`,
 			"name_regex":        `"${alicloud_eip_address.default.address_name}"`,
 			"status":            `"Available"`,
@@ -117,7 +118,7 @@ func TestAccAlicloudEIPAddressesDataSource(t *testing.T) {
 					  }`,
 			"isp": `"BGP"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEipAddressesDataSourceName(rand, map[string]string{
 			"ids":               `["fake"]`,
 			"name_regex":        `"${alicloud_eip_address.default.address_name}"`,
 			"status":            `"InUse"`,
@@ -137,20 +138,20 @@ func TestAccAlicloudEIPAddressesDataSource(t *testing.T) {
 			"ids.#":                            "1",
 			"names.#":                          "1",
 			"addresses.#":                      "1",
-			"addresses.0.id":                   CHECKSET,
+			"addresses.0.id":                   acctest.CHECKSET,
 			"addresses.0.address_name":         fmt.Sprintf("tf-testAccEipAddress-%d", rand),
-			"addresses.0.bandwidth":            CHECKSET,
+			"addresses.0.bandwidth":            acctest.CHECKSET,
 			"addresses.0.description":          fmt.Sprintf("tf-testAccEipAddress-%d", rand),
 			"addresses.0.isp":                  "BGP",
 			"addresses.0.payment_type":         "PayAsYouGo",
-			"addresses.0.resource_group_id":    CHECKSET,
+			"addresses.0.resource_group_id":    acctest.CHECKSET,
 			"addresses.0.status":               "Available",
 			"addresses.0.internet_charge_type": "PayByBandwidth",
 			"addresses.0.tags.%":               "2",
 			"addresses.0.tags.Created":         "tfTest",
 			"addresses.0.tags.For":             "tfTest 123",
-			"eips.0.id":                        CHECKSET,
-			"eips.0.bandwidth":                 CHECKSET,
+			"eips.0.id":                        acctest.CHECKSET,
+			"eips.0.bandwidth":                 acctest.CHECKSET,
 			"eips.0.status":                    "Available",
 			"eips.0.internet_charge_type":      "PayByBandwidth",
 		}
@@ -163,15 +164,15 @@ func TestAccAlicloudEIPAddressesDataSource(t *testing.T) {
 			"eips.#":      "0",
 		}
 	}
-	var alicloudEipAddressesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_eip_addresses.default",
-		existMapFunc: existAlicloudEipAddressesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEipAddressesDataSourceNameMapFunc,
+	var alicloudEipAddressesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_eip_addresses.default",
+		ExistMapFunc: existAlicloudEipAddressesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEipAddressesDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudEipAddressesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, paymentTypeConf, resourceGroupIdConf, ispConf, tagsConf, ipAddressConf, eipAddressConf, allConf)
+	alicloudEipAddressesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, paymentTypeConf, resourceGroupIdConf, ispConf, tagsConf, ipAddressConf, eipAddressConf, allConf)
 }
 func testAccCheckAlicloudEipAddressesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -202,7 +203,7 @@ resource "alicloud_eip_address" "default" {
 }
 
 data "alicloud_eip_addresses" "default" {
-	%s	
+	%s
 }
 `, rand, strings.Join(pairs, " \n "))
 	return config
