@@ -162,6 +162,11 @@ func (s *BssOpenApiService) QueryAvailableInstancesWithoutProductType(id, instan
 	return object, nil
 }
 
+// QueryAvailableInstanceByInstanceID moved to the drds service package
+// (alicloud/service/drds/service.go) when alicloud_drds_polardbx_instance was
+// migrated off the root package; it was polardbx-only and is no longer referenced
+// here. Cross-product BSS helpers above (QueryAvailableInstances, ...) remain.
+
 func (s *BssOpenApiService) QueryAvailableInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
