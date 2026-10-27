@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package cloudcontrol
 
 import (
 	"fmt"
@@ -7,13 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudCloudControlResourceTypes() *schema.Resource {
+func DataSourceCloudControlResourceTypes() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudCloudControlResourceTypeRead,
+		Read: dataSourceCloudControlResourceTypeRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -223,7 +227,7 @@ func dataSourceAliCloudCloudControlResourceTypes() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudCloudControlResourceTypeRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceCloudControlResourceTypeRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var objects []map[string]interface{}
@@ -249,24 +253,24 @@ func dataSourceAliCloudCloudControlResourceTypeRead(d *schema.ResourceData, meta
 	request["provider"] = "aliyun"
 
 	body = request
-	query["MaxResults"] = StringPointer("50")
+	query["MaxResults"] = helper.StringPointer("50")
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, body)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, _ := jsonpath.Get("$.resourceTypes[*]", response)
@@ -284,7 +288,7 @@ func dataSourceAliCloudCloudControlResourceTypeRead(d *schema.ResourceData, meta
 
 		nextToken, _ := jsonpath.Get("$.nextToken", response)
 		if nextToken != nil && nextToken != "" {
-			query["nextToken"] = StringPointer(fmt.Sprint(nextToken))
+			query["nextToken"] = helper.StringPointer(fmt.Sprint(nextToken))
 		} else {
 			break
 		}
@@ -300,7 +304,7 @@ func dataSourceAliCloudCloudControlResourceTypeRead(d *schema.ResourceData, meta
 
 		mapping["primary_identifier"] = objectRaw["primaryIdentifier"]
 		mapping["product"] = objectRaw["product"]
-		mapping["properties"] = convertObjectToJsonString(objectRaw["properties"])
+		mapping["properties"] = convert.ConvertObjectToJsonString(objectRaw["properties"])
 		mapping["resource_type"] = objectRaw["resourceType"]
 
 		createOnlyProperties1Raw := make([]interface{}, 0)
@@ -448,17 +452,17 @@ func dataSourceAliCloudCloudControlResourceTypeRead(d *schema.ResourceData, meta
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("types", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

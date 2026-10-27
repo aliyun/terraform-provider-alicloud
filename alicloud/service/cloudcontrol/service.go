@@ -1,4 +1,4 @@
-package alicloud
+package cloudcontrol
 
 import (
 	"fmt"
@@ -7,35 +7,47 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type CloudControlServiceV2 struct {
+// Service wraps the CloudControl API calls used by the resources and data
+// sources of this package.
+type Service struct {
 	client *connectivity.AliyunClient
+}
+
+// NewService is the exported constructor: the client field stays
+// unexported, so callers outside the package (including the flat
+// layout's acceptance tests) build values with it.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
 }
 
 // DescribeCloudControlResource <<< Encapsulated get interface for CloudControl Resource.
 
-func (s *CloudControlServiceV2) DescribeCloudControlResource(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeCloudControlResource(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := convertIdToAction(id)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	query["regionId"] = StringPointer(client.RegionId)
+	query["regionId"] = helper.StringPointer(client.RegionId)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -43,30 +55,30 @@ func (s *CloudControlServiceV2) DescribeCloudControlResource(id string) (object 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidResource.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Resource", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidResource.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Resource", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.resource", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.resource", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.resource", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CloudControlServiceV2) CloudControlResourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) CloudControlResourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudControlResource(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -81,7 +93,7 @@ func (s *CloudControlServiceV2) CloudControlResourceStateRefreshFunc(id string, 
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -92,26 +104,26 @@ func (s *CloudControlServiceV2) CloudControlResourceStateRefreshFunc(id string, 
 
 // DescribeCloudControlPrice <<< Encapsulated get interface for CloudControl Price.
 
-func (s *CloudControlServiceV2) DescribeCloudControlPrice(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeCloudControlPrice(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := fmt.Sprintf("/api/v1/providers/%s/products/%s/price/*", "aliyun", id)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	query["regionId"] = StringPointer(client.RegionId)
+	query["regionId"] = helper.StringPointer(client.RegionId)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -119,27 +131,27 @@ func (s *CloudControlServiceV2) DescribeCloudControlPrice(id string) (object map
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.price", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.price", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.price", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CloudControlServiceV2) CloudControlPriceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) CloudControlPriceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudControlPrice(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -154,7 +166,7 @@ func (s *CloudControlServiceV2) CloudControlPriceStateRefreshFunc(id string, fie
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -165,7 +177,7 @@ func (s *CloudControlServiceV2) CloudControlPriceStateRefreshFunc(id string, fie
 
 // DescribeCloudControlProduct <<< Encapsulated get interface for CloudControl Product.
 
-func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeCloudControlProduct(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -175,12 +187,12 @@ func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object m
 	query = make(map[string]*string)
 
 	request["provider"] = "aliyun"
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -188,18 +200,18 @@ func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object m
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.products[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.products[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.products[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Product", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Product", id), errs.NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -210,17 +222,17 @@ func (s *CloudControlServiceV2) DescribeCloudControlProduct(id string) (object m
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(NotFoundErr("Product", id), NotFoundMsg, response)
+	return object, errs.WrapErrorf(errs.NotFoundErr("Product", id), errs.NotFoundMsg, response)
 }
 
-func (s *CloudControlServiceV2) CloudControlProductStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) CloudControlProductStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudControlProduct(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -235,7 +247,7 @@ func (s *CloudControlServiceV2) CloudControlProductStateRefreshFunc(id string, f
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -246,7 +258,7 @@ func (s *CloudControlServiceV2) CloudControlProductStateRefreshFunc(id string, f
 
 // DescribeCloudControlResourceType <<< Encapsulated get interface for CloudControl ResourceType.
 
-func (s *CloudControlServiceV2) DescribeCloudControlResourceType(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeCloudControlResourceType(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -254,15 +266,15 @@ func (s *CloudControlServiceV2) DescribeCloudControlResourceType(id string) (obj
 	action := fmt.Sprintf("/api/v1/providers/%s/products/%s/resourceTypes", "aliyun", id)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	query["resourceTypes"] = StringPointer(id)
+	query["resourceTypes"] = helper.StringPointer(id)
 
 	request["provider"] = "aliyun"
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -270,31 +282,31 @@ func (s *CloudControlServiceV2) DescribeCloudControlResourceType(id string) (obj
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.resourceTypes[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.resourceTypes[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.resourceTypes[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("ResourceType", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("ResourceType", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudControlServiceV2) CloudControlResourceTypeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) CloudControlResourceTypeStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudControlResourceType(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -309,7 +321,7 @@ func (s *CloudControlServiceV2) CloudControlResourceTypeStateRefreshFunc(id stri
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil

@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package cloudcontrol
 
 import (
 	"fmt"
@@ -7,14 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAliCloudCloudControlPrices() *schema.Resource {
+func DataSourceCloudControlPrices() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudCloudControlPriceRead,
+		Read: dataSourceCloudControlPriceRead,
 		Schema: map[string]*schema.Schema{
 			"desire_attributes": {
 				Type:          schema.TypeMap,
@@ -120,7 +124,7 @@ func dataSourceAliCloudCloudControlPrices() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudCloudControlPriceRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceCloudControlPriceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var objects []map[string]interface{}
@@ -142,30 +146,30 @@ func dataSourceAliCloudCloudControlPriceRead(d *schema.ResourceData, meta interf
 	request = make(map[string]interface{})
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
-	query["regionId"] = StringPointer(client.RegionId)
+	query["regionId"] = helper.StringPointer(client.RegionId)
 	if v, ok := d.GetOk("desire_attributes"); ok {
-		query["resourceAttributes"] = StringPointer(convertObjectToJsonString(v))
+		query["resourceAttributes"] = helper.StringPointer(convert.ConvertObjectToJsonString(v))
 	} else if v, ok := d.GetOk("desire_attributes_json"); ok {
-		query["resourceAttributes"] = StringPointer(v.(string))
+		query["resourceAttributes"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RoaGet("cloudcontrol", "2022-08-30", action, query, nil, body)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	resp, _ := jsonpath.Get("$.price", response)
@@ -218,14 +222,14 @@ func dataSourceAliCloudCloudControlPriceRead(d *schema.ResourceData, meta interf
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("prices", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }
