@@ -20,7 +20,7 @@ func resourceAliCloudAdbLakeAccount() *schema.Resource {
 		Update: resourceAliCloudAdbLakeAccountUpdate,
 		Delete: resourceAliCloudAdbLakeAccountDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: resourceAdbLakeAccountImportState,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
@@ -94,6 +94,13 @@ func resourceAliCloudAdbLakeAccount() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"engine": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"AnalyticDB", "Clickhouse"}, false),
+			},
 			"ram_user_list": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -106,6 +113,40 @@ func resourceAliCloudAdbLakeAccount() *schema.Resource {
 			},
 		},
 	}
+}
+
+// resourceAdbLakeAccountImportState parses the import id and, when an engine is
+// supplied, records it so that Read/Delete target the correct engine.
+//
+// DescribeAccounts accepts an Engine filter whose API default is AnalyticDB.
+// An account created on the Clickhouse engine cannot be located (and therefore
+// cannot be imported, refreshed or deleted) without passing Engine=Clickhouse,
+// because the default-engine query does not return it. The legacy two-segment id
+// `<db_cluster_id>:<account_name>` is retained for backwards compatibility and
+// resolves to the default engine (AnalyticDB); Clickhouse accounts must be
+// imported with the three-segment form `<db_cluster_id>:<account_name>:<engine>`,
+// which also disambiguates same-named accounts across engines.
+func resourceAdbLakeAccountImportState(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.SplitN(d.Id(), ":", 3)
+	switch len(parts) {
+	case 3:
+		// <db_cluster_id>:<account_name>:<engine>
+		engine := parts[2]
+		if engine != "AnalyticDB" && engine != "Clickhouse" {
+			return nil, WrapError(fmt.Errorf("invalid import id %q: engine segment must be AnalyticDB or Clickhouse", d.Id()))
+		}
+		d.Set("engine", engine)
+		d.SetId(fmt.Sprintf("%s:%s", parts[0], parts[1]))
+	case 2:
+		// legacy <db_cluster_id>:<account_name>; engine is unknown so Read queries
+		// DescribeAccounts without an Engine filter (API default AnalyticDB).
+		if parts[0] == "" || parts[1] == "" {
+			return nil, WrapError(fmt.Errorf("invalid import id %q: expected <db_cluster_id>:<account_name>[:<engine>]", d.Id()))
+		}
+	default:
+		return nil, WrapError(fmt.Errorf("invalid import id %q: expected <db_cluster_id>:<account_name>[:<engine>]", d.Id()))
+	}
+	return []*schema.ResourceData{d}, nil
 }
 
 func resourceAliCloudAdbLakeAccountCreate(d *schema.ResourceData, meta interface{}) error {
@@ -138,6 +179,9 @@ func resourceAliCloudAdbLakeAccountCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("account_description"); ok {
 		request["AccountDescription"] = v
 	}
+	if v, ok := d.GetOk("engine"); ok {
+		request["Engine"] = v
+	}
 	request["AccountPassword"] = d.Get("account_password")
 	request["AccountType"] = d.Get("account_type")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -161,7 +205,13 @@ func resourceAliCloudAdbLakeAccountCreate(d *schema.ResourceData, meta interface
 	d.SetId(fmt.Sprintf("%v:%v", request["DBClusterId"], request["AccountName"]))
 
 	adbServiceV2 := AdbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, adbServiceV2.AdbLakeAccountStateRefreshFuncWithApi(d.Id(), "AccountStatus", []string{}, adbServiceV2.DescribeLakeAccountDescribeAccounts))
+	// The create waiter queries DescribeAccounts, which accepts an Engine
+	// filter. Pass the engine selected at create time so Clickhouse accounts are
+	// polled on the correct engine instead of the API default (AnalyticDB).
+	engine := d.Get("engine").(string)
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, adbServiceV2.AdbLakeAccountStateRefreshFuncWithApi(d.Id(), "AccountStatus", []string{}, func(id string) (map[string]interface{}, error) {
+		return adbServiceV2.DescribeLakeAccountDescribeAccounts(id, engine)
+	}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -173,7 +223,29 @@ func resourceAliCloudAdbLakeAccountRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	adbServiceV2 := AdbServiceV2{client}
 
-	objectRaw, err := adbServiceV2.DescribeAdbLakeAccount(d.Id())
+	// DescribeAccounts accepts an Engine filter and is the authoritative
+	// identity check for the (db_cluster_id, account_name, engine) tuple.
+	// Query it first so that a NotFound on the specified engine removes the
+	// resource from state (refresh) or fails the import, instead of silently
+	// writing empty attributes. A three-segment import
+	// (<db_cluster_id>:<account_name>:<engine>) populates engine before Read,
+	// so Clickhouse accounts are queried on the correct engine. A legacy
+	// two-segment id leaves engine empty, so DescribeAccounts uses the API
+	// default (AnalyticDB) and locates the account by AccountName.
+	objectRaw, err := adbServiceV2.DescribeLakeAccountDescribeAccounts(d.Id(), d.Get("engine").(string))
+	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_adb_lake_account DescribeAccounts NotFound!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	// DescribeAccountAllPrivileges does not accept an Engine parameter; it is
+	// queried only after the engine-qualified account has been confirmed to
+	// exist, so privileges are never read for an identity that has been denied.
+	accountAllPrivilegesRaw, err := adbServiceV2.DescribeAdbLakeAccount(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_adb_lake_account DescribeAdbLakeAccount Failed!!! %s", err)
@@ -183,7 +255,7 @@ func resourceAliCloudAdbLakeAccountRead(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	resultRaw, _ := jsonpath.Get("$.Data.Result", objectRaw)
+	resultRaw, _ := jsonpath.Get("$.Data.Result", accountAllPrivilegesRaw)
 
 	accountPrivilegesMaps := make([]map[string]interface{}, 0)
 	if resultRaw != nil {
@@ -216,15 +288,18 @@ func resourceAliCloudAdbLakeAccountRead(d *schema.ResourceData, meta interface{}
 		return err
 	}
 
-	objectRaw, err = adbServiceV2.DescribeLakeAccountDescribeAccounts(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
-	}
-
 	d.Set("account_description", objectRaw["AccountDescription"])
 	d.Set("account_type", objectRaw["AccountType"])
 	d.Set("status", objectRaw["AccountStatus"])
 	d.Set("account_name", objectRaw["AccountName"])
+	// DescribeAccounts does not return the Engine field for accounts on the
+	// default engine (AnalyticDB). Keep the value dispatched at create time
+	// when the API omits it, so refresh does not produce an empty diff that
+	// would force a replacement of the resource; never overwrite a known
+	// engine with an empty value to avoid historical state drift.
+	if v, ok := objectRaw["Engine"].(string); ok && v != "" {
+		d.Set("engine", v)
+	}
 
 	ramUserListRaw, _ := jsonpath.Get("$.RamUserList.RamUserList", objectRaw)
 	d.Set("ram_user_list", ramUserListRaw)
@@ -250,6 +325,9 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
 	request["DBClusterId"] = parts[0]
+	if v, ok := d.GetOk("engine"); ok {
+		request["Engine"] = v
+	}
 
 	if !d.IsNewResource() && d.HasChange("account_description") {
 		update = true
@@ -280,6 +358,9 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
 	request["DBClusterId"] = parts[0]
+	if v, ok := d.GetOk("engine"); ok {
+		request["Engine"] = v
+	}
 
 	if !d.IsNewResource() && d.HasChange("account_description") {
 		update = true
@@ -427,6 +508,9 @@ func resourceAliCloudAdbLakeAccountDelete(d *schema.ResourceData, meta interface
 	request = make(map[string]interface{})
 	request["AccountName"] = parts[1]
 	request["DBClusterId"] = parts[0]
+	if v, ok := d.GetOk("engine"); ok {
+		request["Engine"] = v
+	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
