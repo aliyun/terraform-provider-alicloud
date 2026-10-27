@@ -1281,8 +1281,6 @@ func Provider() *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			// ack
-			"alicloud_ack_one_cluster":               resourceAliCloudAckOneCluster(),
-			"alicloud_ack_one_membership_attachment": resourceAliCloudAckOneMembershipAttachment(),
 
 			// adb
 			"alicloud_adb_lake_account":            resourceAliCloudAdbLakeAccount(),

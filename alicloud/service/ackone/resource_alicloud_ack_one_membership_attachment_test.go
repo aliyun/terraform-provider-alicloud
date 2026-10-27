@@ -1,30 +1,32 @@
-package alicloud
+package ackone_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ackone"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudAckOneMembershipAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ack_one_membership_attachment.default"
-	ra := resourceAttrInit(resourceId, AliCloudAckOneMembershipAttachmentMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AckOneServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAckOneMembershipAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAckOneMembershipAttachmentMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ackone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMembershipAttachment")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testAccAckOneMembershipAttachment-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAckOneMembershipAttachmentBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAckOneMembershipAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheck(t) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -34,8 +36,8 @@ func TestAccAliCloudAckOneMembershipAttachment_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(
 						map[string]string{
-							"cluster_id":     CHECKSET,
-							"sub_cluster_id": CHECKSET,
+							"cluster_id":     acctest.CHECKSET,
+							"sub_cluster_id": acctest.CHECKSET,
 						},
 					),
 				),
@@ -51,8 +53,8 @@ func TestAccAliCloudAckOneMembershipAttachment_basic(t *testing.T) {
 }
 
 var AliCloudAckOneMembershipAttachmentMap = map[string]string{
-	"cluster_id":     CHECKSET,
-	"sub_cluster_id": CHECKSET,
+	"cluster_id":     acctest.CHECKSET,
+	"sub_cluster_id": acctest.CHECKSET,
 }
 
 func AliCloudAckOneMembershipAttachmentBasicDependence0(name string) string {

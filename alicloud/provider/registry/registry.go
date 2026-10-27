@@ -10,6 +10,7 @@ import (
 
 	alicloudfunction "github.com/aliyun/terraform-provider-alicloud/alicloud/function"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ackone"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/actiontrail"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/adb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/adcp"
@@ -173,6 +174,7 @@ const (
 )
 
 var servicePackages = []conns.ServicePackage{
+	ackone.ServicePackage(),
 	actiontrail.ServicePackage(),
 	adb.ServicePackage(),
 	adcp.ServicePackage(),
