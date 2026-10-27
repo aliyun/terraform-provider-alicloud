@@ -59,6 +59,12 @@ func TestAccAliCloudPolarDBZonalCluster_complete(t *testing.T) {
 					"vpc_id":               "${alicloud_ens_network.network.id}",
 					"vswitch_id":           "${alicloud_ens_vswitch.switch.id}",
 					"target_minor_version": "innovate_x86#20250311",
+					"modify_type":          "Upgrade",
+					"period":               "Month",
+					"period_unit":          "Month",
+					"auto_renew_status":    "NotRenewal",
+					"storage_auto_scale":   "Enable",
+					"zone_id":              "tr-Istanbul-1",
 					"db_cluster_nodes_configs": map[string]string{
 						"db_node_1": preparedNodesEscape["db_node_1"],
 					},
@@ -76,7 +82,7 @@ func TestAccAliCloudPolarDBZonalCluster_complete(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"db_node_class", "target_minor_version", "used_time"},
+				ImportStateVerifyIgnore: []string{"db_node_class", "target_minor_version", "used_time", "modify_type", "period", "storage_auto_scale", "zone_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -120,13 +126,23 @@ func TestAccAliCloudPolarDBZonalCluster_complete(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"renewal_status":    "AutoRenewal",
-					"auto_renew_period": "1",
+					"renewal_status":     "AutoRenewal",
+					"auto_renew_period":  "1",
+					"auto_renew_status":  "AutoRenewal",
+					"period":             "Year",
+					"period_unit":        "Year",
+					"storage_auto_scale": "Disable",
+					"modify_type":        "Downgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"renewal_status":    "AutoRenewal",
-						"auto_renew_period": "1",
+						"renewal_status":     "AutoRenewal",
+						"auto_renew_period":  "1",
+						"auto_renew_status":  "AutoRenewal",
+						"period":             "Year",
+						"period_unit":        "Year",
+						"storage_auto_scale": "Disable",
+						"modify_type":        "Downgrade",
 					}),
 				),
 			},
