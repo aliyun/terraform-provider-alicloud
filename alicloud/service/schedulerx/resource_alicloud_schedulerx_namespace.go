@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package schedulerx. This file is generated automatically. Please do not modify it manually, thank you!
+package schedulerx
 
 import (
 	"fmt"
@@ -8,16 +8,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudSchedulerxNamespace() *schema.Resource {
+func ResourceNamespace() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudSchedulerxNamespaceCreate,
-		Read:   resourceAliCloudSchedulerxNamespaceRead,
-		Update: resourceAliCloudSchedulerxNamespaceUpdate,
-		Delete: resourceAliCloudSchedulerxNamespaceDelete,
+		Create: resourceNamespaceCreate,
+		Read:   resourceNamespaceRead,
+		Update: resourceNamespaceUpdate,
+		Delete: resourceNamespaceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -45,7 +48,7 @@ func resourceAliCloudSchedulerxNamespace() *schema.Resource {
 	}
 }
 
-func resourceAliCloudSchedulerxNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -64,11 +67,11 @@ func resourceAliCloudSchedulerxNamespaceCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -76,30 +79,30 @@ func resourceAliCloudSchedulerxNamespaceCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_schedulerx_namespace", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_schedulerx_namespace", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.Data.NamespaceUid", response)
 	d.SetId(fmt.Sprint(id))
 
-	return resourceAliCloudSchedulerxNamespaceRead(d, meta)
+	return resourceNamespaceRead(d, meta)
 }
 
-func resourceAliCloudSchedulerxNamespaceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceNamespaceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	schedulerxServiceV2 := SchedulerxServiceV2{client}
+	schedulerxService := NewService(client)
 
-	objectRaw, err := schedulerxServiceV2.DescribeSchedulerxNamespace(d.Id())
+	objectRaw, err := schedulerxService.DescribeNamespace(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_schedulerx_namespace DescribeSchedulerxNamespace Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_schedulerx_namespace DescribeNamespace Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("description", objectRaw["Description"])
@@ -111,7 +114,7 @@ func resourceAliCloudSchedulerxNamespaceRead(d *schema.ResourceData, meta interf
 	return nil
 }
 
-func resourceAliCloudSchedulerxNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -134,11 +137,11 @@ func resourceAliCloudSchedulerxNamespaceUpdate(d *schema.ResourceData, meta inte
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -146,16 +149,16 @@ func resourceAliCloudSchedulerxNamespaceUpdate(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudSchedulerxNamespaceRead(d, meta)
+	return resourceNamespaceRead(d, meta)
 }
 
-func resourceAliCloudSchedulerxNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteNamespace"
@@ -167,11 +170,11 @@ func resourceAliCloudSchedulerxNamespaceDelete(d *schema.ResourceData, meta inte
 	request["Namespace"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -179,13 +182,13 @@ func resourceAliCloudSchedulerxNamespaceDelete(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

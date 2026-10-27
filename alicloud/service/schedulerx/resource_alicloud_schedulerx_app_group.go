@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package schedulerx. This file is generated automatically. Please do not modify it manually, thank you!
+package schedulerx
 
 import (
 	"fmt"
@@ -9,16 +9,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudSchedulerxAppGroup() *schema.Resource {
+func ResourceAppGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudSchedulerxAppGroupCreate,
-		Read:   resourceAliCloudSchedulerxAppGroupRead,
-		Update: resourceAliCloudSchedulerxAppGroupUpdate,
-		Delete: resourceAliCloudSchedulerxAppGroupDelete,
+		Create: resourceAppGroupCreate,
+		Read:   resourceAppGroupRead,
+		Update: resourceAppGroupUpdate,
+		Delete: resourceAppGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -98,7 +101,7 @@ func resourceAliCloudSchedulerxAppGroup() *schema.Resource {
 	}
 }
 
-func resourceAliCloudSchedulerxAppGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAppGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -117,54 +120,54 @@ func resourceAliCloudSchedulerxAppGroupCreate(d *schema.ResourceData, meta inter
 	query["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("description"); ok {
-		query["Description"] = StringPointer(v.(string))
+		query["Description"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("monitor_config_json"); ok {
-		query["MonitorConfigJson"] = StringPointer(v.(string))
+		query["MonitorConfigJson"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("max_jobs"); ok {
-		query["MaxJobs"] = StringPointer(strconv.Itoa(v.(int)))
+		query["MaxJobs"] = helper.StringPointer(strconv.Itoa(v.(int)))
 	}
 
 	if v, ok := d.GetOk("app_type"); ok {
-		query["AppType"] = StringPointer(strconv.Itoa(v.(int)))
+		query["AppType"] = helper.StringPointer(strconv.Itoa(v.(int)))
 	}
 
 	if v, ok := d.GetOk("schedule_busy_workers"); ok {
-		query["ScheduleBusyWorkers"] = StringPointer(strconv.FormatBool(v.(bool)))
+		query["ScheduleBusyWorkers"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
 	if v, ok := d.GetOk("namespace_source"); ok {
-		query["NamespaceSource"] = StringPointer(v.(string))
+		query["NamespaceSource"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("namespace_name"); ok {
-		query["NamespaceName"] = StringPointer(v.(string))
+		query["NamespaceName"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOkExists("enable_log"); ok {
-		query["EnableLog"] = StringPointer(strconv.FormatBool(v.(bool)))
+		query["EnableLog"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
 	if v, ok := d.GetOk("app_name"); ok {
-		query["AppName"] = StringPointer(v.(string))
+		query["AppName"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("app_version"); ok {
-		query["AppVersion"] = StringPointer(v.(string))
+		query["AppVersion"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("monitor_contacts_json"); ok {
-		query["MonitorContactsJson"] = StringPointer(v.(string))
+		query["MonitorContactsJson"] = helper.StringPointer(v.(string))
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcGet("schedulerx2", "2019-04-30", action, query, request)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -172,29 +175,29 @@ func resourceAliCloudSchedulerxAppGroupCreate(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_schedulerx_app_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_schedulerx_app_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", query["Namespace"], query["GroupId"]))
 
-	return resourceAliCloudSchedulerxAppGroupRead(d, meta)
+	return resourceAppGroupRead(d, meta)
 }
 
-func resourceAliCloudSchedulerxAppGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAppGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	schedulerxServiceV2 := SchedulerxServiceV2{client}
+	schedulerxService := NewService(client)
 
-	objectRaw, err := schedulerxServiceV2.DescribeSchedulerxAppGroup(d.Id())
+	objectRaw, err := schedulerxService.DescribeAppGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_schedulerx_app_group DescribeSchedulerxAppGroup Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_schedulerx_app_group DescribeAppGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("app_name", objectRaw["AppName"])
@@ -210,7 +213,7 @@ func resourceAliCloudSchedulerxAppGroupRead(d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func resourceAliCloudSchedulerxAppGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAppGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -262,11 +265,11 @@ func resourceAliCloudSchedulerxAppGroupUpdate(d *schema.ResourceData, meta inter
 		request["MaxConcurrency"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -274,16 +277,16 @@ func resourceAliCloudSchedulerxAppGroupUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudSchedulerxAppGroupRead(d, meta)
+	return resourceAppGroupRead(d, meta)
 }
 
-func resourceAliCloudSchedulerxAppGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAppGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -300,11 +303,11 @@ func resourceAliCloudSchedulerxAppGroupDelete(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOkExists("delete_jobs"); ok {
 		request["DeleteJobs"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -312,13 +315,13 @@ func resourceAliCloudSchedulerxAppGroupDelete(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

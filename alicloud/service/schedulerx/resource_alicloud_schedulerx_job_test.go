@@ -1,34 +1,41 @@
-package alicloud
+package schedulerx_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/schedulerx"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// resourceTestAccConfigFunc mirrors the flat-suite helper so the collection-order
+// checker (scripts/collection-order) recognizes this package's config builder: it
+// matches acctest.ResourceTestAccConfig exactly.
+var resourceTestAccConfigFunc = acctest.ResourceTestAccConfig
 
 // Test Schedulerx Job. >>> Resource test cases, automatically generated.
 // Case 预发环境_20241220_杭州region_组合用例B 9597
 func TestAccAliCloudSchedulerxJob_basic9597(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudSchedulerxJobMap9597)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSchedulerxJob")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sschedulerxjob%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxJobBasicDependence9597)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSchedulerxJobMap9597)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return schedulerx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeJob")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sschedulerxjob%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudSchedulerxJobBasicDependence9597)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -81,8 +88,8 @@ func TestAccAliCloudSchedulerxJob_basic9597(t *testing.T) {
 						"success_notice_enable": "false",
 						"job_name":              name,
 						"max_concurrency":       "1",
-						"namespace":             CHECKSET,
-						"group_id":              CHECKSET,
+						"namespace":             acctest.CHECKSET,
+						"group_id":              acctest.CHECKSET,
 						"job_type":              "shell",
 						"content":               "echo 'hello'",
 						"namespace_source":      "schedulerx",
@@ -112,7 +119,7 @@ func TestAccAliCloudSchedulerxJob_basic9597(t *testing.T) {
 }
 
 var AlicloudSchedulerxJobMap9597 = map[string]string{
-	"job_id": CHECKSET,
+	"job_id": acctest.CHECKSET,
 }
 
 func AlicloudSchedulerxJobBasicDependence9597(name string) string {
@@ -148,21 +155,21 @@ resource "alicloud_schedulerx_app_group" "CreateAppGroup" {
 func TestAccAliCloudSchedulerxJob_basic9548(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudSchedulerxJobMap9548)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSchedulerxJob")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sschedulerxjob%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxJobBasicDependence9548)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSchedulerxJobMap9548)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return schedulerx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeJob")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sschedulerxjob%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudSchedulerxJobBasicDependence9548)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -239,8 +246,8 @@ func TestAccAliCloudSchedulerxJob_basic9548(t *testing.T) {
 						"parameters":            "hello word",
 						"job_name":              name,
 						"max_concurrency":       "1",
-						"namespace":             CHECKSET,
-						"group_id":              CHECKSET,
+						"namespace":             acctest.CHECKSET,
+						"group_id":              acctest.CHECKSET,
 						"job_type":              "java",
 						"class_name":            "com.aliyun.schedulerx.example.processor.SimpleJob",
 						"namespace_source":      "schedulerx",
@@ -361,7 +368,7 @@ func TestAccAliCloudSchedulerxJob_basic9548(t *testing.T) {
 }
 
 var AlicloudSchedulerxJobMap9548 = map[string]string{
-	"job_id": CHECKSET,
+	"job_id": acctest.CHECKSET,
 }
 
 func AlicloudSchedulerxJobBasicDependence9548(name string) string {
@@ -394,21 +401,21 @@ resource "alicloud_schedulerx_app_group" "CreateAppGroup" {
 func TestAccAliCloudSchedulerxJob_contactInfoEmpty(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudSchedulerxJobMapContactInfoEmpty)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSchedulerxJob")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sschedulerxjob%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxJobBasicDependenceContactInfoEmpty)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSchedulerxJobMapContactInfoEmpty)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return schedulerx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeJob")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sschedulerxjob%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudSchedulerxJobBasicDependenceContactInfoEmpty)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -455,8 +462,8 @@ func TestAccAliCloudSchedulerxJob_contactInfoEmpty(t *testing.T) {
 						"success_notice_enable":             "false",
 						"job_name":                          name,
 						"max_concurrency":                   "1",
-						"namespace":                         CHECKSET,
-						"group_id":                          CHECKSET,
+						"namespace":                         acctest.CHECKSET,
+						"group_id":                          acctest.CHECKSET,
 						"job_type":                          "shell",
 						"content":                           "echo 'hello'",
 						"namespace_source":                  "schedulerx",
@@ -482,7 +489,7 @@ func TestAccAliCloudSchedulerxJob_contactInfoEmpty(t *testing.T) {
 }
 
 var AlicloudSchedulerxJobMapContactInfoEmpty = map[string]string{
-	"job_id": CHECKSET,
+	"job_id": acctest.CHECKSET,
 }
 
 func AlicloudSchedulerxJobBasicDependenceContactInfoEmpty(name string) string {
@@ -500,6 +507,144 @@ resource "alicloud_schedulerx_app_group" "CreateAppGroup" {
   namespace             = alicloud_schedulerx_namespace.CreateNameSpace.namespace_uid
   group_id              = "test-appgroup-pop-autotest"
   description           = "appgroup for contact_info nil guard test"
+  monitor_contacts_json = "[{\"name\":\"用户-手机\"},{\"name\":\"用户-钉钉\"}]"
+  app_name              = "test-appgroup-pop-autotest"
+  app_version           = "1"
+  namespace_name        = alicloud_schedulerx_namespace.CreateNameSpace.namespace_name
+  monitor_config_json   = "{\"sendChannel\":\"sms,ding\",\"alarmType\":\"Contacts\",\"webhookIsAtAll\":\"false\"}"
+  app_type              = "2"
+  max_jobs              = "100"
+  namespace_source      = "schedulerx"
+}
+
+
+`, name)
+}
+
+// Case job_monitor_info.contact_info collection-order convergence
+func TestAccAliCloudSchedulerxJob_contactInfoOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_schedulerx_job.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSchedulerxJobMapContactInfoOrder)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return schedulerx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeJob")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sschedulerxjob%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxJobBasicDependenceContactInfoOrder)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":                "Enable",
+					"max_attempt":           "0",
+					"description":           "test contact_info collection order",
+					"success_notice_enable": "false",
+					"job_name":              name,
+					"max_concurrency":       "1",
+					"time_config": []map[string]interface{}{
+						{
+							"time_type": "-1",
+							"calendar":  "workday",
+						},
+					},
+					"namespace": "${alicloud_schedulerx_namespace.CreateNameSpace.namespace_uid}",
+					"group_id":  "${alicloud_schedulerx_app_group.CreateAppGroup.group_id}",
+					"job_type":  "shell",
+					"job_monitor_info": []map[string]interface{}{
+						{
+							"monitor_config": []map[string]interface{}{
+								{
+									"timeout":      "7200",
+									"send_channel": "webhook",
+								},
+							},
+							"contact_info": []map[string]interface{}{
+								{
+									"user_name": "order-user-1",
+								},
+								{
+									"user_name": "order-user-2",
+								},
+							},
+						},
+					},
+					"content":          "echo 'hello'",
+					"namespace_source": "schedulerx",
+					"attempt_interval": "30",
+					"execute_mode":     "standalone",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":                "Enable",
+					"max_attempt":           "0",
+					"description":           "test contact_info collection order",
+					"success_notice_enable": "false",
+					"job_name":              name,
+					"max_concurrency":       "1",
+					"time_config": []map[string]interface{}{
+						{
+							"time_type": "-1",
+							"calendar":  "workday",
+						},
+					},
+					"namespace": "${alicloud_schedulerx_namespace.CreateNameSpace.namespace_uid}",
+					"group_id":  "${alicloud_schedulerx_app_group.CreateAppGroup.group_id}",
+					"job_type":  "shell",
+					"job_monitor_info": []map[string]interface{}{
+						{
+							"monitor_config": []map[string]interface{}{
+								{
+									"timeout":      "7200",
+									"send_channel": "webhook",
+								},
+							},
+							"contact_info": []map[string]interface{}{
+								{
+									"user_name": "order-user-2",
+								},
+								{
+									"user_name": "order-user-1",
+								},
+							},
+						},
+					},
+					"content":          "echo 'hello'",
+					"namespace_source": "schedulerx",
+					"attempt_interval": "30",
+					"execute_mode":     "standalone",
+				}),
+			},
+		},
+	})
+}
+
+var AlicloudSchedulerxJobMapContactInfoOrder = map[string]string{
+	"job_id": acctest.CHECKSET,
+}
+
+func AlicloudSchedulerxJobBasicDependenceContactInfoOrder(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_schedulerx_namespace" "CreateNameSpace" {
+  namespace_name = var.name
+  description    = "namespace for contact_info order test"
+}
+
+resource "alicloud_schedulerx_app_group" "CreateAppGroup" {
+  namespace             = alicloud_schedulerx_namespace.CreateNameSpace.namespace_uid
+  group_id              = "test-appgroup-pop-autotest"
+  description           = "appgroup for contact_info order test"
   monitor_contacts_json = "[{\"name\":\"用户-手机\"},{\"name\":\"用户-钉钉\"}]"
   app_name              = "test-appgroup-pop-autotest"
   app_version           = "1"

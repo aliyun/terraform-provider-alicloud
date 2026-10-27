@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package schedulerx. This file is generated automatically. Please do not modify it manually, thank you!
+package schedulerx
 
 import (
 	"fmt"
@@ -9,16 +9,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudSchedulerxJob() *schema.Resource {
+func ResourceJob() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudSchedulerxJobCreate,
-		Read:   resourceAliCloudSchedulerxJobRead,
-		Update: resourceAliCloudSchedulerxJobUpdate,
-		Delete: resourceAliCloudSchedulerxJobDelete,
+		Create: resourceJobCreate,
+		Read:   resourceJobRead,
+		Update: resourceJobUpdate,
+		Delete: resourceJobDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -201,7 +205,7 @@ func resourceAliCloudSchedulerxJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Enable", "Disable"}, false),
 			},
 			"success_notice_enable": {
 				Type:     schema.TypeBool,
@@ -254,7 +258,7 @@ func resourceAliCloudSchedulerxJob() *schema.Resource {
 	}
 }
 
-func resourceAliCloudSchedulerxJobCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceJobCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -294,7 +298,7 @@ func resourceAliCloudSchedulerxJobCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("job_monitor_info"); ok {
 		localData, err := jsonpath.Get("$[0].contact_info", v)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		contactInfoMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range localData.([]interface{}) {
@@ -423,11 +427,11 @@ func resourceAliCloudSchedulerxJobCreate(d *schema.ResourceData, meta interface{
 			request["QueueSize"] = jsonPathResult31
 		}
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -435,30 +439,30 @@ func resourceAliCloudSchedulerxJobCreate(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_schedulerx_job", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_schedulerx_job", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	DataJobIdVar, _ := jsonpath.Get("$.Data.JobId", response)
 	d.SetId(fmt.Sprintf("%v:%v:%v", request["Namespace"], request["GroupId"], DataJobIdVar))
 
-	return resourceAliCloudSchedulerxJobRead(d, meta)
+	return resourceJobRead(d, meta)
 }
 
-func resourceAliCloudSchedulerxJobRead(d *schema.ResourceData, meta interface{}) error {
+func resourceJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	schedulerxServiceV2 := SchedulerxServiceV2{client}
+	schedulerxService := NewService(client)
 
-	objectRaw, err := schedulerxServiceV2.DescribeSchedulerxJob(d.Id())
+	objectRaw, err := schedulerxService.DescribeJob(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_schedulerx_job DescribeSchedulerxJob Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_schedulerx_job DescribeJob Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["AttemptInterval"] != nil {
@@ -599,7 +603,7 @@ func resourceAliCloudSchedulerxJobRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceJobUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -607,10 +611,10 @@ func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{
 	update := false
 
 	if d.HasChange("status") {
-		schedulerxServiceV2 := SchedulerxServiceV2{client}
-		object, err := schedulerxServiceV2.DescribeSchedulerxJob(d.Id())
+		schedulerxService := NewService(client)
+		object, err := schedulerxService.DescribeJob(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("status").(string)
@@ -625,14 +629,14 @@ func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{
 				query["GroupId"] = parts[1]
 				query["RegionId"] = client.RegionId
 				if v, ok := d.GetOk("namespace_source"); ok {
-					query["NamespaceSource"] = StringPointer(v.(string))
+					query["NamespaceSource"] = helper.StringPointer(v.(string))
 				}
 
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcGet("schedulerx2", "2019-04-30", action, query, request)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -640,9 +644,9 @@ func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
@@ -656,14 +660,14 @@ func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{
 				query["JobId"] = parts[2]
 				query["RegionId"] = client.RegionId
 				if v, ok := d.GetOk("namespace_source"); ok {
-					query["NamespaceSource"] = StringPointer(v.(string))
+					query["NamespaceSource"] = helper.StringPointer(v.(string))
 				}
 
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcGet("schedulerx2", "2019-04-30", action, query, request)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -671,9 +675,9 @@ func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
@@ -733,7 +737,7 @@ func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{
 		if v, ok := d.GetOk("job_monitor_info"); ok || d.HasChange("job_monitor_info") {
 			localData, err := jsonpath.Get("$[0].contact_info", v)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			contactInfoMapsArray := make([]interface{}, 0)
 			for _, dataLoop := range localData.([]interface{}) {
@@ -908,11 +912,11 @@ func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("schedulerx2", "2019-04-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -920,16 +924,16 @@ func resourceAliCloudSchedulerxJobUpdate(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudSchedulerxJobRead(d, meta)
+	return resourceJobRead(d, meta)
 }
 
-func resourceAliCloudSchedulerxJobDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceJobDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -945,15 +949,15 @@ func resourceAliCloudSchedulerxJobDelete(d *schema.ResourceData, meta interface{
 	query["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("namespace_source"); ok {
-		query["NamespaceSource"] = StringPointer(v.(string))
+		query["NamespaceSource"] = helper.StringPointer(v.(string))
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcGet("schedulerx2", "2019-04-30", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -961,13 +965,13 @@ func resourceAliCloudSchedulerxJobDelete(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

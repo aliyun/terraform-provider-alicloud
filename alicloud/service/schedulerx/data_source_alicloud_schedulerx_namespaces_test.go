@@ -1,39 +1,40 @@
-package alicloud
+package schedulerx_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudSchedulerxNamespacesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.SchedulerxSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.SchedulerxSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_schedulerx_namespace.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_schedulerx_namespace.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_schedulerx_namespace.default.namespace_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_schedulerx_namespace.default.namespace_name}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_schedulerx_namespace.default.id}"]`,
 			"name_regex": `"${alicloud_schedulerx_namespace.default.namespace_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_schedulerx_namespace.default.id}_fake"]`,
 			"name_regex": `"${alicloud_schedulerx_namespace.default.namespace_name}_fake"`,
 		}),
@@ -45,8 +46,8 @@ func TestAccAlicloudSchedulerxNamespacesDataSource(t *testing.T) {
 			"namespaces.#":                "1",
 			"namespaces.0.description":    fmt.Sprintf("tf-testAccNamespace-%d", rand),
 			"namespaces.0.namespace_name": fmt.Sprintf("tf-testAccNamespace-%d", rand),
-			"namespaces.0.namespace_id":   CHECKSET,
-			"namespaces.0.id":             CHECKSET,
+			"namespaces.0.namespace_id":   acctest.CHECKSET,
+			"namespaces.0.id":             acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudSchedulerxNamespacesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -55,16 +56,16 @@ func TestAccAlicloudSchedulerxNamespacesDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudSchedulerxNamespacesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_schedulerx_namespaces.default",
-		existMapFunc: existAlicloudSchedulerxNamespacesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudSchedulerxNamespacesDataSourceNameMapFunc,
+	var alicloudSchedulerxNamespacesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_schedulerx_namespaces.default",
+		ExistMapFunc: existAlicloudSchedulerxNamespacesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudSchedulerxNamespacesDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudSchedulerxNamespacesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	alicloudSchedulerxNamespacesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -74,7 +75,7 @@ func testAccCheckAlicloudSchedulerxNamespacesDataSourceName(rand int, attrMap ma
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf-testAccNamespace-%d"
 }
 
@@ -83,7 +84,7 @@ resource "alicloud_schedulerx_namespace" "default" {
 	namespace_name = var.name
 }
 
-data "alicloud_schedulerx_namespaces" "default" {	
+data "alicloud_schedulerx_namespaces" "default" {
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))

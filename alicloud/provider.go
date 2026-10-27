@@ -1100,9 +1100,6 @@ func Provider() *schema.Provider {
 			// scdn
 			"alicloud_scdn_domains": dataSourceAlicloudScdnDomains(),
 
-			// schedulerx
-			"alicloud_schedulerx_namespaces": dataSourceAlicloudSchedulerxNamespaces(),
-
 			// sddp
 			"alicloud_sddp_rules":       dataSourceAlicloudSddpRules(),
 			"alicloud_sddp_configs":     dataSourceAlicloudSddpConfigs(),
@@ -2576,11 +2573,6 @@ func Provider() *schema.Provider {
 			// scdn
 			"alicloud_scdn_domain":        resourceAlicloudScdnDomain(),
 			"alicloud_scdn_domain_config": resourceAlicloudScdnDomainConfig(),
-
-			// schedulerx
-			"alicloud_schedulerx_app_group": resourceAliCloudSchedulerxAppGroup(),
-			"alicloud_schedulerx_job":       resourceAliCloudSchedulerxJob(),
-			"alicloud_schedulerx_namespace": resourceAliCloudSchedulerxNamespace(),
 
 			// sddp
 			"alicloud_sddp_rule":       resourceAliCloudSddpRule(),

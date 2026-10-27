@@ -1,4 +1,4 @@
-package alicloud
+package schedulerx_test
 
 import (
 	"fmt"
@@ -11,9 +11,14 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/schedulerx"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,21 +26,21 @@ import (
 func TestAccAliCloudSchedulerxNamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_namespace.default"
-	ra := resourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSchedulerxNamespace")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc%sschedulerxnamespace%d", defaultRegionToTest, rand)
-	checkoutSupportedRegions(t, true, connectivity.SchedulerxSupportRegions)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxNamespaceBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return schedulerx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNamespace")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%sschedulerxnamespace%d", acctest.DefaultRegionToTest, rand)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.SchedulerxSupportRegions)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudSchedulerxNamespaceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
@@ -104,7 +109,7 @@ variable "name" {
 
 // lintignore: R001
 func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := acctest.Provider.ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_schedulerx_namespace"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_schedulerx_namespace"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -122,7 +127,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -149,31 +154,31 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_schedulerx_namespace", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_schedulerx_namespace", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEdasschedulerxClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudSchedulerxNamespaceCreate(dInit, rawClient)
+	err = p["alicloud_schedulerx_namespace"].Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -196,7 +201,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudSchedulerxNamespaceCreate(dInit, rawClient)
+		err := p["alicloud_schedulerx_namespace"].Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -217,20 +222,20 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEdasschedulerxClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudSchedulerxNamespaceCreate(dExisted, rawClient)
+	err = p["alicloud_schedulerx_namespace"].Create(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
 		"description":    "UpdateSchedulerxNamespaceValue",
 		"namespace_name": "UpdateSchedulerxNamespaceValue",
 	}
-	diff, err := newInstanceDiff("alicloud_schedulerx_namespace", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_schedulerx_namespace", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
@@ -264,7 +269,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudSchedulerxNamespaceCreate(dExisted, rawClient)
+		err := p["alicloud_schedulerx_namespace"].Create(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -283,7 +288,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 	}
 
 	// Read
-	diff, err = newInstanceDiff("alicloud_schedulerx_namespace", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_schedulerx_namespace", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
@@ -308,7 +313,7 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudSchedulerxNamespaceCreate(dExisted, rawClient)
+		err := p["alicloud_schedulerx_namespace"].Create(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -325,22 +330,22 @@ func TestUnitAccAlicloudSchedulerxNamespace(t *testing.T) {
 func TestAccAliCloudSchedulerxNamespace_basic11782(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_namespace.default"
-	ra := resourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap11782)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSchedulerxNamespace")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap11782)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return schedulerx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNamespace")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccschedulerx%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxNamespaceBasicDependence11782)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudSchedulerxNamespaceBasicDependence11782)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -352,7 +357,7 @@ func TestAccAliCloudSchedulerxNamespace_basic11782(t *testing.T) {
 					testAccCheck(map[string]string{
 						"namespace_name": name,
 						"description":    "namespace 资源用例自动创建的命名空间",
-						"namespace_uid":  CHECKSET,
+						"namespace_uid":  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -394,22 +399,22 @@ variable "name" {
 func TestAccAliCloudSchedulerxNamespace_basic9449(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_namespace.default"
-	ra := resourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap9449)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSchedulerxNamespace")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSchedulerxNamespaceMap9449)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return schedulerx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNamespace")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccschedulerx%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSchedulerxNamespaceBasicDependence9449)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudSchedulerxNamespaceBasicDependence9449)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -421,7 +426,7 @@ func TestAccAliCloudSchedulerxNamespace_basic9449(t *testing.T) {
 					testAccCheck(map[string]string{
 						"namespace_name": name,
 						"description":    "namespace 资源用例自动创建的命名空间",
-						"namespace_uid":  CHECKSET,
+						"namespace_uid":  acctest.CHECKSET,
 					}),
 				),
 			},

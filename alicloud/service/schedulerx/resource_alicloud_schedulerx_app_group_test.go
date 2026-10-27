@@ -1,11 +1,13 @@
-package alicloud
+package schedulerx_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/schedulerx"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudSchedulerxAppGroup_basic9957(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_app_group.default"
-	ra := resourceAttrInit(resourceId, AliCloudSchedulerxAppGroupMap9957)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSchedulerxAppGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sschedulerxappgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSchedulerxAppGroupBasicDependence9957)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSchedulerxAppGroupMap9957)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return schedulerx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAppGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sschedulerxappgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSchedulerxAppGroupBasicDependence9957)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -41,7 +43,7 @@ func TestAccAliCloudSchedulerxAppGroup_basic9957(t *testing.T) {
 					testAccCheck(map[string]string{
 						"app_name":  name,
 						"group_id":  name,
-						"namespace": CHECKSET,
+						"namespace": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -81,7 +83,7 @@ func TestAccAliCloudSchedulerxAppGroup_basic9957(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"monitor_config_json": CHECKSET,
+						"monitor_config_json": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -91,7 +93,7 @@ func TestAccAliCloudSchedulerxAppGroup_basic9957(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"monitor_contacts_json": CHECKSET,
+						"monitor_contacts_json": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -108,21 +110,21 @@ func TestAccAliCloudSchedulerxAppGroup_basic9957(t *testing.T) {
 func TestAccAliCloudSchedulerxAppGroup_basic9957_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_schedulerx_app_group.default"
-	ra := resourceAttrInit(resourceId, AliCloudSchedulerxAppGroupMap9957)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SchedulerxServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSchedulerxAppGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sschedulerxappgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSchedulerxAppGroupBasicDependence9957)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSchedulerxAppGroupMap9957)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return schedulerx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAppGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sschedulerxappgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSchedulerxAppGroupBasicDependence9957)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -144,15 +146,15 @@ func TestAccAliCloudSchedulerxAppGroup_basic9957_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"namespace":             CHECKSET,
-						"group_id":              CHECKSET,
+						"namespace":             acctest.CHECKSET,
+						"group_id":              acctest.CHECKSET,
 						"description":           name,
-						"monitor_contacts_json": CHECKSET,
+						"monitor_contacts_json": acctest.CHECKSET,
 						"enable_log":            "true",
 						"app_name":              name,
 						"app_version":           "1",
 						"max_jobs":              "100",
-						"monitor_config_json":   CHECKSET,
+						"monitor_config_json":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -167,8 +169,8 @@ func TestAccAliCloudSchedulerxAppGroup_basic9957_twin(t *testing.T) {
 }
 
 var AliCloudSchedulerxAppGroupMap9957 = map[string]string{
-	"app_version": CHECKSET,
-	"max_jobs":    CHECKSET,
+	"app_version": acctest.CHECKSET,
+	"max_jobs":    acctest.CHECKSET,
 }
 
 func AliCloudSchedulerxAppGroupBasicDependence9957(name string) string {

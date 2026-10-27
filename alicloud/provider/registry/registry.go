@@ -136,7 +136,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sae"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/scdn"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/schedulerx2"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/schedulerx"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sddp"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/selectdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/servicecatalog"
@@ -299,7 +299,7 @@ var servicePackages = []conns.ServicePackage{
 	sae.ServicePackage(),
 	sas.ServicePackage(),
 	scdn.ServicePackage(),
-	schedulerx2.ServicePackage(),
+	schedulerx.ServicePackage(),
 	sddp.ServicePackage(),
 	selectdb.ServicePackage(),
 	servicecatalog.ServicePackage(),
