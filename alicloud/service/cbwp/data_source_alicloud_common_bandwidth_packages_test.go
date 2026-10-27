@@ -1,58 +1,63 @@
-package alicloud
+package cbwp_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudCommonBandwidthPackagesDataSourceBasic(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
+	rand := tfacctest.RandIntRange(1000, 9999)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"name_regex": `"${alicloud_common_bandwidth_package.default.bandwidth_package_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"name_regex": `"${alicloud_common_bandwidth_package.default.bandwidth_package_name}_fake"`,
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"ids":    `[ "${alicloud_common_bandwidth_package.default.id}" ]`,
 			"status": `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"ids":    `[ "${alicloud_common_bandwidth_package.default.id}_fake" ]`,
 			"status": `"Pending"`,
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"ids": `[ "${alicloud_common_bandwidth_package.default.id}" ]`,
 		}),
-		fakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"ids": `[ "${alicloud_common_bandwidth_package.default.id}_fake" ]`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"ids":        `[ "${alicloud_common_bandwidth_package.default.id}" ]`,
 			"name_regex": `"${alicloud_common_bandwidth_package.default.bandwidth_package_name}"`,
 			"status":     `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand, map[string]string{
 			"ids":        `[ "${alicloud_common_bandwidth_package.default.id}_fake" ]`,
 			"name_regex": `"${alicloud_common_bandwidth_package.default.bandwidth_package_name}_fake"`,
 			"status":     `"Pending"`,
 		}),
 	}
-	commonBandwidthPackagesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, statusConf, idsConf, allConf)
+	commonBandwidthPackagesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, func() {
+		acctest.PreCheck(t)
+		acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	}, nameRegexConf, statusConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudCommonBandwidthPackagesDataSourceConfigBasic(rand int, attrMap map[string]string) string {
@@ -67,7 +72,7 @@ variable "name" {
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
-	name_regex = "default"
+  name_regex = "default"
 }
 
 resource "alicloud_common_bandwidth_package" "default" {
@@ -90,28 +95,28 @@ var existsCommonBandwidthPackagesMapFunc = func(rand int) map[string]string {
 		"ids.#":                                       "1",
 		"names.#":                                     "1",
 		"packages.#":                                  "1",
-		"packages.0.id":                               CHECKSET,
-		"packages.0.isp":                              CHECKSET,
-		"packages.0.status":                           CHECKSET,
-		"packages.0.business_status":                  CHECKSET,
+		"packages.0.id":                               acctest.CHECKSET,
+		"packages.0.isp":                              acctest.CHECKSET,
+		"packages.0.status":                           acctest.CHECKSET,
+		"packages.0.business_status":                  acctest.CHECKSET,
 		"packages.0.bandwidth":                        "2",
 		"packages.0.name":                             fmt.Sprintf("tf-testAccCommonBandwidthPackageDataSource%d", rand),
 		"packages.0.bandwidth_package_name":           fmt.Sprintf("tf-testAccCommonBandwidthPackageDataSource%d", rand),
-		"packages.0.bandwidth_package_id":             CHECKSET,
+		"packages.0.bandwidth_package_id":             acctest.CHECKSET,
 		"packages.0.description":                      fmt.Sprintf("tf-testAccCommonBandwidthPackageDataSource%d_description", rand),
-		"packages.0.service_managed":                  CHECKSET,
-		"packages.0.resource_group_id":                CHECKSET,
+		"packages.0.service_managed":                  acctest.CHECKSET,
+		"packages.0.resource_group_id":                acctest.CHECKSET,
 		"packages.0.reservation_order_type":           "",
 		"packages.0.reservation_internet_charge_type": "",
 		"packages.0.reservation_bandwidth":            "",
 		"packages.0.reservation_active_time":          "",
-		"packages.0.ratio":                            CHECKSET,
-		"packages.0.public_ip_addresses.#":            CHECKSET,
-		"packages.0.payment_type":                     CHECKSET,
-		"packages.0.internet_charge_type":             CHECKSET,
-		"packages.0.has_reservation_data":             CHECKSET,
+		"packages.0.ratio":                            acctest.CHECKSET,
+		"packages.0.public_ip_addresses.#":            acctest.CHECKSET,
+		"packages.0.payment_type":                     acctest.CHECKSET,
+		"packages.0.internet_charge_type":             acctest.CHECKSET,
+		"packages.0.has_reservation_data":             acctest.CHECKSET,
 		"packages.0.expired_time":                     "",
-		"packages.0.deletion_protection":              CHECKSET,
+		"packages.0.deletion_protection":              acctest.CHECKSET,
 	}
 }
 
@@ -123,8 +128,8 @@ var fakeCommonBandwidthPackagesMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var commonBandwidthPackagesCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_common_bandwidth_packages.default",
-	existMapFunc: existsCommonBandwidthPackagesMapFunc,
-	fakeMapFunc:  fakeCommonBandwidthPackagesMapFunc,
+var commonBandwidthPackagesCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_common_bandwidth_packages.default",
+	ExistMapFunc: existsCommonBandwidthPackagesMapFunc,
+	FakeMapFunc:  fakeCommonBandwidthPackagesMapFunc,
 }

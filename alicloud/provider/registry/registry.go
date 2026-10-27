@@ -28,6 +28,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cbn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cbwp"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cddc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cdn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/chatbot"
@@ -191,6 +192,7 @@ var servicePackages = []conns.ServicePackage{
 	cas.ServicePackage(),
 	cassandra.ServicePackage(),
 	cbn.ServicePackage(),
+	cbwp.ServicePackage(),
 	cddc.ServicePackage(),
 	cdn.ServicePackage(),
 	chatbot.ServicePackage(),
