@@ -1,4 +1,4 @@
-package alicloud
+package ecp_test
 
 import (
 	"fmt"
@@ -11,46 +11,51 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecp"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudEcpInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ECPSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ECPSupportRegions)
 	resourceId := "alicloud_ecp_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudEcpInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudphoneService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEcpInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ecp.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEcpInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secpinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcpInstanceBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secpinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEcpInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type":     CHECKSET,
+						"instance_type":     acctest.CHECKSET,
 						"image_id":          "android-image-release5501072_a11_20240530.raw",
-						"vswitch_id":        CHECKSET,
-						"security_group_id": CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
+						"security_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -70,7 +75,7 @@ func TestAccAliCloudEcpInstance_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"key_pair_name": CHECKSET,
+						"key_pair_name": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -142,30 +147,30 @@ func TestAccAliCloudEcpInstance_basic0(t *testing.T) {
 
 func TestAccAliCloudEcpInstance_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ECPSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ECPSupportRegions)
 	resourceId := "alicloud_ecp_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudEcpInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudphoneService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEcpInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ecp.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEcpInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secpinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcpInstanceBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secpinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEcpInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 					"eip_bandwidth":     "20",
 					"resolution":        "1280*720",
 					"key_pair_name":     "${data.alicloud_ecp_key_pairs.default.pairs.0.key_pair_name}",
@@ -178,13 +183,13 @@ func TestAccAliCloudEcpInstance_basic0_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type":     CHECKSET,
+						"instance_type":     acctest.CHECKSET,
 						"image_id":          "android-image-release5501072_a11_20240530.raw",
-						"vswitch_id":        CHECKSET,
-						"security_group_id": CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
+						"security_group_id": acctest.CHECKSET,
 						"eip_bandwidth":     "20",
 						"resolution":        "1280*720",
-						"key_pair_name":     CHECKSET,
+						"key_pair_name":     acctest.CHECKSET,
 						"payment_type":      "PayAsYouGo",
 						"instance_name":     name,
 						"description":       name,
@@ -204,39 +209,39 @@ func TestAccAliCloudEcpInstance_basic0_twin(t *testing.T) {
 
 func TestAccAliCloudEcpInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ECPSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ECPSupportRegions)
 	resourceId := "alicloud_ecp_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudEcpInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudphoneService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEcpInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ecp.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEcpInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secpinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcpInstanceBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secpinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEcpInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 					"payment_type":      "Subscription",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type":     CHECKSET,
+						"instance_type":     acctest.CHECKSET,
 						"image_id":          "android-image-release5501072_a11_20240530.raw",
-						"vswitch_id":        CHECKSET,
-						"security_group_id": CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
+						"security_group_id": acctest.CHECKSET,
 						"payment_type":      "Subscription",
 					}),
 				),
@@ -257,7 +262,7 @@ func TestAccAliCloudEcpInstance_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"key_pair_name": CHECKSET,
+						"key_pair_name": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -321,31 +326,31 @@ func TestAccAliCloudEcpInstance_basic1(t *testing.T) {
 
 func TestAccAliCloudEcpInstance_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ECPSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ECPSupportRegions)
 	resourceId := "alicloud_ecp_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudEcpInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudphoneService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEcpInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ecp.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEcpInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secpinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcpInstanceBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secpinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEcpInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type":     "${data.alicloud_ecp_instance_types.default.instance_types.0.instance_type}",
 					"image_id":          "android-image-release5501072_a11_20240530.raw",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group_id": "${alicloud_security_group.default.id}",
 					"eip_bandwidth":     "20",
 					"resolution":        "1280*720",
 					"key_pair_name":     "${data.alicloud_ecp_key_pairs.default.pairs.0.key_pair_name}",
@@ -362,13 +367,13 @@ func TestAccAliCloudEcpInstance_basic1_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type":     CHECKSET,
+						"instance_type":     acctest.CHECKSET,
 						"image_id":          "android-image-release5501072_a11_20240530.raw",
-						"vswitch_id":        CHECKSET,
-						"security_group_id": CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
+						"security_group_id": acctest.CHECKSET,
 						"eip_bandwidth":     "20",
 						"resolution":        "1280*720",
-						"key_pair_name":     CHECKSET,
+						"key_pair_name":     acctest.CHECKSET,
 						"payment_type":      "Subscription",
 						"instance_name":     name,
 						"description":       name,
@@ -387,14 +392,14 @@ func TestAccAliCloudEcpInstance_basic1_twin(t *testing.T) {
 }
 
 var AliCloudEcpInstanceMap0 = map[string]string{
-	"resolution":    CHECKSET,
-	"payment_type":  CHECKSET,
-	"instance_name": CHECKSET,
-	"status":        CHECKSET,
+	"resolution":    acctest.CHECKSET,
+	"payment_type":  acctest.CHECKSET,
+	"instance_name": acctest.CHECKSET,
+	"status":        acctest.CHECKSET,
 }
 
 func AliCloudEcpInstanceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
 	}
@@ -417,21 +422,29 @@ func AliCloudEcpInstanceBasicDependence0(name string) string {
   		zone_id = data.alicloud_ecp_zones.default.zones.0.zone_id
 	}
 
-	data "alicloud_security_groups" "default" {
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+	// Use a dedicated, test-owned security group in the same VPC instead of
+	// reusing an account-shared SG (data.alicloud_security_groups.default.ids.0),
+	// which may be managed by a NAT gateway and rejected by RunInstances with
+	// SecurityGroup.Managed. This SG is created and fully destroyed by the test.
+	resource "alicloud_security_group" "default" {
+		security_group_name = var.name
+		vpc_id              = data.alicloud_vpcs.default.ids.0
 	}
-    // resource "alicloud_security_group" "default" {
-	// 	security_group_name = var.name
-	// 	vpc_id = data.alicloud_vpcs.default.ids.0
-	// }
 `, name)
+}
+
+func unitTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_ecp_instance": ecp.ResourceEcpInstance(),
+	}
 }
 
 // lintignore: R001
 func TestUnitAliCloudEcpInstance(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_ecp_instance"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_ecp_instance"].Schema).Data(nil, nil)
+	p := unitTestProviderResources()
+	resourceSchema := p["alicloud_ecp_instance"]
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"instance_name":     "RunInstancesValue",
@@ -461,7 +474,7 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -504,18 +517,18 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ecp_instance", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_ecp_instance", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -523,13 +536,13 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCloudphoneClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudEcpInstanceCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -559,14 +572,14 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudEcpInstanceCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_ecp_instance"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -580,13 +593,13 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCloudphoneClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudEcpInstanceUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateInstanceAttribute
@@ -596,11 +609,11 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 		"key_pair_name": "UpdateInstanceAttributeValue",
 		"vnc_password":  "UpdateInstanceAttributeValue",
 	}
-	diff, err := newInstanceDiff("alicloud_ecp_instance", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_ecp_instance", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_ecp_instance"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// ListInstances Response
 		"Instances": map[string]interface{}{
@@ -631,14 +644,14 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudEcpInstanceUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_ecp_instance"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -653,11 +666,11 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 	attributesDiff = map[string]interface{}{
 		"status": "Stopped",
 	}
-	diff, err = newInstanceDiff("alicloud_ecp_instance", attributes, attributesDiff, dExisted.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_ecp_instance", attributes, attributesDiff, dExisted.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_ecp_instance"].Schema).Data(dExisted.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// ListInstances Response
 		"Instances": map[string]interface{}{
@@ -686,7 +699,7 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudEcpInstanceUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 
 		switch errorCode {
@@ -694,7 +707,7 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_ecp_instance"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -726,7 +739,7 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudEcpInstanceRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -739,13 +752,13 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCloudphoneClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudEcpInstanceDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "CloudPhoneInstances.NotFound"}
@@ -767,7 +780,7 @@ func TestUnitAliCloudEcpInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudEcpInstanceDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

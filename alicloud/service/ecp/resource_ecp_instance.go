@@ -1,4 +1,4 @@
-package alicloud
+package ecp
 
 import (
 	"fmt"
@@ -7,16 +7,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEcpInstance() *schema.Resource {
+func ResourceEcpInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudEcpInstanceCreate,
-		Read:   resourceAliCloudEcpInstanceRead,
-		Update: resourceAliCloudEcpInstanceUpdate,
-		Delete: resourceAliCloudEcpInstanceDelete,
+		Create: resourceEcpInstanceCreate,
+		Read:   resourceEcpInstanceRead,
+		Update: resourceEcpInstanceUpdate,
+		Delete: resourceEcpInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -70,7 +74,7 @@ func resourceAliCloudEcpInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"auto_pay": {
 				Type:     schema.TypeBool,
@@ -83,7 +87,7 @@ func resourceAliCloudEcpInstance() *schema.Resource {
 			"period_unit": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"auto_renew": {
 				Type:     schema.TypeBool,
@@ -106,22 +110,22 @@ func resourceAliCloudEcpInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Running", "Stopped"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Running", "Stopped"}, false),
 			},
 		},
 	}
 }
 
-func resourceAliCloudEcpInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceEcpInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudPhoneService := CloudphoneService{client}
+	ecpService := NewService(client)
 	var response map[string]interface{}
 	action := "RunInstances"
 	request := make(map[string]interface{})
 	var err error
 
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("RunInstances")
+	request["ClientToken"] = helper.BuildClientToken("RunInstances")
 	request["Amount"] = 1
 	request["InstanceType"] = d.Get("instance_type")
 	request["ImageId"] = d.Get("image_id")
@@ -168,11 +172,11 @@ func resourceAliCloudEcpInstanceCreate(d *schema.ResourceData, meta interface{})
 		request["Description"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -180,39 +184,39 @@ func resourceAliCloudEcpInstanceCreate(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecp_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ecp_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if resp, err := jsonpath.Get("$.InstanceIds.InstanceId", response); err != nil || resp == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_ecp_instance")
+		return errs.WrapErrorf(err, errs.IdMsg, "alicloud_ecp_instance")
 	} else {
 		instanceId := resp.([]interface{})[0]
 		d.SetId(fmt.Sprint(instanceId))
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cloudPhoneService.EcpInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ecpService.EcpInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudEcpInstanceUpdate(d, meta)
+	return resourceEcpInstanceUpdate(d, meta)
 }
 
-func resourceAliCloudEcpInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceEcpInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudPhoneService := CloudphoneService{client}
+	ecpService := NewService(client)
 
-	object, err := cloudPhoneService.DescribeEcpInstance(d.Id())
+	object, err := ecpService.DescribeEcpInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_ecp_instance cloudPhoneService.DescribeEcpInstance Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ecp_instance ecpService.DescribeEcpInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("instance_type", object["InstanceType"])
@@ -237,9 +241,9 @@ func resourceAliCloudEcpInstanceRead(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func resourceAliCloudEcpInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceEcpInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudPhoneService := CloudphoneService{client}
+	ecpService := NewService(client)
 	var response map[string]interface{}
 	var err error
 	d.Partial(true)
@@ -281,11 +285,11 @@ func resourceAliCloudEcpInstanceUpdate(d *schema.ResourceData, meta interface{})
 
 	if update {
 		action := "UpdateInstanceAttribute"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -293,10 +297,10 @@ func resourceAliCloudEcpInstanceUpdate(d *schema.ResourceData, meta interface{})
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
@@ -315,24 +319,24 @@ func resourceAliCloudEcpInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if update {
-		object, err := cloudPhoneService.DescribeEcpInstance(d.Id())
+		object, err := ecpService.DescribeEcpInstance(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		if object["Status"].(string) != "Stopped" {
-			err := cloudPhoneService.ModifyEcpInstanceStatus(d, "Stopped")
+			err := ecpService.ModifyEcpInstanceStatus(d, "Stopped")
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 
 		action := "UpdateInstanceAttribute"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, updateResolutionReq, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -340,40 +344,40 @@ func resourceAliCloudEcpInstanceUpdate(d *schema.ResourceData, meta interface{})
 			}
 			return nil
 		})
-		addDebug(action, response, updateResolutionReq)
+		logs.AddDebug(action, response, updateResolutionReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		if object["Status"].(string) != "Running" {
-			err := cloudPhoneService.ModifyEcpInstanceStatus(d, "Running")
+			err := ecpService.ModifyEcpInstanceStatus(d, "Running")
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 
 	}
 
 	if d.HasChange("status") {
-		object, err := cloudPhoneService.DescribeEcpInstance(d.Id())
+		object, err := ecpService.DescribeEcpInstance(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("status").(string)
 		if object["Status"].(string) != target {
 			if target == "Running" {
-				err := cloudPhoneService.ModifyEcpInstanceStatus(d, "Running")
+				err := ecpService.ModifyEcpInstanceStatus(d, "Running")
 				if err != nil {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 			}
 
 			if target == "Stopped" {
-				err := cloudPhoneService.ModifyEcpInstanceStatus(d, "Stopped")
+				err := ecpService.ModifyEcpInstanceStatus(d, "Stopped")
 				if err != nil {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 			}
 		}
@@ -382,12 +386,12 @@ func resourceAliCloudEcpInstanceUpdate(d *schema.ResourceData, meta interface{})
 
 	d.Partial(false)
 
-	return resourceAliCloudEcpInstanceRead(d, meta)
+	return resourceEcpInstanceRead(d, meta)
 }
 
-func resourceAliCloudEcpInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceEcpInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("payment_type"); ok && fmt.Sprint(v) == "Subscription" {
-		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+		return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	client := meta.(*connectivity.AliyunClient)
@@ -404,11 +408,11 @@ func resourceAliCloudEcpInstanceDelete(d *schema.ResourceData, meta interface{})
 		request["Force"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -416,13 +420,13 @@ func resourceAliCloudEcpInstanceDelete(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"CloudPhoneInstances.NotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"CloudPhoneInstances.NotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package alicloud
+package ecp
 
 import (
 	"strconv"
@@ -6,12 +6,15 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudEcpInstanceTypes() *schema.Resource {
+func DataSourceEcpInstanceTypes() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEcpInstanceTypesRead,
+		Read: dataSourceEcpInstanceTypesRead,
 		Schema: map[string]*schema.Schema{
 			"output_file": {
 				Type:     schema.TypeString,
@@ -53,7 +56,7 @@ func dataSourceAlicloudEcpInstanceTypes() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEcpInstanceTypesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceEcpInstanceTypesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListInstanceTypes"
@@ -64,13 +67,13 @@ func dataSourceAlicloudEcpInstanceTypesRead(d *schema.ResourceData, meta interfa
 	var err error
 	response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecp_instance_types", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ecp_instance_types", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	resp, err := jsonpath.Get("$.InstanceTypes.InstanceType", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceTypes.InstanceType", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.InstanceTypes.InstanceType", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -93,10 +96,10 @@ func dataSourceAlicloudEcpInstanceTypesRead(d *schema.ResourceData, meta interfa
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
 
 	if err := d.Set("instance_types", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
