@@ -157,7 +157,7 @@ class LocalGoCacheTest(unittest.TestCase):
                      'consistency-check', 'testing-coverage-rate', 'document-check']:
             workflow = (ROOT / '.github/workflows' / (name + '.yml')).read_text()
             route = workflow.split('  route:\n', 1)[1].split('    steps:\n', 1)[0]
-            self.assertIn('runs-on: ubuntu-latest', route)
+            self.assertIn('runs-on: terraform-ci-route', route)
             self.assertNotIn('runs-on: terraform-ci-policy', route)
             self.assertIn('timeout-minutes: 5', route)
 
@@ -172,6 +172,8 @@ class LocalGoCacheTest(unittest.TestCase):
             local = workflow.split('      - name: Restore node-local Go cache\n', 1)[1].split('      - name: ', 1)[0]
             self.assertIn("classification == 'trusted'", local)
             self.assertIn('git show "$PR_BASE_SHA:scripts/ci/restore-local-go-cache.py"', local)
+            self.assertIn('/opt/terraform-ci-cache/restore.py', local)
+            self.assertIn('if [[ -s "$helper" ]]', local)
             self.assertNotIn('cache/save@', local)
 
 

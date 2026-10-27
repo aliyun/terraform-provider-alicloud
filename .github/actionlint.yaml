@@ -1,0 +1,6 @@
+self-hosted-runner:
+  labels:
+    - terraform-ci-route
+    - terraform-ci-policy
+    - terraform-ci-trusted
+    - terraform-ci-heavy
