@@ -152,6 +152,25 @@ fmt:
 	gofmt -w $(GOFMT_FILES)
 	goimports -w $(GOFMT_FILES)
 
+# Real production build of the root provider main, covering the root main
+# package and every transitive production dependency it links — including the
+# split alicloud/service/* subpackages. This is a genuine `go build`/link, not a
+# renamed `vet`. It is the entry that proves the root main links; the cloudauth
+# init probe (probe_init) compiles+inits a single service package via a
+# no-such-test-case run and does NOT compile or link the root main.
+provider-build:
+	@echo "==> building root provider main (production)..."
+	go build -o /dev/null .
+
+# Assert the root alicloud production dependency graph (root main, non-test)
+# does not depend — directly or transitively — on
+# github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource. Unlike
+# test-framework-guard.sh (a diff-level scan of newly added import lines),
+# this queries the COMPLETE production dependency graph with `go list -deps`,
+# so already-migrated and not-yet-migrated files are both covered.
+check-production-deps:
+	@"$(CURDIR)/scripts/ci/check-production-deps.sh"
+
 fmtcheck:
 	"$(CURDIR)/scripts/gofmtcheck.sh"
 
@@ -271,7 +290,7 @@ sweep:
 		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	fi
 
-.PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native
+.PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native provider-build check-production-deps
 
 all: mac windows linux
 

@@ -337,3 +337,75 @@ jobs:
           else
             CI_CHECK_BASE="$DIFF_BASE" ./scripts/vetcheck.sh
           fi
+
+  BuildInputs:
+    needs: route
+    # Detect whether the change range touches build-input files (CI workflows,
+    # GNUmakefile, CI/check scripts). Product-Go PRs reach ProductionBuild via
+    # route.outputs.relevant; this detector adds the CI/Make/script path so a
+    # base CI/Make/script PR itself is covered instead of being skipped as not
+    # relevant. Fixture-tested by scripts/ci/detect-build-input-changes_test.sh.
+    if: ${{ always() && needs.route.result == 'success' }}
+    permissions:
+      contents: read
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    outputs:
+      changed: ${{ steps.detect.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Resolve change range
+        id: change-range
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Detect build-input changes
+        id: detect
+        env:
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          value="$(scripts/ci/detect-build-input-changes.sh)"
+          echo "changed=$value" >> "$GITHUB_OUTPUT"
+
+  ProductionBuild:
+    needs: [route, BuildInputs]
+    # Real production build of the root provider main + complete production
+    # dependency graph assertion. Complements the Compile job (which runs only
+    # `vet`) with a genuine `go build`/link (root main + transitive production
+    # deps, including the alicloud/service/* subpackages) and a `go list -deps`
+    # graph query that blocks terraform-plugin-sdk/v2/helper/resource from the
+    # production link graph. Runs for product-Go PRs (route relevant) and for
+    # build-input PRs (CI/Make/scripts); reusable by every product migration PR.
+    if: ${{ needs.route.outputs.relevant == 'true' || needs.BuildInputs.outputs.changed == 'true' }}
+    permissions:
+      contents: read
+    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Set up Go Version
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      # Call the underlying commands directly instead of `make provider-build` /
+      # `make check-production-deps`: the route runner for a fork PR can be
+      # `ubuntu-latest`, where `make` is not guaranteed to be on PATH. The make
+      # targets remain the canonical local/FC entry; CI mirrors the existing
+      # `Compile`/`Formatter` jobs, which call scripts/go tools directly.
+      - name: Build root provider main (production)
+        run: go build -o /dev/null .
+      - name: Production dependency graph check (no SDK v2 helper/resource)
+        run: scripts/ci/check-production-deps.sh
+
