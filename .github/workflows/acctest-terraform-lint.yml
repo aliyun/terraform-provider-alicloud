@@ -35,7 +35,7 @@ jobs:
       checks: read
       pull-requests: read
     runs-on: terraform-ci-policy
-    timeout-minutes: 3
+    timeout-minutes: 5
     outputs:
       classification: ${{ steps.select.outputs.classification }}
       runner: ${{ steps.select.outputs.runner }}
@@ -43,7 +43,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@b0f628c5d908294282232241905bb7d5ba385e9e
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@cc0a874ce1783a88cc1bacfb961e4dd7c909cbb6
 
   errcheck:
     name: runner / errcheck
