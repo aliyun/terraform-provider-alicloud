@@ -1,45 +1,57 @@
-package alicloud
+package computenest_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/computenest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudComputeNestServiceInstance_basic0(t *testing.T) {
+func TestAccAliCloudComputeNestServiceInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ComputeNestSupportRegions)
 	resourceId := "alicloud_compute_nest_service_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudComputeNestServiceInstanceMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ComputeNestService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeComputeNestServiceInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
-	name := fmt.Sprintf("tf-testacc%sComputeNestServiceInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudComputeNestServiceInstanceBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, ServiceInstanceMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return computenest.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServiceInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf-testaccComputeNestServiceInstance%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, ServiceInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
+			// ComputeNest is Hangzhou-only (connectivity.ComputeNestSupportRegions);
+			// the flat suite gate checkoutSupportedRegions converged to cn-hangzhou,
+			// so pin it here to keep config and execution region consistent.
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"service_id":             "service-0a15dbf13e4049daaf66",
 					"service_version":        "1",
 					"service_instance_name":  name,
-					"parameters":             `{ \"ZoneId\": \"` + "${data.alicloud_zones.default.zones.0.id}" + `\", \"SystemDiskSize\": 40, \"InstanceChargeType\": \"PostPaid\", \"SecurityGroupId\": \"` + "${alicloud_security_group.default.id}" + `\", \"VSwitchId\": \"` + "${data.alicloud_vswitches.default.ids.0}" + `\", \"Count\": 2, \"UserEnablePrometheus\": true, \"SystemDiskCategory\": \"cloud_efficiency\", \"InternetChargeType\": \"PayByTraffic\", \"InternetMaxBandwidthOut\": 0, \"VpcId\": \"` + "${data.alicloud_vpcs.default.ids.0}" + `\", \"RegionId\": \"` + defaultRegionToTest + `\", \"DataDiskSize\": 100, \"DataDiskCategory\": \"cloud_efficiency\", \"InstanceType\": \"` + "${data.alicloud_instance_types.default.instance_types.0.id}" + `\", \"Password\": \"YourPassword123!\"}`,
+					"parameters":             `{ \"ZoneId\": \"` + "${data.alicloud_zones.default.zones.0.id}" + `\", \"SystemDiskSize\": 40, \"InstanceChargeType\": \"PostPaid\", \"SecurityGroupId\": \"` + "${alicloud_security_group.default.id}" + `\", \"VSwitchId\": \"` + "${alicloud_vswitch.default.id}" + `\", \"Count\": 2, \"UserEnablePrometheus\": true, \"SystemDiskCategory\": \"cloud_efficiency\", \"InternetChargeType\": \"PayByTraffic\", \"InternetMaxBandwidthOut\": 0, \"VpcId\": \"` + "${alicloud_vpc.default.id}" + `\", \"RegionId\": \"cn-hangzhou\", \"DataDiskSize\": 100, \"DataDiskCategory\": \"cloud_efficiency\", \"InstanceType\": \"` + "${data.alicloud_instance_types.default.instance_types.0.id}" + `\", \"Password\": \"YourPassword123!\"}`,
 					"enable_instance_ops":    "false",
 					"template_name":          "模板1",
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"specification_name":     "套餐一",
 					"enable_user_prometheus": "true",
+					"commodity": []map[string]interface{}{
+						{
+							"pay_period":      1,
+							"pay_period_unit": "Month",
+						},
+					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "ServiceInstance",
@@ -52,7 +64,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic0(t *testing.T) {
 						"service_instance_name":  name,
 						"enable_instance_ops":    "false",
 						"template_name":          "模板1",
-						"resource_group_id":      CHECKSET,
+						"resource_group_id":      acctest.CHECKSET,
 						"specification_name":     "套餐一",
 						"enable_user_prometheus": "true",
 						"tags.%":                 "2",
@@ -67,7 +79,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -87,34 +99,43 @@ func TestAccAlicloudComputeNestServiceInstance_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"parameters"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// commodity is create-only: resourceServiceInstanceCreate writes
+				// Commodity into the CreateServiceInstance request, but
+				// resourceServiceInstanceUpdate never handles d.HasChange("commodity")
+				// and resourceServiceInstanceRead never calls d.Set("commodity", ...),
+				// so the imported state cannot carry it. Listing both the block
+				// name and the nested leaf names (commodity.pay_period /
+				// commodity.pay_period_unit) is required because the coverage
+				// checker removes schemaModifySet members by exact dotted-string
+				// match; the bare block name does not exempt its nested fields.
+				ImportStateVerifyIgnore: []string{"parameters", "commodity", "commodity.pay_period", "commodity.pay_period_unit"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudComputeNestServiceInstance_basic1(t *testing.T) {
+func TestAccAliCloudComputeNestServiceInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ComputeNestSupportRegions)
 	resourceId := "alicloud_compute_nest_service_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudComputeNestServiceInstanceMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ComputeNestService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeComputeNestServiceInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
-	name := fmt.Sprintf("tf-testacc%sComputeNestServiceInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudComputeNestServiceInstanceBasicDependence1)
+	ra := acctest.ResourceAttrInit(resourceId, ServiceInstanceMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return computenest.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServiceInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf-testaccComputeNestServiceInstance%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, ServiceInstanceBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -140,7 +161,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic1(t *testing.T) {
 						"service_id":            "service-dd475e6e468348799f0f",
 						"service_version":       "1",
 						"service_instance_name": name,
-						"resource_group_id":     CHECKSET,
+						"resource_group_id":     acctest.CHECKSET,
 						"payment_type":          "Permanent",
 						"operation_metadata.#":  "1",
 						"tags.%":                "2",
@@ -155,7 +176,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -183,25 +204,25 @@ func TestAccAlicloudComputeNestServiceInstance_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudComputeNestServiceInstance_basic2(t *testing.T) {
+func TestAccAliCloudComputeNestServiceInstance_basic2(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ComputeNestSupportRegions)
 	resourceId := "alicloud_compute_nest_service_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudComputeNestServiceInstanceMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ComputeNestService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeComputeNestServiceInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
-	name := fmt.Sprintf("tf-testacc%sComputeNestServiceInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudComputeNestServiceInstanceBasicDependence2)
+	ra := acctest.ResourceAttrInit(resourceId, ServiceInstanceMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return computenest.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServiceInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf-testaccComputeNestServiceInstance%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, ServiceInstanceBasicDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -227,7 +248,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic2(t *testing.T) {
 						"service_id":            "service-a5572d9808b949c1a9fd",
 						"service_version":       "1",
 						"service_instance_name": name,
-						"resource_group_id":     CHECKSET,
+						"resource_group_id":     acctest.CHECKSET,
 						"payment_type":          "Permanent",
 						"operation_metadata.#":  "1",
 						"tags.%":                "2",
@@ -242,7 +263,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -270,11 +291,11 @@ func TestAccAlicloudComputeNestServiceInstance_basic2(t *testing.T) {
 	})
 }
 
-var AlicloudComputeNestServiceInstanceMap = map[string]string{
-	"status": CHECKSET,
+var ServiceInstanceMap = map[string]string{
+	"status": acctest.CHECKSET,
 }
 
-func AlicloudComputeNestServiceInstanceBasicDependence0(name string) string {
+func ServiceInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -286,6 +307,7 @@ func AlicloudComputeNestServiceInstanceBasicDependence0(name string) string {
 	data "alicloud_zones" "default" {
   		available_disk_category     = "cloud_efficiency"
   		available_resource_creation = "VSwitch"
+  		available_instance_type     = "ecs.g6.large"
 	}
 
 	data "alicloud_instance_types" "default" {
@@ -293,23 +315,26 @@ func AlicloudComputeNestServiceInstanceBasicDependence0(name string) string {
   		instance_type_family = "ecs.g6"
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING"
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
 	}
 
-	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_zones.default.zones.0.id
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.0.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
 	}
 
 	resource "alicloud_security_group" "default" {
   		name   = var.name
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+  		vpc_id = alicloud_vpc.default.id
 	}
 `, name)
 }
 
-func AlicloudComputeNestServiceInstanceBasicDependence1(name string) string {
+func ServiceInstanceBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -321,6 +346,7 @@ func AlicloudComputeNestServiceInstanceBasicDependence1(name string) string {
 	data "alicloud_zones" "default" {
   		available_disk_category     = "cloud_efficiency"
   		available_resource_creation = "VSwitch"
+  		available_instance_type     = "ecs.g6.large"
 	}
 
 	data "alicloud_instance_types" "default" {
@@ -334,18 +360,21 @@ func AlicloudComputeNestServiceInstanceBasicDependence1(name string) string {
   		owners      = "system"
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING"
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
 	}
 
-	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_zones.default.zones.0.id
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.0.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
 	}
 
 	resource "alicloud_security_group" "default" {
   		name   = var.name
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+  		vpc_id = alicloud_vpc.default.id
 	}
 
 	resource "alicloud_instance" "default" {
@@ -358,12 +387,12 @@ func AlicloudComputeNestServiceInstanceBasicDependence1(name string) string {
   		availability_zone          = data.alicloud_zones.default.zones.0.id
   		instance_charge_type       = "PostPaid"
   		system_disk_category       = "cloud_efficiency"
-  		vswitch_id                 = data.alicloud_vswitches.default.ids.0
+  		vswitch_id                 = alicloud_vswitch.default.id
 	}
 `, name)
 }
 
-func AlicloudComputeNestServiceInstanceBasicDependence2(name string) string {
+func ServiceInstanceBasicDependence2(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -375,6 +404,7 @@ func AlicloudComputeNestServiceInstanceBasicDependence2(name string) string {
 	data "alicloud_zones" "default" {
   		available_disk_category     = "cloud_efficiency"
   		available_resource_creation = "VSwitch"
+  		available_instance_type     = "ecs.g6.large"
 	}
 
 	data "alicloud_instance_types" "default" {
@@ -382,25 +412,28 @@ func AlicloudComputeNestServiceInstanceBasicDependence2(name string) string {
   		instance_type_family = "ecs.g6"
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING"
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
 	}
 
-	data "alicloud_vswitches" "default" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_zones.default.zones.0.id
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.0.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
 	}
 
 	resource "alicloud_security_group" "default" {
   		name   = var.name
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+  		vpc_id = alicloud_vpc.default.id
 	}
 
 	resource "alicloud_compute_nest_service_instance" "operated" {
   		service_id             = "service-0a15dbf13e4049daaf66"
   		service_version        = "1"
   		service_instance_name  = "${var.name}-operated"
-  		parameters             = "{ \"ZoneId\": \"`+"${data.alicloud_zones.default.zones.0.id}"+`\", \"SystemDiskSize\": 40, \"InstanceChargeType\": \"PostPaid\", \"SecurityGroupId\": \"`+"${alicloud_security_group.default.id}"+`\", \"VSwitchId\": \"`+"${data.alicloud_vswitches.default.ids.0}"+`\", \"Count\": 2, \"UserEnablePrometheus\": true, \"SystemDiskCategory\": \"cloud_efficiency\", \"InternetChargeType\": \"PayByTraffic\", \"InternetMaxBandwidthOut\": 0, \"VpcId\": \"`+"${data.alicloud_vpcs.default.ids.0}"+`\", \"RegionId\": \"`+defaultRegionToTest+`\", \"DataDiskSize\": 100, \"DataDiskCategory\": \"cloud_efficiency\", \"InstanceType\": \"`+"${data.alicloud_instance_types.default.instance_types.0.id}"+`\", \"Password\": \"YourPassword123!\"}"
+  		parameters             = "{ \"ZoneId\": \"`+"${data.alicloud_zones.default.zones.0.id}"+`\", \"SystemDiskSize\": 40, \"InstanceChargeType\": \"PostPaid\", \"SecurityGroupId\": \"`+"${alicloud_security_group.default.id}"+`\", \"VSwitchId\": \"`+"${alicloud_vswitch.default.id}"+`\", \"Count\": 2, \"UserEnablePrometheus\": true, \"SystemDiskCategory\": \"cloud_efficiency\", \"InternetChargeType\": \"PayByTraffic\", \"InternetMaxBandwidthOut\": 0, \"VpcId\": \"`+"${alicloud_vpc.default.id}"+`\", \"RegionId\": \"cn-hangzhou\", \"DataDiskSize\": 100, \"DataDiskCategory\": \"cloud_efficiency\", \"InstanceType\": \"`+"${data.alicloud_instance_types.default.instance_types.0.id}"+`\", \"Password\": \"YourPassword123!\"}"
   		enable_instance_ops    = false
   		template_name          = "模板1"
   		resource_group_id      = data.alicloud_resource_manager_resource_groups.default.groups.0.id

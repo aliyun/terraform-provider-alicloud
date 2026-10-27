@@ -413,7 +413,6 @@ func Provider() *schema.Provider {
 			"alicloud_common_bandwidth_packages": dataSourceAlicloudCommonBandwidthPackages(),
 
 			// compute
-			"alicloud_compute_nest_service_instances": dataSourceAlicloudComputeNestServiceInstances(),
 
 			// config
 			"alicloud_config_rules":                      dataSourceAlicloudConfigRules(),
@@ -1594,7 +1593,6 @@ func Provider() *schema.Provider {
 			"alicloud_common_bandwidth_package_attachment": resourceAliCloudCbwpCommonBandwidthPackageAttachment(),
 
 			// compute
-			"alicloud_compute_nest_service_instance": resourceAlicloudComputeNestServiceInstance(),
 
 			// config
 			"alicloud_config_aggregate_remediation":     resourceAliCloudConfigAggregateRemediation(),

@@ -1,20 +1,25 @@
-package alicloud
+package computenest
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudComputeNestServiceInstance() *schema.Resource {
+func ResourceServiceInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudComputeNestServiceInstanceCreate,
-		Read:   resourceAlicloudComputeNestServiceInstanceRead,
-		Update: resourceAlicloudComputeNestServiceInstanceUpdate,
-		Delete: resourceAlicloudComputeNestServiceInstanceDelete,
+		Create: resourceServiceInstanceCreate,
+		Read:   resourceServiceInstanceRead,
+		Update: resourceServiceInstanceUpdate,
+		Delete: resourceServiceInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -71,7 +76,7 @@ func resourceAlicloudComputeNestServiceInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Permanent", "Subscription", "PayAsYouGo", "CustomFixTime"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Permanent", "Subscription", "PayAsYouGo", "CustomFixTime"}, false),
 			},
 			"enable_user_prometheus": {
 				Type:     schema.TypeBool,
@@ -106,7 +111,7 @@ func resourceAlicloudComputeNestServiceInstance() *schema.Resource {
 								if new == "" {
 									return true
 								}
-								subset, err := compareJsonHasSubset(old, new)
+								subset, err := helper.CompareJsonHasSubset(old, new)
 								if err != nil {
 									return old == new
 								}
@@ -134,12 +139,12 @@ func resourceAlicloudComputeNestServiceInstance() *schema.Resource {
 						"pay_period_unit": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"Year", "Month", "Day"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"Year", "Month", "Day"}, false),
 						},
 					},
 				},
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -148,16 +153,16 @@ func resourceAlicloudComputeNestServiceInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudComputeNestServiceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	computeNestService := ComputeNestService{client}
+	computeNestService := NewService(client)
 	var response map[string]interface{}
 	action := "CreateServiceInstance"
 	request := make(map[string]interface{})
 	var err error
 
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("CreateServiceInstance")
+	request["ClientToken"] = helper.BuildClientToken("CreateServiceInstance")
 	request["ServiceId"] = d.Get("service_id")
 	request["ServiceVersion"] = d.Get("service_version")
 
@@ -244,11 +249,11 @@ func resourceAlicloudComputeNestServiceInstanceCreate(d *schema.ResourceData, me
 		request["Commodity"] = commodityMap
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -256,33 +261,33 @@ func resourceAlicloudComputeNestServiceInstanceCreate(d *schema.ResourceData, me
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_compute_nest_service_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_compute_nest_service_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ServiceInstanceId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Deployed"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, computeNestService.ComputeNestServiceInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Deployed"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, computeNestService.ServiceInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudComputeNestServiceInstanceUpdate(d, meta)
+	return resourceServiceInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudComputeNestServiceInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	computeNestService := ComputeNestService{client}
+	computeNestService := NewService(client)
 
-	object, err := computeNestService.DescribeComputeNestServiceInstance(d.Id())
+	object, err := computeNestService.DescribeServiceInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if service, ok := object["Service"]; ok {
@@ -311,7 +316,7 @@ func resourceAlicloudComputeNestServiceInstanceRead(d *schema.ResourceData, meta
 	if startTime, ok := object["OperationStartTime"]; ok {
 		startTime, err := time.Parse(time.RFC3339Nano, startTime.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		operationMetadataMap["operation_start_time"] = fmt.Sprint(startTime.UnixMilli())
@@ -320,7 +325,7 @@ func resourceAlicloudComputeNestServiceInstanceRead(d *schema.ResourceData, meta
 	if endTime, ok := object["OperationEndTime"]; ok {
 		endTime, err := time.Parse(time.RFC3339Nano, endTime.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		operationMetadataMap["operation_end_time"] = fmt.Sprint(endTime.UnixMilli())
@@ -342,24 +347,24 @@ func resourceAlicloudComputeNestServiceInstanceRead(d *schema.ResourceData, meta
 
 	listTagResourcesObject, err := computeNestService.ListTagResources(d.Id(), "serviceinstance")
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("tags", tags.TagsToMap(listTagResourcesObject))
 
 	return nil
 }
 
-func resourceAlicloudComputeNestServiceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	computeNestService := ComputeNestService{client}
+	computeNestService := NewService(client)
 	var response map[string]interface{}
 	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
 		if err := computeNestService.SetResourceTags(d, "serviceinstance"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -379,11 +384,11 @@ func resourceAlicloudComputeNestServiceInstanceUpdate(d *schema.ResourceData, me
 
 	if update {
 		action := "ChangeResourceGroup"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, changeResourceGroupReq, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -391,22 +396,22 @@ func resourceAlicloudComputeNestServiceInstanceUpdate(d *schema.ResourceData, me
 			}
 			return nil
 		})
-		addDebug(action, response, changeResourceGroupReq)
+		logs.AddDebug(action, response, changeResourceGroupReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
 
 	d.Partial(false)
 
-	return resourceAlicloudComputeNestServiceInstanceRead(d, meta)
+	return resourceServiceInstanceRead(d, meta)
 }
 
-func resourceAlicloudComputeNestServiceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	computeNestService := ComputeNestService{client}
+	computeNestService := NewService(client)
 	action := "DeleteServiceInstances"
 	var response map[string]interface{}
 
@@ -414,15 +419,15 @@ func resourceAlicloudComputeNestServiceInstanceDelete(d *schema.ResourceData, me
 
 	request := map[string]interface{}{
 		"RegionId":          client.RegionId,
-		"ClientToken":       buildClientToken("DeleteServiceInstances"),
+		"ClientToken":       helper.BuildClientToken("DeleteServiceInstances"),
 		"ServiceInstanceId": []string{d.Id()},
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("ComputeNest", "2021-06-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -430,18 +435,18 @@ func resourceAlicloudComputeNestServiceInstanceDelete(d *schema.ResourceData, me
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, computeNestService.ComputeNestServiceInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, computeNestService.ServiceInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
