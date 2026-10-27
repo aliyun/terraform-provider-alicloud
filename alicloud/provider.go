@@ -2230,7 +2230,6 @@ func Provider() *schema.Provider {
 			"alicloud_mongodb_sharding_instance":                resourceAliCloudMongoDBShardingInstance(),
 			"alicloud_mongodb_audit_policy":                     resourceAliCloudMongodbAuditPolicy(),
 			"alicloud_mongodb_sharding_audit_filter":            resourceAliCloudMongodbShardingAuditFilter(),
-			"alicloud_mongodb_account":                          resourceAliCloudMongodbAccount(),
 			"alicloud_mongodb_serverless_instance":              resourceAlicloudMongodbServerlessInstance(),
 			"alicloud_mongodb_public_network_address":           resourceAlicloudMongoDBPublicNetworkAddress(),
 			"alicloud_mongodb_replica_set_role":                 resourceAlicloudMongoDBReplicaSetRole(),
