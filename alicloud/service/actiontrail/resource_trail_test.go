@@ -1,4 +1,5 @@
-package alicloud
+// Package actiontrail_test.
+package actiontrail_test
 
 import (
 	"fmt"
@@ -7,6 +8,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,14 +17,79 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/actiontrail"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
+
+var actiontrailTestEndpoints sync.Map
+var actiontrailTestSignVersion sync.Map
+
+// actiontrailTestClientForRegion rebuilds the package-level sweeper client on the
+// exported connectivity API: the flat-suite sharedClientForRegion is not
+// reachable from this package.
+func actiontrailTestClientForRegion(region string) (*connectivity.AliyunClient, error) {
+	var accessKey, secretKey string
+	if accessKey = os.Getenv("ALICLOUD_ACCESS_KEY"); accessKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_ACCESS_KEY")
+	}
+	if secretKey = os.Getenv("ALICLOUD_SECRET_KEY"); secretKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_SECRET_KEY")
+	}
+	securityToken := os.Getenv("ALICLOUD_SECURITY_TOKEN")
+
+	conf := connectivity.Config{
+		Region:      connectivity.Region(region),
+		RegionId:    region,
+		AccessKey:   accessKey,
+		SecretKey:   secretKey,
+		Protocol:    "HTTPS",
+		Endpoints:   &actiontrailTestEndpoints,
+		SignVersion: &actiontrailTestSignVersion,
+	}
+	if securityToken != "" {
+		conf.SecurityToken = securityToken
+	}
+	credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
+	if v := strings.TrimSpace(securityToken); v != "" {
+		credentialConfig.SetType("sts").SetSecurityToken(v)
+	}
+	credential, err := credentials.NewCredential(credentialConfig)
+	if err != nil {
+		return nil, err
+	}
+	conf.Credential = credential
+
+	return conf.Client()
+}
+
+// actiontrailSweepAll mirrors the root-package sweepAll gate; it is not
+// reachable from a service test package.
+func actiontrailSweepAll() bool {
+	return os.Getenv("ALICLOUD_SWEEP_ALL_RESOURCES") == "true"
+}
+
+// actiontrailTestSweepPreCheckWithRegions mirrors the root-package
+// testSweepPreCheckWithRegions gate; it is not reachable from a service test
+// package.
+func actiontrailTestSweepPreCheckWithRegions(region string, supported bool, regions []connectivity.Region) bool {
+	find := false
+	for _, r := range regions {
+		if region == string(r) {
+			find = true
+			break
+		}
+	}
+	return (find && !supported) || (!find && supported)
+}
 
 func init() {
 	resource.AddTestSweepers(
@@ -34,15 +101,14 @@ func init() {
 }
 
 func testSweepActiontrailTrail(region string) error {
-	if testSweepPreCheckWithRegions(region, false, connectivity.ApiGatewayNoSupportedRegions) {
+	if actiontrailTestSweepPreCheckWithRegions(region, false, connectivity.ApiGatewayNoSupportedRegions) {
 		log.Printf("[INFO] Skipping API Gateway unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	client, err := actiontrailTestClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting AliCloud client.")
+		return errs.WrapErrorf(err, "Error getting AliCloud client.")
 	}
-	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -53,18 +119,18 @@ func testSweepActiontrailTrail(region string) error {
 	action := "DescribeTrails"
 	response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_actiontrail_trails", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_actiontrail_trails", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.TrailList", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TrailList", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.TrailList", response)
 	}
 	sweeped := false
 	result, _ := resp.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
 		skip := true
-		if sweepAll() {
+		if actiontrailSweepAll() {
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(item["Name"].(string)), strings.ToLower(prefix)) {
 					skip = false
@@ -95,9 +161,9 @@ func testSweepActiontrailTrail(region string) error {
 
 // lintignore: R001
 func TestUnitAliCloudActiontrailTrail(t *testing.T) {
-	p := Provider().ResourcesMap
-	d, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, nil)
-	dCreate, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, nil)
+	resourceSchema := actiontrail.ResourceTrail()
+	d, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
 		"trail_name":            "trail_name",
@@ -117,12 +183,11 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := actiontrailTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		"TrailList": []interface{}{
 			map[string]interface{}{
@@ -143,20 +208,20 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
 		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_actiontrail_trail", "MockName"))
+			return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_actiontrail_trail", "MockName"))
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
@@ -266,13 +331,13 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewActiontrailClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudActionTrailTrailCreate(d, rawClient)
+		err := resourceSchema.Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -289,7 +354,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailCreate(d, rawClient)
+		err := resourceSchema.Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -306,7 +371,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailCreate(dCreate, rawClient)
+		err := resourceSchema.Create(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -317,35 +382,35 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewActiontrailClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
 
-		err := resourceAliCloudActionTrailTrailUpdate(d, rawClient)
+		err := resourceSchema.Update(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
 
 	t.Run("UpdateTrailAbnormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdkterraform.NewInstanceDiff()
 		for _, key := range []string{"event_rw", "oss_bucket_name", "oss_key_prefix", "oss_write_role_arn", "sls_project_arn", "sls_write_role_arn", "trail_region", "sls_project_arn", "sls_write_role_arn", "oss_bucket_name", "oss_write_role_arn"} {
-			switch p["alicloud_actiontrail_trail"].Schema[key].Type {
+			switch resourceSchema.Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdkterraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
 		noRetryFlag := true
@@ -359,28 +424,28 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
 
 	t.Run("UpdateTrailNormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdkterraform.NewInstanceDiff()
 		for _, key := range []string{"event_rw", "oss_bucket_name", "oss_key_prefix", "oss_write_role_arn", "sls_project_arn", "sls_write_role_arn", "trail_region", "sls_project_arn", "sls_write_role_arn", "oss_bucket_name", "oss_write_role_arn"} {
-			switch p["alicloud_actiontrail_trail"].Schema[key].Type {
+			switch resourceSchema.Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdkterraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := false
 		noRetryFlag := false
@@ -394,28 +459,28 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
 
 	t.Run("UpdateStopLoggingAbnormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdkterraform.NewInstanceDiff()
 		for _, key := range []string{"status"} {
-			switch p["alicloud_actiontrail_trail"].Schema[key].Type {
+			switch resourceSchema.Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: "Disable"}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: d.Get(key).(string), New: "Disable"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdkterraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
 		noRetryFlag := true
@@ -429,32 +494,32 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateStatusDisable"]("")
 		})
-		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
+		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&actiontrail.ActiontrailService{}), "DescribeActiontrailTrail", func(*actiontrail.ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStopLoggingNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		assert.NotNil(t, err)
 	})
 
 	t.Run("UpdateStopLoggingNormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdkterraform.NewInstanceDiff()
 		for _, key := range []string{"status"} {
-			switch p["alicloud_actiontrail_trail"].Schema[key].Type {
+			switch resourceSchema.Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: "Disable"}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: d.Get(key).(string), New: "Disable"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdkterraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := false
 		noRetryFlag := false
@@ -468,10 +533,10 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateStatusDisable"]("")
 		})
-		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
+		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&actiontrail.ActiontrailService{}), "DescribeActiontrailTrail", func(*actiontrail.ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStopLoggingNormal"]("")
 		})
-		patchActiontrailTrailStateRefreshFunc := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "ActiontrailTrailStateRefreshFunc", func(*ActiontrailService, string, []string) retry.StateRefreshFunc {
+		patchActiontrailTrailStateRefreshFunc := gomonkey.ApplyMethod(reflect.TypeOf(&actiontrail.ActiontrailService{}), "ActiontrailTrailStateRefreshFunc", func(*actiontrail.ActiontrailService, string, []string) retry.StateRefreshFunc {
 			return func() (interface{}, string, error) {
 				object := map[string]interface{}{
 					"EventRW":             "event_rw",
@@ -488,7 +553,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 				return object, "Disable", nil
 			}
 		})
-		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		patchActiontrailTrailStateRefreshFunc.Reset()
@@ -496,22 +561,22 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 	})
 
 	t.Run("UpdateStartLoggingAbnormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdkterraform.NewInstanceDiff()
 		for _, key := range []string{"status"} {
-			switch p["alicloud_actiontrail_trail"].Schema[key].Type {
+			switch resourceSchema.Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: "Enable"}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: d.Get(key).(string), New: "Enable"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdkterraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
 		noRetryFlag := true
@@ -525,32 +590,32 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateStatusEnable"]("")
 		})
-		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
+		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&actiontrail.ActiontrailService{}), "DescribeActiontrailTrail", func(*actiontrail.ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStartLoggingNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		assert.NotNil(t, err)
 	})
 
 	t.Run("UpdateStartLoggingNormal", func(t *testing.T) {
-		diff := terraform.NewInstanceDiff()
+		diff := sdkterraform.NewInstanceDiff()
 		for _, key := range []string{"status"} {
-			switch p["alicloud_actiontrail_trail"].Schema[key].Type {
+			switch resourceSchema.Schema[key].Type {
 			case schema.TypeString:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: "Enable"}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: d.Get(key).(string), New: "Enable"}
 			case schema.TypeBool:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
 			case schema.TypeInt:
-				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+				diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			case schema.TypeMap:
-				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
-				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
-				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+				diff.Attributes["tags.%"] = &sdkterraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &sdkterraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := false
 		noRetryFlag := false
@@ -564,10 +629,10 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["UpdateStatusEnable"]("")
 		})
-		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "DescribeActiontrailTrail", func(*ActiontrailService, string) (map[string]interface{}, error) {
+		patcheDescribeActiontrailTrail := gomonkey.ApplyMethod(reflect.TypeOf(&actiontrail.ActiontrailService{}), "DescribeActiontrailTrail", func(*actiontrail.ActiontrailService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateStartLoggingNormal"]("")
 		})
-		patchActiontrailTrailStateRefreshFunc := gomonkey.ApplyMethod(reflect.TypeOf(&ActiontrailService{}), "ActiontrailTrailStateRefreshFunc", func(*ActiontrailService, string, []string) retry.StateRefreshFunc {
+		patchActiontrailTrailStateRefreshFunc := gomonkey.ApplyMethod(reflect.TypeOf(&actiontrail.ActiontrailService{}), "ActiontrailTrailStateRefreshFunc", func(*actiontrail.ActiontrailService, string, []string) retry.StateRefreshFunc {
 			return func() (interface{}, string, error) {
 				object := map[string]interface{}{
 					"EventRW":             "event_rw",
@@ -584,7 +649,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 				return object, "Enable", nil
 			}
 		})
-		err := resourceAliCloudActionTrailTrailUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeActiontrailTrail.Reset()
 		patchActiontrailTrailStateRefreshFunc.Reset()
@@ -595,13 +660,13 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewActiontrailClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudActionTrailTrailDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -618,7 +683,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -635,7 +700,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -652,7 +717,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -669,7 +734,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailRead(d, rawClient)
+		err := resourceSchema.Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -685,7 +750,7 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudActionTrailTrailRead(d, rawClient)
+		err := resourceSchema.Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
@@ -696,22 +761,22 @@ func TestUnitAliCloudActiontrailTrail(t *testing.T) {
 func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_trail.default"
-	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActiontrailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActiontrailTrail")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tfaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -739,7 +804,7 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"max_compute_project_arn": CHECKSET,
+						"max_compute_project_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -749,7 +814,7 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"max_compute_write_role_arn": CHECKSET,
+						"max_compute_write_role_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -759,7 +824,7 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"oss_bucket_name": CHECKSET,
+						"oss_bucket_name": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -779,7 +844,7 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"oss_write_role_arn": CHECKSET,
+						"oss_write_role_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -789,7 +854,7 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sls_project_arn": CHECKSET,
+						"sls_project_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -799,7 +864,7 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sls_write_role_arn": CHECKSET,
+						"sls_write_role_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -840,7 +905,7 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_selectors":         CHECKSET,
+						"event_selectors":         acctest.CHECKSET,
 						"data_event_trail_region": "cn-hangzhou",
 					}),
 				),
@@ -851,7 +916,7 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_selectors": CHECKSET,
+						"event_selectors": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -877,22 +942,22 @@ func TestAccAliCloudActiontrailTrail_basic11012(t *testing.T) {
 func TestAccAliCloudActiontrailTrail_basic11012_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_trail.default"
-	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActiontrailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActiontrailTrail")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tfaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -915,17 +980,17 @@ func TestAccAliCloudActiontrailTrail_basic11012_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"trail_name":                 name,
 						"event_rw":                   "Write",
-						"max_compute_project_arn":    CHECKSET,
-						"max_compute_write_role_arn": CHECKSET,
-						"oss_bucket_name":            CHECKSET,
+						"max_compute_project_arn":    acctest.CHECKSET,
+						"max_compute_write_role_arn": acctest.CHECKSET,
+						"oss_bucket_name":            acctest.CHECKSET,
 						"oss_key_prefix":             name,
-						"oss_write_role_arn":         CHECKSET,
-						"sls_project_arn":            CHECKSET,
-						"sls_write_role_arn":         CHECKSET,
+						"oss_write_role_arn":         acctest.CHECKSET,
+						"sls_project_arn":            acctest.CHECKSET,
+						"sls_write_role_arn":         acctest.CHECKSET,
 						"status":                     "Enable",
 						"trail_region":               "cn-hangzhou",
 						"is_organization_trail":      "false",
-						"event_selectors":            CHECKSET,
+						"event_selectors":            acctest.CHECKSET,
 						"data_event_trail_region":    "cn-hangzhou",
 					}),
 				),
@@ -940,10 +1005,10 @@ func TestAccAliCloudActiontrailTrail_basic11012_twin(t *testing.T) {
 }
 
 var AliCloudActiontrailTrailMap11012 = map[string]string{
-	"create_time":  CHECKSET,
-	"event_rw":     CHECKSET,
-	"region_id":    CHECKSET,
-	"trail_region": CHECKSET,
+	"create_time":  acctest.CHECKSET,
+	"event_rw":     acctest.CHECKSET,
+	"region_id":    acctest.CHECKSET,
+	"trail_region": acctest.CHECKSET,
 }
 
 func AliCloudActiontrailTrailBasicDependence11012(name string) string {
@@ -951,28 +1016,28 @@ func AliCloudActiontrailTrailBasicDependence11012(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-	
+
 	data "alicloud_account" "default" {
 	}
-	
+
 	data "alicloud_regions" "default" {
   		current = true
 	}
-	
+
 	data "alicloud_ram_roles" "default" {
 		name_regex = "AliyunServiceRoleForActionTrail"
 	}
-	
+
 	resource "alicloud_oss_bucket" "default" {
   		bucket        = var.name
   		force_destroy = true
 	}
-	
+
 	resource "alicloud_log_project" "default" {
   		name        = var.name
   		description = var.name
 	}
-	
+
 	resource "alicloud_maxcompute_project" "default" {
   		default_quota = "默认后付费Quota"
   		project_name  = "actiontrail_${var.name}"
@@ -986,22 +1051,22 @@ func AliCloudActiontrailTrailBasicDependence11012(name string) string {
 func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_trail.default"
-	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActiontrailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActiontrailTrail")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tfaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1029,7 +1094,7 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"max_compute_project_arn": CHECKSET,
+						"max_compute_project_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1039,7 +1104,7 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"max_compute_write_role_arn": CHECKSET,
+						"max_compute_write_role_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1049,7 +1114,7 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"oss_bucket_name": CHECKSET,
+						"oss_bucket_name": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1069,7 +1134,7 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"oss_write_role_arn": CHECKSET,
+						"oss_write_role_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1079,7 +1144,7 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sls_project_arn": CHECKSET,
+						"sls_project_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1089,7 +1154,7 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sls_write_role_arn": CHECKSET,
+						"sls_write_role_arn": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1130,7 +1195,7 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_selectors":         CHECKSET,
+						"event_selectors":         acctest.CHECKSET,
 						"data_event_trail_region": "cn-hangzhou",
 					}),
 				),
@@ -1141,7 +1206,7 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_selectors": CHECKSET,
+						"event_selectors": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1167,22 +1232,22 @@ func TestAccAliCloudActiontrailTrail_basic11016(t *testing.T) {
 func TestAccAliCloudActiontrailTrail_basic11016_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_trail.default"
-	ra := resourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudActiontrailTrailMap11012)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActiontrailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActiontrailTrail")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tfaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudActiontrailTrailBasicDependence11012)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1205,17 +1270,17 @@ func TestAccAliCloudActiontrailTrail_basic11016_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":                       name,
 						"event_rw":                   "Write",
-						"max_compute_project_arn":    CHECKSET,
-						"max_compute_write_role_arn": CHECKSET,
-						"oss_bucket_name":            CHECKSET,
+						"max_compute_project_arn":    acctest.CHECKSET,
+						"max_compute_write_role_arn": acctest.CHECKSET,
+						"oss_bucket_name":            acctest.CHECKSET,
 						"oss_key_prefix":             name,
-						"oss_write_role_arn":         CHECKSET,
-						"sls_project_arn":            CHECKSET,
-						"sls_write_role_arn":         CHECKSET,
+						"oss_write_role_arn":         acctest.CHECKSET,
+						"sls_project_arn":            acctest.CHECKSET,
+						"sls_write_role_arn":         acctest.CHECKSET,
 						"status":                     "Enable",
 						"trail_region":               "cn-hangzhou",
 						"is_organization_trail":      "false",
-						"event_selectors":            CHECKSET,
+						"event_selectors":            acctest.CHECKSET,
 						"data_event_trail_region":    "cn-hangzhou",
 					}),
 				),

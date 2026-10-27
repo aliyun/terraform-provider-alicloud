@@ -1,4 +1,5 @@
-package alicloud
+// Package actiontrail_test.
+package actiontrail_test
 
 import (
 	"fmt"
@@ -14,10 +15,15 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/actiontrail"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,12 +37,53 @@ func init() {
 		})
 }
 
+// actiontrailTestClientForRegionWithBackendRegions mirrors the root-package
+// sharedClientForRegionWithBackendRegions redirect: when the requested region
+// is not one of the supported regions, it falls back to the backup
+// APSouthEast1 (or the first supported region) before building the client via
+// actiontrailTestClientForRegion.
+func actiontrailTestClientForRegionWithBackendRegions(region string, supported bool, regions []connectivity.Region) (*connectivity.AliyunClient, error) {
+	find := false
+	backupRegion := string(connectivity.APSouthEast1)
+	backupRegionFind := false
+	for _, r := range regions {
+		if region == string(r) {
+			find = true
+			break
+		}
+		if string(r) == backupRegion {
+			backupRegionFind = true
+		}
+	}
+
+	if (find && !supported) || (!find && supported) {
+		if supported {
+			// Try to use backup region first
+			if backupRegionFind {
+				log.Printf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, backupRegion)
+				region = backupRegion
+			} else if len(regions) > 0 {
+				// If backup region is not available, use the first supported region
+				targetRegion := string(regions[0])
+				log.Printf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, targetRegion)
+				region = targetRegion
+			}
+		} else {
+			if !backupRegionFind {
+				log.Printf("Skipping unsupported region %s. Unsupported regions: %s. Using %s as this test region", region, regions, backupRegion)
+				region = backupRegion
+			}
+		}
+	}
+	return actiontrailTestClientForRegion(region)
+}
+
 func testSweepActionTrailHistoryDeliveryJob(region string) error {
-	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.ActiontrailSupportRegions)
+	rawClient, err := actiontrailTestClientForRegionWithBackendRegions(region, true, connectivity.ActiontrailSupportRegions)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	client := rawClient.(*connectivity.AliyunClient)
+	client := rawClient
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
@@ -44,16 +91,16 @@ func testSweepActionTrailHistoryDeliveryJob(region string) error {
 	action := "ListDeliveryHistoryJobs"
 	request := map[string]interface{}{}
 
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Actiontrail", "2020-07-06", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -61,7 +108,7 @@ func testSweepActionTrailHistoryDeliveryJob(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
 			return nil
@@ -77,7 +124,7 @@ func testSweepActionTrailHistoryDeliveryJob(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			if !sweepAll() {
+			if !actiontrailSweepAll() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(strings.ToLower(item["TrailName"].(string)), strings.ToLower(prefix)) {
 						skip = false
@@ -101,7 +148,7 @@ func testSweepActionTrailHistoryDeliveryJob(region string) error {
 			}
 			log.Printf("[INFO] Delete Delivery History Job success: %s ", item["TrailName"].(string))
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -111,23 +158,23 @@ func testSweepActionTrailHistoryDeliveryJob(region string) error {
 
 func SkipTestAccAlicloudActiontrailHistoryDeliveryJob_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ActiontrailSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ActiontrailSupportRegions)
 	resourceId := "alicloud_actiontrail_history_delivery_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudActionTrailHistoryDeliveryJobMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudActionTrailHistoryDeliveryJobMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActiontrailService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActiontrailHistoryDeliveryJob")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testaccactiontrailjob%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudActionTrailHistoryDeliveryJobBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudActionTrailHistoryDeliveryJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -151,7 +198,7 @@ func SkipTestAccAlicloudActiontrailHistoryDeliveryJob_basic0(t *testing.T) {
 var AlicloudActionTrailHistoryDeliveryJobMap0 = map[string]string{}
 
 func AlicloudActionTrailHistoryDeliveryJobBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -181,9 +228,9 @@ resource "alicloud_actiontrail_trail" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
-	p := Provider().ResourcesMap
-	d, _ := schema.InternalMap(p["alicloud_actiontrail_history_delivery_job"].Schema).Data(nil, nil)
-	dCreate, _ := schema.InternalMap(p["alicloud_actiontrail_history_delivery_job"].Schema).Data(nil, nil)
+	resourceSchema := actiontrail.ResourceHistoryDeliveryJob()
+	d, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
 		"trail_name": "trail_name",
@@ -194,12 +241,11 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := actiontrailTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		"JobStatus": 2,
 		"TrailName": "trail_name",
@@ -209,20 +255,20 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
 		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_actiontrail_history_delivery_job", "1"))
+			return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_actiontrail_history_delivery_job", "1"))
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
@@ -248,13 +294,13 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewActiontrailClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudActionTrailHistoryDeliveryJobCreate(d, rawClient)
+		err := resourceSchema.Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -271,7 +317,7 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudActionTrailHistoryDeliveryJobCreate(d, rawClient)
+		err := resourceSchema.Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -288,7 +334,7 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudActionTrailHistoryDeliveryJobCreate(dCreate, rawClient)
+		err := resourceSchema.Create(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -300,13 +346,13 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewActiontrailClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudActionTrailHistoryDeliveryJobDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -323,7 +369,7 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudActionTrailHistoryDeliveryJobDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -340,7 +386,7 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudActionTrailHistoryDeliveryJobDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -357,7 +403,7 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudActionTrailHistoryDeliveryJobDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -374,7 +420,7 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudActionTrailHistoryDeliveryJobRead(d, rawClient)
+		err := resourceSchema.Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -390,7 +436,7 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudActionTrailHistoryDeliveryJobRead(d, rawClient)
+		err := resourceSchema.Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
@@ -401,22 +447,22 @@ func TestUnitAlicloudActiontrailHistoryDeliveryJob(t *testing.T) {
 func TestAccAliCloudActionTrailHistoryDeliveryJob_basic12075(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_history_delivery_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudActionTrailHistoryDeliveryJobMap12075)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActionTrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudActionTrailHistoryDeliveryJobMap12075)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActionTrailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActionTrailHistoryDeliveryJob")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudActionTrailHistoryDeliveryJobBasicDependence12075)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudActionTrailHistoryDeliveryJobBasicDependence12075)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -424,7 +470,7 @@ func TestAccAliCloudActionTrailHistoryDeliveryJob_basic12075(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"trail_name": CHECKSET,
+						"trail_name": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -439,8 +485,8 @@ func TestAccAliCloudActionTrailHistoryDeliveryJob_basic12075(t *testing.T) {
 }
 
 var AlicloudActionTrailHistoryDeliveryJobMap12075 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudActionTrailHistoryDeliveryJobBasicDependence12075(name string) string {

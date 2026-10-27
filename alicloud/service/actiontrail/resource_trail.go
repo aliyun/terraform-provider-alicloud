@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package actiontrail. This file is generated automatically. Please do not modify it manually, thank you!
+package actiontrail
 
 import (
 	"fmt"
@@ -8,16 +8,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudActionTrailTrail() *schema.Resource {
+func ResourceTrail() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudActionTrailTrailCreate,
-		Read:   resourceAliCloudActionTrailTrailRead,
-		Update: resourceAliCloudActionTrailTrailUpdate,
-		Delete: resourceAliCloudActionTrailTrailDelete,
+		Create: ResourceTrailCreate,
+		Read:   ResourceTrailRead,
+		Update: ResourceTrailUpdate,
+		Delete: ResourceTrailDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -39,7 +44,7 @@ func resourceAliCloudActionTrailTrail() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Write", "Read", "All"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Write", "Read", "All"}, false),
 			},
 			"event_selectors": {
 				Type:     schema.TypeString,
@@ -122,7 +127,7 @@ func resourceAliCloudActionTrailTrail() *schema.Resource {
 	}
 }
 
-func resourceAliCloudActionTrailTrailCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceTrailCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -137,7 +142,7 @@ func resourceAliCloudActionTrailTrailCreate(d *schema.ResourceData, meta interfa
 	} else if v, ok := d.GetOk("name"); ok {
 		request["Name"] = v
 	} else {
-		return WrapError(Error(`[ERROR] Argument "trail_name" or "name" must be set one!`))
+		return errs.WrapError(errs.Error(`[ERROR] Argument "trail_name" or "name" must be set one!`))
 	}
 
 	if v, ok := d.GetOk("sls_project_arn"); ok {
@@ -170,11 +175,11 @@ func resourceAliCloudActionTrailTrailCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("max_compute_write_role_arn"); ok {
 		request["MaxComputeWriteRoleArn"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -182,35 +187,35 @@ func resourceAliCloudActionTrailTrailCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_actiontrail_trail", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_actiontrail_trail", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Name"]))
 
-	actionTrailServiceV2 := ActionTrailServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Fresh"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, actionTrailServiceV2.ActionTrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
+	actionTrailServiceV2 := NewActionTrailServiceV2(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Fresh"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, actionTrailServiceV2.ActionTrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudActionTrailTrailUpdate(d, meta)
+	return ResourceTrailUpdate(d, meta)
 }
 
-func resourceAliCloudActionTrailTrailRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceTrailRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	actionTrailServiceV2 := ActionTrailServiceV2{client}
+	actionTrailServiceV2 := NewActionTrailServiceV2(client)
 
 	objectRaw, err := actionTrailServiceV2.DescribeActionTrailTrail(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_actiontrail_trail DescribeActionTrailTrail Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
@@ -229,8 +234,8 @@ func resourceAliCloudActionTrailTrailRead(d *schema.ResourceData, meta interface
 	d.Set("trail_name", objectRaw["Name"])
 
 	objectRaw, err = actionTrailServiceV2.DescribeTrailGetDataEventSelector(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("event_selectors", objectRaw["DataEventSelectors"])
@@ -238,7 +243,7 @@ func resourceAliCloudActionTrailTrailRead(d *schema.ResourceData, meta interface
 	slsDeliveryConfigsRawArrayObj, _ := jsonpath.Get("$.SlsDeliveryConfigs[*]", objectRaw)
 	slsDeliveryConfigsRawArray := make([]interface{}, 0)
 	if slsDeliveryConfigsRawArrayObj != nil {
-		slsDeliveryConfigsRawArray = convertToInterfaceArray(slsDeliveryConfigsRawArrayObj)
+		slsDeliveryConfigsRawArray = convert.ConvertToInterfaceArray(slsDeliveryConfigsRawArrayObj)
 	}
 	slsDeliveryConfigsRaw := make(map[string]interface{})
 	if len(slsDeliveryConfigsRawArray) > 0 {
@@ -253,7 +258,7 @@ func resourceAliCloudActionTrailTrailRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceTrailUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -261,7 +266,7 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 	update := false
 	d.Partial(true)
 
-	actionTrailServiceV2 := ActionTrailServiceV2{client}
+	actionTrailServiceV2 := NewActionTrailServiceV2(client)
 	objectRaw, _ := actionTrailServiceV2.DescribeActionTrailTrail(d.Id())
 
 	if d.HasChange("status") {
@@ -270,7 +275,7 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 
 		currentStatus, err := jsonpath.Get("Status", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "Status", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "Status", objectRaw)
 		}
 		if fmt.Sprint(currentStatus) != target {
 			if target == "Enable" {
@@ -279,11 +284,11 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 				query = make(map[string]interface{})
 				request["Name"] = d.Id()
 
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -291,14 +296,14 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				actionTrailServiceV2 := ActionTrailServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Enable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actionTrailServiceV2.ActionTrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
+				actionTrailServiceV2 := NewActionTrailServiceV2(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"Enable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actionTrailServiceV2.ActionTrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -308,11 +313,11 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 				query = make(map[string]interface{})
 				query["Name"] = d.Id()
 
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcGet("Actiontrail", "2020-07-06", action, query, request)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -320,14 +325,14 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				actionTrailServiceV2 := ActionTrailServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Disable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actionTrailServiceV2.ActionTrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
+				actionTrailServiceV2 := NewActionTrailServiceV2(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"Disable"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, actionTrailServiceV2.ActionTrailTrailStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -395,11 +400,11 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 		request["MaxComputeWriteRoleArn"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"InsufficientBucketPolicyException"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -407,9 +412,9 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -429,11 +434,11 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 	}
 	request["EventSelectors"] = d.Get("event_selectors")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -441,17 +446,17 @@ func resourceAliCloudActionTrailTrailUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	d.Partial(false)
-	return resourceAliCloudActionTrailTrailRead(d, meta)
+	return ResourceTrailRead(d, meta)
 }
 
-func resourceAliCloudActionTrailTrailDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceTrailDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTrail"
@@ -462,11 +467,11 @@ func resourceAliCloudActionTrailTrailDelete(d *schema.ResourceData, meta interfa
 	request = make(map[string]interface{})
 	request["Name"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -474,13 +479,13 @@ func resourceAliCloudActionTrailTrailDelete(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"TrailNotFoundException"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"TrailNotFoundException"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

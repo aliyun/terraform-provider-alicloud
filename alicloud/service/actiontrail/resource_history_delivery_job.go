@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package actiontrail. This file is generated automatically. Please do not modify it manually, thank you!
+package actiontrail
 
 import (
 	"fmt"
@@ -7,15 +7,18 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudActionTrailHistoryDeliveryJob() *schema.Resource {
+func ResourceHistoryDeliveryJob() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudActionTrailHistoryDeliveryJobCreate,
-		Read:   resourceAliCloudActionTrailHistoryDeliveryJobRead,
-		Delete: resourceAliCloudActionTrailHistoryDeliveryJobDelete,
+		Create: ResourceHistoryDeliveryJobCreate,
+		Read:   ResourceHistoryDeliveryJobRead,
+		Delete: ResourceHistoryDeliveryJobDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -41,7 +44,7 @@ func resourceAliCloudActionTrailHistoryDeliveryJob() *schema.Resource {
 	}
 }
 
-func resourceAliCloudActionTrailHistoryDeliveryJobCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceHistoryDeliveryJobCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -52,14 +55,14 @@ func resourceAliCloudActionTrailHistoryDeliveryJobCreate(d *schema.ResourceData,
 	var err error
 	request = make(map[string]interface{})
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["TrailName"] = d.Get("trail_name")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -67,35 +70,35 @@ func resourceAliCloudActionTrailHistoryDeliveryJobCreate(d *schema.ResourceData,
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_actiontrail_history_delivery_job", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_actiontrail_history_delivery_job", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["JobId"]))
 
-	actionTrailServiceV2 := ActionTrailServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"1", "2", "3"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, actionTrailServiceV2.ActionTrailHistoryDeliveryJobStateRefreshFunc(d.Id(), "JobStatus", []string{}))
+	actionTrailServiceV2 := NewActionTrailServiceV2(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"1", "2", "3"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, actionTrailServiceV2.ActionTrailHistoryDeliveryJobStateRefreshFunc(d.Id(), "JobStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudActionTrailHistoryDeliveryJobRead(d, meta)
+	return ResourceHistoryDeliveryJobRead(d, meta)
 }
 
-func resourceAliCloudActionTrailHistoryDeliveryJobRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceHistoryDeliveryJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	actionTrailServiceV2 := ActionTrailServiceV2{client}
+	actionTrailServiceV2 := NewActionTrailServiceV2(client)
 
 	objectRaw, err := actionTrailServiceV2.DescribeActionTrailHistoryDeliveryJob(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_actiontrail_history_delivery_job DescribeActionTrailHistoryDeliveryJob Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreatedTime"])
@@ -105,7 +108,7 @@ func resourceAliCloudActionTrailHistoryDeliveryJobRead(d *schema.ResourceData, m
 	return nil
 }
 
-func resourceAliCloudActionTrailHistoryDeliveryJobDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceHistoryDeliveryJobDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDeliveryHistoryJob"
@@ -116,11 +119,11 @@ func resourceAliCloudActionTrailHistoryDeliveryJobDelete(d *schema.ResourceData,
 	request = make(map[string]interface{})
 	request["JobId"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceUnavailable"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ServiceUnavailable"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -128,13 +131,13 @@ func resourceAliCloudActionTrailHistoryDeliveryJobDelete(d *schema.ResourceData,
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

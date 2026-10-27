@@ -1,28 +1,30 @@
-package alicloud
+// Package actiontrail_test.
+package actiontrail_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudActiontrailGlobalEventsStorageRegionDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.ActiontrailGlobalEventsStorageRegionSupportRegions)
+func TestAccAliCloudActiontrailGlobalEventsStorageRegionDataSource(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ActiontrailGlobalEventsStorageRegionSupportRegions)
 	resourceId := "data.alicloud_actiontrail_global_events_storage_region.current"
-	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
+	testAccCheck := acctest.ResourceAttrInit(resourceId, map[string]string{}).ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudActiontrailGlobalEventsStorageRegionDataSource,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"storage_region": CHECKSET,
+						"storage_region": acctest.CHECKSET,
 					}),
 				),
 			},

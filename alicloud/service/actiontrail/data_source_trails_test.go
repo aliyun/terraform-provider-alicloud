@@ -1,52 +1,54 @@
-package alicloud
+// Package actiontrail_test.
+package actiontrail_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudActiontrailTrailsDataSource(t *testing.T) {
+func TestAccAliCloudActiontrailTrailsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_actiontrail_trails.default"
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testaccactiontrail-%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceActiontrailTrailsDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceActiontrailTrailsDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_actiontrail_trail.default.id}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_actiontrail_trail.default.id}-fake",
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_actiontrail_trail.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_actiontrail_trail.default.id}-fake"},
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_actiontrail_trail.default.id}"},
 			"status": "Disable",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_actiontrail_trail.default.id}"},
 			"status": "Enable",
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_actiontrail_trail.default.id}",
 			"ids":        []string{"${alicloud_actiontrail_trail.default.id}"},
 			"status":     "Disable",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_actiontrail_trail.default.id}-fake",
 			"ids":        []string{"${alicloud_actiontrail_trail.default.id}"},
 			"status":     "Enable",
@@ -55,16 +57,16 @@ func TestAccAlicloudActiontrailTrailsDataSource(t *testing.T) {
 	var existActiontrailTrailMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                       "1",
-			"ids.0":                       CHECKSET,
+			"ids.0":                       acctest.CHECKSET,
 			"trails.#":                    "1",
 			"trails.0.event_rw":           "Write",
-			"trails.0.oss_bucket_name":    CHECKSET,
+			"trails.0.oss_bucket_name":    acctest.CHECKSET,
 			"trails.0.oss_key_prefix":     "",
 			"trails.0.sls_project_arn":    "",
 			"trails.0.sls_write_role_arn": "",
 			"trails.0.status":             "Disable",
-			"trails.0.id":                 CHECKSET,
-			"trails.0.trail_name":         CHECKSET,
+			"trails.0.id":                 acctest.CHECKSET,
+			"trails.0.trail_name":         acctest.CHECKSET,
 			"trails.0.trail_region":       "All",
 		}
 	}
@@ -76,13 +78,13 @@ func TestAccAlicloudActiontrailTrailsDataSource(t *testing.T) {
 		}
 	}
 
-	var actionTrailsInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existActiontrailTrailMapFunc,
-		fakeMapFunc:  fakeActiontrailTrailMapFunc,
+	var actionTrailsInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existActiontrailTrailMapFunc,
+		FakeMapFunc:  fakeActiontrailTrailMapFunc,
 	}
 
-	actionTrailsInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, statusConf, allConf)
+	actionTrailsInfo.DataSourceTestCheck(t, 0, nameRegexConf, idsConf, statusConf, allConf)
 }
 
 func dataSourceActiontrailTrailsDependence(name string) string {
@@ -94,6 +96,7 @@ func dataSourceActiontrailTrailsDependence(name string) string {
 	resource "alicloud_actiontrail_trail" "default" {
 	  trail_name = "%[1]s"
 	  oss_bucket_name = alicloud_oss_bucket.default.id
+	  event_rw = "Write"
 	  status= "Disable"
 	}`, name)
 }

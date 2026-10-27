@@ -179,14 +179,6 @@ func Provider() *schema.Provider {
 			// ack
 			"alicloud_ack_service": dataSourceAlicloudAckService(),
 
-			// actiontrail
-			"alicloud_actiontrail_trails":                       dataSourceAlicloudActiontrailTrails(),
-			"alicloud_actiontrail_history_delivery_jobs":        dataSourceAlicloudActiontrailHistoryDeliveryJobs(),
-			"alicloud_actiontrail_global_events_storage_region": dataSourceAlicloudActiontrailGlobalEventsStorageRegion(),
-
-			// actiontrails
-			"alicloud_actiontrails": dataSourceAlicloudActiontrailTrails(),
-
 			// adb
 			"alicloud_adb_clusters":                 dataSourceAlicloudAdbDbClusters(),
 			"alicloud_adb_zones":                    dataSourceAlicloudAdbZones(),
@@ -1305,13 +1297,6 @@ func Provider() *schema.Provider {
 			// ack
 			"alicloud_ack_one_cluster":               resourceAliCloudAckOneCluster(),
 			"alicloud_ack_one_membership_attachment": resourceAliCloudAckOneMembershipAttachment(),
-
-			// actiontrail
-			"alicloud_actiontrail_advanced_query_template":      resourceAliCloudActiontrailAdvancedQueryTemplate(),
-			"alicloud_actiontrail_trail":                        resourceAliCloudActionTrailTrail(),
-			"alicloud_actiontrail":                              resourceAliCloudActionTrailTrail(),
-			"alicloud_actiontrail_history_delivery_job":         resourceAliCloudActionTrailHistoryDeliveryJob(),
-			"alicloud_actiontrail_global_events_storage_region": resourceAlicloudActiontrailGlobalEventsStorageRegion(),
 
 			// adb
 			"alicloud_adb_lake_account":            resourceAliCloudAdbLakeAccount(),
