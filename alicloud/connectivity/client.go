@@ -2500,6 +2500,16 @@ func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) 
 	}
 
 	if v, ok := client.config.Endpoints.Load(configEndpoints); !ok || v.(string) == "" {
+		// Reuse a previously probed endpoint stored under the real product code.
+		// productCodeToConfigEndpoints maps sls->log so the user-config key above
+		// is "log", while loadEndpoint always stores under the product code (e.g.
+		// "sls"). Without this pre-check the mapped read key never matches the
+		// write key, so every SLS API call re-runs endpoint discovery. This
+		// restores the symmetric cache path without affecting the user-config
+		// priority above or non-mapped products whose keys already coincide.
+		if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+			return client.formatEndpointWithAccountID(productCode, v.(string))
+		}
 		if err := client.loadEndpoint(productCode); err != nil {
 			return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v.", productCode, err)
 		}
