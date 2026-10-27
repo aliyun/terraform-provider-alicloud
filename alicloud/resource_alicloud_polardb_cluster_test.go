@@ -668,6 +668,242 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 
 }
 
+func TestAccAliCloudPolarDBCluster_TDEAutomaticRotationIncremental(t *testing.T) {
+	// This case covers incremental TDE auto-rotation: when TDE is already
+	// Enabled and the user adds enable_automatic_rotation=true, the provider
+	// resends ModifyDBClusterTDE carrying TDEStatus=Enable plus the rotation
+	// fields; the server applies the rotation settings (tolerating the
+	// redundant TDEStatus=Enable on an already-enabled cluster) and Read
+	// backfills non-empty automatic_rotation/rotation_interval. PostgreSQL is
+	// used because EnableAutomaticRotation is only supported on PostgreSQL/Oracle
+	// engines (MySQL produces a false negative).
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterTDEAutoRot"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":   CHECKSET,
+		"db_node_class": CHECKSET,
+		"vswitch_id":    CHECKSET,
+		"db_type":       "PostgreSQL",
+		"db_version":    "14",
+		"tde_status":    "Disabled",
+		"status":        CHECKSET,
+		"create_time":   CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterTDEPostgreSQLConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create a PostgreSQL cluster with TDE disabled.
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":           "PostgreSQL",
+					"db_version":        "14",
+					"pay_type":          "PostPaid",
+					"db_node_count":     "2",
+					"db_node_class":     "polar.pg.x4.medium",
+					"vswitch_id":        "${local.vswitch_id}",
+					"description":       "${var.name}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					// Align with the API default for a TDE-disabled cluster:
+					// DescribeDBClusterTDE returns EncryptNewTables="OFF", but the
+					// schema field is Optional (not Computed), so an unset config
+					// (value="") would produce a perpetual diff OFF=>"" at step0.
+					"encrypt_new_tables": "OFF",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category"},
+			},
+			{
+				// stepA: first-enable TDE without automatic rotation. This
+				// exercises the first-enable path (tde_status Disabled→Enabled
+				// sends TDEStatus=Enable) and must not regress. Auto-rotation
+				// is not requested, so automatic_rotation stays unset.
+				// encrypt_new_tables is intentionally not set here (it inherits
+				// "OFF" from step0): ModifyDBClusterTDE silently ignores
+				// EncryptNewTables during the first TDE enable, so asserting ON
+				// here would flap. The encrypt_new_tables incremental behavior is
+				// out of scope for this PR and tracked separately.
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status":     "Enabled",
+					"encryption_key": "${alicloud_kms_key.default.id}",
+					"role_arn":       "acs:ram::${data.alicloud_account.current.id}:role/aliyunrdsinstanceencryptiondefaultrole",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":     "Enabled",
+						"encryption_key": CHECKSET,
+						"role_arn":       CHECKSET,
+					}),
+				),
+			},
+			{
+				// stepB: incremental TDE update — tde_status is already
+				// Enabled, now add enable_automatic_rotation=true. The provider
+				// resends ModifyDBClusterTDE with TDEStatus=Enable and
+				// EnableAutomaticRotation=true; the server applies the rotation
+				// settings (InvalidTDEStatus.AlreadyEnabled is tolerated for the
+				// redundant TDEStatus=Enable on an already-enabled cluster), and
+				// Read backfills non-empty automatic_rotation/rotation_interval.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_automatic_rotation": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"automatic_rotation": CHECKSET,
+						"rotation_interval":  CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudPolarDBCluster_TDEAutomaticRotationOracle(t *testing.T) {
+	// Oracle syntax-compatible engine directly satisfies original acceptance
+	// condition #1 (the requirement targets the Oracle syntax-compatible
+	// cluster). It shares the same incremental rotation path as the PostgreSQL
+	// case: after TDE is already Enabled, adding enable_automatic_rotation=true
+	// resends ModifyDBClusterTDE carrying TDEStatus=Enable plus the rotation
+	// fields; the server applies the rotation settings (tolerating the
+	// redundant TDEStatus=Enable on an already-enabled cluster) and Read
+	// backfills non-empty automatic_rotation/rotation_interval.
+	// EnableAutomaticRotation is supported only on PostgreSQL/Oracle engines
+	// (MySQL produces a false negative).
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterTDEAutoRotOra"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":   CHECKSET,
+		"db_node_class": CHECKSET,
+		"vswitch_id":    CHECKSET,
+		"db_type":       "Oracle",
+		"db_version":    "14",
+		"tde_status":    "Disabled",
+		"status":        CHECKSET,
+		"create_time":   CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterTDEOracleConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create an Oracle syntax-compatible cluster with TDE disabled.
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":           "Oracle",
+					"db_version":        "14",
+					"pay_type":          "PostPaid",
+					"db_node_count":     "2",
+					"db_node_class":     "polar.o.x4.medium",
+					"vswitch_id":        "${local.vswitch_id}",
+					"description":       "${var.name}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					// Align with the API default for a TDE-disabled cluster:
+					// DescribeDBClusterTDE returns EncryptNewTables="OFF", but the
+					// schema field is Optional (not Computed), so an unset config
+					// (value="") would produce a perpetual diff OFF=>"" at step0.
+					"encrypt_new_tables": "OFF",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category"},
+			},
+			{
+				// stepA: first-enable TDE without automatic rotation. This
+				// exercises the first-enable path (tde_status Disabled→Enabled
+				// sends TDEStatus=Enable) and must not regress. Auto-rotation
+				// is not requested, so automatic_rotation stays unset.
+				// encrypt_new_tables is intentionally not set here (it inherits
+				// "OFF" from step0): ModifyDBClusterTDE silently ignores
+				// EncryptNewTables during the first TDE enable, so asserting ON
+				// here would flap. The encrypt_new_tables incremental behavior is
+				// out of scope for this PR and tracked separately.
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status":     "Enabled",
+					"encryption_key": "${alicloud_kms_key.default.id}",
+					"role_arn":       "acs:ram::${data.alicloud_account.current.id}:role/aliyunrdsinstanceencryptiondefaultrole",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":     "Enabled",
+						"encryption_key": CHECKSET,
+						"role_arn":       CHECKSET,
+					}),
+				),
+			},
+			{
+				// stepB: incremental TDE update — tde_status is already
+				// Enabled, now add enable_automatic_rotation=true. The provider
+				// resends ModifyDBClusterTDE with TDEStatus=Enable and
+				// EnableAutomaticRotation=true; the server applies the rotation
+				// settings (InvalidTDEStatus.AlreadyEnabled is tolerated for the
+				// redundant TDEStatus=Enable on an already-enabled cluster), and
+				// Read backfills non-empty automatic_rotation/rotation_interval.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_automatic_rotation": true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"automatic_rotation": CHECKSET,
+						"rotation_interval":  CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testAccPolarDBClusterUpdatePrePaid"
@@ -2297,12 +2533,13 @@ func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_type":         "PostgreSQL",
-					"db_version":      "14",
-					"pay_type":        "PostPaid",
-					"db_node_count":   "2",
-					"db_node_class":   "polar.pg.x4.medium",
-					"enable_dynamodb": true,
+					"db_type":            "PostgreSQL",
+					"db_version":         "14",
+					"pay_type":           "PostPaid",
+					"db_node_count":      "2",
+					"db_node_class":      "polar.pg.x4.medium",
+					"encrypt_new_tables": "OFF",
+					"enable_dynamodb":    true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2312,12 +2549,13 @@ func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_type":         "PostgreSQL",
-					"db_version":      "14",
-					"pay_type":        "PostPaid",
-					"db_node_count":   "2",
-					"db_node_class":   "polar.pg.x4.medium",
-					"enable_dynamodb": false,
+					"db_type":            "PostgreSQL",
+					"db_version":         "14",
+					"pay_type":           "PostPaid",
+					"db_node_count":      "2",
+					"db_node_class":      "polar.pg.x4.medium",
+					"encrypt_new_tables": "OFF",
+					"enable_dynamodb":    false,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2327,12 +2565,13 @@ func TestAccAliCloudPolarDBCluster_EnableDynamoDB(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_type":         "PostgreSQL",
-					"db_version":      "14",
-					"pay_type":        "PostPaid",
-					"db_node_count":   "2",
-					"db_node_class":   "polar.pg.x4.medium",
-					"enable_dynamodb": true,
+					"db_type":            "PostgreSQL",
+					"db_version":         "14",
+					"pay_type":           "PostPaid",
+					"db_node_count":      "2",
+					"db_node_class":      "polar.pg.x4.medium",
+					"encrypt_new_tables": "OFF",
+					"enable_dynamodb":    true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2732,6 +2971,37 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
 	    resource_group_id = "${data.alicloud_account.current.id}"
 		depends_on = [alicloud_ram_role.default]
     }`, name)
+}
+
+func resourcePolarDBClusterTDEPostgreSQLConfigDependence(name string) string {
+	// Reuse the MySQL TDE dependence for shared infrastructure (KMS key, RAM
+	// role, policy attachment, VPC, vswitch, security groups). The node-class
+	// data source is intentionally left querying MySQL rather than switched to
+	// PostgreSQL: data_source_alicloud_polardb_node_classes filters with
+	// strings.Contains(Engine, db_type), but the DescribeDBClusterAvailableResources
+	// API returns abbreviated Engine names like "pg14", so a PostgreSQL query
+	// returns an empty class list and classes.0.zone_id fails with Invalid index.
+	// The vswitch zone is hardcoded to cn-hangzhou-k, confirmed via
+	// DescribeDBClusterAvailableResources to offer polar.pg.x4.medium
+	// (Category=Normal) for pg14. The PostgreSQL
+	// cluster identity (db_type, db_version, db_node_class) is supplied by the
+	// test step config, mirroring TestAccAliCloudPolarDBCluster_EnableDynamoDB
+	// which also hardcodes the PG node class while keeping the MySQL data source.
+	mysql := resourcePolarDBClusterTDEConfigDependence(name)
+	pg := strings.Replace(mysql, `zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id`, `zone_id = "cn-hangzhou-k"`, 1)
+	return pg
+}
+
+func resourcePolarDBClusterTDEOracleConfigDependence(name string) string {
+	// Oracle syntax-compatible engine shares the same TDE test infrastructure
+	// as PostgreSQL (KMS key, RAM role + policy, VPC/vswitch fixed to
+	// cn-hangzhou-k). DescribeDBClusterAvailableResources confirms cn-hangzhou-k
+	// offers polar.o.x4.medium (Category=Normal) for the Oracle 14 (pgo14) engine (legacy Oracle11 is catalog-listed but CreateDBCluster rejects db_version=11 for this account). The
+	// node-class data source is left querying MySQL to avoid the latent
+	// strings.Contains(Engine, db_type) bug in data_source_alicloud_polardb_node_classes
+	// (the API returns abbreviated Engine names); the Oracle cluster identity
+	// (db_type/db_version/db_node_class) is supplied by the test step config.
+	return resourcePolarDBClusterTDEPostgreSQLConfigDependence(name)
 }
 
 func resourcePolarDBClusterConfigDependence(name string) string {
