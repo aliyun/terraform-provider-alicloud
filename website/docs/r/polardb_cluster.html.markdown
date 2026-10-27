@@ -216,6 +216,8 @@ The following arguments are supported:
 * `encryption_key` - (Optional, Available since 1.200.0) The ID of the custom key. `encryption_key` cannot be modified after TDE is opened.
 * `role_arn` - (Optional, Available since 1.200.0) The Alibaba Cloud Resource Name (ARN) of the RAM role. A RAM role is a virtual identity that you can create within your Alibaba Cloud account. For more information see [RAM role overview](https://www.alibabacloud.com/help/en/resource-access-management/latest/ram-role-overview).
 * `enable_automatic_rotation` - (Optional, Type: bool, Available since v1.289.0) Specifies whether to enable automatic rotation of the TDE encryption key. Default to `false`. Valid values are `true`, `false`. This parameter takes effect only after TDE is enabled.
+
+  -> **NOTE:** Only PostgreSQL-compatible and Oracle syntax-compatible clusters support automatic key rotation; a custom KMS key (`encryption_key`) must be specified and TDE must be already enabled.
 * `security_group_ids` - (Optional, Available since 1.128.0) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
 
   -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.

@@ -1025,12 +1025,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			if v, ok := d.GetOkExists("enable_automatic_rotation"); ok {
 				request["EnableAutomaticRotation"] = v
 			}
-			//retry
+			//retry: also retry OperationDenied.DBClusterStatus while a freshly created cluster (e.g. Oracle) settles into Running.
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err := client.RpcPost("polardb", "2017-08-01", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus"}) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -1324,7 +1324,19 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 
-	if d.HasChange("enable_dynamodb") || d.IsNewResource() {
+	// Gate DynamoDB enable/disable on an explicit enable_dynamodb change (or a
+	// new resource that actually requests DynamoDB). Previously the gate also
+	// fired for any new resource via d.IsNewResource(), which drove a Disable
+	// call on PostgreSQL clusters that never enabled DynamoDB and surfaced as a
+	// misleading ParamTypeException. Only enter this block when the user truly
+	// intends a DynamoDB state transition; real Enable/Disable API errors then
+	// propagate unchanged instead of being masked.
+	enableDynamoDB := d.Get("enable_dynamodb").(bool)
+	shouldUpdateDynamoDB := d.HasChange("enable_dynamodb")
+	if d.IsNewResource() {
+		shouldUpdateDynamoDB = enableDynamoDB
+	}
+	if shouldUpdateDynamoDB {
 		if v, ok := d.GetOk("db_type"); ok && v.(string) == "PostgreSQL" {
 			var action string
 			if v, ok := d.GetOk("enable_dynamodb"); ok && v.(bool) == true {
