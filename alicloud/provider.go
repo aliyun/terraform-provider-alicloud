@@ -1727,9 +1727,7 @@ func Provider() *schema.Provider {
 			"alicloud_dcdn_er":                           resourceAlicloudDcdnEr(),
 
 			// ddos
-			"alicloud_ddos_bgp_policy":              resourceAliCloudDdosBgpPolicy(),
-			"alicloud_ddos_basic_defense_threshold": resourceAlicloudDdosBasicDefenseThreshold(),
-			"alicloud_ddos_basic_threshold":         resourceAliCloudDdosBasicThreshold(),
+			"alicloud_ddos_bgp_policy": resourceAliCloudDdosBgpPolicy(),
 
 			// ddosbgp
 			"alicloud_ddosbgp_instance": resourceAliCloudDdosBgpInstance(),
