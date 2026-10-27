@@ -87,6 +87,15 @@ jobs:
             exit 1
           fi
           git archive "$PR_BASE_SHA" scripts/collection-order | tar -x
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go/goimports/golangci-lint/
+        # the node-local seed restore or the coverage `go test`/`go run`. Runs
+        # before setup-go so the env it exports is in effect throughout.
+        shell: bash
+        run: bash scripts/ci/ensure-writable-go-cache.sh
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:

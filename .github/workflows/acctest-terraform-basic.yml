@@ -257,6 +257,15 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go/goimports/golangci-lint/
+        # tfproviderlint. Runs before setup-go so the env it exports is in effect
+        # for setup-go, the node-local seed restore and every later Go step.
+        shell: bash
+        run: bash scripts/ci/ensure-writable-go-cache.sh
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -295,6 +304,15 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go/goimports/golangci-lint/
+        # tfproviderlint. Runs before setup-go so the env it exports is in effect
+        # for setup-go, the node-local seed restore and every later Go step.
+        shell: bash
+        run: bash scripts/ci/ensure-writable-go-cache.sh
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -347,6 +365,15 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go/goimports/golangci-lint/
+        # tfproviderlint. Runs before setup-go so the env it exports is in effect
+        # for setup-go, the node-local seed restore and every later Go step.
+        shell: bash
+        run: bash scripts/ci/ensure-writable-go-cache.sh
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -422,6 +449,17 @@ jobs:
         run: |
           value="$(scripts/ci/detect-build-input-changes.sh)"
           echo "changed=$value" >> "$GITHUB_OUTPUT"
+      - name: Test Route A writable-cache fallback
+        # Deterministic regression for ensure-writable-go-cache.sh: healthy
+        # defaults kept, unwritable defaults redirected to a per-job RUNNER_TEMP
+        # subdir, and env/PATH propagation. Runs whenever route succeeds, so a
+        # CI-only PR exercises the helper in the same workflow that ships it.
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          if [[ -f scripts/ci/test_ensure_writable_go_cache.py ]]; then
+            python3 -m unittest discover -s scripts/ci -p test_ensure_writable_go_cache.py
+          fi
 
   ProductionBuild:
     needs: [route, BuildInputs]
@@ -443,6 +481,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go/goimports/golangci-lint/
+        # tfproviderlint. Runs before setup-go so the env it exports is in effect
+        # for setup-go, the node-local seed restore and every later Go step.
+        shell: bash
+        run: bash scripts/ci/ensure-writable-go-cache.sh
       - name: Set up Go Version
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
