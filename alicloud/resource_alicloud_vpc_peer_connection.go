@@ -115,7 +115,9 @@ func resourceAliCloudVpcPeerPeerConnectionCreate(d *schema.ResourceData, meta in
 	request["ClientToken"] = buildClientToken(action)
 
 	request["VpcId"] = d.Get("vpc_id")
-	request["AcceptingAliUid"] = d.Get("accepting_ali_uid")
+	if v, ok := d.GetOk("accepting_ali_uid"); ok {
+		request["AcceptingAliUid"] = v
+	}
 	request["AcceptingRegionId"] = d.Get("accepting_region_id")
 	request["AcceptingVpcId"] = d.Get("accepting_vpc_id")
 	if v, ok := d.GetOk("description"); ok {

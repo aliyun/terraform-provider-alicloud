@@ -75,7 +75,7 @@ The following arguments are supported:
 *   To create a VPC peering connection within your Alibaba Cloud account, enter the ID of your Alibaba Cloud account.
 *   To create a VPC peering connection between your Alibaba Cloud account and another Alibaba Cloud account, enter the ID of the peer Alibaba Cloud account.
 
-  -> **NOTE:**   If the accepter is a RAM user, set `AcceptingAliUid` to the ID of the Alibaba Cloud account that created the RAM user.
+  -> **NOTE:** `AcceptingAliUid` is required by the CreateVpcPeerConnection API; omitting it triggers an API error reporting a missing required parameter instead of sending a default value. If the accepter is a RAM user, set `AcceptingAliUid` to the ID of the Alibaba Cloud account that created the RAM user.
 
 * `accepting_region_id` - (Required, ForceNew) The region ID of the accepter VPC of the VPC peering connection that you want to create.
 

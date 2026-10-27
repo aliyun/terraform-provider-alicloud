@@ -472,6 +472,60 @@ func TestAccAliCloudVPCPeerConnection_basic1_twin(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudVPCPeerConnection_linkType covers link_type create+modify on an
+// inter-region peer connection. link_type is an inter-region-exclusive capability
+// (same-region creation fails with OperationFailed.InterRegionLinkTypeNotSupported),
+// so it must be exercised on a cross-region connection like basic1. Create with Gold
+// and modify to Platinum; both are documented valid values per VpcPeer 2022-01-01
+// CreateVpcPeerConnection/ModifyVpcPeerConnection LinkType (Silver is undocumented).
+func TestAccAliCloudVPCPeerConnection_linkType(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_peer_connection.default"
+	ra := resourceAttrInit(resourceId, AliCloudVPCPeerConnectionMap0)
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPCPeerConnectionBasicDependence1)
+	_ = v
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactoriesAlternate(),
+		CheckDestroy:      testAccCheckVPCPeerConnectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":              "${alicloud_vpc.requesting.id}",
+					"accepting_vpc_id":    "${alicloud_vpc.accepting.id}",
+					"accepting_region_id": "${data.alicloud_regions.default.regions.0.id}",
+					"accepting_ali_uid":   "${data.alicloud_account.default.id}",
+					"link_type":           "Gold",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":              CHECKSET,
+						"accepting_vpc_id":    CHECKSET,
+						"accepting_region_id": CHECKSET,
+						"accepting_ali_uid":   CHECKSET,
+						"link_type":           "Gold",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"link_type": "Platinum",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"link_type": "Platinum",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AliCloudVPCPeerConnectionMap0 = map[string]string{
 	"bandwidth":         CHECKSET,
 	"resource_group_id": CHECKSET,
