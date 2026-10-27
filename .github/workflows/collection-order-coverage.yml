@@ -37,8 +37,8 @@ jobs:
     permissions:
       checks: read
       pull-requests: read
-    # API-only policy discovery must not occupy the Gate runner pool.
-    runs-on: ubuntu-latest
+    # API-only discovery has its own restricted pool, separate from Gate workers.
+    runs-on: terraform-ci-route
     timeout-minutes: 5
     outputs:
       classification: ${{ steps.select.outputs.classification }}
@@ -104,11 +104,14 @@ jobs:
           if [[ ! -f "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             helper="$RUNNER_TEMP/restore-local-go-cache.py"
             if ! git show "$PR_BASE_SHA:scripts/ci/restore-local-go-cache.py" > "$helper"; then
-              echo 'hit=false' >> "$GITHUB_OUTPUT"
-              exit 0
+              rm -f "$helper"
             fi
           fi
-          if [[ -f "$helper" ]]; then
+          # The administrator helper is read-only and still validates checkout hashes.
+          if [[ ! -s "$helper" && -f /opt/terraform-ci-cache/restore.py ]]; then
+            helper=/opt/terraform-ci-cache/restore.py
+          fi
+          if [[ -s "$helper" ]]; then
             python3 "$helper"
           else
             echo 'hit=false' >> "$GITHUB_OUTPUT"

@@ -35,8 +35,8 @@ jobs:
     permissions:
       checks: read
       pull-requests: read
-    # API-only policy discovery must not occupy the Gate runner pool.
-    runs-on: ubuntu-latest
+    # API-only discovery has its own restricted pool, separate from Gate workers.
+    runs-on: terraform-ci-route
     timeout-minutes: 5
     outputs:
       runner: ${{ steps.select.outputs.runner }}
