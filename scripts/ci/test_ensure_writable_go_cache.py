@@ -214,6 +214,57 @@ class EnsureWritableGoCacheTest(unittest.TestCase):
         self.assertIn(os.path.join(run_dir, "go", "bin"), path_out)
         self.assertIn("redirected=1", stdout)
 
+    def test_unwritable_checksum_state_redirects_gopath(self):
+        # The checksum database lives outside GOMODCACHE. Probe its actual
+        # nested state, including an existing read-only signed tree head.
+        state = os.path.join(self.home, "go", "pkg", "sumdb")
+        server = os.path.join(state, "sum.golang.org")
+        os.makedirs(server)
+        latest = os.path.join(server, "latest")
+        with open(latest, "w", encoding="utf-8") as handle:
+            handle.write("signed tree head")
+        for polluted in (state, server, latest):
+            with self.subTest(polluted=polluted):
+                os.chmod(polluted, 0o400 if polluted == latest else 0o500)
+                try:
+                    env_out, _, _ = run_script(self.home, self.runner_temp)
+                finally:
+                    os.chmod(polluted, 0o600 if polluted == latest else 0o700)
+                self.assertEqual(env_out["GOPATH"], os.path.join(self.runner_temp, "go-cache", "go"))
+                self.assertEqual(env_out["GOCACHE"], os.path.join(self.home, ".cache", "go-build"))
+                new_head = os.path.join(env_out["GOPATH"], "pkg", "sumdb", "sum.golang.org", "latest")
+                os.makedirs(os.path.dirname(new_head), exist_ok=True)
+                with open(new_head, "w", encoding="utf-8") as handle:
+                    handle.write("new tree head")
+                with open(latest, encoding="utf-8") as handle:
+                    self.assertEqual(handle.read(), "signed tree head")
+
+    def test_healthy_checksum_state_is_preserved(self):
+        server = os.path.join(self.home, "go", "pkg", "sumdb", "sum.golang.org")
+        os.makedirs(server)
+        latest = os.path.join(server, "latest")
+        with open(latest, "w", encoding="utf-8") as handle:
+            handle.write("signed tree head")
+        env_out, _, stdout = run_script(self.home, self.runner_temp)
+        self.assertEqual(env_out["GOPATH"], os.path.join(self.home, "go"))
+        self.assertEqual(env_out["GOMODCACHE"], os.path.join(self.home, "go", "pkg", "mod"))
+        self.assertIn("redirected=0", stdout)
+        with open(latest, encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), "signed tree head")
+
+    def test_preset_module_cache_preserved_when_checksum_state_redirects(self):
+        state = os.path.join(self.home, "go", "pkg", "sumdb")
+        os.makedirs(state)
+        warm_mod = os.path.join(self._tmp, "warm-mod")
+        os.makedirs(warm_mod)
+        os.chmod(state, 0o500)
+        try:
+            env_out, _, _ = run_script(self.home, self.runner_temp, {"GOMODCACHE": warm_mod})
+        finally:
+            os.chmod(state, 0o700)
+        self.assertEqual(env_out["GOPATH"], os.path.join(self.runner_temp, "go-cache", "go"))
+        self.assertEqual(env_out["GOMODCACHE"], warm_mod)
+
     def test_preset_gomodcache_preserved_when_gopath_redirects(self):
         # A provisioned runner may pre-set a writable GOMODCACHE (a private
         # warm module cache) while the default GOPATH is unwritable. The

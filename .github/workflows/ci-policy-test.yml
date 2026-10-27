@@ -19,6 +19,9 @@ on:
       - scripts/ci/restore-local-go-cache.py
       - scripts/ci/test_local_go_cache.py
       - scripts/ci/test_go_cache.py
+      - scripts/ci/ensure-writable-go-cache.sh
+      - scripts/ci/test_ensure_writable_go_cache.py
+      - scripts/ci/test_bootstrap_go_cache.py
       - .github/workflows/acctest-terraform-basic.yml
       - .github/workflows/document-check.yml
       - .github/workflows/consistency-check.yml
@@ -34,6 +37,9 @@ on:
       - scripts/ci/restore-local-go-cache.py
       - scripts/ci/test_local_go_cache.py
       - scripts/ci/test_go_cache.py
+      - scripts/ci/ensure-writable-go-cache.sh
+      - scripts/ci/test_ensure_writable_go_cache.py
+      - scripts/ci/test_bootstrap_go_cache.py
       - .github/workflows/acctest-terraform-basic.yml
       - .github/workflows/document-check.yml
       - .github/workflows/consistency-check.yml

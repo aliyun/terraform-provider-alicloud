@@ -293,6 +293,14 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 						// rejects.
 						diff := thisLen - rootPrefixLen
 						if indentStep == 0 {
+							// With a "* " marker, a child list starts two to
+							// five columns after its parent. One column is
+							// still a sibling; six or more is paragraph/code
+							// content, not a nested attribute list. MD007
+							// separately enforces the project's indent style.
+							if diff < 2 || diff > 5 {
+								return fmt.Errorf("resource %s docs %s: indentation delta %d is not a nested attribute list", resourceName, docsPath, diff)
+							}
 							indentStep = diff
 						} else if diff != indentStep {
 							return fmt.Errorf("resource %s docs %s have not been formatted: inconsistent indentation step", resourceName, docsPath)
