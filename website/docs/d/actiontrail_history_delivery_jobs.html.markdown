@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Actiontrail History Delivery Jobs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.139.0+.
+-> **NOTE:** Available since v1.139.0.
 
 ## Example Usage
 
@@ -42,21 +42,30 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of History Delivery Job IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the task. Valid values: `0`, `1`, `2`, `3`. `0`: The task is initializing. `1`: The task is delivering historical events. `2`: The delivery of historical events is complete. `3`: The task fails.
+* `enable_details` - (Optional) Whether to enable details for the jobs. Default value: `false`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `jobs` - A list of Actiontrail History Delivery Jobs. Each element contains the following attributes:
-    * `create_time` - The time when the task was created.
-    * `end_time` - The time when the task ended.
-    * `history_delivery_job_id` -  The resource ID in terraform of History Delivery Job.
-    * `home_region` - The home region of the trail.
-    * `id` - The ID of the History Delivery Job.
-    * `start_time` - The time when the task started.
-    * `status` - The status of the task. Valid values: `0`, `1`, `2`, `3`. `0`: The task is initializing. `1`: The task is delivering historical events. `2`: The delivery of historical events is complete. `3`: The task fails.
-    * `trail_name` - The name of the trail.
-    * `updated_time` - The time when the task was updated.
-    * `job_status` - Detail status of delivery job.
-      * `region` - The region of the delivery job.
-      * `status` - The status of the task. Valid values: `0`, `1`, `2`, `3`. `0`: The task is initializing. `1`: The task is delivering historical events. `2`: The delivery of historical events is complete. `3`: The task fails.
+
+### `jobs`
+
+The jobs supports the following attributes:
+* `create_time` - The time when the task was created.
+* `end_time` - The time when the task ended.
+* `history_delivery_job_id` -  The resource ID in terraform of History Delivery Job.
+* `home_region` - The home region of the trail.
+* `id` - The ID of the History Delivery Job.
+* `start_time` - The time when the task started.
+* `status` - The status of the task. Valid values: `0`, `1`, `2`, `3`. `0`: The task is initializing. `1`: The task is delivering historical events. `2`: The delivery of historical events is complete. `3`: The task fails.
+* `trail_name` - The name of the trail.
+* `updated_time` - The time when the task was updated.
+* `job_status` - Detail status of delivery job.
+
+### `jobs.job_status`
+
+The job_status supports the following attributes:
+* `region` - The region of the delivery job.
+* `status` - The status of the task. Valid values: `0`, `1`, `2`, `3`. `0`: The task is initializing. `1`: The task is delivering historical events. `2`: The delivery of historical events is complete. `3`: The task fails.

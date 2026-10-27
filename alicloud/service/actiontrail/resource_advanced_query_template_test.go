@@ -1,12 +1,14 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package actiontrail. This file is generated automatically. Please do not modify it manually, thank you!
+package actiontrail_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/actiontrail"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +17,22 @@ import (
 func TestAccAliCloudActiontrailAdvancedQueryTemplate_basic10937(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_advanced_query_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudActiontrailAdvancedQueryTemplateMap10937)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudActiontrailAdvancedQueryTemplateMap10937)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActiontrailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActiontrailAdvancedQueryTemplate")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudActiontrailAdvancedQueryTemplateBasicDependence10937)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudActiontrailAdvancedQueryTemplateBasicDependence10937)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -86,22 +88,22 @@ variable "name" {
 func TestAccAliCloudActiontrailAdvancedQueryTemplate_basic10764(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_advanced_query_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudActiontrailAdvancedQueryTemplateMap10764)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudActiontrailAdvancedQueryTemplateMap10764)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActiontrailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActiontrailAdvancedQueryTemplate")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudActiontrailAdvancedQueryTemplateBasicDependence10764)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudActiontrailAdvancedQueryTemplateBasicDependence10764)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -157,22 +159,22 @@ variable "name" {
 func TestAccAliCloudActiontrailAdvancedQueryTemplate_basic10763(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_advanced_query_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudActiontrailAdvancedQueryTemplateMap10763)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudActiontrailAdvancedQueryTemplateMap10763)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActiontrailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActiontrailAdvancedQueryTemplate")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudActiontrailAdvancedQueryTemplateBasicDependence10763)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudActiontrailAdvancedQueryTemplateBasicDependence10763)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -228,22 +230,22 @@ variable "name" {
 func TestAccAliCloudActiontrailAdvancedQueryTemplate_basic5151(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_actiontrail_advanced_query_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudActiontrailAdvancedQueryTemplateMap5151)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ActiontrailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudActiontrailAdvancedQueryTemplateMap5151)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return actiontrail.NewActiontrailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeActiontrailAdvancedQueryTemplate")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccactiontrail%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudActiontrailAdvancedQueryTemplateBasicDependence5151)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudActiontrailAdvancedQueryTemplateBasicDependence5151)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

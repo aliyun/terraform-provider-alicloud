@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package actiontrail. This file is generated automatically. Please do not modify it manually, thank you!
+package actiontrail
 
 import (
 	"fmt"
@@ -7,16 +7,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudActiontrailAdvancedQueryTemplate() *schema.Resource {
+func ResourceAdvancedQueryTemplate() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudActiontrailAdvancedQueryTemplateCreate,
-		Read:   resourceAliCloudActiontrailAdvancedQueryTemplateRead,
-		Update: resourceAliCloudActiontrailAdvancedQueryTemplateUpdate,
-		Delete: resourceAliCloudActiontrailAdvancedQueryTemplateDelete,
+		Create: ResourceAdvancedQueryTemplateCreate,
+		Read:   ResourceAdvancedQueryTemplateRead,
+		Update: ResourceAdvancedQueryTemplateUpdate,
+		Delete: ResourceAdvancedQueryTemplateDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -42,7 +45,7 @@ func resourceAliCloudActiontrailAdvancedQueryTemplate() *schema.Resource {
 	}
 }
 
-func resourceAliCloudActiontrailAdvancedQueryTemplateCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdvancedQueryTemplateCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -58,11 +61,11 @@ func resourceAliCloudActiontrailAdvancedQueryTemplateCreate(d *schema.ResourceDa
 	if v, ok := d.GetOk("template_name"); ok {
 		request["TemplateName"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -70,29 +73,29 @@ func resourceAliCloudActiontrailAdvancedQueryTemplateCreate(d *schema.ResourceDa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_actiontrail_advanced_query_template", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_actiontrail_advanced_query_template", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["TemplateId"]))
 
-	return resourceAliCloudActiontrailAdvancedQueryTemplateRead(d, meta)
+	return ResourceAdvancedQueryTemplateRead(d, meta)
 }
 
-func resourceAliCloudActiontrailAdvancedQueryTemplateRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdvancedQueryTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	actiontrailServiceV2 := ActiontrailServiceV2{client}
+	actiontrailServiceV2 := NewActiontrailServiceV2(client)
 
 	objectRaw, err := actiontrailServiceV2.DescribeActiontrailAdvancedQueryTemplate(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_actiontrail_advanced_query_template DescribeActiontrailAdvancedQueryTemplate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("simple_query", objectRaw["SimpleQuery"])
@@ -102,7 +105,7 @@ func resourceAliCloudActiontrailAdvancedQueryTemplateRead(d *schema.ResourceData
 	return nil
 }
 
-func resourceAliCloudActiontrailAdvancedQueryTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdvancedQueryTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -129,11 +132,11 @@ func resourceAliCloudActiontrailAdvancedQueryTemplateUpdate(d *schema.ResourceDa
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -141,16 +144,16 @@ func resourceAliCloudActiontrailAdvancedQueryTemplateUpdate(d *schema.ResourceDa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudActiontrailAdvancedQueryTemplateRead(d, meta)
+	return ResourceAdvancedQueryTemplateRead(d, meta)
 }
 
-func resourceAliCloudActiontrailAdvancedQueryTemplateDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdvancedQueryTemplateDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteAdvancedQueryTemplate"
@@ -161,12 +164,12 @@ func resourceAliCloudActiontrailAdvancedQueryTemplateDelete(d *schema.ResourceDa
 	request = make(map[string]interface{})
 	request["TemplateId"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Actiontrail", "2020-07-06", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -174,13 +177,13 @@ func resourceAliCloudActiontrailAdvancedQueryTemplateDelete(d *schema.ResourceDa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
