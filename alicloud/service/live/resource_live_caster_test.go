@@ -1,11 +1,13 @@
-package alicloud
+package live_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/live"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudLiveCaster_basic9293(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_live_caster.default"
-	ra := resourceAttrInit(resourceId, AlicloudLiveCasterMap9293)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LiveServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudLiveCasterMap9293)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return live.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLiveCaster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLiveCasterBasicDependence9293)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudLiveCasterBasicDependence9293)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -43,7 +45,7 @@ func TestAccAliCloudLiveCaster_basic9293(t *testing.T) {
 						"caster_name":       name,
 						"payment_type":      "PayAsYouGo",
 						"norm_type":         "1",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -64,14 +66,14 @@ func TestAccAliCloudLiveCaster_basic9293(t *testing.T) {
 					"auto_switch_urgent_on":     "false",
 					"side_output_url_list":      "[\\\"rtmp://antang-test-del04.alivecdn.com/app1/stream1\\\",\\\"rtmp://antang-test-del04.alivecdn.com/app2/stream2\\\"]",
 					"side_output_url":           "rtmp://antang-test-del04.alivecdn.com/app1/stream1",
-					"callback_url":              "http://aliyundoc.com:8000/caster/4a82a3d1b7f0462ea37348366201",
+					"callback_url":              "https://www.aliyun.com",
 					"record_config":             "{\\\"endpoint\\\":\\\"http://oss-cn-shanghai.aliyuncs.com/api\\\",\\\"ossBucket\\\":\\\"liveBucketabcd\\\",\\\"VideoFormat\\\":[{\\\"OssObjectPrefix\\\":\\\"record/apptest/streamtest/1733396815_1733396875\\\",\\\"Format\\\":\\\"m3u8\\\",\\\"CycleDuration\\\":21600,\\\"SliceOssObjectPrefix\\\":\\\"record/apptest/streamtest-s/1733396815\\\"},{\\\"OssObjectPrefix\\\":\\\"record/apptest2/streamtest2/1733396815_1733396875\\\",\\\"Format\\\":\\\"flv\\\",\\\"CycleDuration\\\":21600}],\\\"interval\\\":5}",
 					"sync_groups_config":        "[{\\\"mode\\\":1,\\\"resourceIds\\\":[],\\\"hostResourceId\\\":\\\"3aa2b39a-fd0e-4b8c-be73-b7af31c4****\\\"}]",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"caster_name":               name + "_update",
-						"resource_group_id":         CHECKSET,
+						"resource_group_id":         acctest.CHECKSET,
 						"resource_type":             "caster",
 						"domain_name":               "guoxinplay.alivecdn.com",
 						"urgent_image_url":          "http://learn.aliyundoc.com/AppName/image.jpg",
@@ -85,7 +87,7 @@ func TestAccAliCloudLiveCaster_basic9293(t *testing.T) {
 						"auto_switch_urgent_on":     "false",
 						"side_output_url_list":      "[\"rtmp://antang-test-del04.alivecdn.com/app1/stream1\",\"rtmp://antang-test-del04.alivecdn.com/app2/stream2\"]",
 						"side_output_url":           "rtmp://antang-test-del04.alivecdn.com/app1/stream1",
-						"callback_url":              "http://aliyundoc.com:8000/caster/4a82a3d1b7f0462ea37348366201",
+						"callback_url":              "https://www.aliyun.com",
 						"record_config":             "{\"endpoint\":\"http://oss-cn-shanghai.aliyuncs.com/api\",\"ossBucket\":\"liveBucketabcd\",\"VideoFormat\":[{\"OssObjectPrefix\":\"record/apptest/streamtest/1733396815_1733396875\",\"Format\":\"m3u8\",\"CycleDuration\":21600,\"SliceOssObjectPrefix\":\"record/apptest/streamtest-s/1733396815\"},{\"OssObjectPrefix\":\"record/apptest2/streamtest2/1733396815_1733396875\",\"Format\":\"flv\",\"CycleDuration\":21600}],\"interval\":5}",
 						"sync_groups_config":        "[{\"mode\":1,\"resourceIds\":[],\"hostResourceId\":\"3aa2b39a-fd0e-4b8c-be73-b7af31c4****\"}]",
 					}),
@@ -133,13 +135,13 @@ func TestAccAliCloudLiveCaster_basic9293(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -154,7 +156,7 @@ func TestAccAliCloudLiveCaster_basic9293(t *testing.T) {
 }
 
 var AlicloudLiveCasterMap9293 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudLiveCasterBasicDependence9293(name string) string {

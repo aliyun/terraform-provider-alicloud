@@ -1,4 +1,4 @@
-package alicloud
+package live
 
 import (
 	"fmt"
@@ -7,17 +7,25 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type LiveServiceV2 struct {
+type Service struct {
 	client *connectivity.AliyunClient
+}
+
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
 }
 
 // DescribeLiveCaster <<< Encapsulated get interface for Live Caster.
 
-func (s *LiveServiceV2) DescribeLiveCaster(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeLiveCaster(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -28,12 +36,12 @@ func (s *LiveServiceV2) DescribeLiveCaster(id string) (object map[string]interfa
 	request["CasterId"] = id
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -41,34 +49,34 @@ func (s *LiveServiceV2) DescribeLiveCaster(id string) (object map[string]interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"RegionNoResource"}) {
-			return object, WrapErrorf(NotFoundErr("Caster", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"RegionNoResource"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Caster", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.CasterList.Caster[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CasterList.Caster[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.CasterList.Caster[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Caster", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Caster", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *LiveServiceV2) LiveCasterStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) LiveCasterStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeLiveCaster(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -83,7 +91,7 @@ func (s *LiveServiceV2) LiveCasterStateRefreshFunc(id string, field string, fail
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -93,7 +101,7 @@ func (s *LiveServiceV2) LiveCasterStateRefreshFunc(id string, field string, fail
 // DescribeLiveCaster >>> Encapsulated.
 
 // SetResourceTags <<< Encapsulated tag function for LiveCaster.
-func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		var err error
 		var action string
@@ -102,10 +110,10 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -120,11 +128,11 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -132,9 +140,9 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -153,11 +161,11 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 
 			request["ResourceType"] = d.Get("resource_type")
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -165,9 +173,9 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -176,7 +184,7 @@ func (s *LiveServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 	return nil
 }
 
-func (s *LiveServiceV2) SetLiveResourceTags(d *schema.ResourceData, resourceType string) error {
+func (s *Service) SetLiveResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		var action string
 		var err error
@@ -185,10 +193,10 @@ func (s *LiveServiceV2) SetLiveResourceTags(d *schema.ResourceData, resourceType
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -203,11 +211,11 @@ func (s *LiveServiceV2) SetLiveResourceTags(d *schema.ResourceData, resourceType
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -215,9 +223,9 @@ func (s *LiveServiceV2) SetLiveResourceTags(d *schema.ResourceData, resourceType
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -236,11 +244,11 @@ func (s *LiveServiceV2) SetLiveResourceTags(d *schema.ResourceData, resourceType
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -248,9 +256,9 @@ func (s *LiveServiceV2) SetLiveResourceTags(d *schema.ResourceData, resourceType
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -263,7 +271,7 @@ func (s *LiveServiceV2) SetLiveResourceTags(d *schema.ResourceData, resourceType
 
 // DescribeLiveDomain <<< Encapsulated get interface for Live Domain.
 
-func (s *LiveServiceV2) DescribeLiveDomain(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeLiveDomain(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -274,12 +282,12 @@ func (s *LiveServiceV2) DescribeLiveDomain(id string) (object map[string]interfa
 
 	action := "DescribeLiveDomainDetail"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -287,23 +295,23 @@ func (s *LiveServiceV2) DescribeLiveDomain(id string) (object map[string]interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Domain", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.DomainDetail", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainDetail", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DomainDetail", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *LiveServiceV2) DescribeDomainListLiveTagResources(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDomainListLiveTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -315,12 +323,12 @@ func (s *LiveServiceV2) DescribeDomainListLiveTagResources(id string) (object ma
 	request["ResourceType"] = "DOMAIN"
 	action := "ListLiveTagResources"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -328,26 +336,26 @@ func (s *LiveServiceV2) DescribeDomainListLiveTagResources(id string) (object ma
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *LiveServiceV2) LiveDomainStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) LiveDomainStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.LiveDomainStateRefreshFuncWithApi(id, field, failStates, s.DescribeLiveDomain)
 }
 
-func (s *LiveServiceV2) LiveDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+func (s *Service) LiveDomainStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -361,7 +369,7 @@ func (s *LiveServiceV2) LiveDomainStateRefreshFuncWithApi(id string, field strin
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil

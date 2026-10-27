@@ -1,12 +1,14 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package live_test. This file is generated automatically. Please do not modify it manually, thank you!
+package live_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/live"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +17,22 @@ import (
 func TestAccAliCloudLiveDomain_basic11928(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_live_domain.default"
-	ra := resourceAttrInit(resourceId, AliCloudLiveDomainMap11928)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LiveServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudLiveDomainMap11928)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return live.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLiveDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.com", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudLiveDomainBasicDependence11928)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.com", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudLiveDomainBasicDependence11928)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -52,7 +54,7 @@ func TestAccAliCloudLiveDomain_basic11928(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -118,13 +120,13 @@ func TestAccAliCloudLiveDomain_basic11928(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -141,22 +143,22 @@ func TestAccAliCloudLiveDomain_basic11928(t *testing.T) {
 func TestAccAliCloudLiveDomain_basic11928_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_live_domain.default"
-	ra := resourceAttrInit(resourceId, AliCloudLiveDomainMap11928)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LiveServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudLiveDomainMap11928)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return live.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLiveDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.com", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudLiveDomainBasicDependence11928)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.com", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudLiveDomainBasicDependence11928)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -175,7 +177,7 @@ func TestAccAliCloudLiveDomain_basic11928_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain_type":       "liveVideo",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"scope":             "global",
 						"domain_name":       "demo.alicloud.com",
 						"region":            "cn-shanghai",
@@ -197,10 +199,10 @@ func TestAccAliCloudLiveDomain_basic11928_twin(t *testing.T) {
 }
 
 var AliCloudLiveDomainMap11928 = map[string]string{
-	"create_time":       CHECKSET,
-	"resource_group_id": CHECKSET,
-	"scope":             CHECKSET,
-	"status":            CHECKSET,
+	"create_time":       acctest.CHECKSET,
+	"resource_group_id": acctest.CHECKSET,
+	"scope":             acctest.CHECKSET,
+	"status":            acctest.CHECKSET,
 }
 
 func AliCloudLiveDomainBasicDependence11928(name string) string {
@@ -209,8 +211,7 @@ variable "name" {
     default = "%s"
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {
-}
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 
 `, name)
