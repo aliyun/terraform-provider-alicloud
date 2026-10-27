@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package hologram. This file is generated automatically. Please do not modify it manually, thank you!
+package hologram
 
 import (
 	"fmt"
@@ -9,16 +9,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudHologramInstance() *schema.Resource {
+func ResourceInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudHologramInstanceCreate,
-		Read:   resourceAliCloudHologramInstanceRead,
-		Update: resourceAliCloudHologramInstanceUpdate,
-		Delete: resourceAliCloudHologramInstanceDelete,
+		Create: resourceInstanceCreate,
+		Read:   resourceInstanceRead,
+		Update: resourceInstanceUpdate,
+		Delete: resourceInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -104,13 +110,13 @@ func resourceAliCloudHologramInstance() *schema.Resource {
 			"instance_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^.{2,64}$"), "The name of the resource"),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^.{2,64}$"), "The name of the resource"),
 			},
 			"instance_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Standard", "Follower", "Warehouse", "Shared", "Serverless"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Standard", "Follower", "Warehouse", "Shared", "Serverless"}, false),
 			},
 			"leader_instance_id": {
 				Type:     schema.TypeString,
@@ -121,12 +127,12 @@ func resourceAliCloudHologramInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"pricing_cycle": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Month", "Hour"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Month", "Hour"}, false),
 			},
 			"region_id": {
 				Type:     schema.TypeString,
@@ -140,19 +146,19 @@ func resourceAliCloudHologramInstance() *schema.Resource {
 			"scale_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"DOWNGRADE", "UPGRADE"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"DOWNGRADE", "UPGRADE"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Running", "Allocating", "Suspended", "Creating"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Running", "Allocating", "Suspended", "Creating"}, false),
 			},
 			"storage_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -162,7 +168,7 @@ func resourceAliCloudHologramInstance() *schema.Resource {
 	}
 }
 
-func resourceAliCloudHologramInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -182,7 +188,7 @@ func resourceAliCloudHologramInstanceCreate(d *schema.ResourceData, meta interfa
 	}
 	jsonPathResult2, err := jsonpath.Get("$[*].vswitch_id", d.Get("endpoints").(*schema.Set).List())
 	if err == nil {
-		request["vSwitchId"] = convertListToCommaSeparate(filterEmptyStrings(jsonPathResult2.([]interface{})))
+		request["vSwitchId"] = convert.ConvertListToCommaSeparate(convert.FilterEmptyStrings(jsonPathResult2.([]interface{})))
 	}
 
 	if v, ok := d.GetOkExists("gateway_count"); ok {
@@ -191,7 +197,7 @@ func resourceAliCloudHologramInstanceCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["resourceGroupId"] = v
 	}
-	request["chargeType"] = convertHologramInstancechargeTypeRequest(d.Get("payment_type").(string))
+	request["chargeType"] = convertInstancechargeTypeRequest(d.Get("payment_type").(string))
 	request["instanceName"] = d.Get("instance_name")
 	if v, ok := d.GetOkExists("auto_pay"); ok {
 		request["autoPay"] = v
@@ -201,7 +207,7 @@ func resourceAliCloudHologramInstanceCreate(d *schema.ResourceData, meta interfa
 	}
 	jsonPathResult9, err := jsonpath.Get("$[*].vpc_id", d.Get("endpoints").(*schema.Set).List())
 	if err == nil {
-		request["vpcId"] = convertListToCommaSeparate(filterEmptyStrings(jsonPathResult9.([]interface{})))
+		request["vpcId"] = convert.ConvertListToCommaSeparate(convert.FilterEmptyStrings(jsonPathResult9.([]interface{})))
 	}
 
 	request["regionId"] = client.RegionId
@@ -220,11 +226,11 @@ func resourceAliCloudHologramInstanceCreate(d *schema.ResourceData, meta interfa
 		request["coldStorageSize"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -232,41 +238,41 @@ func resourceAliCloudHologramInstanceCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_hologram_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_hologram_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	code, _ := jsonpath.Get("$.Data.Success", response)
 	if fmt.Sprint(code) != "true" {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_hologram_instance", action, AlibabaCloudSdkGoERROR, response)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_hologram_instance", action, errs.AlibabaCloudSdkGoERROR, response)
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
-	hologramServiceV2 := HologramServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+	service := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudHologramInstanceUpdate(d, meta)
+	return resourceInstanceUpdate(d, meta)
 }
 
-func resourceAliCloudHologramInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hologramServiceV2 := HologramServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := hologramServiceV2.DescribeHologramInstance(d.Id())
+	objectRaw, err := service.DescribeInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_hologram_instance DescribeHologramInstance Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_hologram_instance DescribeInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("cold_storage_size", objectRaw["ColdStorage"])
@@ -277,7 +283,7 @@ func resourceAliCloudHologramInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("instance_name", objectRaw["InstanceName"])
 	d.Set("instance_type", objectRaw["InstanceType"])
 	d.Set("leader_instance_id", objectRaw["LeaderInstanceId"])
-	d.Set("payment_type", convertHologramInstanceInstanceInstanceChargeTypeResponse(objectRaw["InstanceChargeType"]))
+	d.Set("payment_type", convertInstanceInstanceInstanceChargeTypeResponse(objectRaw["InstanceChargeType"]))
 	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("status", objectRaw["InstanceStatus"])
@@ -287,7 +293,7 @@ func resourceAliCloudHologramInstanceRead(d *schema.ResourceData, meta interface
 	endpointsRaw := objectRaw["Endpoints"]
 	endpointsMaps := make([]map[string]interface{}, 0)
 	if endpointsRaw != nil {
-		for _, endpointsChildRaw := range convertToInterfaceArray(endpointsRaw) {
+		for _, endpointsChildRaw := range convert.ConvertToInterfaceArray(endpointsRaw) {
 			endpointsMap := make(map[string]interface{})
 			endpointsChildRaw := endpointsChildRaw.(map[string]interface{})
 			endpointsMap["alternative_endpoints"] = endpointsChildRaw["AlternativeEndpoints"]
@@ -305,12 +311,12 @@ func resourceAliCloudHologramInstanceRead(d *schema.ResourceData, meta interface
 		return err
 	}
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -320,8 +326,8 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	update := false
 	d.Partial(true)
 
-	hologramServiceV2 := HologramServiceV2{client}
-	objectRaw, _ := hologramServiceV2.DescribeHologramInstance(d.Id())
+	service := NewService(client)
+	objectRaw, _ := service.DescribeInstance(d.Id())
 
 	if d.HasChange("status") {
 		var err error
@@ -329,7 +335,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 
 		currentStatus, err := jsonpath.Get("InstanceStatus", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "InstanceStatus", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "InstanceStatus", objectRaw)
 		}
 		if fmt.Sprint(currentStatus) != target {
 			if target == "Suspended" {
@@ -341,11 +347,11 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 				request["instanceId"] = d.Id()
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -353,14 +359,14 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				hologramServiceV2 := HologramServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Suspended"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+				service := NewService(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"Suspended"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -373,11 +379,11 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 				request["instanceId"] = d.Id()
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -385,14 +391,14 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				hologramServiceV2 := HologramServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+				service := NewService(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -405,9 +411,9 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 
 		currentStatus, err := jsonpath.Get("EnableSSL", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "EnableSSL", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "EnableSSL", objectRaw)
 		}
-		currentStatusValue, formatErr := formatBool(currentStatus)
+		currentStatusValue, formatErr := convert.FormatBool(currentStatus)
 		if formatErr != nil {
 			return formatErr
 		}
@@ -420,11 +426,11 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 				body = make(map[string]interface{})
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("Hologram", "2022-06-01", action, query, header, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -432,9 +438,9 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
@@ -446,11 +452,11 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 				body = make(map[string]interface{})
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("Hologram", "2022-06-01", action, query, header, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -458,9 +464,9 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
@@ -480,11 +486,11 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	request["instanceName"] = d.Get("instance_name")
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -492,20 +498,20 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		hologramServiceV2 := HologramServiceV2{client}
+		service := NewService(client)
 
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(request["instanceName"])}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "InstanceName", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(request["instanceName"])}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "InstanceName", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
-		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		stateConf = helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -546,11 +552,11 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -558,22 +564,22 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		hologramServiceV2 := HologramServiceV2{client}
+		service := NewService(client)
 
 		if d.HasChange("cpu") {
-			stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(request["cpu"])}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "Cpu", []string{}))
+			stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(request["cpu"])}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "Cpu", []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -591,11 +597,11 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -603,14 +609,14 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		hologramServiceV2 := HologramServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
+		service := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -629,11 +635,11 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -641,20 +647,20 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		hologramServiceV2 := HologramServiceV2{client}
+		service := NewService(client)
 
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(request["gatewayCount"])}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "GatewayCount", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(request["gatewayCount"])}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "GatewayCount", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
-		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		stateConf = helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -670,7 +676,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	jsonPathResult, err := jsonpath.Get("$[*].vpc_id", d.Get("endpoints").(*schema.Set).List())
 	if err == nil {
-		request["vpcId"] = convertListToCommaSeparate(filterEmptyStrings(jsonPathResult.([]interface{})))
+		request["vpcId"] = convert.ConvertListToCommaSeparate(convert.FilterEmptyStrings(jsonPathResult.([]interface{})))
 	}
 
 	if !d.IsNewResource() && d.HasChange("endpoints") {
@@ -678,7 +684,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	jsonPathResult1, err := jsonpath.Get("$[*].vswitch_id", d.Get("endpoints").(*schema.Set).List())
 	if err == nil {
-		request["vSwitchId"] = convertListToCommaSeparate(filterEmptyStrings(jsonPathResult1.([]interface{})))
+		request["vSwitchId"] = convert.ConvertListToCommaSeparate(convert.FilterEmptyStrings(jsonPathResult1.([]interface{})))
 	}
 
 	if d.HasChange("endpoints") {
@@ -686,15 +692,15 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	jsonPathResult2, err := jsonpath.Get("$[*].type", d.Get("endpoints").(*schema.Set).List())
 	if err == nil {
-		request["networkTypes"] = convertListToCommaSeparate(filterEmptyStrings(jsonPathResult2.([]interface{})))
+		request["networkTypes"] = convert.ConvertListToCommaSeparate(convert.FilterEmptyStrings(jsonPathResult2.([]interface{})))
 	}
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -702,33 +708,33 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		hologramServiceV2 := HologramServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		service := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	if d.HasChange("tags") {
-		hologramServiceV2 := HologramServiceV2{client}
-		if err := hologramServiceV2.SetResourceTags(d, ""); err != nil {
-			return WrapError(err)
+		service := NewService(client)
+		if err := service.SetResourceTags(d, ""); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudHologramInstanceRead(d, meta)
+	return resourceInstanceRead(d, meta)
 }
 
-func resourceAliCloudHologramInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	enableDelete := true
 	if v, ok := d.GetOk("payment_type"); ok {
-		if InArray(fmt.Sprint(v), []string{"Subscription"}) {
-			return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+		if helper.InArray(fmt.Sprint(v), []string{"Subscription"}) {
+			return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 		}
 	}
 	if enableDelete {
@@ -745,12 +751,12 @@ func resourceAliCloudHologramInstanceDelete(d *schema.ResourceData, meta interfa
 		request["RegionId"] = client.RegionId
 
 		body = request
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RoaPost("Hologram", "2022-06-01", action, query, nil, body, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -758,26 +764,26 @@ func resourceAliCloudHologramInstanceDelete(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"resource not exists failed"}) || NotFoundError(err) {
+			if errs.IsExpectedErrors(err, []string{"resource not exists failed"}) || errs.NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		hologramServiceV2 := HologramServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, hologramServiceV2.HologramInstanceStateRefreshFunc(d.Id(), "$.InstanceId", []string{}))
+		service := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, service.InstanceStateRefreshFunc(d.Id(), "$.InstanceId", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
 	return nil
 }
 
-func convertHologramInstanceInstanceInstanceChargeTypeResponse(source interface{}) interface{} {
+func convertInstanceInstanceInstanceChargeTypeResponse(source interface{}) interface{} {
 	source = fmt.Sprint(source)
 	switch source {
 	case "PostPaid":
@@ -788,7 +794,7 @@ func convertHologramInstanceInstanceInstanceChargeTypeResponse(source interface{
 	return source
 }
 
-func convertHologramInstancechargeTypeRequest(source interface{}) interface{} {
+func convertInstancechargeTypeRequest(source interface{}) interface{} {
 	source = fmt.Sprint(source)
 	switch source {
 	case "Subscription":
