@@ -1,4 +1,4 @@
-package alicloud
+package scdn_test
 
 import (
 	"fmt"
@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func SkipTestAccAlicloudScdnDomainDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
+	rand := tfacctest.RandIntRange(1000, 9999)
 	testAccConfig := dataSourceTestAccConfigFunc("data.alicloud_scdn_domains.default", strconv.FormatInt(int64(rand), 10), dataSourceScdnDomainsConfigDependence)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{

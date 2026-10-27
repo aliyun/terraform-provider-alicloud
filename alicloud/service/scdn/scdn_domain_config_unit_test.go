@@ -1,7 +1,6 @@
-package alicloud
+package scdn
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -12,203 +11,15 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func SkipTestAccAlicloudScdnDomainConfig_ip_allow_list(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_scdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, scdnDomainConfigBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &ScdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceScdnDomainConfigDependence)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_scdn_domain.default.domain_name}",
-					"function_name": "ip_allow_list_set",
-					"function_args": []map[string]interface{}{
-						{
-							"arg_name":  "ip_list",
-							"arg_value": "110.110.110.110",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"domain_name":     name,
-						"function_name":   "ip_allow_list_set",
-						"function_args.#": "1",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func SkipTestAccAlicloudScdnDomainConfig_referer_white_list(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_scdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, scdnDomainConfigBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &ScdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceScdnDomainConfigDependence)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_scdn_domain.default.domain_name}",
-					"function_name": "referer_white_list_set",
-					"function_args": []map[string]interface{}{
-						{
-							"arg_name":  "refer_domain_allow_list",
-							"arg_value": "110.110.110.110",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"domain_name":     name,
-						"function_name":   "referer_white_list_set",
-						"function_args.#": "1",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func SkipTestAccAlicloudScdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_scdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, scdnDomainConfigBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &ScdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceScdnDomainConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"domain_name":   "${alicloud_scdn_domain.default.domain_name}",
-					"function_name": "filetype_based_ttl_set",
-					"function_args": []map[string]interface{}{
-						{
-							"arg_name":  "ttl",
-							"arg_value": "300",
-						},
-						{
-							"arg_name":  "file_type",
-							"arg_value": "jpg",
-						},
-						{
-							"arg_name":  "weight",
-							"arg_value": "1",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"domain_name":     name,
-						"function_name":   "filetype_based_ttl_set",
-						"function_args.#": "3",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func resourceScdnDomainConfigDependence(name string) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "%s"
-	}
-	resource "alicloud_scdn_domain" "default" {
-	 domain_name = var.name
-	 status = "online"
-     sources {
-        content = "1.1.1.1"
-        type = "ipaddr"
-        priority = 20
-        port = 80
-     }
-	}
-`, name)
-}
-
-var scdnDomainConfigBasicMap = map[string]string{
-	"config_id": CHECKSET,
-	"status":    "success",
-}
-
 // lintignore: R001
 func SkipTestUnitAlicloudScdnDomainConfig(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_scdn_domain_config"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_scdn_domain_config"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -232,7 +43,7 @@ func SkipTestUnitAlicloudScdnDomainConfig(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -260,18 +71,18 @@ func SkipTestUnitAlicloudScdnDomainConfig(t *testing.T) {
 	CreateMockResponse := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_scdn_domain_config", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_scdn_domain_config", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -279,9 +90,9 @@ func SkipTestUnitAlicloudScdnDomainConfig(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewScdnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -329,9 +140,9 @@ func SkipTestUnitAlicloudScdnDomainConfig(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewScdnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -448,9 +259,9 @@ func SkipTestUnitAlicloudScdnDomainConfig(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewScdnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})

@@ -1096,9 +1096,6 @@ func Provider() *schema.Provider {
 			// sag
 			"alicloud_sag_acls": dataSourceAlicloudSagAcls(),
 
-			// scdn
-			"alicloud_scdn_domains": dataSourceAlicloudScdnDomains(),
-
 			// schedulerx
 			"alicloud_schedulerx_namespaces": dataSourceAlicloudSchedulerxNamespaces(),
 
@@ -2570,10 +2567,6 @@ func Provider() *schema.Provider {
 			"alicloud_sag_snat_entry":  resourceAlicloudSagSnatEntry(),
 			"alicloud_sag_dnat_entry":  resourceAlicloudSagDnatEntry(),
 			"alicloud_sag_client_user": resourceAlicloudSagClientUser(),
-
-			// scdn
-			"alicloud_scdn_domain":        resourceAlicloudScdnDomain(),
-			"alicloud_scdn_domain_config": resourceAlicloudScdnDomainConfig(),
 
 			// schedulerx
 			"alicloud_schedulerx_app_group": resourceAliCloudSchedulerxAppGroup(),
