@@ -95,8 +95,25 @@ The following arguments are supported:
 * `backup_set_id` - (Optional, Available since v1.211.1) The ID of the backup set that you want to use to restore data.
 * `restore_type` - (Optional, Available since v1.211.1) The method that you want to use to restore data. Valid values:
   - `backup`: Restores data from a backup set. **NOTE:** You must set `source_db_cluster_id` and `backup_set_id`.
-  - `timepoint `: Restores data to a point in time. **NOTE:** You must set `source_db_cluster_id` and `restore_to_time`.
+  - `timepoint`: Restores data to a point in time. **NOTE:** You must set `source_db_cluster_id` and `restore_to_time`.
 * `restore_to_time` - (Optional, Available since v1.211.1) The point in time to which you want to restore data from the backup set.
+* `db_cluster_network_type` - (Optional, String, ForceNew, Available since v2.2.0) The network type of the cluster. Valid value: `VPC`.
+* `audit_log_status` - (Optional, String, Available since v2.2.0) The status of the SQL audit log. Valid values: `on`, `off`.
+* `essd_cache_size` - (Optional, Int, Available since v2.2.0) The size of the ESSD cache. Unit: GB.
+* `enable_essd_cache` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable the ESSD cache feature. Valid values: `true`, `false`.
+* `capacity` - (Optional, Int, Available since v2.2.0) The size of the lake storage acceleration cache. Unit: GB.
+* `enable_lake_cache` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable lake storage acceleration. Valid values: `true`, `false`.
+* `enable_compaction_service` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable the remote build (compaction) service. Valid values: `true`, `false`.
+* `maintain_time` - (Optional, String, Available since v2.2.0) The maintenance window of the cluster. Format: `HH:00Z-HH:00Z`. The window must start on the hour and span exactly one hour, for example `04:00Z-05:00Z`.
+* `auto_renewal_status` - (Optional, String, Available since v2.2.0) The auto-renewal status of a `Subscription` cluster. Valid values: `AutoRenewal`, `Normal`, `NotRenewal`. **NOTE:** This argument is valid only when `payment_type` is set to `Subscription`.
+* `auto_renewal_period` - (Optional, Int, Available since v2.2.0) The auto-renewal duration of a `Subscription` cluster. Valid values: `1` to `11` when `auto_renewal_period_unit` is `Month`, `1`, `2`, `3` or `5` when `auto_renewal_period_unit` is `Year`. **NOTE:** This argument is valid only when `payment_type` is set to `Subscription`.
+* `auto_renewal_period_unit` - (Optional, String, Available since v2.2.0) The unit of the auto-renewal duration of a `Subscription` cluster. Valid values: `Year`, `Month`. **NOTE:** This argument is valid only when `payment_type` is set to `Subscription`.
+* `db_cluster_ip_array_name` - (Optional, String, Available since v2.2.0) The name of the IP address whitelist group. Defaults to `default`. **NOTE:** `security_ips` is applied to this group. Changing the name does not delete the previous group; remove it manually in the console if it is no longer needed.
+* `db_cluster_ip_array_attribute` - (Optional, String, Available since v2.2.0) The attribute of the IP address whitelist group. Set it to `hidden` to hide the group in the console. **NOTE:** This argument is write-only. Groups that carry the `hidden` attribute are not returned by the whitelist query API, so the attribute and the IP list of such a group cannot be refreshed and drift is not detected.
+* `modify_mode` - (Optional, String, Available since v2.2.0) The modification mode of the IP address whitelist. Valid values: `Cover`, `Append`, `Delete`.
+* `db_version` - (Optional, String, Available since v2.2.0) The kernel version to which you want to upgrade the cluster. **NOTE:** `db_version` must be set when you change the kernel version. Use the version returned by `DescribeKernelVersion` and make sure it is newer than the current kernel version of the cluster.
+* `switch_mode` - (Optional, Int, Available since v2.2.0) The time when the kernel version is switched. Valid values: `0` (switch immediately) and `1` (switch during the maintenance window). Defaults to `0`. **NOTE:** `switch_mode` takes effect only when `db_version` is set.
+* `engine_type` - (Optional, String, Available since v2.2.0) The computing engine type of the SQL audit log. Valid values: `XIHE`, `SPARK`. **NOTE:** This argument requires `audit_log_status` to be set.
 
 ## Attributes Reference
 
@@ -114,6 +131,7 @@ The following attributes are exported:
 * `port` - The port that is used to access the cluster.
 * `connection_string` - The endpoint of the cluster.
 * `create_time` - The createTime of the cluster.
+* `used_time` - (Available since v2.2.0) The subscription duration in months, derived from `period`. It is `0` for `PayAsYouGo` clusters and for subscription clusters without `period`.
 
 ## Timeouts
 

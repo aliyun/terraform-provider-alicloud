@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -879,7 +880,7 @@ func (s *AdbService) AdbDbClusterLakeVersionStateRefreshFunc(d *schema.ResourceD
 	}
 }
 
-func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[string]interface{}, err error) {
+func (s *AdbService) DescribeClusterAccessWhiteList(id string, ipArrayName string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeClusterAccessWhiteList"
 	request := map[string]interface{}{
@@ -910,18 +911,65 @@ func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[strin
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	resp, err := jsonpath.Get("$.Items.IPArray", response)
+	return adbIPArrayGroup(response, id, ipArrayName)
+}
+
+// adbIdentityValue returns the identity value of a collection element when the
+// API contract declares it as a non-empty string. A missing key, a wrong type or
+// an empty value is a malformed response, not evidence that the requested object
+// is absent, so callers must not turn it into a NotFound signal.
+func adbIdentityValue(item map[string]interface{}, key string) (string, bool) {
+	value, ok := item[key]
+	if !ok {
+		return "", false
+	}
+	text, ok := value.(string)
+	if !ok {
+		return "", false
+	}
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return "", false
+	}
+	return text, true
+}
+
+// adbIPArrayGroup selects one whitelist group from a DescribeClusterAccessWhiteList
+// response. Every element must carry the documented string identity key; only a
+// well-formed list without the requested group (an empty list or a hidden group
+// that the API does not return) is reported as NotFound.
+func adbIPArrayGroup(response map[string]interface{}, id string, ipArrayName string) (map[string]interface{}, error) {
+	value, err := jsonpath.Get("$.Items.IPArray", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.IPArray", response)
+		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.IPArray", response)
 	}
-
-	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(NotFoundErr("DBClusterLakeVersion", id), NotFoundWithResponse, response)
+	groups, ok := value.([]interface{})
+	if !ok {
+		return nil, WrapErrorf(Error("unexpected response shape"), FailedGetAttributeMsg, id, "$.Items.IPArray", response)
 	}
-
-	object = resp.([]interface{})[0].(map[string]interface{})
-
-	return object, nil
+	if len(groups) == 0 {
+		return nil, WrapErrorf(NotFoundErr("DBClusterLakeVersion", id), NotFoundWithResponse, response)
+	}
+	items := make([]map[string]interface{}, 0, len(groups))
+	names := make([]string, 0, len(groups))
+	for _, group := range groups {
+		item, ok := group.(map[string]interface{})
+		if !ok {
+			return nil, WrapErrorf(Error("unexpected response shape"), FailedGetAttributeMsg, id, "$.Items.IPArray", response)
+		}
+		name, ok := adbIdentityValue(item, "DBClusterIPArrayName")
+		if !ok {
+			return nil, WrapErrorf(Error("unexpected response shape: DBClusterIPArrayName must be a non-empty string"), FailedGetAttributeMsg, id, "$.Items.IPArray", response)
+		}
+		items = append(items, item)
+		names = append(names, name)
+	}
+	for i, name := range names {
+		if name == ipArrayName {
+			return items[i], nil
+		}
+	}
+	return nil, WrapErrorf(NotFoundErr("DBClusterLakeVersion", id+"#"+ipArrayName), NotFoundWithResponse, response)
 }
 
 func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]interface{}, err error) {
@@ -1114,4 +1162,249 @@ func (s *AdbService) AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d *sche
 
 		return object, fmt.Sprint(object["SSLEnabled"]), nil
 	}
+}
+
+// adbDataObjectSection returns a required object section of a response. A missing
+// key or an unexpected type is a malformed response, never a NotFound signal.
+func adbDataObjectSection(response map[string]interface{}, path string, id string) (map[string]interface{}, error) {
+	value, err := jsonpath.Get(path, response)
+	if err != nil {
+		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, path, response)
+	}
+	object, ok := value.(map[string]interface{})
+	if !ok {
+		return nil, WrapErrorf(Error("unexpected response shape"), FailedGetAttributeMsg, id, path, response)
+	}
+	return object, nil
+}
+
+// adbAutoRenewalRecord selects the record of one cluster from a
+// DescribeAutoRenewalAttribute response. PayAsYouGo clusters are not listed by the
+// API, so a well-formed list without the requested cluster is a NotFound signal;
+// every element must carry the documented string identity key first.
+func adbAutoRenewalRecord(response map[string]interface{}, id string) (map[string]interface{}, error) {
+	value, err := jsonpath.Get("$.Items.AutoRenewalAttribute", response)
+	if err != nil {
+		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.AutoRenewalAttribute", response)
+	}
+	records, ok := value.([]interface{})
+	if !ok {
+		return nil, WrapErrorf(Error("unexpected response shape"), FailedGetAttributeMsg, id, "$.Items.AutoRenewalAttribute", response)
+	}
+	if len(records) == 0 {
+		return nil, WrapErrorf(NotFoundErr("Adb:DbClusterLakeVersion", id), NotFoundWithResponse, response)
+	}
+	items := make([]map[string]interface{}, 0, len(records))
+	clusterIds := make([]string, 0, len(records))
+	for _, record := range records {
+		item, ok := record.(map[string]interface{})
+		if !ok {
+			return nil, WrapErrorf(Error("unexpected response shape"), FailedGetAttributeMsg, id, "$.Items.AutoRenewalAttribute", response)
+		}
+		clusterId, ok := adbIdentityValue(item, "DBClusterId")
+		if !ok {
+			return nil, WrapErrorf(Error("unexpected response shape: DBClusterId must be a non-empty string"), FailedGetAttributeMsg, id, "$.Items.AutoRenewalAttribute", response)
+		}
+		items = append(items, item)
+		clusterIds = append(clusterIds, clusterId)
+	}
+	for i, clusterId := range clusterIds {
+		if clusterId == id {
+			return items[i], nil
+		}
+	}
+	return nil, WrapErrorf(NotFoundErr("Adb:DbClusterLakeVersion", id), NotFoundWithResponse, response)
+}
+
+// adbLakeCacheResponseCodeOK reports whether the business Code of a
+// DescribeLakeCacheSize/ModifyLakeCacheSize response is the documented success
+// value. The second return value is false when the response carries no Code.
+func adbLakeCacheResponseCodeOK(response map[string]interface{}) (bool, bool) {
+	if response == nil {
+		return false, false
+	}
+	value, ok := response["Code"]
+	if !ok || value == nil {
+		return false, false
+	}
+	return fmt.Sprint(value) == "200", true
+}
+
+func (s *AdbService) DescribeAdbDbClusterLakeVersionEssdCacheConfig(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeEssdCacheConfig"
+	request := map[string]interface{}{
+		"DBClusterId": id,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	object, err = adbDataObjectSection(response, "$.Data", id)
+	if err != nil {
+		return nil, err
+	}
+	return object, nil
+}
+
+func (s *AdbService) DescribeAdbDbClusterLakeVersionLakeCacheSize(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeLakeCacheSize"
+	request := map[string]interface{}{
+		"DBClusterId": id,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	if ok, present := adbLakeCacheResponseCodeOK(response); present && !ok {
+		return object, WrapErrorf(Error(fmt.Sprintf("DescribeLakeCacheSize reported Code=%v", response["Code"])), DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	object, err = adbDataObjectSection(response, "$.Data", id)
+	if err != nil {
+		return nil, err
+	}
+	return object, nil
+}
+
+func (s *AdbService) DescribeAdbDbClusterLakeVersionCompactionServiceSwitch(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeCompactionServiceSwitch"
+	request := map[string]interface{}{
+		"DBClusterId": id,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	object, err = adbDataObjectSection(response, "$.Data", id)
+	if err != nil {
+		return nil, err
+	}
+	return object, nil
+}
+
+func (s *AdbService) DescribeAdbDbClusterLakeVersionAutoRenewalAttribute(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeAutoRenewalAttribute"
+
+	ids, err := json.Marshal([]string{id})
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"DBClusterId": string(ids),
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return adbAutoRenewalRecord(response, id)
+}
+
+func (s *AdbService) DescribeAdbDbClusterLakeVersionAuditLogConfig(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeAuditLogConfig"
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"DBClusterId": id,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		// DescribeAuditLogConfig is published under adb 2019-03-15.
+		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	object, err = adbDataObjectSection(response, "$", id)
+	if err != nil {
+		return nil, err
+	}
+	return object, nil
 }
