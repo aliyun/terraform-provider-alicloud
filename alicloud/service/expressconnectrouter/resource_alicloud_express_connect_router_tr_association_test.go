@@ -1,11 +1,13 @@
-package alicloud
+package expressconnectrouter_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/expressconnectrouter"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,25 +16,25 @@ import (
 func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6355(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_tr_association.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationMap6355)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ExpressConnectRouterServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationMap6355)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return expressconnectrouter.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeExpressConnectRouterExpressConnectRouterTrAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutertrassociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationBasicDependence6355)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutertrassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationBasicDependence6355)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"association_region_id":   defaultRegionToTest,
+					"association_region_id":   acctest.DefaultRegionToTest,
 					"ecr_id":                  "${alicloud_express_connect_router_express_connect_router.defaultpX0KlC.id}",
 					"cen_id":                  "${alicloud_cen_instance.default418DC9.id}",
 					"transit_router_owner_id": "${data.alicloud_account.current.id}",
@@ -40,8 +42,8 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"association_region_id": CHECKSET,
-						"ecr_id":                CHECKSET,
+						"association_region_id": acctest.CHECKSET,
+						"ecr_id":                acctest.CHECKSET,
 					}),
 				),
 			},
@@ -79,7 +81,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"association_region_id":   defaultRegionToTest,
+					"association_region_id":   acctest.DefaultRegionToTest,
 					"ecr_id":                  "${alicloud_express_connect_router_express_connect_router.defaultpX0KlC.id}",
 					"cen_id":                  "${alicloud_cen_instance.default418DC9.id}",
 					"transit_router_owner_id": "${data.alicloud_account.current.id}",
@@ -89,12 +91,12 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"association_region_id":   CHECKSET,
-						"ecr_id":                  CHECKSET,
-						"cen_id":                  CHECKSET,
-						"transit_router_owner_id": CHECKSET,
+						"association_region_id":   acctest.CHECKSET,
+						"ecr_id":                  acctest.CHECKSET,
+						"cen_id":                  acctest.CHECKSET,
+						"transit_router_owner_id": acctest.CHECKSET,
 						"allowed_prefixes.#":      "3",
-						"transit_router_id":       CHECKSET,
+						"transit_router_id":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -109,10 +111,10 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6
 }
 
 var AlicloudExpressConnectRouterExpressConnectRouterTrAssociationMap6355 = map[string]string{
-	"status":            CHECKSET,
-	"create_time":       CHECKSET,
-	"association_id":    CHECKSET,
-	"transit_router_id": CHECKSET,
+	"status":            acctest.CHECKSET,
+	"create_time":       acctest.CHECKSET,
+	"association_id":    acctest.CHECKSET,
+	"transit_router_id": acctest.CHECKSET,
 }
 
 func AlicloudExpressConnectRouterExpressConnectRouterTrAssociationBasicDependence6355(name string) string {
@@ -163,25 +165,25 @@ data "alicloud_account" "current" {
 func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6355_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_tr_association.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationMap6355)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ExpressConnectRouterServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationMap6355)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return expressconnectrouter.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeExpressConnectRouterExpressConnectRouterTrAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutertrassociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationBasicDependence6355)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutertrassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationBasicDependence6355)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"association_region_id":   defaultRegionToTest,
+					"association_region_id":   acctest.DefaultRegionToTest,
 					"ecr_id":                  "${alicloud_express_connect_router_express_connect_router.defaultpX0KlC.id}",
 					"cen_id":                  "${alicloud_cen_instance.default418DC9.id}",
 					"transit_router_owner_id": "${data.alicloud_account.current.id}",
@@ -191,12 +193,12 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"association_region_id":   CHECKSET,
-						"ecr_id":                  CHECKSET,
-						"cen_id":                  CHECKSET,
-						"transit_router_owner_id": CHECKSET,
+						"association_region_id":   acctest.CHECKSET,
+						"ecr_id":                  acctest.CHECKSET,
+						"cen_id":                  acctest.CHECKSET,
+						"transit_router_owner_id": acctest.CHECKSET,
 						"allowed_prefixes.#":      "3",
-						"transit_router_id":       CHECKSET,
+						"transit_router_id":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -214,25 +216,25 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6
 func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6355_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_tr_association.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationMap6355)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ExpressConnectRouterServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationMap6355)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return expressconnectrouter.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeExpressConnectRouterExpressConnectRouterTrAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutertrassociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationBasicDependence6355)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutertrassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationBasicDependence6355)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"association_region_id":   defaultRegionToTest,
+					"association_region_id":   acctest.DefaultRegionToTest,
 					"ecr_id":                  "${alicloud_express_connect_router_express_connect_router.defaultpX0KlC.id}",
 					"cen_id":                  "${alicloud_cen_instance.default418DC9.id}",
 					"transit_router_owner_id": "${data.alicloud_account.current.id}",
@@ -242,12 +244,12 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"association_region_id":   CHECKSET,
-						"ecr_id":                  CHECKSET,
-						"cen_id":                  CHECKSET,
-						"transit_router_owner_id": CHECKSET,
+						"association_region_id":   acctest.CHECKSET,
+						"ecr_id":                  acctest.CHECKSET,
+						"cen_id":                  acctest.CHECKSET,
+						"transit_router_owner_id": acctest.CHECKSET,
 						"allowed_prefixes.#":      "3",
-						"transit_router_id":       CHECKSET,
+						"transit_router_id":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -277,6 +279,62 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_basic6
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case TrAssociation allowed_prefixes collection order 6355
+func TestAccAliCloudExpressConnectRouterExpressConnectRouterTrAssociation_allowedPrefixesOrder6355(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_express_connect_router_tr_association.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationMap6355)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return expressconnectrouter.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeExpressConnectRouterExpressConnectRouterTrAssociation")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutertrassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudExpressConnectRouterExpressConnectRouterTrAssociationBasicDependence6355)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id":   acctest.DefaultRegionToTest,
+					"ecr_id":                  "${alicloud_express_connect_router_express_connect_router.defaultpX0KlC.id}",
+					"cen_id":                  "${alicloud_cen_instance.default418DC9.id}",
+					"transit_router_owner_id": "${data.alicloud_account.current.id}",
+					"allowed_prefixes": []string{
+						"${var.alowprefix1}", "${var.allowprefix2}", "${var.allowprefix3}"},
+					"transit_router_id": "${alicloud_cen_transit_router.defaultRYcjsc.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"association_region_id":   acctest.DefaultRegionToTest,
+					"ecr_id":                  "${alicloud_express_connect_router_express_connect_router.defaultpX0KlC.id}",
+					"cen_id":                  "${alicloud_cen_instance.default418DC9.id}",
+					"transit_router_owner_id": "${data.alicloud_account.current.id}",
+					"allowed_prefixes": []string{
+						"${var.allowprefix3}", "${var.allowprefix2}", "${var.alowprefix1}"},
+					"transit_router_id": "${alicloud_cen_transit_router.defaultRYcjsc.transit_router_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_prefixes.#": "3",
+					}),
+				),
 			},
 		},
 	})

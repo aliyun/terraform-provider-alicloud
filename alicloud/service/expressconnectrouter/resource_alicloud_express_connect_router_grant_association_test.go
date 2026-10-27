@@ -1,11 +1,13 @@
-package alicloud
+package expressconnectrouter_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/expressconnectrouter"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,24 @@ import (
 func TestAccAliCloudExpressConnectRouterGrantAssociation_basic9639(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_express_connect_router_grant_association.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectRouterGrantAssociationMap9639)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ExpressConnectRouterServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudExpressConnectRouterGrantAssociationMap9639)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return expressconnectrouter.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeExpressConnectRouterGrantAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sexpressconnectroutergrantassociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectRouterGrantAssociationBasicDependence9639)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectroutergrantassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudExpressConnectRouterGrantAssociationBasicDependence9639)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			// The pre-provisioned ECR (ecr-g2g2f4ww1vduya9xcn) lives in cn-hangzhou.
+			// Force cn-hangzhou via TestSalveRegions so GrantInstanceToExpressConnectRouter
+			// resolves the ECR in its home region, matching the data source test.
+			acctest.PreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -40,10 +45,10 @@ func TestAccAliCloudExpressConnectRouterGrantAssociation_basic9639(t *testing.T)
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ecr_id":             CHECKSET,
-						"instance_region_id": CHECKSET,
-						"instance_id":        CHECKSET,
-						"ecr_owner_ali_uid":  CHECKSET,
+						"ecr_id":             acctest.CHECKSET,
+						"instance_region_id": acctest.CHECKSET,
+						"instance_id":        acctest.CHECKSET,
+						"ecr_owner_ali_uid":  acctest.CHECKSET,
 						"instance_type":      "VPC",
 					}),
 				),
@@ -65,7 +70,7 @@ func TestAccAliCloudExpressConnectRouterGrantAssociation_basic9639(t *testing.T)
 }
 
 var AlicloudExpressConnectRouterGrantAssociationMap9639 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudExpressConnectRouterGrantAssociationBasicDependence9639(name string) string {

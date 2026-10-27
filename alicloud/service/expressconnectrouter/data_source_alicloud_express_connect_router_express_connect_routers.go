@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package expressconnectrouter
 
 import (
 	"fmt"
@@ -8,14 +8,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAliCloudExpressConnectRouterExpressConnectRouters() *schema.Resource {
+func DataSourceExpressConnectRouters() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudExpressConnectRouterExpressConnectRouterRead,
+		Read: dataSourceExpressConnectRoutersRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -43,9 +48,9 @@ func dataSourceAliCloudExpressConnectRouterExpressConnectRouters() *schema.Resou
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"ACTIVE", "UPDATING", "ASSOCIATING", "DISSOCIATING", "LOCKED_ATTACHING", "LOCKED_DETACHING", "RECLAIMING", "DELETING"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ACTIVE", "UPDATING", "ASSOCIATING", "DISSOCIATING", "LOCKED_ATTACHING", "LOCKED_DETACHING", "RECLAIMING", "DELETING"}, false),
 			},
-			"tags": tagsSchemaWithElements(),
+			"tags": tags.TagsSchemaWithElements(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -116,14 +121,14 @@ func dataSourceAliCloudExpressConnectRouterExpressConnectRouters() *schema.Resou
 	}
 }
 
-func dataSourceAliCloudExpressConnectRouterExpressConnectRouterRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceExpressConnectRoutersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeExpressConnectRouter"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["MaxResults"] = PageSizeLarge
-	request["ClientToken"] = buildClientToken(action)
+	request["MaxResults"] = helper.PageSizeLarge
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("ecr_id"); ok {
 		request["EcrId"] = v
@@ -138,8 +143,8 @@ func dataSourceAliCloudExpressConnectRouterExpressConnectRouterRead(d *schema.Re
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
 	status, statusOk := d.GetOk("status")
@@ -160,7 +165,7 @@ func dataSourceAliCloudExpressConnectRouterExpressConnectRouterRead(d *schema.Re
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		expressConnectRouterNameRegex = r
@@ -170,11 +175,11 @@ func dataSourceAliCloudExpressConnectRouterExpressConnectRouterRead(d *schema.Re
 	var err error
 
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -182,15 +187,15 @@ func dataSourceAliCloudExpressConnectRouterExpressConnectRouterRead(d *schema.Re
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_express_connect_router_express_connect_routers", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_express_connect_router_express_connect_routers", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.EcrList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.EcrList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.EcrList", response)
 		}
 
 		result, _ := resp.([]interface{})
@@ -238,7 +243,7 @@ func dataSourceAliCloudExpressConnectRouterExpressConnectRouterRead(d *schema.Re
 			"status":            object["Status"],
 			"create_time":       fmt.Sprint(object["GmtCreate"]),
 			"modify_time":       fmt.Sprint(object["GmtModified"]),
-			"tags":              tagsToMap(object["Tags"]),
+			"tags":              tags.TagsToMap(object["Tags"]),
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
@@ -246,22 +251,22 @@ func dataSourceAliCloudExpressConnectRouterExpressConnectRouterRead(d *schema.Re
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("routers", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
