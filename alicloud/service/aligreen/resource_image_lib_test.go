@@ -1,11 +1,13 @@
-package alicloud
+package aligreen_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	aligreen "github.com/aliyun/terraform-provider-alicloud/alicloud/service/aligreen"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudAligreenImageLib_basic7332(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_image_lib.default"
-	ra := resourceAttrInit(resourceId, AlicloudAligreenImageLibMap7332)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AligreenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenImageLibMap7332)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAligreenImageLib")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_aligreenimagelib%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenImageLibBasicDependence7332)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAligreenImageLibBasicDependence7332)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -103,21 +105,21 @@ resource "alicloud_aligreen_biz_type" "defaultUalunB" {
 func TestAccAliCloudAligreenImageLib_basic7317(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_image_lib.default"
-	ra := resourceAttrInit(resourceId, AlicloudAligreenImageLibMap7317)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AligreenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenImageLibMap7317)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAligreenImageLib")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_aligreenimagelib%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenImageLibBasicDependence7317)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAligreenImageLibBasicDependence7317)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -192,21 +194,21 @@ resource "alicloud_aligreen_biz_type" "defaultUalunB" {
 func TestAccAliCloudAligreenImageLib_basic7332_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_image_lib.default"
-	ra := resourceAttrInit(resourceId, AlicloudAligreenImageLibMap7332)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AligreenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenImageLibMap7332)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAligreenImageLib")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_aligreenimagelib%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenImageLibBasicDependence7332)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAligreenImageLibBasicDependence7332)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -241,21 +243,21 @@ func TestAccAliCloudAligreenImageLib_basic7332_twin(t *testing.T) {
 func TestAccAliCloudAligreenImageLib_basic7317_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_image_lib.default"
-	ra := resourceAttrInit(resourceId, AlicloudAligreenImageLibMap7317)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AligreenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenImageLibMap7317)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAligreenImageLib")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_aligreenimagelib%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenImageLibBasicDependence7317)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAligreenImageLibBasicDependence7317)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -290,21 +292,21 @@ func TestAccAliCloudAligreenImageLib_basic7317_twin(t *testing.T) {
 func TestAccAliCloudAligreenImageLib_basic7332_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_image_lib.default"
-	ra := resourceAttrInit(resourceId, AlicloudAligreenImageLibMap7332)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AligreenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenImageLibMap7332)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAligreenImageLib")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_aligreenimagelib%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenImageLibBasicDependence7332)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAligreenImageLibBasicDependence7332)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -349,21 +351,21 @@ func TestAccAliCloudAligreenImageLib_basic7332_raw(t *testing.T) {
 func TestAccAliCloudAligreenImageLib_basic7317_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_aligreen_image_lib.default"
-	ra := resourceAttrInit(resourceId, AlicloudAligreenImageLibMap7317)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AligreenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenImageLibMap7317)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAligreenImageLib")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_aligreenimagelib%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenImageLibBasicDependence7317)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAligreenImageLibBasicDependence7317)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -399,6 +401,60 @@ func TestAccAliCloudAligreenImageLib_basic7317_raw(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case 图片库 collection-order coverage
+// Covers the configurable multi-member TypeList attribute biz_types: apply the
+// original member order, then a convergent apply with the members reordered.
+func TestAccAliCloudAligreenImageLib_collectionOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_aligreen_image_lib.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAligreenImageLibMap7332)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return aligreen.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAligreenImageLib")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testacc_aligreenimagelib%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAligreenImageLibBasicDependence7332)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"category":       "BLACK",
+					"scene":          "PORN",
+					"image_lib_name": name,
+					"biz_types": []string{
+						"test_007", "test_008"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"category":       "BLACK",
+						"scene":          "PORN",
+						"image_lib_name": name,
+						"biz_types.#":    "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"biz_types": []string{
+						"test_008", "test_007"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"biz_types.#": "2",
+					}),
+				),
 			},
 		},
 	})

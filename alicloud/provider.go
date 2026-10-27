@@ -1331,12 +1331,6 @@ func Provider() *schema.Provider {
 			"alicloud_alidns_monitor_config":             resourceAlicloudAlidnsMonitorConfig(),
 
 			// aligreen
-			"alicloud_aligreen_oss_stock_task": resourceAliCloudAligreenOssStockTask(),
-			"alicloud_aligreen_keyword_lib":    resourceAliCloudAligreenKeywordLib(),
-			"alicloud_aligreen_image_lib":      resourceAliCloudAligreenImageLib(),
-			"alicloud_aligreen_biz_type":       resourceAliCloudAligreenBizType(),
-			"alicloud_aligreen_callback":       resourceAliCloudAligreenCallback(),
-			"alicloud_aligreen_audit_callback": resourceAliCloudAligreenAuditCallback(),
 
 			// alikafka
 			"alicloud_alikafka_scheduled_scaling_rule":         resourceAliCloudAlikafkaScheduledScalingRule(),

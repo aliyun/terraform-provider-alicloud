@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package aligreen
 
 import (
 	"fmt"
@@ -9,6 +9,10 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -113,28 +117,28 @@ func resourceAliCloudAligreenKeywordLibCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("biz_types"); ok {
 		jsonPathResult7, err := jsonpath.Get("$", v)
 		if err == nil && jsonPathResult7 != "" {
-			request["BizTypes"] = convertListToJsonString(jsonPathResult7.([]interface{}))
+			request["BizTypes"] = convert.ConvertListToJsonString(jsonPathResult7.([]interface{}))
 		}
 	}
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_aligreen_keyword_lib", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_aligreen_keyword_lib", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
@@ -144,16 +148,16 @@ func resourceAliCloudAligreenKeywordLibCreate(d *schema.ResourceData, meta inter
 
 func resourceAliCloudAligreenKeywordLibRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	aligreenServiceV2 := AligreenServiceV2{client}
+	aligreenServiceV2 := NewService(client)
 
 	objectRaw, err := aligreenServiceV2.DescribeAligreenKeywordLib(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_aligreen_keyword_lib DescribeAligreenKeywordLib Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["Category"] != nil {
@@ -211,7 +215,7 @@ func resourceAliCloudAligreenKeywordLibUpdate(d *schema.ResourceData, meta inter
 		update = true
 		jsonPathResult2, err := jsonpath.Get("$", d.Get("biz_types"))
 		if err == nil {
-			request["BizTypes"] = convertListToJsonString(jsonPathResult2.([]interface{}))
+			request["BizTypes"] = convert.ConvertListToJsonString(jsonPathResult2.([]interface{}))
 		}
 	}
 
@@ -228,21 +232,21 @@ func resourceAliCloudAligreenKeywordLibUpdate(d *schema.ResourceData, meta inter
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -263,23 +267,23 @@ func resourceAliCloudAligreenKeywordLibDelete(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Green", "2017-08-23", action, query, request, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
