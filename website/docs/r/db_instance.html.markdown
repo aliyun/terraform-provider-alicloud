@@ -30,6 +30,14 @@ For information about RDS and how to use it, see [What is ApsaraDB for RDS](http
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_db_zones" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
@@ -68,7 +76,7 @@ resource "alicloud_db_instance" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = "terraform-example"
   vswitch_id               = alicloud_vswitch.example.id
@@ -88,6 +96,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_db_zones" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
@@ -126,7 +142,7 @@ resource "alicloud_db_instance" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = "terraform-example"
   vswitch_id               = alicloud_vswitch.example.id
@@ -153,6 +169,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_db_zones" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
@@ -192,7 +216,7 @@ resource "alicloud_db_instance" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = "terraform-example"
   vswitch_id               = join(",", alicloud_vswitch.example.*.id)
@@ -214,6 +238,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf_example"
 }
@@ -258,7 +290,7 @@ resource "alicloud_db_instance" "example" {
   engine_version           = "8.0"
   category                 = "HighAvailability"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = var.name
   vswitch_id               = join(",", alicloud_vswitch.example.*.id)
@@ -278,6 +310,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -340,6 +380,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-accdbinstance"
 }
@@ -381,7 +429,7 @@ resource "alicloud_vswitch" "example" {
 resource "alicloud_db_instance" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
@@ -408,6 +456,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-accdbinstance"
 }
@@ -445,7 +501,7 @@ data "alicloud_vswitches" "default" {
 resource "alicloud_db_instance" "example" {
   engine                   = "PostgreSQL"
   engine_version           = "14.0"
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
@@ -469,6 +525,14 @@ resource "alicloud_db_instance" "example" {
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-accdbinstance"
 }
@@ -510,7 +574,7 @@ resource "alicloud_vswitch" "example" {
 resource "alicloud_db_instance" "example" {
   engine                   = "SQLServer"
   engine_version           = "2019_std_sl"
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
   instance_charge_type     = "Serverless"
   instance_name            = var.name
@@ -525,6 +589,82 @@ resource "alicloud_db_instance" "example" {
   }
 }
 
+```
+
+### Create a RDS MySQL instance with multiple whitelist groups
+
+```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+variable "name" {
+  default = "terraform-example"
+}
+
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.example.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vswitch_name = var.name
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this[*].id, [""])[0]
+}
+
+resource "alicloud_db_instance" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  db_instance_storage_type = "cloud_essd"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = local.vswitch_id
+  security_ips             = ["10.0.0.1"]
+
+  db_instance_ip_arrays {
+    name         = "office"
+    security_ips = ["10.10.10.0/24"]
+  }
+
+  db_instance_ip_arrays {
+    name         = "partner"
+    security_ips = ["172.16.0.0/24", "192.168.1.10"]
+  }
+}
 ```
 
 ### Deleting `alicloud_db_instance` or removing it from your configuration
@@ -622,6 +762,13 @@ The following arguments are supported:
 * `db_instance_ip_array_attribute` - (Optional, Available since v1.125.0) The attribute of the IP address whitelist. By default, this parameter is empty.
 
   -> **NOTE:** The IP address whitelists that have the hidden attribute are not displayed in the ApsaraDB RDS console. These IP address whitelists are used to access Alibaba Cloud services, such as Data Transmission Service (DTS).
+* `db_instance_ip_arrays` - (Optional, Set, Available since v2.2.0) A set of IP address whitelist group blocks. Each block manages one whitelist group, and all configured groups are created, updated or deleted within a single apply. At most 199 groups can be declared here: an instance supports 200 whitelist groups in total and the group managed through `security_ips` always counts against that limit. See [`db_instance_ip_arrays`](#db_instance_ip_arrays) below.
+
+  -> **NOTE:** Group names must be unique and must differ from `db_instance_ip_array_name`. The group configured through `security_ips` is managed separately and is not managed by `db_instance_ip_arrays`. Removing a block deletes that group from the instance and renaming a block deletes the old group and creates the new one. The `default` group and groups that are not managed by this resource are never deleted. Groups whose attribute is `hidden` are system groups used by DMS, DTS and DAS and are not managed by this resource.
+
+  -> **NOTE:** Import does not populate `db_instance_ip_arrays`, so that whitelist groups created outside Terraform are not adopted. Declare the groups in the configuration and apply to start managing them.
+
+  -> **NOTE:** Groups provided by a whitelist template through `template_id_list` are managed by the template, not by this resource. They are returned with the `template` attribute and never exposed through `db_instance_ip_arrays`. Declaring a group whose name matches a template-provided group fails with an error before any change is made, so the template group and its association stay intact.
 * `security_ip_type` - (Optional, Available since v1.125.0) The type of IP address in the IP address whitelist.
 * `db_is_ignore_case` - (Optional, Available since v1.168.0) Specifies whether table names on the instance are case-sensitive. Valid values: `true`, `false`.
   * `true` - Table names are not case-sensitive. This is the default value.
@@ -854,6 +1001,13 @@ The following arguments are supported:
   - No
 
 * `db_param_group_id` - (Optional, Available since v1.222.0) Parameter template ID. Only MySQL and PostgreSQL support this parameter. If this parameter is not specified, the default parameter template is used. You can also customize a parameter template and use it here.
+
+### `db_instance_ip_arrays`
+
+The db_instance_ip_arrays mapping supports the following:
+
+* `name` - (Required, String) The name of the IP address whitelist group. It must be 1 to 64 characters long, must be unique within this block set, and must differ from `db_instance_ip_array_name`. Renaming the group deletes the old group and creates the new one.
+* `security_ips` - (Optional, Set) A set of IP addresses in the group. At least one IP address, CIDR block, or address range is required; a group without any entry is rejected during plan.
 
 ### `parameters`
 

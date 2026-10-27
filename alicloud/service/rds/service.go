@@ -13,6 +13,7 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -1193,7 +1194,199 @@ func (s *RdsService) ModifyDBSecurityIps(instanceId, ips string) error {
 	return nil
 }
 
+// modifySecurityIpsStateErrors lists the transient instance-state errors that
+// the official ModifySecurityIps error table returns while the instance is still
+// changing state. Terminal parameter, quota or template conflicts are not
+// retried.
+var modifySecurityIpsStateErrors = []string{
+	"IncorrectMasterDBInstanceState",
+	"IncorrectDBInstanceState",
+	"InvalideStatus.Format",
+}
+
+// isRetryableModifySecurityIpsError reports whether a ModifySecurityIps call may
+// succeed later.
+func isRetryableModifySecurityIpsError(err error) bool {
+	return NeedRetry(err) || IsExpectedErrors(err, modifySecurityIpsStateErrors)
+}
+
+// ModifyDBSecurityIpsGroup creates or overwrites one named whitelist group.
+func (s *RdsService) ModifyDBSecurityIpsGroup(instanceId, groupName, ips string, timeout time.Duration) error {
+	return s.modifyDBSecurityIpsGroup(instanceId, groupName, ips, "Cover", timeout)
+}
+
+// DeleteDBSecurityIpsGroup removes a custom whitelist group. ModifySecurityIps
+// has no documented delete-group operation, but a custom group disappears once
+// its IP list is emptied. This behaviour was verified on the PostgreSQL and
+// MySQL instances used by this resource's acceptance tests; it is not a
+// documented API contract for every engine. Cover mode with an empty SecurityIps
+// is tried first, and Delete mode with the group's current IP list is used as a
+// fallback when the group survives. A removal is only reported as done when the
+// group list is read back and the group is really absent.
+func (s *RdsService) DeleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout time.Duration) error {
+	return deleteDBSecurityIpsGroup(instanceId, groupName, currentIps, timeout, serviceSecurityIpsGroupAccess{service: s})
+}
+
+// securityIpsGroupAccess is the minimal API surface the removal decision needs.
+// It keeps the decision testable without issuing cloud calls. Every call takes
+// the remaining update budget so a long Cover step cannot hand the fallback a
+// fresh full timeout.
+type securityIpsGroupAccess interface {
+	modifyGroup(instanceId, groupName, ips, mode string, timeout time.Duration) error
+	groupAbsent(instanceId, groupName string, timeout time.Duration) (bool, error)
+}
+
+type serviceSecurityIpsGroupAccess struct {
+	service *RdsService
+}
+
+func (a serviceSecurityIpsGroupAccess) modifyGroup(instanceId, groupName, ips, mode string, timeout time.Duration) error {
+	return a.service.modifyDBSecurityIpsGroup(instanceId, groupName, ips, mode, timeout)
+}
+
+func (a serviceSecurityIpsGroupAccess) groupAbsent(instanceId, groupName string, timeout time.Duration) (bool, error) {
+	return a.service.dbSecurityIpsGroupAbsent(instanceId, groupName, timeout)
+}
+
+func deleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout time.Duration, access securityIpsGroupAccess) error {
+	deadline := time.Now().Add(timeout)
+	remaining := func() (time.Duration, error) {
+		left := time.Until(deadline)
+		if left <= 0 {
+			return 0, WrapErrorf(fmt.Errorf("update timeout budget is exhausted while removing whitelist group %q", groupName), DefaultErrorMsg, instanceId, "ModifySecurityIps", AlibabaCloudSdkGoERROR)
+		}
+		return left, nil
+	}
+
+	budget, err := remaining()
+	if err != nil {
+		return err
+	}
+	absent, err := access.groupAbsent(instanceId, groupName, budget)
+	if err != nil {
+		return err
+	}
+	if absent {
+		return nil
+	}
+
+	budget, err = remaining()
+	if err != nil {
+		return err
+	}
+	coverErr := access.modifyGroup(instanceId, groupName, "", "Cover", budget)
+	if coverErr == nil || IsExpectedErrors(coverErr, []string{"InvalidSecurityIps.MalFormed"}) {
+		budget, err = remaining()
+		if err != nil {
+			return err
+		}
+		absent, err = access.groupAbsent(instanceId, groupName, budget)
+		if err != nil {
+			return err
+		}
+		if absent {
+			return nil
+		}
+	}
+
+	if currentIps != "" {
+		budget, err = remaining()
+		if err != nil {
+			return err
+		}
+		deleteErr := access.modifyGroup(instanceId, groupName, currentIps, "Delete", budget)
+		if deleteErr != nil && !IsExpectedErrors(deleteErr, []string{"InvalidSecurityIps.MalFormed"}) {
+			return deleteErr
+		}
+		budget, err = remaining()
+		if err != nil {
+			return err
+		}
+		absent, err = access.groupAbsent(instanceId, groupName, budget)
+		if err != nil {
+			return err
+		}
+		if absent {
+			return nil
+		}
+	}
+
+	if coverErr != nil {
+		return coverErr
+	}
+	return WrapErrorf(fmt.Errorf("whitelist group %q still exists after it was removed", groupName), DefaultErrorMsg, instanceId, "ModifySecurityIps", AlibabaCloudSdkGoERROR)
+}
+
+// dbSecurityIpsGroupAbsent reports whether a named whitelist group no longer
+// exists on the instance.
+func (s *RdsService) dbSecurityIpsGroupAbsent(instanceId, groupName string, timeout time.Duration) (bool, error) {
+	ipArrays, err := s.DescribeDBSecurityIpsWithTimeout(instanceId, timeout)
+	if err != nil {
+		return false, WrapError(err)
+	}
+	for _, item := range ipArrays {
+		ipArray, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if name, _ := ipArray["DBInstanceIPArrayName"].(string); name == groupName {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// modifyDBSecurityIpsGroup writes one named whitelist group with the given
+// ModifyMode. An empty ips value with Cover mode removes the group.
+func (s *RdsService) modifyDBSecurityIpsGroup(instanceId, groupName, ips, modifyMode string, timeout time.Duration) error {
+	action := "ModifySecurityIps"
+	request := map[string]interface{}{
+		"RegionId":              s.client.RegionId,
+		"DBInstanceId":          instanceId,
+		"DBInstanceIPArrayName": groupName,
+		"SecurityIps":           ips,
+		"ModifyMode":            modifyMode,
+		"SourceIp":              s.client.SourceIp,
+	}
+
+	var response map[string]interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	startedAt := time.Now()
+	err = retry.Retry(timeout, func() *retry.RetryError {
+		response, err = s.client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		if err != nil {
+			if isRetryableModifySecurityIpsError(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+
+	remaining := timeout - time.Since(startedAt)
+	if remaining <= 0 {
+		return WrapErrorf(fmt.Errorf("no time left to wait for the instance after ModifySecurityIps"), IdMsg, instanceId)
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, remaining, 1*time.Second, s.RdsDBInstanceStateRefreshFunc(instanceId, []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, instanceId)
+	}
+	return nil
+}
+
 func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, error) {
+	return s.DescribeDBSecurityIpsWithTimeout(instanceId, 5*time.Minute)
+}
+
+// DescribeDBSecurityIpsWithTimeout reads the whitelist groups with the caller's
+// remaining update budget instead of a fresh fixed retry window.
+func (s *RdsService) DescribeDBSecurityIpsWithTimeout(instanceId string, timeout time.Duration) ([]interface{}, error) {
 	action := "DescribeDBInstanceIPArrayList"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -1204,7 +1397,7 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, er
 	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+	err = retry.Retry(timeout, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
@@ -1219,7 +1412,18 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, er
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
-	return response["Items"].(map[string]interface{})["DBInstanceIPArray"].([]interface{}), nil
+	items, ok := response["Items"].(map[string]interface{})
+	if !ok {
+		return nil, WrapErrorf(fmt.Errorf("describe response has no Items object"), DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	ipArrays, ok := items["DBInstanceIPArray"].([]interface{})
+	if !ok {
+		if _, exists := items["DBInstanceIPArray"]; !exists {
+			return []interface{}{}, nil
+		}
+		return nil, WrapErrorf(fmt.Errorf("describe response has an invalid DBInstanceIPArray value"), DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	return ipArrays, nil
 }
 
 func (s *RdsService) DescribeParameterTemplates(instanceId, engine, engineVersion string) ([]interface{}, error) {
@@ -1245,7 +1449,12 @@ func (s *RdsService) GetSecurityIps(instanceId string, dbInstanceIpArrayName str
 	if err != nil {
 		return nil, WrapError(err)
 	}
+	return FlattenSecurityIps(object, dbInstanceIpArrayName), nil
+}
 
+// FlattenSecurityIps collects the IP list of one named whitelist group from a
+// DescribeDBInstanceIPArrayList result so callers can reuse a single describe.
+func FlattenSecurityIps(object []interface{}, dbInstanceIpArrayName string) []string {
 	var ips, separator string
 	ipsMap := make(map[string]string)
 	for _, ip := range object {
@@ -1267,7 +1476,7 @@ func (s *RdsService) GetSecurityIps(instanceId string, dbInstanceIpArrayName str
 		}
 	}
 
-	return finalIps, nil
+	return finalIps
 }
 
 func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, error) {

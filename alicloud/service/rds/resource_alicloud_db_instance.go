@@ -1,8 +1,10 @@
 package rds
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -16,12 +18,28 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+const (
+	DefaultDBInstanceIpArrayName     = "default"
+	DBInstanceIpArrayAttributeHidden = "hidden"
+	// DBInstanceIpArrayAttributeTemplate marks a group that an attached
+	// whitelist template owns; such groups must never be managed directly.
+	DBInstanceIpArrayAttributeTemplate = "template"
+	// DBInstanceIPArrayGroupLimit is the documented maximum number of IP
+	// whitelist groups per instance. The legacy group configured through
+	// security_ips is always present and counts against it, so the block set
+	// itself may hold at most one group less.
+	DBInstanceIPArrayGroupLimit = 200
+)
+
 func resourceAliCloudDBInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudDBInstanceCreate,
 		Read:   resourceAliCloudDBInstanceRead,
 		Update: resourceAliCloudDBInstanceUpdate,
 		Delete: resourceAliCloudDBInstanceDelete,
+		CustomizeDiff: func(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+			return validateDBInstanceIpArrays(d)
+		},
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -170,6 +188,30 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 				Optional: true,
+			},
+			// Groups attached through template_id_list are owned by the
+			// whitelist template. A configuration that reuses a template group
+			// name is rejected before any write, so the template group and its
+			// association stay unchanged.
+			"db_instance_ip_arrays": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: DBInstanceIPArrayGroupLimit - 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: StringLenBetween(1, 64),
+						},
+						"security_ips": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							MinItems: 1,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
 			},
 			"db_instance_ip_array_name": {
 				Type:             schema.TypeString,
@@ -1676,6 +1718,12 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.HasChange("db_instance_ip_arrays") {
+		if err := modifyDBInstanceIpArrays(d, meta); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAliCloudDBInstanceRead(d, meta)
@@ -2164,12 +2212,12 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	dbInstanceIpArrayName := "default"
+	dbInstanceIpArrayName := DefaultDBInstanceIpArrayName
 	if v, ok := d.GetOk("db_instance_ip_array_name"); ok {
 		dbInstanceIpArrayName = v.(string)
 	}
 
-	ips, err := rdsService.GetSecurityIps(d.Id(), dbInstanceIpArrayName)
+	apiIpArrays, err := rdsService.DescribeDBSecurityIps(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
@@ -2242,7 +2290,12 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("resource_group_id", instance["ResourceGroupId"])
 	d.Set("monitoring_period", monitoringPeriod)
 
-	d.Set("security_ips", ips)
+	d.Set("security_ips", FlattenSecurityIps(apiIpArrays, dbInstanceIpArrayName))
+	// Only the groups already tracked in the state are refreshed so groups
+	// created outside Terraform are neither adopted nor reported as drift.
+	ipArrays := flattenDBInstanceIpArrays(apiIpArrays, dbInstanceIpArrayName)
+	ipArrays = filterDBInstanceIpArraysByNames(ipArrays, d.Get("db_instance_ip_arrays"))
+	d.Set("db_instance_ip_arrays", ipArrays)
 	d.Set("db_instance_ip_array_name", d.Get("db_instance_ip_array_name"))
 	d.Set("db_instance_ip_array_attribute", d.Get("db_instance_ip_array_attribute"))
 	d.Set("db_instance_type", instance["DBInstanceType"])
@@ -2874,4 +2927,284 @@ func ConvertMySQLInstanceOptimizedWritesResponse(source string) string {
 	default:
 		return source
 	}
+}
+
+func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
+
+	updateDeadline := time.Now().Add(d.Timeout(schema.TimeoutUpdate))
+	remainingUpdateTime := func() (time.Duration, error) {
+		remaining := time.Until(updateDeadline)
+		if remaining <= 0 {
+			return 0, fmt.Errorf("update timeout budget is exhausted while modifying db_instance_ip_arrays")
+		}
+		return remaining, nil
+	}
+
+	legacyGroupName, _ := d.Get("db_instance_ip_array_name").(string)
+	if legacyGroupName == "" {
+		legacyGroupName = DefaultDBInstanceIpArrayName
+	}
+
+	newSet := d.Get("db_instance_ip_arrays").(*schema.Set)
+	oldRaw, _ := d.GetChange("db_instance_ip_arrays")
+	oldSet, _ := oldRaw.(*schema.Set)
+
+	newGroups := make(map[string]map[string]interface{}, newSet.Len())
+	for _, item := range newSet.List() {
+		group := item.(map[string]interface{})
+		newGroups[group["name"].(string)] = group
+	}
+
+	timeout, err := remainingUpdateTime()
+	if err != nil {
+		return WrapError(err)
+	}
+	apiIpArrays, err := loadDBInstanceIpArraysWithinBudget(&rdsService, d.Id(), timeout)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	removed := make([]string, 0)
+	if oldSet != nil {
+		for _, item := range oldSet.List() {
+			group := item.(map[string]interface{})
+			name, _ := group["name"].(string)
+			if name == "" || newGroups[name] != nil {
+				continue
+			}
+			removed = append(removed, name)
+		}
+		sort.Strings(removed)
+	}
+
+	// Groups marked by the API as whitelist-template groups are owned by the
+	// template. Reject a configuration that would write or remove one of those
+	// names before any write, so the template group and the template
+	// association stay unchanged.
+	managedNames := make([]string, 0, len(newGroups)+len(removed))
+	for name := range newGroups {
+		managedNames = append(managedNames, name)
+	}
+	managedNames = append(managedNames, removed...)
+	if name, conflict := findDBInstanceIpArrayTemplateConflict(managedNames, templateDBInstanceIpArrayGroupNames(apiIpArrays)); conflict {
+		return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is provided by an attached whitelist template; co-managing the same group is unsupported", name))
+	}
+
+	// Delete the groups this resource managed before but no longer configures.
+	// Only names recorded in the previous state are considered, so groups that
+	// were created outside Terraform are never touched.
+	if oldSet != nil {
+		for _, name := range removed {
+			if isProtectedDBInstanceIpArrayName(name, legacyGroupName) {
+				continue
+			}
+			existing, ok := findDBInstanceIpArray(apiIpArrays, name)
+			if !ok {
+				continue
+			}
+			if attribute, _ := existing["DBInstanceIPArrayAttribute"].(string); attribute == DBInstanceIpArrayAttributeHidden || attribute == DBInstanceIpArrayAttributeTemplate {
+				continue
+			}
+			currentIps, _ := existing["SecurityIPList"].(string)
+			timeout, err := remainingUpdateTime()
+			if err != nil {
+				return WrapError(err)
+			}
+			if err := rdsService.DeleteDBSecurityIpsGroup(d.Id(), name, currentIps, timeout); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifySecurityIps", AlibabaCloudSdkGoERROR)
+			}
+		}
+	}
+
+	// Create or overwrite the configured groups.
+	names := make([]string, 0, len(newGroups))
+	for name := range newGroups {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if existing, ok := findDBInstanceIpArray(apiIpArrays, name); ok {
+			if attribute, _ := existing["DBInstanceIPArrayAttribute"].(string); attribute == DBInstanceIpArrayAttributeHidden {
+				return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is a hidden system group used by DMS, DTS or DAS", name))
+			} else if attribute == DBInstanceIpArrayAttributeTemplate {
+				return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is provided by an attached whitelist template; co-managing the same group is unsupported", name))
+			}
+		}
+		ips := strings.Join(expandStringList(newGroups[name]["security_ips"].(*schema.Set).List()), COMMA_SEPARATED)
+		timeout, err := remainingUpdateTime()
+		if err != nil {
+			return WrapError(err)
+		}
+		if err := rdsService.ModifyDBSecurityIpsGroup(d.Id(), name, ips, timeout); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifySecurityIps", AlibabaCloudSdkGoERROR)
+		}
+	}
+	// Keep the state aligned with the configuration so the following Read does
+	// not re-adopt a group that was just removed.
+	if err := d.Set("db_instance_ip_arrays", newSet.List()); err != nil {
+		return WrapError(err)
+	}
+	return nil
+}
+
+// securityIpsGroupReader is the minimal read surface the update entry needs.
+type securityIpsGroupReader interface {
+	DescribeDBSecurityIpsWithTimeout(instanceId string, timeout time.Duration) ([]interface{}, error)
+}
+
+// loadDBInstanceIpArraysWithinBudget reads the current whitelist groups with the
+// remaining update budget. An exhausted budget aborts before any Cover or
+// Delete call is attempted.
+func loadDBInstanceIpArraysWithinBudget(reader securityIpsGroupReader, instanceId string, timeout time.Duration) ([]interface{}, error) {
+	if timeout <= 0 {
+		return nil, fmt.Errorf("update timeout budget is exhausted before reading whitelist groups")
+	}
+	return reader.DescribeDBSecurityIpsWithTimeout(instanceId, timeout)
+}
+
+// templateDBInstanceIpArrayGroupNames returns the names of the whitelist
+// groups that attached whitelist templates own. The API marks them with the
+// template attribute.
+func templateDBInstanceIpArrayGroupNames(ipArrays []interface{}) map[string]bool {
+	names := make(map[string]bool)
+	for _, item := range ipArrays {
+		ipArray, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		attribute, _ := ipArray["DBInstanceIPArrayAttribute"].(string)
+		if attribute != DBInstanceIpArrayAttributeTemplate {
+			continue
+		}
+		if name, _ := ipArray["DBInstanceIPArrayName"].(string); name != "" {
+			names[name] = true
+		}
+	}
+	return names
+}
+
+// findDBInstanceIpArrayTemplateConflict returns the first group name that a
+// whitelist template owns.
+func findDBInstanceIpArrayTemplateConflict(names []string, templateGroups map[string]bool) (string, bool) {
+	sorted := append([]string(nil), names...)
+	sort.Strings(sorted)
+	for _, name := range sorted {
+		if templateGroups[name] {
+			return name, true
+		}
+	}
+	return "", false
+}
+
+// validateDBInstanceIpArrays rejects reserved and duplicate group names at plan
+// time, before any API call is made.
+func validateDBInstanceIpArrays(d *schema.ResourceDiff) error {
+	legacyGroupName, _ := d.Get("db_instance_ip_array_name").(string)
+	if legacyGroupName == "" {
+		legacyGroupName = DefaultDBInstanceIpArrayName
+	}
+	groups := d.Get("db_instance_ip_arrays").(*schema.Set).List()
+	if len(groups) >= DBInstanceIPArrayGroupLimit {
+		return fmt.Errorf("db_instance_ip_arrays supports at most %d groups; the whitelist group managed through security_ips counts against the instance limit of %d", DBInstanceIPArrayGroupLimit-1, DBInstanceIPArrayGroupLimit)
+	}
+	seen := make(map[string]bool, len(groups))
+	for _, item := range groups {
+		group := item.(map[string]interface{})
+		name, _ := group["name"].(string)
+		if name == "" {
+			return fmt.Errorf("db_instance_ip_arrays requires a non-empty name")
+		}
+		if isProtectedDBInstanceIpArrayName(name, legacyGroupName) {
+			return fmt.Errorf("db_instance_ip_arrays group %q is reserved: manage the default group with security_ips and db_instance_ip_array_name", name)
+		}
+		if seen[name] {
+			return fmt.Errorf("db_instance_ip_arrays contains duplicate group %q", name)
+		}
+		seen[name] = true
+		if len(expandStringList(group["security_ips"].(*schema.Set).List())) == 0 {
+			return fmt.Errorf("db_instance_ip_arrays group %q requires at least one security_ips entry", name)
+		}
+	}
+	return nil
+}
+
+// isProtectedDBInstanceIpArrayName reports whether a whitelist group must never
+// be deleted or managed through db_instance_ip_arrays. The default group and the
+// legacy single group are managed by security_ips; hidden system groups back
+// DMS, DTS and DAS and are filtered out before this check is reached.
+func isProtectedDBInstanceIpArrayName(name, legacyGroupName string) bool {
+	if strings.EqualFold(name, DefaultDBInstanceIpArrayName) {
+		return true
+	}
+	return name == legacyGroupName
+}
+
+func findDBInstanceIpArray(ipArrays []interface{}, name string) (map[string]interface{}, bool) {
+	for _, item := range ipArrays {
+		ipArray, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if arrayName, _ := ipArray["DBInstanceIPArrayName"].(string); arrayName == name {
+			return ipArray, true
+		}
+	}
+	return nil, false
+}
+
+func flattenDBInstanceIpArrays(ipArrays []interface{}, excludeName string) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(ipArrays))
+	for _, item := range ipArrays {
+		ipArray, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name, _ := ipArray["DBInstanceIPArrayName"].(string)
+		if name == "" || name == excludeName {
+			continue
+		}
+		attribute, _ := ipArray["DBInstanceIPArrayAttribute"].(string)
+		if attribute == DBInstanceIpArrayAttributeHidden || attribute == DBInstanceIpArrayAttributeTemplate {
+			// Hidden groups back DMS/DTS/DAS access and template groups are
+			// owned by an attached whitelist template; never manage or expose
+			// them through this block.
+			continue
+		}
+		ipList := make([]string, 0)
+		if v, ok := ipArray["SecurityIPList"].(string); ok && v != "" {
+			ipList = strings.Split(v, COMMA_SEPARATED)
+		}
+		result = append(result, map[string]interface{}{
+			"name":         name,
+			"security_ips": ipList,
+		})
+	}
+	return result
+}
+
+// filterDBInstanceIpArraysByNames keeps only the groups already tracked in the
+// state so groups created outside Terraform are neither adopted nor reported as
+// permanent differences.
+func filterDBInstanceIpArraysByNames(ipArrays []map[string]interface{}, existing interface{}) []map[string]interface{} {
+	existingSet, ok := existing.(*schema.Set)
+	if !ok || existingSet == nil || existingSet.Len() == 0 {
+		return make([]map[string]interface{}, 0)
+	}
+	managed := make(map[string]bool, existingSet.Len())
+	for _, item := range existingSet.List() {
+		if group, ok := item.(map[string]interface{}); ok {
+			if name, ok := group["name"].(string); ok && name != "" {
+				managed[name] = true
+			}
+		}
+	}
+	filtered := make([]map[string]interface{}, 0, len(ipArrays))
+	for _, group := range ipArrays {
+		if name, ok := group["name"].(string); ok && managed[name] {
+			filtered = append(filtered, group)
+		}
+	}
+	return filtered
 }

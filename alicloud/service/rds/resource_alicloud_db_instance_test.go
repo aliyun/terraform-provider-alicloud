@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"reflect"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -513,25 +517,26 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 	})
 }
 
-func resourceDBInstanceConfigDependence(name string) string {
-	return fmt.Sprintf(`
+func resourceDBInstanceConfigDependenceNetworkEngine(engine, engineVersion, category, storageType string) func(name string) string {
+	return func(name string) string {
+		return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
 }
 data "alicloud_db_zones" "default"{
-	engine = "MySQL"
-	engine_version = "8.0"
+	engine = "%s"
+	engine_version = "%s"
 	instance_charge_type = "PostPaid"
-	category = "Basic"
- 	db_instance_storage_type = "cloud_essd"
+	category = "%s"
+	db_instance_storage_type = "%s"
 }
 
 data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-    category = "Basic"
- 	db_instance_storage_type = "cloud_essd"
+	engine = "%s"
+	engine_version = "%s"
+    category = "%s"
+	db_instance_storage_type = "%s"
 	instance_charge_type = "PostPaid"
 }
 
@@ -554,7 +559,55 @@ locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id = data.alicloud_db_zones.default.ids.0
 }
+`, name, engine, engineVersion, category, storageType, engine, engineVersion, category, storageType)
+	}
+}
 
+func resourceDBInstanceIpArraysConfigDependence(engine, engineVersion, category, storageType string) func(name string) string {
+	// Reuse an existing vSwitch of the default VPC and deploy the instance in its
+	// zone. The default VPC is shared by many test runs and the fixed
+	// cidrsubnet slice of the older helper can already be occupied, which fails
+	// the whole step with InvalidCidrBlock.Overlapped before the database is
+	// created. The class list is filtered to the requested engine because the
+	// class data source also returns non-relational SKUs that cannot be ordered.
+	classExpr := "data.alicloud_db_instance_classes.default.instance_classes"
+	if engine == "MySQL" {
+		classExpr = "[for c in data.alicloud_db_instance_classes.default.instance_classes : c if length(regexall(\"^mysql\\\\.\", c.instance_class)) > 0]"
+	}
+	return func(name string) string {
+		return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_vswitches.default.vswitches.0.zone_id
+	engine                   = "%s"
+	engine_version           = "%s"
+    category                 = "%s"
+	db_instance_storage_type = "%s"
+	instance_charge_type     = "PostPaid"
+}
+locals {
+  vswitch_id       = data.alicloud_vswitches.default.ids.0
+  zone_id          = data.alicloud_vswitches.default.vswitches.0.zone_id
+  ip_array_classes = %s
+}
+`, name, engine, engineVersion, category, storageType, classExpr)
+	}
+}
+
+func resourceDBInstanceConfigDependenceNetwork(engineVersion, category, storageType string) func(name string) string {
+	return resourceDBInstanceConfigDependenceNetworkEngine("MySQL", engineVersion, category, storageType)
+}
+
+func resourceDBInstanceConfigDependence(name string) string {
+	return resourceDBInstanceConfigDependenceNetwork("8.0", "Basic", "cloud_essd")(name) + `
 data "alicloud_resource_manager_resource_groups" "default" {
 	status = "OK"
 }
@@ -577,7 +630,7 @@ resource "alicloud_kms_key" "default" {
   status               = "Enabled"
   dkms_instance_id        = data.alicloud_kms_instances.default.ids.0
 }
-`, name)
+`
 }
 
 func resourceDBInstanceConfigDependenceSwitchDBInstanceHA(name string) string {
@@ -4848,4 +4901,811 @@ func TestUnitParseDBInstanceParamGroupId(t *testing.T) {
 			}
 		})
 	}
+}
+
+func testAccCheckDBInstanceIpArrays(resourceId string, expected map[string][]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found", resourceId)
+		}
+		attrs := rs.Primary.Attributes
+		actual := make(map[string][]string)
+		const prefix = "db_instance_ip_arrays."
+		for key, name := range attrs {
+			if !strings.HasPrefix(key, prefix) || !strings.HasSuffix(key, ".name") {
+				continue
+			}
+			index := strings.TrimSuffix(strings.TrimPrefix(key, prefix), ".name")
+			rawCount, ok := attrs[prefix+index+".security_ips.#"]
+			if !ok {
+				return fmt.Errorf("group %q has no security_ips count in state", name)
+			}
+			count, err := strconv.Atoi(rawCount)
+			if err != nil {
+				return fmt.Errorf("group %q has an invalid security_ips count: %s", name, err)
+			}
+			groupPrefix := prefix + index + ".security_ips."
+			ips := make([]string, 0, count)
+			for key, value := range attrs {
+				if !strings.HasPrefix(key, groupPrefix) || strings.HasSuffix(key, ".#") {
+					continue
+				}
+				ips = append(ips, value)
+			}
+			if len(ips) != count {
+				return fmt.Errorf("group %q security_ips count mismatch: state reports %d, found %d elements", name, count, len(ips))
+			}
+			sort.Strings(ips)
+			actual[name] = ips
+		}
+		if len(actual) != len(expected) {
+			return fmt.Errorf("expected %d whitelist groups, got %d: %v", len(expected), len(actual), actual)
+		}
+		for name, want := range expected {
+			got, ok := actual[name]
+			if !ok {
+				return fmt.Errorf("whitelist group %q not found in state: %v", name, actual)
+			}
+			wantIps := append([]string{}, want...)
+			sort.Strings(wantIps)
+			if !reflect.DeepEqual(got, wantIps) {
+				return fmt.Errorf("group %q security_ips: expected %v, got %v", name, wantIps, got)
+			}
+		}
+		return nil
+	}
+}
+
+func testAccCheckDBInstanceIpArrayInCloud(resourceId, groupName, wantIps string, wantExist bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found", resourceId)
+		}
+		service := rds.NewRdsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		ipArrays, err := service.DescribeDBSecurityIps(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		for _, item := range ipArrays {
+			ipArray, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if name, _ := ipArray["DBInstanceIPArrayName"].(string); name == groupName {
+				if !wantExist {
+					return fmt.Errorf("whitelist group %q still exists on the instance", groupName)
+				}
+				gotIps, _ := ipArray["SecurityIPList"].(string)
+				got := strings.Split(gotIps, ",")
+				sort.Strings(got)
+				want := strings.Split(wantIps, ",")
+				sort.Strings(want)
+				if !reflect.DeepEqual(got, want) {
+					return fmt.Errorf("group %q security ips on the instance: expected %v, got %v", groupName, want, got)
+				}
+				return nil
+			}
+		}
+		if wantExist {
+			return fmt.Errorf("whitelist group %q not found on the instance", groupName)
+		}
+		return nil
+	}
+}
+
+func testAccCheckDBInstanceIpArrayAttribute(resourceId, groupName, wantAttribute string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found", resourceId)
+		}
+		service := rds.NewRdsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		ipArrays, err := service.DescribeDBSecurityIps(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		for _, item := range ipArrays {
+			ipArray, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if name, _ := ipArray["DBInstanceIPArrayName"].(string); name == groupName {
+				attribute, _ := ipArray["DBInstanceIPArrayAttribute"].(string)
+				if attribute != wantAttribute {
+					return fmt.Errorf("group %q attribute: expected %q, got %q", groupName, wantAttribute, attribute)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("whitelist group %q not found on the instance", groupName)
+	}
+}
+
+func testAccCheckDBInstanceIpArrayExists(resourceId, groupName, wantIps string) resource.TestCheckFunc {
+	return testAccCheckDBInstanceIpArrayInCloud(resourceId, groupName, wantIps, true)
+}
+
+func testAccCheckDBInstanceIpArrayDeleted(resourceId, groupName string) resource.TestCheckFunc {
+	return testAccCheckDBInstanceIpArrayInCloud(resourceId, groupName, "", false)
+}
+
+// testAccCheckDBInstanceWhitelistTemplateDeleted verifies that the whitelist
+// template created by the test is really gone, so the account-level fixture
+// cannot leak when CheckDestroy for the instance passes.
+func testAccCheckDBInstanceWhitelistTemplateDeleted(templateName string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		service := rds.NewRdsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		template, err := service.DescribeAllWhitelistTemplate(templateName)
+		if err == nil && template != nil {
+			return fmt.Errorf("whitelist template %q still exists", templateName)
+		}
+		if err != nil && !errs.NotFoundError(err) {
+			return fmt.Errorf("failed to check whitelist template %q: %s", templateName, err)
+		}
+		return nil
+	}
+}
+
+func testAccDBInstanceIpArraysMysqlConfig() map[string]interface{} {
+	return map[string]interface{}{
+		"engine":                   "MySQL",
+		"engine_version":           "8.0",
+		"instance_type":            "${local.ip_array_classes[0].instance_class}",
+		"instance_storage":         "${local.ip_array_classes[0].storage_range[0].min}",
+		"instance_charge_type":     "Postpaid",
+		"db_instance_storage_type": "cloud_essd",
+		"category":                 "HighAvailability",
+		"instance_name":            "${var.name}",
+		"vswitch_id":               "${local.vswitch_id}",
+		"security_ips":             []string{"10.0.0.1"},
+	}
+}
+
+func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
+	acctest.PreCheck(t)
+
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return rds.NewRdsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDBInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc-dbinstance-iparrays-%d", rand.Intn(100000))
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDBInstanceIpArraysConfigDependence("MySQL", "8.0", "HighAvailability", "cloud_essd"))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Old state created before this block existed: only the legacy
+				// single group is configured, so the new block is absent.
+				Config: testAccConfig(testAccDBInstanceIpArraysMysqlConfig()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(mergeStringInterfaceMap(testAccDBInstanceIpArraysMysqlConfig(), map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "office",
+							"security_ips": []string{"10.10.10.0/24"},
+						},
+						{
+							"name":         "partner",
+							"security_ips": []string{"172.16.0.0/24", "192.168.1.10"},
+						},
+					},
+				})),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "2",
+					}),
+					testAccCheckDBInstanceIpArrays(resourceId, map[string][]string{
+						"office":  {"10.10.10.0/24"},
+						"partner": {"172.16.0.0/24", "192.168.1.10"},
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "office", "10.10.10.0/24"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "partner", "172.16.0.0/24,192.168.1.10"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "office",
+							"security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"},
+						},
+						{
+							"name":         "partner",
+							"security_ips": []string{"172.16.0.0/24"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "2",
+					}),
+					testAccCheckDBInstanceIpArrays(resourceId, map[string][]string{
+						"office":  {"10.10.10.0/24", "10.10.12.0/24"},
+						"partner": {"172.16.0.0/24"},
+					}),
+				),
+			},
+			{
+				// Second plan after the old state was upgraded to the new block:
+				// the configuration is unchanged, so the plan must be empty.
+				Config:   testAccConfig(map[string]interface{}{}),
+				PlanOnly: true,
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Import does not adopt whitelist groups that the configuration
+				// does not manage yet.
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound", "db_instance_ip_arrays"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected one imported state, got %d", len(states))
+					}
+					if got := states[0].Attributes["db_instance_ip_arrays.#"]; got != "" && got != "0" {
+						return fmt.Errorf("import must not adopt whitelist groups, got db_instance_ip_arrays.#=%q", got)
+					}
+					return nil
+				},
+			},
+			{
+				// Removing a block deletes the group from the instance.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "office",
+							"security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+					}),
+					testAccCheckDBInstanceIpArrays(resourceId, map[string][]string{
+						"office": {"10.10.10.0/24", "10.10.12.0/24"},
+					}),
+					testAccCheckDBInstanceIpArrayDeleted(resourceId, "partner"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "office", "10.10.10.0/24,10.10.12.0/24"),
+				),
+			},
+			{
+				// Renaming a block deletes the old group and creates the new one.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "officev2",
+							"security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+					}),
+					testAccCheckDBInstanceIpArrays(resourceId, map[string][]string{
+						"officev2": {"10.10.10.0/24", "10.10.12.0/24"},
+					}),
+					testAccCheckDBInstanceIpArrayDeleted(resourceId, "office"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "officev2", "10.10.10.0/24,10.10.12.0/24"),
+				),
+			},
+			{
+				// The legacy single group and the default group stay outside
+				// db_instance_ip_arrays and are not touched when managed groups
+				// change.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name": "legacygrp",
+					"security_ips":              []string{"10.0.0.9"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "officev2",
+							"security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "legacygrp", "10.0.0.9"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "default", "10.0.0.1"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "officev2", "10.10.10.0/24,10.10.12.0/24"),
+				),
+			},
+			{
+				// Removing the last managed group keeps the legacy and default
+				// groups unchanged. The generated configuration is cumulative, so
+				// the removed block must be dropped with REMOVEKEY.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name": "legacygrp",
+					"security_ips":              []string{"10.0.0.9"},
+					"db_instance_ip_arrays":     acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "0",
+					}),
+					testAccCheckDBInstanceIpArrayDeleted(resourceId, "officev2"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "legacygrp", "10.0.0.9"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "default", "10.0.0.1"),
+				),
+			},
+			{
+				// A hidden group is created through the legacy attributes; direct
+				// group management must not adopt or modify it.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name":      "hiddenlegacy",
+					"db_instance_ip_array_attribute": "hidden",
+					"security_ips":                   []string{"10.0.0.7"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "officev2",
+							"security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "hiddenlegacy", "10.0.0.7"),
+					testAccCheckDBInstanceIpArrayAttribute(resourceId, "hiddenlegacy", "hidden"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "officev2", "10.10.10.0/24,10.10.12.0/24"),
+				),
+			},
+			{
+				// Create a second legacy group that will later fall outside the
+				// configuration, modelling a group that Terraform does not manage.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name":      "external",
+					"db_instance_ip_array_attribute": "",
+					"security_ips":                   []string{"10.0.0.6"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "officev2",
+							"security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "hiddenlegacy", "10.0.0.7"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "external", "10.0.0.6"),
+				),
+			},
+			{
+				// Switching the legacy group leaves "external" behind; direct group
+				// deletion must not touch it or the hidden group.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name":      "legacygrp",
+					"db_instance_ip_array_attribute": "",
+					"security_ips":                   []string{"10.0.0.9"},
+					"db_instance_ip_arrays":          acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "0",
+					}),
+					testAccCheckDBInstanceIpArrayDeleted(resourceId, "officev2"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "external", "10.0.0.6"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "hiddenlegacy", "10.0.0.7"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "legacygrp", "10.0.0.9"),
+				),
+			},
+			{
+				// The default group stays managed by security_ips.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name":      "legacygrp",
+					"db_instance_ip_array_attribute": "",
+					"security_ips":                   []string{"10.0.0.9"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "default",
+							"security_ips": []string{"10.10.10.0/24"},
+						},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`db_instance_ip_arrays group "default" is reserved`),
+			},
+			{
+				// Duplicate names are rejected before any API call.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name": "legacygrp",
+					"security_ips":              []string{"10.0.0.9"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "dup", "security_ips": []string{"10.10.20.0/24"}},
+						{"name": "dup", "security_ips": []string{"10.10.21.0/24"}},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`contains duplicate group "dup"`),
+			},
+			{
+				// A group without any security_ips entry is rejected at plan time.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name": "legacygrp",
+					"security_ips":              []string{"10.0.0.9"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "emptygrp", "security_ips": []string{}},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`requires 1 item minimum|at least 1 item|requires at least one security_ips entry`),
+			},
+			{
+				// Group names longer than 64 characters are rejected at plan time.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name": "legacygrp",
+					"security_ips":              []string{"10.0.0.9"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": strings.Repeat("a", 65), "security_ips": []string{"10.10.22.0/24"}},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`expected length of .*name to be in the range`),
+			},
+			{
+				// Character-set probe: the public API rejects a group name with a
+				// space. The observed error is recorded in the run log and used to
+				// decide whether a client-side charset rule is justified.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name": "legacygrp",
+					"security_ips":              []string{"10.0.0.9"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "office group", "security_ips": []string{"10.10.23.0/24"}},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`(?i)invalid|malformed|format|illegal|not valid|not supported|parameter`),
+			},
+			{
+				// End with a valid configuration so the post-test destroy can plan.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_array_name": "legacygrp",
+					"security_ips":              []string{"10.0.0.9"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "finalgrp", "security_ips": []string{"10.10.30.0/24"}},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "finalgrp", "10.10.30.0/24"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "legacygrp", "10.0.0.9"),
+				),
+			},
+			{
+				// Plannable import runs a real plan against the imported state.
+				// The imported state has no groups, so the plan must update the
+				// resource to add the configured groups instead of a silent
+				// no-op, proving import does not adopt whitelist groups.
+				// ExpectNonEmptyPlan allows the non-noop import plan; the plan
+				// check below requires the concrete update action.
+				ResourceName:       resourceId,
+				ImportState:        true,
+				ImportStateKind:    resource.ImportBlockWithID,
+				ExpectNonEmptyPlan: true,
+				ImportPlanChecks: resource.ImportPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+		},
+	})
+}
+
+func resourceDBInstanceIpArraysTemplateDependence(templateName, engine, engineVersion, category, storageType string) func(name string) string {
+	base := resourceDBInstanceIpArraysConfigDependence(engine, engineVersion, category, storageType)
+	return func(name string) string {
+		return base(name) + fmt.Sprintf(`
+resource "alicloud_rds_whitelist_template" "default" {
+  ip_white_list = "10.20.0.0/24"
+  template_name = "%s"
+}
+`, templateName)
+	}
+}
+
+func TestAccAliCloudDBInstance_ipArrayTemplateBoundary(t *testing.T) {
+	acctest.PreCheck(t)
+
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return rds.NewRdsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDBInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc-iparray-tpl-%d", rand.Intn(100000))
+	templateName := fmt.Sprintf("tf-testAcc-iparray-tmpl-%d", rand.Intn(100000))
+	templateGroupName := templateName + "_template_suffix"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDBInstanceIpArraysTemplateDependence(templateName, "MySQL", "8.0", "HighAvailability", "cloud_essd"))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy: resource.ComposeTestCheckFunc(
+			rac.CheckResourceDestroy(),
+			testAccCheckDBInstanceWhitelistTemplateDeleted(templateName),
+		),
+		Steps: []resource.TestStep{
+			{
+				// A whitelist template attached through template_id_list owns a
+				// group of its own while direct groups are managed separately.
+				Config: testAccConfig(mergeStringInterfaceMap(testAccDBInstanceIpArraysMysqlConfig(), map[string]interface{}{
+					"template_id_list": []string{"${alicloud_rds_whitelist_template.default.id}"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "office", "security_ips": []string{"10.10.10.0/24"}},
+						{"name": "partner", "security_ips": []string{"172.16.0.0/24"}},
+					},
+				})),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "2",
+						"template_id_list.#":      "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "office", "10.10.10.0/24"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, templateGroupName, "10.20.0.0/24"),
+					testAccCheckDBInstanceIpArrayAttribute(resourceId, templateGroupName, "template"),
+				),
+			},
+			{
+				// Changing and deleting direct groups must not touch the template
+				// group or detach the template.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "office", "security_ips": []string{"10.10.10.0/24", "10.10.11.0/24"}},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+						"template_id_list.#":      "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "office", "10.10.10.0/24,10.10.11.0/24"),
+					testAccCheckDBInstanceIpArrayDeleted(resourceId, "partner"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, templateGroupName, "10.20.0.0/24"),
+				),
+			},
+			{
+				// A direct group may not reuse the name of a group provided by an
+				// attached whitelist template. The update is rejected before any
+				// write, so the template group and its association stay intact.
+				Config: testAccConfig(map[string]interface{}{
+					"template_id_list": []string{"${alicloud_rds_whitelist_template.default.id}"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": templateGroupName, "security_ips": []string{"10.30.0.0/24"}},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`co-managing the same group is unsupported|DuplicatedWithTemplate`),
+			},
+			{
+				// After the rejected update the template group, its addresses and
+				// the template association are unchanged.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "office", "security_ips": []string{"10.10.10.0/24", "10.10.11.0/24"}},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+						"template_id_list.#":      "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "office", "10.10.10.0/24,10.10.11.0/24"),
+					testAccCheckDBInstanceIpArrayDeleted(resourceId, "partner"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, templateGroupName, "10.20.0.0/24"),
+					testAccCheckDBInstanceIpArrayAttribute(resourceId, templateGroupName, "template"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudDBInstance_ipArraysPostgreSQL(t *testing.T) {
+	acctest.PreCheck(t)
+
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return rds.NewRdsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDBInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc-pg-iparrays-%d", rand.Intn(100000))
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDBInstanceIpArraysConfigDependence("PostgreSQL", "13.0", "Basic", "cloud_essd"))
+
+	baseConfig := map[string]interface{}{
+		"engine":                   "PostgreSQL",
+		"engine_version":           "13.0",
+		"instance_type":            "${local.ip_array_classes[0].instance_class}",
+		"instance_storage":         "${local.ip_array_classes[0].storage_range[0].min}",
+		"zone_id":                  "${local.zone_id}",
+		"instance_charge_type":     "Postpaid",
+		"instance_name":            "${var.name}",
+		"vswitch_id":               "${local.vswitch_id}",
+		"db_instance_storage_type": "cloud_essd",
+		"category":                 "Basic",
+		"security_ips":             []string{"10.0.0.1"},
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(mergeStringInterfaceMap(baseConfig, map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "office",
+							"security_ips": []string{"10.10.10.0/24"},
+						},
+						{
+							"name":         "partner",
+							"security_ips": []string{"172.16.0.0/24"},
+						},
+					},
+				})),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                  "PostgreSQL",
+						"db_instance_ip_arrays.#": "2",
+					}),
+					testAccCheckDBInstanceIpArrays(resourceId, map[string][]string{
+						"office":  {"10.10.10.0/24"},
+						"partner": {"172.16.0.0/24"},
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "office",
+							"security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"},
+						},
+						{
+							"name":         "partner",
+							"security_ips": []string{"172.16.0.0/24"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "2",
+					}),
+					testAccCheckDBInstanceIpArrays(resourceId, map[string][]string{
+						"office":  {"10.10.10.0/24", "10.10.12.0/24"},
+						"partner": {"172.16.0.0/24"},
+					}),
+				),
+			},
+			{
+				// Removing a block deletes the group on PostgreSQL as well.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "office",
+							"security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+					}),
+					testAccCheckDBInstanceIpArrays(resourceId, map[string][]string{
+						"office": {"10.10.10.0/24", "10.10.12.0/24"},
+					}),
+					testAccCheckDBInstanceIpArrayDeleted(resourceId, "partner"),
+				),
+			},
+			{
+				// Renaming a block deletes the old group and creates the new one.
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{
+							"name":         "officepg",
+							"security_ips": []string{"10.10.10.0/24", "10.10.12.0/24"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+					}),
+					testAccCheckDBInstanceIpArrays(resourceId, map[string][]string{
+						"officepg": {"10.10.10.0/24", "10.10.12.0/24"},
+					}),
+					testAccCheckDBInstanceIpArrayDeleted(resourceId, "office"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "officepg", "10.10.10.0/24,10.10.12.0/24"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudDBInstance_ipArraySingleGroup(t *testing.T) {
+	acctest.PreCheck(t)
+
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return rds.NewRdsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDBInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc-dbinstance-iparray-single-%d", rand.Intn(100000))
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDBInstanceIpArraysConfigDependence("MySQL", "8.0", "HighAvailability", "cloud_essd"))
+
+	singleGroupConfig := testAccDBInstanceIpArraysMysqlConfig()
+	singleGroupConfig["security_ips"] = []string{"10.0.0.2", "10.0.0.3"}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(singleGroupConfig),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips.#":          "2",
+						"db_instance_ip_arrays.#": "0",
+					}),
+				),
+			},
+			{
+				// Re-applying the same single-group configuration must produce an
+				// empty plan even though the provider added the optional
+				// db_instance_ip_arrays attribute.
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips.#":          "2",
+						"db_instance_ip_arrays.#": "0",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func mergeStringInterfaceMap(base, override map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{}, len(base)+len(override))
+	for k, v := range base {
+		result[k] = v
+	}
+	for k, v := range override {
+		result[k] = v
+	}
+	return result
 }
