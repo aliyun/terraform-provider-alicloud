@@ -266,7 +266,7 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Cbn", "2017-09-12", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.VpcRouteTable", "IncorrectStatus.VpcSwitch", "IncorrectStatus.VpcOrVswitch", "InstanceStatus.NotSupport", "IncorrectStatus.Attachment", "Throttling.User", "IncorrectStatus.VpcResource"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.VpcRouteTable", "IncorrectStatus.VpcSwitch", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.TransitRouter", "InstanceStatus.NotSupport", "IncorrectStatus.Attachment", "Throttling.User", "IncorrectStatus.VpcResource"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
