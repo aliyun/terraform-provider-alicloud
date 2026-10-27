@@ -343,27 +343,6 @@ func redisSecurityGroupIdDiffSuppressFunc(k, old, new string, d *schema.Resource
 	return true
 }
 
-func elasticsearchEnablePublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOkExists("enable_public"); ok && v.(bool) == true {
-		return false
-	}
-	return true
-}
-
-func elasticsearchEnableKibanaPublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOkExists("enable_kibana_public_network"); ok && v.(bool) == true {
-		return false
-	}
-	return true
-}
-
-func elasticsearchEnableKibanaPrivateDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOkExists("enable_kibana_private_network"); ok && v.(bool) == true {
-		return false
-	}
-	return true
-}
-
 func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if d.Get("instance_charge_type").(string) == "PostPaid" {
 		return true
@@ -598,20 +577,6 @@ func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	// if we want to change cluster's image_id to default, we have to find out what the default image_id is,
 	// then fill that image_id in this field.
 	return new == "" || !(d.Id() == "") && !d.Get("force_update").(bool)
-}
-
-func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-
-	oldVersion := strings.Split(strings.Split(old, "_")[0], ".")
-	newVersion := strings.Split(strings.Split(new, "_")[0], ".")
-
-	if len(oldVersion) >= 2 && len(newVersion) >= 2 {
-		if oldVersion[0] == newVersion[0] && oldVersion[1] == newVersion[1] {
-			return true
-		}
-	}
-
-	return false
 }
 
 func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -931,11 +896,4 @@ func CmsAlarmDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	sort.Strings(oldvlist)
 	return strings.Join(newvlist, " ") == strings.Join(oldvlist, " ")
 
-}
-
-func esDataNodeDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if v, ok := d.GetOk("data_node_disk_type"); ok && v.(string) != "cloud_essd" {
-		return true
-	}
-	return false
 }

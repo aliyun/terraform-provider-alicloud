@@ -1,4 +1,4 @@
-package alicloud
+package elasticsearch
 
 import (
 	"sort"
@@ -7,9 +7,15 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// DataSourceZones is the SDKv2 factory for alicloud_elasticsearch_zones.
+func DataSourceZones() *schema.Resource { return dataSourceAlicloudElaticsearchZones() }
 
 func dataSourceAlicloudElaticsearchZones() *schema.Resource {
 	return &schema.Resource{
@@ -59,14 +65,14 @@ func dataSourceAlicloudElaticsearchZonesRead(d *schema.ResourceData, meta interf
 	var err error
 	request := elasticsearch.CreateGetRegionConfigurationRequest()
 	request.RegionId = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 			return elasticsearchClient.GetRegionConfiguration(request)
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceUnavailable"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ServiceUnavailable"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -76,16 +82,16 @@ func dataSourceAlicloudElaticsearchZonesRead(d *schema.ResourceData, meta interf
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_elasticsearch_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_elasticsearch_zones", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.GetActionName(), request)
+	logs.AddDebug(request.GetActionName(), raw, request.GetActionName(), request)
 	zones, _ := raw.(*elasticsearch.GetRegionConfigurationResponse)
 	for _, zoneID := range zones.Result.Zones {
-		if multi && strings.Contains(zoneID, MULTI_IZ_SYMBOL) {
+		if multi && strings.Contains(zoneID, helper.MultiIzSymbol) {
 			zoneIds = append(zoneIds, zoneID)
 			continue
 		}
-		if !multi && !strings.Contains(zoneID, MULTI_IZ_SYMBOL) {
+		if !multi && !strings.Contains(zoneID, helper.MultiIzSymbol) {
 			zoneIds = append(zoneIds, zoneID)
 			continue
 		}
@@ -104,20 +110,20 @@ func dataSourceAlicloudElaticsearchZonesRead(d *schema.ResourceData, meta interf
 		for _, zoneId := range zoneIds {
 			mapping := map[string]interface{}{
 				"id":             zoneId,
-				"multi_zone_ids": splitMultiZoneId(zoneId),
+				"multi_zone_ids": helper.SplitMultiZoneId(zoneId),
 			}
 			s = append(s, mapping)
 		}
 	}
-	d.SetId(dataResourceIdHash(zoneIds))
+	d.SetId(helper.DataResourceIdHash(zoneIds))
 	if err := d.Set("zones", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("ids", zoneIds); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

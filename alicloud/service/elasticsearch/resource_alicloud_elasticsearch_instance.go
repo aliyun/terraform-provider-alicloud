@@ -1,4 +1,4 @@
-package alicloud
+package elasticsearch
 
 import (
 	"fmt"
@@ -9,9 +9,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// ResourceInstance is the SDKv2 factory for alicloud_elasticsearch_instance.
+// It is defined in the resource file so the collection-order checker can
+// locate the registered factory's implementation.
+func ResourceInstance() *schema.Resource { return resourceAliCloudElasticsearchInstance() }
 
 func resourceAliCloudElasticsearchInstance() *schema.Resource {
 	return &schema.Resource{
@@ -47,7 +58,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
-							ValidateFunc: StringInSlice([]string{"cloud_efficiency"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"cloud_efficiency"}, false),
 						},
 						"amount": {
 							Type:     schema.TypeInt,
@@ -82,7 +93,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 							Optional:     true,
 							Computed:     true,
 							ForceNew:     true,
-							ValidateFunc: StringInSlice([]string{"cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
 						},
 						"disk_encryption": {
 							Type:     schema.TypeBool,
@@ -99,7 +110,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(2, 50),
+							ValidateFunc: validators.IntBetween(2, 50),
 						},
 						"spec": {
 							Type:     schema.TypeString,
@@ -145,7 +156,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"x-pack", "IS"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"x-pack", "IS"}, false),
 			},
 			"kibana_configuration": {
 				Type:     schema.TypeList,
@@ -159,7 +170,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 							Optional:     true,
 							Computed:     true,
 							ForceNew:     true,
-							ValidateFunc: IntInSlice([]int{0, 1}),
+							ValidateFunc: validators.IntInSlice([]int{0, 1}),
 						},
 						"spec": {
 							Type:     schema.TypeString,
@@ -170,7 +181,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 							Optional:     true,
 							Computed:     true,
 							ForceNew:     true,
-							ValidateFunc: IntInSlice([]int{0}),
+							ValidateFunc: validators.IntInSlice([]int{0}),
 						},
 					},
 				},
@@ -216,13 +227,13 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
-							ValidateFunc: StringInSlice([]string{"cloud_ssd", "cloud_essd"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"cloud_ssd", "cloud_essd"}, false),
 						},
 						"amount": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							ForceNew:     true,
-							ValidateFunc: IntInSlice([]int{0, 3}),
+							ValidateFunc: validators.IntInSlice([]int{0, 3}),
 						},
 						"spec": {
 							Type:     schema.TypeString,
@@ -232,7 +243,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							ForceNew:     true,
-							ValidateFunc: IntInSlice([]int{0, 20}),
+							ValidateFunc: validators.IntInSlice([]int{0, 20}),
 						},
 					},
 				},
@@ -240,7 +251,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 			"order_action_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
 			},
 			"password": {
 				Type:      schema.TypeString,
@@ -251,7 +262,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"private_whitelist": {
 				Type:     schema.TypeSet,
@@ -263,7 +274,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"HTTP", "HTTPS"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"HTTP", "HTTPS"}, false),
 			},
 			"public_domain": {
 				Type:     schema.TypeString,
@@ -305,7 +316,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"update_strategy": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -327,7 +338,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
-							ValidateFunc: StringInSlice([]string{"cloud_efficiency"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"cloud_efficiency"}, false),
 						},
 						"disk_encryption": {
 							Type:     schema.TypeBool,
@@ -354,7 +365,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: IntBetween(0, 3),
+				ValidateFunc: validators.IntBetween(0, 3),
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -376,14 +387,14 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: StringInSlice([]string{string(PrePaid), string(PostPaid)}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PrePaid", "PostPaid"}, false),
 				Computed:     true,
 				Optional:     true,
 				Deprecated:   "Field 'instance_charge_type' has been deprecated since provider version 1.262.0. New field 'payment_type' instead.",
 			},
 			"period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc: validators.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -407,7 +418,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"cloud_ssd", "cloud_essd"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"cloud_ssd", "cloud_essd"}, false),
 				Deprecated:   "Field 'master_node_disk_type' has been deprecated since provider version 1.262.0. New field 'master_configuration.disk_type' instead.",
 			},
 
@@ -415,7 +426,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(2, 25),
+				ValidateFunc: validators.IntBetween(2, 25),
 				Deprecated:   "Field 'client_node_amount' has been deprecated since provider version 1.262.0. New field 'client_node_configuration.amount' instead.",
 			},
 			"client_node_spec": {
@@ -429,7 +440,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(2, 50),
+				ValidateFunc: validators.IntBetween(2, 50),
 				Deprecated:   "Field 'data_node_amount' has been deprecated since provider version 1.262.0. New field 'data_node_configuration.amount' instead.",
 			},
 			"data_node_spec": {
@@ -462,7 +473,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Computed:         true,
-				ValidateFunc:     StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				ValidateFunc:     validators.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 				DiffSuppressFunc: esDataNodeDiskPerformanceLevelDiffSuppressFunc,
 				Deprecated:       "Field 'data_node_disk_performance_level' has been deprecated since provider version 1.262.0. New field 'data_node_configuration.performance_level' instead.",
 			},
@@ -470,7 +481,7 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(2, 50),
+				ValidateFunc: validators.IntBetween(2, 50),
 				Deprecated:   "Field 'warm_node_amount' has been deprecated since provider version 1.262.0. New field 'warm_node_configuration.amount' instead.",
 			},
 			"warm_node_spec": {
@@ -483,14 +494,14 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(500, 20480),
+				ValidateFunc: validators.IntBetween(500, 20480),
 				Deprecated:   "Field 'warm_node_amount' has been deprecated since provider version 1.262.0. New field 'warm_node_configuration.disk' instead.",
 			},
 			"warm_node_disk_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"cloud_efficiency"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"cloud_efficiency"}, false),
 				Deprecated:   "Field 'warm_node_amount' has been deprecated since provider version 1.262.0. New field 'warm_node_configuration.disk_type' instead.",
 			},
 			"warm_node_disk_encrypted": {
@@ -518,7 +529,7 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 
 	clientNodeConfiguration := make(map[string]interface{})
 
-	if v := d.Get("client_node_configuration"); !IsNil(v) {
+	if v := d.Get("client_node_configuration"); !helper.IsNil(v) {
 		disk1, _ := jsonpath.Get("$[0].disk", v)
 		if disk1 != nil && disk1 != "" {
 			clientNodeConfiguration["disk"] = disk1
@@ -541,7 +552,7 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 
 	nodeSpec := make(map[string]interface{})
 
-	if v := d.Get("data_node_configuration"); !IsNil(v) {
+	if v := d.Get("data_node_configuration"); !helper.IsNil(v) {
 		disk3, _ := jsonpath.Get("$[0].disk", v)
 		if disk3 != nil && disk3 != "" {
 			nodeSpec["disk"] = disk3
@@ -571,7 +582,7 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 	}
 	masterConfiguration := make(map[string]interface{})
 
-	if v := d.Get("master_configuration"); !IsNil(v) {
+	if v := d.Get("master_configuration"); !helper.IsNil(v) {
 		disk5, _ := jsonpath.Get("$[0].disk", v)
 		if disk5 != nil && disk5 != "" {
 			masterConfiguration["disk"] = disk5
@@ -594,7 +605,7 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 
 	warmNodeConfiguration := make(map[string]interface{})
 
-	if v := d.Get("warm_node_configuration"); !IsNil(v) {
+	if v := d.Get("warm_node_configuration"); !helper.IsNil(v) {
 		spec7, _ := jsonpath.Get("$[0].spec", v)
 		if spec7 != nil && spec7 != "" {
 			warmNodeConfiguration["spec"] = spec7
@@ -622,15 +633,14 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 	password := d.Get("password").(string)
 	kmsPassword := d.Get("kms_encrypted_password").(string)
 	if password == "" && kmsPassword == "" {
-		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		return errs.WrapError(errs.Error("One of the 'password' and 'kms_encrypted_password' should be set."))
 	}
 	if password != "" {
 		request["esAdminPassword"] = password
 	} else {
-		kmsService := KmsService{meta.(*connectivity.AliyunClient)}
-		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		decryptResp, err := kmsDecrypt(client, kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["esAdminPassword"] = decryptResp
 	}
@@ -640,13 +650,13 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
 	}
 
 	kibanaConfiguration := make(map[string]interface{})
 
-	if v := d.Get("kibana_configuration"); !IsNil(v) {
+	if v := d.Get("kibana_configuration"); !helper.IsNil(v) {
 		disk9, _ := jsonpath.Get("$[0].disk", v)
 		if disk9 != nil && disk9 != "" {
 			kibanaConfiguration["disk"] = disk9
@@ -677,10 +687,9 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 	}
 	request["esVersion"] = d.Get("version")
 	vswitchId := d.Get("vswitch_id")
-	vpcService := VpcService{client}
-	vsw, err := vpcService.DescribeVSwitch(vswitchId.(string))
+	vsw, err := describeVSwitch(client, vswitchId.(string))
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	network := make(map[string]interface{})
 	network["type"] = "vpc"
@@ -696,10 +705,10 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 		paymentInfo := make(map[string]interface{})
 		if d.Get("period").(int) >= 12 {
 			paymentInfo["duration"] = d.Get("period").(int) / 12
-			paymentInfo["pricingCycle"] = string(Year)
+			paymentInfo["pricingCycle"] = "Year"
 		} else {
 			paymentInfo["duration"] = d.Get("period").(int)
-			paymentInfo["pricingCycle"] = string(Month)
+			paymentInfo["pricingCycle"] = "Month"
 		}
 		request["paymentInfo"] = paymentInfo
 	}
@@ -716,7 +725,7 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("master_node_spec"); ok {
 		masterDiskType, diskExits := d.GetOkExists("master_node_disk_type")
 		if !diskExits {
-			return WrapError(fmt.Errorf("CreateInstance error: master_node_disk_type is null"))
+			return errs.WrapError(fmt.Errorf("CreateInstance error: master_node_disk_type is null"))
 		}
 		masterNode := make(map[string]interface{})
 		masterNode["spec"] = v.(string)
@@ -767,11 +776,11 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 	}
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, nil, body, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TokenPreviousRequestProcessError", "ServiceUnavailable"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"TokenPreviousRequestProcessError", "ServiceUnavailable"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -779,19 +788,19 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_elasticsearch_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_elasticsearch_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.Result.instanceId", response)
 	d.SetId(fmt.Sprint(id))
 
 	elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "$.inited", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "$.inited", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudElasticsearchInstanceUpdate(d, meta)
@@ -803,12 +812,12 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 
 	objectRaw, err := elasticsearchServiceV2.DescribeElasticsearchInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_elasticsearch_instance DescribeElasticsearchInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("arch_type", objectRaw["archType"])
@@ -915,13 +924,13 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 	}
 	kibanaPrivateIPWhitelistRaw := make([]interface{}, 0)
 	if objectRaw["kibanaPrivateIPWhitelist"] != nil {
-		kibanaPrivateIPWhitelistRaw = convertToInterfaceArray(objectRaw["kibanaPrivateIPWhitelist"])
+		kibanaPrivateIPWhitelistRaw = convert.ConvertToInterfaceArray(objectRaw["kibanaPrivateIPWhitelist"])
 	}
 
 	d.Set("kibana_private_whitelist", kibanaPrivateIPWhitelistRaw)
 	kibanaIPWhitelistRaw := make([]interface{}, 0)
 	if objectRaw["kibanaIPWhitelist"] != nil {
-		kibanaIPWhitelistRaw = convertToInterfaceArray(objectRaw["kibanaIPWhitelist"])
+		kibanaIPWhitelistRaw = convert.ConvertToInterfaceArray(objectRaw["kibanaIPWhitelist"])
 	}
 
 	d.Set("kibana_whitelist", kibanaIPWhitelistRaw)
@@ -944,18 +953,18 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 	}
 	privateNetworkIpWhiteListRaw := make([]interface{}, 0)
 	if objectRaw["privateNetworkIpWhiteList"] != nil {
-		privateNetworkIpWhiteListRaw = convertToInterfaceArray(objectRaw["privateNetworkIpWhiteList"])
+		privateNetworkIpWhiteListRaw = convert.ConvertToInterfaceArray(objectRaw["privateNetworkIpWhiteList"])
 	}
 
 	d.Set("private_whitelist", privateNetworkIpWhiteListRaw)
 	publicIpWhitelistRaw := make([]interface{}, 0)
 	if objectRaw["publicIpWhitelist"] != nil {
-		publicIpWhitelistRaw = convertToInterfaceArray(objectRaw["publicIpWhitelist"])
+		publicIpWhitelistRaw = convert.ConvertToInterfaceArray(objectRaw["publicIpWhitelist"])
 	}
 
 	d.Set("public_whitelist", publicIpWhitelistRaw)
 	tagsMaps := objectRaw["tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 	warmNodeConfigurationMaps := make([]map[string]interface{}, 0)
 	warmNodeConfigurationMap := make(map[string]interface{})
 	warmNodeConfigurationRaw := make(map[string]interface{})
@@ -978,8 +987,8 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 	checkValue00 := d.Get("payment_type")
 	if checkValue00 == "Subscription" {
 		objectRaw, err = elasticsearchServiceV2.DescribeInstanceQueryAvailableInstances(d)
-		if err != nil && !NotFoundError(err) {
-			return WrapError(err)
+		if err != nil && !errs.NotFoundError(err) {
+			return errs.WrapError(err)
 		}
 
 		d.Set("auto_renew_duration", objectRaw["RenewalDuration"])
@@ -990,8 +999,8 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 	checkValue00 = d.Get("arch_type")
 	if checkValue00 == "public" {
 		objectRaw, err = elasticsearchServiceV2.DescribeInstanceListKibanaPvlNetwork(d.Id())
-		if err != nil && !NotFoundError(err) {
-			return WrapError(err)
+		if err != nil && !errs.NotFoundError(err) {
+			return errs.WrapError(err)
 		}
 
 		securityGroupsRaw, _ := jsonpath.Get("$.securityGroups", objectRaw)
@@ -1006,47 +1015,47 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	if !d.IsNewResource() && d.HasChange("instance_charge_type") {
 		if err := updateInstanceChargeType(d, meta); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-	} else if !d.IsNewResource() && d.Get("instance_charge_type").(string) == string(PrePaid) && d.HasChange("period") {
+	} else if !d.IsNewResource() && d.Get("instance_charge_type").(string) == "PrePaid" && d.HasChange("period") {
 		if err := renewInstance(d, meta); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("kibana_node_spec") {
 		if err := updateKibanaNode(d, meta); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if !d.IsNewResource() && (d.HasChange("master_node_spec") || d.HasChange("master_node_disk_type")) {
 		if err := updateMasterNode(d, meta); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if !d.IsNewResource() && (d.HasChange("client_node_spec") || d.HasChange("client_node_amount")) {
 		if err := updateClientNode(d, meta); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("data_node_amount") {
 		if err := updateDataNodeAmount(d, meta); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChanges("data_node_spec", "data_node_disk_size", "data_node_disk_performance_level") {
 		if err := updateDataNodeSpec(d, meta); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChanges("warm_node_spec", "warm_node_amount", "warm_node_disk_size") {
 		if err := updateWarmNode(d, meta); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -1076,12 +1085,12 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		}
 		const moveAction = "MoveResources"
 		var moveResp map[string]interface{}
-		moveWait := incrementalWait(3*time.Second, 5*time.Second)
+		moveWait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		if err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			var err error
 			moveResp, err = client.RpcPost("ResourceManager", "2020-03-31", moveAction, nil, moveReq, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					moveWait()
 					return retry.RetryableError(err)
 				}
@@ -1089,9 +1098,9 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), moveAction, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), moveAction, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(moveAction, moveResp, moveReq)
+		logs.AddDebug(moveAction, moveResp, moveReq)
 	}
 
 	elasticsearchServiceV2 := ElasticsearchServiceV2{client}
@@ -1103,7 +1112,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 
 		currentStatus, err := jsonpath.Get("protocol", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "protocol", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "protocol", objectRaw)
 		}
 		if fmt.Sprint(currentStatus) != target {
 			if target == "HTTPS" {
@@ -1114,11 +1123,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				body = make(map[string]interface{})
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1126,14 +1135,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1145,11 +1154,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				body = make(map[string]interface{})
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1157,14 +1166,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1181,9 +1190,9 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 
 		currentStatus, err := jsonpath.Get("enableKibanaPrivateNetwork", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "enableKibanaPrivateNetwork", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "enableKibanaPrivateNetwork", objectRaw)
 		}
-		currentStatusValue, formatErr := formatBool(currentStatus)
+		currentStatusValue, formatErr := convert.FormatBool(currentStatus)
 		if formatErr != nil {
 			return formatErr
 		}
@@ -1206,11 +1215,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				request["nodeType"] = "KIBANA"
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1218,14 +1227,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1247,11 +1256,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				request["actionType"] = "CLOSE"
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1259,14 +1268,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1285,19 +1294,19 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				if v, ok := d.GetOk("kibana_private_security_group_id"); ok {
 					localData, err := jsonpath.Get("$", v)
 					if err != nil {
-						return WrapError(err)
+						return errs.WrapError(err)
 					}
-					securityGroupsMapsArray := convertToInterfaceArray(localData)
+					securityGroupsMapsArray := convert.ConvertToInterfaceArray(localData)
 
 					request["securityGroups"] = securityGroupsMapsArray
 				}
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1305,14 +1314,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1329,11 +1338,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				body = make(map[string]interface{})
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1341,14 +1350,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1365,9 +1374,9 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 
 		currentStatus, err := jsonpath.Get("enablePublic", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "enablePublic", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "enablePublic", objectRaw)
 		}
-		currentStatusNum, formatErr := formatBool(currentStatus)
+		currentStatusNum, formatErr := convert.FormatBool(currentStatus)
 		if formatErr != nil {
 			return formatErr
 		}
@@ -1384,11 +1393,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				request["networkType"] = "PUBLIC"
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1396,14 +1405,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1419,11 +1428,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				request["actionType"] = "CLOSE"
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1431,14 +1440,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1455,9 +1464,9 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 
 		currentStatus, err := jsonpath.Get("enableKibanaPublicNetwork", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "enableKibanaPublicNetwork", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "enableKibanaPublicNetwork", objectRaw)
 		}
-		currentStatusResult, formatErr := formatBool(currentStatus)
+		currentStatusResult, formatErr := convert.FormatBool(currentStatus)
 		if formatErr != nil {
 			return formatErr
 		}
@@ -1474,11 +1483,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				request["networkType"] = "PUBLIC"
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1486,14 +1495,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1509,11 +1518,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 				request["actionType"] = "CLOSE"
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1521,14 +1530,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -1547,7 +1556,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	}
 	clientNodeConfiguration := make(map[string]interface{})
 
-	if v := d.Get("client_node_configuration"); !IsNil(v) || d.HasChange("client_node_configuration") {
+	if v := d.Get("client_node_configuration"); !helper.IsNil(v) || d.HasChange("client_node_configuration") {
 		disk1, _ := jsonpath.Get("$[0].disk", v)
 		if disk1 != nil && disk1 != "" {
 			clientNodeConfiguration["disk"] = disk1
@@ -1573,7 +1582,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	}
 	nodeSpec := make(map[string]interface{})
 
-	if v := d.Get("data_node_configuration"); !IsNil(v) || d.HasChange("data_node_configuration") {
+	if v := d.Get("data_node_configuration"); !helper.IsNil(v) || d.HasChange("data_node_configuration") {
 		disk3, _ := jsonpath.Get("$[0].disk", v)
 		if disk3 != nil && disk3 != "" {
 			nodeSpec["disk"] = disk3
@@ -1603,7 +1612,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	}
 	warmNodeConfiguration := make(map[string]interface{})
 
-	if v := d.Get("warm_node_configuration"); !IsNil(v) || d.HasChange("warm_node_configuration") {
+	if v := d.Get("warm_node_configuration"); !helper.IsNil(v) || d.HasChange("warm_node_configuration") {
 		spec5, _ := jsonpath.Get("$[0].spec", v)
 		if spec5 != nil && spec5 != "" {
 			warmNodeConfiguration["spec"] = spec5
@@ -1633,7 +1642,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	}
 	masterConfiguration := make(map[string]interface{})
 
-	if v := d.Get("master_configuration"); !IsNil(v) || d.HasChange("master_configuration") {
+	if v := d.Get("master_configuration"); !helper.IsNil(v) || d.HasChange("master_configuration") {
 		disk7, _ := jsonpath.Get("$[0].disk", v)
 		if disk7 != nil && disk7 != "" {
 			masterConfiguration["disk"] = disk7
@@ -1668,7 +1677,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	}
 	kibanaConfiguration := make(map[string]interface{})
 
-	if v := d.Get("kibana_configuration"); !IsNil(v) || d.HasChange("kibana_configuration") {
+	if v := d.Get("kibana_configuration"); !helper.IsNil(v) || d.HasChange("kibana_configuration") {
 		disk9, _ := jsonpath.Get("$[0].disk", v)
 		if disk9 != nil && disk9 != "" {
 			kibanaConfiguration["disk"] = disk9
@@ -1686,20 +1695,20 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	}
 
 	if v, ok := d.GetOkExists("force"); ok {
-		query["force"] = StringPointer(strconv.FormatBool(v.(bool)))
+		query["force"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
 	if v, ok := d.GetOk("order_action_type"); ok {
-		query["orderActionType"] = StringPointer(v.(string))
+		query["orderActionType"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1707,14 +1716,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{"inactive"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{"inactive"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -1733,11 +1742,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavaliable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavaliable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1745,14 +1754,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -1771,26 +1780,25 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	password := d.Get("password").(string)
 	kmsPassword := d.Get("kms_encrypted_password").(string)
 	if password == "" && kmsPassword == "" {
-		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+		return errs.WrapError(errs.Error("One of the 'password' and 'kms_encrypted_password' should be set."))
 	}
 	if password != "" {
 		request["esAdminPassword"] = password
 	} else {
-		kmsService := KmsService{meta.(*connectivity.AliyunClient)}
-		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		decryptResp, err := kmsDecrypt(client, kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["esAdminPassword"] = decryptResp
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1798,14 +1806,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -1826,10 +1834,10 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			paymentInfo := make(map[string]interface{})
 			if d.Get("period").(int) >= 12 {
 				paymentInfo["duration"] = d.Get("period").(int) / 12
-				paymentInfo["pricingCycle"] = string(Year)
+				paymentInfo["pricingCycle"] = "Year"
 			} else {
 				paymentInfo["duration"] = d.Get("period").(int)
-				paymentInfo["pricingCycle"] = string(Month)
+				paymentInfo["pricingCycle"] = "Month"
 			}
 			request["paymentInfo"] = paymentInfo
 		}
@@ -1837,11 +1845,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1849,14 +1857,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("payment_type"))}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "paymentType", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("payment_type"))}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "paymentType", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -1867,11 +1875,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	body = make(map[string]interface{})
 
 	if v, ok := d.GetOk("update_strategy"); ok {
-		query["updateStrategy"] = StringPointer(v.(string))
+		query["updateStrategy"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOkExists("force"); ok {
-		query["force"] = StringPointer(strconv.FormatBool(v.(bool)))
+		query["force"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
 	if d.HasChange("setting_config") {
@@ -1883,11 +1891,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1895,14 +1903,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
-		if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		if err != nil && !errs.IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -1924,7 +1932,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	if v, ok := d.GetOk("public_whitelist"); ok || d.HasChange("public_whitelist") {
-		whiteIpListMapsArray := convertToInterfaceArray(v)
+		whiteIpListMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["whiteIpList"] = whiteIpListMapsArray
 	}
@@ -1933,11 +1941,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 
 	body = request
 	if update && enableModifyWhiteIps3 {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1945,14 +1953,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -1968,7 +1976,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	if v, ok := d.GetOk("private_whitelist"); ok || d.HasChange("private_whitelist") {
-		whiteIpListMapsArray := convertToInterfaceArray(v)
+		whiteIpListMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["whiteIpList"] = whiteIpListMapsArray
 	}
@@ -1977,11 +1985,11 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1989,14 +1997,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -2019,18 +2027,18 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	if v, ok := d.GetOk("kibana_whitelist"); ok || d.HasChange("kibana_whitelist") {
-		whiteIpListMapsArray := convertToInterfaceArray(v)
+		whiteIpListMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["whiteIpList"] = whiteIpListMapsArray
 	}
 
 	body = request
 	if update && enableModifyWhiteIps4 {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -2038,14 +2046,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -2068,18 +2076,18 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	if v, ok := d.GetOk("kibana_private_whitelist"); ok || d.HasChange("kibana_private_whitelist") {
-		whiteIpListMapsArray := convertToInterfaceArray(v)
+		whiteIpListMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["whiteIpList"] = whiteIpListMapsArray
 	}
 
 	body = request
 	if update && enableModifyWhiteIps5 {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -2087,14 +2095,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -2117,20 +2125,20 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("kibana_private_security_group_id"); ok || d.HasChange("kibana_private_security_group_id") {
 		localData, err := jsonpath.Get("$", v)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		securityGroupsMapsArray := convertToInterfaceArray(localData)
+		securityGroupsMapsArray := convert.ConvertToInterfaceArray(localData)
 
 		request["securityGroups"] = securityGroupsMapsArray
 	}
 
 	body = request
 	if update && enableUpdateKibanaPvlNetwork1 {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -2138,14 +2146,14 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -2191,15 +2199,15 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 	}
 
 	if update && enableSetRenewal1 {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
-				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 					request["ProductType"] = "elasticsearchpre_intl"
 					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return retry.RetryableError(err)
@@ -2208,16 +2216,16 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
 		elasticsearchServiceV2 := ElasticsearchServiceV2{client}
 		if err := elasticsearchServiceV2.SetResourceTags(d, "INSTANCE"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
@@ -2235,11 +2243,11 @@ func resourceAliCloudElasticsearchInstanceDelete(d *schema.ResourceData, meta in
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("elasticsearch", "2017-06-13", action, query, nil, nil, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TokenPreviousRequestProcessError", "ServiceUnavailable", "InstanceActivating", "InternalServerError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"TokenPreviousRequestProcessError", "ServiceUnavailable", "InstanceActivating", "InternalServerError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -2247,13 +2255,13 @@ func resourceAliCloudElasticsearchInstanceDelete(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InstanceNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InstanceNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
