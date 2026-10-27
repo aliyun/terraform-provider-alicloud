@@ -24,6 +24,8 @@ on:
       - scripts/ci/run-tflint_test.sh
       - scripts/ci/initialization-check.sh
       - scripts/ci/initialization-check_test.sh
+      - scripts/ci/scoping-init-regression.sh
+      - scripts/ci/scoping-init-regression_test.sh
       - scripts/local-ci-check.sh
 
 permissions: {}
@@ -148,10 +150,70 @@ jobs:
           filter: blob:none
       - name: Test change range and lint scoping
         shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_BASE_REPOSITORY_URL: ${{ github.event.pull_request.base.repo.clone_url }}
         run: |
           scripts/ci/resolve-change-range_test.sh
           scripts/ci/run-tflint_test.sh
-          scripts/ci/initialization-check_test.sh
+          # #11312 added initialization-check_test.sh to this step; this PR adds
+          # scoping-init-regression.sh/_test.sh to gate it for pre-#11312 heads.
+          # The workflow definition runs from the merge commit (base+head), but
+          # the checked-out working tree is the PR HEAD. A head that predates
+          # these entries (e.g. an in-flight migration PR forked before #11312)
+          # lacks them, so a bare `scripts/ci/scoping-init-regression.sh` call
+          # would itself exit 127 -- the very noise failure this PR fixes.
+          # Materialize the runner and its test from a trusted, immutable
+          # source (the GitHub-event base = master tip, content-addressed) into
+          # a temp tool dir; fall back to the checked-out HEAD only when the
+          # base predates this entry (this PR's own pre-merge CI). The
+          # materialized runner is trusted; the working tree stays the head
+          # under test, so a PR cannot ship a tampered runner to bypass the
+          # regression, and a head that deletes/tampers the init test still
+          # fails (boundary-checked against the trusted merge-base).
+          tool_dir="$RUNNER_TEMP/scoping-init-regression"
+          mkdir -p "$tool_dir"
+          # materialize_scoping_entry echoes (to stdout) the trusted source SHA it
+          # used, so the workflow can pass it to the materialized _test as
+          # SCOPING_TOOL_SOURCE_SHA. The _test must NOT assume the checked-out
+          # HEAD is the tool source: on a real pre-#11312 head, HEAD lacks both
+          # the new entry and the init-test add history.
+          materialize_scoping_entry() {
+            local repo_path="$1" dest="$2"
+            if [[ "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]] \
+               && git show "${PR_BASE_SHA}:${repo_path}" >"$dest" 2>/dev/null; then
+              printf '%s\n' "$PR_BASE_SHA"
+              return 0
+            fi
+            if [[ "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ ! -s "$dest" ]]; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              git fetch --no-tags --no-recurse-submodules --filter=blob:none \
+                ci-base "$PR_BASE_SHA" >/dev/null 2>&1 || true
+              if git show "${PR_BASE_SHA}:${repo_path}" >"$dest" 2>/dev/null; then
+                printf '%s\n' "$PR_BASE_SHA"
+                return 0
+              fi
+            fi
+            # Base predates this entry (this PR's pre-merge CI): the HEAD is the
+            # content under review. A genuinely old head is served from the base
+            # path above once this PR merges to master.
+            if [[ -r "$repo_path" ]]; then
+              cp "$repo_path" "$dest"
+              printf '%s\n' "$(git rev-parse HEAD)"
+              return 0
+            fi
+            echo "::error::could not materialize ${repo_path} from the trusted base or HEAD; cannot run the scoping regression (no silent skip)." >&2
+            return 1
+          }
+          SCOPING_TOOL_SOURCE_SHA="$(materialize_scoping_entry scripts/ci/scoping-init-regression.sh "$tool_dir/scoping-init-regression.sh")" || exit 1
+          materialize_scoping_entry scripts/ci/scoping-init-regression_test.sh "$tool_dir/scoping-init-regression_test.sh" >/dev/null || exit 1
+          export SCOPING_TOOL_SOURCE_SHA
+          chmod +x "$tool_dir/scoping-init-regression.sh" "$tool_dir/scoping-init-regression_test.sh"
+          "$tool_dir/scoping-init-regression.sh"
+          "$tool_dir/scoping-init-regression_test.sh"
       - name: Resolve change range
         id: change-range
         shell: bash
