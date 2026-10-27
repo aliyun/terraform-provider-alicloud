@@ -1,16 +1,17 @@
-package alicloud
+package ons_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudOnsTopicsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+func TestAccAliCloudOnsTopicsDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_ons_topics.default"
-	name := fmt.Sprintf("tf-testacc%sonstopic%v", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sonstopic%v", acctest.DefaultRegionToTest, rand)
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceOnsTopicsConfigDependence)
 
@@ -59,7 +60,7 @@ func TestAccAlicloudOnsTopicsDataSource(t *testing.T) {
 		return map[string]string{
 			"names.#":                     "1",
 			"topics.#":                    "1",
-			"topics.0.topic_name":         fmt.Sprintf("tf-testacc%sonstopic%v", defaultRegionToTest, rand),
+			"topics.0.topic_name":         fmt.Sprintf("tf-testacc%sonstopic%v", acctest.DefaultRegionToTest, rand),
 			"topics.0.relation":           "6",
 			"topics.0.relation_name":      "授权发布/订阅",
 			"topics.0.message_type":       "0",
@@ -82,7 +83,7 @@ func TestAccAlicloudOnsTopicsDataSource(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
 	onsTopicsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, tagsConf)
 }

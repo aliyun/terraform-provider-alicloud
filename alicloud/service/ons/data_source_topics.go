@@ -1,4 +1,4 @@
-package alicloud
+package ons
 
 import (
 	"fmt"
@@ -6,13 +6,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOnsTopics() *schema.Resource {
+func DataSourceOnsTopics() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudOnsTopicsRead,
+		Read: dataSourceOnsTopicsRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -23,7 +28,7 @@ func dataSourceAlicloudOnsTopics() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"names": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -105,7 +110,7 @@ func dataSourceAlicloudOnsTopics() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceOnsTopicsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "OnsTopicList"
@@ -128,7 +133,7 @@ func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		topicNameRegex = r
 	}
@@ -146,13 +151,13 @@ func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) e
 	var err error
 	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_topics", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ons_topics", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	resp, err := jsonpath.Get("$.Data.PublishInfoDo", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.PublishInfoDo", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data.PublishInfoDo", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -174,12 +179,12 @@ func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) e
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		message_typeVal, err := formatInt(object["MessageType"])
+		message_typeVal, err := convert.FormatInt(object["MessageType"])
 		if err != nil {
 			return err
 		}
 
-		relationVal, err := formatInt(object["Relation"])
+		relationVal, err := convert.FormatInt(object["Relation"])
 		if err != nil {
 			return err
 		}
@@ -196,18 +201,18 @@ func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) e
 			"topic":              fmt.Sprint(object["Topic"]),
 		}
 
-		tags := make(map[string]interface{})
+		tagMap := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.Tags.Tag", object)
 		if t != nil {
 			for _, t := range t.([]interface{}) {
 				key := t.(map[string]interface{})["Key"].(string)
 				value := t.(map[string]interface{})["Value"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
+				if !tags.IgnoredTags(key, value) {
+					tagMap[key] = value
 				}
 			}
 		}
-		mapping["tags"] = tags
+		mapping["tags"] = tagMap
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(object["Topic"]))
 			names = append(names, object["Topic"])
@@ -215,11 +220,11 @@ func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) e
 			continue
 		}
 
-		onsService := OnsService{client}
+		onsService := Service{client: client}
 		id := fmt.Sprint(object["InstanceId"], ":", object["Topic"])
 		getResp, err := onsService.OnsTopicStatus(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["perm"] = getResp["Perm"]
 		ids = append(ids, fmt.Sprint(object["Topic"]))
@@ -227,20 +232,20 @@ func dataSourceAlicloudOnsTopicsRead(d *schema.ResourceData, meta interface{}) e
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("topics", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

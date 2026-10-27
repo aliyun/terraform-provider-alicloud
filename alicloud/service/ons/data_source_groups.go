@@ -1,4 +1,4 @@
-package alicloud
+package ons
 
 import (
 	"fmt"
@@ -6,13 +6,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOnsGroups() *schema.Resource {
+func DataSourceOnsGroups() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudOnsGroupsRead,
+		Read: dataSourceOnsGroupsRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -45,7 +49,7 @@ func dataSourceAlicloudOnsGroups() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -95,7 +99,7 @@ func dataSourceAlicloudOnsGroups() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudOnsGroupsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceOnsGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "OnsGroupList"
@@ -121,14 +125,14 @@ func dataSourceAlicloudOnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		groupNameRegex = r
 	}
 	if v, ok := d.GetOk("group_id_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		groupNameRegex = r
 	}
@@ -146,13 +150,13 @@ func dataSourceAlicloudOnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 	var err error
 	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_groups", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ons_groups", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	resp, err := jsonpath.Get("$.Data.SubscribeInfoDo", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.SubscribeInfoDo", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data.SubscribeInfoDo", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -183,37 +187,37 @@ func dataSourceAlicloudOnsGroupsRead(d *schema.ResourceData, meta interface{}) e
 			"remark":             object["Remark"],
 		}
 
-		tags := make(map[string]interface{})
+		tagMap := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.Tags.Tag", object)
 		if t != nil {
 			for _, t := range t.([]interface{}) {
 				key := t.(map[string]interface{})["Key"].(string)
 				value := t.(map[string]interface{})["Value"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
+				if !tags.IgnoredTags(key, value) {
+					tagMap[key] = value
 				}
 			}
 		}
-		mapping["tags"] = tags
+		mapping["tags"] = tagMap
 		ids = append(ids, fmt.Sprint(object["GroupId"]))
 		names = append(names, object["GroupId"])
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("groups", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

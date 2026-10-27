@@ -1,307 +1,25 @@
-package alicloud
+package ons
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	resource.AddTestSweepers("alicloud_ons_group", &resource.Sweeper{
-		Name: "alicloud_ons_group",
-		F:    testSweepOnsGroup,
-	})
-}
-
-func testSweepOnsGroup(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return WrapErrorf(err, "error getting Alicloud client.")
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"GID-tf-testAcc",
-		"GID_tf-testacc",
-		"CID-tf-testAcc",
-		"CID_tf-testacc",
-	}
-
-	action := "OnsInstanceInServiceList"
-	request := make(map[string]interface{})
-	var response map[string]interface{}
-	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
-	if err != nil {
-		log.Printf("[ERROR] Failed to retrieve ons instance in service list: %s", err)
-	}
-	resp, err := jsonpath.Get("$.Data.InstanceVO", response)
-	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
-	}
-
-	var instanceIds []string
-	result, _ := resp.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		instanceIds = append(instanceIds, item["InstanceId"].(string))
-	}
-
-	for _, instanceId := range instanceIds {
-
-		action := "OnsGroupList"
-		request := make(map[string]interface{})
-		var response map[string]interface{}
-		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_groups", action, AlibabaCloudSdkGoERROR)
-		}
-		resp, err := jsonpath.Get("$.Data.SubscribeInfoDo", response)
-		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.SubscribeInfoDo", response)
-		}
-
-		result, _ := resp.([]interface{})
-		for _, v := range result {
-			item := v.(map[string]interface{})
-			name := item["GroupId"].(string)
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping ons group: %s ", name)
-				continue
-			}
-			log.Printf("[INFO] delete ons group: %s ", name)
-
-			action := "OnsGroupDelete"
-			request := map[string]interface{}{
-				"GroupId":    name,
-				"InstanceId": instanceId,
-			}
-			response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete ons group (%s): %s", name, err)
-
-			}
-		}
-	}
-
-	return nil
-}
-
-func TestAccAliCloudOnsGroup_basic(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ons_group.default"
-	ra := resourceAttrInit(resourceId, onsGroupBasicMap)
-	serviceFunc := func() interface{} {
-		return &OnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("GID-tf-testacconsgroupbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOnsGroupConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_ons_instance.default.id}",
-					"group_id":    "${var.group_id}",
-					"remark":      "alicloud_ons_group_remark",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"group_id": fmt.Sprintf("GID-tf-testacconsgroupbasic%v", rand),
-						"remark":   "alicloud_ons_group_remark",
-					}),
-				),
-			},
-
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TFM",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "1",
-						"tags.Created": "TFM",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"group_id": "${var.group_id}_change",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"group_id": fmt.Sprintf("GID-tf-testacconsgroupbasic%v_change", rand)}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"group_id": "${var.group_id}",
-					"remark":   "alicloud_ons_group_remark",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"group_id": fmt.Sprintf("GID-tf-testacconsgroupbasic%v", rand),
-						"remark":   "alicloud_ons_group_remark",
-					}),
-				),
-			},
-		},
-	})
-
-}
-
-func TestAccAliCloudOnsGroup_multi(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ons_group.default"
-	ra := resourceAttrInit(resourceId, onsGroupBasicMap)
-	serviceFunc := func() interface{} {
-		return &OnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("GID-tf-testacconsgroupbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOnsGroupMultiConfigMulti)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_id": "${alicloud_ons_instance.default.id}",
-					"group_id":    "${var.group_id}",
-					"remark":      "alicloud_ons_group_remark",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"group_id": fmt.Sprintf("GID-tf-testacconsgroupbasic%v", rand),
-						"remark":   "alicloud_ons_group_remark",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-
-}
-
-func resourceOnsGroupConfigDependence(name string) string {
-	return fmt.Sprintf(`
-resource "alicloud_ons_instance" "default" {
-  name = "%s"
-}
-
-variable "group_id" {
- default = "%s"
-}
-`, name, name)
-}
-
-func resourceOnsGroupMultiConfigMulti(name string) string {
-	return fmt.Sprintf(`
-variable "group_id" {
-  default = "%s"
-}
-variable "groups" {
-  type = list(map(string))
-  default = [
-    {
-      "group_name" : "GID_TF_TEST_1_2",
-      "remark" : "TF_TEST_1_2"
-    },
-    {
-      "group_name" : "GID_TF_TEST_1_1",
-      "remark" : "TF_TEST_1_1"
-    },
-      {
-      "group_name" : "GID_TF_TEST_1",
-      "remark" : "TF_TEST_1"
-    },
-      {
-      "group_name" : "GID_TF_TEST_2_1",
-      "remark" : "TF_TEST_2_1"
-    },
-      {
-      "group_name" : "GID_TF_TEST_2",
-      "remark" : "TF_TEST_2"
-    }
-  ]
-  description = "The specification of ons groups."
-}
-
-resource "alicloud_ons_instance" "default" {
-	instance_name = "%s"
-}
-
-resource "alicloud_ons_group" "default1" {
-	count       = length(var.groups)
-	instance_id = alicloud_ons_instance.default.id
-	group_name  = var.groups[count.index].group_name
-	remark      = var.groups[count.index].remark
-}
-`, name, name)
-}
-
-var onsGroupBasicMap = map[string]string{
-	"group_id": "${var.group_id}",
-	"remark":   "alicloud_ons_group_remark",
-}
-
 // lintignore: R001
 func TestUnitAlicloudOnsGroup(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_ons_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ons_group"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -322,7 +40,7 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -358,18 +76,18 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ons_group", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_ons_group", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -377,13 +95,13 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewOnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudOnsGroupCreate(dInit, rawClient)
+	err = resourceOnsGroupCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -408,7 +126,7 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsGroupCreate(dInit, rawClient)
+		err := resourceOnsGroupCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -429,13 +147,13 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewOnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudOnsGroupUpdate(dExisted, rawClient)
+	err = resourceOnsGroupUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// OnsGroupConsumerUpdate
@@ -453,7 +171,7 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if *action == "OnsGroupConsumerUpdate" {
 				switch errorCode {
 				case "NonRetryableError":
@@ -468,7 +186,7 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsGroupUpdate(dExisted, rawClient)
+		err := resourceOnsGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -537,7 +255,7 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsGroupUpdate(dExisted, rawClient)
+		err := resourceOnsGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -606,7 +324,7 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsGroupUpdate(dExisted, rawClient)
+		err := resourceOnsGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -645,7 +363,7 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsGroupRead(dExisted, rawClient)
+		err := resourceOnsGroupRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -658,13 +376,13 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewOnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudOnsGroupDelete(dExisted, rawClient)
+	err = resourceOnsGroupDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -692,7 +410,7 @@ func TestUnitAlicloudOnsGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsGroupDelete(dExisted, rawClient)
+		err := resourceOnsGroupDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

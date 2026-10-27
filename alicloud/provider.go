@@ -929,12 +929,6 @@ func Provider() *schema.Provider {
 			// ocean
 			"alicloud_ocean_base_instances": dataSourceAlicloudOceanBaseInstances(),
 
-			// ons
-			"alicloud_ons_instances": dataSourceAlicloudOnsInstances(),
-			"alicloud_ons_topics":    dataSourceAlicloudOnsTopics(),
-			"alicloud_ons_groups":    dataSourceAlicloudOnsGroups(),
-			"alicloud_ons_service":   dataSourceAlicloudOnsService(),
-
 			// oos
 			"alicloud_oos_templates":            dataSourceAlicloudOosTemplates(),
 			"alicloud_oos_executions":           dataSourceAlicloudOosExecutions(),
@@ -2291,11 +2285,6 @@ func Provider() *schema.Provider {
 
 			// ocean
 			"alicloud_ocean_base_instance": resourceAliCloudOceanBaseInstance(),
-
-			// ons
-			"alicloud_ons_instance": resourceAlicloudOnsInstance(),
-			"alicloud_ons_topic":    resourceAlicloudOnsTopic(),
-			"alicloud_ons_group":    resourceAlicloudOnsGroup(),
 
 			// oos
 			"alicloud_oos_template":               resourceAlicloudOosTemplate(),

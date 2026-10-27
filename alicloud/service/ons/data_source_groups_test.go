@@ -1,14 +1,14 @@
-package alicloud
+package ons_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudOnsGroupsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_ons_groups.default"
 	name := fmt.Sprintf("GID-tf-testacconsgroup%v", rand)
 
