@@ -281,8 +281,6 @@ func Provider() *schema.Provider {
 			"alicloud_brain_industrial_pid_loops":         dataSourceAlicloudBrainIndustrialPidLoops(),
 
 			// bss
-			"alicloud_bss_open_api_products":        dataSourceAlicloudBssOpenApiProducts(),
-			"alicloud_bss_open_api_pricing_modules": dataSourceAlicloudBssOpenApiPricingModules(),
 
 			// caller
 			"alicloud_caller_identity": dataSourceAlicloudCallerIdentity(),

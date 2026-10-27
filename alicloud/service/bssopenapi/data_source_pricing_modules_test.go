@@ -1,24 +1,25 @@
-package alicloud
+package bssopenapi_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudBssOpenApiPricingModuleDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudBssOpenApiPricingModuleSourceConfig(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudBssOpenApiPricingModuleSourceConfig(rand, map[string]string{
 			"name_regex":        `"国内月均日峰值带宽"`,
 			"product_code":      `"cdn"`,
 			"subscription_type": `"PayAsYouGo"`,
 			"product_type":      `"CDN"`,
 		}),
-		fakeConfig: testAccCheckAlicloudBssOpenApiPricingModuleSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudBssOpenApiPricingModuleSourceConfig(rand, map[string]string{
 			"name_regex":        `"国内月均日峰值带宽_fake"`,
 			"product_code":      `"cdn"`,
 			"subscription_type": `"PayAsYouGo"`,
@@ -26,14 +27,14 @@ func TestAccAlicloudBssOpenApiPricingModuleDataSource(t *testing.T) {
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudBssOpenApiPricingModuleSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudBssOpenApiPricingModuleSourceConfig(rand, map[string]string{
 			"ids":               `["cdn:CDN:PayAsYouGo:Cdn95China"]`,
 			"product_code":      `"cdn"`,
 			"subscription_type": `"PayAsYouGo"`,
 			"product_type":      `"CDN"`,
 		}),
-		fakeConfig: testAccCheckAlicloudBssOpenApiPricingModuleSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudBssOpenApiPricingModuleSourceConfig(rand, map[string]string{
 			"ids":               `["cdn:CDN:PayAsYouGo:Cdn95China_fake"]`,
 			"product_code":      `"cdn"`,
 			"subscription_type": `"PayAsYouGo"`,
@@ -41,18 +42,18 @@ func TestAccAlicloudBssOpenApiPricingModuleDataSource(t *testing.T) {
 		}),
 	}
 
-	BssOpenApiPricingModuleCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, allConf)
+	BssOpenApiPricingModuleCheckInfo.DataSourceTestCheck(t, rand, nameRegexConf, allConf)
 }
 
 var existBssOpenApiPricingModuleMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"modules.#":                     "1",
-		"modules.0.id":                  CHECKSET,
-		"modules.0.code":                CHECKSET,
-		"modules.0.pricing_module_name": CHECKSET,
-		"modules.0.product_code":        CHECKSET,
-		"modules.0.product_type":        CHECKSET,
-		"modules.0.subscription_type":   CHECKSET,
+		"modules.0.id":                  acctest.CHECKSET,
+		"modules.0.code":                acctest.CHECKSET,
+		"modules.0.pricing_module_name": acctest.CHECKSET,
+		"modules.0.product_code":        acctest.CHECKSET,
+		"modules.0.product_type":        acctest.CHECKSET,
+		"modules.0.subscription_type":   acctest.CHECKSET,
 	}
 }
 
@@ -62,10 +63,10 @@ var fakeBssOpenApiPricingModuleMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var BssOpenApiPricingModuleCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_bss_open_api_pricing_modules.default",
-	existMapFunc: existBssOpenApiPricingModuleMapFunc,
-	fakeMapFunc:  fakeBssOpenApiPricingModuleMapFunc,
+var BssOpenApiPricingModuleCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_bss_open_api_pricing_modules.default",
+	ExistMapFunc: existBssOpenApiPricingModuleMapFunc,
+	FakeMapFunc:  fakeBssOpenApiPricingModuleMapFunc,
 }
 
 func testAccCheckAlicloudBssOpenApiPricingModuleSourceConfig(rand int, attrMap map[string]string) string {

@@ -8,5 +8,15 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "BssOpenApi",
+		SDKDataSources: []conns.SDKDataSource{
+			{
+				TypeName: "alicloud_bss_open_api_products",
+				Factory:  DataSourceProducts,
+			},
+			{
+				TypeName: "alicloud_bss_open_api_pricing_modules",
+				Factory:  DataSourcePricingModules,
+			},
+		},
 	}
 }
