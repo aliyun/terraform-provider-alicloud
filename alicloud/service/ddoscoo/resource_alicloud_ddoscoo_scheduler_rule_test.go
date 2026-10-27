@@ -1,4 +1,4 @@
-package alicloud
+package ddoscoo_test
 
 import (
 	"fmt"
@@ -11,33 +11,38 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	ddoscoo "github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddoscoo"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAliCloudDdosCooSchedulerRule_basic(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_scheduler_rule.default"
-	ra := resourceAttrInit(resourceId, DdosCooSchedulerRuleMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, DdosCooSchedulerRuleMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdoscooSchedulerRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccDdoscooSchedulerRule%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, DdosCooSchedulerRuleBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, DdosCooSchedulerRuleBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -81,7 +86,7 @@ func TestAccAliCloudDdosCooSchedulerRule_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -128,7 +133,7 @@ data "alicloud_resource_manager_resource_groups" "defaults" {
 
 // lintignore: R001
 func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := acctest.Provider.ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ddoscoo_scheduler_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ddoscoo_scheduler_rule"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -157,7 +162,7 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -187,18 +192,18 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ddoscoo_scheduler_rule", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_ddoscoo_scheduler_rule", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -206,13 +211,13 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDdoscooClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDdoscooSchedulerRuleCreate(dInit, rawClient)
+	err = p["alicloud_ddoscoo_scheduler_rule"].Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -237,7 +242,7 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdoscooSchedulerRuleCreate(dInit, rawClient)
+		err := p["alicloud_ddoscoo_scheduler_rule"].Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -258,13 +263,13 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDdoscooClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDdoscooSchedulerRuleUpdate(dExisted, rawClient)
+	err = p["alicloud_ddoscoo_scheduler_rule"].Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifySchedulerRule
@@ -282,7 +287,7 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 		"resource_group_id": "ModifySchedulerRuleValue",
 		"param":             "ModifySchedulerRuleValue",
 	}
-	diff, err := newInstanceDiff("alicloud_ddoscoo_scheduler_rule", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_ddoscoo_scheduler_rule", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
@@ -322,7 +327,7 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdoscooSchedulerRuleUpdate(dExisted, rawClient)
+		err := p["alicloud_ddoscoo_scheduler_rule"].Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -361,7 +366,7 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdoscooSchedulerRuleRead(dExisted, rawClient)
+		err := p["alicloud_ddoscoo_scheduler_rule"].Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -374,13 +379,13 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDdoscooClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDdoscooSchedulerRuleDelete(dExisted, rawClient)
+	err = p["alicloud_ddoscoo_scheduler_rule"].Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -402,7 +407,7 @@ func TestUnitAlicloudDdoscooSchedulerRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdoscooSchedulerRuleDelete(dExisted, rawClient)
+		err := p["alicloud_ddoscoo_scheduler_rule"].Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

@@ -1,43 +1,44 @@
-package alicloud
+package ddoscoo_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDdosCooInstanceDataSource_basic(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_ddoscoo_instances.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId,
 		fmt.Sprintf("tf_testAcc%d", rand),
 		dataSourceDdoscooInstanceConfigDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_ddoscoo_instance.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_ddoscoo_instance.default.name}-fake",
 		}),
 	}
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_ddoscoo_instance.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_ddoscoo_instance.default.id}-fake"},
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_ddoscoo_instance.default.name}",
 			"ids":        []string{"${alicloud_ddoscoo_instance.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_ddoscoo_instance.default.name}-fake",
 			"ids":        []string{"${alicloud_ddoscoo_instance.default.id}"},
 		}),
@@ -46,7 +47,7 @@ func TestAccAliCloudDdosCooInstanceDataSource_basic(t *testing.T) {
 	var existDdoscooInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                         "1",
-			"ids.0":                         CHECKSET,
+			"ids.0":                         acctest.CHECKSET,
 			"names.#":                       "1",
 			"names.0":                       fmt.Sprintf("tf_testAcc%d", rand),
 			"instances.#":                   "1",
@@ -56,15 +57,15 @@ func TestAccAliCloudDdosCooInstanceDataSource_basic(t *testing.T) {
 			"instances.0.service_bandwidth": "100",
 			"instances.0.port_count":        "50",
 			"instances.0.domain_count":      "50",
-			"instances.0.remark":            CHECKSET,
-			"instances.0.ip_mode":           CHECKSET,
-			"instances.0.debt_status":       CHECKSET,
-			"instances.0.edition":           CHECKSET,
-			"instances.0.status":            CHECKSET,
-			"instances.0.ip_version":        CHECKSET,
-			"instances.0.enabled":           CHECKSET,
-			"instances.0.expire_time":       CHECKSET,
-			"instances.0.create_time":       CHECKSET,
+			"instances.0.remark":            acctest.CHECKSET,
+			"instances.0.ip_mode":           acctest.CHECKSET,
+			"instances.0.debt_status":       acctest.CHECKSET,
+			"instances.0.edition":           acctest.CHECKSET,
+			"instances.0.status":            acctest.CHECKSET,
+			"instances.0.ip_version":        acctest.CHECKSET,
+			"instances.0.enabled":           acctest.CHECKSET,
+			"instances.0.expire_time":       acctest.CHECKSET,
+			"instances.0.create_time":       acctest.CHECKSET,
 		}
 	}
 
@@ -76,19 +77,19 @@ func TestAccAliCloudDdosCooInstanceDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var ddoscooInstanceCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existDdoscooInstanceMapFunc,
-		fakeMapFunc:  fakeDdoscooInstanceMapFunc,
+	var ddoscooInstanceCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existDdoscooInstanceMapFunc,
+		FakeMapFunc:  fakeDdoscooInstanceMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckPrePaidResources(t)
-		testAccPreCheckWithTime(t, []int{15})
-		testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+		acctest.PreCheck(t)
+		acctest.PreCheckPrePaidResources(t)
+		acctest.PreCheckWithTime(t, []int{15})
+		acctest.PreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 
 	}
-	ddoscooInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	ddoscooInstanceCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceDdoscooInstanceConfigDependence(name string) string {

@@ -1,4 +1,4 @@
-package alicloud
+package ddoscoo
 
 import (
 	"fmt"
@@ -7,11 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDdoscooInstance() *schema.Resource {
+func ResourceDdoscooInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudDdoscooInstanceCreate,
 		Read:   resourceAliCloudDdoscooInstanceRead,
@@ -29,7 +35,7 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringLenBetween(1, 64),
+				ValidateFunc: validators.StringLenBetween(1, 64),
 			},
 			"port_count": {
 				Type:     schema.TypeString,
@@ -69,7 +75,7 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"coop"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"coop"}, false),
 			},
 			"product_plan": {
 				Type:     schema.TypeString,
@@ -81,35 +87,35 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Ipv4", "Ipv6"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Ipv4", "Ipv6"}, false),
 			},
 			"bandwidth_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"0", "1", "2"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"0", "1", "2"}, false),
 			},
 			"function_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"0", "1"}, false),
 			},
 			"product_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"ddoscoo", "ddoscoo_intl", "ddosDip"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ddoscoo", "ddoscoo_intl", "ddosDip"}, false),
 			},
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc: validators.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 			},
 			"modify_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"ip": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -128,7 +134,7 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 
 func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddoscooService := DdoscooService{client}
+	ddoscooService := NewService(client)
 	var response map[string]interface{}
 	var err error
 	var endpoint string
@@ -246,15 +252,15 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		request["Period"] = 1
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, false, endpoint)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return retry.RetryableError(err)
 			}
@@ -262,18 +268,18 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ddoscoo_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	response = response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 
-	stateConf := BuildStateConf([]string{"Pending"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ddoscooService.DdosStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{"Pending"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ddoscooService.DdosStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudDdoscooInstanceUpdate(d, client)
@@ -281,21 +287,21 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 
 func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddosCooServiceV2 := DdosCooServiceV2{client}
+	ddosCooServiceV2 := NewService(client)
 
 	objectRaw, err := ddosCooServiceV2.DescribeDdosCooInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ddoscoo_instance DescribeDdosCooInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("address_type", objectRaw["IpVersion"])
 	d.Set("create_time", objectRaw["CreateTime"])
-	edition, formatErr := formatInt(objectRaw["Edition"])
+	edition, formatErr := convert.FormatInt(objectRaw["Edition"])
 	if formatErr != nil {
 		return formatErr
 	}
@@ -305,8 +311,8 @@ func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("ip", objectRaw["Ip"])
 
 	objectRaw, err = ddosCooServiceV2.DescribeInstanceDescribeInstanceSpecs(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("bandwidth", objectRaw["ElasticBandwidth"])
@@ -317,8 +323,8 @@ func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("service_bandwidth", objectRaw["BandwidthMbps"])
 
 	objectRaw, err = ddosCooServiceV2.DescribeInstanceDescribeInstanceExt(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("function_version", objectRaw["FunctionVersion"])
@@ -326,19 +332,19 @@ func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("product_plan", objectRaw["ProductPlan"])
 
 	objectRaw, err = ddosCooServiceV2.DescribeInstanceDescribeTagResources(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
 
 func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddosCooServiceV2 := DdosCooServiceV2{client}
+	ddosCooServiceV2 := NewService(client)
 	var response map[string]interface{}
 	var err error
 	d.Partial(true)
@@ -349,11 +355,11 @@ func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 			"InstanceId": d.Id(),
 			"Remark":     d.Get("name"),
 		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -361,15 +367,15 @@ func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if d.HasChange("tags") {
 		if err := ddosCooServiceV2.SetResourceTags(d, "INSTANCE"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -380,70 +386,70 @@ func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if d.HasChange("bandwidth") {
 		if err := ddosCooServiceV2.ModifyDdosCooInstance("bandwidth", "Bandwidth", d); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 	}
 
 	if d.HasChange("base_bandwidth") {
 		if err := ddosCooServiceV2.ModifyDdosCooInstance("base_bandwidth", "BaseBandwidth", d); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 	}
 
 	if d.HasChange("domain_count") {
 		if err := ddosCooServiceV2.ModifyDdosCooInstance("domain_count", "DomainCount", d); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 	}
 
 	if d.HasChange("port_count") {
 		if err := ddosCooServiceV2.ModifyDdosCooInstance("port_count", "PortCount", d); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 	}
 
 	if d.HasChange("service_bandwidth") {
 		if err := ddosCooServiceV2.ModifyDdosCooInstance("service_bandwidth", "ServiceBandwidth", d); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 	}
 
 	if d.HasChange("normal_bandwidth") {
 		if err := ddosCooServiceV2.ModifyDdosCooInstance("normal_bandwidth", "NormalBandwidth", d); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 	}
 
 	if d.HasChange("normal_qps") {
 		if err := ddosCooServiceV2.ModifyDdosCooInstance("normal_qps", "NormalQps", d); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 	}
 
 	if d.HasChange("product_plan") {
 		if err := ddosCooServiceV2.ModifyDdosCooInstance("product_plan", "ProductPlan", d); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 	}
 
 	if d.HasChange("function_version") {
 		if err := ddosCooServiceV2.ModifyDdosCooInstance("function_version", "FunctionVersion", d); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ddosCooServiceV2.DdosCooInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ddosCooServiceV2.DdosCooInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	d.Partial(false)
@@ -461,11 +467,11 @@ func resourceAliCloudDdoscooInstanceDelete(d *schema.ResourceData, meta interfac
 		"InstanceId": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -473,16 +479,16 @@ func resourceAliCloudDdoscooInstanceDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 			return nil
 		}
-		if IsExpectedErrors(err, []string{"InstanceNotExpire"}) {
-			return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+		if errs.IsExpectedErrors(err, []string{"InstanceNotExpire"}) {
+			return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

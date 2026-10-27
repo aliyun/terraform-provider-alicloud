@@ -1,11 +1,13 @@
-package alicloud
+package ddoscoo_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddoscoo"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,23 +16,23 @@ import (
 func TestAccAliCloudDdosCooWebCcRule_basic12398(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_web_cc_rule.default"
-	ra := resourceAttrInit(resourceId, AliCloudDdosCooWebCcRuleMap12398)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDdosCooWebCcRuleMap12398)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosCooWebCcRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooWebCcRuleBasicDependence12398)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDdosCooWebCcRuleBasicDependence12398)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -60,7 +62,7 @@ func TestAccAliCloudDdosCooWebCcRule_basic12398(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":          name,
-						"domain":        CHECKSET,
+						"domain":        acctest.CHECKSET,
 						"rule_detail.#": "1",
 					}),
 				),
@@ -135,23 +137,23 @@ func TestAccAliCloudDdosCooWebCcRule_basic12398(t *testing.T) {
 func TestAccAliCloudDdosCooWebCcRule_basic12398_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_web_cc_rule.default"
-	ra := resourceAttrInit(resourceId, AliCloudDdosCooWebCcRuleMap12398)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDdosCooWebCcRuleMap12398)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosCooWebCcRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooWebCcRuleBasicDependence12398)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDdosCooWebCcRuleBasicDependence12398)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -209,7 +211,7 @@ func TestAccAliCloudDdosCooWebCcRule_basic12398_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":          name,
-						"domain":        CHECKSET,
+						"domain":        acctest.CHECKSET,
 						"rule_detail.#": "1",
 					}),
 				),

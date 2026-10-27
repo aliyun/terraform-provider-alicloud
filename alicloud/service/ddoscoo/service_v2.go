@@ -1,4 +1,4 @@
-package alicloud
+package ddoscoo
 
 import (
 	"encoding/json"
@@ -8,27 +8,27 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
 
-type DdosCooServiceV2 struct {
-	client *connectivity.AliyunClient
-}
-
 // DescribeDdosCooPort <<< Encapsulated get interface for DdosCoo Port.
 
-func (s *DdosCooServiceV2) DescribeDdosCooPort(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDdosCooPort(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribePort"
 	request = make(map[string]interface{})
@@ -37,44 +37,44 @@ func (s *DdosCooServiceV2) DescribeDdosCooPort(id string) (object map[string]int
 	query["FrontendProtocol"] = parts[2]
 	query["InstanceId"] = parts[0]
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"anycast_controller3006"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"anycast_controller3006"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.NetworkRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NetworkRules[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.NetworkRules[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Port", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Port", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *DdosCooServiceV2) DescribeDescribeNetworkRuleAttributes(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDescribeNetworkRuleAttributes(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeNetworkRuleAttributes"
 	request = make(map[string]interface{})
@@ -86,49 +86,49 @@ func (s *DdosCooServiceV2) DescribeDescribeNetworkRuleAttributes(id string) (obj
 	jsonString, _ = sjson.Set(jsonString, "NetworkRules.0.InstanceId", parts[0])
 	err = json.Unmarshal([]byte(jsonString), &request)
 	if err != nil {
-		return object, WrapError(err)
+		return object, errs.WrapError(err)
 	}
-	request["NetworkRules"] = convertObjectToJsonString(request["NetworkRules"])
+	request["NetworkRules"] = convert.ConvertObjectToJsonString(request["NetworkRules"])
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"anycast_controller3006"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"anycast_controller3006"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.NetworkRuleAttributes[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NetworkRuleAttributes[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.NetworkRuleAttributes[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Port", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Port", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *DdosCooServiceV2) DdosCooPortStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DdosCooPortStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosCooPort(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -136,7 +136,7 @@ func (s *DdosCooServiceV2) DdosCooPortStateRefreshFunc(id string, field string, 
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -147,7 +147,7 @@ func (s *DdosCooServiceV2) DdosCooPortStateRefreshFunc(id string, field string, 
 
 // DescribeDdosCooDomainResource <<< Encapsulated get interface for DdosCoo DomainResource.
 
-func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDdosCooDomainResource(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -157,12 +157,12 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[
 	request["Domain"] = id
 	action := "DescribeDomainResource"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -170,23 +170,23 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.WebRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.WebRules[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.WebRules[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DomainResource", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *DdosCooServiceV2) DescribeDomainResourceDescribeWebRules(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDomainResourceDescribeWebRules(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -196,12 +196,12 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeWebRules(id string) (ob
 	request["Domain"] = id
 	action := "DescribeWebRules"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -209,23 +209,23 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeWebRules(id string) (ob
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.WebRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.WebRules[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.WebRules[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DomainResource", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *DdosCooServiceV2) DescribeDomainResourceDescribeDomainCcProtectSwitch(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDomainResourceDescribeDomainCcProtectSwitch(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -236,12 +236,12 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeDomainCcProtectSwitch(i
 	request["RegionId"] = client.RegionId
 	action := "DescribeDomainCcProtectSwitch"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -249,26 +249,26 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeDomainCcProtectSwitch(i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
-			return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"DomainNotExist"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DomainResource", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.ProtectSwitchList[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ProtectSwitchList[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.ProtectSwitchList[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DomainResource", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *DdosCooServiceV2) DescribeDomainResourceDescribeHeaders(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDomainResourceDescribeHeaders(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -279,12 +279,12 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeHeaders(id string) (obj
 	request["RegionId"] = client.RegionId
 	action := "DescribeHeaders"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -292,34 +292,34 @@ func (s *DdosCooServiceV2) DescribeDomainResourceDescribeHeaders(id string) (obj
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
-			return object, WrapErrorf(NotFoundErr("DomainResource", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"DomainNotExist"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DomainResource", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.CustomHeader", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CustomHeader", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.CustomHeader", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DdosCooDomainResourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.DdosCooDomainResourceStateRefreshFuncWithApi(id, field, failStates, s.DescribeDdosCooDomainResource)
 }
 
-func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+func (s *Service) DdosCooDomainResourceStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		object["OcspEnabled"] = convertDdosCooDomainResourceWebRulesOcspEnabledResponse(object["OcspEnabled"])
 		v, err := jsonpath.Get(field, object)
@@ -334,7 +334,7 @@ func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFuncWithApi(id strin
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -345,7 +345,7 @@ func (s *DdosCooServiceV2) DdosCooDomainResourceStateRefreshFuncWithApi(id strin
 
 // DescribeDdosCooInstance <<< Encapsulated get interface for DdosCoo Instance.
 
-func (s *DdosCooServiceV2) DescribeDdosCooInstance(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDdosCooInstance(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -353,16 +353,16 @@ func (s *DdosCooServiceV2) DescribeDdosCooInstance(id string) (object map[string
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceIds.1"] = id
-	request["PageSize"] = PageSizeSmall
+	request["PageSize"] = helper.PageSizeSmall
 	request["PageNumber"] = 1
 	action := "DescribeInstances"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -370,27 +370,27 @@ func (s *DdosCooServiceV2) DescribeDdosCooInstance(id string) (object map[string
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InstanceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Instances[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Instances[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *DdosCooServiceV2) DescribeInstanceDescribeInstanceSpecs(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeInstanceDescribeInstanceSpecs(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -400,12 +400,12 @@ func (s *DdosCooServiceV2) DescribeInstanceDescribeInstanceSpecs(id string) (obj
 	request["InstanceIds.1"] = id
 	action := "DescribeInstanceSpecs"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidInstanceId"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"InvalidInstanceId"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -413,27 +413,27 @@ func (s *DdosCooServiceV2) DescribeInstanceDescribeInstanceSpecs(id string) (obj
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InstanceNotFound", "ddos_coop3301"}) || NotFoundError(err) {
-			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InstanceNotFound", "ddos_coop3301"}) || errs.NotFoundError(err) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.InstanceSpecs[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceSpecs[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.InstanceSpecs[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *DdosCooServiceV2) DescribeInstanceDescribeInstanceExt(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeInstanceDescribeInstanceExt(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -444,12 +444,12 @@ func (s *DdosCooServiceV2) DescribeInstanceDescribeInstanceExt(id string) (objec
 
 	action := "DescribeInstanceExt"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -457,24 +457,24 @@ func (s *DdosCooServiceV2) DescribeInstanceDescribeInstanceExt(id string) (objec
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.InstanceExtSpecs[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceExtSpecs[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.InstanceExtSpecs[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *DdosCooServiceV2) DescribeInstanceDescribeTagResources(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeInstanceDescribeTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -486,12 +486,12 @@ func (s *DdosCooServiceV2) DescribeInstanceDescribeTagResources(id string) (obje
 	request["ResourceType"] = "INSTANCE"
 	action := "DescribeTagResources"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -499,15 +499,15 @@ func (s *DdosCooServiceV2) DescribeInstanceDescribeTagResources(id string) (obje
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *DdosCooServiceV2) ModifyDdosCooInstance(schemaName string, specName string, d *schema.ResourceData) (err error) {
+func (s *Service) ModifyDdosCooInstance(schemaName string, specName string, d *schema.ResourceData) (err error) {
 	client := s.client
 	var response map[string]interface{}
 	action := "ModifyInstance"
@@ -536,11 +536,11 @@ func (s *DdosCooServiceV2) ModifyDdosCooInstance(schemaName string, specName str
 		request["ModifyType"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -548,22 +548,22 @@ func (s *DdosCooServiceV2) ModifyDdosCooInstance(schemaName string, specName str
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
 }
 
-func (s *DdosCooServiceV2) DdosCooInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DdosCooInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosCooInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -578,7 +578,7 @@ func (s *DdosCooServiceV2) DdosCooInstanceStateRefreshFunc(id string, field stri
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -588,7 +588,7 @@ func (s *DdosCooServiceV2) DdosCooInstanceStateRefreshFunc(id string, field stri
 // DescribeDdosCooInstance >>> Encapsulated.
 
 // SetResourceTags <<< Encapsulated tag function for DdosCoo.
-func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		var action string
 		var err error
@@ -597,10 +597,10 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -615,11 +615,11 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -627,9 +627,9 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -648,11 +648,11 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 				count++
 			}
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -660,9 +660,9 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -675,14 +675,14 @@ func (s *DdosCooServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 
 // DescribeDdosCooDomainPreciseAccessRule <<< Encapsulated get interface for DdosCoo DomainPreciseAccessRule.
 
-func (s *DdosCooServiceV2) DescribeDdosCooDomainPreciseAccessRule(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDdosCooDomainPreciseAccessRule(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 		return nil, err
 	}
 	request = make(map[string]interface{})
@@ -692,12 +692,12 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainPreciseAccessRule(id string) (ob
 	request["Owner"] = "manual"
 	action := "DescribeWebPreciseAccessRule"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -705,21 +705,21 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainPreciseAccessRule(id string) (ob
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
-			return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"DomainNotExist"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DomainPreciseAccessRule", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.PreciseAccessConfigList[0].RuleList", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DomainPreciseAccessRule", id), errs.NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DomainPreciseAccessRule", id), errs.NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -730,21 +730,21 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainPreciseAccessRule(id string) (ob
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(NotFoundErr("DomainPreciseAccessRule", id), NotFoundMsg, response)
+	return object, errs.WrapErrorf(errs.NotFoundErr("DomainPreciseAccessRule", id), errs.NotFoundMsg, response)
 }
 
-func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DdosCooDomainPreciseAccessRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeDdosCooDomainPreciseAccessRule)
 }
 
-func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+func (s *Service) DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -783,7 +783,7 @@ func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -794,14 +794,14 @@ func (s *DdosCooServiceV2) DdosCooDomainPreciseAccessRuleStateRefreshFuncWithApi
 
 // DescribeDdosCooWebCcRule <<< Encapsulated get interface for DdosCoo WebCcRule.
 
-func (s *DdosCooServiceV2) DescribeDdosCooWebCcRule(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDdosCooWebCcRule(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 		return nil, err
 	}
 	request = make(map[string]interface{})
@@ -811,12 +811,12 @@ func (s *DdosCooServiceV2) DescribeDdosCooWebCcRule(id string) (object map[strin
 	request["Owner"] = "manual"
 	action := "DescribeWebCCRulesV2"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -824,21 +824,21 @@ func (s *DdosCooServiceV2) DescribeDdosCooWebCcRule(id string) (object map[strin
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
-			return object, WrapErrorf(NotFoundErr("WebCcRule", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"DomainNotExist"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("WebCcRule", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.WebCCRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("WebCcRule", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("WebCcRule", id), errs.NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("WebCcRule", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("WebCcRule", id), errs.NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -852,21 +852,21 @@ func (s *DdosCooServiceV2) DescribeDdosCooWebCcRule(id string) (object map[strin
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(NotFoundErr("WebCcRule", id), NotFoundMsg, response)
+	return object, errs.WrapErrorf(errs.NotFoundErr("WebCcRule", id), errs.NotFoundMsg, response)
 }
 
-func (s *DdosCooServiceV2) DdosCooWebCcRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DdosCooWebCcRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.DdosCooWebCcRuleStateRefreshFuncWithApi(id, field, failStates, s.DescribeDdosCooWebCcRule)
 }
 
-func (s *DdosCooServiceV2) DdosCooWebCcRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+func (s *Service) DdosCooWebCcRuleStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -905,7 +905,7 @@ func (s *DdosCooServiceV2) DdosCooWebCcRuleStateRefreshFuncWithApi(id string, fi
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil

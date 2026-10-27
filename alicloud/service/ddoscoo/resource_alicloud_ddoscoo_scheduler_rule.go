@@ -1,4 +1,4 @@
-package alicloud
+package ddoscoo
 
 import (
 	"fmt"
@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudDdoscooSchedulerRule() *schema.Resource {
+func ResourceDdoscooSchedulerRule() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudDdoscooSchedulerRuleCreate,
 		Read:   resourceAlicloudDdoscooSchedulerRuleRead,
@@ -112,30 +116,30 @@ func resourceAlicloudDdoscooSchedulerRuleCreate(d *schema.ResourceData, meta int
 			ruleMaps = append(ruleMaps, ruleMap)
 		}
 
-		rules, err := convertListMapToJsonString(ruleMaps)
+		rules, err := convert.ConvertListMapToJsonString(ruleMaps)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Rules"] = rules
 	}
 
 	request["RuleName"] = d.Get("rule_name")
 	request["RuleType"] = d.Get("rule_type")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_scheduler_rule", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ddoscoo_scheduler_rule", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["RuleName"]))
@@ -144,20 +148,20 @@ func resourceAlicloudDdoscooSchedulerRuleCreate(d *schema.ResourceData, meta int
 }
 func resourceAlicloudDdoscooSchedulerRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddoscooService := DdoscooService{client}
+	ddoscooService := NewService(client)
 	object, err := ddoscooService.DescribeDdoscooSchedulerRule(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ddoscoo_scheduler_rule ddoscooService.DescribeDdoscooSchedulerRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("rule_name", d.Id())
 	d.Set("cname", object["Cname"])
-	rule_typeVal, err := formatInt(object["RuleType"])
+	rule_typeVal, err := convert.FormatInt(object["RuleType"])
 	if err != nil {
 		return err
 	}
@@ -167,20 +171,20 @@ func resourceAlicloudDdoscooSchedulerRuleRead(d *schema.ResourceData, meta inter
 		for _, rule := range v {
 			ruleMap := map[string]interface{}{}
 			ruleArg := rule.(map[string]interface{})
-			ruleArgPriority, err := formatInt(ruleArg["Priority"])
+			ruleArgPriority, err := convert.FormatInt(ruleArg["Priority"])
 			if err != nil {
 				return err
 			}
 			ruleMap["priority"] = ruleArgPriority
 			ruleMap["region_id"] = ruleArg["RegionId"]
-			ruleArgStatus, err := formatInt(ruleArg["Status"])
+			ruleArgStatus, err := convert.FormatInt(ruleArg["Status"])
 			if err != nil {
 				return err
 			}
 			ruleMap["status"] = ruleArgStatus
 			ruleMap["type"] = ruleArg["Type"]
 			ruleMap["value"] = ruleArg["Value"]
-			valueType, err := formatInt(ruleArg["ValueType"])
+			valueType, err := convert.FormatInt(ruleArg["ValueType"])
 			if err != nil {
 				return err
 			}
@@ -218,9 +222,9 @@ func resourceAlicloudDdoscooSchedulerRuleUpdate(d *schema.ResourceData, meta int
 			ruleMaps = append(ruleMaps, ruleMap)
 		}
 
-		rules, err := convertListMapToJsonString(ruleMaps)
+		rules, err := convert.ConvertListMapToJsonString(ruleMaps)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Rules"] = rules
 	}
@@ -239,21 +243,21 @@ func resourceAlicloudDdoscooSchedulerRuleUpdate(d *schema.ResourceData, meta int
 	}
 	if update {
 		action := "ModifySchedulerRule"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -269,21 +273,21 @@ func resourceAlicloudDdoscooSchedulerRuleDelete(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

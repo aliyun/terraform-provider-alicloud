@@ -1,4 +1,4 @@
-package alicloud
+package ddoscoo
 
 import (
 	"fmt"
@@ -8,11 +8,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDdosCooWebCcRule() *schema.Resource {
+func ResourceDdoscooWebCcRule() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudDdosCooWebCcRuleCreate,
 		Read:   resourceAliCloudDdosCooWebCcRuleRead,
@@ -99,7 +104,7 @@ func resourceAliCloudDdosCooWebCcRule() *schema.Resource {
 						"action": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"block", "challenge", "watch", "accept"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"block", "challenge", "watch", "accept"}, false),
 						},
 						"statistics": {
 							Type:     schema.TypeList,
@@ -182,7 +187,7 @@ func resourceAliCloudDdosCooWebCcRuleCreate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if v := d.Get("rule_detail"); !IsNil(v) {
+	if v := d.Get("rule_detail"); !helper.IsNil(v) {
 		ratelimit := make(map[string]interface{})
 		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", d.Get("rule_detail"))
 		if threshold1 != nil && threshold1 != "" {
@@ -210,14 +215,14 @@ func resourceAliCloudDdosCooWebCcRuleCreate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if v := d.Get("rule_detail"); !IsNil(v) {
+	if v := d.Get("rule_detail"); !helper.IsNil(v) {
 		status_code := make(map[string]interface{})
 		countThreshold, _ := jsonpath.Get("$[0].status_code[0].count_threshold", d.Get("rule_detail"))
-		if countThreshold != nil && countThreshold != "" && !IsEmpty(countThreshold) {
+		if countThreshold != nil && countThreshold != "" && !helper.IsEmpty(countThreshold) {
 			status_code["count_threshold"] = countThreshold
 		}
 		ratioThreshold, _ := jsonpath.Get("$[0].status_code[0].ratio_threshold", d.Get("rule_detail"))
-		if ratioThreshold != nil && ratioThreshold != "" && !IsEmpty(ratioThreshold) {
+		if ratioThreshold != nil && ratioThreshold != "" && !helper.IsEmpty(ratioThreshold) {
 			status_code["ratio_threshold"] = ratioThreshold
 		}
 		useRatio, _ := jsonpath.Get("$[0].status_code[0].use_ratio", d.Get("rule_detail"))
@@ -238,7 +243,7 @@ func resourceAliCloudDdosCooWebCcRuleCreate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if v := d.Get("rule_detail"); !IsNil(v) {
+	if v := d.Get("rule_detail"); !helper.IsNil(v) {
 		statistics := make(map[string]interface{})
 		mode1, _ := jsonpath.Get("$[0].statistics[0].mode", d.Get("rule_detail"))
 		if mode1 != nil && mode1 != "" {
@@ -262,13 +267,13 @@ func resourceAliCloudDdosCooWebCcRuleCreate(d *schema.ResourceData, meta interfa
 		ruleListDataList["name"] = v
 	}
 
-	if v := d.Get("rule_detail"); !IsNil(v) {
+	if v := d.Get("rule_detail"); !helper.IsNil(v) {
 		localData, err := jsonpath.Get("$[0].condition", v)
 		if err != nil {
 			localData = make([]interface{}, 0)
 		}
 		localMaps := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(localData) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 			dataLoopTmp := make(map[string]interface{})
 			if dataLoop != nil {
 				dataLoopTmp = dataLoop.(map[string]interface{})
@@ -286,15 +291,15 @@ func resourceAliCloudDdosCooWebCcRuleCreate(d *schema.ResourceData, meta interfa
 
 	RuleListMap := make([]interface{}, 0)
 	RuleListMap = append(RuleListMap, ruleListDataList)
-	request["RuleList"] = convertObjectToJsonString(RuleListMap)
+	request["RuleList"] = convert.ConvertObjectToJsonString(RuleListMap)
 
 	request["Expires"] = "0"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -302,10 +307,10 @@ func resourceAliCloudDdosCooWebCcRuleCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_web_cc_rule", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ddoscoo_web_cc_rule", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["Domain"], ruleListDataList["name"]))
@@ -315,16 +320,16 @@ func resourceAliCloudDdosCooWebCcRuleCreate(d *schema.ResourceData, meta interfa
 
 func resourceAliCloudDdosCooWebCcRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddosCooServiceV2 := DdosCooServiceV2{client}
+	ddosCooServiceV2 := NewService(client)
 
 	objectRaw, err := ddosCooServiceV2.DescribeDdosCooWebCcRule(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ddoscoo_web_cc_rule DescribeDdosCooWebCcRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("name", objectRaw["Name"])
@@ -344,7 +349,7 @@ func resourceAliCloudDdosCooWebCcRuleRead(d *schema.ResourceData, meta interface
 		conditionChildRaw := ruleDetailRaw["Condition"]
 		conditionMaps := make([]map[string]interface{}, 0)
 		if conditionChildRaw != nil {
-			for _, contentRaw := range convertToInterfaceArray(conditionChildRaw) {
+			for _, contentRaw := range convert.ConvertToInterfaceArray(conditionChildRaw) {
 				conditionMap := make(map[string]interface{})
 				conditionChildRaw := contentRaw.(map[string]interface{})
 				conditionMap["content"] = conditionChildRaw["Content"]
@@ -437,7 +442,7 @@ func resourceAliCloudDdosCooWebCcRuleUpdate(d *schema.ResourceData, meta interfa
 
 	ruleListDataList["name"] = parts[1]
 
-	if v := d.Get("rule_detail"); !IsNil(v) {
+	if v := d.Get("rule_detail"); !helper.IsNil(v) {
 		ratelimit := make(map[string]interface{})
 		threshold1, _ := jsonpath.Get("$[0].rate_limit[0].threshold", d.Get("rule_detail"))
 		if threshold1 != nil && threshold1 != "" {
@@ -465,14 +470,14 @@ func resourceAliCloudDdosCooWebCcRuleUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if v := d.Get("rule_detail"); !IsNil(v) {
+	if v := d.Get("rule_detail"); !helper.IsNil(v) {
 		status_code := make(map[string]interface{})
 		countThreshold, _ := jsonpath.Get("$[0].status_code[0].count_threshold", d.Get("rule_detail"))
-		if countThreshold != nil && countThreshold != "" && !IsEmpty(countThreshold) {
+		if countThreshold != nil && countThreshold != "" && !helper.IsEmpty(countThreshold) {
 			status_code["count_threshold"] = countThreshold
 		}
 		ratioThreshold, _ := jsonpath.Get("$[0].status_code[0].ratio_threshold", d.Get("rule_detail"))
-		if ratioThreshold != nil && ratioThreshold != "" && !IsEmpty(ratioThreshold) {
+		if ratioThreshold != nil && ratioThreshold != "" && !helper.IsEmpty(ratioThreshold) {
 			status_code["ratio_threshold"] = ratioThreshold
 		}
 		useRatio, _ := jsonpath.Get("$[0].status_code[0].use_ratio", d.Get("rule_detail"))
@@ -493,7 +498,7 @@ func resourceAliCloudDdosCooWebCcRuleUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if v := d.Get("rule_detail"); !IsNil(v) {
+	if v := d.Get("rule_detail"); !helper.IsNil(v) {
 		statistics := make(map[string]interface{})
 		mode1, _ := jsonpath.Get("$[0].statistics[0].mode", d.Get("rule_detail"))
 		if mode1 != nil && mode1 != "" {
@@ -513,13 +518,13 @@ func resourceAliCloudDdosCooWebCcRuleUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	if v := d.Get("rule_detail"); !IsNil(v) {
+	if v := d.Get("rule_detail"); !helper.IsNil(v) {
 		localData, err := jsonpath.Get("$[0].condition", v)
 		if err != nil {
 			localData = make([]interface{}, 0)
 		}
 		localMaps := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(localData) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 			dataLoopTmp := make(map[string]interface{})
 			if dataLoop != nil {
 				dataLoopTmp = dataLoop.(map[string]interface{})
@@ -537,16 +542,16 @@ func resourceAliCloudDdosCooWebCcRuleUpdate(d *schema.ResourceData, meta interfa
 
 	RuleListMap := make([]interface{}, 0)
 	RuleListMap = append(RuleListMap, ruleListDataList)
-	request["RuleList"] = convertObjectToJsonString(RuleListMap)
+	request["RuleList"] = convert.ConvertObjectToJsonString(RuleListMap)
 
 	request["Expires"] = "0"
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -554,9 +559,9 @@ func resourceAliCloudDdosCooWebCcRuleUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -573,15 +578,15 @@ func resourceAliCloudDdosCooWebCcRuleDelete(d *schema.ResourceData, meta interfa
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	request["RuleNames"] = convertListToJsonString([]interface{}{parts[1]})
+	request["RuleNames"] = convert.ConvertListToJsonString([]interface{}{parts[1]})
 	request["Domain"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -589,13 +594,13 @@ func resourceAliCloudDdosCooWebCcRuleDelete(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

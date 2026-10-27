@@ -1,4 +1,4 @@
-package alicloud
+package ddoscoo
 
 import (
 	"fmt"
@@ -7,12 +7,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudDdoscooInstances() *schema.Resource {
+func DataSourceDdoscooInstances() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudDdoscooInstancesRead,
 
@@ -119,7 +123,7 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 	action := "DescribeInstances"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeSmall
+	request["PageSize"] = helper.PageSizeSmall
 	request["PageNumber"] = 1
 
 	var nameRegex *regexp.Regexp
@@ -138,11 +142,11 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 	var objects []map[string]interface{}
 	// describe ddoscoo instance filtered by name_regex
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -150,14 +154,14 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ddoscoo_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.Instances", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Instances", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Instances", response)
 		}
 		result, _ := resp.([]interface{})
 
@@ -170,7 +174,7 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 			objects = append(objects, item)
 		}
 
-		if len(result) < PageSizeSmall {
+		if len(result) < helper.PageSizeSmall {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -183,18 +187,18 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 	}
 
 	if len(instanceIds) < 1 {
-		return WrapError(extractDdoscooInstance(d, map[string]map[string]interface{}{}, objects))
+		return errs.WrapError(extractDdoscooInstance(d, map[string]map[string]interface{}{}, objects))
 	}
 
 	specAction := "DescribeInstanceSpecs"
 	specReq := make(map[string]interface{})
 	specReq["InstanceIds"] = instanceIds
 	var specResponse map[string]interface{}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		specResponse, err = client.RpcPost("ddoscoo", "2020-01-01", specAction, nil, specReq, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -202,13 +206,13 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(specAction, specResponse, specReq)
+	logs.AddDebug(specAction, specResponse, specReq)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", specAction, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ddoscoo_instances", specAction, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.InstanceSpecs", specResponse)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, specAction, "$.InstanceSpecs", specResponse)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, specAction, "$.InstanceSpecs", specResponse)
 	}
 	result, _ := resp.([]interface{})
 	specObjects := make(map[string]map[string]interface{}, len(instanceIds))
@@ -217,7 +221,7 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 		specObjects[fmt.Sprint(item["InstanceId"])] = item
 	}
 
-	return WrapError(extractDdoscooInstance(d, specObjects, objects))
+	return errs.WrapError(extractDdoscooInstance(d, specObjects, objects))
 }
 
 func extractDdoscooInstance(d *schema.ResourceData, instanceSpecs map[string]map[string]interface{}, instance []map[string]interface{}) error {
@@ -227,28 +231,28 @@ func extractDdoscooInstance(d *schema.ResourceData, instanceSpecs map[string]map
 
 	for _, item := range instance {
 
-		debt_statusVal, err := formatInt(item["DebtStatus"])
+		debt_statusVal, err := convert.FormatInt(item["DebtStatus"])
 		if err != nil {
 			return err
 		}
-		editionVal, err := formatInt(item["Edition"])
+		editionVal, err := convert.FormatInt(item["Edition"])
 		if err != nil {
 			return err
 		}
 
-		statusVal, err := formatInt(item["Status"])
+		statusVal, err := convert.FormatInt(item["Status"])
 		if err != nil {
 			return err
 		}
-		enabledVal, err := formatInt(item["Enabled"])
+		enabledVal, err := convert.FormatInt(item["Enabled"])
 		if err != nil {
 			return err
 		}
-		expire_timeVal, err := formatInt(item["ExpireTime"])
+		expire_timeVal, err := convert.FormatInt(item["ExpireTime"])
 		if err != nil {
 			return err
 		}
-		create_timeVal, err := formatInt(item["CreateTime"])
+		create_timeVal, err := convert.FormatInt(item["CreateTime"])
 		if err != nil {
 			return err
 		}
@@ -267,27 +271,27 @@ func extractDdoscooInstance(d *schema.ResourceData, instanceSpecs map[string]map
 		}
 
 		if v, ok := instanceSpecs[fmt.Sprint(item["InstanceId"])]; ok {
-			bandwidthValue, err := formatInt(v["ElasticBandwidth"])
+			bandwidthValue, err := convert.FormatInt(v["ElasticBandwidth"])
 			if err != nil {
 				return err
 			}
 			mapping["bandwidth"] = bandwidthValue
-			baseBandwidth, err := formatInt(v["BaseBandwidth"])
+			baseBandwidth, err := convert.FormatInt(v["BaseBandwidth"])
 			if err != nil {
 				return err
 			}
 			mapping["base_bandwidth"] = baseBandwidth
-			serviceBandwidth, err := formatInt(v["BandwidthMbps"])
+			serviceBandwidth, err := convert.FormatInt(v["BandwidthMbps"])
 			if err != nil {
 				return err
 			}
 			mapping["service_bandwidth"] = serviceBandwidth
-			portCount, err := formatInt(v["PortLimit"])
+			portCount, err := convert.FormatInt(v["PortLimit"])
 			if err != nil {
 				return err
 			}
 			mapping["port_count"] = portCount
-			domainCount, err := formatInt(v["DomainLimit"])
+			domainCount, err := convert.FormatInt(v["DomainLimit"])
 			if err != nil {
 				return err
 			}
@@ -299,22 +303,22 @@ func extractDdoscooInstance(d *schema.ResourceData, instanceSpecs map[string]map
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(instanceIds))
+	d.SetId(helper.DataResourceIdHash(instanceIds))
 	if err := d.Set("ids", instanceIds); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

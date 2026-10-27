@@ -1,4 +1,4 @@
-package alicloud
+package ddoscoo_test
 
 import (
 	"fmt"
@@ -9,10 +9,14 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddoscoo"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -24,11 +28,11 @@ func init() {
 }
 
 func testSweepDdosCooInstances(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.DdoscooSupportedRegions) {
+	if sweep.SweepPreCheckWithRegions(region, true, connectivity.DdoscooSupportedRegions) {
 		log.Printf("[INFO] Skipping ddoscoo unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		log.Printf("error getting AliCloud client: %s", err)
 		return nil
@@ -42,17 +46,17 @@ func testSweepDdosCooInstances(region string) error {
 
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var insts []map[string]interface{}
 
 	for {
 		action := "DescribeInstances"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -74,7 +78,7 @@ func testSweepDdosCooInstances(region string) error {
 			insts = append(insts, item)
 		}
 
-		if len(resp.([]interface{})) < PageSizeLarge {
+		if len(resp.([]interface{})) < helper.PageSizeLarge {
 			break
 		}
 
@@ -96,23 +100,23 @@ func testSweepDdosCooInstances(region string) error {
 		action := "DescribeDomainResource"
 		request := map[string]interface{}{
 			"InstanceIds": []string{instanceId},
-			"PageSize":    PageSizeSmall,
+			"PageSize":    helper.PageSizeSmall,
 			"PageNumber":  1,
 		}
 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -130,11 +134,11 @@ func testSweepDdosCooInstances(region string) error {
 					"Domain": domain,
 				}
 
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 					_, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -152,15 +156,15 @@ func testSweepDdosCooInstances(region string) error {
 		action = "DescribePort"
 		request = map[string]interface{}{
 			"InstanceId": instanceId,
-			"PageSize":   PageSizeLarge,
+			"PageSize":   helper.PageSizeLarge,
 			"PageNumber": 1,
 		}
 
-		wait = incrementalWait(3*time.Second, 3*time.Second)
+		wait = helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -184,11 +188,11 @@ func testSweepDdosCooInstances(region string) error {
 					"InstanceId":       instanceId,
 				}
 
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 					_, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -201,7 +205,7 @@ func testSweepDdosCooInstances(region string) error {
 				}
 			}
 		}
-		if !sweepAll() {
+		if !sweep.SweepAll() {
 			if skip {
 				log.Printf("[INFO] Skipping Ddoscoo Instance: %s", name)
 				continue
@@ -223,26 +227,26 @@ func testSweepDdosCooInstances(region string) error {
 }
 
 func TestAccAliCloudDdosCooInstance_basic0(t *testing.T) {
-	var v ddoscoo.Instance
-	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
+	var v map[string]interface{}
+	acctest.PreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDdosCooInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosCooInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -376,13 +380,13 @@ func TestAccAliCloudDdosCooInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -398,26 +402,26 @@ func TestAccAliCloudDdosCooInstance_basic0(t *testing.T) {
 }
 
 func TestAccAliCloudDdosCooInstance_basic0_twin(t *testing.T) {
-	var v ddoscoo.Instance
-	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
+	var v map[string]interface{}
+	acctest.PreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDdosCooInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosCooInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -465,26 +469,26 @@ func TestAccAliCloudDdosCooInstance_basic0_twin(t *testing.T) {
 }
 
 func TestAccAliCloudDdosCooInstance_basic0_intl(t *testing.T) {
-	var v ddoscoo.Instance
-	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
+	var v map[string]interface{}
+	acctest.PreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDdosCooInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosCooInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, IntlSite)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.IntlSite)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -621,13 +625,13 @@ func TestAccAliCloudDdosCooInstance_basic0_intl(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -642,26 +646,26 @@ func TestAccAliCloudDdosCooInstance_basic0_intl(t *testing.T) {
 }
 
 func TestAccAliCloudDdosCooInstance_basic1_dip(t *testing.T) {
-	var v ddoscoo.Instance
-	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceIntlSupportedRegions)
+	var v map[string]interface{}
+	acctest.PreCheckWithRegions(t, true, connectivity.DdoscooInstanceIntlSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDdosCooInstanceMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosCooInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -789,13 +793,13 @@ func TestAccAliCloudDdosCooInstance_basic1_dip(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -811,26 +815,26 @@ func TestAccAliCloudDdosCooInstance_basic1_dip(t *testing.T) {
 }
 
 func TestAccAliCloudDdosCooInstance_basic1_dip_intl(t *testing.T) {
-	var v ddoscoo.Instance
-	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceIntlSupportedRegions)
+	var v map[string]interface{}
+	acctest.PreCheckWithRegions(t, true, connectivity.DdoscooInstanceIntlSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudDdosCooInstanceMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDdosCooInstanceMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosCooInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDdosCooInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, IntlSite)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.IntlSite)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -958,13 +962,13 @@ func TestAccAliCloudDdosCooInstance_basic1_dip_intl(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -980,26 +984,26 @@ func TestAccAliCloudDdosCooInstance_basic1_dip_intl(t *testing.T) {
 }
 
 var AliCloudDdosCooInstanceMap0 = map[string]string{
-	"normal_bandwidth": CHECKSET,
-	"normal_qps":       CHECKSET,
-	"edition_sale":     CHECKSET,
-	"product_plan":     CHECKSET,
-	"address_type":     CHECKSET,
-	"function_version": CHECKSET,
-	"ip":               CHECKSET,
-	"status":           CHECKSET,
-	"create_time":      CHECKSET,
+	"normal_bandwidth": acctest.CHECKSET,
+	"normal_qps":       acctest.CHECKSET,
+	"edition_sale":     acctest.CHECKSET,
+	"product_plan":     acctest.CHECKSET,
+	"address_type":     acctest.CHECKSET,
+	"function_version": acctest.CHECKSET,
+	"ip":               acctest.CHECKSET,
+	"status":           acctest.CHECKSET,
+	"create_time":      acctest.CHECKSET,
 }
 
 var AliCloudDdosCooInstanceMap1 = map[string]string{
-	"normal_bandwidth": CHECKSET,
-	"normal_qps":       CHECKSET,
-	"product_plan":     CHECKSET,
-	"address_type":     CHECKSET,
-	"function_version": CHECKSET,
-	"ip":               CHECKSET,
-	"status":           CHECKSET,
-	"create_time":      CHECKSET,
+	"normal_bandwidth": acctest.CHECKSET,
+	"normal_qps":       acctest.CHECKSET,
+	"product_plan":     acctest.CHECKSET,
+	"address_type":     acctest.CHECKSET,
+	"function_version": acctest.CHECKSET,
+	"ip":               acctest.CHECKSET,
+	"status":           acctest.CHECKSET,
+	"create_time":      acctest.CHECKSET,
 }
 
 func AliCloudDdosCooInstanceBasicDependence0(name string) string {

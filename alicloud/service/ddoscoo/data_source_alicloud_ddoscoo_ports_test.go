@@ -1,31 +1,32 @@
-package alicloud
+package ddoscoo_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDdosCooPortsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1, 65535)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandIntRange(1, 65535)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ddoscoo_port.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ddoscoo_port.default.id}_fake"]`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_ddoscoo_port.default.id}"]`,
 			"frontend_port":     fmt.Sprintf(`"%d"`, rand+1),
 			"frontend_protocol": `"tcp"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDdoscooPortsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_ddoscoo_port.default.id}_fake"]`,
 			"frontend_port":     fmt.Sprintf(`"%d"`, rand+1),
 			"frontend_protocol": `"tcp"`,
@@ -38,8 +39,8 @@ func TestAccAliCloudDdosCooPortsDataSource(t *testing.T) {
 			"ports.0.backend_port":      fmt.Sprintf("%d", rand),
 			"ports.0.frontend_port":     fmt.Sprintf("%d", rand+1),
 			"ports.0.frontend_protocol": `tcp`,
-			"ports.0.instance_id":       CHECKSET,
-			"ports.0.id":                CHECKSET,
+			"ports.0.instance_id":       acctest.CHECKSET,
+			"ports.0.id":                acctest.CHECKSET,
 			"ports.0.real_servers.#":    `1`,
 		}
 	}
@@ -49,15 +50,15 @@ func TestAccAliCloudDdosCooPortsDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudDdoscooPortsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_ddoscoo_ports.default",
-		existMapFunc: existAlicloudDdoscooPortsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudDdoscooPortsDataSourceNameMapFunc,
+	var alicloudDdoscooPortsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_ddoscoo_ports.default",
+		ExistMapFunc: existAlicloudDdoscooPortsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudDdoscooPortsDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 	}
-	alicloudDdoscooPortsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, allConf)
+	alicloudDdoscooPortsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, allConf)
 }
 func testAccCheckAlicloudDdoscooPortsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -67,7 +68,7 @@ func testAccCheckAlicloudDdoscooPortsDataSourceName(rand int, attrMap map[string
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf-testAccPort-%d"
 }
 
@@ -78,10 +79,10 @@ resource "alicloud_ddoscoo_port" "default" {
 	frontend_port = "%d"
 	instance_id = data.alicloud_ddoscoo_instances.default.ids.0
 	frontend_protocol = "tcp"
-	real_servers = ["192.168.0.1"]
+	real_servers = ["1.1.1.1"]
 }
 
-data "alicloud_ddoscoo_ports" "default" {	
+data "alicloud_ddoscoo_ports" "default" {
 	instance_id = alicloud_ddoscoo_port.default.instance_id
 	%s
 }
