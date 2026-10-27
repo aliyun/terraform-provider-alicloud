@@ -1,34 +1,37 @@
-package alicloud
+// Package tag_test.
+package tag_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tag"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // Case 标签策略测试用例_1_副本1737105427623 10066
 func TestAccAliCloudTagPolicy_basic10066(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TagPolicySupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TagPolicySupportRegions)
 	resourceId := "alicloud_tag_policy.default"
-	ra := resourceAttrInit(resourceId, AliCloudTagPolicyMap10066)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &TagServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudTagPolicyMap10066)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return tag.NewTagServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeTagPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacctag%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudTagPolicyBasicDependence10066)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudTagPolicyBasicDependence10066)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -38,7 +41,7 @@ func TestAccAliCloudTagPolicy_basic10066(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"policy_name":    name,
-						"policy_content": CHECKSET,
+						"policy_content": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -48,7 +51,7 @@ func TestAccAliCloudTagPolicy_basic10066(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"policy_content": CHECKSET,
+						"policy_content": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -83,7 +86,7 @@ func TestAccAliCloudTagPolicy_basic10066(t *testing.T) {
 }
 
 var AliCloudTagPolicyMap10066 = map[string]string{
-	"user_type": CHECKSET,
+	"user_type": acctest.CHECKSET,
 }
 
 func AliCloudTagPolicyBasicDependence10066(name string) string {
@@ -97,23 +100,23 @@ func AliCloudTagPolicyBasicDependence10066(name string) string {
 // Case Policy 10066  twin
 func TestAccAliCloudTagPolicy_basic10066_twin(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TagPolicySupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TagPolicySupportRegions)
 	resourceId := "alicloud_tag_policy.default"
-	ra := resourceAttrInit(resourceId, AliCloudTagPolicyMap10066)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &TagServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudTagPolicyMap10066)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return tag.NewTagServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeTagPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacctag%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudTagPolicyBasicDependence10066)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudTagPolicyBasicDependence10066)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -126,7 +129,7 @@ func TestAccAliCloudTagPolicy_basic10066_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"policy_desc":    name,
 						"policy_name":    name,
-						"policy_content": CHECKSET,
+						"policy_content": acctest.CHECKSET,
 						"user_type":      "USER",
 					}),
 				),

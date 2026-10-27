@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package tag
 
 import (
 	"encoding/json"
@@ -9,17 +9,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
 )
 
-func resourceAliCloudTagAssociatedRule() *schema.Resource {
+func ResourceAssociatedRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudTagAssociatedRuleCreate,
-		Read:   resourceAliCloudTagAssociatedRuleRead,
-		Update: resourceAliCloudTagAssociatedRuleUpdate,
-		Delete: resourceAliCloudTagAssociatedRuleDelete,
+		Create: ResourceAssociatedRuleCreate,
+		Read:   ResourceAssociatedRuleRead,
+		Update: ResourceAssociatedRuleUpdate,
+		Delete: ResourceAssociatedRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -47,7 +51,7 @@ func resourceAliCloudTagAssociatedRule() *schema.Resource {
 	}
 }
 
-func resourceAliCloudTagAssociatedRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAssociatedRuleCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -80,15 +84,15 @@ func resourceAliCloudTagAssociatedRuleCreate(d *schema.ResourceData, meta interf
 	CreateRulesListMap = append(CreateRulesListMap, objectDataLocalMap)
 	request["CreateRulesList"] = CreateRulesListMap
 
-	jsonString := convertObjectToJsonString(request)
+	jsonString := convert.ConvertObjectToJsonString(request)
 	jsonString, _ = sjson.Set(jsonString, "CreateRulesList.0.SettingName", d.Get("associated_setting_name"))
 	_ = json.Unmarshal([]byte(jsonString), &request)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -96,30 +100,30 @@ func resourceAliCloudTagAssociatedRuleCreate(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_tag_associated_rule", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_tag_associated_rule", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("CreateRulesList[0].SettingName", request)
 	d.SetId(fmt.Sprint(id))
 
-	return resourceAliCloudTagAssociatedRuleRead(d, meta)
+	return ResourceAssociatedRuleRead(d, meta)
 }
 
-func resourceAliCloudTagAssociatedRuleRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceAssociatedRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	tagServiceV2 := TagServiceV2{client}
+	tagServiceV2 := NewTagServiceV2(client)
 
 	objectRaw, err := tagServiceV2.DescribeTagAssociatedRule(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_tag_associated_rule DescribeTagAssociatedRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("status", objectRaw["Status"])
@@ -135,7 +139,7 @@ func resourceAliCloudTagAssociatedRuleRead(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func resourceAliCloudTagAssociatedRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAssociatedRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -161,11 +165,11 @@ func resourceAliCloudTagAssociatedRuleUpdate(d *schema.ResourceData, meta interf
 	}
 	request["Status"] = d.Get("status")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -173,16 +177,16 @@ func resourceAliCloudTagAssociatedRuleUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudTagAssociatedRuleRead(d, meta)
+	return ResourceAssociatedRuleRead(d, meta)
 }
 
-func resourceAliCloudTagAssociatedRuleDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceAssociatedRuleDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteAssociatedResourceRule"
@@ -194,12 +198,12 @@ func resourceAliCloudTagAssociatedRuleDelete(d *schema.ResourceData, meta interf
 	request["SettingName"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -207,13 +211,13 @@ func resourceAliCloudTagAssociatedRuleDelete(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidSettingName.NotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InvalidSettingName.NotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

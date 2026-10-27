@@ -1,35 +1,39 @@
-package alicloud
+// Package tag_test.
+package tag_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tag"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// collection-order: bypass tag_keys -- pre-existing uncovered TypeList attribute outside this pure directory migration (file moved from alicloud/ root; the attribute and its test coverage are unchanged stock)
 // Test Tag AssociatedRule. >>> Resource test cases, automatically generated.
 // Case 关联资源测试用例_副本1737426969003 10094
 func TestAccAliCloudTagAssociatedRule_basic10094(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_tag_associated_rule.default"
-	ra := resourceAttrInit(resourceId, AliCloudTagAssociatedRuleMap10094)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &TagServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudTagAssociatedRuleMap10094)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return tag.NewTagServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeTagAssociatedRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacctag%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudTagAssociatedRuleBasicDependence10094)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudTagAssociatedRuleBasicDependence10094)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -116,22 +120,22 @@ func TestAccAliCloudTagAssociatedRule_basic10094(t *testing.T) {
 func TestAccAliCloudTagAssociatedRule_basic10094_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_tag_associated_rule.default"
-	ra := resourceAttrInit(resourceId, AliCloudTagAssociatedRuleMap10094)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &TagServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudTagAssociatedRuleMap10094)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return tag.NewTagServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeTagAssociatedRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacctag%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudTagAssociatedRuleBasicDependence10094)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudTagAssociatedRuleBasicDependence10094)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

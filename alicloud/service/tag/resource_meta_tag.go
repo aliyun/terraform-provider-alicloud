@@ -1,19 +1,23 @@
-package alicloud
+package tag
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudTagMetaTag() *schema.Resource {
+func ResourceMetaTag() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudTagMetaTagCreate,
-		Read:   resourceAlicloudTagMetaTagRead,
-		Delete: resourceAlicloudTagMetaTagDelete,
+		Create: ResourceMetaTagCreate,
+		Read:   ResourceMetaTagRead,
+		Delete: ResourceMetaTagDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -22,7 +26,7 @@ func resourceAlicloudTagMetaTag() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringLenBetween(1, 128),
+				ValidateFunc: validators.StringLenBetween(1, 128),
 			},
 			"values": {
 				Type:     schema.TypeList,
@@ -30,14 +34,14 @@ func resourceAlicloudTagMetaTag() *schema.Resource {
 				ForceNew: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: StringLenBetween(1, 128),
+					ValidateFunc: validators.StringLenBetween(1, 128),
 				},
 			},
 		},
 	}
 }
 
-func resourceAlicloudTagMetaTagCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceMetaTagCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateTags"
@@ -62,35 +66,35 @@ func resourceAlicloudTagMetaTagCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["TagKeyValueParamList"] = tagKeyValueParamLists
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_tag_meta_tag", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_tag_meta_tag", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	d.SetId(fmt.Sprintf("%v:%v", client.RegionId, d.Get("key")))
-	return resourceAlicloudTagMetaTagRead(d, meta)
+	return ResourceMetaTagRead(d, meta)
 }
-func resourceAlicloudTagMetaTagRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceMetaTagRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	tagService := TagService{client}
-	parts, err := ParseResourceIdN(d.Id(), 2)
+	tagService := NewTagService(client)
+	parts, err := helper.ParseResourceIdN(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	o, err := tagService.DescribeTagValue(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("key", parts[1])
@@ -98,12 +102,12 @@ func resourceAlicloudTagMetaTagRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func resourceAlicloudTagMetaTagDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceMetaTagDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTag"
 	var response map[string]interface{}
 	var err error
-	parts, err := ParseResourceIdN(d.Id(), 2)
+	parts, err := helper.ParseResourceIdN(d.Id(), 2)
 	w, _ := d.GetOk("values")
 	strings := w.([]interface{})
 	for _, v := range strings {
@@ -113,21 +117,21 @@ func resourceAlicloudTagMetaTagDelete(d *schema.ResourceData, meta interface{}) 
 		}
 
 		request["RegionId"] = client.RegionId
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 			response, err = client.RpcPost("Tag", "2018-08-28", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -136,21 +140,21 @@ func resourceAlicloudTagMetaTagDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	requestAll["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, nil, requestAll, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, requestAll)
+		logs.AddDebug(action, response, requestAll)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

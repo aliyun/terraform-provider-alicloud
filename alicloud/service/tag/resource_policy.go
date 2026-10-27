@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package tag
 
 import (
 	"fmt"
@@ -7,17 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAliCloudTagPolicy() *schema.Resource {
+func ResourcePolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudTagPolicyCreate,
-		Read:   resourceAliCloudTagPolicyRead,
-		Update: resourceAliCloudTagPolicyUpdate,
-		Delete: resourceAliCloudTagPolicyDelete,
+		Create: ResourcePolicyCreate,
+		Read:   ResourcePolicyRead,
+		Update: ResourcePolicyUpdate,
+		Delete: ResourcePolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -32,7 +35,7 @@ func resourceAliCloudTagPolicy() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -55,7 +58,7 @@ func resourceAliCloudTagPolicy() *schema.Resource {
 	}
 }
 
-func resourceAliCloudTagPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourcePolicyCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -75,11 +78,11 @@ func resourceAliCloudTagPolicyCreate(d *schema.ResourceData, meta interface{}) e
 		request["UserType"] = v
 	}
 	request["PolicyName"] = d.Get("policy_name")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -87,29 +90,29 @@ func resourceAliCloudTagPolicyCreate(d *schema.ResourceData, meta interface{}) e
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_tag_policy", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_tag_policy", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["PolicyId"]))
 
-	return resourceAliCloudTagPolicyRead(d, meta)
+	return ResourcePolicyRead(d, meta)
 }
 
-func resourceAliCloudTagPolicyRead(d *schema.ResourceData, meta interface{}) error {
+func ResourcePolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	tagServiceV2 := TagServiceV2{client}
+	tagServiceV2 := NewTagServiceV2(client)
 
 	objectRaw, err := tagServiceV2.DescribeTagPolicy(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_tag_policy DescribeTagPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("policy_content", objectRaw["PolicyContent"])
@@ -120,7 +123,7 @@ func resourceAliCloudTagPolicyRead(d *schema.ResourceData, meta interface{}) err
 	return nil
 }
 
-func resourceAliCloudTagPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourcePolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -147,11 +150,11 @@ func resourceAliCloudTagPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 	request["PolicyName"] = d.Get("policy_name")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -159,16 +162,16 @@ func resourceAliCloudTagPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudTagPolicyRead(d, meta)
+	return ResourcePolicyRead(d, meta)
 }
 
-func resourceAliCloudTagPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourcePolicyDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeletePolicy"
@@ -180,12 +183,12 @@ func resourceAliCloudTagPolicyDelete(d *schema.ResourceData, meta interface{}) e
 	request["PolicyId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -193,13 +196,13 @@ func resourceAliCloudTagPolicyDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

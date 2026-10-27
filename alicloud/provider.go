@@ -1179,7 +1179,6 @@ func Provider() *schema.Provider {
 			"alicloud_ssl_certificates_service_certificates":          dataSourceAliCloudSslCertificatesServiceCertificates(),
 
 			// tag
-			"alicloud_tag_meta_tags": dataSourceAlicloudTagMetaTags(),
 
 			// threat
 			"alicloud_threat_detection_attack_path_whitelists": dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
@@ -2669,10 +2668,6 @@ func Provider() *schema.Provider {
 			"alicloud_subnet": resourceAliCloudVpcVswitch(),
 
 			// tag
-			"alicloud_tag_associated_rule":   resourceAliCloudTagAssociatedRule(),
-			"alicloud_tag_policy":            resourceAliCloudTagPolicy(),
-			"alicloud_tag_policy_attachment": resourceAlicloudTagPolicyAttachment(),
-			"alicloud_tag_meta_tag":          resourceAlicloudTagMetaTag(),
 
 			// threat
 			"alicloud_threat_detection_attack_path_whitelist":              resourceAliCloudThreatDetectionAttackPathWhitelist(),
