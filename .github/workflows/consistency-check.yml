@@ -70,6 +70,14 @@ jobs:
           if [[ -f scripts/ci/test_check_scope.py && -f scripts/ci/check_scope.py ]]; then
             python3 -m unittest discover -s scripts/ci -p test_check_scope.py
           fi
+      - name: Prepare writable Go/tool cache
+        # Route A: keep caches when HOME-owned defaults are writable; redirect
+        # only the unwritable ones to a per-job $RUNNER_TEMP subdir so a polluted
+        # /home/runner on the trusted fleet no longer causes EACCES in setup-go,
+        # the node-local seed restore, consistency_check or the master tfproviderlint
+        # build. Runs before setup-go so the env it exports is in effect throughout.
+        shell: bash
+        run: bash scripts/ci/ensure-writable-go-cache.sh
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -168,7 +176,7 @@ jobs:
         id: tfproviderlint-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/terraform-ci-tools/tfproviderlint
+          path: ${{ env.TF_CI_TOOLS_DIR }}/tfproviderlint
           key: tfproviderlint-v2-${{ runner.os }}-${{ runner.arch }}-go1.26.10-v0.31.0
       - name: Build master tfproviderlint binary
         id: tfproviderlint-build
@@ -178,12 +186,12 @@ jobs:
           GOTOOLCHAIN: go1.26.10
           GOBIN: ${{ runner.temp }}/tfproviderlint-bin
         run: |
-          mkdir -p "$GOBIN" "$HOME/.cache/terraform-ci-tools"
+          mkdir -p "$GOBIN" "$TF_CI_TOOLS_DIR"
           go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
-          cp "$GOBIN/tfproviderlint" "$HOME/.cache/terraform-ci-tools/tfproviderlint"
+          cp "$GOBIN/tfproviderlint" "$TF_CI_TOOLS_DIR/tfproviderlint"
       - name: Save master tfproviderlint binary
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.tfproviderlint-cache.outputs.cache-hit != 'true' && steps.tfproviderlint-build.outcome == 'success' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/terraform-ci-tools/tfproviderlint
+          path: ${{ env.TF_CI_TOOLS_DIR }}/tfproviderlint
           key: tfproviderlint-v2-${{ runner.os }}-${{ runner.arch }}-go1.26.10-v0.31.0

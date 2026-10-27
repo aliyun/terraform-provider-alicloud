@@ -79,6 +79,15 @@ jobs:
             echo "needed=true" >> "$GITHUB_OUTPUT"
             echo "packages=./..." >> "$GITHUB_OUTPUT"
           fi
+      - name: Prepare writable Go/tool cache
+        # Route A: keep caches when HOME-owned defaults are writable; redirect
+        # only the unwritable ones to a per-job $RUNNER_TEMP subdir. Exports
+        # GOPATH/GOBIN/GOCACHE/GOMODCACHE/GOLANGCI_LINT_CACHE before reviewdog's
+        # internal Go setup so errcheck/golangci-lint no longer hit EACCES on a
+        # polluted /home/runner on the trusted fleet.
+        if: steps.scope.outputs.needed == 'true'
+        shell: bash
+        run: bash scripts/ci/ensure-writable-go-cache.sh
       - name: errcheck
         if: steps.scope.outputs.needed == 'true'
         uses: reviewdog/action-golangci-lint@284129a3ac23bc5d8ac1522e0b6511df74a8836d # v2.10.2
@@ -121,6 +130,13 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: ${{ github.event.pull_request.base.repo.clone_url }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Prepare writable Go/tool cache
+        # Route A: keep caches when HOME-owned defaults are writable; redirect
+        # only the unwritable ones to a per-job $RUNNER_TEMP subdir so a polluted
+        # /home/runner on the trusted fleet no longer causes EACCES in setup-go,
+        # go install or the tfproviderlint tool drop. Runs before setup-go.
+        shell: bash
+        run: bash scripts/ci/ensure-writable-go-cache.sh
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -168,18 +184,18 @@ jobs:
         id: tfproviderlint-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/terraform-ci-tools/tfproviderlint
+          path: ${{ env.TF_CI_TOOLS_DIR }}/tfproviderlint
           key: tfproviderlint-v2-${{ runner.os }}-${{ runner.arch }}-go1.26.10-v0.31.0
       - name: Install tfproviderlint
         if: steps.tfproviderlint-cache.outputs.cache-hit != 'true'
         env:
           GOBIN: ${{ runner.temp }}/tfproviderlint-bin
         run: |
-          mkdir -p "$GOBIN" "$HOME/.cache/terraform-ci-tools"
+          mkdir -p "$GOBIN" "$TF_CI_TOOLS_DIR"
           go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
-          cp "$GOBIN/tfproviderlint" "$HOME/.cache/terraform-ci-tools/tfproviderlint"
+          cp "$GOBIN/tfproviderlint" "$TF_CI_TOOLS_DIR/tfproviderlint"
       - name: Add tfproviderlint to PATH
-        run: echo "$HOME/.cache/terraform-ci-tools" >> "$GITHUB_PATH"
+        run: echo "$TF_CI_TOOLS_DIR" >> "$GITHUB_PATH"
       - name: Run tfproviderlint
         env:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}

@@ -35,6 +35,11 @@ jobs:
           tar -xzf "$RUNNER_TEMP/golangci.tar.gz" --strip-components=1 -C "$RUNNER_TEMP/golangci"
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/golangci" >> "$GITHUB_PATH"
+          # run-document-checks.py resolves the docs tool drop via this
+          # variable; pin it to the install target so the smoke test finds
+          # misspell/terrafmt without the Route A prepare step (this fork
+          # validation runs on ubuntu-latest).
+          echo "TF_DOC_TOOLS_DIR=$HOME/.cache/terraform-doc-tools" >> "$GITHUB_ENV"
       - name: Verify real tools catch changed-file failures
         env:
           PYTHONDONTWRITEBYTECODE: '1'
