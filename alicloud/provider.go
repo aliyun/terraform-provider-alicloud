@@ -829,10 +829,6 @@ func Provider() *schema.Provider {
 			// instances
 			"alicloud_instances": dataSourceAlicloudInstances(),
 
-			// iot
-			"alicloud_iot_service":       dataSourceAlicloudIotService(),
-			"alicloud_iot_device_groups": dataSourceAlicloudIotDeviceGroups(),
-
 			// key
 			"alicloud_key_pairs": dataSourceAliCloudEcsKeyPairs(),
 
@@ -2167,9 +2163,6 @@ func Provider() *schema.Provider {
 
 			// instance
 			"alicloud_instance": resourceAliCloudInstance(),
-
-			// iot
-			"alicloud_iot_device_group": resourceAlicloudIotDeviceGroup(),
 
 			// key
 			"alicloud_key_pair":            resourceAliCloudEcsKeyPair(),
