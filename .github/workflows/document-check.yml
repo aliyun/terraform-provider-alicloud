@@ -35,7 +35,12 @@ jobs:
     permissions:
       checks: read
       pull-requests: read
-    runs-on: terraform-ci-policy
+    # Isolate from the Basic Policy Gate pool: the route job runs github-script
+    # only (no fork code is checked out, fork-scoped token), so ubuntu-latest is
+    # sufficient and frees terraform-ci-policy for the Gate under batch
+    # concurrency. See .github/actions/terraform-ci-select-policy for the
+    # scheduling-isolation regression test that pins this invariant.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       runner: ${{ steps.select.outputs.runner }}

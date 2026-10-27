@@ -43,4 +43,4 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
       - name: Run route policy unit tests
-        run: node --test .github/actions/terraform-ci-select-policy/route.test.js
+        run: node --test .github/actions/terraform-ci-select-policy/route.test.js .github/actions/terraform-ci-select-policy/scheduling-isolation.test.js
