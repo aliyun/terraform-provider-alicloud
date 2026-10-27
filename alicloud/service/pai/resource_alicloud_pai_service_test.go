@@ -1,33 +1,35 @@
-package alicloud
+package pai_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/pai"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudPaiService_basic7678_modified(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_service.default"
-	ra := resourceAttrInit(resourceId, AlicloudPaiServiceMap7678_modified)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPaiServiceMap7678_modified)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return pai.NewPaiServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiService")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacc7678%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPaiServiceBasicDependence7678_modified)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPaiServiceBasicDependence7678_modified)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -41,7 +43,7 @@ func TestAccAliCloudPaiService_basic7678_modified(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"develop":        "false",
-						"service_config": CHECKSET,
+						"service_config": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -56,7 +58,7 @@ func TestAccAliCloudPaiService_basic7678_modified(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"service_config": CHECKSET,
+						"service_config": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -93,13 +95,13 @@ func TestAccAliCloudPaiService_basic7678_modified(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -114,9 +116,9 @@ func TestAccAliCloudPaiService_basic7678_modified(t *testing.T) {
 }
 
 var AlicloudPaiServiceMap7678_modified = map[string]string{
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
-	"service_uid": CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
+	"service_uid": acctest.CHECKSET,
 }
 
 func AlicloudPaiServiceBasicDependence7678_modified(name string) string {
@@ -160,22 +162,22 @@ resource "alicloud_pai_workspace_workspace" "update" {
 func TestAccAliCloudPaiService_basic3213(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_service.default"
-	ra := resourceAttrInit(resourceId, AlicloudPaiServiceMap3213)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPaiServiceMap3213)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return pai.NewPaiServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiService")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc%spaiservice%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPaiServiceBasicDependence3213)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%spaiservice%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPaiServiceBasicDependence3213)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -185,7 +187,7 @@ func TestAccAliCloudPaiService_basic3213(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"develop":        "false",
-						"service_config": CHECKSET,
+						"service_config": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -220,9 +222,9 @@ func TestAccAliCloudPaiService_basic3213(t *testing.T) {
 }
 
 var AlicloudPaiServiceMap3213 = map[string]string{
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
-	"service_uid": CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
+	"service_uid": acctest.CHECKSET,
 }
 
 func AlicloudPaiServiceBasicDependence3213(name string) string {

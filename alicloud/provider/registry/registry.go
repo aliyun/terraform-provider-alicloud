@@ -120,6 +120,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/opensearch"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ots"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/pai"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/paiflow"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardbx"
@@ -285,6 +286,7 @@ var servicePackages = []conns.ServicePackage{
 	opensearch.ServicePackage(),
 	oss.ServicePackage(),
 	ots.ServicePackage(),
+	pai.ServicePackage(),
 	paiflow.ServicePackage(),
 	polardb.ServicePackage(),
 	polardbx.ServicePackage(),
