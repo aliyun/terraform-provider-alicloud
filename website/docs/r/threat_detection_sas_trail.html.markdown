@@ -12,7 +12,7 @@ Provides a Threat Detection Sas Trail resource.
 
 For information about Threat Detection Sas Trail and how to use it, see [What is Sas Trail](https://www.alibabacloud.com/help/zh/security-center/developer-reference/api-sas-2018-12-03-createservicetrail).
 
--> **NOTE:** Available since v1.212.0.
+-> **NOTE:** Available since v1.213.0.
 
 ## Example Usage
 
@@ -47,13 +47,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as ``.
-* `create_time` - The service trace creation timestamp, in milliseconds.
-* `service_trail` - Service trace configuration information.
-  * `config` - Service tracking on status. The value is:
-  - **on:** Open
-  - **off:** off.
-  * `update_time` - The timestamp of the last service update. Unit: milliseconds.
+* `id` - The ID of the Sas Trail. The value is formulated as `<account_id>`, which is the account ID since the Sas Trail is a global singleton resource.
+* `create_time` - The creation timestamp of the Sas Trail, in milliseconds.
+* `service_trail` - Sas Trail configuration information.
+  * `config` - The status of the Sas Trail. The value is:
+  - **`on`:** enabled
+  - **`off`:** disabled
+  * `update_time` - The timestamp of the last Sas Trail update. Unit: milliseconds.
 
 ## Timeouts
 
@@ -66,5 +66,5 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 Threat Detection Sas Trail can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_threat_detection_sas_trail.example 
+$ terraform import alicloud_threat_detection_sas_trail.example <account_id>
 ```
