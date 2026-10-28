@@ -47,6 +47,7 @@ func testSweepCenRouteService(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve cen instance in service list: %s", err)
+			break
 		}
 
 		response, _ := raw.(*cbn.DescribeCensResponse)
@@ -70,7 +71,8 @@ func testSweepCenRouteService(region string) error {
 		}
 		page, err := getNextpageNumber(request.PageNumber)
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to paginate cen instances (stopping): %s", err)
+			break
 		}
 		request.PageNumber = page
 	}
@@ -87,6 +89,7 @@ func testSweepCenRouteService(region string) error {
 			})
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete cen route service(%s): %s.", cenId, err)
+				break
 			}
 			response, _ := raw.(*cbn.DescribeRouteServicesInCenResponse)
 
@@ -103,7 +106,8 @@ func testSweepCenRouteService(region string) error {
 			}
 			page, err := getNextpageNumber(request.PageNumber)
 			if err != nil {
-				return WrapError(err)
+				log.Printf("[ERROR] Failed to paginate cen route services (stopping): %s", err)
+				break
 			}
 			request.PageNumber = page
 		}

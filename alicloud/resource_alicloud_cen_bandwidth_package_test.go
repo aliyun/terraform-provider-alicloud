@@ -73,7 +73,8 @@ func testSweepCenBandwidthPackage(region string) error {
 		}
 
 		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return err
+			log.Printf("[ERROR] Failed to paginate cen bandwidth packages (stopping): %s", err)
+			break
 		} else {
 			request.PageNumber = page
 		}

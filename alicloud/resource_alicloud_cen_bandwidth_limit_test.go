@@ -48,7 +48,8 @@ func testSweepCenBandwidthLimit(region string) error {
 			return cenClient.DescribeCenInterRegionBandwidthLimits(request)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving CEN InterRegionBandwidthLimits: %s", err)
+			log.Printf("[ERROR] Failed to list cen inter-region bandwidth limits: %s", err)
+			break
 		}
 		response, _ := raw.(*cbn.DescribeCenInterRegionBandwidthLimitsResponse)
 		if len(response.CenInterRegionBandwidthLimits.CenInterRegionBandwidthLimit) < 1 {
@@ -62,7 +63,8 @@ func testSweepCenBandwidthLimit(region string) error {
 
 		page, err := getNextpageNumber(request.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to paginate cen bandwidth limits (stopping): %s", err)
+			break
 		}
 		request.PageNumber = page
 	}
