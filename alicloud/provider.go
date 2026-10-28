@@ -2684,7 +2684,6 @@ func Provider() *schema.Provider {
 			"alicloud_smartag_flow_log": resourceAlicloudSmartagFlowLog(),
 
 			// sms
-			"alicloud_sms_short_url": resourceAlicloudSmsShortUrl(),
 
 			// snapshot
 			"alicloud_snapshot":        resourceAliCloudEcsSnapshot(),
