@@ -11,7 +11,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"log"
