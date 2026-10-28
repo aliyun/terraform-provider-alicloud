@@ -2252,16 +2252,6 @@ func Provider() *schema.Provider {
 			"alicloud_ots_search_index":        resourceAlicloudOtsSearchIndex(),
 
 			// pai
-			"alicloud_pai_workspace_user_config":    resourceAliCloudPaiWorkspaceUserConfig(),
-			"alicloud_pai_workspace_model_version":  resourceAliCloudPaiWorkspaceModelVersion(),
-			"alicloud_pai_workspace_model":          resourceAliCloudPaiWorkspaceModel(),
-			"alicloud_pai_workspace_member":         resourceAliCloudPaiWorkspaceMember(),
-			"alicloud_pai_workspace_code_source":    resourceAliCloudPaiWorkspaceCodeSource(),
-			"alicloud_pai_workspace_run":            resourceAliCloudPaiWorkspaceRun(),
-			"alicloud_pai_workspace_datasetversion": resourceAliCloudPaiWorkspaceDatasetversion(),
-			"alicloud_pai_workspace_experiment":     resourceAliCloudPaiWorkspaceExperiment(),
-			"alicloud_pai_workspace_dataset":        resourceAliCloudPaiWorkspaceDataset(),
-			"alicloud_pai_workspace_workspace":      resourceAliCloudPaiWorkspaceWorkspace(),
 
 			// polar
 			"alicloud_polar_db_extension": resourceAliCloudPolarDbExtension(),

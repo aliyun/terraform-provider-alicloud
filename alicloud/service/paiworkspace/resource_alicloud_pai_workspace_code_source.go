@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package paiworkspace
 
 import (
 	"fmt"
@@ -7,11 +7,15 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAliCloudPaiWorkspaceCodeSource() *schema.Resource {
+func ResourcePaiWorkspaceCodeSource() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudPaiWorkspaceCodeSourceCreate,
 		Read:   resourceAliCloudPaiWorkspaceCodeSourceRead,
@@ -29,7 +33,7 @@ func resourceAliCloudPaiWorkspaceCodeSource() *schema.Resource {
 			"accessibility": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
 			},
 			"code_branch": {
 				Type:     schema.TypeString,
@@ -109,11 +113,11 @@ func resourceAliCloudPaiWorkspaceCodeSourceCreate(d *schema.ResourceData, meta i
 		request["CodeCommit"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -121,10 +125,10 @@ func resourceAliCloudPaiWorkspaceCodeSourceCreate(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pai_workspace_code_source", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_pai_workspace_code_source", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["CodeSourceId"]))
@@ -134,16 +138,16 @@ func resourceAliCloudPaiWorkspaceCodeSourceCreate(d *schema.ResourceData, meta i
 
 func resourceAliCloudPaiWorkspaceCodeSourceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	paiWorkspaceServiceV2 := PaiWorkspaceServiceV2{client}
+	paiWorkspaceServiceV2 := NewService(client)
 
 	objectRaw, err := paiWorkspaceServiceV2.DescribePaiWorkspaceCodeSource(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_pai_workspace_code_source DescribePaiWorkspaceCodeSource Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["Accessibility"] != nil {
@@ -192,10 +196,10 @@ func resourceAliCloudPaiWorkspaceCodeSourceUpdate(d *schema.ResourceData, meta i
 	update := false
 
 	if d.HasChange("accessibility") {
-		paiWorkspaceServiceV2 := PaiWorkspaceServiceV2{client}
+		paiWorkspaceServiceV2 := NewService(client)
 		object, err := paiWorkspaceServiceV2.DescribePaiWorkspaceCodeSource(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("accessibility").(string)
@@ -209,11 +213,11 @@ func resourceAliCloudPaiWorkspaceCodeSourceUpdate(d *schema.ResourceData, meta i
 				request["CodeSourceId"] = d.Id()
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -221,9 +225,9 @@ func resourceAliCloudPaiWorkspaceCodeSourceUpdate(d *schema.ResourceData, meta i
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
@@ -282,11 +286,11 @@ func resourceAliCloudPaiWorkspaceCodeSourceUpdate(d *schema.ResourceData, meta i
 	request["MountPath"] = d.Get("mount_path")
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -294,9 +298,9 @@ func resourceAliCloudPaiWorkspaceCodeSourceUpdate(d *schema.ResourceData, meta i
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -315,12 +319,12 @@ func resourceAliCloudPaiWorkspaceCodeSourceDelete(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	request["CodeSourceId"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("AIWorkSpace", "2021-02-04", action, query, nil, nil, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"201400004"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"201400004"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -328,13 +332,13 @@ func resourceAliCloudPaiWorkspaceCodeSourceDelete(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"201400002"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"201400002"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,12 +1,15 @@
-package alicloud
+package paiworkspace_test
 
 import (
 	"fmt"
 	"regexp"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/paiworkspace"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -16,22 +19,22 @@ import (
 func TestAccAliCloudPaiWorkspaceWorkspace_basic7875(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_workspace_workspace.default"
-	ra := resourceAttrInit(resourceId, AliCloudPaiWorkspaceWorkspaceMap7875)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiWorkspaceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudPaiWorkspaceWorkspaceMap7875)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return paiworkspace.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiWorkspaceWorkspace")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testaccworkspace%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPaiWorkspaceWorkspaceBasicDependence7875)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudPaiWorkspaceWorkspaceBasicDependence7875)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -42,7 +45,7 @@ func TestAccAliCloudPaiWorkspaceWorkspace_basic7875(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":    CHECKSET,
+						"description":    acctest.CHECKSET,
 						"workspace_name": name,
 						"env_types.#":    "1",
 					}),
@@ -54,7 +57,7 @@ func TestAccAliCloudPaiWorkspaceWorkspace_basic7875(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"display_name": CHECKSET,
+						"display_name": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -64,7 +67,7 @@ func TestAccAliCloudPaiWorkspaceWorkspace_basic7875(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"display_name": CHECKSET,
+						"display_name": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -74,7 +77,7 @@ func TestAccAliCloudPaiWorkspaceWorkspace_basic7875(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -91,22 +94,22 @@ func TestAccAliCloudPaiWorkspaceWorkspace_basic7875(t *testing.T) {
 func TestAccAliCloudPaiWorkspaceWorkspace_basic7875_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_workspace_workspace.default"
-	ra := resourceAttrInit(resourceId, AliCloudPaiWorkspaceWorkspaceMap7875)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiWorkspaceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudPaiWorkspaceWorkspaceMap7875)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return paiworkspace.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiWorkspaceWorkspace")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testaccworkspace%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPaiWorkspaceWorkspaceBasicDependence7875)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudPaiWorkspaceWorkspaceBasicDependence7875)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -119,10 +122,10 @@ func TestAccAliCloudPaiWorkspaceWorkspace_basic7875_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":       CHECKSET,
+						"description":       acctest.CHECKSET,
 						"workspace_name":    name,
-						"display_name":      CHECKSET,
-						"resource_group_id": CHECKSET,
+						"display_name":      acctest.CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"env_types.#":       "1",
 					}),
 				),
@@ -138,10 +141,10 @@ func TestAccAliCloudPaiWorkspaceWorkspace_basic7875_twin(t *testing.T) {
 }
 
 var AliCloudPaiWorkspaceWorkspaceMap7875 = map[string]string{
-	"status":            CHECKSET,
-	"create_time":       CHECKSET,
-	"resource_group_id": CHECKSET,
-	"display_name":      CHECKSET,
+	"status":            acctest.CHECKSET,
+	"create_time":       acctest.CHECKSET,
+	"resource_group_id": acctest.CHECKSET,
+	"display_name":      acctest.CHECKSET,
 }
 
 func AliCloudPaiWorkspaceWorkspaceBasicDependence7875(name string) string {
@@ -156,15 +159,15 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 func TestAccAliCloudPaiWorkspaceWorkspace_duplicateName(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testaccworkspace%d", rand)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckPaiWorkspaceWorkspaceDestroy,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckPaiWorkspaceWorkspaceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPaiWorkspaceWorkspaceNameConfig(name),
@@ -181,15 +184,15 @@ func TestAccAliCloudPaiWorkspaceWorkspace_duplicateName(t *testing.T) {
 }
 
 func TestAccAliCloudPaiWorkspaceWorkspace_nameRetainedAfterDestroy(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testaccworkspace%d", rand)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckPaiWorkspaceWorkspaceDestroy,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckPaiWorkspaceWorkspaceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPaiWorkspaceWorkspaceNameConfig(name),
@@ -234,15 +237,15 @@ resource "alicloud_pai_workspace_workspace" "duplicate" {
 }
 
 func testAccCheckPaiWorkspaceWorkspaceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	paiWorkspaceServiceV2 := PaiWorkspaceServiceV2{client}
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	paiWorkspaceServiceV2 := paiworkspace.NewService(client)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_pai_workspace_workspace" {
 			continue
 		}
 		if _, err := paiWorkspaceServiceV2.DescribePaiWorkspaceWorkspace(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				continue
 			}
 			return err
