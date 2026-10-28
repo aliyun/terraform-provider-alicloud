@@ -61,7 +61,8 @@ func testSweepResourceManagerPolicy(region string) error {
 
 		resp, err := jsonpath.Get("$.Policies.Policy", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies.Policy", response)
+			log.Printf("[ERROR] Failed to parse $.Policies.Policy (treat as empty): %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -98,7 +99,8 @@ func testSweepResourceManagerPolicy(region string) error {
 		}
 		resp, err := jsonpath.Get("$.PolicyVersions.PolicyVersion", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policies.Policy", response)
+			log.Printf("[ERROR] Failed to parse $.PolicyVersions.PolicyVersion (treat as empty): %s", err)
+			continue
 		}
 		if len(resp.([]interface{})) > 0 {
 			for _, version := range resp.([]interface{}) {
