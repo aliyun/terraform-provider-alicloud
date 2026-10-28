@@ -26,6 +26,13 @@ import (
 const (
 	testAccPrivateLinkCrossRegionServiceRegion  = "cn-hangzhou"
 	testAccPrivateLinkCrossRegionEndpointRegion = "cn-beijing"
+
+	// ALB is enabled only in cn-shanghai in the test account, so the ALB
+	// cross-region scenario uses cn-shanghai as the endpoint service region and
+	// cn-hangzhou (the NLB/PrivateLink cross-region region) as the peer endpoint
+	// region in supported_region_list.
+	testAccPrivateLinkAlbCrossRegionServiceRegion  = "cn-shanghai"
+	testAccPrivateLinkAlbCrossRegionEndpointRegion = "cn-hangzhou"
 )
 
 func init() {
@@ -723,6 +730,142 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_sameBackendDualZone(t *testing
 	})
 }
 
+func TestAccAliCloudPrivatelinkVpcEndpointService_albCrossRegionDualZone(t *testing.T) {
+	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	testAccCheck := ra.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccPrivateLinkAlbCrossRegion%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckPrivateLinkAlbCrossRegion(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      testAccCheckPrivateLinkVpcEndpointServiceDestroyInRegion(testAccPrivateLinkAlbCrossRegionServiceRegion),
+		Steps: []resource.TestStep{
+			{
+				// Original cross-region ALB one-step-create scenario: the SAME ALB
+				// is attached to the endpoint service in two availability zones via
+				// two inline resource blocks (identical resource_id + resource_type,
+				// different zone_id) while supported_region_list contains a peer
+				// region (the server requires >=2 zones for cross-region). Before
+				// PR #11104 the resource TypeSet hashed on resource_id +
+				// resource_type only, collapsing the two blocks into one and
+				// aborting with "Provider produced inconsistent final plan". With
+				// zone_id in the hash both attachments are preserved and
+				// CreateVpcEndpointService succeeds in a single apply. This cannot
+				// be replaced by the NLB same-region sameBackendDualZone case.
+				Config: testAccPrivateLinkVpcEndpointServiceAlbCrossRegionConfig(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_description":     name,
+						"service_resource_type":   "alb",
+						"auto_accept_connection":  "true",
+						"resource.#":              "2",
+						"supported_region_list.#": "2",
+					}),
+					testAccCheckPrivateLinkVpcEndpointServiceSupportedRegions(resourceId, testAccPrivateLinkAlbCrossRegionServiceRegion, testAccPrivateLinkAlbCrossRegionEndpointRegion),
+				),
+			},
+			{
+				// A no-op plan must show no changes: zone_id is part of element
+				// identity and Read backfills it per item, so no detach/attach
+				// churn is generated for ALB cross-zone attachments.
+				Config:             testAccPrivateLinkVpcEndpointServiceAlbCrossRegionConfig(name),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func testAccPreCheckPrivateLinkAlbCrossRegion(t *testing.T) {
+	testAccPreCheck(t)
+	if !testAccPrivateLinkRegionInList(connectivity.Shanghai, connectivity.AlbSupportRegions) {
+		t.Skipf("Skipping unsupported service region %s. ALB supported regions: %v.", connectivity.Shanghai, connectivity.AlbSupportRegions)
+		t.Skipped()
+	}
+}
+
+func testAccPrivateLinkVpcEndpointServiceAlbCrossRegionConfig(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+provider "alicloud" {
+  region = "%s"
+}
+
+data "alicloud_alb_zones" "default" {}
+
+resource "alicloud_vpc" "service" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "service_a" {
+  vswitch_name = "${var.name}-a"
+  vpc_id       = alicloud_vpc.service.id
+  zone_id      = data.alicloud_alb_zones.default.zones.0.id
+  cidr_block   = "192.168.0.0/18"
+}
+
+resource "alicloud_vswitch" "service_b" {
+  vswitch_name = "${var.name}-b"
+  vpc_id       = alicloud_vpc.service.id
+  zone_id      = data.alicloud_alb_zones.default.zones.1.id
+  cidr_block   = "192.168.64.0/18"
+}
+
+resource "alicloud_alb_load_balancer" "service" {
+  load_balancer_name     = var.name
+  address_type           = "Intranet"
+  address_allocated_mode = "Fixed"
+  vpc_id                 = alicloud_vpc.service.id
+  load_balancer_edition  = "Standard"
+  load_balancer_billing_config {
+    pay_type = "PayAsYouGo"
+  }
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.service_a.id
+    zone_id    = data.alicloud_alb_zones.default.zones.0.id
+  }
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.service_b.id
+    zone_id    = data.alicloud_alb_zones.default.zones.1.id
+  }
+}
+
+resource "alicloud_privatelink_vpc_endpoint_service" "default" {
+  service_description    = var.name
+  service_resource_type  = "alb"
+  auto_accept_connection = true
+  supported_region_list = [
+    "%s",
+    "%s"
+  ]
+
+  resource {
+    resource_id   = alicloud_alb_load_balancer.service.id
+    resource_type = "alb"
+    zone_id       = data.alicloud_alb_zones.default.zones.0.id
+  }
+
+  resource {
+    resource_id   = alicloud_alb_load_balancer.service.id
+    resource_type = "alb"
+    zone_id       = data.alicloud_alb_zones.default.zones.1.id
+  }
+
+  depends_on = [alicloud_alb_load_balancer.service]
+}
+`, name, testAccPrivateLinkAlbCrossRegionServiceRegion, testAccPrivateLinkAlbCrossRegionServiceRegion, testAccPrivateLinkAlbCrossRegionEndpointRegion)
+}
+
 func AlicloudPrivatelinkVpcEndpointServiceResourceDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -1384,6 +1527,118 @@ variable "region_id" {
 
 
 `, name)
+}
+
+// TestUnitVpcEndpointServiceResourceZoneIdentity exercises the real TypeSet
+// element-hash (schema.Set) for the inline `resource` block without any cloud
+// API. SLB backends are zone-less in identity: a config block that omits
+// zone_id and a read-back block carrying a non-empty API ZoneId must hash
+// identically, otherwise the SDK set identity changes and produces perpetual
+// detach/attach churn. ALB/NLB/GWLB keep zone_id so two cross-zone attachments
+// for the same backend stay distinct (PR #11104). The pre-fix raw helper
+// vpcEndpointServiceResourceZoneId does NOT normalize slb, which is exactly the
+// non-empty-vs-empty mismatch that drove the churn; the type-aware helper
+// closes it.
+func TestUnitVpcEndpointServiceResourceZoneIdentity(t *testing.T) {
+	p := Provider().ResourcesMap
+	setSchema := p["alicloud_privatelink_vpc_endpoint_service"].Schema["resource"]
+	hashFn := setSchema.Set
+
+	// SLB: user omits zone_id; the upstream can return a non-empty ZoneId.
+	omit := map[string]interface{}{"resource_id": "lb-1", "resource_type": "slb", "zone_id": ""}
+	readBack := map[string]interface{}{"resource_id": "lb-1", "resource_type": "slb", "zone_id": "cn-huhehaote-b"}
+	assert.Equal(t, hashFn(omit), hashFn(readBack),
+		"slb must be zone-less: omitted vs non-empty read-back must hash equally (no churn)")
+
+	// Pre-fix mechanism: the raw helper preserves the non-empty value, so the
+	// old hash (resource_id|resource_type|rawZone) diverged for "" vs "<zone>".
+	assert.NotEqual(t, vpcEndpointServiceResourceZoneId(""), vpcEndpointServiceResourceZoneId("cn-huhehaote-b"),
+		"raw helper does not normalize slb — this divergence is the churn source the fix removes")
+	// Type-aware helper normalizes slb to "" regardless of input.
+	assert.Equal(t, "", vpcEndpointServiceResourceZoneIdForType("slb", ""))
+	assert.Equal(t, "", vpcEndpointServiceResourceZoneIdForType("slb", "cn-huhehaote-b"))
+	assert.Equal(t, "cn-huhehaote-b", vpcEndpointServiceResourceZoneIdForType("nlb", "cn-huhehaote-b"))
+
+	// ALB/NLB/GWLB keep zone_id: same backend in two zones stays distinct, and
+	// omitted != non-empty (no regression of the cross-zone fix).
+	for _, rt := range []string{"alb", "nlb", "gwlb"} {
+		hA := hashFn(map[string]interface{}{"resource_id": "lb-2", "resource_type": rt, "zone_id": "region-a"})
+		hB := hashFn(map[string]interface{}{"resource_id": "lb-2", "resource_type": rt, "zone_id": "region-b"})
+		assert.NotEqual(t, hA, hB, "%s dual-zone attachments must remain distinct", rt)
+		assert.NotEqual(t,
+			hashFn(map[string]interface{}{"resource_id": "lb-2", "resource_type": rt, "zone_id": ""}),
+			hA, "%s omitted vs non-empty must stay distinct", rt)
+	}
+}
+
+// TestUnitVpcEndpointServiceResourceReadZoneNormalization drives the real Read
+// CRUD path against a mocked upstream (DoRequest is patched) that returns a
+// non-empty ZoneId for an SLB attachment (as the ListVpcEndpointServiceResources
+// responseDemo shows) and asserts the stored state zone_id is normalized to ""
+// so it matches the zone-less config-side hash. NLB preserves the read-back
+// zone. No cloud resources are created; this is the minimal non-billing SDK
+// Read fixture that, together with the TestUnit hash identity case, confirms
+// the SLB omit-zone scenario without expanding the cloud matrix. It is named
+// TestUnit so the unit gate selects it alongside the hash identity case. The
+// Read path needs a configured AliyunClient (sharedClientForRegion +
+// ALICLOUD_REGION); in a no-credential quick run the client setup fails and the
+// case skips via t.Skipf, so it neither bills nor regresses; in the credentialed
+// acceptance environment it executes against the real client with the patched
+// DoRequest.
+func TestUnitVpcEndpointServiceResourceReadZoneNormalization(t *testing.T) {
+	p := Provider().ResourcesMap
+	resourceSchema := p["alicloud_privatelink_vpc_endpoint_service"].Schema
+
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping non-billing Read fixture without a configured client: %s", err)
+		t.Skipped()
+	}
+	clientImpl := rawClient.(*connectivity.AliyunClient)
+
+	readWith := func(serviceType, resourceId, zoneId string) []interface{} {
+		d, _ := schema.InternalMap(resourceSchema).Data(nil, nil)
+		d.SetId("svc-1")
+		d.Set("service_resource_type", serviceType)
+		mockResponse := map[string]interface{}{
+			"ServiceId":           "svc-1",
+			"ServiceResourceType": serviceType,
+			"ServiceStatus":       "Active",
+			"AutoAcceptEnabled":   true,
+			"ConnectBandwidth":    100,
+			"Resources": []interface{}{
+				map[string]interface{}{
+					"ResourceId":   resourceId,
+					"ResourceType": serviceType,
+					"ZoneId":       zoneId,
+				},
+			},
+		}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest",
+			func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				return mockResponse, nil
+			})
+		defer patches.Reset()
+		if err := resourceAliCloudPrivateLinkVpcEndpointServiceRead(d, clientImpl); err != nil {
+			t.Fatalf("Read(%s) failed: %s", serviceType, err)
+		}
+		return d.Get("resource").(*schema.Set).List()
+	}
+
+	// SLB: non-empty read-back zone must be normalized to "" in state.
+	slbItems := readWith("slb", "lb-1", "cn-huhehaote-b")
+	assert.Equal(t, 1, len(slbItems), "expected one slb attachment")
+	slbItem := slbItems[0].(map[string]interface{})
+	assert.Equal(t, "lb-1", slbItem["resource_id"])
+	assert.Equal(t, "slb", slbItem["resource_type"])
+	assert.Equal(t, "", slbItem["zone_id"], "slb zone must be normalized to empty in state (zone-less identity)")
+
+	// NLB: read-back zone is preserved (no regression of the cross-zone hash).
+	nlbItems := readWith("nlb", "lb-2", "region-a")
+	assert.Equal(t, 1, len(nlbItems), "expected one nlb attachment")
+	nlbItem := nlbItems[0].(map[string]interface{})
+	assert.Equal(t, "region-a", nlbItem["zone_id"], "nlb zone must be preserved in state")
 }
 
 // Test PrivateLink VpcEndpointService. <<< Resource test cases, automatically generated.
