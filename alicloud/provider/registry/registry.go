@@ -23,6 +23,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/amqpopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apig"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/arms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bailian"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bpstudio"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/brainindustrial"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
@@ -112,6 +113,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/milvus"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mnsopen"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/modelstudio"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mscopensubscription"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mse"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/nas"
@@ -193,6 +195,7 @@ var servicePackages = []conns.ServicePackage{
 	amqpopen.ServicePackage(),
 	apig.ServicePackage(),
 	arms.ServicePackage(),
+	bailian.ServicePackage(),
 	bpstudio.ServicePackage(),
 	brainindustrial.ServicePackage(),
 	bssopenapi.ServicePackage(),
@@ -280,6 +283,7 @@ var servicePackages = []conns.ServicePackage{
 	maxcompute.ServicePackage(),
 	mhub.ServicePackage(),
 	milvus.ServicePackage(),
+	modelstudio.ServicePackage(),
 	mns.ServicePackage(),
 	mnsopen.ServicePackage(),
 	mscopensubscription.ServicePackage(),
