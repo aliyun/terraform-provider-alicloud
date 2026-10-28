@@ -8,7 +8,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/gpdb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -205,17 +204,6 @@ func ecsTagsToMap(tags []ecs.Tag) map[string]string {
 	return result
 }
 
-func elasticsearchTagsToMap(tags []elasticsearch.Tag) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !elasticsearchTagIgnored(t.TagKey, t.TagValue) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-
-	return result
-}
-
 func vpcTagsToMap(tags []vpc.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
@@ -383,19 +371,6 @@ func slbTagIgnored(t slb.TagResource) bool {
 
 func albTagIgnored(tagKey string, tagValue interface{}) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://", "^ack", "^ingress"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
-		ok, _ := regexp.MatchString(v, tagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", tagKey, tagValue)
-			return true
-		}
-	}
-	return false
-}
-
-func elasticsearchTagIgnored(tagKey, tagValue string) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
 		ok, _ := regexp.MatchString(v, tagKey)

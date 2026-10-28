@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package elasticsearch
 
 import (
 	"encoding/json"
@@ -9,6 +9,11 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
@@ -16,6 +21,13 @@ import (
 
 type ElasticsearchServiceV2 struct {
 	client *connectivity.AliyunClient
+}
+
+// NewElasticsearchServiceV2 constructs an ElasticsearchServiceV2 bound to the
+// shared connectivity client; acceptance tests use it from the external
+// elasticsearch_test package.
+func NewElasticsearchServiceV2(client *connectivity.AliyunClient) *ElasticsearchServiceV2 {
+	return &ElasticsearchServiceV2{client: client}
 }
 
 // DescribeElasticsearchInstance <<< Encapsulated get interface for Elasticsearch Instance.
@@ -33,12 +45,12 @@ func (s *ElasticsearchServiceV2) DescribeElasticsearchInstance(id string) (objec
 
 	action := fmt.Sprintf("/openapi/instances/%s", InstanceId)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("elasticsearch", "2017-06-13", action, query, header, nil)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceUnavailable"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ServiceUnavailable"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -46,17 +58,17 @@ func (s *ElasticsearchServiceV2) DescribeElasticsearchInstance(id string) (objec
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InstanceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Result", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Result", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Result", response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -80,16 +92,16 @@ func (s *ElasticsearchServiceV2) DescribeInstanceQueryAvailableInstances(d *sche
 	}
 	action := "QueryAvailableInstances"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductCode"] = "elasticsearch"
 				request["ProductType"] = "elasticsearchpre_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
@@ -99,18 +111,18 @@ func (s *ElasticsearchServiceV2) DescribeInstanceQueryAvailableInstances(d *sche
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Data.InstanceList[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Data.InstanceList[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -128,12 +140,12 @@ func (s *ElasticsearchServiceV2) DescribeInstanceListKibanaPvlNetwork(id string)
 
 	action := fmt.Sprintf("/openapi/instances/%s/actions/get-kibana-private", InstanceId)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("elasticsearch", "2017-06-13", action, query, header, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -141,26 +153,26 @@ func (s *ElasticsearchServiceV2) DescribeInstanceListKibanaPvlNetwork(id string)
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InstanceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Result[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Result[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Result[*]", response)
 	}
 
 	kibanaPvlNetwork, err := parseKibanaPvlResult(v)
 	if err != nil {
-		return object, WrapErrorf(err, "get kibana pvl network error %s", id)
+		return object, errs.WrapErrorf(err, "get kibana pvl network error %s", id)
 	}
 
 	if kibanaPvlNetwork == nil {
-		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 	}
 
 	return kibanaPvlNetwork, nil
@@ -174,10 +186,10 @@ func (s *ElasticsearchServiceV2) ElasticsearchInstanceStateRefreshFuncWithApi(id
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		object["paymentType"] = convertElasticsearchInstanceResultpaymentTypeResponse(object["paymentType"])
 		v, err := jsonpath.Get(field, object)
@@ -192,7 +204,7 @@ func (s *ElasticsearchServiceV2) ElasticsearchInstanceStateRefreshFuncWithApi(id
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -213,10 +225,10 @@ func (s *ElasticsearchServiceV2) SetResourceTags(d *schema.ResourceData, resourc
 		query := make(map[string]*string)
 		body := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -225,16 +237,16 @@ func (s *ElasticsearchServiceV2) SetResourceTags(d *schema.ResourceData, resourc
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
-			query["ResourceIds"] = StringPointer(convertObjectToJsonString(expandSingletonToList(d.Id())))
+			query["ResourceIds"] = helper.StringPointer(convert.ConvertObjectToJsonString(convert.ExpandSingletonToList(d.Id())))
 
-			query["TagKeys"] = StringPointer(convertListToJsonString(convertListStringToListInterface(removedTagKeys)))
-			query["ResourceType"] = StringPointer(resourceType)
+			query["TagKeys"] = helper.StringPointer(convert.ConvertListToJsonString(convert.ConvertListStringToListInterface(removedTagKeys)))
+			query["ResourceType"] = helper.StringPointer(resourceType)
 			body = request
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaDelete("elasticsearch", "2017-06-13", action, query, header, nil, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -242,9 +254,9 @@ func (s *ElasticsearchServiceV2) SetResourceTags(d *schema.ResourceData, resourc
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -267,16 +279,16 @@ func (s *ElasticsearchServiceV2) SetResourceTags(d *schema.ResourceData, resourc
 			request["Tags"] = tagsMaps
 
 			request["ResourceType"] = resourceType
-			jsonString := convertObjectToJsonString(request)
+			jsonString := convert.ConvertObjectToJsonString(request)
 			jsonString, _ = sjson.Set(jsonString, "ResourceIds.0", d.Id())
 			_ = json.Unmarshal([]byte(jsonString), &request)
 
 			body = request
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -284,9 +296,9 @@ func (s *ElasticsearchServiceV2) SetResourceTags(d *schema.ResourceData, resourc
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}

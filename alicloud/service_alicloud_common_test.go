@@ -1044,36 +1044,6 @@ resource "alicloud_vswitch" "default" {
   name              = "${var.name}"
 }
 `
-
-const ElasticsearchInstanceCommonTestCase = `
-data "alicloud_elasticsearch_zones" "default" {}
-
-data "alicloud_resource_manager_resource_groups" "default" {}
-
-resource "alicloud_vpc" "default" {
-	vpc_name   = "${var.name}"
-	cidr_block = "172.16.0.0/12"
-}
-
-resource "alicloud_vswitch" "default" {
-	vswitch_name = "${var.name}"
-	vpc_id       = "${alicloud_vpc.default.id}"
-	cidr_block   = "172.16.0.0/21"
-	zone_id      = "${data.alicloud_elasticsearch_zones.default.zones[0].id}"
-}
-
-resource "alicloud_security_group" "default" {
-	name   = "${var.name}"
-	vpc_id = "${alicloud_vpc.default.id}"
-}
-
-locals {
-	vswitch_id        = alicloud_vswitch.default.id
-	resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
-	security_group    = alicloud_security_group.default.id
-}
-`
-
 const SlbVpcCommonTestCase = `
 data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"

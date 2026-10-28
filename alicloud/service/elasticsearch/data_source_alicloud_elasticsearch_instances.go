@@ -1,4 +1,4 @@
-package alicloud
+package elasticsearch
 
 import (
 	"encoding/json"
@@ -7,9 +7,16 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+// DataSourceInstances is the SDKv2 factory for alicloud_elasticsearch_instances.
+func DataSourceInstances() *schema.Resource { return dataSourceAlicloudElasticsearch() }
 
 func dataSourceAlicloudElasticsearch() *schema.Resource {
 	return &schema.Resource{
@@ -36,7 +43,7 @@ func dataSourceAlicloudElasticsearch() *schema.Resource {
 					"6.7.0_with_X-Pack",
 				}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -118,7 +125,7 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 	request := elasticsearch.CreateListInstanceRequest()
 	request.RegionId = client.RegionId
 	request.EsVersion = d.Get("version").(string)
-	request.Size = requests.NewInteger(PageSizeLarge)
+	request.Size = requests.NewInteger(helper.PageSizeLarge)
 	request.Page = requests.NewInteger(1)
 
 	if v, ok := d.GetOk("tags"); ok {
@@ -133,7 +140,7 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 
 		reqTagsStr, err := json.Marshal(reqTags)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.Tags = string(reqTagsStr)
 	}
@@ -145,9 +152,9 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 			return elasticsearchClient.ListInstance(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_elasticsearch_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_elasticsearch_instances", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RoaRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RoaRequest, request)
 		response, _ := raw.(*elasticsearch.ListInstanceResponse)
 		if len(response.Result) < 1 {
 			break
@@ -157,13 +164,13 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 			instances = append(instances, item)
 		}
 
-		if len(response.Result) < PageSizeLarge {
+		if len(response.Result) < helper.PageSizeLarge {
 			break
 		}
 
-		page, err := getNextpageNumber(request.Page)
+		page, err := helper.GetNextpageNumber(request.Page)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.Page = page
 	}
@@ -174,7 +181,7 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("description_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		descriptionRegex = r
 	}
@@ -202,7 +209,7 @@ func dataSourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{
 		filteredInstances = append(filteredInstances, instance)
 	}
 
-	return WrapError(extractInstance(d, filteredInstances))
+	return errs.WrapError(extractInstance(d, filteredInstances))
 }
 
 func extractInstance(d *schema.ResourceData, instances []elasticsearch.Instance) error {
@@ -232,22 +239,22 @@ func extractInstance(d *schema.ResourceData, instances []elasticsearch.Instance)
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("descriptions", descriptions); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

@@ -1,18 +1,45 @@
-package alicloud
+package elasticsearch_test
 
 import (
 	"fmt"
-	"log"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	essvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/elasticsearch"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+const ElasticsearchInstanceCommonTestCase = `
+data "alicloud_elasticsearch_zones" "default" {}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "default" {
+	vpc_name   = "${var.name}"
+	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+	vswitch_name = "${var.name}"
+	vpc_id       = "${alicloud_vpc.default.id}"
+	cidr_block   = "172.16.0.0/21"
+	zone_id      = "${data.alicloud_elasticsearch_zones.default.zones[0].id}"
+}
+
+resource "alicloud_security_group" "default" {
+	name   = "${var.name}"
+	vpc_id = "${alicloud_vpc.default.id}"
+}
+
+locals {
+	vswitch_id        = alicloud_vswitch.default.id
+	resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+	security_group    = alicloud_security_group.default.id
+}
+`
 
 const DataNodeSpec = "elasticsearch.sn1ne.large"
 const DataNodeSpecForUpdate = "elasticsearch.sn2ne.large"
@@ -65,133 +92,34 @@ const Version716 = "7.16.2_with_X-Pack"
 
 const Version77 = "7.7.1_with_X-Pack"
 
-func init() {
-	resource.AddTestSweepers("alicloud_elasticsearch_instance", &resource.Sweeper{
-		Name: "alicloud_elasticsearch_instance",
-		F:    testSweepElasticsearch,
-	})
-}
-
-func testSweepElasticsearch(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("Error getting Alicloud client: %s", err)
-	}
-
-	client := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"",
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-
-	var instances []elasticsearch.Instance
-	req := elasticsearch.CreateListInstanceRequest()
-	req.RegionId = client.RegionId
-	req.Page = requests.NewInteger(1)
-	req.Size = requests.NewInteger(PageSizeLarge)
-
-	for {
-		raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-			return elasticsearchClient.ListInstance(req)
-		})
-
-		if err != nil {
-			log.Printf("[ERROR] %s", WrapError(fmt.Errorf("Error listing Elasticsearch instances: %s", err)))
-			break
-		}
-
-		resp, _ := raw.(*elasticsearch.ListInstanceResponse)
-		if resp == nil || len(resp.Result) < 1 {
-			break
-		}
-
-		instances = append(instances, resp.Result...)
-
-		if len(resp.Result) < PageSizeLarge {
-			break
-		}
-
-		page, err := getNextpageNumber(req.Page)
-		if err != nil {
-			return err
-		}
-		req.Page = page
-	}
-
-	sweeped := false
-	service := VpcService{client}
-	for _, v := range instances {
-		description := v.Description
-		id := v.InstanceId
-		skip := true
-		if !sweepAll() {
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(description), strings.ToLower(prefix)) {
-					skip = false
-					break
-				}
-			}
-			// If a ES description is not set successfully, it should be fetched by vswitch name and deleted.
-			if skip {
-				if need, err := service.needSweepVpc(v.NetworkConfig.VpcId, v.NetworkConfig.VswitchId); err == nil {
-					skip = !need
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Elasticsearch Instance: %s (%s)", description, id)
-				continue
-			}
-		}
-		log.Printf("[INFO] Deleting Elasticsearch Instance: %s (%s)", description, id)
-		req := elasticsearch.CreateDeleteInstanceRequest()
-		req.InstanceId = id
-		_, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-			return elasticsearchClient.DeleteInstance(req)
-		})
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete Elasticsearch Instance (%s (%s)): %s", description, id, err)
-		} else {
-			sweeped = true
-		}
-	}
-
-	if sweeped {
-		// Waiting 30 seconds to eusure these instances have been deleted.
-		time.Sleep(30 * time.Second)
-	}
-
-	return nil
-}
-
 func TestAccAliCloudElasticsearchInstance_basic(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchMap)
+	ra := acctest.ResourceAttrInit(resourceId, elasticsearchMap)
 
 	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return essvc.NewElasticsearchService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &instance, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", acctest.DefaultRegionToTest, rand)
 	if len(name) > 30 {
 		name = name[:30]
 	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.ChengDu})
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.ChengDu})
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -205,7 +133,7 @@ func TestAccAliCloudElasticsearchInstance_basic(t *testing.T) {
 					"data_node_disk_type":              DataNodeEssdDiskType,
 					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
 					"kibana_node_spec":                 KibanaSpec,
-					"instance_charge_type":             string(PostPaid),
+					"instance_charge_type":             "PostPaid",
 					"zone_count":                       "1",
 					"resource_group_id":                "${local.resource_group_id}",
 					"enable_kibana_public_network":     "true",
@@ -227,12 +155,12 @@ func TestAccAliCloudElasticsearchInstance_basic(t *testing.T) {
 						"data_node_disk_type":              DataNodeEssdDiskType,
 						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
 						"kibana_node_spec":                 KibanaSpec,
-						"instance_charge_type":             string(PostPaid),
+						"instance_charge_type":             "PostPaid",
 						"zone_count":                       "1",
-						"resource_group_id":                CHECKSET,
+						"resource_group_id":                acctest.CHECKSET,
 						"enable_kibana_public_network":     "true",
 						"enable_kibana_private_network":    "true",
-						"kibana_private_security_group_id": CHECKSET,
+						"kibana_private_security_group_id": acctest.CHECKSET,
 						"warm_node_amount":                 WarmNodeAmount,
 						"warm_node_disk_size":              WarmNodeDiskSize,
 						"warm_node_disk_encrypted":         "false",
@@ -264,13 +192,13 @@ func TestAccAliCloudElasticsearchInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.%":       acctest.REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -313,7 +241,7 @@ func TestAccAliCloudElasticsearchInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_kibana_private_network":    "true",
-						"kibana_private_security_group_id": CHECKSET,
+						"kibana_private_security_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -418,30 +346,30 @@ func TestAccAliCloudElasticsearchInstance_version(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchMap)
+	ra := acctest.ResourceAttrInit(resourceId, elasticsearchMap)
 
 	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return essvc.NewElasticsearchService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &instance, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", acctest.DefaultRegionToTest, rand)
 	if len(name) > 30 {
 		name = name[:30]
 	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -456,12 +384,12 @@ func TestAccAliCloudElasticsearchInstance_version(t *testing.T) {
 					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
 					"kibana_node_spec":                 KibanaSpec,
 
-					"instance_charge_type": string(PostPaid),
+					"instance_charge_type": "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name,
-						"version":     REGEXMATCH + "^7.16.*_with_X-Pack",
+						"version":     acctest.REGEXMATCH + "^7.16.*_with_X-Pack",
 					}),
 				),
 			},
@@ -472,7 +400,7 @@ func TestAccAliCloudElasticsearchInstance_version(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": REGEXMATCH + "8.5.*_with_X-Pack",
+						"version": acctest.REGEXMATCH + "8.5.*_with_X-Pack",
 					}),
 				),
 			},
@@ -503,30 +431,30 @@ func TestAccAliCloudElasticsearchInstance_multizone(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchMap)
+	ra := acctest.ResourceAttrInit(resourceId, elasticsearchMap)
 
 	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return essvc.NewElasticsearchService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &instance, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", acctest.DefaultRegionToTest, rand)
 	if len(name) > 30 {
 		name = name[:30]
 	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependenceKms)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceElasticsearchInstanceConfigDependenceKms)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -545,7 +473,7 @@ func TestAccAliCloudElasticsearchInstance_multizone(t *testing.T) {
 					"master_node_spec":                 MasterNodeSpec,
 					"master_node_disk_type":            MasterNodeEssdDiskType,
 					"kibana_node_spec":                 KibanaSpec,
-					"instance_charge_type":             string(PostPaid),
+					"instance_charge_type":             "PostPaid",
 					"zone_count":                       DefaultZoneAmount,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -560,7 +488,7 @@ func TestAccAliCloudElasticsearchInstance_multizone(t *testing.T) {
 						"master_node_spec":                 MasterNodeSpec,
 						"master_node_disk_type":            MasterNodeEssdDiskType,
 						"kibana_node_spec":                 KibanaSpec,
-						"instance_charge_type":             string(PostPaid),
+						"instance_charge_type":             "PostPaid",
 						"zone_count":                       DefaultZoneAmount,
 					}),
 				),
@@ -574,7 +502,7 @@ func TestAccAliCloudElasticsearchInstance_multizone(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"kms_encrypted_password":   CHECKSET,
+						"kms_encrypted_password":   acctest.CHECKSET,
 						"kms_encryption_context.%": "1",
 					}),
 				),
@@ -587,30 +515,30 @@ func TestAccAliCloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchMap)
+	ra := acctest.ResourceAttrInit(resourceId, elasticsearchMap)
 
 	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return essvc.NewElasticsearchService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &instance, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", acctest.DefaultRegionToTest, rand)
 	if len(name) > 30 {
 		name = name[:30]
 	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -625,7 +553,7 @@ func TestAccAliCloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
 					"data_node_disk_encrypted":         "true",
 					"kibana_node_spec":                 KibanaSpec,
-					"instance_charge_type":             string(PostPaid),
+					"instance_charge_type":             "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -642,29 +570,29 @@ func TestAccAliCloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchMap)
+	ra := acctest.ResourceAttrInit(resourceId, elasticsearchMap)
 
 	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return essvc.NewElasticsearchService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &instance, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", acctest.DefaultRegionToTest, rand)
 	if len(name) > 30 {
 		name = name[:30]
 	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -756,11 +684,11 @@ func TestAccAliCloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 			// pre paid to post paid
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_charge_type": string(PostPaid),
+					"instance_charge_type": "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_charge_type": string(PostPaid),
+						"instance_charge_type": "PostPaid",
 					}),
 				),
 			},
@@ -772,29 +700,29 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchNetworkMap)
+	ra := acctest.ResourceAttrInit(resourceId, elasticsearchNetworkMap)
 
 	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return essvc.NewElasticsearchService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &instance, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", acctest.DefaultRegionToTest, rand)
 	if len(name) > 30 {
 		name = name[:30]
 	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -808,7 +736,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 					"data_node_disk_type":              DataNodeEssdDiskType,
 					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
 					"kibana_node_spec":                 KibanaSpec,
-					"instance_charge_type":             string(PostPaid),
+					"instance_charge_type":             "PostPaid",
 					"zone_count":                       "1",
 					"enable_public":                    "true",
 					"enable_kibana_private_network":    "false",
@@ -825,7 +753,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 						"data_node_disk_type":              DataNodeEssdDiskType,
 						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
 						"kibana_node_spec":                 KibanaSpec,
-						"instance_charge_type":             string(PostPaid),
+						"instance_charge_type":             "PostPaid",
 						"zone_count":                       "1",
 						"enable_public":                    "true",
 						"enable_kibana_private_network":    "false",
@@ -859,7 +787,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_kibana_private_network":    "true",
-						"kibana_private_security_group_id": CHECKSET,
+						"kibana_private_security_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -966,7 +894,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_kibana_private_network":    "true",
-						"kibana_private_security_group_id": CHECKSET,
+						"kibana_private_security_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -986,19 +914,19 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 }
 
 var elasticsearchMap = map[string]string{
-	"description":                      CHECKSET,
-	"data_node_spec":                   CHECKSET,
-	"data_node_amount":                 CHECKSET,
-	"data_node_disk_size":              CHECKSET,
-	"data_node_disk_type":              CHECKSET,
-	"data_node_disk_performance_level": CHECKSET,
-	"instance_charge_type":             CHECKSET,
+	"description":                      acctest.CHECKSET,
+	"data_node_spec":                   acctest.CHECKSET,
+	"data_node_amount":                 acctest.CHECKSET,
+	"data_node_disk_size":              acctest.CHECKSET,
+	"data_node_disk_type":              acctest.CHECKSET,
+	"data_node_disk_performance_level": acctest.CHECKSET,
+	"instance_charge_type":             acctest.CHECKSET,
 	"status":                           "active",
 	"enable_public":                    "false",
 	"enable_kibana_public_network":     "true",
 	"enable_kibana_private_network":    "false",
-	"id":                               CHECKSET,
-	"vswitch_id":                       CHECKSET,
+	"id":                               acctest.CHECKSET,
+	"vswitch_id":                       acctest.CHECKSET,
 }
 
 var elasticsearchNetworkMap = map[string]string{}
@@ -1049,22 +977,22 @@ func resourceElasticsearchInstanceConfigDependenceKms(name string) string {
 func TestAccAliCloudElasticsearchInstance_basic11468(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11468)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11468)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11468)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11468)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1106,7 +1034,7 @@ func TestAccAliCloudElasticsearchInstance_basic11468(t *testing.T) {
 						"protocol":                   "HTTP",
 						"version":                    "7.10.0_with_X-Pack",
 						"password":                   "Admain@123",
-						"resource_group_id":          CHECKSET,
+						"resource_group_id":          acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1142,13 +1070,13 @@ func TestAccAliCloudElasticsearchInstance_basic11468(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -1163,12 +1091,12 @@ func TestAccAliCloudElasticsearchInstance_basic11468(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11468 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11468(name string) string {
@@ -1195,7 +1123,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -1203,22 +1130,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11477(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11477)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11477)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11477)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11477)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1290,13 +1217,13 @@ func TestAccAliCloudElasticsearchInstance_basic11477(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -1311,12 +1238,12 @@ func TestAccAliCloudElasticsearchInstance_basic11477(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11477 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11477(name string) string {
@@ -1341,7 +1268,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -1349,22 +1275,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11518(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11518)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11518)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11518)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11518)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1412,7 +1338,7 @@ func TestAccAliCloudElasticsearchInstance_basic11518(t *testing.T) {
 						"order_action_type":                "UPGRADE",
 						"public_whitelist.#":               "0",
 						"enable_kibana_private_network":    "true",
-						"kibana_private_security_group_id": CHECKSET,
+						"kibana_private_security_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1444,7 +1370,7 @@ func TestAccAliCloudElasticsearchInstance_basic11518(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_kibana_private_network":    "true",
-						"kibana_private_security_group_id": CHECKSET,
+						"kibana_private_security_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1480,13 +1406,13 @@ func TestAccAliCloudElasticsearchInstance_basic11518(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -1501,12 +1427,12 @@ func TestAccAliCloudElasticsearchInstance_basic11518(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11518 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11518(name string) string {
@@ -1545,22 +1471,22 @@ resource "alicloud_security_group" "default" {
 func TestAccAliCloudElasticsearchInstance_basic11519(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11519)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11519)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11519)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11519)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1642,7 +1568,7 @@ func TestAccAliCloudElasticsearchInstance_basic11519(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_kibana_public_network": "false",
-						"kibana_whitelist.#":           CHECKSET,
+						"kibana_whitelist.#":           acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1678,13 +1604,13 @@ func TestAccAliCloudElasticsearchInstance_basic11519(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -1699,11 +1625,11 @@ func TestAccAliCloudElasticsearchInstance_basic11519(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11519 = map[string]string{
-	"status":      CHECKSET,
-	"domain":      CHECKSET,
-	"kibana_port": CHECKSET,
-	"create_time": CHECKSET,
-	"public_port": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"domain":      acctest.CHECKSET,
+	"kibana_port": acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"public_port": acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11519(name string) string {
@@ -1728,7 +1654,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -1736,22 +1661,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11456(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11456)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11456)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11456)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11456)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1835,13 +1760,13 @@ func TestAccAliCloudElasticsearchInstance_basic11456(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -1856,12 +1781,12 @@ func TestAccAliCloudElasticsearchInstance_basic11456(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11456 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11456(name string) string {
@@ -1886,7 +1811,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -1894,22 +1818,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11520(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11520)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11520)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11520)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11520)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2003,13 +1927,13 @@ func TestAccAliCloudElasticsearchInstance_basic11520(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -2024,12 +1948,12 @@ func TestAccAliCloudElasticsearchInstance_basic11520(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11520 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11520(name string) string {
@@ -2054,7 +1978,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -2062,22 +1985,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11469(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11469)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11469)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11469)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11469)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2173,13 +2096,13 @@ func TestAccAliCloudElasticsearchInstance_basic11469(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -2194,12 +2117,12 @@ func TestAccAliCloudElasticsearchInstance_basic11469(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11469 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11469(name string) string {
@@ -2224,7 +2147,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -2232,22 +2154,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11508(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11508)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11508)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11508)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11508)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2278,7 +2200,7 @@ func TestAccAliCloudElasticsearchInstance_basic11508(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "修改SettingConfig",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"version":           "7.10.0_with_X-Pack",
 						"payment_type":      "PayAsYouGo",
 						"password":          "TerraformAdmin@123!",
@@ -2340,13 +2262,13 @@ func TestAccAliCloudElasticsearchInstance_basic11508(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -2361,12 +2283,12 @@ func TestAccAliCloudElasticsearchInstance_basic11508(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11508 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11508(name string) string {
@@ -2393,7 +2315,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -2401,22 +2322,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11514(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11514)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11514)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11514)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11514)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2447,7 +2368,7 @@ func TestAccAliCloudElasticsearchInstance_basic11514(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "修改KibanaConfiguration",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"version":           "7.10.0_with_X-Pack",
 						"payment_type":      "PayAsYouGo",
 						"password":          "TerraformAdmin@123!",
@@ -2503,13 +2424,13 @@ func TestAccAliCloudElasticsearchInstance_basic11514(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -2524,12 +2445,12 @@ func TestAccAliCloudElasticsearchInstance_basic11514(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11514 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11514(name string) string {
@@ -2556,7 +2477,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -2564,22 +2484,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11516(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11516)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11516)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11516)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11516)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2657,7 +2577,7 @@ func TestAccAliCloudElasticsearchInstance_basic11516(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_public":      "false",
-						"public_whitelist.#": CHECKSET,
+						"public_whitelist.#": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -2693,13 +2613,13 @@ func TestAccAliCloudElasticsearchInstance_basic11516(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -2714,12 +2634,12 @@ func TestAccAliCloudElasticsearchInstance_basic11516(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11516 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11516(name string) string {
@@ -2744,7 +2664,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -2752,22 +2671,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11480(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11480)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11480)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11480)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11480)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2802,7 +2721,7 @@ func TestAccAliCloudElasticsearchInstance_basic11480(t *testing.T) {
 						"payment_type":                     "PayAsYouGo",
 						"version":                          "7.10.0_with_X-Pack",
 						"password":                         "Admain@123",
-						"kibana_private_security_group_id": CHECKSET,
+						"kibana_private_security_group_id": acctest.CHECKSET,
 						"enable_kibana_private_network":    "true",
 					}),
 				),
@@ -2815,7 +2734,7 @@ func TestAccAliCloudElasticsearchInstance_basic11480(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"kibana_private_security_group_id": CHECKSET,
+						"kibana_private_security_group_id": acctest.CHECKSET,
 						"order_action_type":                "UPGRADE",
 					}),
 				),
@@ -2826,7 +2745,7 @@ func TestAccAliCloudElasticsearchInstance_basic11480(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"kibana_private_security_group_id": CHECKSET,
+						"kibana_private_security_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -2882,13 +2801,13 @@ func TestAccAliCloudElasticsearchInstance_basic11480(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -2903,12 +2822,12 @@ func TestAccAliCloudElasticsearchInstance_basic11480(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11480 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11480(name string) string {
@@ -2947,7 +2866,6 @@ resource "alicloud_security_group" "defaultfyX8IE" {
   vpc_id              = alicloud_vpc.defaultLPXHTQ.id
 }
 
-
 `, name)
 }
 
@@ -2955,22 +2873,22 @@ resource "alicloud_security_group" "defaultfyX8IE" {
 func TestAccAliCloudElasticsearchInstance_basic11506(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11506)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11506)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11506)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11506)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3001,7 +2919,7 @@ func TestAccAliCloudElasticsearchInstance_basic11506(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "Update_描述-密码-https-http",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"version":           "7.10.0_with_X-Pack",
 						"payment_type":      "PayAsYouGo",
 						"password":          "TerraformAdmin@123!",
@@ -3070,13 +2988,13 @@ func TestAccAliCloudElasticsearchInstance_basic11506(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -3091,12 +3009,12 @@ func TestAccAliCloudElasticsearchInstance_basic11506(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11506 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11506(name string) string {
@@ -3123,7 +3041,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -3131,22 +3048,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11515(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11515)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11515)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11515)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11515)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3177,7 +3094,7 @@ func TestAccAliCloudElasticsearchInstance_basic11515(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "Update_NodeAmount",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"version":           "7.10.0_with_X-Pack",
 						"payment_type":      "PayAsYouGo",
 						"password":          "TerraformAdmin@123!",
@@ -3236,13 +3153,13 @@ func TestAccAliCloudElasticsearchInstance_basic11515(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -3257,12 +3174,12 @@ func TestAccAliCloudElasticsearchInstance_basic11515(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11515 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11515(name string) string {
@@ -3289,7 +3206,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -3297,22 +3213,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11512(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11512)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11512)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11512)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11512)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3343,7 +3259,7 @@ func TestAccAliCloudElasticsearchInstance_basic11512(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "Update_DataNodeConfiguration",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"version":           "7.10.0_with_X-Pack",
 						"payment_type":      "PayAsYouGo",
 						"password":          "TerraformAdmin@123!",
@@ -3404,13 +3320,13 @@ func TestAccAliCloudElasticsearchInstance_basic11512(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -3425,12 +3341,12 @@ func TestAccAliCloudElasticsearchInstance_basic11512(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11512 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11512(name string) string {
@@ -3457,7 +3373,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -3465,22 +3380,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11511(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11511)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11511)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11511)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11511)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3511,7 +3426,7 @@ func TestAccAliCloudElasticsearchInstance_basic11511(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "Update_ClientNodeConfiguration",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"version":           "7.10.0_with_X-Pack",
 						"payment_type":      "PayAsYouGo",
 						"password":          "TerraformAdmin@123!",
@@ -3570,13 +3485,13 @@ func TestAccAliCloudElasticsearchInstance_basic11511(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -3591,12 +3506,12 @@ func TestAccAliCloudElasticsearchInstance_basic11511(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11511 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11511(name string) string {
@@ -3623,7 +3538,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -3631,22 +3545,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11510(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11510)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11510)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11510)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11510)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3677,7 +3591,7 @@ func TestAccAliCloudElasticsearchInstance_basic11510(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "Update_WarmNodeConfiguration",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"version":           "7.10.0_with_X-Pack",
 						"payment_type":      "PayAsYouGo",
 						"password":          "TerraformAdmin@123!",
@@ -3737,13 +3651,13 @@ func TestAccAliCloudElasticsearchInstance_basic11510(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -3758,12 +3672,12 @@ func TestAccAliCloudElasticsearchInstance_basic11510(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11510 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11510(name string) string {
@@ -3790,7 +3704,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -3798,22 +3711,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11470(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11470)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11470)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11470)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11470)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -3916,13 +3829,13 @@ func TestAccAliCloudElasticsearchInstance_basic11470(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -3937,12 +3850,12 @@ func TestAccAliCloudElasticsearchInstance_basic11470(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11470 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11470(name string) string {
@@ -3967,7 +3880,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -3975,22 +3887,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11509(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11509)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11509)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11509)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11509)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4021,7 +3933,7 @@ func TestAccAliCloudElasticsearchInstance_basic11509(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "Update_MasterConfiguration",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"version":           "7.10.0_with_X-Pack",
 						"payment_type":      "PayAsYouGo",
 						"password":          "TerraformAdmin@123!",
@@ -4080,13 +3992,13 @@ func TestAccAliCloudElasticsearchInstance_basic11509(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -4101,12 +4013,12 @@ func TestAccAliCloudElasticsearchInstance_basic11509(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11509 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11509(name string) string {
@@ -4133,7 +4045,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -4141,23 +4052,23 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_basic11529(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11529)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11529)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11529)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11529)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4222,9 +4133,9 @@ func TestAccAliCloudElasticsearchInstance_basic11529(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":          "PayAsYouGo",
-						"renew_status":          REMOVEKEY,
-						"auto_renew_duration":   REMOVEKEY,
-						"renewal_duration_unit": REMOVEKEY,
+						"renew_status":          acctest.REMOVEKEY,
+						"auto_renew_duration":   acctest.REMOVEKEY,
+						"renewal_duration_unit": acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -4260,13 +4171,13 @@ func TestAccAliCloudElasticsearchInstance_basic11529(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -4283,23 +4194,23 @@ func TestAccAliCloudElasticsearchInstance_basic11529(t *testing.T) {
 func TestAccAliCloudElasticsearchInstance_basic11529_intl(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11529)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11529)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11529)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11529)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithAccountSiteType(t, IntlSite)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.IntlSite)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4364,9 +4275,9 @@ func TestAccAliCloudElasticsearchInstance_basic11529_intl(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":          "PayAsYouGo",
-						"renew_status":          REMOVEKEY,
-						"auto_renew_duration":   REMOVEKEY,
-						"renewal_duration_unit": REMOVEKEY,
+						"renew_status":          acctest.REMOVEKEY,
+						"auto_renew_duration":   acctest.REMOVEKEY,
+						"renewal_duration_unit": acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -4402,13 +4313,13 @@ func TestAccAliCloudElasticsearchInstance_basic11529_intl(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -4423,12 +4334,12 @@ func TestAccAliCloudElasticsearchInstance_basic11529_intl(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11529 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11529(name string) string {
@@ -4452,7 +4363,6 @@ resource "alicloud_vswitch" "defaultmJ42pm" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -4460,22 +4370,22 @@ resource "alicloud_vswitch" "defaultmJ42pm" {
 func TestAccAliCloudElasticsearchInstance_basic11482(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11482)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMap11482)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11482)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependence11482)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4568,13 +4478,13 @@ func TestAccAliCloudElasticsearchInstance_basic11482(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -4583,12 +4493,12 @@ func TestAccAliCloudElasticsearchInstance_basic11482(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMap11482 = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependence11482(name string) string {
@@ -4613,7 +4523,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   vswitch_name = "es-instanc-case"
 }
 
-
 `, name)
 }
 
@@ -4622,22 +4531,22 @@ resource "alicloud_vswitch" "defaultAislbL" {
 func TestAccAliCloudElasticsearchInstance_deprecatedToNewFields(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapDeprecatedFields)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapDeprecatedFields)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccelasticsearch%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceDeprecatedFields)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceDeprecatedFields)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -4671,11 +4580,11 @@ func TestAccAliCloudElasticsearchInstance_deprecatedToNewFields(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"data_node_spec":      REMOVEKEY,
-					"data_node_amount":    REMOVEKEY,
-					"data_node_disk_size": REMOVEKEY,
-					"data_node_disk_type": REMOVEKEY,
-					"kibana_node_spec":    REMOVEKEY,
+					"data_node_spec":      acctest.REMOVEKEY,
+					"data_node_amount":    acctest.REMOVEKEY,
+					"data_node_disk_size": acctest.REMOVEKEY,
+					"data_node_disk_type": acctest.REMOVEKEY,
+					"kibana_node_spec":    acctest.REMOVEKEY,
 					"data_node_configuration": []map[string]interface{}{
 						{
 							"disk_type": "cloud_ssd",
@@ -4763,11 +4672,11 @@ func TestAccAliCloudElasticsearchInstance_deprecatedToNewFields(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMapDeprecatedFields = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependenceDeprecatedFields(name string) string {
@@ -4796,22 +4705,22 @@ resource "alicloud_vswitch" "default" {
 func TestAccAliCloudElasticsearchInstance_resourceGroup(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapResourceGroup)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ElasticsearchServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapResourceGroup)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeElasticsearchInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfes%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceResourceGroup)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceResourceGroup)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				// Create with resource_group_id and read it back.
@@ -4850,7 +4759,7 @@ func TestAccAliCloudElasticsearchInstance_resourceGroup(t *testing.T) {
 						"instance_category": "x-pack",
 						"protocol":          "HTTP",
 						"version":           "7.10.0_with_X-Pack",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -4861,7 +4770,7 @@ func TestAccAliCloudElasticsearchInstance_resourceGroup(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.target", "id"),
 				),
@@ -4877,12 +4786,12 @@ func TestAccAliCloudElasticsearchInstance_resourceGroup(t *testing.T) {
 }
 
 var AlicloudElasticsearchInstanceMapResourceGroup = map[string]string{
-	"status":        CHECKSET,
-	"kibana_domain": CHECKSET,
-	"domain":        CHECKSET,
-	"kibana_port":   CHECKSET,
-	"create_time":   CHECKSET,
-	"public_port":   CHECKSET,
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
 }
 
 func AlicloudElasticsearchInstanceBasicDependenceResourceGroup(name string) string {
@@ -4913,7 +4822,6 @@ resource "alicloud_vswitch" "defaultAislbL" {
   cidr_block   = "10.0.10.0/24"
   vswitch_name = "es-instance-resource-group"
 }
-
 
 `, name, name, name)
 }

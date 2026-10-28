@@ -627,8 +627,6 @@ func Provider() *schema.Provider {
 			"alicloud_eips": dataSourceAlicloudEipAddresses(),
 
 			// elasticsearch
-			"alicloud_elasticsearch_instances": dataSourceAlicloudElasticsearch(),
-			"alicloud_elasticsearch_zones":     dataSourceAlicloudElaticsearchZones(),
 
 			// emr
 			"alicloud_emr_instance_types": dataSourceAlicloudEmrInstanceTypes(),
@@ -1801,7 +1799,6 @@ func Provider() *schema.Provider {
 			"alicloud_eip_address":         resourceAliCloudEipAddress(),
 
 			// elasticsearch
-			"alicloud_elasticsearch_instance": resourceAliCloudElasticsearchInstance(),
 
 			// emr
 			"alicloud_emr_cluster": resourceAlicloudEmrCluster(),
