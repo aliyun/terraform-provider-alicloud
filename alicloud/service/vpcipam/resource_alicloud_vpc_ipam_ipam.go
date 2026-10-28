@@ -1,17 +1,23 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package vpcipam. This file is generated automatically. Please do not modify it manually, thank you!
+package vpcipam
 
 import (
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 )
 
-func resourceAliCloudVpcIpamIpam() *schema.Resource {
+func ResourceVpcIpamIpam() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudVpcIpamIpamCreate,
 		Read:   resourceAliCloudVpcIpamIpamRead,
@@ -64,7 +70,7 @@ func resourceAliCloudVpcIpamIpam() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 		},
 	}
 }
@@ -80,7 +86,7 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("ipam_name"); ok {
 		request["IpamName"] = v
@@ -89,7 +95,7 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("operating_region_list"); ok {
-		operatingRegionListMapsArray := convertToInterfaceArray(v)
+		operatingRegionListMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["OperatingRegionList"] = operatingRegionListMapsArray
 	}
@@ -98,15 +104,15 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 		request["IpamDescription"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -114,10 +120,10 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_ipam_ipam", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_vpc_ipam_ipam", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["IpamId"]))
@@ -127,16 +133,16 @@ func resourceAliCloudVpcIpamIpamCreate(d *schema.ResourceData, meta interface{})
 
 func resourceAliCloudVpcIpamIpamRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcIpamServiceV2 := VpcIpamServiceV2{client}
+	vpcIpamServiceV2 := NewService(client)
 
 	objectRaw, err := vpcIpamServiceV2.DescribeVpcIpamIpam(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_vpc_ipam_ipam DescribeVpcIpamIpam Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
@@ -150,12 +156,12 @@ func resourceAliCloudVpcIpamIpamRead(d *schema.ResourceData, meta interface{}) e
 
 	operatingRegionListRaw := make([]interface{}, 0)
 	if objectRaw["OperatingRegionList"] != nil {
-		operatingRegionListRaw = convertToInterfaceArray(objectRaw["OperatingRegionList"])
+		operatingRegionListRaw = convert.ConvertToInterfaceArray(objectRaw["OperatingRegionList"])
 	}
 
 	d.Set("operating_region_list", operatingRegionListRaw)
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
@@ -174,7 +180,7 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	query = make(map[string]interface{})
 	request["IpamId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("ipam_name") {
 		update = true
 		request["IpamName"] = d.Get("ipam_name")
@@ -186,11 +192,11 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -198,9 +204,9 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -215,11 +221,11 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "IPAM"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -227,9 +233,9 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -247,16 +253,16 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 			query = make(map[string]interface{})
 			request["IpamId"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 			localData := added.List()
 			addOperatingRegionMapsArray := localData
 			request["AddOperatingRegion"] = addOperatingRegionMapsArray
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -264,9 +270,9 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -277,16 +283,16 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 			query = make(map[string]interface{})
 			request["IpamId"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 			localData := removed.List()
 			removeOperatingRegionMapsArray := localData
 			request["RemoveOperatingRegion"] = removeOperatingRegionMapsArray
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -294,18 +300,18 @@ func resourceAliCloudVpcIpamIpamUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
 
 	}
 	if d.HasChange("tags") {
-		vpcIpamServiceV2 := VpcIpamServiceV2{client}
+		vpcIpamServiceV2 := NewService(client)
 		if err := vpcIpamServiceV2.SetResourceTags(d, "IPAM"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
@@ -323,13 +329,13 @@ func resourceAliCloudVpcIpamIpamDelete(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	request["IpamId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -337,13 +343,13 @@ func resourceAliCloudVpcIpamIpamDelete(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

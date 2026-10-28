@@ -1,17 +1,21 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package vpcipam. This file is generated automatically. Please do not modify it manually, thank you!
+package vpcipam
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 )
 
-func dataSourceAliCloudVpcIpamIpamPoolCidrs() *schema.Resource {
+func DataSourceVpcIpamIpamPoolCidrs() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAliCloudVpcIpamIpamPoolCidrRead,
 		Schema: map[string]*schema.Schema{
@@ -82,24 +86,24 @@ func dataSourceAliCloudVpcIpamIpamPoolCidrRead(d *schema.ResourceData, meta inte
 		request["Cidr"] = v
 	}
 	request["IpamPoolId"] = d.Get("ipam_pool_id")
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, _ := jsonpath.Get("$.IpamPoolCidrs[*]", response)
@@ -139,14 +143,14 @@ func dataSourceAliCloudVpcIpamIpamPoolCidrRead(d *schema.ResourceData, meta inte
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("cidrs", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

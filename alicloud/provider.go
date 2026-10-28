@@ -1177,10 +1177,6 @@ func Provider() *schema.Provider {
 			// vpc
 			"alicloud_vpc_route_target_groups":                 dataSourceAliCloudVpcRouteTargetGroups(),
 			"alicloud_vpc_ipv6_cidr_blocks":                    dataSourceAliCloudVpcIpv6CidrBlocks(),
-			"alicloud_vpc_ipam_ipam_scopes":                    dataSourceAliCloudVpcIpamIpamScopes(),
-			"alicloud_vpc_ipam_ipam_pool_cidrs":                dataSourceAliCloudVpcIpamIpamPoolCidrs(),
-			"alicloud_vpc_ipam_ipam_pool_allocations":          dataSourceAliCloudVpcIpamIpamPoolAllocations(),
-			"alicloud_vpc_ipam_ipam_pools":                     dataSourceAliCloudVpcIpamIpamPools(),
 			"alicloud_vpc_flow_logs":                           dataSourceAlicloudVpcFlowLogs(),
 			"alicloud_vpc_dhcp_options_sets":                   dataSourceAlicloudVpcDhcpOptionsSets(),
 			"alicloud_vpc_nat_ip_cidrs":                        dataSourceAlicloudVpcNatIpCidrs(),
@@ -1202,7 +1198,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_public_ip_address_pools":             dataSourceAlicloudVpcPublicIpAddressPools(),
 			"alicloud_vpc_public_ip_address_pool_cidr_blocks":  dataSourceAlicloudVpcPublicIpAddressPoolCidrBlocks(),
 			"alicloud_vpc_flow_log_service":                    dataSourceAliCloudVpcFlowLogService(),
-			"alicloud_vpc_ipam_ipams":                          dataSourceAliCloudVpcIpamIpams(),
 
 			// vpcs
 			"alicloud_vpcs": dataSourceAlicloudVpcs(),
@@ -2625,13 +2620,6 @@ func Provider() *schema.Provider {
 			// vpc
 			"alicloud_vpc_route_target_group":                      resourceAliCloudVpcRouteTargetGroup(),
 			"alicloud_vpc_ipv6_cidr_block":                         resourceAliCloudVpcIpv6CidrBlock(),
-			"alicloud_vpc_ipam_ipam_resource_discovery":            resourceAliCloudVpcIpamIpamResourceDiscovery(),
-			"alicloud_vpc_ipam_service":                            resourceAliCloudVpcIpamService(),
-			"alicloud_vpc_ipam_ipam_pool_allocation":               resourceAliCloudVpcIpamIpamPoolAllocation(),
-			"alicloud_vpc_ipam_ipam_pool_cidr":                     resourceAliCloudVpcIpamIpamPoolCidr(),
-			"alicloud_vpc_ipam_ipam_pool":                          resourceAliCloudVpcIpamIpamPool(),
-			"alicloud_vpc_ipam_ipam_scope":                         resourceAliCloudVpcIpamIpamScope(),
-			"alicloud_vpc_ipam_ipam":                               resourceAliCloudVpcIpamIpam(),
 			"alicloud_vpc_ipv6_address":                            resourceAliCloudVpcIpv6Address(),
 			"alicloud_vpc_gateway_endpoint_route_table_attachment": resourceAliCloudVpcGatewayEndpointRouteTableAttachment(),
 			"alicloud_vpc_gateway_endpoint":                        resourceAliCloudVpcGatewayEndpoint(),

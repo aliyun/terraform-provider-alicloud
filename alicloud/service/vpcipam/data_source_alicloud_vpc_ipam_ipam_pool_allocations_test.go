@@ -1,66 +1,68 @@
-package alicloud
+package vpcipam_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudVpcIpamIpamPoolAllocationDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	rand := acctest.RandIntRange(1000000, 9999999)
+	acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}"]`,
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}_fake"]`,
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}"`,
 		}),
 	}
 
-	IpamPoolAllocationNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+	IpamPoolAllocationNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":                       `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}"]`,
 			"ipam_pool_allocation_name": `"${var.name}"`,
 			"ipam_pool_id":              `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":                       `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}_fake"]`,
 			"ipam_pool_allocation_name": `"${var.name}_fake"`,
 			"ipam_pool_id":              `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}"`,
 		}),
 	}
-	IpamPoolIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+	IpamPoolIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}"]`,
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}_fake"]`,
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}_fake"`,
 		}),
 	}
-	CidrConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+	CidrConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}"]`,
 			"cidr":         `"10.0.0.0/20"`,
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}_fake"]`,
 			"cidr":         `"10.0.0.0/20_fake"`,
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":                       `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}"]`,
 			"ipam_pool_allocation_name": `"${var.name}"`,
 
@@ -68,7 +70,7 @@ func TestAccAlicloudVpcIpamIpamPoolAllocationDataSource(t *testing.T) {
 
 			"cidr": `"10.0.0.0/20"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand, map[string]string{
 			"ids":                       `["${alicloud_vpc_ipam_ipam_pool_allocation.default.id}_fake"]`,
 			"ipam_pool_allocation_name": `"${var.name}_fake"`,
 
@@ -78,24 +80,24 @@ func TestAccAlicloudVpcIpamIpamPoolAllocationDataSource(t *testing.T) {
 		}),
 	}
 
-	VpcIpamIpamPoolAllocationCheckInfo.dataSourceTestCheck(t, rand, idsConf, IpamPoolAllocationNameConf, IpamPoolIdConf, CidrConf, allConf)
+	VpcIpamIpamPoolAllocationCheckInfo.DataSourceTestCheck(t, rand, idsConf, IpamPoolAllocationNameConf, IpamPoolIdConf, CidrConf, allConf)
 }
 
 var existVpcIpamIpamPoolAllocationMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"allocations.#":        "1",
-		"allocations.0.status": CHECKSET,
-		"allocations.0.ipam_pool_allocation_description": CHECKSET,
-		"allocations.0.source_cidr":                      CHECKSET,
-		"allocations.0.ipam_pool_id":                     CHECKSET,
-		"allocations.0.create_time":                      CHECKSET,
-		"allocations.0.resource_type":                    CHECKSET,
-		"allocations.0.resource_owner_id":                CHECKSET,
-		"allocations.0.ipam_pool_allocation_name":        CHECKSET,
-		"allocations.0.total_count":                      CHECKSET,
-		"allocations.0.cidr":                             CHECKSET,
-		"allocations.0.ipam_pool_allocation_id":          CHECKSET,
-		"allocations.0.region_id":                        CHECKSET,
+		"allocations.0.status": acctest.CHECKSET,
+		"allocations.0.ipam_pool_allocation_description": acctest.CHECKSET,
+		"allocations.0.source_cidr":                      acctest.CHECKSET,
+		"allocations.0.ipam_pool_id":                     acctest.CHECKSET,
+		"allocations.0.create_time":                      acctest.CHECKSET,
+		"allocations.0.resource_type":                    acctest.CHECKSET,
+		"allocations.0.resource_owner_id":                acctest.CHECKSET,
+		"allocations.0.ipam_pool_allocation_name":        acctest.CHECKSET,
+		"allocations.0.total_count":                      acctest.CHECKSET,
+		"allocations.0.cidr":                             acctest.CHECKSET,
+		"allocations.0.ipam_pool_allocation_id":          acctest.CHECKSET,
+		"allocations.0.region_id":                        acctest.CHECKSET,
 	}
 }
 
@@ -105,10 +107,10 @@ var fakeVpcIpamIpamPoolAllocationMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var VpcIpamIpamPoolAllocationCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_vpc_ipam_ipam_pool_allocations.default",
-	existMapFunc: existVpcIpamIpamPoolAllocationMapFunc,
-	fakeMapFunc:  fakeVpcIpamIpamPoolAllocationMapFunc,
+var VpcIpamIpamPoolAllocationCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_vpc_ipam_ipam_pool_allocations.default",
+	ExistMapFunc: existVpcIpamIpamPoolAllocationMapFunc,
+	FakeMapFunc:  fakeVpcIpamIpamPoolAllocationMapFunc,
 }
 
 func testAccCheckAlicloudVpcIpamIpamPoolAllocationSourceConfig(rand int, attrMap map[string]string) string {

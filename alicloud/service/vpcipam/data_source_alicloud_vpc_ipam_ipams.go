@@ -1,4 +1,5 @@
-package alicloud
+// Package vpcipam. This file is generated automatically. Please do not modify it manually, thank you!
+package vpcipam
 
 import (
 	"fmt"
@@ -6,15 +7,20 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 )
 
-func dataSourceAliCloudVpcIpamIpamPoolAllocations() *schema.Resource {
+func DataSourceVpcIpamIpams() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudVpcIpamIpamPoolAllocationRead,
+		Read: dataSourceAliCloudVpcIpamIpamRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -32,48 +38,57 @@ func dataSourceAliCloudVpcIpamIpamPoolAllocations() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
-			"cidr": {
+			"ipam_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"ipam_pool_allocation_id": {
+			"ipam_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"ipam_pool_allocation_name": {
+			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"ipam_pool_id": {
-				Type:     schema.TypeString,
-				Required: true,
+			// lintignore: S006
+			"tags": {
+				Type:     schema.TypeMap,
+				Optional: true,
 			},
-			"allocations": {
+			"ipams": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"cidr": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"create_time": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"ipam_pool_allocation_description": {
+						"default_resource_discovery_association_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"ipam_pool_allocation_id": {
+						"default_resource_discovery_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"ipam_pool_allocation_name": {
+						"ipam_description": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"ipam_pool_id": {
+						"ipam_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ipam_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"private_default_scope_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"public_default_scope_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -81,23 +96,11 @@ func dataSourceAliCloudVpcIpamIpamPoolAllocations() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"resource_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"resource_owner_id": {
+						"resource_discovery_association_count": {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"resource_region_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"resource_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"source_cidr": {
+						"resource_group_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -105,9 +108,10 @@ func dataSourceAliCloudVpcIpamIpamPoolAllocations() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"total_count": {
-							Type:     schema.TypeInt,
+						"tags": {
+							Type:     schema.TypeMap,
 							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"id": {
 							Type:     schema.TypeString,
@@ -124,7 +128,7 @@ func dataSourceAliCloudVpcIpamIpamPoolAllocations() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudVpcIpamIpamPoolAllocationRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudVpcIpamIpamRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var objects []map[string]interface{}
@@ -132,7 +136,7 @@ func dataSourceAliCloudVpcIpamIpamPoolAllocationRead(d *schema.ResourceData, met
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		nameRegex = r
 	}
@@ -150,51 +154,55 @@ func dataSourceAliCloudVpcIpamIpamPoolAllocationRead(d *schema.ResourceData, met
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
-	action := "ListIpamPoolAllocations"
+	action := "ListIpams"
 	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("cidr"); ok {
-		request["Cidr"] = v
+	if v, ok := d.GetOk("ipam_id"); ok {
+		request["IpamIds.1"] = v
 	}
-	if v, ok := d.GetOk("ipam_pool_allocation_name"); ok {
-		request["IpamPoolAllocationName"] = v
+	if v, ok := d.GetOk("ipam_name"); ok {
+		request["IpamName"] = v
 	}
-	request["IpamPoolId"] = d.Get("ipam_pool_id")
-	if v, ok := d.GetOk("ipam_pool_allocation_id"); ok {
-		request["IpamPoolAllocationId"] = v
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
-	request["MaxResults"] = PageSizeLarge
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
+	}
+
+	request["MaxResults"] = helper.PageSizeLarge
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("VpcIpam", "2023-02-28", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		resp, _ := jsonpath.Get("$.IpamPoolAllocations[*]", response)
+		resp, _ := jsonpath.Get("$.Ipams[*]", response)
 
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if nameRegex != nil && !nameRegex.MatchString(fmt.Sprint(item["IpamPoolAllocationName"])) {
+			if nameRegex != nil && !nameRegex.MatchString(fmt.Sprint(item["IpamName"])) {
 				continue
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprint(item["IpamPoolAllocationId"])]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["IpamId"])]; !ok {
 					continue
 				}
 			}
@@ -214,38 +222,43 @@ func dataSourceAliCloudVpcIpamIpamPoolAllocationRead(d *schema.ResourceData, met
 	for _, objectRaw := range objects {
 		mapping := map[string]interface{}{}
 
-		mapping["id"] = objectRaw["IpamPoolAllocationId"]
+		mapping["id"] = objectRaw["IpamId"]
 
-		mapping["cidr"] = objectRaw["Cidr"]
-		mapping["create_time"] = objectRaw["CreationTime"]
-		mapping["ipam_pool_allocation_description"] = objectRaw["IpamPoolAllocationDescription"]
-		mapping["ipam_pool_allocation_name"] = objectRaw["IpamPoolAllocationName"]
-		mapping["ipam_pool_id"] = objectRaw["IpamPoolId"]
+		mapping["create_time"] = objectRaw["CreateTime"]
+		mapping["default_resource_discovery_association_id"] = objectRaw["DefaultResourceDiscoveryAssociationId"]
+		mapping["default_resource_discovery_id"] = objectRaw["DefaultResourceDiscoveryId"]
+		mapping["ipam_description"] = objectRaw["IpamDescription"]
+		mapping["ipam_name"] = objectRaw["IpamName"]
+		mapping["private_default_scope_id"] = objectRaw["PrivateDefaultScopeId"]
+		mapping["public_default_scope_id"] = objectRaw["PublicDefaultScopeId"]
 		mapping["region_id"] = objectRaw["RegionId"]
-		mapping["resource_id"] = objectRaw["ResourceId"]
-		mapping["resource_owner_id"] = objectRaw["ResourceOwnerId"]
-		mapping["resource_region_id"] = objectRaw["ResourceRegionId"]
-		mapping["resource_type"] = objectRaw["ResourceType"]
-		mapping["source_cidr"] = objectRaw["SourceCidr"]
-		mapping["status"] = objectRaw["Status"]
-		mapping["ipam_pool_allocation_id"] = objectRaw["IpamPoolAllocationId"]
+		mapping["resource_discovery_association_count"] = objectRaw["ResourceDiscoveryAssociationCount"]
+		mapping["resource_group_id"] = objectRaw["ResourceGroupId"]
+		mapping["status"] = objectRaw["IpamStatus"]
+		mapping["ipam_id"] = objectRaw["IpamId"]
+
+		tagsMaps := objectRaw["Tags"]
+		mapping["tags"] = tags.TagsToMap(tagsMaps)
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, objectRaw["IpamPoolAllocationName"])
+		names = append(names, objectRaw["IpamName"])
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	if err := d.Set("allocations", s); err != nil {
-		return WrapError(err)
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("ipams", s); err != nil {
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

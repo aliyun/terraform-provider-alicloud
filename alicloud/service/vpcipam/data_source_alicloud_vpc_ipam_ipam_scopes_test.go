@@ -1,70 +1,72 @@
-package alicloud
+package vpcipam_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudVpcIpamIpamScopeDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	rand := acctest.RandIntRange(1000000, 9999999)
+	acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_vpc_ipam_ipam_scope.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_vpc_ipam_ipam_scope.default.id}_fake"]`,
 		}),
 	}
 
-	IpamScopeNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+	IpamScopeNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":             `["${alicloud_vpc_ipam_ipam_scope.default.id}"]`,
 			"ipam_scope_name": `"${var.name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":             `["${alicloud_vpc_ipam_ipam_scope.default.id}_fake"]`,
 			"ipam_scope_name": `"${var.name}_fake"`,
 		}),
 	}
-	ResourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+	ResourceGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":               `["${alicloud_vpc_ipam_ipam_scope.default.id}"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":               `["${alicloud_vpc_ipam_ipam_scope.default.id}_fake"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake"`,
 		}),
 	}
-	IpamScopeTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+	IpamScopeTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":             `["${alicloud_vpc_ipam_ipam_scope.default.id}"]`,
 			"ipam_scope_type": `"private"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":             `["${alicloud_vpc_ipam_ipam_scope.default.id}_fake"]`,
 			"ipam_scope_type": `"private_fake"`,
 		}),
 	}
-	IpamIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+	IpamIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":     `["${alicloud_vpc_ipam_ipam_scope.default.id}"]`,
 			"ipam_id": `"${alicloud_vpc_ipam_ipam.defaultIpam.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":     `["${alicloud_vpc_ipam_ipam_scope.default.id}_fake"]`,
 			"ipam_id": `"${alicloud_vpc_ipam_ipam.defaultIpam.id}_fake"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":             `["${alicloud_vpc_ipam_ipam_scope.default.id}"]`,
 			"ipam_scope_name": `"${var.name}"`,
 
@@ -72,7 +74,7 @@ func TestAccAlicloudVpcIpamIpamScopeDataSource(t *testing.T) {
 
 			"ipam_id": `"${alicloud_vpc_ipam_ipam.defaultIpam.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand, map[string]string{
 			"ids":             `["${alicloud_vpc_ipam_ipam_scope.default.id}_fake"]`,
 			"ipam_scope_name": `"${var.name}_fake"`,
 
@@ -82,21 +84,21 @@ func TestAccAlicloudVpcIpamIpamScopeDataSource(t *testing.T) {
 		}),
 	}
 
-	VpcIpamIpamScopeCheckInfo.dataSourceTestCheck(t, rand, idsConf, IpamScopeNameConf, ResourceGroupIdConf, IpamScopeTypeConf, IpamIdConf, allConf)
+	VpcIpamIpamScopeCheckInfo.DataSourceTestCheck(t, rand, idsConf, IpamScopeNameConf, ResourceGroupIdConf, IpamScopeTypeConf, IpamIdConf, allConf)
 }
 
 var existVpcIpamIpamScopeMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"scopes.#":                        "1",
-		"scopes.0.status":                 CHECKSET,
-		"scopes.0.ipam_scope_name":        CHECKSET,
-		"scopes.0.resource_group_id":      CHECKSET,
-		"scopes.0.create_time":            CHECKSET,
-		"scopes.0.ipam_id":                CHECKSET,
-		"scopes.0.ipam_scope_type":        CHECKSET,
-		"scopes.0.ipam_scope_id":          CHECKSET,
-		"scopes.0.ipam_scope_description": CHECKSET,
-		"scopes.0.tags.%":                 CHECKSET,
+		"scopes.0.status":                 acctest.CHECKSET,
+		"scopes.0.ipam_scope_name":        acctest.CHECKSET,
+		"scopes.0.resource_group_id":      acctest.CHECKSET,
+		"scopes.0.create_time":            acctest.CHECKSET,
+		"scopes.0.ipam_id":                acctest.CHECKSET,
+		"scopes.0.ipam_scope_type":        acctest.CHECKSET,
+		"scopes.0.ipam_scope_id":          acctest.CHECKSET,
+		"scopes.0.ipam_scope_description": acctest.CHECKSET,
+		"scopes.0.tags.%":                 acctest.CHECKSET,
 	}
 }
 
@@ -106,10 +108,10 @@ var fakeVpcIpamIpamScopeMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var VpcIpamIpamScopeCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_vpc_ipam_ipam_scopes.default",
-	existMapFunc: existVpcIpamIpamScopeMapFunc,
-	fakeMapFunc:  fakeVpcIpamIpamScopeMapFunc,
+var VpcIpamIpamScopeCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_vpc_ipam_ipam_scopes.default",
+	ExistMapFunc: existVpcIpamIpamScopeMapFunc,
+	FakeMapFunc:  fakeVpcIpamIpamScopeMapFunc,
 }
 
 func testAccCheckAlicloudVpcIpamIpamScopeSourceConfig(rand int, attrMap map[string]string) string {

@@ -1,59 +1,61 @@
-package alicloud
+package vpcipam_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudVpcIpamIpamPoolCidrDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	rand := acctest.RandIntRange(1000000, 9999999)
+	acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	IpamPoolIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
+	IpamPoolIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool_cidr.default.ipam_pool_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}_fake"`,
 		}),
 	}
-	CidrConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
+	CidrConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool_cidr.default.ipam_pool_id}"`,
 			"cidr":         `"10.0.0.0/8"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool_cidr.default.ipam_pool_id}"`,
 			"cidr":         `"10.0.0.0/8_fake"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool_cidr.default.ipam_pool_id}"`,
 
 			"cidr": `"10.0.0.0/8"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand, map[string]string{
 			"ipam_pool_id": `"${alicloud_vpc_ipam_ipam_pool.defaultIpamPool.id}_fake"`,
 
 			"cidr": `"10.0.0.0/8_fake"`,
 		}),
 	}
 
-	VpcIpamIpamPoolCidrCheckInfo.dataSourceTestCheck(t, rand, IpamPoolIdConf, CidrConf, allConf)
+	VpcIpamIpamPoolCidrCheckInfo.DataSourceTestCheck(t, rand, IpamPoolIdConf, CidrConf, allConf)
 }
 
 var existVpcIpamIpamPoolCidrMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"cidrs.#":              "1",
-		"cidrs.0.status":       CHECKSET,
-		"cidrs.0.cidr":         CHECKSET,
-		"cidrs.0.ipam_pool_id": CHECKSET,
+		"cidrs.0.status":       acctest.CHECKSET,
+		"cidrs.0.cidr":         acctest.CHECKSET,
+		"cidrs.0.ipam_pool_id": acctest.CHECKSET,
 	}
 }
 
@@ -63,10 +65,10 @@ var fakeVpcIpamIpamPoolCidrMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var VpcIpamIpamPoolCidrCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_vpc_ipam_ipam_pool_cidrs.default",
-	existMapFunc: existVpcIpamIpamPoolCidrMapFunc,
-	fakeMapFunc:  fakeVpcIpamIpamPoolCidrMapFunc,
+var VpcIpamIpamPoolCidrCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_vpc_ipam_ipam_pool_cidrs.default",
+	ExistMapFunc: existVpcIpamIpamPoolCidrMapFunc,
+	FakeMapFunc:  fakeVpcIpamIpamPoolCidrMapFunc,
 }
 
 func testAccCheckAlicloudVpcIpamIpamPoolCidrSourceConfig(rand int, attrMap map[string]string) string {
