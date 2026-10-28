@@ -41,6 +41,7 @@ func testSweepAlikafkaSaslAcl(region string) error {
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve alikafka instance in service list: %s", err)
+		return nil
 	}
 
 	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
@@ -163,6 +164,7 @@ func deleteAcl(alikafkaService AlikafkaService, instanceId string, username stri
 	if err != nil {
 		log.Printf("[ERROR] Failed to query alikafka acl username (%s), resourceType (%s), "+
 			"resourceName (%s) instanceId (%s): %s", username, resourceType, resourceName, instanceId, err)
+		return
 	}
 	aclListResp, _ := raw.(*alikafka.DescribeAclsResponse)
 

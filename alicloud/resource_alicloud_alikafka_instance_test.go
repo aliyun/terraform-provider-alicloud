@@ -48,6 +48,7 @@ func testSweepAlikafkaInstance(region string) error {
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve alikafka instance in service list: %s", err)
+		return nil
 	}
 
 	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
