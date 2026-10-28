@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Oos Application Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
 
@@ -46,7 +46,7 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Application Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

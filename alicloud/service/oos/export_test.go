@@ -1,0 +1,54 @@
+package oos
+
+// export_test.go exposes unexported CRUD helpers so the external oos_test
+// package (gomonkey unit tests in resource_*_test.go) can invoke them
+// directly. The helper names themselves are preserved per the migration spec;
+// these exported variables are test-only aliases and do not change the public
+// API of the package.
+var (
+	ResourceAlicloudOosApplicationCreate = resourceAlicloudOosApplicationCreate
+	ResourceAlicloudOosApplicationRead   = resourceAlicloudOosApplicationRead
+	ResourceAlicloudOosApplicationUpdate = resourceAlicloudOosApplicationUpdate
+	ResourceAlicloudOosApplicationDelete = resourceAlicloudOosApplicationDelete
+
+	ResourceAlicloudOosApplicationGroupCreate = resourceAlicloudOosApplicationGroupCreate
+	ResourceAlicloudOosApplicationGroupRead   = resourceAlicloudOosApplicationGroupRead
+	ResourceAlicloudOosApplicationGroupDelete = resourceAlicloudOosApplicationGroupDelete
+
+	ResourceAlicloudOosExecutionCreate = resourceAlicloudOosExecutionCreate
+	ResourceAlicloudOosExecutionRead   = resourceAlicloudOosExecutionRead
+	ResourceAlicloudOosExecutionDelete = resourceAlicloudOosExecutionDelete
+
+	ResourceAlicloudOosParameterCreate = resourceAlicloudOosParameterCreate
+	ResourceAlicloudOosParameterRead   = resourceAlicloudOosParameterRead
+	ResourceAlicloudOosParameterUpdate = resourceAlicloudOosParameterUpdate
+	ResourceAlicloudOosParameterDelete = resourceAlicloudOosParameterDelete
+
+	ResourceAlicloudOosServiceSettingCreate = resourceAlicloudOosServiceSettingCreate
+	ResourceAlicloudOosServiceSettingRead   = resourceAlicloudOosServiceSettingRead
+	ResourceAlicloudOosServiceSettingUpdate = resourceAlicloudOosServiceSettingUpdate
+	ResourceAlicloudOosServiceSettingDelete = resourceAlicloudOosServiceSettingDelete
+
+	ResourceAlicloudOosStateConfigurationCreate = resourceAlicloudOosStateConfigurationCreate
+	ResourceAlicloudOosStateConfigurationRead   = resourceAlicloudOosStateConfigurationRead
+	ResourceAlicloudOosStateConfigurationUpdate = resourceAlicloudOosStateConfigurationUpdate
+	ResourceAlicloudOosStateConfigurationDelete = resourceAlicloudOosStateConfigurationDelete
+
+	ResourceAlicloudOosTemplateCreate = resourceAlicloudOosTemplateCreate
+	ResourceAlicloudOosTemplateRead   = resourceAlicloudOosTemplateRead
+	ResourceAlicloudOosTemplateUpdate = resourceAlicloudOosTemplateUpdate
+	ResourceAlicloudOosTemplateDelete = resourceAlicloudOosTemplateDelete
+
+	// patch_baseline and secret_parameter CRUD helpers use the AliCloud
+	// (capital-C) casing preserved per the migration spec; exported here for
+	// the same external oos_test gomonkey unit tests.
+	ResourceAliCloudOosPatchBaselineCreate = resourceAliCloudOosPatchBaselineCreate
+	ResourceAliCloudOosPatchBaselineRead   = resourceAliCloudOosPatchBaselineRead
+	ResourceAliCloudOosPatchBaselineUpdate = resourceAliCloudOosPatchBaselineUpdate
+	ResourceAliCloudOosPatchBaselineDelete = resourceAliCloudOosPatchBaselineDelete
+
+	ResourceAliCloudOosSecretParameterCreate = resourceAliCloudOosSecretParameterCreate
+	ResourceAliCloudOosSecretParameterRead   = resourceAliCloudOosSecretParameterRead
+	ResourceAliCloudOosSecretParameterUpdate = resourceAliCloudOosSecretParameterUpdate
+	ResourceAliCloudOosSecretParameterDelete = resourceAliCloudOosSecretParameterDelete
+)
