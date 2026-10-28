@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Simple Application Server Custom Images of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.143.0+.
+-> **NOTE:** Available since v1.143.0.
 
 ## Example Usage
 
@@ -42,14 +42,14 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Custom Image name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Custom Image names.
 * `images` - A list of Simple Application Server Custom Images. Each element contains the following attributes:
-	* `custom_image_id` - The first ID of the resource.
-	* `custom_image_name` - The name of the resource.
-	* `description` - Image description information.
-	* `id` - The ID of the Custom Image.
-	* `platform` - The type of operating system used by the Mirror. Valid values: `Linux`, `Windows`.
+  * `custom_image_id` - The first ID of the resource.
+  * `custom_image_name` - The name of the resource.
+  * `description` - Image description information.
+  * `id` - The ID of the Custom Image.
+  * `platform` - The type of operating system used by the Mirror. Valid values: `Linux`, `Windows`.

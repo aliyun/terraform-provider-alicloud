@@ -1,7 +1,6 @@
-package alicloud
+package swasopen
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -12,145 +11,15 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudSimpleApplicationServerInstance_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_simple_application_server_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudSimpleApplicationServerInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SwasOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSimpleApplicationServerInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testaccswasinstance%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSimpleApplicationServerInstanceBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
-			testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"payment_type":   "Subscription",
-					"plan_id":        "${data.alicloud_simple_application_server_plans.default.plans.0.id}",
-					"instance_name":  name,
-					"image_id":       "${data.alicloud_simple_application_server_images.default.images.0.id}",
-					"period":         "1",
-					"data_disk_size": "100",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"payment_type":   "Subscription",
-						"plan_id":        CHECKSET,
-						"instance_name":  name,
-						"image_id":       CHECKSET,
-						"period":         "1",
-						"data_disk_size": "100",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "Stopped",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "Stopped",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "Running",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "Running",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name": name + "Update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name": name + "Update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"password": "Test123!",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"password": "Test123!",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"image_id": "${data.alicloud_simple_application_server_images.default.images.1.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"image_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name": name,
-					"image_id":      "${data.alicloud_simple_application_server_images.default.images.0.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name": name,
-						"image_id":      CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew_period", "period", "auto_renew", "data_disk_size", "amount", "password"},
-			},
-		},
-	})
-}
-
-var AlicloudSimpleApplicationServerInstanceMap0 = map[string]string{}
-
-func AlicloudSimpleApplicationServerInstanceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_simple_application_server_images" "default" {
-	platform = "Linux"
-}
-data "alicloud_simple_application_server_plans" "default" {
-	platform = "Linux"
-}
-
-`, name)
-}
-
 // lintignore: R001
 func TestUnitSimpleApplicationServerInstance(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_simple_application_server_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_simple_application_server_instance"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -174,7 +43,7 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -204,18 +73,18 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_simple_application_server_instance", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_simple_application_server_instance", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -223,13 +92,13 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSwasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudSimpleApplicationServerInstanceCreate(dInit, rawClient)
+	err = resourceInstanceCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -257,7 +126,7 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerInstanceCreate(dInit, rawClient)
+		err := resourceInstanceCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -278,13 +147,13 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSwasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudSimpleApplicationServerInstanceUpdate(dExisted, rawClient)
+	err = resourceInstanceUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ResetSystem
@@ -322,7 +191,7 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerInstanceUpdate(dExisted, rawClient)
+		err := resourceInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -375,7 +244,7 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerInstanceUpdate(dExisted, rawClient)
+		err := resourceInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -429,7 +298,7 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerInstanceUpdate(dExisted, rawClient)
+		err := resourceInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -482,7 +351,7 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerInstanceUpdate(dExisted, rawClient)
+		err := resourceInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -535,7 +404,7 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerInstanceUpdate(dExisted, rawClient)
+		err := resourceInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -574,7 +443,7 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerInstanceRead(dExisted, rawClient)
+		err := resourceInstanceRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -585,7 +454,7 @@ func TestUnitSimpleApplicationServerInstance(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudSimpleApplicationServerInstanceDelete(dExisted, rawClient)
+	err = resourceInstanceDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 
 }
