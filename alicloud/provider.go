@@ -2148,8 +2148,6 @@ func Provider() *schema.Provider {
 			"alicloud_lindorm_instance":       resourceAliCloudLindormInstance(),
 
 			// live
-			"alicloud_live_domain": resourceAliCloudLiveDomain(),
-			"alicloud_live_caster": resourceAliCloudLiveCaster(),
 
 			// log
 			"alicloud_log_alert":           resourceAlicloudLogAlert(),

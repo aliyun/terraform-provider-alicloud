@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package live. This file is generated automatically. Please do not modify it manually, thank you!
+package live
 
 import (
 	"fmt"
@@ -8,16 +8,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudLiveCaster() *schema.Resource {
+func ResourceLiveCaster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudLiveCasterCreate,
-		Read:   resourceAliCloudLiveCasterRead,
-		Update: resourceAliCloudLiveCasterUpdate,
-		Delete: resourceAliCloudLiveCasterDelete,
+		Create: resourceLiveCasterCreate,
+		Read:   resourceLiveCasterRead,
+		Update: resourceLiveCasterUpdate,
+		Delete: resourceLiveCasterDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -64,7 +69,7 @@ func resourceAliCloudLiveCaster() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo"}, false),
 			},
 			"program_effect": {
 				Type:     schema.TypeInt,
@@ -99,7 +104,7 @@ func resourceAliCloudLiveCaster() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"transcode_config": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -124,7 +129,7 @@ func resourceAliCloudLiveCaster() *schema.Resource {
 	}
 }
 
-func resourceAliCloudLiveCasterCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceLiveCasterCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -135,7 +140,7 @@ func resourceAliCloudLiveCasterCreate(d *schema.ResourceData, meta interface{}) 
 	query := make(map[string]interface{})
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("caster_name"); ok {
 		request["CasterName"] = v
@@ -146,15 +151,15 @@ func resourceAliCloudLiveCasterCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["ChargeType"] = convertLiveCasterChargeTypeRequest(d.Get("payment_type").(string))
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -162,29 +167,29 @@ func resourceAliCloudLiveCasterCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_live_caster", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_live_caster", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["CasterId"]))
 
-	return resourceAliCloudLiveCasterRead(d, meta)
+	return resourceLiveCasterRead(d, meta)
 }
 
-func resourceAliCloudLiveCasterRead(d *schema.ResourceData, meta interface{}) error {
+func resourceLiveCasterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	liveServiceV2 := LiveServiceV2{client}
+	liveService := NewService(client)
 
-	objectRaw, err := liveServiceV2.DescribeLiveCaster(d.Id())
+	objectRaw, err := liveService.DescribeLiveCaster(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_live_caster DescribeLiveCaster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["CasterName"] != nil {
@@ -204,12 +209,12 @@ func resourceAliCloudLiveCasterRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	tagsMaps, _ := jsonpath.Get("$.Tags.tag", objectRaw)
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceAliCloudLiveCasterUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceLiveCasterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -277,11 +282,11 @@ func resourceAliCloudLiveCasterUpdate(d *schema.ResourceData, meta interface{}) 
 		request["UrgentLiveStreamUrl"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -289,9 +294,9 @@ func resourceAliCloudLiveCasterUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -305,11 +310,11 @@ func resourceAliCloudLiveCasterUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -317,23 +322,23 @@ func resourceAliCloudLiveCasterUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		liveServiceV2 := LiveServiceV2{client}
-		if err := liveServiceV2.SetResourceTags(d, ""); err != nil {
-			return WrapError(err)
+		liveService := NewService(client)
+		if err := liveService.SetResourceTags(d, ""); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudLiveCasterRead(d, meta)
+	return resourceLiveCasterRead(d, meta)
 }
 
-func resourceAliCloudLiveCasterDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceLiveCasterDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteCaster"
@@ -345,12 +350,12 @@ func resourceAliCloudLiveCasterDelete(d *schema.ResourceData, meta interface{}) 
 	request["CasterId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("live", "2016-11-01", action, query, request, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -358,13 +363,13 @@ func resourceAliCloudLiveCasterDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

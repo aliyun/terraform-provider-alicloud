@@ -1,4 +1,4 @@
-package alicloud
+package live
 
 import (
 	"fmt"
@@ -7,16 +7,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudLiveDomain() *schema.Resource {
+func ResourceLiveDomain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudLiveDomainCreate,
-		Read:   resourceAliCloudLiveDomainRead,
-		Update: resourceAliCloudLiveDomainUpdate,
-		Delete: resourceAliCloudLiveDomainDelete,
+		Create: resourceLiveDomainCreate,
+		Read:   resourceLiveDomainRead,
+		Update: resourceLiveDomainUpdate,
+		Delete: resourceLiveDomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -58,19 +64,19 @@ func resourceAliCloudLiveDomain() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"domestic", "overseas", "global"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"domestic", "overseas", "global"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 		},
 	}
 }
 
-func resourceAliCloudLiveDomainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceLiveDomainCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -95,11 +101,11 @@ func resourceAliCloudLiveDomainCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["Region"] = d.Get("region")
 	request["LiveDomainType"] = d.Get("domain_type")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"LockFail"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"LockFail"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -107,35 +113,35 @@ func resourceAliCloudLiveDomainCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_live_domain", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_live_domain", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["DomainName"]))
 
-	liveServiceV2 := LiveServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, liveServiceV2.LiveDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
+	liveService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, liveService.LiveDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudLiveDomainUpdate(d, meta)
+	return resourceLiveDomainUpdate(d, meta)
 }
 
-func resourceAliCloudLiveDomainRead(d *schema.ResourceData, meta interface{}) error {
+func resourceLiveDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	liveServiceV2 := LiveServiceV2{client}
+	liveService := NewService(client)
 
-	objectRaw, err := liveServiceV2.DescribeLiveDomain(d.Id())
+	objectRaw, err := liveService.DescribeLiveDomain(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_live_domain DescribeLiveDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["GmtCreated"])
@@ -146,23 +152,23 @@ func resourceAliCloudLiveDomainRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("status", objectRaw["DomainStatus"])
 	d.Set("domain_name", objectRaw["DomainName"])
 
-	objectRaw, err = liveServiceV2.DescribeDomainListLiveTagResources(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	objectRaw, err = liveService.DescribeDomainListLiveTagResources(d.Id())
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	tagResourceRawObj, _ := jsonpath.Get("$.TagResources.TagResource[*]", objectRaw)
 	tagResourceRaw := make([]interface{}, 0)
 	if tagResourceRawObj != nil {
-		tagResourceRaw = convertToInterfaceArray(tagResourceRawObj)
+		tagResourceRaw = convert.ConvertToInterfaceArray(tagResourceRawObj)
 	}
 
-	d.Set("tags", tagsToMap(tagResourceRaw))
+	d.Set("tags", tags.TagsToMap(tagResourceRaw))
 
 	return nil
 }
 
-func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceLiveDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -170,8 +176,8 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	update := false
 	d.Partial(true)
 
-	liveServiceV2 := LiveServiceV2{client}
-	objectRaw, _ := liveServiceV2.DescribeLiveDomain(d.Id())
+	liveService := NewService(client)
+	objectRaw, _ := liveService.DescribeLiveDomain(d.Id())
 
 	if d.HasChange("status") {
 		var err error
@@ -179,7 +185,7 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 
 		currentStatus, err := jsonpath.Get("DomainStatus", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "DomainStatus", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "DomainStatus", objectRaw)
 		}
 		if fmt.Sprint(currentStatus) != target {
 			if target == "online" {
@@ -188,11 +194,11 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 				query = make(map[string]interface{})
 				request["DomainName"] = d.Id()
 
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -200,14 +206,14 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				liveServiceV2 := LiveServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, liveServiceV2.LiveDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
+				liveService := NewService(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"online"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, liveService.LiveDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -217,11 +223,11 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 				query = make(map[string]interface{})
 				request["DomainName"] = d.Id()
 
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -229,14 +235,14 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				liveServiceV2 := LiveServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"offline"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, liveServiceV2.LiveDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"online"}))
+				liveService := NewService(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"offline"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, liveService.LiveDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{"online"}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -254,11 +260,11 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -266,9 +272,9 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -282,11 +288,11 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["Property"] = convertLiveDomainPropertyRequest(d.Get("scope").(string))
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -294,23 +300,23 @@ func resourceAliCloudLiveDomainUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		liveServiceV2 := LiveServiceV2{client}
-		if err := liveServiceV2.SetLiveResourceTags(d, "DOMAIN"); err != nil {
-			return WrapError(err)
+		liveService := NewService(client)
+		if err := liveService.SetLiveResourceTags(d, "DOMAIN"); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudLiveDomainRead(d, meta)
+	return resourceLiveDomainRead(d, meta)
 }
 
-func resourceAliCloudLiveDomainDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceLiveDomainDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteLiveDomain"
@@ -321,11 +327,11 @@ func resourceAliCloudLiveDomainDelete(d *schema.ResourceData, meta interface{}) 
 	request = make(map[string]interface{})
 	request["DomainName"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("live", "2016-11-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -333,19 +339,19 @@ func resourceAliCloudLiveDomainDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	liveServiceV2 := LiveServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 2*time.Second, liveServiceV2.LiveDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
+	liveService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 2*time.Second, liveService.LiveDomainStateRefreshFunc(d.Id(), "DomainStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
