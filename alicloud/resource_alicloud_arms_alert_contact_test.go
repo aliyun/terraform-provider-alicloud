@@ -69,7 +69,8 @@ func testSweepArmsAlertContact(region string) error {
 		}
 		resp, err := jsonpath.Get("$.PageBean.Contacts", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PageBean.Contacts", response)
+			log.Printf("[ERROR] Failed to parse $.PageBean.Contacts (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
