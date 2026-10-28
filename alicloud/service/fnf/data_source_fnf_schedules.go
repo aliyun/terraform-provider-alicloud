@@ -1,4 +1,4 @@
-package alicloud
+package fnf
 
 import (
 	"fmt"
@@ -6,13 +6,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudFnfSchedules() *schema.Resource {
+func DataSourceFnfSchedules() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudFnfSchedulesRead,
+		Read: dataSourceFnfSchedulesRead,
 		Schema: map[string]*schema.Schema{
 			"flow_name": {
 				Type:     schema.TypeString,
@@ -86,7 +89,7 @@ func dataSourceAlicloudFnfSchedules() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudFnfSchedulesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceFnfSchedulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListSchedules"
@@ -100,7 +103,7 @@ func dataSourceAlicloudFnfSchedulesRead(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		scheduleNameRegex = r
 	}
@@ -119,13 +122,13 @@ func dataSourceAlicloudFnfSchedulesRead(d *schema.ResourceData, meta interface{}
 	for {
 		response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_schedules", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_fnf_schedules", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Schedules", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Schedules", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Schedules", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -167,20 +170,20 @@ func dataSourceAlicloudFnfSchedulesRead(d *schema.ResourceData, meta interface{}
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("schedules", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

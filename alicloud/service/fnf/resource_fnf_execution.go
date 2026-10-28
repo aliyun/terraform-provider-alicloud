@@ -1,4 +1,4 @@
-package alicloud
+package fnf
 
 import (
 	"fmt"
@@ -6,17 +6,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudFnFExecution() *schema.Resource {
+func ResourceFnFExecution() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudFnFExecutionCreate,
-		Read:   resourceAlicloudFnFExecutionRead,
-		Update: resourceAlicloudFnFExecutionUpdate,
-		Delete: resourceAlicloudFnFExecutionDelete,
+		Create: resourceFnFExecutionCreate,
+		Read:   resourceFnFExecutionRead,
+		Update: resourceFnFExecutionUpdate,
+		Delete: resourceFnFExecutionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -41,7 +44,7 @@ func resourceAlicloudFnFExecution() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -55,7 +58,7 @@ func resourceAlicloudFnFExecution() *schema.Resource {
 	}
 }
 
-func resourceAlicloudFnFExecutionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceFnFExecutionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "StartExecution"
@@ -68,11 +71,11 @@ func resourceAlicloudFnFExecutionCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("input"); ok {
 		request["Input"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("fnf", "2019-03-15", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -80,35 +83,35 @@ func resourceAlicloudFnFExecutionCreate(d *schema.ResourceData, meta interface{}
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fnf_execution", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fnf_execution", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["FlowName"], ":", request["ExecutionName"]))
-	fnfService := FnfService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, fnfService.FnFExecutionStateRefreshFunc(d.Id(), []string{}))
+	fnfService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, fnfService.FnFExecutionStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudFnFExecutionUpdate(d, meta)
+	return resourceFnFExecutionUpdate(d, meta)
 }
-func resourceAlicloudFnFExecutionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceFnFExecutionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fnfService := FnfService{client}
+	fnfService := NewService(client)
 	object, err := fnfService.DescribeFnFExecution(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_fnf_execution fnfService.DescribeFnFExecution Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("execution_name", parts[1])
 	d.Set("flow_name", parts[0])
@@ -116,21 +119,21 @@ func resourceAlicloudFnFExecutionRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("status", object["Status"])
 	return nil
 }
-func resourceAlicloudFnFExecutionUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceFnFExecutionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fnfService := FnfService{client}
+	fnfService := NewService(client)
 	var err error
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Partial(true)
 
 	if d.HasChange("status") {
 		object, err := fnfService.DescribeFnFExecution(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		target := d.Get("status").(string)
 		if object["Status"].(string) != target {
@@ -140,11 +143,11 @@ func resourceAlicloudFnFExecutionUpdate(d *schema.ResourceData, meta interface{}
 					"FlowName":      parts[0],
 				}
 				action := "StopExecution"
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("fnf", "2019-03-15", action, nil, request, false)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -152,21 +155,21 @@ func resourceAlicloudFnFExecutionUpdate(d *schema.ResourceData, meta interface{}
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, fnfService.FnFExecutionStateRefreshFunc(d.Id(), []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, fnfService.FnFExecutionStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudFnFExecutionRead(d, meta)
+	return resourceFnFExecutionRead(d, meta)
 }
-func resourceAlicloudFnFExecutionDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudFnFExecution. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceFnFExecutionDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resourceFnFExecution. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

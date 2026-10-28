@@ -713,12 +713,6 @@ func Provider() *schema.Provider {
 			// file
 			"alicloud_file_crc64_checksum": dataSourceAlicloudFileCRC64Checksum(),
 
-			// fnf
-			"alicloud_fnf_service":    dataSourceAlicloudFnfService(),
-			"alicloud_fnf_flows":      dataSourceAlicloudFnfFlows(),
-			"alicloud_fnf_schedules":  dataSourceAlicloudFnfSchedules(),
-			"alicloud_fnf_executions": dataSourceAlicloudFnFExecutions(),
-
 			// forward
 			"alicloud_forward_entries": dataSourceAlicloudForwardEntries(),
 
@@ -1990,11 +1984,6 @@ func Provider() *schema.Provider {
 			"alicloud_fcv3_alias":               resourceAliCloudFcv3Alias(),
 			"alicloud_fcv3_custom_domain":       resourceAliCloudFcv3CustomDomain(),
 			"alicloud_fcv3_function":            resourceAliCloudFcv3Function(),
-
-			// fnf
-			"alicloud_fnf_flow":      resourceAlicloudFnfFlow(),
-			"alicloud_fnf_schedule":  resourceAlicloudFnfSchedule(),
-			"alicloud_fnf_execution": resourceAlicloudFnFExecution(),
 
 			// forward
 			"alicloud_forward_entry": resourceAliCloudNatGatewayForwardEntry(),

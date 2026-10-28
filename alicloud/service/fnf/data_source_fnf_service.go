@@ -1,4 +1,4 @@
-package alicloud
+package fnf
 
 import (
 	"fmt"
@@ -6,14 +6,17 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudFnfService() *schema.Resource {
+func DataSourceFnfService() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudFnfServiceRead,
+		Read: dataSourceFnfServiceRead,
 
 		Schema: map[string]*schema.Schema{
 			"enable": {
@@ -29,7 +32,7 @@ func dataSourceAlicloudFnfService() *schema.Resource {
 		},
 	}
 }
-func dataSourceAlicloudFnfServiceRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceFnfServiceRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
 		d.SetId("FnfServiceHasNotBeenOpened")
 		d.Set("status", "")
@@ -51,15 +54,15 @@ func dataSourceAlicloudFnfServiceRead(d *schema.ResourceData, meta interface{}) 
 		request["Parameter.1.Value"] = "fnf_intl_public_intl"
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["Parameter.1.Value"] = "fnf_intl_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return retry.RetryableError(err)
@@ -69,14 +72,14 @@ func dataSourceAlicloudFnfServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	})
 
-	addDebug(action, response, nil)
+	logs.AddDebug(action, response, nil)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILED", "PURCHASE_QUANTITY_LIMIT", "ORDER.OPEND"}) {
+		if errs.IsExpectedErrors(err, []string{"SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILED", "PURCHASE_QUANTITY_LIMIT", "ORDER.OPEND"}) {
 			d.SetId("FnfServiceHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
 		}
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fnf_service", "CreateInstance", AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_fnf_service", "CreateInstance", errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if response["Data"] != nil {

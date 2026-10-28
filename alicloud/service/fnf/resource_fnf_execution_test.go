@@ -1,9 +1,8 @@
-package alicloud
+package fnf_test
 
 import (
 	"fmt"
 	"log"
-	"os"
 	"reflect"
 	"testing"
 
@@ -11,59 +10,58 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fnf"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
+const fnfExecutionResourceId = "alicloud_fnf_execution.default"
+
 func TestAccAlicloudFnFExecution_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_fnf_execution.default"
-	checkoutSupportedRegions(t, true, connectivity.FnFSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudFnFExecutionMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &FnfService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFnFExecution")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfnfexecution%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFnFExecutionBasicDependence0)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfnfexecution%d", fnfTestRegion(), rand)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"input":          `{\"wait\": 600}`,
-					"flow_name":      "${alicloud_fnf_flow.default.name}",
-					"execution_name": name,
-				}),
+				Config: fnfExecutionTestAccDependence(name) + fmt.Sprintf(`
+resource "alicloud_fnf_execution" "default" {
+  input          = "{\"wait\": 600}"
+  flow_name      = alicloud_fnf_flow.default.name
+  execution_name = var.name
+}
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"input":          CHECKSET,
-						"flow_name":      CHECKSET,
-						"execution_name": name,
-					}),
+					resource.TestCheckResourceAttrSet(fnfExecutionResourceId, "input"),
+					resource.TestCheckResourceAttrSet(fnfExecutionResourceId, "flow_name"),
+					resource.TestCheckResourceAttr(fnfExecutionResourceId, "execution_name", name),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "Stopped",
-				}),
+				Config: fnfExecutionTestAccDependence(name) + fmt.Sprintf(`
+resource "alicloud_fnf_execution" "default" {
+  input          = "{\"wait\": 600}"
+  flow_name      = alicloud_fnf_flow.default.name
+  execution_name = var.name
+  status         = "Stopped"
+}
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "Stopped",
-					}),
+					resource.TestCheckResourceAttr(fnfExecutionResourceId, "status", "Stopped"),
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            fnfExecutionResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{},
@@ -72,10 +70,8 @@ func TestAccAlicloudFnFExecution_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudFnFExecutionMap0 = map[string]string{}
-
-func AlicloudFnFExecutionBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+func fnfExecutionTestAccDependence(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -119,10 +115,9 @@ resource "alicloud_fnf_flow" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudFnFExecution(t *testing.T) {
-	p := Provider().ResourcesMap
-	checkoutSupportedRegions(t, true, connectivity.FnFSupportRegions)
-	dInit, _ := schema.InternalMap(p["alicloud_fnf_execution"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_fnf_execution"].Schema).Data(nil, nil)
+	resourceSchema := fnf.ResourceFnFExecution()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"input":          "StartExecutionValue",
@@ -138,13 +133,11 @@ func TestUnitAlicloudFnFExecution(t *testing.T) {
 			log.Printf("[ERROR] the field %s setting error", key)
 		}
 	}
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	region := fnfTestRegion()
+	rawClient, err := fnfTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
 	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// DescribeExecution
 		"FlowName":      "StartExecutionValue",
@@ -157,32 +150,34 @@ func TestUnitAlicloudFnFExecution(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_fnf_execution", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_fnf_execution", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			for k, v := range operationMockResponse {
+				ReadMockResponse[k] = v
+			}
 		}
 		return ReadMockResponse, nil
 	}
 
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewFnfClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudFnFExecutionCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -207,14 +202,14 @@ func TestUnitAlicloudFnFExecution(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudFnFExecutionCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_fnf_execution"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -226,26 +221,23 @@ func TestUnitAlicloudFnFExecution(t *testing.T) {
 	}
 
 	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewFnfClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudFnFExecutionUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// StopExecution
 	attributesDiff := map[string]interface{}{
 		"status": "Stopped",
 	}
-	diff, err := newInstanceDiff("alicloud_fnf_execution", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_fnf_execution"].Schema).Data(dInit.State(), diff)
+	diff := fnfStringAttrDiff(resourceSchema, attributes, attributesDiff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// DescribeExecution Response
 		"Status": "Stopped",
@@ -268,14 +260,14 @@ func TestUnitAlicloudFnFExecution(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudFnFExecutionUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_fnf_execution"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -307,7 +299,7 @@ func TestUnitAlicloudFnFExecution(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudFnFExecutionRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -318,7 +310,6 @@ func TestUnitAlicloudFnFExecution(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudFnFExecutionDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	assert.Nil(t, err)
-
 }
