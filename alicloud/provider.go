@@ -1216,7 +1216,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_ipv4_gateways":                       dataSourceAlicloudVpcIpv4Gateways(),
 			"alicloud_vpc_prefix_lists":                        dataSourceAlicloudVpcPrefixLists(),
 			"alicloud_vpc_public_ip_address_pools":             dataSourceAlicloudVpcPublicIpAddressPools(),
-			"alicloud_vpc_peer_connections":                    dataSourceAlicloudVpcPeerConnections(),
 			"alicloud_vpc_public_ip_address_pool_cidr_blocks":  dataSourceAlicloudVpcPublicIpAddressPoolCidrBlocks(),
 			"alicloud_vpc_flow_log_service":                    dataSourceAliCloudVpcFlowLogService(),
 			"alicloud_vpc_ipam_ipams":                          dataSourceAliCloudVpcIpamIpams(),
@@ -2700,11 +2699,9 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_prefix_list":                             resourceAliCloudVpcPrefixList(),
 			"alicloud_vpc_ipv4_cidr_block":                         resourceAliCloudVpcIpv4CidrBlock(),
 			"alicloud_vpc_public_ip_address_pool":                  resourceAliCloudVpcPublicIpAddressPool(),
-			"alicloud_vpc_peer_connection":                         resourceAliCloudVpcPeerPeerConnection(),
 			"alicloud_vpc_public_ip_address_pool_cidr_block":       resourceAliCloudVpcPublicIpAddressPoolCidrBlock(),
 			"alicloud_vpc_network_acl_attachment":                  resourceAliCloudVpcNetworkAclAttachment(),
 			"alicloud_vpc_gateway_route_table_attachment":          resourceAliCloudVpcGatewayRouteTableAttachment(),
-			"alicloud_vpc_peer_connection_accepter":                resourceAliCloudVpcPeerPeerConnectionAccepter(),
 
 			// vpn
 			"alicloud_vpn_gateway_enhanced_vpn_gateway": resourceAliCloudVpnGatewayEnhancedVpnGateway(),

@@ -1,30 +1,33 @@
-package alicloud
+package vpcpeer_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcpeer"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // Case 1
 func TestAccAliCloudVpcPeerConnectionAccepter_basic2(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_vpc_peer_connection_accepter.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcPeerConnectionAccepterMap0)
-	testAccCheck := ra.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcPeerConnectionAccepterBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcPeerConnectionAccepterMap0)
+	testAccCheck := ra.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcPeerConnectionAccepterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactoriesAlternate(),
+		ProviderFactories: acctest.SDKProviderFactoriesAlternate(),
 		CheckDestroy:      testAccCheckVPCPeerConnectionAccepterDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -34,7 +37,7 @@ func TestAccAliCloudVpcPeerConnectionAccepter_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id": CHECKSET,
+						"instance_id": acctest.CHECKSET,
 						"link_type":   "Gold",
 					}),
 				),
@@ -67,7 +70,7 @@ func TestAccAliCloudVpcPeerConnectionAccepter_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -152,17 +155,17 @@ resource "alicloud_vpc_peer_connection" "default" {
 var AlicloudVpcPeerConnectionAccepterMap0 = map[string]string{}
 
 func testAccCheckVPCPeerConnectionAccepterDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	vpcPeerService := VpcPeerService{client}
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	service := vpcpeer.NewService(client)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_vpc_peer_connection_accepter" {
 			continue
 		}
 
-		_, err := vpcPeerService.DescribeVpcPeerConnection(rs.Primary.ID)
+		_, err := service.DescribeVpcPeerConnection(rs.Primary.ID)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				continue
 			}
 			return err
@@ -188,16 +191,16 @@ func testAccCheckVPCPeerConnectionAccepterDestroyWithProviders(providers *[]*sch
 
 func testAccCheckVPCPeerConnectionAccepterDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
 	client := provider.Meta().(*connectivity.AliyunClient)
-	vpcPeerService := VpcPeerService{client}
+	service := vpcpeer.NewService(client)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_vpc_peer_connection_accepter" {
 			continue
 		}
 
-		_, err := vpcPeerService.DescribeVpcPeerConnection(rs.Primary.ID)
+		_, err := service.DescribeVpcPeerConnection(rs.Primary.ID)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				continue
 			}
 			return err
