@@ -729,7 +729,15 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("description") {
+	// description is also passed to CreateFileSystem, but for a newly created
+	// resource the value read back from DescribeFileSystems can be empty (the
+	// Create payload does not reliably persist Description the way an explicit
+	// ModifyFileSystem does). Mirror the Update path by persisting description
+	// via ModifyFileSystem even on the Create-tail Update so that Read returns
+	// the configured value and the second plan shows no description drift.
+	// description remains Optional (governable); the ModifyFileSystem call is
+	// only issued when description is present in the config (d.HasChange).
+	if d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
 	}

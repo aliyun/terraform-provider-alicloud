@@ -245,6 +245,110 @@ func TestAccAliCloudNasFileSystem_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudNasFileSystem_description(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.NasClassicSupportedRegions)
+	resourceId := "alicloud_nas_file_system.default"
+	ra := resourceAttrInit(resourceId, AliCloudNasFileSystem0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	// description is asserted directly via resource.TestCheckResourceAttr and the
+	// second step is PlanOnly; the CHECKSET map from resourceAttrMapUpdateSet is
+	// not used here, so it is not initialized (an unused value would fail go vet).
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudNasFileSystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNasFileSystemBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// IDRefreshName is intentionally omitted: the ID-only refresh equivalence
+		// check would flag resource_group_id (and empty-collection defaults) which
+		// the NAS server populates asynchronously seconds after CreateFileSystem
+		// — the same async fill that, before the fix, also left description empty.
+		// description drift is verified directly by the PlanOnly step below, which
+		// is what the routePlan requires. No existing nas_file_system ACC test sets
+		// IDRefreshName.
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// description set at Create time together with recycle_bin and nfs_acl,
+				// mirroring the NAS block of TestAccAliCloudHbrPolicyBinding_basic6226.
+				// After the fix description is persisted via ModifyFileSystem on the
+				// Create-tail Update and read back, so the post-apply plan is empty.
+				Config: testAccConfig(map[string]interface{}{
+					"protocol_type":    "NFS",
+					"storage_type":     "Capacity",
+					"file_system_type": "standard",
+					"description":      name,
+					"zone_id":          "${data.alicloud_nas_zones.standard.zones.0.zone_id}",
+					"recycle_bin": []map[string]interface{}{
+						{
+							"status":        "Enable",
+							"reserved_days": "10",
+						},
+					},
+					"nfs_acl": []map[string]interface{}{
+						{
+							"enabled": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					// description is the drift attribute under test; assert it directly
+					// rather than via the CHECKSET framework, which also asserts
+					// resource_group_id and is flaky because ResourceGroupId is
+					// populated asynchronously (seconds after CreateFileSystem).
+					resource.TestCheckResourceAttr(resourceId, "description", name),
+				),
+			},
+			{
+				// After the fix, description is persisted via ModifyFileSystem on the
+				// Create-tail Update and read back, so re-applying the same config
+				// produces an empty plan (no description drift).
+				Config: testAccConfig(map[string]interface{}{
+					"protocol_type":    "NFS",
+					"storage_type":     "Capacity",
+					"file_system_type": "standard",
+					"description":      name,
+					"zone_id":          "${data.alicloud_nas_zones.standard.zones.0.zone_id}",
+					"recycle_bin": []map[string]interface{}{
+						{
+							"status":        "Enable",
+							"reserved_days": "10",
+						},
+					},
+					"nfs_acl": []map[string]interface{}{
+						{
+							"enabled": "true",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				// Update description; must persist via ModifyFileSystem and read back.
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "-updated",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "description", name+"-updated"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"snapshot_id"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudNasFileSystem_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.NasClassicSupportedRegions)
