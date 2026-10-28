@@ -20,6 +20,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/alidns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/aligreen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/alikafka"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/amqp"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/amqpopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apig"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/arms"
@@ -190,6 +191,7 @@ var servicePackages = []conns.ServicePackage{
 	alidns.ServicePackage(),
 	aligreen.ServicePackage(),
 	alikafka.ServicePackage(),
+	amqp.ServicePackage(),
 	amqpopen.ServicePackage(),
 	apig.ServicePackage(),
 	arms.ServicePackage(),
