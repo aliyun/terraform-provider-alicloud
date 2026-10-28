@@ -8,6 +8,12 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Oos",
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_oos_inventory_items",
+				Factory:  NewInventoryItemsDataSource,
+			},
+		},
 		EphemeralResources: []conns.EphemeralResource{
 			{
 				TypeName: "alicloud_oos_secret_parameter",
