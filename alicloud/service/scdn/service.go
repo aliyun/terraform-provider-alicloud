@@ -1,4 +1,4 @@
-package alicloud
+package scdn
 
 import (
 	"encoding/json"
@@ -7,26 +7,39 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type ScdnService struct {
+// Service wraps the SCDN API calls used by the resources and data sources of
+// this package. The root alicloud package cannot be imported from a service
+// package, so the encapsulated calls live here with the resources.
+type Service struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *ScdnService) DescribeScdnDomainCertificateInfo(id string) (object map[string]interface{}, err error) {
+// NewService is the exported constructor: the client field stays unexported,
+// so callers outside the package (including the acceptance tests) build
+// values with it.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+func (s *Service) DescribeScdnDomainCertificateInfo(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeScdnDomainCertificateInfo"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -34,26 +47,26 @@ func (s *ScdnService) DescribeScdnDomainCertificateInfo(id string) (object map[s
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.CertInfos.CertInfo", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CertInfos.CertInfo", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.CertInfos.CertInfo", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SCDN", id), errs.NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DomainName"]) != id {
-			return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("SCDN", id), errs.NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
 
-func (s *ScdnService) convertFunctionsToString(v []interface{}) (string, error) {
+func (s *Service) convertFunctionsToString(v []interface{}) (string, error) {
 	arrayMaps := make([]interface{}, len(v))
 	for i, vv := range v {
 		item := vv.(map[string]interface{})
@@ -79,23 +92,23 @@ func (s *ScdnService) convertFunctionsToString(v []interface{}) (string, error) 
 	}
 	maps, err := json.Marshal(arrayMaps)
 	if err != nil {
-		return "", WrapError(err)
+		return "", errs.WrapError(err)
 	}
 	return string(maps), nil
 }
 
-func (s *ScdnService) DescribeScdnDomain(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeScdnDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeScdnDomainDetail"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -103,53 +116,53 @@ func (s *ScdnService) DescribeScdnDomain(id string) (object map[string]interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("SCDN:Domain", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		if errs.IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("SCDN:Domain", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.DomainDetail", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainDetail", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DomainDetail", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
 }
 
-func (s *ScdnService) ScdnDomainStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) ScdnDomainStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeScdnDomain(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if fmt.Sprint(object["DomainStatus"]) == failState {
-				return object, fmt.Sprint(object["DomainStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["DomainStatus"])))
+				return object, fmt.Sprint(object["DomainStatus"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["DomainStatus"])))
 			}
 		}
 		return object, fmt.Sprint(object["DomainStatus"]), nil
 	}
 }
 
-func (s *ScdnService) DescribeScdnCertificateList(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeScdnCertificateList(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeScdnCertificateList"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -157,37 +170,37 @@ func (s *ScdnService) DescribeScdnCertificateList(id string) (object map[string]
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.CertificateListModel.CertList.Cert", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CertificateListModel.CertList.Cert", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.CertificateListModel.CertList.Cert", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SCDN", id), errs.NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DomainName"]) != id {
-			return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("SCDN", id), errs.NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
 
-func (s *ScdnService) DescribeScdnDomainCname(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeScdnDomainCname(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeScdnDomainCname"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("scdn", "2017-11-15", action, request, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -195,37 +208,37 @@ func (s *ScdnService) DescribeScdnDomainCname(id string) (object map[string]inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.CnameDatas.Data", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CnameDatas.Data", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.CnameDatas.Data", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SCDN", id), errs.NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DomainName"]) != id {
-			return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("SCDN", id), errs.NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
 
-func (s *ScdnService) DescribeScdnDomainConfigs(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeScdnDomainConfigs(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeScdnDomainConfigs"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -233,37 +246,37 @@ func (s *ScdnService) DescribeScdnDomainConfigs(id string) (object map[string]in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.DomainConfigs.DomainConfig", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainConfigs.DomainConfig", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DomainConfigs.DomainConfig", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SCDN", id), errs.NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DomainName"]) != id {
-			return object, WrapErrorf(NotFoundErr("SCDN", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("SCDN", id), errs.NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
 
-func (s *ScdnService) DescribeScdnDomainDetail(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeScdnDomainDetail(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeScdnDomainDetail"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -271,27 +284,27 @@ func (s *ScdnService) DescribeScdnDomainDetail(id string) (object map[string]int
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("SCDN:Domain", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		if errs.IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("SCDN:Domain", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.DomainDetail", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainDetail", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DomainDetail", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
 }
 
-func (s *ScdnService) DescribeScdnDomainConfig(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeScdnDomainConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
-	parts, err := ParseResourceId(id, 3)
+	parts, err := helper.ParseResourceId(id, 3)
 	if err != nil {
-		err = WrapError(err)
+		err = errs.WrapError(err)
 		return
 	}
 	action := "DescribeScdnDomainConfigs"
@@ -304,40 +317,40 @@ func (s *ScdnService) DescribeScdnDomainConfig(id string) (object map[string]int
 	}
 	response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			err = WrapErrorf(NotFoundErr("ScdnDomainConfig", id), NotFoundMsg, ProviderERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
+			err = errs.WrapErrorf(errs.NotFoundErr("ScdnDomainConfig", id), errs.NotFoundMsg, errs.ProviderERROR)
 			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		return object, err
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	v, err := jsonpath.Get("$.DomainConfigs.DomainConfig", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainConfigs.DomainConfig", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DomainConfigs.DomainConfig", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("DCDN:DomainConfig", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DCDN:DomainConfig", id), errs.NotFoundWithResponse, response)
 	} else if len(v.([]interface{})) > 0 {
 		object = v.([]interface{})[0].(map[string]interface{})
 	}
 	return object, nil
 }
 
-func (s *ScdnService) ScdnDomainConfigStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) ScdnDomainConfigStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeScdnDomainConfig(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if object["Status"].(string) == failState {
-				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+				return object, object["Status"].(string), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, object["Status"].(string)))
 			}
 		}
 		return object, object["Status"].(string), nil

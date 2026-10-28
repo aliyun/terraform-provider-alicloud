@@ -11,7 +11,7 @@ description: |-
 
 Provides a SCDN Domain resource.
 
-For information about SCDN Domain and how to use it, see [What is Domain](https://help.aliyun.com/document_detail/63672.html).
+For information about SCDN Domain and how to use it, see [What is Domain](https://www.alibabacloud.com/help/doc-detail/63672.html).
 
 -> **NOTE:** Available since v1.131.0.
 
@@ -44,46 +44,39 @@ resource "alicloud_scdn_domain" "example" {
 The following arguments are supported:
 
 * `biz_name` - (Optional, Deprecated) Attribute perm has been deprecated and suggest removing it from your template.
-* `cert_infos` - (Optional) Certificate Information. See the following `Block cert_infos`.
+* `cert_infos` - (Optional) Certificate Information. See [`cert_infos`](#cert_infos) below for details.
 * `check_url` - (Optional) The health check url.
 * `domain_name` - (Required, ForceNew) The name of domain.
 * `force_set` - (Optional) Whether to set certificate forcibly.
 * `resource_group_id` - (Optional, Computed) The resource group id.
-* `sources` - (Required) the Origin Server Information. See the following `Block sources`.
+* `sources` - (Required) The Origin Server Information. See [`sources`](#sources) below for details.
 * `status` - (Optional, Computed) The status of the resource. Valid values: `offline`, `online`.
 
-#### Block sources
+### `sources`
 
-The sources supports the following: 
+The `sources` block supports the following:
 
 * `content` - (Required) The Back-to-Source Address.
-* `enabled` - (Optional) The source status. Valid values: online, offline.
-* `port` - (Required) Port.
+* `enabled` - (Optional) The source status. Valid values: `online`, `offline`.
+* `port` - (Required, Int) Port.
 * `priority` - (Required) Priority.
-* `type` - (Required) The Origin Server Type. Valid Values: 
-  * ipaddr: IP Source Station 
-  * domain: the Domain Name 
-  * oss: OSS Bucket as a Source Station.
-  
-#### Block function_args
+* `type` - (Required) The Origin Server Type. Valid values:
+  * `ipaddr`: IP Source Station.
+  * `domain`: the Domain Name.
+  * `oss`: OSS Bucket as a Source Station.
 
-The function_args supports the following: 
+### `cert_infos`
 
-* `arg_name` - (Optional) The Configuration Name.
-* `arg_value` - (Optional) and Leave the Configuration Values.
+The `cert_infos` block supports the following:
 
-#### Block cert_infos
-
-The cert_infos supports the following: 
-
-* `cert_name` - (Optional) If You Enable HTTPS Here Certificate Name.
-* `cert_type` - (Optional) Certificate Type. Value Range: 
-  * upload: Certificate
-  * cas: Certificate Authority Certificate. 
-  * free: Free Certificate.
-* `ssl_pri` - (Optional) Private Key. Do Not Enable Certificate without Entering a User Name and Configure Certificates Enter Private Key.
-* `ssl_protocol` - (Optional) Whether to Enable SSL Certificate. Valid Values: on, off. Valid values: `on`, `off`.
-* `ssl_pub` - (Optional) If You Enable HTTPS Here Key.
+* `cert_name` - (Optional) The certificate name when HTTPS is enabled.
+* `cert_type` - (Optional) Certificate Type. Valid values:
+  * `upload`: Certificate.
+  * `cas`: Certificate Authority Certificate.
+  * `free`: Free Certificate.
+* `ssl_pri` - (Optional) Private Key. Required when uploading a certificate.
+* `ssl_protocol` - (Optional) Whether to enable SSL certificate. Valid values: `on`, `off`.
+* `ssl_pub` - (Optional) The public key when HTTPS is enabled.
 
 ## Attributes Reference
 

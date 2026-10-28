@@ -1050,7 +1050,6 @@ func Provider() *schema.Provider {
 			"alicloud_sag_acls": dataSourceAlicloudSagAcls(),
 
 			// scdn
-			"alicloud_scdn_domains": dataSourceAlicloudScdnDomains(),
 
 			// sddp
 			"alicloud_sddp_rules":       dataSourceAlicloudSddpRules(),
@@ -2431,8 +2430,6 @@ func Provider() *schema.Provider {
 			"alicloud_sag_client_user": resourceAlicloudSagClientUser(),
 
 			// scdn
-			"alicloud_scdn_domain":        resourceAlicloudScdnDomain(),
-			"alicloud_scdn_domain_config": resourceAlicloudScdnDomainConfig(),
 
 			// sddp
 			"alicloud_sddp_rule":       resourceAliCloudSddpRule(),
