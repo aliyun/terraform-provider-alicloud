@@ -421,22 +421,6 @@ func Provider() *schema.Provider {
 			"alicloud_config_aggregate_deliveries":       dataSourceAlicloudConfigAggregateDeliveries(),
 
 			// cr
-			"alicloud_cr_artifact_subscription_rules": dataSourceAliCloudCrArtifactSubscriptionRules(),
-			"alicloud_cr_artifact_lifecycle_rules":    dataSourceAliCloudCrArtifactLifecycleRules(),
-			"alicloud_cr_namespaces":                  dataSourceAlicloudCRNamespaces(),
-			"alicloud_cr_repos":                       dataSourceAlicloudCRRepos(),
-			"alicloud_cr_ee_instances":                dataSourceAlicloudCrEEInstances(),
-			"alicloud_cr_ee_namespaces":               dataSourceAlicloudCrEENamespaces(),
-			"alicloud_cr_ee_repos":                    dataSourceAliCloudCrEERepos(),
-			"alicloud_cr_ee_sync_rules":               dataSourceAlicloudCrEESyncRules(),
-			"alicloud_cr_service":                     dataSourceAlicloudCrService(),
-			"alicloud_cr_endpoint_acl_policies":       dataSourceAlicloudCrEndpointAclPolicies(),
-			"alicloud_cr_endpoint_acl_service":        dataSourceAlicloudCrEndpointAclService(),
-			"alicloud_cr_internet_endpoint":           dataSourceAlicloudCrInternetEndpoint(),
-			"alicloud_cr_chart_namespaces":            dataSourceAlicloudCrChartNamespaces(),
-			"alicloud_cr_chart_repositories":          dataSourceAlicloudCrChartRepositories(),
-			"alicloud_cr_chains":                      dataSourceAlicloudCrChains(),
-			"alicloud_cr_vpc_endpoint_linked_vpcs":    dataSourceAlicloudCrVpcEndpointLinkedVpcs(),
 
 			// cs
 			"alicloud_cs_clusters":                       dataSourceAliCloudAckClusters(),
@@ -1570,23 +1554,6 @@ func Provider() *schema.Provider {
 			"alicloud_copy_image": resourceAliCloudImageCopy(),
 
 			// cr
-			"alicloud_cr_instance_customized_domain":  resourceAliCloudCrInstanceCustomizedDomain(),
-			"alicloud_cr_artifact_subscription_rule":  resourceAliCloudCrArtifactSubscriptionRule(),
-			"alicloud_cr_internet_endpoint":           resourceAlicloudCrInternetEndpoint(),
-			"alicloud_cr_artifact_lifecycle_rule":     resourceAliCloudCrArtifactLifecycleRule(),
-			"alicloud_cr_storage_domain_routing_rule": resourceAliCloudCrStorageDomainRoutingRule(),
-			"alicloud_cr_scan_rule":                   resourceAliCloudCrScanRule(),
-			"alicloud_cr_namespace":                   resourceAlicloudCRNamespace(),
-			"alicloud_cr_repo":                        resourceAlicloudCRRepo(),
-			"alicloud_cr_ee_instance":                 resourceAliCloudCrInstance(),
-			"alicloud_cr_ee_namespace":                resourceAliCloudCrEENamespace(),
-			"alicloud_cr_ee_repo":                     resourceAliCloudCrEERepo(),
-			"alicloud_cr_ee_sync_rule":                resourceAliCloudCrRepoSyncRule(),
-			"alicloud_cr_endpoint_acl_policy":         resourceAlicloudCrEndpointAclPolicy(),
-			"alicloud_cr_chart_namespace":             resourceAlicloudCrChartNamespace(),
-			"alicloud_cr_chart_repository":            resourceAlicloudCrChartRepository(),
-			"alicloud_cr_chain":                       resourceAlicloudCrChain(),
-			"alicloud_cr_vpc_endpoint_linked_vpc":     resourceAlicloudCrVpcEndpointLinkedVpc(),
 
 			// cs
 			"alicloud_cs_kubernetes_policy_instance": resourceAliCloudCSKubernetesPolicyInstance(),
