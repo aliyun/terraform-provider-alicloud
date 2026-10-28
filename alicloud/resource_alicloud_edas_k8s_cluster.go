@@ -28,9 +28,14 @@ func resourceAlicloudEdasK8sCluster() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			// Computed: Read populates namespace_id from the EDAS GetCluster
+			// RegionId. Marking it Computed suppresses the persistent diff that
+			// otherwise forces recreation when users omit namespace_id (the value
+			// is read back from the server rather than supplied in config).
 			"namespace_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"cluster_name": {
