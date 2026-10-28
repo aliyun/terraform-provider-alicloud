@@ -68,7 +68,8 @@ func testSweepEipAddress(region string) error {
 		}
 		resp, err := jsonpath.Get("$.EipAddresses.EipAddress", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.EipAddresses.EipAddress", response)
+			log.Printf("[ERROR] Failed to parse $.EipAddresses.EipAddress (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
