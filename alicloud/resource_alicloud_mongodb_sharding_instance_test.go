@@ -389,8 +389,10 @@ func TestAccAliCloudMongoDBShardingInstance_securityIpGroups(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version": "4.2",
-					"vswitch_id":     "${alicloud_vswitch.default.id}",
+					"engine_version":              "4.2",
+					"vswitch_id":                  "${alicloud_vswitch.default.id}",
+					"account_password_wo":         "YourPassword123!",
+					"account_password_wo_version": 1,
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "dds.mongos.mid",
@@ -425,7 +427,8 @@ func TestAccAliCloudMongoDBShardingInstance_securityIpGroups(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_ip_groups.#": "2",
+						"security_ip_groups.#":        "2",
+						"account_password_wo_version": "1",
 					}),
 				),
 			},
@@ -456,10 +459,34 @@ func TestAccAliCloudMongoDBShardingInstance_securityIpGroups(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password_wo":         "YourPassword123!Update",
+					"account_password_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password":            "YourPassword123!password",
+					"account_password_wo":         REMOVEKEY,
+					"account_password_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password":            "YourPassword123!password",
+						"account_password_wo_version": REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "order_type", "parameters"},
+				ImportStateVerifyIgnore: []string{"account_password", "account_password_wo", "account_password_wo_version", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "order_type", "parameters"},
 			},
 		},
 	})

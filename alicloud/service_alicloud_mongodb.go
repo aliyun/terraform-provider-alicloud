@@ -819,6 +819,18 @@ func (s *MongoDBService) ResetAccountPassword(d *schema.ResourceData, password s
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
+	if instanceType == "instance" {
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, s.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+	} else {
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, s.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	return err
 }
 
