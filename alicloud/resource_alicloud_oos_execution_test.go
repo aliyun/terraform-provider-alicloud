@@ -47,11 +47,13 @@ func testSweepOosExecution(region string) error {
 	for {
 		response, err = client.RpcPost("oos", "2019-06-01", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "testSweepOosExecution", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list OOS Executions: %s", err)
+			break
 		}
 		resp, err := jsonpath.Get("$.Executions", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Executions", response)
+			log.Printf("[ERROR] Failed to parse OOS Executions: %s", err)
+			break
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
