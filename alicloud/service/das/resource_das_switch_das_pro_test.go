@@ -1,33 +1,40 @@
-package alicloud
+package das_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/das"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// SkipTestAccAliCloudDasSwitchDasPro_basic0 remains disabled (Skip prefix
+// preserved from the flat layout). The resource is DEPRECATED since v1.249.0
+// and its ACC was already skipped pre-migration; the migration does not
+// re-enable it. Kept compiling so the package builds and the known coverage
+// gap stays explicit.
 func SkipTestAccAliCloudDasSwitchDasPro_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_das_switch_das_pro.default"
-	ra := resourceAttrInit(resourceId, AliCloudDasSwitchDasProMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDasSwitchDasProMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return das.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDasSwitchDasPro")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDasSwitchDasPro-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDasSwitchDasProBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDasSwitchDasProBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -37,9 +44,9 @@ func SkipTestAccAliCloudDasSwitchDasPro_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":   CHECKSET,
+						"instance_id":   acctest.CHECKSET,
 						"sql_retention": "30",
-						"user_id":       CHECKSET,
+						"user_id":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -53,7 +60,7 @@ func SkipTestAccAliCloudDasSwitchDasPro_basic0(t *testing.T) {
 }
 
 var AliCloudDasSwitchDasProMap0 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AliCloudDasSwitchDasProBasicDependence0(name string) string {
@@ -95,6 +102,7 @@ func AliCloudDasSwitchDasProBasicDependence0(name string) string {
   		db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
   		vswitch_id    = alicloud_vswitch.default.id
   		description   = var.name
+  		encrypt_new_tables = "OFF"
 	}
 `, name)
 }
