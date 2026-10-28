@@ -106,6 +106,23 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"scc_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
+			"polar_scc_wait_timeout": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"polar_scc_timeout_action": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "2"}, false),
+			},
 		},
 	}
 }
@@ -138,6 +155,12 @@ func resourceAlicloudPolarDBEndpointCreate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		request.EndpointConfig = string(endpointConfig)
+	}
+	if polarSccWaitTimeout, ok := d.GetOk("polar_scc_wait_timeout"); ok {
+		request.PolarSccWaitTimeout = polarSccWaitTimeout.(string)
+	}
+	if polarSccTimeoutAction, ok := d.GetOk("polar_scc_timeout_action"); ok {
+		request.PolarSccTimeoutAction = polarSccTimeoutAction.(string)
 	}
 
 	enpoints, err := polarDBService.DescribePolarDBInstanceNetInfo(clusterId)
@@ -216,6 +239,20 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("auto_add_new_nodes", autoAddNewNodes)
 	d.Set("read_write_mode", readWriteMode)
+	if err := d.Set("scc_mode", strings.ToLower(object.SccMode)); err != nil {
+		return WrapError(err)
+	}
+	// Keep the configured value when the API omits these optional SCC settings.
+	if object.PolarSccWaitTimeout != "" {
+		if err := d.Set("polar_scc_wait_timeout", object.PolarSccWaitTimeout); err != nil {
+			return WrapError(err)
+		}
+	}
+	if object.PolarSccTimeoutAction != "" {
+		if err := d.Set("polar_scc_timeout_action", object.PolarSccTimeoutAction); err != nil {
+			return WrapError(err)
+		}
+	}
 
 	if err = polarDBService.RefreshEndpointConfig(d); err != nil {
 		return WrapError(err)
@@ -287,7 +324,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 	dbClusterId := parts[0]
 	dbEndpointId := parts[1]
 
-	if d.HasChanges("nodes", "read_write_mode", "auto_add_new_nodes", "endpoint_config", "db_endpoint_description") {
+	if d.HasChanges("nodes", "read_write_mode", "auto_add_new_nodes", "endpoint_config", "db_endpoint_description", "scc_mode", "polar_scc_wait_timeout", "polar_scc_timeout_action") {
 		modifyEndpointRequest := polardb.CreateModifyDBClusterEndpointRequest()
 		modifyEndpointRequest.RegionId = client.RegionId
 		modifyEndpointRequest.DBClusterId = dbClusterId
@@ -319,6 +356,21 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 		if d.HasChange("db_endpoint_description") {
 			modifyEndpointRequest.DBEndpointDescription = d.Get("db_endpoint_description").(string)
 			configItem["DBEndpointDescription"] = d.Get("db_endpoint_description").(string)
+		}
+		if d.HasChange("scc_mode") {
+			sccMode := d.Get("scc_mode").(string)
+			modifyEndpointRequest.SccMode = sccMode
+			configItem["SccMode"] = sccMode
+		}
+		if d.HasChange("polar_scc_wait_timeout") {
+			polarSccWaitTimeout := d.Get("polar_scc_wait_timeout").(string)
+			modifyEndpointRequest.PolarSccWaitTimeout = polarSccWaitTimeout
+			configItem["PolarSccWaitTimeout"] = polarSccWaitTimeout
+		}
+		if d.HasChange("polar_scc_timeout_action") {
+			polarSccTimeoutAction := d.Get("polar_scc_timeout_action").(string)
+			modifyEndpointRequest.PolarSccTimeoutAction = polarSccTimeoutAction
+			configItem["PolarSccTimeoutAction"] = polarSccTimeoutAction
 		}
 		if err := retry.Retry(8*time.Minute, func() *retry.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {

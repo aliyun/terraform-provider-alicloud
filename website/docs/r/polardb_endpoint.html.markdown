@@ -83,6 +83,9 @@ The following arguments are supported:
 * `db_endpoint_description` - (Optional, Available since v1.201.0) The name of the endpoint.
 * `connection_prefix` - (Optional, Available since v1.217.0) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
 * `port` - (Optional, Available since v1.217.0) Port of the specified endpoint. Valid values: 3000 to 5999.
+* `scc_mode` - (Optional, Computed, String, Available since v2.2.0) Specifies whether to enable global consistency (high-performance mode). Valid values: `on`, `off`. Before setting this argument to `on`, set `ConsistLevel` in `endpoint_config` to `0` (eventual consistency).
+* `polar_scc_wait_timeout` - (Optional, Computed, String, Available since v2.2.0) The timeout period of global consistency (high-performance mode).
+* `polar_scc_timeout_action` - (Optional, Computed, String, Available since v2.2.0) The timeout policy of global consistency (high-performance mode). Valid values: `0`, `2`. `0` forwards the timed-out request to the primary node, and `2` degrades the query to a non-consistency read without returning an error.
 
 ## Attributes Reference
 
