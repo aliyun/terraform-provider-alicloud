@@ -1002,9 +1002,6 @@ func Provider() *schema.Provider {
 			"alicloud_ram_access_key_policy": dataSourceAlicloudRamAccessKeyPolicy(),
 			"alicloud_ram_saml_providers":    dataSourceAlicloudRamSamlProviders(),
 
-			// rdc
-			"alicloud_rdc_organizations": dataSourceAlicloudRdcOrganizations(),
-
 			// rds
 			"alicloud_rds_backups":               dataSourceAlicloudRdsBackups(),
 			"alicloud_rds_modify_parameter_logs": dataSourceAlicloudRdsModifyParameterLogs(),
@@ -2391,9 +2388,6 @@ func Provider() *schema.Provider {
 			"alicloud_ram_group_policy_attachment": resourceAliCloudRamGroupPolicyAttachment(),
 			"alicloud_ram_saml_provider":           resourceAliCloudRamSamlProvider(),
 			"alicloud_ram_security_preference":     resourceAliCloudRamSecurityPreference(),
-
-			// rdc
-			"alicloud_rdc_organization": resourceAlicloudRdcOrganization(),
 
 			// rds
 			"alicloud_rds_custom_disk_attachment":       resourceAliCloudRdsCustomDiskAttachment(),

@@ -1,4 +1,4 @@
-package alicloud
+package devopsrdc
 
 import (
 	"fmt"
@@ -6,16 +6,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudRdcOrganization() *schema.Resource {
+func ResourceRdcOrganization() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRdcOrganizationCreate,
-		Read:   resourceAlicloudRdcOrganizationRead,
-		Update: resourceAlicloudRdcOrganizationUpdate,
-		Delete: resourceAlicloudRdcOrganizationDelete,
+		Create: resourceRdcOrganizationCreate,
+		Read:   resourceRdcOrganizationRead,
+		Update: resourceRdcOrganizationUpdate,
+		Delete: resourceRdcOrganizationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -42,7 +45,7 @@ func resourceAlicloudRdcOrganization() *schema.Resource {
 	}
 }
 
-func resourceAlicloudRdcOrganizationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceRdcOrganizationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateDevopsOrganization"
@@ -56,11 +59,11 @@ func resourceAlicloudRdcOrganizationCreate(d *schema.ResourceData, meta interfac
 		request["RealPk"] = v
 	}
 	request["Source"] = d.Get("source")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("devops-rdc", "2020-03-03", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -68,35 +71,38 @@ func resourceAlicloudRdcOrganizationCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rdc_organization", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_rdc_organization", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Object"]))
 
-	return resourceAlicloudRdcOrganizationRead(d, meta)
+	return resourceRdcOrganizationRead(d, meta)
 }
-func resourceAlicloudRdcOrganizationRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceRdcOrganizationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	devopsRdcService := DevopsRdcService{client}
-	object, err := devopsRdcService.DescribeRdcOrganization(d.Id())
+	service := NewService(client)
+	object, err := service.DescribeRdcOrganization(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_rdc_organization devopsRdcService.DescribeRdcOrganization Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_rdc_organization service.DescribeRdcOrganization Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("organization_name", object["Name"])
 	return nil
 }
-func resourceAlicloudRdcOrganizationUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceRdcOrganizationUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudRdcOrganizationRead(d, meta)
+	return resourceRdcOrganizationRead(d, meta)
 }
-func resourceAlicloudRdcOrganizationDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceRdcOrganizationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDevopsOrganization"
 	var response map[string]interface{}
@@ -105,11 +111,11 @@ func resourceAlicloudRdcOrganizationDelete(d *schema.ResourceData, meta interfac
 		"OrgId": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("devops-rdc", "2020-03-03", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -117,12 +123,12 @@ func resourceAlicloudRdcOrganizationDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidOrganization.NotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"InvalidOrganization.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
