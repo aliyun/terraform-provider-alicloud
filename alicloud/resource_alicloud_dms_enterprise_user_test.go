@@ -50,13 +50,15 @@ func testSweepDMSEnterpriseUsers(region string) error {
 	for {
 		response, err = client.RpcPost("dms-enterprise", "2018-11-01", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dms_enterprise_users", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list DMS Enterprise User: %s", err)
+			break
 		}
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.UserList.User", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.UserList.User", response)
+			log.Printf("[ERROR] Failed to parse DMS Enterprise User response: %s", err)
+			break
 		}
 
 		result, _ := resp.([]interface{})
