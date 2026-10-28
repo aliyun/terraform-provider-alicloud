@@ -1,43 +1,44 @@
-package alicloud
+package governance_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudGovernanceBaselineDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	rand := acctest.RandIntRange(1000000, 9999999)
+	acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGovernanceBaselineSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudGovernanceBaselineSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_governance_baseline.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudGovernanceBaselineSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudGovernanceBaselineSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_governance_baseline.default.id}_fake"]`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGovernanceBaselineSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudGovernanceBaselineSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_governance_baseline.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudGovernanceBaselineSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudGovernanceBaselineSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_governance_baseline.default.id}_fake"]`,
 		}),
 	}
 
-	GovernanceBaselineCheckInfo.dataSourceTestCheck(t, rand, idsConf, allConf)
+	GovernanceBaselineCheckInfo.DataSourceTestCheck(t, rand, idsConf, allConf)
 }
 
 var existGovernanceBaselineMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"baselines.#":             "1",
-		"baselines.0.baseline_id": CHECKSET,
+		"baselines.0.baseline_id": acctest.CHECKSET,
 	}
 }
 
@@ -47,10 +48,10 @@ var fakeGovernanceBaselineMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var GovernanceBaselineCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_governance_baselines.default",
-	existMapFunc: existGovernanceBaselineMapFunc,
-	fakeMapFunc:  fakeGovernanceBaselineMapFunc,
+var GovernanceBaselineCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_governance_baselines.default",
+	ExistMapFunc: existGovernanceBaselineMapFunc,
+	FakeMapFunc:  fakeGovernanceBaselineMapFunc,
 }
 
 func testAccCheckAlicloudGovernanceBaselineSourceConfig(rand int, attrMap map[string]string) string {

@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package governance. This file is generated automatically. Please do not modify it manually, thank you!
+package governance
 
 import (
 	"fmt"
@@ -8,14 +8,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAliCloudGovernanceBaselines() *schema.Resource {
+func DataSourceGovernanceBaselines() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudGovernanceBaselineRead,
+		Read: dataSourceGovernanceBaselineRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -61,7 +64,7 @@ func dataSourceAliCloudGovernanceBaselines() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudGovernanceBaselineRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceGovernanceBaselineRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var request map[string]interface{}
@@ -72,22 +75,22 @@ func dataSourceAliCloudGovernanceBaselineRead(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("governance", "2021-01-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	var objects []map[string]interface{}
@@ -95,7 +98,7 @@ func dataSourceAliCloudGovernanceBaselineRead(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		nameRegex = r
 	}
@@ -141,21 +144,21 @@ func dataSourceAliCloudGovernanceBaselineRead(d *schema.ResourceData, meta inter
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("baselines", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

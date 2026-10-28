@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package governance. This file is generated automatically. Please do not modify it manually, thank you!
+package governance
 
 import (
 	"fmt"
@@ -7,16 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudGovernanceBaseline() *schema.Resource {
+func ResourceGovernanceBaseline() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudGovernanceBaselineCreate,
-		Read:   resourceAliCloudGovernanceBaselineRead,
-		Update: resourceAliCloudGovernanceBaselineUpdate,
-		Delete: resourceAliCloudGovernanceBaselineDelete,
+		Create: resourceGovernanceBaselineCreate,
+		Read:   resourceGovernanceBaselineRead,
+		Update: resourceGovernanceBaselineUpdate,
+		Delete: resourceGovernanceBaselineDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -35,7 +39,7 @@ func resourceAliCloudGovernanceBaseline() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"1.0"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"1.0"}, false),
 						},
 						"config": {
 							Type:     schema.TypeString,
@@ -60,7 +64,7 @@ func resourceAliCloudGovernanceBaseline() *schema.Resource {
 	}
 }
 
-func resourceAliCloudGovernanceBaselineCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceGovernanceBaselineCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -91,41 +95,41 @@ func resourceAliCloudGovernanceBaselineCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("governance", "2021-01-20", action, query, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_governance_baseline", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_governance_baseline", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["BaselineId"]))
 
-	return resourceAliCloudGovernanceBaselineRead(d, meta)
+	return resourceGovernanceBaselineRead(d, meta)
 }
 
-func resourceAliCloudGovernanceBaselineRead(d *schema.ResourceData, meta interface{}) error {
+func resourceGovernanceBaselineRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	governanceServiceV2 := GovernanceServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := governanceServiceV2.DescribeGovernanceBaseline(d.Id())
+	objectRaw, err := service.DescribeGovernanceBaseline(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_governance_baseline DescribeGovernanceBaseline Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["BaselineName"] != nil {
@@ -157,7 +161,7 @@ func resourceAliCloudGovernanceBaselineRead(d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func resourceAliCloudGovernanceBaselineUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceGovernanceBaselineUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -196,28 +200,28 @@ func resourceAliCloudGovernanceBaselineUpdate(d *schema.ResourceData, meta inter
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("governance", "2021-01-20", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudGovernanceBaselineRead(d, meta)
+	return resourceGovernanceBaselineRead(d, meta)
 }
 
-func resourceAliCloudGovernanceBaselineDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceGovernanceBaselineDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteAccountFactoryBaseline"
@@ -229,26 +233,26 @@ func resourceAliCloudGovernanceBaselineDelete(d *schema.ResourceData, meta inter
 	query["BaselineId"] = d.Id()
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("governance", "2021-01-20", action, query, request, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidBaseline.NotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"InvalidBaseline.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
