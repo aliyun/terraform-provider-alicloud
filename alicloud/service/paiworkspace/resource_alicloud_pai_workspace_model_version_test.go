@@ -1,12 +1,14 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package paiworkspace_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/paiworkspace"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +17,22 @@ import (
 func TestAccAliCloudPaiWorkspaceModelVersion_basic10362(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_workspace_model_version.default"
-	ra := resourceAttrInit(resourceId, AliCloudPaiWorkspaceModelVersionMap10362)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiWorkspaceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudPaiWorkspaceModelVersionMap10362)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return paiworkspace.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiWorkspaceModelVersion")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPaiWorkspaceModelVersionBasicDependence10362)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudPaiWorkspaceModelVersionBasicDependence10362)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -40,7 +42,7 @@ func TestAccAliCloudPaiWorkspaceModelVersion_basic10362(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"uri":      "oss://hz-test-0701.oss-cn-hangzhou-internal.aliyuncs.com/checkpoints/",
-						"model_id": CHECKSET,
+						"model_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -176,7 +178,7 @@ func TestAccAliCloudPaiWorkspaceModelVersion_basic10362(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"options": CHECKSET,
+						"options": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -198,7 +200,7 @@ func TestAccAliCloudPaiWorkspaceModelVersion_basic10362(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"source_type": "TrainingService",
-						"source_id":   CHECKSET,
+						"source_id":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -238,22 +240,22 @@ func TestAccAliCloudPaiWorkspaceModelVersion_basic10362(t *testing.T) {
 func TestAccAliCloudPaiWorkspaceModelVersion_basic10362_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_workspace_model_version.default"
-	ra := resourceAttrInit(resourceId, AliCloudPaiWorkspaceModelVersionMap10362)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiWorkspaceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudPaiWorkspaceModelVersionMap10362)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return paiworkspace.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiWorkspaceModelVersion")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPaiWorkspaceModelVersionBasicDependence10362)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudPaiWorkspaceModelVersionBasicDependence10362)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -314,10 +316,10 @@ func TestAccAliCloudPaiWorkspaceModelVersion_basic10362_twin(t *testing.T) {
 						"labels.#":            "5",
 						"metrics.%":           "1",
 						"metrics.test":        "Metrics",
-						"model_id":            CHECKSET,
-						"options":             CHECKSET,
+						"model_id":            acctest.CHECKSET,
+						"options":             acctest.CHECKSET,
 						"source_type":         "TrainingService",
-						"source_id":           CHECKSET,
+						"source_id":           acctest.CHECKSET,
 						"training_spec.%":     "1",
 						"training_spec.test":  "TrainingSpec",
 						"uri":                 "oss://hz-test-0701.oss-cn-hangzhou-internal.aliyuncs.com/checkpoints/",
@@ -337,9 +339,9 @@ func TestAccAliCloudPaiWorkspaceModelVersion_basic10362_twin(t *testing.T) {
 }
 
 var AliCloudPaiWorkspaceModelVersionMap10362 = map[string]string{
-	"approval_status": CHECKSET,
-	"source_type":     CHECKSET,
-	"version_name":    CHECKSET,
+	"approval_status": acctest.CHECKSET,
+	"source_type":     acctest.CHECKSET,
+	"version_name":    acctest.CHECKSET,
 }
 
 func AliCloudPaiWorkspaceModelVersionBasicDependence10362(name string) string {

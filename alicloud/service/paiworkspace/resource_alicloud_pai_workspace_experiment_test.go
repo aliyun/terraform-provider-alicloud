@@ -1,11 +1,13 @@
-package alicloud
+package paiworkspace_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/paiworkspace"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -16,8 +18,8 @@ func testAccCheckPaiWorkspaceExperimentLabelsEmpty(resourceId string) resource.T
 		if !ok {
 			return fmt.Errorf("resource %s not found in state", resourceId)
 		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		object, err := (&PaiWorkspaceServiceV2{client}).DescribePaiWorkspaceExperiment(rs.Primary.ID)
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		object, err := (paiworkspace.NewService(client)).DescribePaiWorkspaceExperiment(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -33,22 +35,22 @@ func testAccCheckPaiWorkspaceExperimentLabelsEmpty(resourceId string) resource.T
 func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_workspace_experiment.default"
-	ra := resourceAttrInit(resourceId, AlicloudPaiWorkspaceExperimentMap9003)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiWorkspaceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPaiWorkspaceExperimentMap9003)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return paiworkspace.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiWorkspaceExperiment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPaiWorkspaceExperimentBasicDependence9003)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPaiWorkspaceExperimentBasicDependence9003)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			// Regression for QA F-1: an empty labels block used to reach Apply with a
 			// nil element and panic the Create path. The nil-element guard now skips
@@ -67,7 +69,7 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 						"accessibility":   "PRIVATE",
 						"artifact_uri":    "oss://yyt-409262.oss-cn-hangzhou.aliyuncs.com/test/",
 						"experiment_name": name,
-						"workspace_id":    CHECKSET,
+						"workspace_id":    acctest.CHECKSET,
 					}),
 				),
 			},
@@ -105,9 +107,9 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 					testAccCheck(map[string]string{
 						"accessibility":   "PUBLIC",
 						"experiment_name": name + "_update",
-						"labels.#":        REMOVEKEY,
-						"labels.0.key":    REMOVEKEY,
-						"labels.0.value":  REMOVEKEY,
+						"labels.#":        acctest.REMOVEKEY,
+						"labels.0.key":    acctest.REMOVEKEY,
+						"labels.0.value":  acctest.REMOVEKEY,
 					}),
 					testAccCheckPaiWorkspaceExperimentLabelsEmpty(resourceId),
 				),
@@ -200,7 +202,7 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"accessibility":   "PUBLIC",
 					"experiment_name": name + "_update",
-					"labels":          REMOVEKEY,
+					"labels":          acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -237,15 +239,15 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"accessibility":   "PUBLIC",
 					"experiment_name": name + "_update",
-					"labels":          REMOVEKEY,
+					"labels":          acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"accessibility":   "PUBLIC",
 						"experiment_name": name + "_update",
 						"labels.#":        "0",
-						"labels.0.key":    REMOVEKEY,
-						"labels.0.value":  REMOVEKEY,
+						"labels.0.key":    acctest.REMOVEKEY,
+						"labels.0.value":  acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -260,7 +262,7 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic9003(t *testing.T) {
 }
 
 var AlicloudPaiWorkspaceExperimentMap9003 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudPaiWorkspaceExperimentBasicDependence9003(name string) string {
@@ -284,22 +286,22 @@ resource "alicloud_pai_workspace_workspace" "defaultDI9fsL" {
 func TestAccAliCloudPaiWorkspaceExperiment_basic6043(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_workspace_experiment.default"
-	ra := resourceAttrInit(resourceId, AlicloudPaiWorkspaceExperimentMap6043)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiWorkspaceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPaiWorkspaceExperimentMap6043)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return paiworkspace.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiWorkspaceExperiment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPaiWorkspaceExperimentBasicDependence6043)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPaiWorkspaceExperimentBasicDependence6043)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -320,7 +322,7 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic6043(t *testing.T) {
 						"accessibility":   "PRIVATE",
 						"artifact_uri":    "oss://yyt-409262.oss-cn-hangzhou.aliyuncs.com/test/",
 						"experiment_name": name,
-						"workspace_id":    CHECKSET,
+						"workspace_id":    acctest.CHECKSET,
 					}),
 					testAccCheckPaiWorkspaceExperimentLabelsEmpty(resourceId),
 				),
@@ -329,7 +331,7 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic6043(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"accessibility":   "PUBLIC",
 					"experiment_name": name + "_update",
-					"labels":          REMOVEKEY,
+					"labels":          acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -350,7 +352,7 @@ func TestAccAliCloudPaiWorkspaceExperiment_basic6043(t *testing.T) {
 }
 
 var AlicloudPaiWorkspaceExperimentMap6043 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudPaiWorkspaceExperimentBasicDependence6043(name string) string {
@@ -387,7 +389,7 @@ func TestUnitPaiWorkspaceExperimentLabelsExpand(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := expandPaiWorkspaceExperimentLabels(tc.raw)
+			got := paiworkspace.ExpandPaiWorkspaceExperimentLabels(tc.raw)
 			if len(got) != tc.expected {
 				t.Fatalf("expected %d labels, got %d: %#v", tc.expected, len(got), got)
 			}

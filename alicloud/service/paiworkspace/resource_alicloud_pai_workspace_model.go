@@ -1,24 +1,28 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package paiworkspace
 
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAliCloudPaiWorkspaceModelVersion() *schema.Resource {
+func ResourcePaiWorkspaceModel() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudPaiWorkspaceModelVersionCreate,
-		Read:   resourceAliCloudPaiWorkspaceModelVersionRead,
-		Update: resourceAliCloudPaiWorkspaceModelVersionUpdate,
-		Delete: resourceAliCloudPaiWorkspaceModelVersionDelete,
+		Create: resourceAliCloudPaiWorkspaceModelCreate,
+		Read:   resourceAliCloudPaiWorkspaceModelRead,
+		Update: resourceAliCloudPaiWorkspaceModelUpdate,
+		Delete: resourceAliCloudPaiWorkspaceModelDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -28,28 +32,18 @@ func resourceAliCloudPaiWorkspaceModelVersion() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"approval_status": {
+			"accessibility": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
+			},
+			"domain": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			// lintignore: S006
 			"extra_info": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
-			"format_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"framework_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			// lintignore: S006
-			"inference_spec": {
 				Type:     schema.TypeMap,
 				Optional: true,
 			},
@@ -69,44 +63,35 @@ func resourceAliCloudPaiWorkspaceModelVersion() *schema.Resource {
 					},
 				},
 			},
-			// lintignore: S006
-			"metrics": {
-				Type:     schema.TypeMap,
+			"model_description": {
+				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"model_id": {
+			"model_doc": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"model_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
-			"options": {
+			"model_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"source_id": {
+			"order_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"origin": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"source_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			// lintignore: S006
-			"training_spec": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
-			"uri": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"version_description": {
+			"task": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"version_name": {
+			"workspace_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -116,26 +101,19 @@ func resourceAliCloudPaiWorkspaceModelVersion() *schema.Resource {
 	}
 }
 
-func resourceAliCloudPaiWorkspaceModelVersionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudPaiWorkspaceModelCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	ModelId := d.Get("model_id")
-	action := fmt.Sprintf("/api/v1/models/%s/versions", ModelId)
+	action := fmt.Sprintf("/api/v1/models")
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	if v, ok := d.GetOk("version_name"); ok {
-		request["VersionName"] = v
-	}
 
-	if v, ok := d.GetOk("extra_info"); ok {
-		request["ExtraInfo"] = v
-	}
-	request["Uri"] = d.Get("uri")
+	request["ModelName"] = d.Get("model_name")
 	if v, ok := d.GetOk("labels"); ok {
 		labelsMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range v.([]interface{}) {
@@ -148,42 +126,42 @@ func resourceAliCloudPaiWorkspaceModelVersionCreate(d *schema.ResourceData, meta
 		request["Labels"] = labelsMapsArray
 	}
 
-	if v, ok := d.GetOk("version_description"); ok {
-		request["VersionDescription"] = v
+	if v, ok := d.GetOk("model_description"); ok {
+		request["ModelDescription"] = v
 	}
-	if v, ok := d.GetOk("format_type"); ok {
-		request["FormatType"] = v
+	if v, ok := d.GetOk("workspace_id"); ok {
+		request["WorkspaceId"] = v
 	}
-	if v, ok := d.GetOk("framework_type"); ok {
-		request["FrameworkType"] = v
+	if v, ok := d.GetOk("accessibility"); ok {
+		request["Accessibility"] = v
 	}
-	if v, ok := d.GetOk("options"); ok {
-		request["Options"] = v
+	if v, ok := d.GetOk("origin"); ok {
+		request["Origin"] = v
 	}
-	if v, ok := d.GetOk("training_spec"); ok {
-		request["TrainingSpec"] = v
+	if v, ok := d.GetOk("domain"); ok {
+		request["Domain"] = v
 	}
-	if v, ok := d.GetOk("inference_spec"); ok {
-		request["InferenceSpec"] = v
+	if v, ok := d.GetOk("task"); ok {
+		request["Task"] = v
 	}
-	if v, ok := d.GetOk("source_type"); ok {
-		request["SourceType"] = v
+	if v, ok := d.GetOk("model_doc"); ok {
+		request["ModelDoc"] = v
 	}
-	if v, ok := d.GetOk("source_id"); ok {
-		request["SourceId"] = v
+	if v, ok := d.GetOkExists("order_number"); ok {
+		request["OrderNumber"] = v
 	}
-	if v, ok := d.GetOk("approval_status"); ok {
-		request["ApprovalStatus"] = v
+	if v, ok := d.GetOk("model_type"); ok {
+		request["ModelType"] = v
 	}
-	if v, ok := d.GetOk("metrics"); ok {
-		request["Metrics"] = v
+	if v, ok := d.GetOk("extra_info"); ok {
+		request["ExtraInfo"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -191,45 +169,43 @@ func resourceAliCloudPaiWorkspaceModelVersionCreate(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pai_workspace_model_version", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_pai_workspace_model", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	VersionNameVar, _ := jsonpath.Get("$.VersionName", response)
-	d.SetId(fmt.Sprintf("%v:%v", ModelId, VersionNameVar))
+	id, _ := jsonpath.Get("$.ModelId", response)
+	d.SetId(fmt.Sprint(id))
 
-	return resourceAliCloudPaiWorkspaceModelVersionRead(d, meta)
+	return resourceAliCloudPaiWorkspaceModelRead(d, meta)
 }
 
-func resourceAliCloudPaiWorkspaceModelVersionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudPaiWorkspaceModelRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	paiWorkspaceServiceV2 := PaiWorkspaceServiceV2{client}
+	paiWorkspaceServiceV2 := NewService(client)
 
-	objectRaw, err := paiWorkspaceServiceV2.DescribePaiWorkspaceModelVersion(d.Id())
+	objectRaw, err := paiWorkspaceServiceV2.DescribePaiWorkspaceModel(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_pai_workspace_model_version DescribePaiWorkspaceModelVersion Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_pai_workspace_model DescribePaiWorkspaceModel Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	d.Set("approval_status", objectRaw["ApprovalStatus"])
+	d.Set("accessibility", objectRaw["Accessibility"])
+	d.Set("domain", objectRaw["Domain"])
 	d.Set("extra_info", objectRaw["ExtraInfo"])
-	d.Set("format_type", objectRaw["FormatType"])
-	d.Set("framework_type", objectRaw["FrameworkType"])
-	d.Set("inference_spec", objectRaw["InferenceSpec"])
-	d.Set("metrics", objectRaw["Metrics"])
-	d.Set("options", objectRaw["Options"])
-	d.Set("source_id", objectRaw["SourceId"])
-	d.Set("source_type", objectRaw["SourceType"])
-	d.Set("training_spec", objectRaw["TrainingSpec"])
-	d.Set("uri", objectRaw["Uri"])
-	d.Set("version_description", objectRaw["VersionDescription"])
-	d.Set("version_name", objectRaw["VersionName"])
+	d.Set("model_description", objectRaw["ModelDescription"])
+	d.Set("model_doc", objectRaw["ModelDoc"])
+	d.Set("model_name", objectRaw["ModelName"])
+	d.Set("model_type", objectRaw["ModelType"])
+	d.Set("order_number", objectRaw["OrderNumber"])
+	d.Set("origin", objectRaw["Origin"])
+	d.Set("task", objectRaw["Task"])
+	d.Set("workspace_id", objectRaw["WorkspaceId"])
 
 	labelsRaw := objectRaw["Labels"]
 	labelsMaps := make([]map[string]interface{}, 0)
@@ -247,77 +223,76 @@ func resourceAliCloudPaiWorkspaceModelVersionRead(d *schema.ResourceData, meta i
 		return err
 	}
 
-	parts := strings.Split(d.Id(), ":")
-	d.Set("model_id", parts[0])
-
 	return nil
 }
 
-func resourceAliCloudPaiWorkspaceModelVersionUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudPaiWorkspaceModelUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
 	var body map[string]interface{}
 	update := false
-	d.Partial(true)
 
 	var err error
-	parts := strings.Split(d.Id(), ":")
-	ModelId := parts[0]
-	VersionName := parts[1]
-	action := fmt.Sprintf("/api/v1/models/%s/versions/%s", ModelId, VersionName)
+	ModelId := d.Id()
+	action := fmt.Sprintf("/api/v1/models/%s", ModelId)
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
+	request["ModelId"] = d.Id()
 
-	if d.HasChange("version_description") {
+	if d.HasChange("model_name") {
 		update = true
 	}
-	if v, ok := d.GetOk("version_description"); ok {
-		request["VersionDescription"] = v
-	}
-	if d.HasChange("metrics") {
+	request["ModelName"] = d.Get("model_name")
+	if d.HasChange("model_description") {
 		update = true
 	}
-	if v, ok := d.GetOk("metrics"); ok {
-		request["Metrics"] = v
+	if v, ok := d.GetOk("model_description"); ok {
+		request["ModelDescription"] = v
 	}
-	if d.HasChange("training_spec") {
+	if d.HasChange("accessibility") {
 		update = true
 	}
-	if v, ok := d.GetOk("training_spec"); ok {
-		request["TrainingSpec"] = v
+	if v, ok := d.GetOk("accessibility"); ok {
+		request["Accessibility"] = v
 	}
-	if d.HasChange("inference_spec") {
+	if d.HasChange("origin") {
 		update = true
 	}
-	if v, ok := d.GetOk("inference_spec"); ok {
-		request["InferenceSpec"] = v
+	if v, ok := d.GetOk("origin"); ok {
+		request["Origin"] = v
 	}
-	if d.HasChange("options") {
+	if d.HasChange("domain") {
 		update = true
 	}
-	if v, ok := d.GetOk("options"); ok {
-		request["Options"] = v
+	if v, ok := d.GetOk("domain"); ok {
+		request["Domain"] = v
 	}
-	if d.HasChange("source_type") {
+	if d.HasChange("task") {
 		update = true
 	}
-	if v, ok := d.GetOk("source_type"); ok {
-		request["SourceType"] = v
+	if v, ok := d.GetOk("task"); ok {
+		request["Task"] = v
 	}
-	if d.HasChange("source_id") {
+	if d.HasChange("model_doc") {
 		update = true
 	}
-	if v, ok := d.GetOk("source_id"); ok {
-		request["SourceId"] = v
+	if v, ok := d.GetOk("model_doc"); ok {
+		request["ModelDoc"] = v
 	}
-	if d.HasChange("approval_status") {
+	if d.HasChange("order_number") {
 		update = true
 	}
-	if v, ok := d.GetOk("approval_status"); ok {
-		request["ApprovalStatus"] = v
+	if v, ok := d.GetOkExists("order_number"); ok {
+		request["OrderNumber"] = v
+	}
+	if d.HasChange("model_type") {
+		update = true
+	}
+	if v, ok := d.GetOk("model_type"); ok {
+		request["ModelType"] = v
 	}
 	if d.HasChange("extra_info") {
 		update = true
@@ -327,11 +302,11 @@ func resourceAliCloudPaiWorkspaceModelVersionUpdate(d *schema.ResourceData, meta
 	}
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -339,9 +314,9 @@ func resourceAliCloudPaiWorkspaceModelVersionUpdate(d *schema.ResourceData, meta
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -351,10 +326,12 @@ func resourceAliCloudPaiWorkspaceModelVersionUpdate(d *schema.ResourceData, meta
 		added := newEntry
 
 		if len(removed.([]interface{})) > 0 {
-			action = fmt.Sprintf("/api/v1/models/%s/versions/%s/labels", ModelId, VersionName)
+			ModelId := d.Id()
+			action := fmt.Sprintf("/api/v1/models/%s/labels", ModelId)
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
+			request["ModelId"] = d.Id()
 
 			localData := removed.([]interface{})
 			labelsMapsArray := make([]interface{}, 0)
@@ -362,14 +339,14 @@ func resourceAliCloudPaiWorkspaceModelVersionUpdate(d *schema.ResourceData, meta
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				labelsMapsArray = append(labelsMapsArray, dataLoopTmp["key"])
 			}
-			query["LabelKeys"] = StringPointer(convertListToCommaSeparate(labelsMapsArray))
+			query["LabelKeys"] = helper.StringPointer(convert.ConvertListToCommaSeparate(labelsMapsArray))
 
 			body = request
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaDelete("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -377,18 +354,20 @@ func resourceAliCloudPaiWorkspaceModelVersionUpdate(d *schema.ResourceData, meta
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
 
 		if len(added.([]interface{})) > 0 {
-			action = fmt.Sprintf("/api/v1/models/%s/versions/%s/labels", ModelId, VersionName)
+			ModelId := d.Id()
+			action := fmt.Sprintf("/api/v1/models/%s/labels", ModelId)
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
+			request["ModelId"] = d.Id()
 
 			localData := added.([]interface{})
 			labelsMapsArray := make([]interface{}, 0)
@@ -402,11 +381,11 @@ func resourceAliCloudPaiWorkspaceModelVersionUpdate(d *schema.ResourceData, meta
 			request["Labels"] = labelsMapsArray
 
 			body = request
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -414,37 +393,34 @@ func resourceAliCloudPaiWorkspaceModelVersionUpdate(d *schema.ResourceData, meta
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
 	}
-
-	d.Partial(false)
-	return resourceAliCloudPaiWorkspaceModelVersionRead(d, meta)
+	return resourceAliCloudPaiWorkspaceModelRead(d, meta)
 }
 
-func resourceAliCloudPaiWorkspaceModelVersionDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudPaiWorkspaceModelDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	parts := strings.Split(d.Id(), ":")
-	ModelId := parts[0]
-	VersionName := parts[1]
-	action := fmt.Sprintf("/api/v1/models/%s/versions/%s", ModelId, VersionName)
+	ModelId := d.Id()
+	action := fmt.Sprintf("/api/v1/models/%s", ModelId)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
+	request["ModelId"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("AIWorkSpace", "2021-02-04", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -452,13 +428,13 @@ func resourceAliCloudPaiWorkspaceModelVersionDelete(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
