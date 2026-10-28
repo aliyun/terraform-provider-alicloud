@@ -183,6 +183,21 @@ func TestUnitEfloControllerEndpoint(t *testing.T) {
 	}
 }
 
+func TestUnitPaiDswEndpoint(t *testing.T) {
+	// The location service rejects "pai-dsw" as a service code (it returns
+	// 404 Illegal Parameter for every region), so irregularProductEndpoint
+	// pins the documented regional endpoint
+	// pai-dsw.<region>.aliyuncs.com instead of failing the ROA request before
+	// it reaches the product.
+	endpointFmt, ok := irregularProductEndpoint["pai_dsw"]
+	assert.True(t, ok)
+	assert.Equal(t, "pai-dsw.%s.aliyuncs.com", endpointFmt)
+
+	for _, region := range []string{"cn-hangzhou", "cn-beijing", "cn-shanghai"} {
+		assert.Equal(t, fmt.Sprintf("pai-dsw.%s.aliyuncs.com", region), fmt.Sprintf(endpointFmt, region))
+	}
+}
+
 func TestUnitEfloControllerEndpointFromEnv(t *testing.T) {
 	// Explicit provider endpoint config and environment variables take
 	// precedence over the regularProductEndpoint fallback.
