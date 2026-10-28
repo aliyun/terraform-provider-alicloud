@@ -49,33 +49,33 @@ resource "alicloud_threat_detection_honeypot_probe" "default" {
 
 The following arguments are supported:
 * `arp` - (Optional) ARP spoofing detection.**true**: Enable **false**: Disabled
-* `control_node_id` - (Required,ForceNew) The ID of the management node.
+* `control_node_id` - (Required, ForceNew) The ID of the management node.
 * `display_name` - (Required) Probe display name.
-* `honeypot_bind_list` - (ForceNew,Optional) Configure the service.See the following `Block HoneypotBindList`.
+* `honeypot_bind_list` - (ForceNew, Optional) Configure the service. See [`honeypot_bind_list`](#honeypot_bind_list) below.
 * `ping` - (Optional) Ping scan detection. Value: **true**: Enable **false**: Disabled
-* `probe_type` - (Required,ForceNew) Probe type, support `host_probe` and `vpc_black_hole_probe`.
+* `probe_type` - (Required, ForceNew) Probe type, support `host_probe` and `vpc_black_hole_probe`.
   * `host_probe`: host probe
   * `vpc_black_hole_probe`: virtual private cloud (VPC) probe
-* `proxy_ip` - (ForceNew,Optional) The IP address of the proxy.
-* `probe_version` - (ForceNew,Optional) The version of the probe.
-* `service_ip_list` - (Computed,Optional) Listen to the IP address list.
-* `uuid` - (ForceNew,Optional) Machine uuid, **probe_type** is `host_probe`. This value cannot be empty.
-* `vpc_id` - (ForceNew,Optional) The ID of the VPC. **probe_type** is `vpc_black_hole_probe`. This value cannot be empty. 
+* `proxy_ip` - (ForceNew, Optional) The IP address of the proxy.
+* `probe_version` - (ForceNew, Optional) The version of the probe.
+* `service_ip_list` - (Computed, Optional) Listen to the IP address list.
+* `uuid` - (ForceNew, Optional) Machine uuid, **probe_type** is `host_probe`. This value cannot be empty.
+* `vpc_id` - (ForceNew, Optional) The ID of the VPC. **probe_type** is `vpc_black_hole_probe`. This value cannot be empty.
 
-#### Block HoneypotBindList
+### `honeypot_bind_list`
 
 The HoneypotBindList supports the following:
-* `bind_port_list` - (ForceNew,Optional) List of listening ports.See the following `Block BindPortList`.
-* `honeypot_id` - (ForceNew,Optional) Honeypot ID.
+* `bind_port_list` - (ForceNew, Optional) List of listening ports. See [`bind_port_list`](#honeypot_bind_list-bind_port_list) below.
+* `honeypot_id` - (ForceNew, Optional) Honeypot ID.
 
-#### Block BindPortList
+### `honeypot_bind_list-bind_port_list`
 
 The BindPortList supports the following:
-* `bind_port` - (ForceNew,Optional) Whether to bind the port.
-* `end_port` - (ForceNew,Optional) End port.
-* `fixed` - (ForceNew,Optional) Whether the port is fixed.
-* `start_port` - (ForceNew,Optional) Start port.
-* `target_port` - (ForceNew,Optional) Destination port.
+* `bind_port` - (ForceNew, Optional) Whether to bind the port.
+* `end_port` - (ForceNew, Optional) End port.
+* `fixed` - (ForceNew, Optional) Whether the port is fixed.
+* `start_port` - (ForceNew, Optional) Start port.
+* `target_port` - (ForceNew, Optional) Destination port.
 
 
 ## Attributes Reference
@@ -83,7 +83,6 @@ The BindPortList supports the following:
 The following attributes are exported:
 * `id` - The `key` of the resource supplied above.
 * `honeypot_probe_id` - The first ID of the resource
-* `service_ip_list` - Listen to the IP address list.
 * `status` - The status of the resource
 
 ## Timeouts
