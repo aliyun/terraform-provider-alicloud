@@ -226,15 +226,16 @@ func resourceAlicloudAutoProvisioningGroupRead(d *schema.ResourceData, meta inte
 	d.Set("default_target_capacity_type", object.TargetCapacitySpecification.DefaultTargetCapacityType)
 	d.Set("launch_template_version", object.LaunchTemplateVersion)
 	launch_template_config := []map[string]interface{}{}
-	para := map[string]interface{}{}
 	for _, mappara := range object.LaunchTemplateConfigs.LaunchTemplateConfig {
-		para["instance_type"] = mappara.InstanceType
-		para["vswitch_id"] = mappara.VSwitchId
-		para["weighted_capacity"] = fmt.Sprintf("%v", mappara.WeightedCapacity)
-		para["max_price"] = fmt.Sprintf("%v", mappara.MaxPrice)
-		para["priority"] = fmt.Sprintf("%v", mappara.Priority)
+		para := map[string]interface{}{
+			"instance_type":     mappara.InstanceType,
+			"vswitch_id":        mappara.VSwitchId,
+			"weighted_capacity": fmt.Sprintf("%v", mappara.WeightedCapacity),
+			"max_price":         fmt.Sprintf("%v", mappara.MaxPrice),
+			"priority":          fmt.Sprintf("%v", mappara.Priority),
+		}
+		launch_template_config = append(launch_template_config, para)
 	}
-	launch_template_config = append(launch_template_config, para)
 	d.Set("launch_template_config", launch_template_config)
 
 	return nil
@@ -346,7 +347,7 @@ func buildAlicloudAutoProvisioningGroupArgs(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("spot_instance_interruption_behavior"); ok && v.(string) != "" {
 		request.SpotInstanceInterruptionBehavior = v.(string)
 	}
-	if v, ok := d.GetOk("spot_instancePools_to_use_count"); ok && v.(string) != "" {
+	if v, ok := d.GetOk("spot_instance_pools_to_use_count"); ok {
 		request.SpotInstancePoolsToUseCount = requests.NewInteger(v.(int))
 	}
 	if v, ok := d.GetOk("pay_as_you_go_allocation_strategy"); ok && v.(string) != "" {

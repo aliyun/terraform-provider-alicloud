@@ -11,7 +11,7 @@ description: |-
 
 Provides a ECS auto provisioning group resource which is a solution that uses preemptive instances and pay_as_you_go instances to rapidly deploy clusters.
 
--> **NOTE:** Available in 1.79.0+
+-> **NOTE:** Available since v1.79.0+
 
 
 ## Example Usage
@@ -102,9 +102,9 @@ The following arguments are supported:
 * `max_spot_price` - (Optional) The global maximum price for preemptible instances in the auto provisioning group. If both the `MaxSpotPrice` and `LaunchTemplateConfig.N.MaxPrice` parameters are specified, the maximum price is the lower value of the two.
 * `valid_from` - (Optional, ForceNew) The time when the auto provisioning group is started. The period of time between this point in time and the point in time specified by the `valid_until` parameter is the effective time period of the auto provisioning group.By default, an auto provisioning group is immediately started after creation.
 * `valid_until` - (Optional, ForceNew) The time when the auto provisioning group expires. The period of time between this point in time and the point in time specified by the `valid_from` parameter is the effective time period of the auto provisioning group.By default, an auto provisioning group never expires.
-* `launch_template_config` - (Required, ForceNew) DataDisk mappings to attach to ecs instance. See [`block-config`](#block-config) below for details.
+* `launch_template_config` - (Required, ForceNew) DataDisk mappings to attach to ecs instance. See [`launch_template_config`](#launch_template_config) below for details.
 
-### `block-config`
+### `launch_template_config`
 
 The config mapping supports the following:
 * `instance_type` - (Optional) The instance type of the Nth extended configurations of the launch template.
