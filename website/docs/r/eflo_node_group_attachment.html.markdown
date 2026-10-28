@@ -52,23 +52,24 @@ resource "alicloud_eflo_node_group_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cluster_id` - (Optional, ForceNew, Computed) Cluster ID
-* `data_disk` - (Optional, List) The data disk of the cloud disk to be attached to the node. See [`data_disk`](#data_disk) below.
+* `cluster_id` - (Optional, ForceNew, Computed) The cluster ID.
+* `data_disk` - (Optional, List) The data disk of the cloud disk to be attached to the node. See [`data_disk`](#data_disk) below. The parameter is immutable after resource creation.
 * `hostname` - (Required, ForceNew) Node hostname
-* `login_password` - (Optional) Node login password
-* `node_group_id` - (Optional, ForceNew, Computed) Node group ID
+* `login_password` - (Optional) Login Password
+* `node_group_id` - (Optional, ForceNew, Computed) The node group ID.
 * `node_id` - (Optional, ForceNew, Computed) Node ID
-* `user_data` - (Optional) User-defined data
-* `vswitch_id` - (Required, ForceNew) vswitch id
-* `vpc_id` - (Required, ForceNew) Vpc id
+* `security_group_id` - (Optional, ForceNew) Security group ID
+* `user_data` - (Optional) Custom Data
+* `vswitch_id` - (Required, ForceNew) VSwitch ID
+* `vpc_id` - (Required, ForceNew) VPC ID
 
 ### `data_disk`
 
 The data_disk supports the following:
 * `category` - (Optional) Type
-* `delete_with_node` - (Optional) Indicate whether the data disk is released with the node. true indicates that the data disk will be released together when the node unsubscribes.
-* `performance_level` - (Optional) Performance level
-* `size` - (Optional, Int) Data disk size
+* `delete_with_node` - (Optional) Whether the data disk is deleted with the node
+* `performance_level` - (Optional) Data Disk Performance Level
+* `size` - (Optional, Int) Disk Size
 
 ## Attributes Reference
 
