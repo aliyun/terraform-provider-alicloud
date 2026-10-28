@@ -1,45 +1,46 @@
-package alicloud
+package brainindustrial_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudBrainIndustrialPidLoopsDataSource(t *testing.T) {
+func TestAccAliCloudBrainIndustrialPidLoopsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_brain_industrial_pid_loops.default"
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceBrainIndustrialPidLoopsDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceBrainIndustrialPidLoopsDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"pid_project_id": "${alicloud_brain_industrial_pid_project.default.id}",
 			"name_regex":     "${alicloud_brain_industrial_pid_loop.default.pid_loop_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"pid_project_id": "${alicloud_brain_industrial_pid_project.default.id}",
 			"name_regex":     "${alicloud_brain_industrial_pid_loop.default.pid_loop_name}-fake",
 		}),
 	}
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"pid_project_id": "${alicloud_brain_industrial_pid_project.default.id}",
 			"ids":            []string{"${alicloud_brain_industrial_pid_loop.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"pid_project_id": "${alicloud_brain_industrial_pid_project.default.id}",
 			"ids":            []string{"${alicloud_brain_industrial_pid_loop.default.id}-fake"},
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"pid_project_id": "${alicloud_brain_industrial_pid_project.default.id}",
 			"status":         "0",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"pid_project_id": "${alicloud_brain_industrial_pid_project.default.id}",
 			"status":         "1",
 		}),
@@ -47,17 +48,17 @@ func TestAccAlicloudBrainIndustrialPidLoopsDataSource(t *testing.T) {
 	var existBrainIndustrialPidLoopsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                       "1",
-			"ids.0":                       CHECKSET,
+			"ids.0":                       acctest.CHECKSET,
 			"names.#":                     "1",
 			"names.0":                     name,
 			"loops.#":                     "1",
 			"loops.0.pid_loop_dcs_type":   "standard",
 			"loops.0.pid_loop_is_crucial": "false",
-			"loops.0.pid_loop_id":         CHECKSET,
-			"loops.0.id":                  CHECKSET,
+			"loops.0.pid_loop_id":         acctest.CHECKSET,
+			"loops.0.id":                  acctest.CHECKSET,
 			"loops.0.pid_loop_name":       name,
 			"loops.0.pid_loop_type":       "0",
-			"loops.0.status":              CHECKSET,
+			"loops.0.status":              acctest.CHECKSET,
 		}
 	}
 
@@ -69,17 +70,17 @@ func TestAccAlicloudBrainIndustrialPidLoopsDataSource(t *testing.T) {
 		}
 	}
 
-	var BrainIndustrialPidLoopsInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existBrainIndustrialPidLoopsMapFunc,
-		fakeMapFunc:  fakeBrainIndustrialPidLoopsMapFunc,
+	var BrainIndustrialPidLoopsInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existBrainIndustrialPidLoopsMapFunc,
+		FakeMapFunc:  fakeBrainIndustrialPidLoopsMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.BrainIndustrialRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.BrainIndustrialRegions)
 	}
 
-	BrainIndustrialPidLoopsInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, idsConf, statusConf)
+	BrainIndustrialPidLoopsInfo.DataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, idsConf, statusConf)
 }
 
 func dataSourceBrainIndustrialPidLoopsDependence(name string) string {
