@@ -14,52 +14,6 @@ type HitsdbService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *HitsdbService) DescribeTsdbInstance(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
-	client := s.client
-	action := "DescribeHiTSDBInstance"
-	request := map[string]interface{}{
-		"RegionId":   s.client.RegionId,
-		"InstanceId": id,
-	}
-	response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, true)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.IsNotValidError", "TSDB.Errorcode.InstanceDeleted", "TSDB.Errorcode.InstanceNotFound", "TSDB.Errorcode.ParameterInvaild"}) {
-			err = WrapErrorf(NotFoundErr("TsdbInstance", id), NotFoundMsg, ProviderERROR)
-			return object, err
-		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
-	}
-	addDebug(action, response, request)
-	v, err := jsonpath.Get("$", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
-	}
-	object = v.(map[string]interface{})
-	return object, nil
-}
-
-func (s *HitsdbService) TsdbInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeTsdbInstance(id)
-		if err != nil {
-			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
-				return nil, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
-		for _, failState := range failStates {
-			if object["Status"].(string) == failState {
-				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
-			}
-		}
-		return object, object["Status"].(string), nil
-	}
-}
-
 func (s *HitsdbService) GetInstanceIpWhiteList(id string) (object []interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client

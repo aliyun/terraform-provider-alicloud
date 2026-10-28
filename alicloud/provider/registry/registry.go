@@ -149,6 +149,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sts"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/swasopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tag"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tsdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ververica"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vod"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpc"
@@ -312,6 +313,7 @@ var servicePackages = []conns.ServicePackage{
 	sts.ServicePackage(),
 	swasopen.ServicePackage(),
 	tag.ServicePackage(),
+	tsdb.ServicePackage(),
 	ververica.ServicePackage(),
 	vod.ServicePackage(),
 	vpc.ServicePackage(),
