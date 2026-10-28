@@ -1,4 +1,4 @@
-package alicloud
+package ons
 
 import (
 	"fmt"
@@ -6,17 +6,22 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudOnsTopic() *schema.Resource {
+func ResourceOnsTopic() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudOnsTopicCreate,
-		Read:   resourceAlicloudOnsTopicRead,
-		Update: resourceAlicloudOnsTopicUpdate,
-		Delete: resourceAlicloudOnsTopicDelete,
+		Create: resourceOnsTopicCreate,
+		Read:   resourceOnsTopicRead,
+		Update: resourceOnsTopicUpdate,
+		Delete: resourceOnsTopicDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -49,7 +54,7 @@ func resourceAlicloudOnsTopic() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringLenBetween(1, 128),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"topic_name": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -71,7 +76,7 @@ func resourceAlicloudOnsTopic() *schema.Resource {
 	}
 }
 
-func resourceAlicloudOnsTopicCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceOnsTopicCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "OnsTopicCreate"
@@ -88,89 +93,89 @@ func resourceAlicloudOnsTopicCreate(d *schema.ResourceData, meta interface{}) er
 	} else if v, ok := d.GetOk("topic"); ok {
 		request["Topic"] = v
 	} else {
-		return WrapError(Error(`[ERROR] Argument "topic" or "topic_name" must be set one!`))
+		return errs.WrapError(errs.Error(`[ERROR] Argument "topic" or "topic_name" must be set one!`))
 	}
 
-	wait := incrementalWait(3*time.Second, 10*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"Throttling.User"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_topic", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ons_topic", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Topic"]))
 
-	onsService := OnsService{client}
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, onsService.OceanOnsTopicStateRefreshFunc(d.Id(), "$.ServiceStatus", []string{}))
+	onsService := Service{client: client}
+	stateConf := helper.BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, onsService.OceanOnsTopicStateRefreshFunc(d.Id(), "$.ServiceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudOnsTopicUpdate(d, meta)
+	return resourceOnsTopicUpdate(d, meta)
 }
-func resourceAlicloudOnsTopicRead(d *schema.ResourceData, meta interface{}) error {
+func resourceOnsTopicRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	onsService := OnsService{client}
+	onsService := Service{client: client}
 	object, err := onsService.DescribeOnsTopic(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ons_topic onsService.DescribeOnsTopic Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("instance_id", parts[0])
 	d.Set("topic_name", parts[1])
 	d.Set("topic", parts[1])
-	message_typeVal, err := formatInt(object["MessageType"])
+	message_typeVal, err := convert.FormatInt(object["MessageType"])
 	if err != nil {
 		return err
 	}
 	d.Set("message_type", message_typeVal)
 	d.Set("remark", object["Remark"])
-	d.Set("tags", tagsToMap(object["Tags"].(map[string]interface{})["Tag"]))
+	d.Set("tags", tags.TagsToMap(object["Tags"].(map[string]interface{})["Tag"]))
 
 	onsTopicStatusObject, err := onsService.OnsTopicStatus(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	permVal, err := formatInt(onsTopicStatusObject["Perm"])
+	permVal, err := convert.FormatInt(onsTopicStatusObject["Perm"])
 	if err != nil {
 		return err
 	}
 	d.Set("perm", permVal)
 	return nil
 }
-func resourceAlicloudOnsTopicUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceOnsTopicUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	onsService := OnsService{client}
+	onsService := Service{client: client}
 	if d.HasChange("tags") {
 		if err := onsService.SetResourceTags(d, "TOPIC"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
-	return resourceAlicloudOnsTopicRead(d, meta)
+	return resourceOnsTopicRead(d, meta)
 }
-func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceOnsTopicDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	action := "OnsTopicDelete"
 	var response map[string]interface{}
@@ -179,24 +184,24 @@ func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) er
 		"Topic":      parts[1],
 	}
 
-	wait := incrementalWait(3*time.Second, 10*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"Throttling.User"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR"}) {
+		if errs.IsExpectedErrors(err, []string{"AUTH_RESOURCE_OWNER_ERROR"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

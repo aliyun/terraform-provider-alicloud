@@ -1,197 +1,25 @@
-package alicloud
+package ons
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	resource.AddTestSweepers("alicloud_ons_instance", &resource.Sweeper{
-		Name: "alicloud_ons_instance",
-		F:    testSweepOnsInstance,
-		Dependencies: []string{
-			"alicloud_ons_topic",
-			"alicloud_ons_group",
-		},
-	})
-}
-
-func testSweepOnsInstance(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return WrapErrorf(err, "error getting Alicloud client.")
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testacc",
-		"GID-tf-testAcc",
-		"GID_tf-testacc",
-		"CID-tf-testAcc",
-		"CID_tf-testacc",
-	}
-
-	action := "OnsInstanceInServiceList"
-	request := make(map[string]interface{})
-	var response map[string]interface{}
-	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
-	if err != nil {
-		log.Printf("[ERROR] Failed to retrieve ONS instance in service list: %s", err)
-	}
-
-	resp, err := jsonpath.Get("$.Data.InstanceVO", response)
-	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
-	}
-
-	result, _ := resp.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		name := item["InstanceName"].(string)
-		skip := true
-		if !sweepAll() {
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping ons instance: %s ", name)
-				continue
-			}
-		}
-		log.Printf("[INFO] delete ons instance: %s ", name)
-
-		action := "OnsInstanceDelete"
-		request := map[string]interface{}{
-			"InstanceId": item["InstanceId"],
-		}
-		_, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete ons instance (%s): %s", name, err)
-		}
-	}
-
-	return nil
-}
-
-func TestAccAliCloudOnsInstance_basic(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ons_instance.default"
-	ra := resourceAttrInit(resourceId, OnsInstanceMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &OnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeOnsInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAcc%sOnsInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, OnsInstanceBasicdependence)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name": "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name": name,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "1",
-						"tags.Created": "TF",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name": name + "update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"remark": "Test-Remark",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"remark": "Test-Remark",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_name": "${var.name}",
-					"remark":        "Test-Remark",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name": name,
-						"remark":        "Test-Remark",
-					}),
-				),
-			},
-		},
-	})
-}
-
-var OnsInstanceMap = map[string]string{
-	"instance_type": CHECKSET,
-	"status":        CHECKSET,
-}
-
-func OnsInstanceBasicdependence(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-`, name)
-}
-
 // lintignore: R001
 func TestUnitAlicloudOnsInstance(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_ons_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ons_instance"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -209,7 +37,7 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -247,18 +75,18 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ons_instance", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_ons_instance", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -266,13 +94,13 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewOnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudOnsInstanceCreate(dInit, rawClient)
+	err = resourceOnsInstanceCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -300,7 +128,7 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsInstanceCreate(dInit, rawClient)
+		err := resourceOnsInstanceCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -321,13 +149,13 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewOnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudOnsInstanceUpdate(dExisted, rawClient)
+	err = resourceOnsInstanceUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// OnsInstanceUpdate
@@ -366,7 +194,7 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsInstanceUpdate(dExisted, rawClient)
+		err := resourceOnsInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -427,7 +255,7 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsInstanceUpdate(dExisted, rawClient)
+		err := resourceOnsInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -488,7 +316,7 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsInstanceUpdate(dExisted, rawClient)
+		err := resourceOnsInstanceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -527,7 +355,7 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsInstanceRead(dExisted, rawClient)
+		err := resourceOnsInstanceRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -540,13 +368,13 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewOnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudOnsInstanceDelete(dExisted, rawClient)
+	err = resourceOnsInstanceDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "Throttling.User", "INSTANCE_NOT_EMPTY", "nil"}
@@ -568,7 +396,7 @@ func TestUnitAlicloudOnsInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudOnsInstanceDelete(dExisted, rawClient)
+		err := resourceOnsInstanceDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

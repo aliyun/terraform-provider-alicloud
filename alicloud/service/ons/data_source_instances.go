@@ -1,4 +1,4 @@
-package alicloud
+package ons
 
 import (
 	"fmt"
@@ -6,13 +6,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOnsInstances() *schema.Resource {
+func DataSourceOnsInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudOnsInstancesRead,
+		Read: dataSourceOnsInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -35,7 +40,7 @@ func dataSourceAlicloudOnsInstances() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.IntInSlice([]int{0, 2, 5, 7}),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -114,7 +119,7 @@ func dataSourceAlicloudOnsInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceOnsInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "OnsInstanceInServiceList"
@@ -134,7 +139,7 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		instanceNameRegex = r
 	}
@@ -153,13 +158,13 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 	var err error
 	response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_instances", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ons_instances", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	resp, err := jsonpath.Get("$.Data.InstanceVO", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data.InstanceVO", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -175,7 +180,7 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 			}
 		}
 		if statusOk {
-			instanceStatusVal, instanceStatusErr := formatInt(item["InstanceStatus"])
+			instanceStatusVal, instanceStatusErr := convert.FormatInt(item["InstanceStatus"])
 			if instanceStatusErr != nil {
 				return instanceStatusErr
 			}
@@ -190,19 +195,19 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		instance_typeVal, err := formatInt(object["InstanceType"])
+		instance_typeVal, err := convert.FormatInt(object["InstanceType"])
 		if err != nil {
 			return err
 		}
-		releaseTime, err := formatInt(object["ReleaseTime"])
+		releaseTime, err := convert.FormatInt(object["ReleaseTime"])
 		if err != nil {
 			return err
 		}
-		statusVal, err := formatInt(object["InstanceStatus"])
+		statusVal, err := convert.FormatInt(object["InstanceStatus"])
 		if err != nil {
 			return err
 		}
-		instance_statusVal, err := formatInt(object["InstanceStatus"])
+		instance_statusVal, err := convert.FormatInt(object["InstanceStatus"])
 		if err != nil {
 			return err
 		}
@@ -217,18 +222,18 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 			"instance_status":    instance_statusVal,
 		}
 
-		tags := make(map[string]interface{})
+		tagMap := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.Tags.Tag", object)
 		if t != nil {
 			for _, t := range t.([]interface{}) {
 				key := t.(map[string]interface{})["Key"].(string)
 				value := t.(map[string]interface{})["Value"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
+				if !tags.IgnoredTags(key, value) {
+					tagMap[key] = value
 				}
 			}
 		}
-		mapping["tags"] = tags
+		mapping["tags"] = tagMap
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(object["InstanceId"]))
 			names = append(names, object["InstanceName"])
@@ -236,11 +241,11 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 			continue
 		}
 
-		onsService := OnsService{client}
+		onsService := Service{client: client}
 		id := fmt.Sprint(object["InstanceId"])
 		getResp, err := onsService.DescribeOnsInstance(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["http_internal_endpoint"] = getResp["Endpoints"].(map[string]interface{})["HttpInternalEndpoint"]
 		mapping["http_internet_endpoint"] = getResp["Endpoints"].(map[string]interface{})["HttpInternetEndpoint"]
@@ -252,20 +257,20 @@ func dataSourceAlicloudOnsInstancesRead(d *schema.ResourceData, meta interface{}
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

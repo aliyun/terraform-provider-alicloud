@@ -1,16 +1,17 @@
-package alicloud
+package ons_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudOnsInstancesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_ons_instances.default"
-	name := fmt.Sprintf("tf-testacc%sonsinstance%v", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sonsinstance%v", acctest.DefaultRegionToTest, rand)
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceOnsInstancesConfigDependence)
 
@@ -90,7 +91,7 @@ func TestAccAlicloudOnsInstancesDataSource(t *testing.T) {
 			"instances.0.status":          "5",
 			"instances.0.release_time":    CHECKSET,
 			"instances.0.instance_type":   "1",
-			"instances.0.instance_name":   fmt.Sprintf("tf-testacc%sonsinstance%v", defaultRegionToTest, rand),
+			"instances.0.instance_name":   fmt.Sprintf("tf-testacc%sonsinstance%v", acctest.DefaultRegionToTest, rand),
 		}
 	}
 
@@ -109,7 +110,7 @@ func TestAccAlicloudOnsInstancesDataSource(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
 	onsRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, statusConf, tagsConf, allConf)
 }

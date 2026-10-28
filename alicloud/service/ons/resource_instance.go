@@ -1,4 +1,4 @@
-package alicloud
+package ons
 
 import (
 	"fmt"
@@ -6,17 +6,22 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudOnsInstance() *schema.Resource {
+func ResourceOnsInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudOnsInstanceCreate,
-		Read:   resourceAlicloudOnsInstanceRead,
-		Update: resourceAlicloudOnsInstanceUpdate,
-		Delete: resourceAlicloudOnsInstanceDelete,
+		Create: resourceOnsInstanceCreate,
+		Read:   resourceOnsInstanceRead,
+		Update: resourceOnsInstanceUpdate,
+		Delete: resourceOnsInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -61,12 +66,12 @@ func resourceAlicloudOnsInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 		},
 	}
 }
 
-func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceOnsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "OnsInstanceCreate"
@@ -77,65 +82,65 @@ func resourceAlicloudOnsInstanceCreate(d *schema.ResourceData, meta interface{})
 	} else if v, ok := d.GetOk("name"); ok {
 		request["InstanceName"] = v
 	} else {
-		return WrapError(Error(`[ERROR] Argument "name" or "instance_name" must be set one!`))
+		return errs.WrapError(errs.Error(`[ERROR] Argument "name" or "instance_name" must be set one!`))
 	}
 
 	if v, ok := d.GetOk("remark"); ok {
 		request["Remark"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 10*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Throttling.User"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"Throttling.User"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ons_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ons_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))
 
-	return resourceAlicloudOnsInstanceUpdate(d, meta)
+	return resourceOnsInstanceUpdate(d, meta)
 }
-func resourceAlicloudOnsInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceOnsInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	onsService := OnsService{client}
+	onsService := Service{client: client}
 	object, err := onsService.DescribeOnsInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ons_instance onsService.DescribeOnsInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("instance_name", object["InstanceName"])
 	d.Set("name", object["InstanceName"])
-	instance_typeVal, err := formatInt(object["InstanceType"])
+	instance_typeVal, err := convert.FormatInt(object["InstanceType"])
 	if err != nil {
 		return err
 	}
 	d.Set("instance_type", instance_typeVal)
-	releaseTime, err := formatInt(object["ReleaseTime"])
+	releaseTime, err := convert.FormatInt(object["ReleaseTime"])
 	if err != nil {
 		return err
 	}
 	d.Set("release_time", fmt.Sprint(releaseTime))
 	d.Set("remark", object["Remark"])
-	statusVal, err := formatInt(object["InstanceStatus"])
+	statusVal, err := convert.FormatInt(object["InstanceStatus"])
 	if err != nil {
 		return err
 	}
 	d.Set("status", statusVal)
-	instance_statusVal, err := formatInt(object["InstanceStatus"])
+	instance_statusVal, err := convert.FormatInt(object["InstanceStatus"])
 	if err != nil {
 		return err
 	}
@@ -143,21 +148,21 @@ func resourceAlicloudOnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 
 	listTagResourcesObject, err := onsService.ListTagResources(d.Id(), "INSTANCE")
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("tags", tags.TagsToMap(listTagResourcesObject))
 	return nil
 }
-func resourceAlicloudOnsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceOnsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	onsService := OnsService{client}
+	onsService := Service{client: client}
 	var err error
 	var response map[string]interface{}
 	d.Partial(true)
 
 	if d.HasChange("tags") {
 		if err := onsService.SetResourceTags(d, "INSTANCE"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	update := false
@@ -178,27 +183,27 @@ func resourceAlicloudOnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if update {
 		action := "OnsInstanceUpdate"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudOnsInstanceRead(d, meta)
+	return resourceOnsInstanceRead(d, meta)
 }
-func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceOnsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "OnsInstanceDelete"
 	var response map[string]interface{}
@@ -207,21 +212,21 @@ func resourceAlicloudOnsInstanceDelete(d *schema.ResourceData, meta interface{})
 		"InstanceId": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 10*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Ons", "2019-02-14", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"INSTANCE_NOT_EMPTY", "Throttling.User"}) {
+			if errs.IsExpectedErrors(err, []string{"INSTANCE_NOT_EMPTY", "Throttling.User"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

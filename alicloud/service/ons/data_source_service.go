@@ -1,17 +1,20 @@
-package alicloud
+package ons
 
 import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOnsService() *schema.Resource {
+func DataSourceOnsService() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudOnsServiceRead,
+		Read: dataSourceOnsServiceRead,
 
 		Schema: map[string]*schema.Schema{
 			"enable": {
@@ -27,7 +30,7 @@ func dataSourceAlicloudOnsService() *schema.Resource {
 		},
 	}
 }
-func dataSourceAlicloudOnsServiceRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceOnsServiceRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
 		d.SetId("OnsServiceHasNotBeenOpened")
 		d.Set("status", "")
@@ -40,22 +43,22 @@ func dataSourceAlicloudOnsServiceRead(d *schema.ResourceData, meta interface{}) 
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err := client.RpcPostWithEndpoint("Ons", "2019-02-14", action, nil, request, false, connectivity.OpenOnsService)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || helper.NeedRetry(err) {
 				return retry.RetryableError(err)
 			}
-			addDebug(action, response, nil)
+			logs.AddDebug(action, response, nil)
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, nil)
+		logs.AddDebug(action, response, nil)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OrderOpend"}) {
+		if errs.IsExpectedErrors(err, []string{"OrderOpend"}) {
 			d.SetId("OnsServiceHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
 		}
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ons_service", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ons_service", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	d.SetId("OnsServiceHasBeenOpened")
 	d.Set("status", "Opened")
