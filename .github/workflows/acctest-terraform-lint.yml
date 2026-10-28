@@ -176,12 +176,6 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
           filter: blob:none
-      - name: Test change range and lint scoping
-        shell: bash
-        run: |
-          scripts/ci/resolve-change-range_test.sh
-          scripts/ci/run-tflint_test.sh
-          scripts/ci/initialization-check_test.sh
       - name: Resolve change range
         id: change-range
         shell: bash
@@ -191,6 +185,22 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: ${{ github.event.pull_request.base.repo.clone_url }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Test change range and lint scoping
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          # Resolve change range first: its exact base and merge base are validated.
+          helper=scripts/ci/run-ci-fixtures.py
+          if [[ ! -s "$helper" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == pull_request && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            helper="$RUNNER_TEMP/run-ci-fixtures.py"
+            git show "$PR_BASE_SHA:scripts/ci/run-ci-fixtures.py" > "$helper"
+          fi
+          python3 "$helper" lint
       - name: Prepare writable Go/tool cache
         # Route A: keep caches when HOME-owned defaults are writable; redirect
         # only the unwritable ones to a per-job $RUNNER_TEMP subdir so a polluted
