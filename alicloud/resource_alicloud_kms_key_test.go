@@ -56,13 +56,15 @@ func testSweepKmsKey(region string) error {
 	for {
 		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_key", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list kms key: %s", err)
+			return nil
 		}
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Keys.Key", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Keys.Key", response)
+			log.Printf("[ERROR] Failed to parse $.Keys.Key (treat as empty): %s", err)
+			return nil
 		}
 
 		result, _ := resp.([]interface{})

@@ -52,13 +52,15 @@ func testSweepKmsAlias(region string) error {
 	for {
 		response, err = client.RpcPost("Kms", "2016-01-20", action, nil, request, false)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_alias", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list kms alias: %s", err)
+			return nil
 		}
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Aliases.Alias", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Aliases.Alias", response)
+			log.Printf("[ERROR] Failed to parse $.Aliases.Alias (treat as empty): %s", err)
+			return nil
 		}
 
 		result, _ := resp.([]interface{})
