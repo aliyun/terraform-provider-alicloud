@@ -164,13 +164,13 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	object := fc.TriggerCreateObject{
-		TriggerName:    StringPointer(name),
-		TriggerType:    StringPointer(d.Get("type").(string)),
-		InvocationRole: StringPointer(d.Get("role").(string)),
+		TriggerName:    helper.StringPointer(name),
+		TriggerType:    helper.StringPointer(d.Get("type").(string)),
+		InvocationRole: helper.StringPointer(d.Get("role").(string)),
 		TriggerConfig:  config,
 	}
 	if v, ok := d.GetOk("source_arn"); ok && v.(string) != "" {
-		object.SourceARN = StringPointer(v.(string))
+		object.SourceARN = helper.StringPointer(v.(string))
 	}
 	request := fc.NewCreateTriggerInput(serviceName, fcName)
 	request.TriggerCreateObject = object
@@ -258,7 +258,7 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 	updateInput := fc.NewUpdateTriggerInput(parts[0], parts[1], parts[2])
 	updateInput.WithHeader(HeaderEnableEBTrigger, "enable")
 	if d.HasChange("role") {
-		updateInput.InvocationRole = StringPointer(d.Get("role").(string))
+		updateInput.InvocationRole = helper.StringPointer(d.Get("role").(string))
 	}
 	if d.HasChange("config") {
 		var config interface{}

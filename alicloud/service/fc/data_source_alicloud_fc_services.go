@@ -6,6 +6,7 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -167,7 +168,7 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 			return fcClient.ListServices(request)
 		})
 		if err != nil {
-			return errs.WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_services", "ListServices", errs.FcGoSdk)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_fc_services", "ListServices", errs.FcGoSdk)
 		}
 		logs.AddDebug("ListServices", raw, requestInfo, request)
 		response, _ := raw.(*fc.ListServicesOutput)
@@ -266,7 +267,7 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("services", serviceMappings); err != nil {
 		return errs.WrapError(err)
 	}
@@ -279,7 +280,7 @@ func dataSourceAlicloudFcServicesRead(d *schema.ResourceData, meta interface{}) 
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), serviceMappings)
+		helper.WriteToFile(output.(string), serviceMappings)
 	}
 	return nil
 }

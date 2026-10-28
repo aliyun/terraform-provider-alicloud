@@ -438,11 +438,11 @@ func (s *Service) DescribeFcFunctionAsyncInvokeConfig(id string) (*fc.GetFunctio
 
 func (s *Service) SetResourceTags(d *schema.ResourceData, resourceArn *string) error {
 	if d.HasChange("tags") {
-		added, removed := tags.parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !tags.ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}

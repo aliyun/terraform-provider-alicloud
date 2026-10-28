@@ -107,7 +107,7 @@ func resourceAlicloudFcLayerVersionCreate(d *schema.ResourceData, meta interface
 
 	codeMaps := make(map[string]interface{}, 0)
 	if v, ok := d.GetOk("zip_file"); ok && fmt.Sprint(v) != "" && v.(string) != "" {
-		file, err := loadFileContent(v.(string))
+		file, err := helper.LoadFileContent(v.(string))
 		if err != nil {
 			return errs.WrapError(err)
 		}

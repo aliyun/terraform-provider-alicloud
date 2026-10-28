@@ -7,7 +7,9 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -110,8 +112,8 @@ func resourceAlicloudFCCustomDomainCreate(d *schema.ResourceData, meta interface
 	name := d.Get("domain_name").(string)
 
 	request := &fc.CreateCustomDomainInput{
-		DomainName: StringPointer(name),
-		Protocol:   StringPointer(d.Get("protocol").(string)),
+		DomainName: helper.StringPointer(name),
+		Protocol:   helper.StringPointer(d.Get("protocol").(string)),
 	}
 
 	request.WithRouteConfig(parseRouteConfig(d))
@@ -223,7 +225,7 @@ func resourceAlicloudFCCustomDomainUpdate(d *schema.ResourceData, meta interface
 	update := false
 	if d.HasChange("protocol") {
 		update = true
-		request.Protocol = StringPointer(d.Get("protocol").(string))
+		request.Protocol = helper.StringPointer(d.Get("protocol").(string))
 	}
 
 	if d.HasChange("route_config") {
@@ -282,7 +284,7 @@ func parseRouteConfig(d *schema.ResourceData) (config *fc.RouteConfig) {
 				WithServiceName(m["service_name"].(string)).
 				WithFunctionName(m["function_name"].(string)).
 				WithQualifier(m["qualifier"].(string)).
-				WithMethods(expandStringList(m["methods"].([]interface{})))
+				WithMethods(convert.ExpandStringList(m["methods"].([]interface{})))
 			pathConfigList = append(pathConfigList, *pathConfig)
 		}
 		config = fc.NewRouteConfig().WithRoutes(pathConfigList)
@@ -294,9 +296,9 @@ func parseCertConfig(d *schema.ResourceData) (config *fc.CertConfig) {
 	if v, ok := d.GetOk("cert_config"); ok {
 		m := v.([]interface{})[0].(map[string]interface{})
 		config = &fc.CertConfig{
-			CertName:    StringPointer(m["cert_name"].(string)),
-			PrivateKey:  StringPointer(m["private_key"].(string)),
-			Certificate: StringPointer(m["certificate"].(string)),
+			CertName:    helper.StringPointer(m["cert_name"].(string)),
+			PrivateKey:  helper.StringPointer(m["private_key"].(string)),
+			Certificate: helper.StringPointer(m["certificate"].(string)),
 		}
 	}
 	return config

@@ -10,6 +10,7 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -122,26 +123,26 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 	id := fmt.Sprintf("%s:%s:%s", serviceName, functionName, qualifier)
 
 	request := &fc.PutFunctionAsyncInvokeConfigInput{
-		ServiceName:  StringPointer(serviceName),
-		FunctionName: StringPointer(functionName),
+		ServiceName:  helper.StringPointer(serviceName),
+		FunctionName: helper.StringPointer(functionName),
 	}
 
 	if v, ok := d.GetOkExists("maximum_retry_attempts"); ok {
-		request.MaxAsyncRetryAttempts = Int64Pointer(int64(v.(int)))
+		request.MaxAsyncRetryAttempts = helper.Int64Pointer(int64(v.(int)))
 	}
 	if v, ok := d.GetOk("destination_config"); ok {
 		request.DestinationConfig = parseFCDestinationConfig(v.([]interface{}))
 	}
 
 	if qualifier != "" {
-		request.Qualifier = StringPointer(qualifier)
+		request.Qualifier = helper.StringPointer(qualifier)
 	}
 
 	if v, ok := d.GetOk("maximum_event_age_in_seconds"); ok {
-		request.MaxAsyncEventAgeInSeconds = Int64Pointer(int64(v.(int)))
+		request.MaxAsyncEventAgeInSeconds = helper.Int64Pointer(int64(v.(int)))
 	}
 	if v, ok := d.GetOk("stateful_invocation"); ok {
-		request.StatefulInvocation = BoolPointer(v.(bool))
+		request.StatefulInvocation = helper.BoolPointer(v.(bool))
 	}
 
 	var response *fc.PutFunctionAsyncInvokeConfigOutput
@@ -213,19 +214,19 @@ func resourceAlicloudFCAsyncInvokeConfigUpdate(d *schema.ResourceData, meta inte
 	}
 
 	request := &fc.PutFunctionAsyncInvokeConfigInput{
-		ServiceName:  StringPointer(serviceName),
-		FunctionName: StringPointer(functionName),
+		ServiceName:  helper.StringPointer(serviceName),
+		FunctionName: helper.StringPointer(functionName),
 	}
-	request.MaxAsyncRetryAttempts = Int64Pointer(int64(d.Get("maximum_retry_attempts").(int)))
+	request.MaxAsyncRetryAttempts = helper.Int64Pointer(int64(d.Get("maximum_retry_attempts").(int)))
 	request.DestinationConfig = parseFCDestinationConfig(d.Get("destination_config").([]interface{}))
-	request.Qualifier = StringPointer(qualifier)
+	request.Qualifier = helper.StringPointer(qualifier)
 
 	if v, ok := d.GetOk("maximum_event_age_in_seconds"); ok {
-		request.MaxAsyncEventAgeInSeconds = Int64Pointer(int64(v.(int)))
+		request.MaxAsyncEventAgeInSeconds = helper.Int64Pointer(int64(v.(int)))
 	}
 
 	if v, ok := d.GetOkExists("stateful_invocation"); ok {
-		request.StatefulInvocation = BoolPointer(v.(bool))
+		request.StatefulInvocation = helper.BoolPointer(v.(bool))
 	}
 
 	var response *fc.PutFunctionAsyncInvokeConfigOutput
@@ -307,7 +308,7 @@ func expandFCDestinationConfigOnSuccess(l []interface{}) *fc.Destination {
 	var onSuccess *fc.Destination
 	if v, ok := m["destination"].(string); ok {
 		onSuccess = &fc.Destination{
-			Destination: StringPointer(v),
+			Destination: helper.StringPointer(v),
 		}
 	}
 
@@ -323,7 +324,7 @@ func expandFCDestinationConfigOnFailure(l []interface{}) *fc.Destination {
 	var onFailure *fc.Destination
 	if v, ok := m["destination"].(string); ok {
 		onFailure = &fc.Destination{
-			Destination: StringPointer(v),
+			Destination: helper.StringPointer(v),
 		}
 	}
 

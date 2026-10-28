@@ -6,6 +6,7 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -121,7 +122,7 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 			return fcClient.ListTriggers(request)
 		})
 		if err != nil {
-			return errs.WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_triggers", "ListTriggers", errs.FcGoSdk)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_fc_triggers", "ListTriggers", errs.FcGoSdk)
 		}
 		logs.AddDebug("ListTriggers", raw, requestInfo, request)
 		response, _ := raw.(*fc.ListTriggersOutput)
@@ -181,7 +182,7 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("triggers", triggerMappings); err != nil {
 		return errs.WrapError(err)
 	}
@@ -194,7 +195,7 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), triggerMappings)
+		helper.WriteToFile(output.(string), triggerMappings)
 	}
 	return nil
 }

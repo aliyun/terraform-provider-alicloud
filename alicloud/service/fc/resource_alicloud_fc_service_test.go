@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
@@ -112,7 +113,7 @@ func testSweepFCServices(region string) error {
 						triggerDeleted = true
 						if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 							return fcClient.DeleteTrigger(&fc.DeleteTriggerInput{
-								ServiceName:  StringPointer(name),
+								ServiceName:  helper.StringPointer(name),
 								FunctionName: function.FunctionName,
 								TriggerName:  trigger.TriggerName,
 							})
@@ -135,7 +136,7 @@ func testSweepFCServices(region string) error {
 				}
 				if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 					return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
-						ServiceName:  StringPointer(name),
+						ServiceName:  helper.StringPointer(name),
 						FunctionName: function.FunctionName,
 					})
 				}); err != nil {
@@ -160,7 +161,7 @@ func testSweepFCServices(region string) error {
 			request["VpcId"] = *v.VPCConfig.VPCID
 			request["VSwitchId"] = v.VPCConfig.VSwitchIDs[0]
 			request["RegionId"] = client.RegionId
-			request["PageSize"] = PageSizeLarge
+			request["PageSize"] = helper.PageSizeLarge
 			request["PageNumber"] = 1
 			response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
@@ -192,7 +193,7 @@ func testSweepFCServices(region string) error {
 		log.Printf("[INFO] Prepare to delete FC versions...")
 		input := &fc.ListServiceVersionsInput{
 			ServiceName: v.ServiceName,
-			Limit:       Int32Pointer(100),
+			Limit:       helper.Int32Pointer(100),
 		}
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.ListServiceVersions(input)
@@ -218,7 +219,7 @@ func testSweepFCServices(region string) error {
 		log.Printf("[INFO] Deleting FC services: %s (%s)", name, id)
 		_, err = client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.DeleteService(&fc.DeleteServiceInput{
-				ServiceName: StringPointer(name),
+				ServiceName: helper.StringPointer(name),
 			})
 		})
 		if err != nil {

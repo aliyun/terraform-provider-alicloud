@@ -44,7 +44,7 @@ func dataSourceAlicloudFcServiceRead(d *schema.ResourceData, meta interface{}) e
 		return errs.WrapError(err)
 	}
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2020-03-10"), nil, StringPointer("POST"), StringPointer("AK"), String("/service/open"), nil, nil, request, &util.RuntimeOptions{})
+		response, err := conn.DoRequestWithAction(helper.StringPointer(action), helper.StringPointer("2020-03-10"), nil, helper.StringPointer("POST"), helper.StringPointer("AK"), helper.String("/service/open"), nil, nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || helper.NeedRetry(err) {
 				return retry.RetryableError(err)
@@ -61,7 +61,7 @@ func dataSourceAlicloudFcServiceRead(d *schema.ResourceData, meta interface{}) e
 			d.Set("status", "Opened")
 			return nil
 		}
-		return errs.WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_service", action, errs.AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_fc_service", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	d.SetId("FcServiceHasBeenOpened")
 	d.Set("status", "Opened")

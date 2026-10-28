@@ -6,6 +6,7 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -113,7 +114,7 @@ func testSweepFCFunctionAsyncInvokeConfig(region string) error {
 						triggerDeleted = true
 						if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 							return fcClient.DeleteTrigger(&fc.DeleteTriggerInput{
-								ServiceName:  StringPointer(name),
+								ServiceName:  helper.StringPointer(name),
 								FunctionName: function.FunctionName,
 								TriggerName:  trigger.TriggerName,
 							})
@@ -133,7 +134,7 @@ func testSweepFCFunctionAsyncInvokeConfig(region string) error {
 				// remove function invoke async config
 				if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 					return fcClient.DeleteFunctionAsyncInvokeConfig(&fc.DeleteFunctionAsyncInvokeConfigInput{
-						ServiceName:  StringPointer(name),
+						ServiceName:  helper.StringPointer(name),
 						FunctionName: function.FunctionName,
 					})
 				}); err != nil {
@@ -145,7 +146,7 @@ func testSweepFCFunctionAsyncInvokeConfig(region string) error {
 				}
 				if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 					return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
-						ServiceName:  StringPointer(name),
+						ServiceName:  helper.StringPointer(name),
 						FunctionName: function.FunctionName,
 					})
 				}); err != nil {
@@ -165,7 +166,7 @@ func testSweepFCFunctionAsyncInvokeConfig(region string) error {
 		log.Printf("[INFO] Deleting FC services: %s (%s)", name, id)
 		_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.DeleteService(&fc.DeleteServiceInput{
-				ServiceName: StringPointer(name),
+				ServiceName: helper.StringPointer(name),
 			})
 		})
 		if err != nil {
