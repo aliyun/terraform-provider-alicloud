@@ -345,7 +345,6 @@ func Provider() *schema.Provider {
 			"alicloud_cen_transit_route_table_aggregations":             dataSourceAlicloudCenTransitRouteTableAggregations(),
 
 			// chatbot
-			"alicloud_chatbot_agents": dataSourceAlicloudChatbotAgents(),
 
 			// click
 			"alicloud_click_house_db_clusters":     dataSourceAlicloudClickHouseDbClusters(),
@@ -1422,7 +1421,6 @@ func Provider() *schema.Provider {
 			"alicloud_cen_transit_route_table_aggregation":             resourceAliCloudCenTransitRouteTableAggregation(),
 
 			// chatbot
-			"alicloud_chatbot_publish_task": resourceAlicloudChatbotPublishTask(),
 
 			// click
 			"alicloud_click_house_enterprise_db_cluster_computing_group": resourceAliCloudClickHouseEnterpriseDbClusterComputingGroup(),
