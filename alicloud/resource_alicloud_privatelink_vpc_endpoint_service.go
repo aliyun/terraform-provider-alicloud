@@ -81,17 +81,18 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 				//
 				// zone_id is Optional + Computed, so including it in the hash
 				// could in principle churn when the field is omitted in config
-				// but read back from the server. In practice this cannot happen:
-				// for alb/nlb/gwlb the upstream API makes ZoneId required on
-				// attach, so users always specify it and the read-back value
-				// matches the configured one; for slb the upstream returns no
-				// zone, and Read normalizes the absent value to "" via
-				// vpcEndpointServiceResourceZoneId so both sides hash "" and the
-				// single-attachment behavior is unchanged. No perpetual diff /
-				// detach-attach churn is introduced.
+				// but read back from the server. For alb/nlb/gwlb the upstream
+				// API makes ZoneId required on attach, so users always specify it
+				// and the read-back value matches the configured one. For slb the
+				// upstream can return a non-empty ZoneId (e.g. the zone the SLB was
+				// created in), so vpcEndpointServiceResourceZoneIdForType normalizes
+				// zone_id to "" for slb on BOTH the config-side hash and the Read
+				// state; ALB/NLB/GWLB keep zone_id in the hash so cross-zone
+				// attachments remain distinct. No perpetual diff / detach-attach
+				// churn is introduced.
 				Set: func(v interface{}) int {
 					m := v.(map[string]interface{})
-					return helper.Hashcode(fmt.Sprintf("%s|%s|%s", m["resource_id"], m["resource_type"], vpcEndpointServiceResourceZoneId(m["zone_id"])))
+					return helper.Hashcode(fmt.Sprintf("%s|%s|%s", m["resource_id"], m["resource_type"], vpcEndpointServiceResourceZoneIdForType(m["resource_type"], m["zone_id"])))
 				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -297,7 +298,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceRead(d *schema.ResourceData, m
 		// Normalize ZoneId so an absent/nil API value is stored as "" rather than
 		// nil; this keeps TypeSet element hashing stable (nil vs "" hash
 		// differently) and avoids perpetual diff / detach-attach churn.
-		zoneId := vpcEndpointServiceResourceZoneId(item["ZoneId"])
+		zoneId := vpcEndpointServiceResourceZoneIdForType(item["ResourceType"], item["ZoneId"])
 		resourceMap := map[string]interface{}{
 			"resource_id":   item["ResourceId"],
 			"resource_type": item["ResourceType"],
@@ -366,6 +367,20 @@ func vpcEndpointServiceResourceZoneId(zoneId interface{}) string {
 		return ""
 	}
 	return s
+}
+
+// vpcEndpointServiceResourceZoneIdForType returns the ZoneId to use in a
+// resource attachment's TypeSet hash for a given resource_type. SLB
+// attachments are single-attachment per resource and the upstream can
+// return a non-empty ZoneId, so zone_id is normalized to "" for slb on
+// both the config-side hash and the Read state to keep the legacy
+// single-attachment behavior unchanged. ALB/NLB/GWLB keep zone_id in the
+// hash so cross-zone attachments of the same backend remain distinct.
+func vpcEndpointServiceResourceZoneIdForType(resourceType, zoneId interface{}) string {
+	if fmt.Sprint(resourceType) == "slb" {
+		return ""
+	}
+	return vpcEndpointServiceResourceZoneId(zoneId)
 }
 
 func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData, meta interface{}) error {
