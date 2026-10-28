@@ -1,17 +1,21 @@
-package alicloud
+package dbs
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudDbsBackupPlan() *schema.Resource {
+func ResourceDbsBackupPlan() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudDbsBackupPlanCreate,
 		Read:   resourceAlicloudDbsBackupPlanRead,
@@ -164,13 +168,13 @@ func resourceAlicloudDbsBackupPlan() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"Year", "Month"}, false),
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				DiffSuppressFunc: postPaidDiffSuppressFunc,
 			},
 			"used_time": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ValidateFunc:     validation.IntBetween(1, 11),
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				DiffSuppressFunc: postPaidDiffSuppressFunc,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -349,12 +353,12 @@ func resourceAlicloudDbsBackupPlanCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("used_time"); ok {
 		request["UsedTime"] = v
 	}
-	request["ClientToken"] = buildClientToken("CreateAndStartBackupPlan")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateAndStartBackupPlan")
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"undefined"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"undefined"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -362,31 +366,31 @@ func resourceAlicloudDbsBackupPlanCreate(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dbs_backup_plan", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dbs_backup_plan", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["BackupPlanId"]))
-	dbsService := DbsService{client}
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dbsService.DbsBackupPlanStateRefreshFunc(d.Id(), []string{"stop"}))
+	dbsService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dbsService.DbsBackupPlanStateRefreshFunc(d.Id(), []string{"stop"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAlicloudDbsBackupPlanUpdate(d, meta)
 }
 func resourceAlicloudDbsBackupPlanRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dbsService := DbsService{client}
+	dbsService := NewService(client)
 	object, err := dbsService.DescribeDbsBackupPlan(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_dbs_backup_plan dbsService.DescribeDbsBackupPlan Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if v, ok := object["BackupGatewayId"]; ok && fmt.Sprint(object["BackupGatewayId"]) != "0" {
 		d.Set("backup_gateway_id", fmt.Sprint(v))
@@ -417,19 +421,19 @@ func resourceAlicloudDbsBackupPlanRead(d *schema.ResourceData, meta interface{})
 
 	describeBackupPlanBillingObject, err := dbsService.DescribeBackupPlanBilling(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("payment_type", convertDbsBackupPlanPaymentTypeResponse(describeBackupPlanBillingObject["BuyChargeType"]))
 	return nil
 }
 func resourceAlicloudDbsBackupPlanUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dbsService := DbsService{client}
+	dbsService := NewService(client)
 	var response map[string]interface{}
 	if d.HasChange("status") {
 		object, err := dbsService.DescribeDbsBackupPlan(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		target := d.Get("status").(string)
 		if object["BackupPlanStatus"].(string) != target {
@@ -439,12 +443,12 @@ func resourceAlicloudDbsBackupPlanUpdate(d *schema.ResourceData, meta interface{
 				}
 				request["StopMethod"] = "ALL"
 				action := "StopBackupPlan"
-				request["ClientToken"] = buildClientToken("StopBackupPlan")
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				request["ClientToken"] = helper.BuildClientToken("StopBackupPlan")
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 					response, err = client.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -452,13 +456,13 @@ func resourceAlicloudDbsBackupPlanUpdate(d *schema.ResourceData, meta interface{
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"pause"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbsService.DbsBackupPlanStateRefreshFunc(d.Id(), []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"pause"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbsService.DbsBackupPlanStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 			if target == "running" {
@@ -466,12 +470,12 @@ func resourceAlicloudDbsBackupPlanUpdate(d *schema.ResourceData, meta interface{
 					"BackupPlanId": d.Id(),
 				}
 				action := "StartBackupPlan"
-				request["ClientToken"] = buildClientToken("StartBackupPlan")
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				request["ClientToken"] = helper.BuildClientToken("StartBackupPlan")
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 					response, err = client.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -479,13 +483,13 @@ func resourceAlicloudDbsBackupPlanUpdate(d *schema.ResourceData, meta interface{
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbsService.DbsBackupPlanStateRefreshFunc(d.Id(), []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbsService.DbsBackupPlanStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 		}
@@ -494,7 +498,7 @@ func resourceAlicloudDbsBackupPlanUpdate(d *schema.ResourceData, meta interface{
 }
 func resourceAlicloudDbsBackupPlanDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dbsService := DbsService{client}
+	dbsService := NewService(client)
 	action := "ReleaseBackupPlan"
 	var response map[string]interface{}
 	var err error
@@ -502,12 +506,12 @@ func resourceAlicloudDbsBackupPlanDelete(d *schema.ResourceData, meta interface{
 		"BackupPlanId": d.Id(),
 	}
 
-	request["ClientToken"] = buildClientToken("ReleaseBackupPlan")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("ReleaseBackupPlan")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -515,16 +519,16 @@ func resourceAlicloudDbsBackupPlanDelete(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidJobId"}) {
+		if errs.IsExpectedErrors(err, []string{"InvalidJobId"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, dbsService.DbsBackupPlanStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, dbsService.DbsBackupPlanStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
@@ -585,4 +589,21 @@ func convertDbsBackupPeriodResponse(source interface{}) interface{} {
 
 	}
 	return source
+}
+
+// postPaidDiffSuppressFunc mirrors the shared root helper of the same name. The
+// validators leaf package does not yet export it; migrating that shared helper
+// out of the root package is a separate baseline change and is out of scope for
+// this per-product split. This local copy preserves the original diff-suppress
+// behaviour 1:1 so the dbs schema keeps its public semantics.
+func postPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	// payment_type is the instance_charge_type's replacement.
+	// If both instance_charge_type and payment_type are "", it means hiding a default "PostPaid"
+	if v, ok := d.GetOk("instance_charge_type"); ok && strings.ToLower(v.(string)) == "prepaid" {
+		return false
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+		return false
+	}
+	return true
 }

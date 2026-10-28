@@ -474,9 +474,6 @@ func Provider() *schema.Provider {
 			"alicloud_dbfs_snapshots":               dataSourceAlicloudDbfsSnapshots(),
 			"alicloud_dbfs_auto_snap_shot_policies": dataSourceAlicloudDbfsAutoSnapShotPolicies(),
 
-			// dbs
-			"alicloud_dbs_backup_plans": dataSourceAlicloudDbsBackupPlans(),
-
 			// dcdn
 			"alicloud_dcdn_service":      dataSourceAlicloudDcdnService(),
 			"alicloud_dcdn_domains":      dataSourceAlicloudDcdnDomains(),
@@ -1596,9 +1593,6 @@ func Provider() *schema.Provider {
 			"alicloud_dbfs_instance_attachment":   resourceAliCloudDbfsInstanceAttachment(),
 			"alicloud_dbfs_service_linked_role":   resourceAlicloudDbfsServiceLinkedRole(),
 			"alicloud_dbfs_auto_snap_shot_policy": resourceAlicloudDbfsAutoSnapShotPolicy(),
-
-			// dbs
-			"alicloud_dbs_backup_plan": resourceAlicloudDbsBackupPlan(),
 
 			// dcdn
 			"alicloud_dcdn_domain":                       resourceAliCloudDcdnDomain(),
