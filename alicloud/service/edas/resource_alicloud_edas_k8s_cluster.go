@@ -1,0 +1,223 @@
+package edas
+
+import (
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAlicloudEdasK8sCluster() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAlicloudEdasK8sClusterCreate,
+		Read:   resourceAlicloudEdasK8sClusterRead,
+		Delete: resourceAlicloudEdasK8sClusterDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(60 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"cs_cluster_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"namespace_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cluster_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"cluster_type": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"network_mode": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"cluster_import_status": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func resourceAlicloudEdasK8sClusterCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	edasService := EdasService{client}
+
+	request := edas.CreateImportK8sClusterRequest()
+	request.RegionId = client.RegionId
+	request.ClusterId = d.Get("cs_cluster_id").(string)
+	if v, ok := d.GetOk("namespace_id"); ok {
+		request.NamespaceId = v.(string)
+	}
+	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.ImportK8sCluster(request)
+	})
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_edas_k8s_cluster", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+	logs.AddDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	response, _ := raw.(*edas.ImportK8sClusterResponse)
+	if response.Code != 200 {
+		return errs.WrapError(errs.Error("import k8s cluster failed for %s", response.Message))
+	}
+	if len(response.Data) == 0 {
+		return errs.WrapError(errs.Error("null cluster id after import k8s cluster"))
+	}
+	d.SetId(response.Data)
+	// Wait until import succeed
+	req := edas.CreateGetClusterRequest()
+	req.ClusterId = response.Data
+	wait := helper.IncrementalWait(1*time.Second, 2*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+			return edasClient.GetCluster(req)
+		})
+		response, _ := raw.(*edas.GetClusterResponse)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{errs.ThrottlingUser}) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		if response.Code != 200 {
+			return retry.NonRetryableError(errs.Error("Get cluster failed for %s", response.Message))
+		}
+
+		logs.AddDebug(request.GetActionName(), raw, request.RoaRequest, request)
+		if response.Cluster.ClusterImportStatus == 3 {
+			return retry.RetryableError(errs.Error("cluster is importing"))
+		}
+		if response.Cluster.ClusterImportStatus == 1 {
+			return nil
+		}
+
+		return retry.NonRetryableError(errs.Error("cluster status abnormal"))
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return resourceAlicloudEdasK8sClusterRead(d, meta)
+}
+
+func resourceAlicloudEdasK8sClusterRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	edasService := EdasService{client}
+
+	object, err := edasService.DescribeEdasK8sCluster(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("cluster_name", object.ClusterName)
+	d.Set("cluster_type", object.ClusterType)
+	d.Set("network_mode", object.NetworkMode)
+	d.Set("vpc_id", object.VpcId)
+	d.Set("namespace_id", object.RegionId)
+	d.Set("cluster_import_status", object.ClusterImportStatus)
+	d.Set("cs_cluster_id", object.CsClusterId)
+
+	return nil
+}
+
+func resourceAlicloudEdasK8sClusterDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	edasService := EdasService{client}
+
+	clusterId := d.Id()
+	regionId := client.RegionId
+
+	request := edas.CreateDeleteClusterRequest()
+	request.RegionId = regionId
+	request.ClusterId = clusterId
+
+	wait := helper.IncrementalWait(1*time.Second, 2*time.Second)
+	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+			return edasClient.DeleteCluster(request)
+		})
+		response, _ := raw.(*edas.DeleteClusterResponse)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{errs.ThrottlingUser}) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		if response.Code != 200 {
+			return retry.NonRetryableError(errs.Error("Delete EDAS K8s cluster failed for %s", response.Message))
+		}
+
+		logs.AddDebug(request.GetActionName(), raw, request.RoaRequest, request)
+		return nil
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+
+	reqGet := edas.CreateGetClusterRequest()
+	reqGet.RegionId = regionId
+	reqGet.ClusterId = clusterId
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+			return edasClient.GetCluster(reqGet)
+		})
+		response, _ := raw.(*edas.GetClusterResponse)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{errs.ThrottlingUser}) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+		if response.Code == 200 {
+			// ClusterImportStatus 4 indicates the cluster registration has been marked
+			// for deletion by EDAS. The record may linger in GetCluster responses while
+			// the underlying ACK cluster tears down, but the EDAS-side deletion is done.
+			if response.Cluster.ClusterImportStatus == 4 {
+				return nil
+			}
+			return retry.RetryableError(errs.Error("cluster deleting"))
+		} else if response.Code == 601 && strings.Contains(response.Message, "does not exist") {
+			return nil
+		} else {
+			return retry.NonRetryableError(errs.Error("check cluster status failed for %s", response.Message))
+		}
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
