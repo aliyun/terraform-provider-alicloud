@@ -47,7 +47,8 @@ func testSweepEmrCluster(region string) error {
 		})
 
 		if err != nil {
-			return fmt.Errorf("Error retrieving EMR Cluster: %s", err)
+			log.Printf("[ERROR] Failed to list EMR Cluster: %s", err)
+			break
 		}
 
 		resp, _ := raw.(*emr.ListClustersResponse)
@@ -90,7 +91,8 @@ func testSweepEmrCluster(region string) error {
 		}
 
 		if page, err := getNextpageNumber(req.PageNumber); err != nil {
-			return err
+			log.Printf("[ERROR] Failed to get next page for EMR Cluster: %s", err)
+			break
 		} else {
 			req.PageNumber = page
 		}

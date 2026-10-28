@@ -43,11 +43,13 @@ func testSweepEmrV2Cluster(region string) error {
 	for {
 		listClustersResponse, err := client.RpcPost("Emr", "2021-03-20", listClustersAction, nil, listClustersRequest, true)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_emrv2_cluster", listClustersAction, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list EMR V2 Cluster: %s", err)
+			break
 		}
 		resp, err := jsonpath.Get("$.Clusters", listClustersResponse)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, listClustersAction, "$.Clusters", listClustersResponse)
+			log.Printf("[ERROR] Failed to parse EMR V2 Cluster list: %s", err)
+			break
 		}
 		if resp == nil || len(resp.([]interface{})) == 0 {
 			break
