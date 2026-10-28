@@ -1,4 +1,4 @@
-package alicloud
+package waf_test
 
 import (
 	"fmt"
@@ -11,10 +11,13 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/waf"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,22 +25,22 @@ import (
 // lintignore: AT001
 func TestAccAliCloudWafProtectionModule_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	resourceId := "alicloud_waf_protection_module.default"
-	ra := resourceAttrInit(resourceId, AlicloudWAFProtectionModuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &WafOpenapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudWAFProtectionModuleMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return waf.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafProtectionModule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%swafprotectionmodule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWAFProtectionModuleBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%swafprotectionmodule%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudWAFProtectionModuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -49,8 +52,8 @@ func TestAccAliCloudWafProtectionModule_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain":       CHECKSET,
-						"instance_id":  CHECKSET,
+						"domain":       acctest.CHECKSET,
+						"instance_id":  acctest.CHECKSET,
 						"defense_type": "ac_cc",
 						"mode":         "0",
 						"status":       "0",
@@ -131,8 +134,9 @@ resource "alicloud_waf_domain" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
-	p := Provider().ResourcesMap
-	d, _ := schema.InternalMap(p["alicloud_waf_protection_module"].Schema).Data(nil, nil)
+	p := acctest.Provider.ResourcesMap
+	resourceSchema := p["alicloud_waf_protection_module"]
+	d, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_waf_protection_module"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
@@ -148,7 +152,7 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := wafTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -165,20 +169,20 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
 		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_waf_protection_module", "MockDefenseType"))
+			return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_waf_protection_module", "MockDefenseType"))
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
@@ -204,13 +208,13 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewWafClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudWafProtectionModuleCreate(d, rawClient)
+		err := resourceSchema.Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -227,7 +231,7 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudWafProtectionModuleCreate(d, rawClient)
+		err := resourceSchema.Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -244,7 +248,7 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudWafProtectionModuleCreate(dCreate, rawClient)
+		err := resourceSchema.Create(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -255,14 +259,14 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewWafClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
 
-		err := resourceAlicloudWafProtectionModuleUpdate(d, rawClient)
+		err := resourceSchema.Update(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -297,7 +301,7 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudWafProtectionModuleUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -332,7 +336,7 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudWafProtectionModuleUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -367,7 +371,7 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudWafProtectionModuleUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -402,13 +406,13 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudWafProtectionModuleUpdate(resourceData1, rawClient)
+		err := resourceSchema.Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
 	// Delete
 	t.Run("DeleteNormal", func(t *testing.T) {
-		err := resourceAlicloudWafProtectionModuleDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		assert.Nil(t, err)
 	})
 
@@ -424,7 +428,7 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudWafProtectionModuleRead(d, rawClient)
+		err := resourceSchema.Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -440,7 +444,7 @@ func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudWafProtectionModuleRead(d, rawClient)
+		err := resourceSchema.Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})

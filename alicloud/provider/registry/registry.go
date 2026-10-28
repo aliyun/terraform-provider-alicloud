@@ -157,6 +157,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcipam"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcpeer"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/waf"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/wafopenapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/yundunbastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/yundundbaudit"
@@ -322,6 +323,7 @@ var servicePackages = []conns.ServicePackage{
 	vpcipam.ServicePackage(),
 	vpcpeer.ServicePackage(),
 	vs.ServicePackage(),
+	waf.ServicePackage(),
 	wafopenapi.ServicePackage(),
 	yundunbastionhost.ServicePackage(),
 	yundundbaudit.ServicePackage(),

@@ -1,4 +1,4 @@
-package alicloud
+package waf_test
 
 import (
 	"fmt"
@@ -6,45 +6,46 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudWafCertificateDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
 			"ids":         `["${alicloud_waf_certificate.default.id}"]`,
 			"instance_id": `"${alicloud_waf_certificate.default.instance_id}"`,
 			"domain":      `"${alicloud_waf_certificate.default.domain}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
 			"ids":         `["${alicloud_waf_certificate.default.id}_fake"]`,
 			"instance_id": `"${alicloud_waf_certificate.default.instance_id}"`,
 			"domain":      `"${alicloud_waf_certificate.default.domain}"`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
 			"name_regex":  `"${alicloud_waf_certificate.default.certificate_name}"`,
 			"instance_id": `"${alicloud_waf_certificate.default.instance_id}"`,
 			"domain":      `"${alicloud_waf_certificate.default.domain}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
 			"name_regex":  `"${alicloud_waf_certificate.default.certificate_name}_fake"`,
 			"instance_id": `"${alicloud_waf_certificate.default.instance_id}"`,
 			"domain":      `"${alicloud_waf_certificate.default.domain}"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
 			"ids":         `["${alicloud_waf_certificate.default.id}"]`,
 			"instance_id": `"${alicloud_waf_certificate.default.instance_id}"`,
 			"domain":      `"${alicloud_waf_certificate.default.domain}"`,
 			"name_regex":  `"${alicloud_waf_certificate.default.certificate_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudWafCertificateDataSourceName(rand, map[string]string{
 			"ids":         `["${alicloud_waf_certificate.default.id}_fake"]`,
 			"instance_id": `"${alicloud_waf_certificate.default.instance_id}"`,
 			"domain":      `"${alicloud_waf_certificate.default.domain}"`,
@@ -56,8 +57,8 @@ func TestAccAliCloudWafCertificateDataSource(t *testing.T) {
 			"ids.#":                           "1",
 			"names.#":                         "1",
 			"certificates.#":                  "1",
-			"certificates.0.certificate_name": CHECKSET,
-			"certificates.0.certificate_id":   CHECKSET,
+			"certificates.0.certificate_name": acctest.CHECKSET,
+			"certificates.0.certificate_id":   acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudWafCertificateSourceNameMapFunc = func(rand int) map[string]string {
@@ -66,16 +67,16 @@ func TestAccAliCloudWafCertificateDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudWafCertificateCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_waf_certificates.default",
-		existMapFunc: existAlicloudWafCertificateDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudWafCertificateSourceNameMapFunc,
+	var alicloudWafCertificateCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_waf_certificates.default",
+		ExistMapFunc: existAlicloudWafCertificateDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudWafCertificateSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
+		acctest.PreCheck(t)
+		wafPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
 	}
-	alicloudWafCertificateCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	alicloudWafCertificateCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
 func testAccCheckAlicloudWafCertificateDataSourceName(rand int, attrMap map[string]string) string {
@@ -219,6 +220,6 @@ EOF
 data "alicloud_waf_certificates" "default" {	
 	%s
 }
-`, rand, os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE") == string(IntlSite), strings.Join(pairs, " \n "))
+`, rand, os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE") == string(acctest.IntlSite), strings.Join(pairs, " \n "))
 	return config
 }

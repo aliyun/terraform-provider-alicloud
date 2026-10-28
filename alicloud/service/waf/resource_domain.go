@@ -1,4 +1,4 @@
-package alicloud
+package waf
 
 import (
 	"fmt"
@@ -6,17 +6,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudWafDomain() *schema.Resource {
+func ResourceDomain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudWafDomainCreate,
-		Read:   resourceAlicloudWafDomainRead,
-		Update: resourceAlicloudWafDomainUpdate,
-		Delete: resourceAlicloudWafDomainDelete,
+		Create: resourceDomainCreate,
+		Read:   resourceDomainRead,
+		Update: resourceDomainUpdate,
+		Delete: resourceDomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -144,9 +148,9 @@ func resourceAlicloudWafDomain() *schema.Resource {
 	}
 }
 
-func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDomainCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	wafOpenapiService := WafOpenapiService{client}
+	wafOpenapiService := NewService(client)
 	var response map[string]interface{}
 	action := "CreateDomain"
 	request := make(map[string]interface{})
@@ -164,15 +168,15 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 	} else if v, ok := d.GetOk("domain"); ok {
 		request["Domain"] = v
 	} else {
-		return WrapError(Error(`[ERROR] Argument "domain" or "domain_name" must be set one!`))
+		return errs.WrapError(errs.Error(`[ERROR] Argument "domain" or "domain_name" must be set one!`))
 	}
 
 	if v, ok := d.GetOk("http2_port"); ok {
-		request["Http2Port"] = convertListToJsonString(v.(*schema.Set).List())
+		request["Http2Port"] = convert.ConvertListToJsonString(v.(*schema.Set).List())
 	}
 
 	if v, ok := d.GetOk("http_port"); ok {
-		request["HttpPort"] = convertListToJsonString(v.(*schema.Set).List())
+		request["HttpPort"] = convert.ConvertListToJsonString(v.(*schema.Set).List())
 	}
 
 	if v, ok := d.GetOk("http_to_user_ip"); ok {
@@ -180,7 +184,7 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if v, ok := d.GetOk("https_port"); ok {
-		request["HttpsPort"] = convertListToJsonString(v.(*schema.Set).List())
+		request["HttpsPort"] = convert.ConvertListToJsonString(v.(*schema.Set).List())
 	}
 
 	if v, ok := d.GetOk("https_redirect"); ok {
@@ -197,7 +201,7 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("log_headers"); ok {
 		logHeaders, err := wafOpenapiService.convertLogHeadersToString(v.(*schema.Set).List())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["LogHeaders"] = logHeaders
 	}
@@ -211,96 +215,96 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if v, ok := d.GetOk("source_ips"); ok {
-		request["SourceIps"] = convertListToJsonString(v.(*schema.Set).List())
+		request["SourceIps"] = convert.ConvertListToJsonString(v.(*schema.Set).List())
 	}
 
 	if v, ok := d.GetOk("write_time"); ok {
 		request["WriteTime"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_waf_domain", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_waf_domain", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Domain"]))
 
-	return resourceAlicloudWafDomainRead(d, meta)
+	return resourceDomainRead(d, meta)
 }
-func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	wafOpenapiService := WafOpenapiService{client}
+	wafOpenapiService := NewService(client)
 	object, err := wafOpenapiService.DescribeWafDomain(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_waf_domain wafOpenapiService.DescribeWafDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("domain_name", parts[1])
 	d.Set("domain", parts[1])
 	d.Set("instance_id", parts[0])
-	clusterType, err := formatInt(object["ClusterType"])
+	clusterType, err := convert.FormatInt(object["ClusterType"])
 	if err != nil {
 		return err
 	}
 	d.Set("cluster_type", convertClusterTypeResponse(clusterType))
 	d.Set("cname", object["Cname"])
-	connection_timeVal, err := formatInt(object["ConnectionTime"])
+	connection_timeVal, err := convert.FormatInt(object["ConnectionTime"])
 	if err != nil {
 		return err
 	}
 	d.Set("connection_time", connection_timeVal)
-	http2_portVal, err := convertJsonStringToStringList(object["Http2Port"])
+	http2_portVal, err := convert.ConvertJsonStringToStringList(object["Http2Port"])
 	if err != nil {
 		return err
 	}
 	d.Set("http2_port", http2_portVal)
-	http_portVal, err := convertJsonStringToStringList(object["HttpPort"])
+	http_portVal, err := convert.ConvertJsonStringToStringList(object["HttpPort"])
 	if err != nil {
 		return err
 	}
 	d.Set("http_port", http_portVal)
-	httpToUserIp, err := formatInt(object["HttpToUserIp"])
+	httpToUserIp, err := convert.FormatInt(object["HttpToUserIp"])
 	if err != nil {
 		return err
 	}
 	d.Set("http_to_user_ip", convertHttpToUserIpResponse(httpToUserIp))
-	https_portVal, err := convertJsonStringToStringList(object["HttpsPort"])
+	https_portVal, err := convert.ConvertJsonStringToStringList(object["HttpsPort"])
 	if err != nil {
 		return err
 	}
 	d.Set("https_port", https_portVal)
-	httpsRedirect, err := formatInt(object["HttpsRedirect"])
+	httpsRedirect, err := convert.FormatInt(object["HttpsRedirect"])
 	if err != nil {
 		return err
 	}
 	d.Set("https_redirect", convertHttpsRedirectResponse(httpsRedirect))
-	isAccessProduct, err := formatInt(object["IsAccessProduct"])
+	isAccessProduct, err := convert.FormatInt(object["IsAccessProduct"])
 	if err != nil {
 		return err
 	}
 	d.Set("is_access_product", convertIsAccessProductResponse(isAccessProduct))
-	loadBalancing, err := formatInt(object["LoadBalancing"])
+	loadBalancing, err := convert.FormatInt(object["LoadBalancing"])
 	if err != nil {
 		return err
 	}
@@ -315,30 +319,30 @@ func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) err
 			})
 		}
 		if err := d.Set("log_headers", logHeaders); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
-	read_timeVal, err := formatInt(object["ReadTime"])
+	read_timeVal, err := convert.FormatInt(object["ReadTime"])
 	if err != nil {
 		return err
 	}
 	d.Set("read_time", read_timeVal)
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("source_ips", object["SourceIps"])
-	write_timeVal, err := formatInt(object["WriteTime"])
+	write_timeVal, err := convert.FormatInt(object["WriteTime"])
 	if err != nil {
 		return err
 	}
 	d.Set("write_time", write_timeVal)
 	return nil
 }
-func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	wafOpenapiService := WafOpenapiService{client}
+	wafOpenapiService := NewService(client)
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Partial(true)
 
@@ -349,21 +353,21 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 		request["ClusterType"] = convertClusterTypeRequest(d.Get("cluster_type").(string))
 		action := "ModifyDomainClusterType"
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update := false
@@ -382,11 +386,11 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("http2_port") {
 		update = true
 	}
-	request["Http2Port"] = convertListToJsonString(d.Get("http2_port").(*schema.Set).List())
+	request["Http2Port"] = convert.ConvertListToJsonString(d.Get("http2_port").(*schema.Set).List())
 	if d.HasChange("http_port") {
 		update = true
 	}
-	request["HttpPort"] = convertListToJsonString(d.Get("http_port").(*schema.Set).List())
+	request["HttpPort"] = convert.ConvertListToJsonString(d.Get("http_port").(*schema.Set).List())
 	if d.HasChange("http_to_user_ip") {
 		update = true
 	}
@@ -394,7 +398,7 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("https_port") {
 		update = true
 	}
-	request["HttpsPort"] = convertListToJsonString(d.Get("https_port").(*schema.Set).List())
+	request["HttpsPort"] = convert.ConvertListToJsonString(d.Get("https_port").(*schema.Set).List())
 	if d.HasChange("https_redirect") {
 		update = true
 	}
@@ -408,7 +412,7 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 	logHeaders, err := wafOpenapiService.convertLogHeadersToString(d.Get("log_headers").(*schema.Set).List())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request["LogHeaders"] = logHeaders
 	if d.HasChange("read_time") {
@@ -418,38 +422,38 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("source_ips") {
 		update = true
 	}
-	request["SourceIps"] = convertListToJsonString(d.Get("source_ips").(*schema.Set).List())
+	request["SourceIps"] = convert.ConvertListToJsonString(d.Get("source_ips").(*schema.Set).List())
 	if d.HasChange("write_time") {
 		update = true
 	}
 	request["WriteTime"] = d.Get("write_time")
 	if update {
 		action := "ModifyDomain"
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudWafDomainRead(d, meta)
+	return resourceDomainRead(d, meta)
 }
-func resourceAlicloudWafDomainDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDomainDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	action := "DeleteDomain"
 	var response map[string]interface{}
@@ -458,24 +462,24 @@ func resourceAlicloudWafDomainDelete(d *schema.ResourceData, meta interface{}) e
 		"InstanceId": parts[0],
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNotExist"}) {
+		if errs.IsExpectedErrors(err, []string{"DomainNotExist"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

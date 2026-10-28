@@ -51,4 +51,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `domain` - The domain that you want to add to WAF.
   * `id` - The ID of the Certificate.
   * `instance_id` - WAF instance ID.
-	
+  * `is_using` - Whether the certificate is in use.
+  * `sans` - The Subject Alternative Names (SAN) of the certificate.

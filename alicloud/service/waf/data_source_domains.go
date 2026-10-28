@@ -1,4 +1,4 @@
-package alicloud
+package waf
 
 import (
 	"fmt"
@@ -6,13 +6,17 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudWafDomains() *schema.Resource {
+func DataSourceDomains() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudWafDomainsRead,
+		Read: dataSourceDomainsRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -151,7 +155,7 @@ func dataSourceAlicloudWafDomains() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDomainsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDomainNames"
@@ -164,7 +168,7 @@ func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		domainNameRegex = r
 	}
@@ -184,9 +188,9 @@ func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) 
 	runtime.SetAutoretry(true)
 	response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_waf_domains", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_waf_domains", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	ids := make([]string, 0)
 	names := make([]string, 0)
@@ -214,50 +218,50 @@ func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) 
 			continue
 		}
 
-		waf_openapiService := WafOpenapiService{client}
+		waf_openapiService := NewService(client)
 		id := fmt.Sprint(request["InstanceId"], ":", object.(string))
 		getResp, err := waf_openapiService.DescribeWafDomain(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		clusterType, err := formatInt(getResp["ClusterType"])
+		clusterType, err := convert.FormatInt(getResp["ClusterType"])
 		if err != nil {
 			return err
 		}
 		mapping["cluster_type"] = convertClusterTypeResponse(clusterType)
 		mapping["cname"] = getResp["Cname"]
 		mapping["connection_time"] = getResp["ConnectionTime"]
-		http2Port, err := convertJsonStringToStringList(getResp["Http2Port"])
+		http2Port, err := convert.ConvertJsonStringToStringList(getResp["Http2Port"])
 		if err != nil {
 			return err
 		}
 		mapping["http2_port"] = http2Port
-		httpPort, err := convertJsonStringToStringList(getResp["HttpPort"])
+		httpPort, err := convert.ConvertJsonStringToStringList(getResp["HttpPort"])
 		if err != nil {
 			return err
 		}
 		mapping["http_port"] = httpPort
-		httpToUserIp, err := formatInt(getResp["HttpToUserIp"])
+		httpToUserIp, err := convert.FormatInt(getResp["HttpToUserIp"])
 		if err != nil {
 			return err
 		}
 		mapping["http_to_user_ip"] = convertHttpToUserIpResponse(httpToUserIp)
-		httpsPort, err := convertJsonStringToStringList(getResp["HttpsPort"])
+		httpsPort, err := convert.ConvertJsonStringToStringList(getResp["HttpsPort"])
 		if err != nil {
 			return err
 		}
 		mapping["https_port"] = httpsPort
-		httpsRedirect, err := formatInt(getResp["HttpsRedirect"])
+		httpsRedirect, err := convert.FormatInt(getResp["HttpsRedirect"])
 		if err != nil {
 			return err
 		}
 		mapping["https_redirect"] = convertHttpsRedirectResponse(httpsRedirect)
-		isAccessProduct, err := formatInt(getResp["IsAccessProduct"])
+		isAccessProduct, err := convert.FormatInt(getResp["IsAccessProduct"])
 		if err != nil {
 			return err
 		}
 		mapping["is_access_product"] = convertIsAccessProductResponse(isAccessProduct)
-		loadBalancing, err := formatInt(getResp["LoadBalancing"])
+		loadBalancing, err := convert.FormatInt(getResp["LoadBalancing"])
 		if err != nil {
 			return err
 		}
@@ -282,20 +286,20 @@ func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("domains", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

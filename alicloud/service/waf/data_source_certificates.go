@@ -1,4 +1,4 @@
-package alicloud
+package waf
 
 import (
 	"fmt"
@@ -8,14 +8,17 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudWafCertificates() *schema.Resource {
+func DataSourceCertificates() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudWafCertificatesRead,
+		Read: dataSourceCertificatesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -90,7 +93,7 @@ func dataSourceAlicloudWafCertificates() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudWafCertificatesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceCertificatesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeCertificates"
@@ -104,7 +107,7 @@ func dataSourceAlicloudWafCertificatesRead(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		certificateNameRegex = r
 	}
@@ -115,9 +118,9 @@ func dataSourceAlicloudWafCertificatesRead(d *schema.ResourceData, meta interfac
 			if vv == nil {
 				continue
 			}
-			parts, err := ParseResourceId(vv.(string), 3)
+			parts, err := helper.ParseResourceId(vv.(string), 3)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			idsMap[parts[2]] = parts[2]
 		}
@@ -126,11 +129,11 @@ func dataSourceAlicloudWafCertificatesRead(d *schema.ResourceData, meta interfac
 	var err error
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -138,13 +141,13 @@ func dataSourceAlicloudWafCertificatesRead(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_waf_certificates", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_waf_certificates", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.Certificates", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Certificates", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Certificates", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -178,20 +181,20 @@ func dataSourceAlicloudWafCertificatesRead(d *schema.ResourceData, meta interfac
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("certificates", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
