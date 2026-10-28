@@ -36,7 +36,7 @@ resource "alicloud_log_alert_resource" "example_user" {
 
 The following arguments are supported:
 
-* `type` - (Required, ForceNew) The type of alert resources, must be user or project, 'user' for init aliyuncloud account's alert center resource, including project named sls-alert-{uid}-{region} and some dashboards; 'project' for init project's alert resource, including logstore named internal-alert-history and alert dashboard.
+* `type` - (Required, ForceNew) The type of alert resources, must be user or project, 'user' for init the user-level alert center notification resources, including alert policies, action policies and content templates, it does not create the project named sls-alert-{uid}-{region}, which can only be initialized via the SLS console; 'project' for init the project's alert history logstore named internal-alert-history.
 * `lang` - (Optional, ForceNew) The lang of alert center resource when type is user.
 * `project` - (Optional, ForceNew) The project of alert resource when type is project.
 
