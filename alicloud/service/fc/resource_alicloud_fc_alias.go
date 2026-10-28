@@ -104,7 +104,7 @@ func resourceAlicloudFCAliasCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if response == nil {
-		return errs.WrapError(Error("Creating function compute alias got an empty response"))
+		return errs.WrapError(errs.Error("Creating function compute alias got an empty response"))
 	}
 
 	d.SetId(fmt.Sprintf("%s:%s", serviceName, *response.AliasName))

@@ -595,7 +595,7 @@ func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCCon
 			return
 		}
 		if role, ok := d.GetOk("role"); !ok || role.(string) == "" {
-			err = errs.WrapError(Error("'role' is required when 'vpc_config' is set."))
+			err = errs.WrapError(errs.Error("'role' is required when 'vpc_config' is set."))
 			return
 		}
 		if conf != nil {
@@ -679,7 +679,7 @@ func parseNasConfig(d *schema.ResourceData) (config *fc.NASConfig, err error) {
 		config = fc.NewNASConfig()
 		c, ok := v.([]interface{})[0].(map[string]interface{})
 		if !ok {
-			return nil, Error("Failed to parse nas config.")
+			return nil, errs.Error("Failed to parse nas config.")
 		}
 		config.UserID = helper.Int32Pointer(int32(c["user_id"].(int)))
 		config.GroupID = helper.Int32Pointer(int32(c["group_id"].(int)))
@@ -692,7 +692,7 @@ func parseNasConfig(d *schema.ResourceData) (config *fc.NASConfig, err error) {
 				})
 			}
 		} else {
-			return nil, Error("Failed to parse mount points.")
+			return nil, errs.Error("Failed to parse mount points.")
 		}
 	}
 	return
@@ -703,7 +703,7 @@ func parseTracingConfig(d *schema.ResourceData) (tracingConfig *fc.TracingConfig
 	if v, ok := d.GetOk("tracing_config"); ok {
 		c, ok := v.([]interface{})[0].(map[string]interface{})
 		if !ok {
-			return nil, Error("Failed to parse tracing config.")
+			return nil, errs.Error("Failed to parse tracing config.")
 		}
 		tracingConfig.Type = helper.StringPointer(c["type"].(string))
 		if params := c["params"].(map[string]interface{}); len(params) > 0 {
@@ -716,7 +716,7 @@ func parseTracingConfig(d *schema.ResourceData) (tracingConfig *fc.TracingConfig
 				return nil, errs.WrapError(err)
 			}
 		} else {
-			return nil, Error("Failed to parse tracing config, params must be set.")
+			return nil, errs.Error("Failed to parse tracing config, params must be set.")
 		}
 	}
 	return tracingConfig, nil

@@ -166,7 +166,7 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 	}
 
 	if response == nil {
-		return errs.WrapError(Error("Putting function async invoke config got an empty response"))
+		return errs.WrapError(errs.Error("Putting function async invoke config got an empty response"))
 	}
 
 	d.SetId(id)
@@ -250,7 +250,7 @@ func resourceAlicloudFCAsyncInvokeConfigUpdate(d *schema.ResourceData, meta inte
 	}
 
 	if response == nil {
-		return errs.WrapError(Error("Putting function async invoke config got an empty response"))
+		return errs.WrapError(errs.Error("Putting function async invoke config got an empty response"))
 	}
 
 	return resourceAlicloudFCAsyncInvokeConfigRead(d, meta)

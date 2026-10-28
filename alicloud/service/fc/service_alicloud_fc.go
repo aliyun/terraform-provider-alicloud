@@ -35,6 +35,15 @@ const (
 // HeaderEnableEBTrigger mirrors the root package header constant used by FC trigger calls.
 const HeaderEnableEBTrigger = "x-fc-enable-eventbridge-trigger"
 
+// The following mirror root-package constants (alicloud/common.go) used by FC
+// resource wait helpers and ID parsing; no leaf-package equivalent exists, so
+// they are defined locally to keep the subpackage self-contained.
+const (
+	DefaultTimeout       = 120
+	DefaultTimeoutMedium = 500
+	COLON_SEPARATED      = ":"
+)
+
 func (s *Service) DescribeFcService(id string) (*fc.GetServiceOutput, error) {
 	response := &fc.GetServiceOutput{}
 	request := &fc.GetServiceInput{ServiceName: &id}

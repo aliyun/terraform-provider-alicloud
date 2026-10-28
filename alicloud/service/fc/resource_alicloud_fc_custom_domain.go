@@ -142,7 +142,7 @@ func resourceAlicloudFCCustomDomainCreate(d *schema.ResourceData, meta interface
 	}
 
 	if response == nil {
-		return errs.WrapError(Error("Creating function compute custom domain got a empty response"))
+		return errs.WrapError(errs.Error("Creating function compute custom domain got a empty response"))
 	}
 
 	d.SetId(*response.DomainName)
@@ -206,7 +206,7 @@ func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}
 			// Skip the null cert config.
 		} else {
 			b, _ := json.Marshal(object)
-			return errs.WrapError(Error("Illegal cert config: %s", string(b)))
+			return errs.WrapError(errs.Error("Illegal cert config: %s", string(b)))
 		}
 	}
 	if err := d.Set("cert_config", certConfig); err != nil {

@@ -260,7 +260,7 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if function == nil {
-		return errs.WrapError(Error("Creating function compute function got a empty response"))
+		return errs.WrapError(errs.Error("Creating function compute function got a empty response"))
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", serviceName, COLON_SEPARATED, *function.FunctionName))
@@ -476,7 +476,7 @@ func parseCustomContainerConfig(d *schema.ResourceData) (config *fc.CustomContai
 		if ok {
 			return c.WithImage(config["image"].(string)).WithCommand(config["command"].(string)).WithArgs(config["args"].(string)), nil
 		} else {
-			return nil, Error("Failed to parse custom_container_config")
+			return nil, errs.Error("Failed to parse custom_container_config")
 		}
 	}
 	// The "custom_container_config" has not been set.
