@@ -11,20 +11,20 @@ description: |-
 
 This data source provides a list of Common Bandwidth Packages owned by an Alibaba Cloud account.
 
--> **NOTE:** Available in 1.36.0+.
+-> **NOTE:** Available since v1.36.0+.
 
 ## Example Usage
 
 ```terraform
 data "alicloud_common_bandwidth_packages" "foo" {
-  name_regex = "^tf-testAcc.*"
+  name_regex = "^tf-example.*"
   ids        = ["${alicloud_common_bandwidth_package.foo.id}"]
 }
 
 resource "alicloud_common_bandwidth_package" "foo" {
   bandwidth   = "2"
-  name        = "tf-testAccCommonBandwidthPackage"
-  description = "tf-testAcc-CommonBandwidthPackage"
+  name        = "tf-exampleCommonBandwidthPackage"
+  description = "tf-exampleCommonBandwidthPackage"
 }
 ```
 
@@ -55,8 +55,10 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - The description of the Common Bandwidth Package instance.
   * `business_status` - The business status of the Common Bandwidth Package instance.
   * `isp` - ISP of the Common Bandwidth Package.
-  * `creation_time` - (Deprecated from v1.120.0) Time of creation.
-  * `public_ip_addresses` - Public ip addresses that in the Common Bandwidth Pakcage.
+  * `public_ip_addresses` - The public_ip_addresses mapping supports the following:
+    * `ip_address` - The address of the EIP.
+    * `allocation_id` - The ID of the EIP instance.
+    * `bandwidth_package_ip_relation_status` - The IP relation status of bandwidth package.
   * `resource_group_id` - The Id of resource group which the common bandwidth package belongs.
   * `bandwidth_package_id` - The resource ID of bandwidth package.
   * `bandwidth_package_name` - The name of bandwidth package.
@@ -71,11 +73,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `reservation_internet_charge_type` - The charge type of reservation internet.
   * `reservation_order_type` - The type of reservation order.
   * `service_managed` - The service managed.
-  
-## Public ip addresses Block
-  
-  The public ip addresses mapping supports the following:
-  
-  * `ip_address`   - The address of the EIP.
-  * `allocation_id` - The ID of the EIP instance.
-  * `bandwidth_package_ip_relation_status` - The IP relation status of bandwidth package.

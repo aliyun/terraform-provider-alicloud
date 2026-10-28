@@ -407,9 +407,6 @@ func Provider() *schema.Provider {
 			"alicloud_cms_metric_rule_black_lists":   dataSourceAlicloudCmsMetricRuleBlackLists(),
 			"alicloud_cms_site_monitors":             dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 
-			// common
-			"alicloud_common_bandwidth_packages": dataSourceAlicloudCommonBandwidthPackages(),
-
 			// compute
 
 			// config
@@ -1559,10 +1556,6 @@ func Provider() *schema.Provider {
 			"alicloud_cms_hybrid_monitor_fc_task":  resourceAlicloudCmsHybridMonitorFcTask(),
 			"alicloud_cms_event_rule":              resourceAliCloudCloudMonitorServiceEventRule(),
 			"alicloud_cms_metric_rule_black_list":  resourceAlicloudCmsMetricRuleBlackList(),
-
-			// common
-			"alicloud_common_bandwidth_package":            resourceAliCloudCbwpCommonBandwidthPackage(),
-			"alicloud_common_bandwidth_package_attachment": resourceAliCloudCbwpCommonBandwidthPackageAttachment(),
 
 			// compute
 
