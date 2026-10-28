@@ -130,6 +130,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/rds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/rdsai"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/realtimecompute"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/resourcemanager"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/resourcesharing"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/rkvstore"
@@ -295,6 +296,7 @@ var servicePackages = []conns.ServicePackage{
 	ram.ServicePackage(),
 	rds.ServicePackage(),
 	rdsai.ServicePackage(),
+	realtimecompute.ServicePackage(),
 	resourcemanager.ServicePackage(),
 	resourcesharing.ServicePackage(),
 	rkvstore.ServicePackage(),
