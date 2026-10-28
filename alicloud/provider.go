@@ -14,11 +14,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aliyun/credentials-go/credentials"
-	"github.com/aliyun/credentials-go/credentials/providers"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+
+	"github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/credentials-go/credentials/providers"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -216,14 +217,6 @@ func Provider() *schema.Provider {
 			"alicloud_alikafka_sasl_acls":       dataSourceAlicloudAlikafkaSaslAcls(),
 
 			// amqp
-			"alicloud_amqp_open_source_accounts":    dataSourceAliCloudAmqpOpenSourceAccounts(),
-			"alicloud_amqp_open_source_permissions": dataSourceAliCloudAmqpOpenSourcePermissions(),
-			"alicloud_amqp_virtual_hosts":           dataSourceAlicloudAmqpVirtualHosts(),
-			"alicloud_amqp_queues":                  dataSourceAlicloudAmqpQueues(),
-			"alicloud_amqp_exchanges":               dataSourceAlicloudAmqpExchanges(),
-			"alicloud_amqp_instances":               dataSourceAliCloudAmqpInstances(),
-			"alicloud_amqp_bindings":                dataSourceAlicloudAmqpBindings(),
-			"alicloud_amqp_static_accounts":         dataSourceAlicloudAmqpStaticAccounts(),
 
 			// api
 			"alicloud_api_gateway_service":     dataSourceAlicloudApiGatewayService(),
@@ -1273,14 +1266,6 @@ func Provider() *schema.Provider {
 			"alicloud_alikafka_instance_allowed_ip_attachment": resourceAliCloudAliKafkaInstanceAllowedIpAttachment(),
 
 			// amqp
-			"alicloud_amqp_open_source_account":    resourceAliCloudAmqpOpenSourceAccount(),
-			"alicloud_amqp_open_source_permission": resourceAliCloudAmqpOpenSourcePermission(),
-			"alicloud_amqp_virtual_host":           resourceAliCloudAmqpVirtualHost(),
-			"alicloud_amqp_queue":                  resourceAliCloudAmqpQueue(),
-			"alicloud_amqp_exchange":               resourceAliCloudAmqpExchange(),
-			"alicloud_amqp_instance":               resourceAliCloudAmqpInstance(),
-			"alicloud_amqp_binding":                resourceAliCloudAmqpBinding(),
-			"alicloud_amqp_static_account":         resourceAliCloudAmqpStaticAccount(),
 
 			// api
 			"alicloud_api_gateway_access_control_list":     resourceAliCloudApiGatewayAccessControlList(),
