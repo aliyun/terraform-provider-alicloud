@@ -117,6 +117,36 @@ jobs:
           else
             echo '::notice::Writable-cache helper unavailable; using runner defaults.'
           fi
+      - name: Set up Go before cache restoration
+        if: steps.scope.outputs.needed == 'true'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Restore node-local Go cache
+        id: local-go-cache
+        if: ${{ needs.route.outputs.classification == 'trusted' && steps.scope.outputs.needed == 'true' }}
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Older PR heads may lack the helper. Use their exact base fixture.
+          helper=scripts/ci/restore-local-go-cache.py
+          if [[ ! -f "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/restore-local-go-cache.py"
+            if ! git show "$PR_BASE_SHA:scripts/ci/restore-local-go-cache.py" > "$helper"; then
+              rm -f "$helper"
+            fi
+          fi
+          # The administrator helper is read-only and still validates checkout hashes.
+          if [[ ! -s "$helper" && -f /opt/terraform-ci-cache/restore.py ]]; then
+            helper=/opt/terraform-ci-cache/restore.py
+          fi
+          if [[ -s "$helper" ]]; then
+            python3 "$helper"
+          else
+            echo 'hit=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: errcheck
         if: steps.scope.outputs.needed == 'true'
         uses: reviewdog/action-golangci-lint@284129a3ac23bc5d8ac1522e0b6511df74a8836d # v2.10.2

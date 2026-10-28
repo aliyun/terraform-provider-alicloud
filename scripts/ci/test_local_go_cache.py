@@ -1,4 +1,5 @@
 """Test cache identity, private copies, and the local/remote trust boundary."""
+import contextlib
 import hashlib
 import functools
 import http.server
@@ -76,6 +77,12 @@ class LocalGoCacheTest(unittest.TestCase):
         self.assertEqual((self.modules / 'cache/download/fixture').read_text(), 'modules/cache/download')
         self.assertFalse((self.modules / 'expanded-module-source').exists())
 
+    def test_restore_reports_transfer_and_extraction_separately(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            self.assertTrue(self.restore())
+        self.assertRegex(output.getvalue(), r'archive_bytes=\d+, download_seconds=\d+\.\d+, extract_seconds=\d+\.\d+')
+
     def test_every_dependency_input_invalidates_seed_before_copy(self):
         for name in cache.INPUTS:
             with self.subTest(name=name):
@@ -143,6 +150,19 @@ class LocalGoCacheTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     cache.extract(self.seed / 'unsafe.tar.gz', self.modules, self.build)
         self.assertFalse((self.root / 'escape').exists())
+
+    def test_existing_destination_symlink_cannot_escape_pinned_root(self):
+        outside = self.root / 'outside'
+        outside.mkdir()
+        self.build.mkdir()
+        (self.build / 'nested').symlink_to(outside, target_is_directory=True)
+        with tarfile.open(self.seed / 'nested.tar.gz', 'w:gz') as archive:
+            member = tarfile.TarInfo('build/nested/escape')
+            member.size = 1
+            archive.addfile(member, io.BytesIO(b'x'))
+        with self.assertRaises(ValueError):
+            cache.extract(self.seed / 'nested.tar.gz', self.modules, self.build)
+        self.assertFalse((outside / 'escape').exists())
 
     def test_unknown_format_or_repository_is_a_miss(self):
         for field, value in [('version', 2), ('source_repository', 'other/repository'), ('source_sha', 'unpublished')]:
