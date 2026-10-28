@@ -1,14 +1,17 @@
-package alicloud
+package market
 
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudProduct() *schema.Resource {
+func DataSourceProduct() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudProductRead,
+		Read: dataSourceProductRead,
 
 		Schema: map[string]*schema.Schema{
 			"product_code": {
@@ -97,7 +100,7 @@ func dataSourceAlicloudProduct() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudProductRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceProductRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := market.CreateDescribeProductRequest()
 	request.Code = d.Get("product_code").(string)
@@ -105,9 +108,9 @@ func dataSourceAlicloudProductRead(d *schema.ResourceData, meta interface{}) err
 		return marketClient.DescribeProduct(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_market_product", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_market_product", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*market.DescribeProductResponse)
 	return productDescriptionAttributes(d, response)
 }
@@ -169,14 +172,64 @@ func productDescriptionAttributes(d *schema.ResourceData, product *market.Descri
 
 	s = append(s, mapping)
 
-	d.SetId(dataResourceIdHash([]string{product.Code}))
+	d.SetId(helper.DataResourceIdHash([]string{product.Code}))
 	if err := d.Set("product", s); err != nil {
 		return err
 	}
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
+}
+
+func getRegionByImageIdPrefix(imageId string) string {
+	switch imageId[:5] {
+
+	case "m-m5e":
+		return "cn-qingdao"
+	case "m-2ze":
+		return "cn-beijing"
+	case "m-8vb":
+		return "cn-zhangjiakou"
+	case "m-hp3":
+		return "cn-huhehaote"
+	case "m-bp1":
+		return "cn-hangzhou"
+	case "m-uf6":
+		return "cn-shanghai"
+	case "m-wz9":
+		return "cn-shenzhen"
+	case "m-f8z":
+		return "cn-heyuan"
+	case "m-2vc":
+		return "cn-chengdu"
+	case "m-j6c":
+		return "cn-hongkong"
+	case "m-6we":
+		return "ap-northeast-1"
+	case "m-t4n":
+		return "ap-southeast-1"
+	case "m-p0w":
+		return "ap-southeast-2"
+	case "m-8ps":
+		return "ap-southeast-3"
+	case "m-k1a":
+		return "ap-southeast-5"
+	case "m-a2d":
+		return "ap-south-1"
+	case "m-0xi":
+		return "us-east-1"
+	case "m-rj9":
+		return "us-west-1"
+	case "m-d7o":
+		return "eu-west-1"
+	case "m-eb3":
+		return "me-east-1"
+	case "m-gw8":
+		return "eu-central-1"
+	default:
+		return ""
+	}
 }
