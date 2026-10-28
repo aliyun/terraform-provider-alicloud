@@ -15,7 +15,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
@@ -974,49 +973,6 @@ func TestAccAlicloudProviderLog(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": name,
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudProviderDatahub(t *testing.T) {
-	var v *datahub.GetProjectResult
-
-	resourceId := "alicloud_datahub_project.default"
-	ra := resourceAttrInit(resourceId, datahubProjectBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100000, 999999)
-	name := fmt.Sprintf("tf_testaccdatahubproject%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
-		return providerCommon + resourceDatahubProjectConfigDependence(name)
-	})
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
-		},
-		// module name
 		ProviderFactories: testAccProviderFactory,
 		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

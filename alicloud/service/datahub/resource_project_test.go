@@ -1,4 +1,4 @@
-package alicloud
+package datahub_test
 
 import (
 	"fmt"
@@ -6,8 +6,11 @@ import (
 	"testing"
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	datahubsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/datahub"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -23,11 +26,11 @@ func init() {
 }
 
 func testSweepDatahubProject(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.DatahubSupportedRegions) {
+	if sweep.SweepPreCheckWithRegions(region, true, connectivity.DatahubSupportedRegions) {
 		log.Printf("[INFO] Skipping Datahub unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -45,7 +48,7 @@ func testSweepDatahubProject(region string) error {
 
 	for _, projectName := range projects.ProjectNames {
 		// a testing project?
-		if !isTerraformTestingDatahubObject(projectName) {
+		if !datahubsvc.IsTerraformTestingDatahubObject(projectName) {
 			log.Printf("[INFO] Skipping Datahub project: %s", projectName)
 			continue
 		}
@@ -109,40 +112,42 @@ func testSweepDatahubProject(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDatahubProject_basic(t *testing.T) {
+func TestAccAliCloudDatahubProject_basic(t *testing.T) {
 	var v *datahub.GetProjectResult
 
 	resourceId := "alicloud_datahub_project.default"
-	ra := resourceAttrInit(resourceId, datahubProjectBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, datahubProjectBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return datahubsvc.NewDatahubService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100000, 999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100000, 999999)
 	name := fmt.Sprintf("tf_testaccdatahubproject%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubProjectConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDatahubProjectConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": name,
+					"name":    name,
+					"comment": "project added by terraform",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": name,
+						"name":    name,
+						"comment": "project added by terraform",
 					}),
 				),
 			},
@@ -166,32 +171,32 @@ func TestAccAlicloudDatahubProject_basic(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudDatahubProject_multi(t *testing.T) {
+func TestAccAliCloudDatahubProject_multi(t *testing.T) {
 	var v *datahub.GetProjectResult
 
 	resourceId := "alicloud_datahub_project.default.4"
-	ra := resourceAttrInit(resourceId, datahubProjectBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, datahubProjectBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return datahubsvc.NewDatahubService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100000, 999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100000, 999999)
 	name := fmt.Sprintf("tf_testaccdatahubproject%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDatahubProjectConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDatahubProjectConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -210,7 +215,7 @@ func resourceDatahubProjectConfigDependence(name string) string {
 }
 
 var datahubProjectBasicMap = map[string]string{
-	"name":    CHECKSET,
+	"name":    acctest.CHECKSET,
 	"comment": "project added by terraform",
 }
 
@@ -225,7 +230,7 @@ func testAccCheckDatahubProjectExist(n string) resource.TestCheckFunc {
 			return fmt.Errorf("no Datahub project ID is set")
 		}
 
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
 		_, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
 			return dataHubClient.GetProject(rs.Primary.ID)
 		})

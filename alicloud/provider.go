@@ -463,9 +463,6 @@ func Provider() *schema.Provider {
 
 			// database
 
-			// datahub
-			"alicloud_datahub_service": dataSourceAlicloudDatahubService(),
-
 			// dataworks
 			"alicloud_dataworks_service": dataSourceAlicloudDataWorksService(),
 
@@ -1633,11 +1630,6 @@ func Provider() *schema.Provider {
 			"alicloud_data_works_folder":                  resourceAlicloudDataWorksFolder(),
 
 			// database
-
-			// datahub
-			"alicloud_datahub_project":      resourceAlicloudDatahubProject(),
-			"alicloud_datahub_subscription": resourceAlicloudDatahubSubscription(),
-			"alicloud_datahub_topic":        resourceAlicloudDatahubTopic(),
 
 			// db
 			"alicloud_db_database":                        resourceAliCloudRdsDatabase(),

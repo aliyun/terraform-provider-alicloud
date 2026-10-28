@@ -1,5 +1,7 @@
-// Package alicloud common functions used by datahub
-package alicloud
+// Package datahub contains the datahub service resources and data sources
+// migrated from the root alicloud package. The root package cannot be imported
+// from a service package, so the encapsulated datahub calls live here.
+package datahub
 
 import (
 	"strings"
@@ -7,10 +9,32 @@ import (
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 )
 
+// Status mirrors the root package status type used by the WaitFor helpers.
+type Status string
+
+const (
+	Deleted         = Status("Deleted")
+	DefaultTimeout  = 120
+	COLON_SEPARATED = ":"
+	DoesNotExist    = "does not exist"
+)
+
+// DatahubService wraps the datahub API calls used by the resources of this package.
 type DatahubService struct {
 	client *connectivity.AliyunClient
+}
+
+// NewDatahubService is the exported constructor: the client field stays
+// unexported, so callers outside the package (including the acceptance
+// tests) build values with it.
+func NewDatahubService(client *connectivity.AliyunClient) *DatahubService {
+	return &DatahubService{client: client}
 }
 
 func (s *DatahubService) DescribeDatahubProject(id string) (*datahub.GetProjectResult, error) {
@@ -22,18 +46,18 @@ func (s *DatahubService) DescribeDatahubProject(id string) (*datahub.GetProjectR
 	})
 	if err != nil {
 		if isDatahubNotExistError(err) {
-			return project, WrapErrorf(err, NotFoundMsg, AliyunDatahubSdkGo)
+			return project, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliyunDatahubSdkGo)
 		}
-		return project, WrapErrorf(err, DefaultErrorMsg, id, "GetProject", AliyunDatahubSdkGo)
+		return project, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "GetProject", errs.AliyunDatahubSdkGo)
 	}
-	if debugOn() {
+	if logs.DebugOn() {
 		requestMap := make(map[string]string)
 		requestMap["ProjectName"] = id
-		addDebug("GetProject", raw, requestInfo, requestMap)
+		logs.AddDebug("GetProject", raw, requestInfo, requestMap)
 	}
 	project, _ = raw.(*datahub.GetProjectResult)
 	if project == nil {
-		return project, WrapErrorf(NotFoundErr("DatahubProject", id), NotFoundMsg, ProviderERROR)
+		return project, errs.WrapErrorf(errs.NotFoundErr("DatahubProject", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return project, nil
 }
@@ -44,21 +68,21 @@ func (s *DatahubService) WaitForDatahubProject(id string, status Status, timeout
 	for {
 		object, err := s.DescribeDatahubProject(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 
 		if time.Now().After(deadline) {
-			objstringfy, err := convertArrayObjectToJsonString(object)
+			objstringfy, err := convert.ConvertArrayObjectToJsonString(object)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, objstringfy, id, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, objstringfy, id, errs.ProviderERROR)
 		}
 
 	}
@@ -66,9 +90,9 @@ func (s *DatahubService) WaitForDatahubProject(id string, status Status, timeout
 
 func (s *DatahubService) DescribeDatahubSubscription(id string) (*datahub.GetSubscriptionResult, error) {
 	subscription := &datahub.GetSubscriptionResult{}
-	parts, err := ParseResourceId(id, 3)
+	parts, err := helper.ParseResourceId(id, 3)
 	if err != nil {
-		return subscription, WrapError(err)
+		return subscription, errs.WrapError(err)
 	}
 	projectName, topicName, subId := parts[0], parts[1], parts[2]
 
@@ -80,47 +104,47 @@ func (s *DatahubService) DescribeDatahubSubscription(id string) (*datahub.GetSub
 	})
 	if err != nil {
 		if isDatahubNotExistError(err) {
-			return subscription, WrapErrorf(err, NotFoundMsg, AliyunDatahubSdkGo)
+			return subscription, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliyunDatahubSdkGo)
 		}
-		return subscription, WrapErrorf(err, DefaultErrorMsg, id, "GetSubscription", AliyunDatahubSdkGo)
+		return subscription, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "GetSubscription", errs.AliyunDatahubSdkGo)
 	}
-	if debugOn() {
+	if logs.DebugOn() {
 		requestMap := make(map[string]string)
 		requestMap["ProjectName"] = projectName
 		requestMap["TopicName"] = topicName
 		requestMap["SubId"] = subId
-		addDebug("GetProject", raw, requestInfo, requestMap)
+		logs.AddDebug("GetProject", raw, requestInfo, requestMap)
 	}
 	subscription, _ = raw.(*datahub.GetSubscriptionResult)
 	if subscription == nil || subscription.TopicName != topicName || subscription.SubId != subId {
-		return subscription, WrapErrorf(NotFoundErr("DatahubSubscription", id), NotFoundMsg, ProviderERROR)
+		return subscription, errs.WrapErrorf(errs.NotFoundErr("DatahubSubscription", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return subscription, nil
 }
 
 func (s *DatahubService) WaitForDatahubSubscription(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	parts, err := ParseResourceId(id, 3)
+	parts, err := helper.ParseResourceId(id, 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	topicName, subId := parts[1], parts[2]
 	for {
 		object, err := s.DescribeDatahubSubscription(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if object.TopicName == topicName && object.SubId == subId && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.TopicName+":"+object.SubId, parts[1]+":"+parts[2], ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.TopicName+":"+object.SubId, parts[1]+":"+parts[2], errs.ProviderERROR)
 		}
 
 	}
@@ -128,9 +152,9 @@ func (s *DatahubService) WaitForDatahubSubscription(id string, status Status, ti
 
 func (s *DatahubService) DescribeDatahubTopic(id string) (*datahub.GetTopicResult, error) {
 	topic := &datahub.GetTopicResult{}
-	parts, err := ParseResourceId(id, 2)
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		return topic, WrapError(err)
+		return topic, errs.WrapError(err)
 	}
 	projectName, topicName := parts[0], parts[1]
 
@@ -142,46 +166,46 @@ func (s *DatahubService) DescribeDatahubTopic(id string) (*datahub.GetTopicResul
 	})
 	if err != nil {
 		if isDatahubNotExistError(err) {
-			return topic, WrapErrorf(err, NotFoundMsg, AliyunDatahubSdkGo)
+			return topic, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliyunDatahubSdkGo)
 		}
-		return topic, WrapErrorf(err, DefaultErrorMsg, id, "GetTopic", AliyunDatahubSdkGo)
+		return topic, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "GetTopic", errs.AliyunDatahubSdkGo)
 	}
-	if debugOn() {
+	if logs.DebugOn() {
 		requestMap := make(map[string]string)
 		requestMap["ProjectName"] = projectName
 		requestMap["TopicName"] = topicName
-		addDebug("GetTopic", raw, requestInfo, requestMap)
+		logs.AddDebug("GetTopic", raw, requestInfo, requestMap)
 	}
 	topic, _ = raw.(*datahub.GetTopicResult)
 	if topic == nil {
-		return topic, WrapErrorf(NotFoundErr("DatahubTopic", id), NotFoundMsg, ProviderERROR)
+		return topic, errs.WrapErrorf(errs.NotFoundErr("DatahubTopic", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return topic, nil
 }
 
 func (s *DatahubService) WaitForDatahubTopic(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	parts, err := ParseResourceId(id, 2)
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	projectName, topicName := parts[0], parts[1]
 	for {
 		object, err := s.DescribeDatahubTopic(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if object.ProjectName == projectName && object.TopicName == topicName && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ProjectName+":"+object.TopicName, id, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.ProjectName+":"+object.TopicName, id, errs.ProviderERROR)
 		}
 
 	}
@@ -213,29 +237,8 @@ func isRetryableDatahubError(err error) bool {
 	return false
 }
 
-// It is proactive defense to the case that SDK extends new datahub objects.
-const (
-	DoesNotExist = "does not exist"
-)
-
 func isDatahubNotExistError(err error) bool {
-	return IsExpectedErrors(err, []string{datahub.NoSuchProject, datahub.NoSuchTopic, datahub.NoSuchShard, datahub.NoSuchSubscription, DoesNotExist})
-}
-
-func isTerraformTestingDatahubObject(name string) bool {
-	prefixes := []string{
-		"tf_testAcc",
-		"tf_test_",
-		"testAcc",
-	}
-
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-			return true
-		}
-	}
-
-	return false
+	return errs.IsExpectedErrors(err, []string{datahub.NoSuchProject, datahub.NoSuchTopic, datahub.NoSuchShard, datahub.NoSuchSubscription, DoesNotExist})
 }
 
 func getDefaultRecordSchemainMap() map[string]interface{} {
@@ -252,4 +255,22 @@ func recordSchemaToMap(fields []datahub.Field) map[string]string {
 	}
 
 	return result
+}
+
+// IsTerraformTestingDatahubObject reports whether name looks like a Terraform
+// acceptance test fixture, used by the project sweeper.
+func IsTerraformTestingDatahubObject(name string) bool {
+	prefixes := []string{
+		"tf_testAcc",
+		"tf_test_",
+		"testAcc",
+	}
+
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+			return true
+		}
+	}
+
+	return false
 }
