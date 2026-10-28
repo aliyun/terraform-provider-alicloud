@@ -1,4 +1,5 @@
-package alicloud
+// Package quickbi_test.
+package quickbi_test
 
 import (
 	"fmt"
@@ -14,10 +15,16 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/quickbi"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,12 +38,25 @@ func init() {
 		})
 }
 
+// quickbiTestClientForRegion returns a real *connectivity.AliyunClient for the
+// migrated sweepers and gomonkey unit tests by delegating to the shared
+// sweep.SharedClientForRegion, which owns the standard test env parsing, the
+// per-region endpoint cache and the SignVersion config. No region fallback or
+// copied client construction is duplicated here.
+func quickbiTestClientForRegion(region string) (*connectivity.AliyunClient, error) {
+	rawClient, err := sweep.SharedClientForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+	return rawClient.(*connectivity.AliyunClient), nil
+}
+
 func testSweepQuickBIUser(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := quickbiTestClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	client := rawClient.(*connectivity.AliyunClient)
+	client := rawClient
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
@@ -44,16 +64,16 @@ func testSweepQuickBIUser(region string) error {
 
 	action := "QueryUserList"
 	request := make(map[string]interface{})
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNum"] = 1
 
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(30*time.Second, func() *retry.RetryError {
 			response, err = client.RpcGet("quickbi-public", "2020-08-01", action, request, nil)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -61,7 +81,7 @@ func testSweepQuickBIUser(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
 			return nil
@@ -93,14 +113,14 @@ func testSweepQuickBIUser(region string) error {
 			request := map[string]interface{}{
 				"UserId": item["UserId"],
 			}
-			request["ClientToken"] = buildClientToken("DeleteUser")
+			request["ClientToken"] = helper.BuildClientToken("DeleteUser")
 			_, err = client.RpcPost("quickbi-public", "2020-08-01", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete QuickBI User (%s): %s", item["UserId"].(string), err)
 			}
 			log.Printf("[INFO] Delete QuickBI User success: %s ", item["UserId"].(string))
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNum"] = request["PageNum"].(int) + 1
@@ -112,21 +132,26 @@ func TestAccAliCloudQuickBIUser_basic0(t *testing.T) {
 	t.Skip()
 	var v map[string]interface{}
 	resourceId := "alicloud_quick_bi_user.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuickBIUserMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuickbiPublicService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuickBIUserMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quickbi.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuickBiUser")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squickbiuser%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuickBIUserBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squickbiuser%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuickBIUserBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			// QuickBI is not available in the default test region (cn-beijing); the
+			// service serves cn-hangzhou (and other supported regions) per the official
+			// endpoint metadata. Force a supported region so the acceptance tests
+			// exercise a real endpoint instead of NXDOMAIN. Production code is unchanged.
+			t.Setenv("ALICLOUD_REGION", "cn-hangzhou")
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -140,7 +165,7 @@ func TestAccAliCloudQuickBIUser_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"nick_name":       name,
-						"account_name":    CHECKSET,
+						"account_name":    acctest.CHECKSET,
 						"admin_user":      "false",
 						"auth_admin_user": "false",
 						"user_type":       "Developer",
@@ -205,7 +230,7 @@ func TestAccAliCloudQuickBIUser_basic0(t *testing.T) {
 var AlicloudQuickBIUserMap0 = map[string]string{}
 
 func AlicloudQuickBIUserBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -220,9 +245,9 @@ locals{
 
 // lintignore: R001
 func TestUnitAlicloudQuickBIUser(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_quick_bi_user"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_quick_bi_user"].Schema).Data(nil, nil)
+	resourceSchema := quickbi.ResourceQuickBiUser()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"nick_name":       "AddUserValue",
@@ -242,12 +267,11 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := quickbiTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// QueryUserInfoByUserId
 		"Result": map[string]interface{}{
@@ -268,18 +292,18 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_quick_bi_user", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_quick_bi_user", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -287,13 +311,13 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewQuickbiClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudQuickBiUserCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -321,14 +345,14 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudQuickBiUserCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_quick_bi_user"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -342,13 +366,13 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewQuickbiClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudQuickBiUserUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateUser
@@ -358,11 +382,11 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 		"nick_name":       "UpdateUserValue",
 		"user_type":       "Visitor",
 	}
-	diff, err := newInstanceDiff("alicloud_quick_bi_user", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_quick_bi_user", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_quick_bi_user"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// QueryUserInfoByUserId Response
 		"Result": map[string]interface{}{
@@ -390,14 +414,14 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudQuickBiUserUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_quick_bi_user"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -429,7 +453,7 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudQuickBiUserRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -442,13 +466,13 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewQuickbiClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudQuickBiUserDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "User.Not.In.Organization"}
@@ -470,7 +494,7 @@ func TestUnitAlicloudQuickBIUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudQuickBiUserDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

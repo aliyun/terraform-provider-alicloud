@@ -1002,7 +1002,7 @@ func Provider() *schema.Provider {
 			"alicloud_pvtz_rules":          dataSourceAlicloudPvtzRules(),
 
 			// quick
-			"alicloud_quick_bi_users": dataSourceAlicloudQuickBiUsers(),
+			// quickbi types are registered via service/quickbi.ServicePackage().
 
 			// quotas
 			"alicloud_quotas_quotas":                dataSourceAlicloudQuotasQuotas(),
@@ -2429,7 +2429,7 @@ func Provider() *schema.Provider {
 			"alicloud_pvtz_rule_attachment":        resourceAlicloudPvtzRuleAttachment(),
 
 			// quick
-			"alicloud_quick_bi_user": resourceAlicloudQuickBiUser(),
+			// quickbi types are registered via service/quickbi.ServicePackage().
 
 			// quotas
 			"alicloud_quotas_template_service":      resourceAliCloudQuotasTemplateService(),
