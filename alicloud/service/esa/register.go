@@ -8,5 +8,11 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "ESA",
+		SDKResources: []conns.SDKResource{
+			{
+				TypeName: "alicloud_esa_site_environment",
+				Factory:  ResourceSiteEnvironment,
+			},
+		},
 	}
 }
