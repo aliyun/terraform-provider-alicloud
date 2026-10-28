@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecp available zones to the user.
 ---
 
-# alicloud\_ecp\_zones
+# alicloud_ecp_zones
 
 This data source provides the available zones with the Cloud Phone (ECP) Instance of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.158.0+.
+-> **NOTE:** Available since v1.158.0.
 
 ## Example Usage
 
@@ -31,9 +31,9 @@ The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `zones` - A list of availability zone information collection.
-	* `zone_id` - String to filter results by zone id.
+  * `zone_id` - String to filter results by zone id.

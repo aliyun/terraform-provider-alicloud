@@ -1,4 +1,4 @@
-package alicloud
+package ecp
 
 import (
 	"strconv"
@@ -6,12 +6,15 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudEcpZones() *schema.Resource {
+func DataSourceEcpZones() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEcpZonesRead,
+		Read: dataSourceEcpZonesRead,
 		Schema: map[string]*schema.Schema{
 			"output_file": {
 				Type:     schema.TypeString,
@@ -33,7 +36,7 @@ func dataSourceAlicloudEcpZones() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEcpZonesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceEcpZonesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListZones"
@@ -44,13 +47,13 @@ func dataSourceAlicloudEcpZonesRead(d *schema.ResourceData, meta interface{}) er
 	var err error
 	response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecp_zones", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ecp_zones", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	resp, err := jsonpath.Get("$.Zones.Zone", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Zones.Zone", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Zones.Zone", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -68,10 +71,10 @@ func dataSourceAlicloudEcpZonesRead(d *schema.ResourceData, meta interface{}) er
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
 
 	if err := d.Set("zones", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

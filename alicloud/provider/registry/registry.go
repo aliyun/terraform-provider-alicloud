@@ -69,6 +69,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ebs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecd"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eci"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecp"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/edsaic"
@@ -234,6 +235,7 @@ var servicePackages = []conns.ServicePackage{
 	eas.ServicePackage(),
 	ebs.ServicePackage(),
 	ecd.ServicePackage(),
+	ecp.ServicePackage(),
 	eci.ServicePackage(),
 	ecs.ServicePackage(),
 	edas.ServicePackage(),

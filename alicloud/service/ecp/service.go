@@ -1,4 +1,4 @@
-package alicloud
+package ecp
 
 import (
 	"fmt"
@@ -6,15 +6,27 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type CloudphoneService struct {
+// Service wraps the Cloudphone (ECP) API calls used by the resources and
+// data sources of this package.
+type Service struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *CloudphoneService) DescribeEcpKeyPair(id string) (object map[string]interface{}, err error) {
+// NewService is the exported constructor: the client field stays unexported,
+// so callers outside the package (including the flat layout's acceptance
+// tests) build values with it.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+func (s *Service) DescribeEcpKeyPair(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "ListKeyPairs"
@@ -22,11 +34,11 @@ func (s *CloudphoneService) DescribeEcpKeyPair(id string) (object map[string]int
 		"RegionId":    s.client.RegionId,
 		"KeyPairName": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -34,26 +46,26 @@ func (s *CloudphoneService) DescribeEcpKeyPair(id string) (object map[string]int
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.KeyPairs.KeyPair", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.KeyPairs.KeyPair", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.KeyPairs.KeyPair", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("ECP", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("ECP", id), errs.NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["KeyPairName"]) != id {
-			return object, WrapErrorf(NotFoundErr("ECP", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("ECP", id), errs.NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
 
-func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeEcpInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "ListInstances"
 
@@ -62,16 +74,16 @@ func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]in
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": []string{id},
-		"MaxResults": PageSizeLarge,
+		"MaxResults": helper.PageSizeLarge,
 	}
 
 	idExist := false
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -79,19 +91,19 @@ func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.Instances.Instance", response)
 		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances.Instance", response)
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Instances.Instance", response)
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(NotFoundErr("Ecp:Instance", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("Ecp:Instance", id), errs.NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -109,26 +121,26 @@ func (s *CloudphoneService) DescribeEcpInstance(id string) (object map[string]in
 	}
 
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("Ecp:Instance", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Ecp:Instance", id), errs.NotFoundWithResponse, response)
 	}
 
 	return object, nil
 }
 
-func (s *CloudphoneService) EcpInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) EcpInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcpInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if fmt.Sprint(object["Status"]) == failState {
-				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
 
@@ -136,7 +148,7 @@ func (s *CloudphoneService) EcpInstanceStateRefreshFunc(id string, failStates []
 	}
 }
 
-func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, status string) (err error) {
+func (s *Service) ModifyEcpInstanceStatus(d *schema.ResourceData, status string) (err error) {
 	var response map[string]interface{}
 	client := s.client
 
@@ -148,11 +160,11 @@ func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, stat
 			"RegionId":   s.client.RegionId,
 			"InstanceId": []string{d.Id()},
 		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(20*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, startInstanceReq, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -160,15 +172,15 @@ func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, stat
 			}
 			return nil
 		})
-		addDebug(action, response, startInstanceReq)
+		logs.AddDebug(action, response, startInstanceReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, s.EcpInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, s.EcpInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	case "Stopped":
 		action := "StopInstances"
@@ -182,11 +194,11 @@ func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, stat
 			stopInstanceReq["Force"] = v
 		}
 
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(20*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, stopInstanceReq, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -194,22 +206,22 @@ func (s *CloudphoneService) ModifyEcpInstanceStatus(d *schema.ResourceData, stat
 			}
 			return nil
 		})
-		addDebug(action, response, stopInstanceReq)
+		logs.AddDebug(action, response, stopInstanceReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, s.EcpInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, s.EcpInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	return nil
 }
 
-func (s *CloudphoneService) ListInstanceVncUrl(id string) (object map[string]interface{}, err error) {
+func (s *Service) ListInstanceVncUrl(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "ListInstanceVncUrl"
@@ -217,11 +229,11 @@ func (s *CloudphoneService) ListInstanceVncUrl(id string) (object map[string]int
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -229,13 +241,13 @@ func (s *CloudphoneService) ListInstanceVncUrl(id string) (object map[string]int
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil

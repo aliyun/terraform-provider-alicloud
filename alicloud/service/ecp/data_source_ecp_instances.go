@@ -1,4 +1,4 @@
-package alicloud
+package ecp
 
 import (
 	"fmt"
@@ -7,19 +7,23 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEcpInstances() *schema.Resource {
+func DataSourceEcpInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEcpInstancesRead,
+		Read: dataSourceEcpInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -60,7 +64,7 @@ func dataSourceAlicloudEcpInstances() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Pending", "Running", "Starting", "Stopped", "Stopping"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Pending", "Running", "Starting", "Stopped", "Stopping"}, false),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -143,7 +147,7 @@ func dataSourceAlicloudEcpInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEcpInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceEcpInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListInstances"
@@ -173,13 +177,13 @@ func dataSourceAlicloudEcpInstancesRead(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 	var objects []map[string]interface{}
 	var instanceNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		instanceNameRegex = r
 	}
@@ -196,11 +200,11 @@ func dataSourceAlicloudEcpInstancesRead(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cloudphone", "2020-12-30", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -208,13 +212,13 @@ func dataSourceAlicloudEcpInstancesRead(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ecp_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ecp_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Instances.Instance", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Instances.Instance", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Instances.Instance", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -261,29 +265,29 @@ func dataSourceAlicloudEcpInstancesRead(d *schema.ResourceData, meta interface{}
 			continue
 		}
 		id := fmt.Sprint(object["InstanceId"])
-		cloudphoneService := CloudphoneService{client}
-		getResp, err := cloudphoneService.ListInstanceVncUrl(id)
+		ecpService := NewService(client)
+		getResp, err := ecpService.ListInstanceVncUrl(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["vnc_url"] = getResp["VncUrl"]
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

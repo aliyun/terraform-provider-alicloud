@@ -580,10 +580,6 @@ func Provider() *schema.Provider {
 			"alicloud_eci_zones":            dataSourceAlicloudEciZones(),
 
 			// ecp
-			"alicloud_ecp_key_pairs":      dataSourceAlicloudEcpKeyPairs(),
-			"alicloud_ecp_instances":      dataSourceAlicloudEcpInstances(),
-			"alicloud_ecp_zones":          dataSourceAlicloudEcpZones(),
-			"alicloud_ecp_instance_types": dataSourceAlicloudEcpInstanceTypes(),
 
 			// ecs
 			"alicloud_ecs_dedicated_hosts":               dataSourceAliCloudEcsDedicatedHosts(),
@@ -1744,8 +1740,6 @@ func Provider() *schema.Provider {
 			"alicloud_eci_virtual_node":        resourceAlicloudEciVirtualNode(),
 
 			// ecp
-			"alicloud_ecp_key_pair": resourceAlicloudEcpKeyPair(),
-			"alicloud_ecp_instance": resourceAliCloudEcpInstance(),
 
 			// ecs
 			"alicloud_ecs_disk_default_kms_key":            resourceAliCloudEcsDiskDefaultKmsKey(),
