@@ -1,4 +1,4 @@
-package alicloud
+package iot_test
 
 import (
 	"fmt"
@@ -6,35 +6,36 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudIotDeviceGroupsDataSource(t *testing.T) {
 	os.Setenv("ALICLOUD_REGION", "cn-shanghai")
-	rand := acctest.RandIntRange(1, 100)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandIntRange(1, 100)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_iot_device_group.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_iot_device_group.default.id}_fake"]`,
 		}),
 	}
 
-	groupNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
+	groupNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
 			"group_name": `"${alicloud_iot_device_group.default.group_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
 			"group_name": `"${alicloud_iot_device_group.default.group_name}_fake"`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_iot_device_group.default.group_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_iot_device_group.default.group_name}_fake"`,
 		}),
 	}
@@ -55,12 +56,12 @@ func TestAccAlicloudIotDeviceGroupsDataSource(t *testing.T) {
 			"ids.#": "0",
 		}
 	}
-	var alicloudIotDeviceGroupsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_iot_device_groups.default",
-		existMapFunc: existAlicloudIotDeviceGroupsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudIotDeviceGroupsDataSourceNameMapFunc,
+	var alicloudIotDeviceGroupsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_iot_device_groups.default",
+		ExistMapFunc: existAlicloudIotDeviceGroupsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudIotDeviceGroupsDataSourceNameMapFunc,
 	}
-	alicloudIotDeviceGroupsCheckInfo.dataSourceTestCheck(t, rand, idsConf, groupNameConf, nameRegexConf)
+	alicloudIotDeviceGroupsCheckInfo.DataSourceTestCheck(t, rand, idsConf, groupNameConf, nameRegexConf)
 }
 func testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -70,7 +71,7 @@ func testAccCheckAlicloudIotDeviceGroupsDataSourceName(rand int, attrMap map[str
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf_testAccDeviceGroups_%d"
 }
 resource "alicloud_iot_device_group" "default"{
@@ -78,7 +79,7 @@ resource "alicloud_iot_device_group" "default"{
   group_desc = var.name
 }
 
-data "alicloud_iot_device_groups" "default" {	
+data "alicloud_iot_device_groups" "default" {
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))

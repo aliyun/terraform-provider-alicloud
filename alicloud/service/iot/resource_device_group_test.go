@@ -1,4 +1,4 @@
-package alicloud
+package iot_test
 
 import (
 	"fmt"
@@ -13,9 +13,15 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/iot"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,9 +34,9 @@ func init() {
 }
 
 func testSweepDeviceGroup(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
+		return errs.WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -40,7 +46,7 @@ func testSweepDeviceGroup(region string) error {
 	}
 	request := map[string]interface{}{
 		"CurrentPage": 1,
-		"PageSize":    PageSizeSmall,
+		"PageSize":    helper.PageSizeSmall,
 	}
 	var response map[string]interface{}
 	action := "QueryDeviceGroupList"
@@ -50,11 +56,11 @@ func testSweepDeviceGroup(region string) error {
 			log.Printf("[ERROR] %s got an error: %#v", action, err)
 			return nil
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Data.GroupInfo", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.GroupInfo", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data.GroupInfo", response)
 		}
 
 		result, _ := resp.([]interface{})
@@ -87,7 +93,7 @@ func testSweepDeviceGroup(region string) error {
 
 			log.Printf("[INFO] Delete Iot Device Group Success: %v ", item["GroupName"])
 		}
-		if len(result) < PageSizeSmall {
+		if len(result) < helper.PageSizeSmall {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -98,22 +104,22 @@ func testSweepDeviceGroup(region string) error {
 func TestAccAlicloudIotDeviceGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_iot_device_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudIotDeviceGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &IotService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeIotDeviceGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 1000)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudIotDeviceGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return iot.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDeviceGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 1000)
 	name := fmt.Sprintf("tf_testacciot%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudIotDeviceGroupBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudIotDeviceGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			os.Setenv("ALICLOUD_REGION", "cn-shanghai")
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -158,18 +164,25 @@ func TestAccAlicloudIotDeviceGroup_basic0(t *testing.T) {
 var AlicloudIotDeviceGroupMap0 = map[string]string{}
 
 func AlicloudIotDeviceGroupBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
 `, name)
 }
 
+func unitTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_iot_device_group": iot.ResourceDeviceGroup(),
+	}
+}
+
 // lintignore: R001
 func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_iot_device_group"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_iot_device_group"].Schema).Data(nil, nil)
+	p := unitTestProviderResources()
+	resourceSchema := p["alicloud_iot_device_group"]
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"group_desc":      "CreateDeviceGroupValue",
@@ -187,7 +200,7 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -211,18 +224,18 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_iot_device_group", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_iot_device_group", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -230,13 +243,13 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewIotClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudIotDeviceGroupCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -265,14 +278,14 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudIotDeviceGroupCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_iot_device_group"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -286,13 +299,13 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewIotClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudIotDeviceGroupUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateDeviceGroup
@@ -300,11 +313,11 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 		"group_desc":      "UpdateDeviceGroupValue",
 		"iot_instance_id": "UpdateDeviceGroupValue",
 	}
-	diff, err := newInstanceDiff("alicloud_iot_device_group", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_iot_device_group", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_iot_device_group"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// QueryDeviceGroupInfo Response
 		"Data": map[string]interface{}{
@@ -329,14 +342,14 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudIotDeviceGroupUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_iot_device_group"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -368,7 +381,7 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudIotDeviceGroupRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -381,13 +394,13 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewIotClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudIotDeviceGroupDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -409,7 +422,7 @@ func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudIotDeviceGroupDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
