@@ -47,7 +47,8 @@ func testSweepOSSBuckets(region string) error {
 		return ossClient.ListBuckets(options...)
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving OSS buckets: %s", err)
+		log.Printf("[ERROR] Failed to list OSS buckets: %s", err)
+		return nil
 	}
 	resp, _ := raw.(oss.ListBucketsResult)
 	for _, v := range resp.Buckets {
