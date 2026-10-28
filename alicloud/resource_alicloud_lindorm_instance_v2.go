@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -25,7 +26,31 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 			Update: schema.DefaultTimeout(1001 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+			// white_ip_list is a TypeList, but the Lindorm API
+			// (DescribeLindormV2Instance) returns WhiteIpList in an order
+			// that may differ from the config. When the old and new lists
+			// contain the same group_name/ip_list pairs (regardless of
+			// order), set the new value to the old value so the SDK sees
+			// no change and suppresses the perpetual plan diff caused by
+			// TypeList order sensitivity. SetNew (not Clear) is used
+			// because clearing individual nested-attribute keys does not
+			// suppress the structural TypeList diff.
+			if diff.HasChange("white_ip_list") {
+				oldVal, newVal := diff.GetChange("white_ip_list")
+				oldList := convertToInterfaceArray(oldVal)
+				newList := convertToInterfaceArray(newVal)
+				if len(oldList) == len(newList) && whiteIpListSameSet(oldList, newList) {
+					return diff.SetNew("white_ip_list", oldVal)
+				}
+			}
+			return nil
+		},
 		Schema: map[string]*schema.Schema{
+			"ali_uid": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"arbiter_vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -56,6 +81,10 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+			},
+			"create_milliseconds": {
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 			"deletion_protection": {
 				Type:     schema.TypeString,
@@ -162,9 +191,21 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 					},
 				},
 			},
+			"expired_milliseconds": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"instance_alias": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"instance_status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"network_type": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"payment_type": {
 				Type:     schema.TypeString,
@@ -185,6 +226,10 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 				ForceNew: true,
 			},
 			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"service_type": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -358,16 +403,22 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
+	d.Set("ali_uid", objectRaw["AliUid"])
 	d.Set("arbiter_vswitch_id", objectRaw["ArbiterVSwitchId"])
 	d.Set("arbiter_zone_id", objectRaw["ArbiterZoneId"])
 	d.Set("cloud_storage_size", objectRaw["CloudStorageSize"])
 	d.Set("cloud_storage_type", objectRaw["DiskCategory"])
+	d.Set("create_milliseconds", objectRaw["CreateMilliseconds"])
 	d.Set("deletion_protection", objectRaw["DeletionProtection"])
+	d.Set("expired_milliseconds", objectRaw["ExpiredMilliseconds"])
 	d.Set("instance_alias", objectRaw["InstanceAlias"])
+	d.Set("instance_status", objectRaw["InstanceStatus"])
+	d.Set("network_type", objectRaw["NetworkType"])
 	d.Set("payment_type", objectRaw["PayType"])
 	d.Set("primary_vswitch_id", objectRaw["PrimaryVSwitchId"])
 	d.Set("primary_zone_id", objectRaw["PrimaryZoneId"])
 	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("service_type", objectRaw["ServiceType"])
 	d.Set("standby_vswitch_id", objectRaw["StandbyVSwitchId"])
 	d.Set("standby_zone_id", objectRaw["StandbyZoneId"])
 	d.Set("vpc_id", objectRaw["VpcId"])
@@ -540,7 +591,7 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"LindormErrorCode.OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"LindormErrorCode.OperationDenied.OrderProcessing", "LindormErrorCode.InternalError"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -619,7 +670,7 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"WhiteIpInUpdating"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -678,4 +729,35 @@ func resourceAliCloudLindormInstanceV2Delete(d *schema.ResourceData, meta interf
 	}
 
 	return nil
+}
+
+// whiteIpListSameSet reports whether two white_ip_list slices contain the
+// same set of group_name/ip_list pairs, ignoring element order.
+func whiteIpListSameSet(a, b []interface{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	pairs := make(map[string]string, len(a))
+	for _, item := range a {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			return false
+		}
+		groupName, _ := m["group_name"].(string)
+		ipList, _ := m["ip_list"].(string)
+		pairs[groupName] = ipList
+	}
+	for _, item := range b {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			return false
+		}
+		groupName, _ := m["group_name"].(string)
+		ipList, _ := m["ip_list"].(string)
+		if pairs[groupName] != ipList {
+			return false
+		}
+		delete(pairs, groupName)
+	}
+	return len(pairs) == 0
 }
