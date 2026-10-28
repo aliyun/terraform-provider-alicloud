@@ -1,11 +1,13 @@
-package alicloud
+package cloudphone_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudphone"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudCloudPhoneImage_basic9933(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_phone_image.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudPhoneImageMap9933)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudPhoneServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudPhoneImage")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCloudPhoneImageMap9933)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cloudphone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeImage")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccloudphone%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudPhoneImageBasicDependence9933)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCloudPhoneImageBasicDependence9933)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -38,7 +40,7 @@ func TestAccAliCloudCloudPhoneImage_basic9933(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"image_name":  name,
-						"instance_id": CHECKSET,
+						"instance_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -63,7 +65,7 @@ func TestAccAliCloudCloudPhoneImage_basic9933(t *testing.T) {
 }
 
 var AlicloudCloudPhoneImageMap9933 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudCloudPhoneImageBasicDependence9933(name string) string {

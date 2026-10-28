@@ -1,11 +1,13 @@
-package alicloud
+package cloudphone_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudphone"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,20 +17,20 @@ import (
 func TestAccAliCloudCloudPhoneInstance_basic9932(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_phone_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudPhoneInstanceMap9932)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudPhoneServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudPhoneInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCloudPhoneInstanceMap9932)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cloudphone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccloudphone%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudPhoneInstanceBasicDependence9932)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCloudPhoneInstanceBasicDependence9932)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -37,7 +39,7 @@ func TestAccAliCloudCloudPhoneInstance_basic9932(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"android_instance_group_id": CHECKSET,
+						"android_instance_group_id": acctest.CHECKSET,
 						"android_instance_name":     "CreateInstanceName",
 					}),
 				),

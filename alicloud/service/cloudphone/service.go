@@ -1,4 +1,4 @@
-package alicloud
+package cloudphone
 
 import (
 	"fmt"
@@ -7,16 +7,27 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type CloudPhoneServiceV2 struct {
+// Service wraps the CloudPhone API calls used by the resources of this package.
+type Service struct {
 	client *connectivity.AliyunClient
 }
 
-// DescribeCloudPhonePolicy <<< Encapsulated get interface for CloudPhone Policy.
+// NewService is the exported constructor: the client field stays
+// unexported, so callers outside the package (including the flat
+// layout's acceptance tests) build values with it.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
 
-func (s *CloudPhoneServiceV2) DescribeCloudPhonePolicy(id string) (object map[string]interface{}, err error) {
+// DescribePolicy <<< Encapsulated get interface for CloudPhone Policy.
+
+func (s *Service) DescribePolicy(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -27,12 +38,12 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhonePolicy(id string) (object map[st
 
 	action := "ListPolicyGroups"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -40,31 +51,31 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhonePolicy(id string) (object map[st
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.PolicyGroupModel[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PolicyGroupModel[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.PolicyGroupModel[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Policy", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhonePolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) PolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCloudPhonePolicy(id)
+		object, err := s.DescribePolicy(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -79,18 +90,18 @@ func (s *CloudPhoneServiceV2) CloudPhonePolicyStateRefreshFunc(id string, field 
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
 	}
 }
 
-// DescribeCloudPhonePolicy >>> Encapsulated.
+// DescribePolicy >>> Encapsulated.
 
-// DescribeCloudPhoneInstanceGroup <<< Encapsulated get interface for CloudPhone InstanceGroup.
+// DescribeInstanceGroup <<< Encapsulated get interface for CloudPhone InstanceGroup.
 
-func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstanceGroup(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeInstanceGroup(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -101,12 +112,12 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstanceGroup(id string) (object
 	request["BizRegionId"] = client.RegionId
 	action := "DescribeAndroidInstanceGroups"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -114,31 +125,31 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstanceGroup(id string) (object
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.InstanceGroupModel[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceGroupModel[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.InstanceGroupModel[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("InstanceGroup", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("InstanceGroup", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhoneInstanceGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) InstanceGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCloudPhoneInstanceGroup(id)
+		object, err := s.DescribeInstanceGroup(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -153,17 +164,17 @@ func (s *CloudPhoneServiceV2) CloudPhoneInstanceGroupStateRefreshFunc(id string,
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
 	}
 }
 
-// DescribeCloudPhoneInstanceGroup >>> Encapsulated.
-// DescribeCloudPhoneInstance <<< Encapsulated get interface for CloudPhone Instance.
+// DescribeInstanceGroup >>> Encapsulated.
+// DescribeInstance <<< Encapsulated get interface for CloudPhone Instance.
 
-func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstance(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeInstance(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -174,12 +185,12 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstance(id string) (object map[
 
 	action := "DescribeAndroidInstances"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -187,31 +198,31 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneInstance(id string) (object map[
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.InstanceModel[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceModel[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.InstanceModel[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhoneInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) InstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCloudPhoneInstance(id)
+		object, err := s.DescribeInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -226,17 +237,17 @@ func (s *CloudPhoneServiceV2) CloudPhoneInstanceStateRefreshFunc(id string, fiel
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
 	}
 }
 
-// DescribeCloudPhoneInstance >>> Encapsulated.
-// DescribeCloudPhoneKeyPair <<< Encapsulated get interface for CloudPhone KeyPair.
+// DescribeInstance >>> Encapsulated.
+// DescribeKeyPair <<< Encapsulated get interface for CloudPhone KeyPair.
 
-func (s *CloudPhoneServiceV2) DescribeCloudPhoneKeyPair(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeKeyPair(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -247,12 +258,12 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneKeyPair(id string) (object map[s
 
 	action := "DescribeKeyPairs"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -260,31 +271,31 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneKeyPair(id string) (object map[s
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Data[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Data[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("KeyPair", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("KeyPair", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhoneKeyPairStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) KeyPairStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCloudPhoneKeyPair(id)
+		object, err := s.DescribeKeyPair(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -299,18 +310,18 @@ func (s *CloudPhoneServiceV2) CloudPhoneKeyPairStateRefreshFunc(id string, field
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
 	}
 }
 
-// DescribeCloudPhoneKeyPair >>> Encapsulated.
+// DescribeKeyPair >>> Encapsulated.
 
-// DescribeCloudPhoneImage <<< Encapsulated get interface for CloudPhone Image.
+// DescribeImage <<< Encapsulated get interface for CloudPhone Image.
 
-func (s *CloudPhoneServiceV2) DescribeCloudPhoneImage(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeImage(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -321,12 +332,12 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneImage(id string) (object map[str
 
 	action := "GetImageInfo"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -334,27 +345,27 @@ func (s *CloudPhoneServiceV2) DescribeCloudPhoneImage(id string) (object map[str
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("Image", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Image", id), errs.NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *CloudPhoneServiceV2) CloudPhoneImageStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) ImageStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCloudPhoneImage(id)
+		object, err := s.DescribeImage(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -369,11 +380,11 @@ func (s *CloudPhoneServiceV2) CloudPhoneImageStateRefreshFunc(id string, field s
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
 	}
 }
 
-// DescribeCloudPhoneImage >>> Encapsulated.
+// DescribeImage >>> Encapsulated.
