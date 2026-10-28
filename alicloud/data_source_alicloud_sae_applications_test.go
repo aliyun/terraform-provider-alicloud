@@ -61,6 +61,20 @@ func TestAccAlicloudSAEApplicationDataSource(t *testing.T) {
 		}),
 	}
 
+	reverseTrueConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSaeApplicationDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_sae_application.default.id}"]`,
+			"reverse":        "true",
+			"enable_details": "true",
+		}),
+	}
+	reverseFalseConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudSaeApplicationDataSourceName(rand, map[string]string{
+			"ids":            `["${alicloud_sae_application.default.id}"]`,
+			"reverse":        "false",
+			"enable_details": "true",
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSaeApplicationDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_sae_application.default.id}"]`,
@@ -149,7 +163,7 @@ func TestAccAlicloudSAEApplicationDataSource(t *testing.T) {
 		existMapFunc: existAlicloudSaeApplicationDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudSaeApplicationDataSourceNameMapFunc,
 	}
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameConf, fieldConf, namespaceIdConf, statusConf, allConf)
+	alicloudSaeNamespaceCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameConf, fieldConf, namespaceIdConf, statusConf, reverseTrueConf, reverseFalseConf, allConf)
 }
 func testAccCheckAlicloudSaeApplicationDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
