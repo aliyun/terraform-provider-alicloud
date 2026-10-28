@@ -11,6 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// collection-order: bypass step_adjustment -- pre-existing attribute outside this change
+// collection-order: bypass hybrid_metrics -- pre-existing attribute outside this change
+
 // EssInstanceCommonTestCase is an ESS-local copy of EcsInstanceCommonTestCase
 // with stricter alicloud_instance_types filters (cpu_core_count + memory_size)
 // and alicloud_images bound to the chosen instance_type. Used by the ESS test
@@ -538,6 +541,100 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_dimension(t *testi
 					testAccCheck(map[string]string{
 						"alarm_dimension.#": "1",
 						"metric_name":       "LoadBalancerRealServerAverageQps",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_options(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":          CHECKSET,
+		"scaling_rule_type":         "TargetTrackingScalingRule",
+		"metric_name":               "CpuUtilization",
+		"target_value":              "20.1",
+		"disable_scale_in":          "false",
+		"estimated_instance_warmup": "200",
+		"alarm_options.#":           "1",
+		"alarm_options.0.period":    "300",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssTargetTrackingScalingRuleAlarmOptions-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssTargetTrackingScalingRuleConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName:     resourceId,
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "20.1",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options": []map[string]interface{}{
+						{
+							"period": 300,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "20.1",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options": []map[string]interface{}{
+						{
+							"period": 15,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_options.#":        "1",
+						"alarm_options.0.period": "15",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "20.1",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options": []map[string]interface{}{
+						{},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_options.#":        "1",
+						"alarm_options.0.period": "60",
 					}),
 				),
 			},
