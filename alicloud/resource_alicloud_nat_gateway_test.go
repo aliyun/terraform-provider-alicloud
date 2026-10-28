@@ -52,12 +52,14 @@ func testSweepNatGateways(region string) error {
 	for {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
-			return fmt.Errorf("Error retrieving Nat Gateways: %s", err)
+			log.Printf("[ERROR] Failed to list nat gateways: %s", err)
+			return nil
 		}
 
 		resp, err := jsonpath.Get("$.NatGateways.NatGateway", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NatGateways.NatGateway", response)
+			log.Printf("[ERROR] Failed to parse $.NatGateways.NatGateway (treat as empty): %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
